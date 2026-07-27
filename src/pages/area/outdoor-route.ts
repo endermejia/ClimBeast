@@ -51,6 +51,7 @@ import { TourStep } from '../../services/tour.service';
 
 import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
 import { ChartAscentsByGradeComponent } from '../../components/charts/chart-ascents-by-grade';
+import { ChartAscentsByStyleComponent } from '../../components/charts/chart-ascents-by-style';
 import { GradeComponent } from '../../components/ui/avatar-grade';
 import { SectionHeaderComponent } from '../../components/ui/section-header';
 import { TourHintComponent } from '../../components/ui/tour-hint';
@@ -71,6 +72,7 @@ import { handleErrorToast } from '../../utils';
   imports: [
     AscentsFeedComponent,
     ChartAscentsByGradeComponent,
+    ChartAscentsByStyleComponent,
     DecimalPipe,
     FormsModule,
     GradeComponent,
@@ -150,13 +152,85 @@ import { handleErrorToast } from '../../utils';
             <!-- Chart and Actions -->
 
             <div class="flex flex-col gap-6 items-center w-full">
-              <!-- Chart -->
-              <div class="flex items-center justify-center w-full">
+              <!-- Charts -->
+              <div
+                class="flex flex-col gap-4 items-center justify-center w-full"
+              >
                 <app-chart-ascents-by-grade
                   [ascents]="ascents()"
                   [gradeLabel]="gradeLabel()"
                   class="w-full"
                 />
+                <app-chart-ascents-by-style
+                  [ascents]="ascents()"
+                  class="w-full"
+                />
+              </div>
+            </div>
+
+            <!-- Stats & Actions (Right Column) -->
+            <div class="flex flex-col gap-6">
+              <div class="flex flex-wrap justify-around gap-6">
+                @if (r.height; as height) {
+                  <div class="flex flex-col items-center">
+                    <span
+                      class="text-xs uppercase opacity-60 font-semibold tracking-wider mb-2"
+                    >
+                      {{ 'height' | translate }}
+                    </span>
+                    <div class="flex items-center gap-2">
+                      <span
+                        [tuiAvatar]="'@tui.arrow-up-right'"
+                        size="s"
+                        appearance="secondary"
+                      ></span>
+                      <span class="text-xl font-semibold"
+                        >{{ height || '--' }}m</span
+                      >
+                    </div>
+                  </div>
+                }
+
+                <div class="flex flex-col items-center">
+                  <span
+                    class="text-xs uppercase opacity-60 font-semibold tracking-wider mb-2"
+                  >
+                    {{ 'climbing_kind' | translate }}
+                  </span>
+                  <div class="flex items-center gap-2">
+                    <span
+                      [tuiAvatar]="
+                        climbingIcons[r.climbing_kind] || '@tui.mountain'
+                      "
+                      size="s"
+                      appearance="secondary"
+                    ></span>
+                    <span class="text-xl font-semibold">{{
+                      'climbingKinds.' + r.climbing_kind | translate
+                    }}</span>
+                  </div>
+                </div>
+
+                <div class="flex flex-col items-center">
+                  <span
+                    class="text-xs uppercase opacity-60 font-semibold tracking-wider mb-2"
+                  >
+                    {{ 'rating' | translate }}
+                  </span>
+                  <div class="flex items-center gap-2">
+                    <tui-rating
+                      [max]="5"
+                      [ngModel]="r.rating || 0"
+                      [readOnly]="true"
+                      [style.font-size.rem]="1.5"
+                    />
+                    @if (r.rating; as rating) {
+                      <span class="text-xl font-semibold">
+                        {{ rating | number: '1.1-1' }}
+                      </span>
+                    }
+                  </div>
+                </div>
               </div>
 
               <!-- Action Buttons -->
@@ -234,72 +308,6 @@ import { handleErrorToast } from '../../utils';
                     {{ 'project' | translate }}
                   </button>
                 }
-              </div>
-            </div>
-
-            <!-- Stats -->
-            <div class="flex flex-col gap-6">
-              <div class="flex flex-wrap justify-around gap-6">
-                @if (r.height; as height) {
-                  <div class="flex flex-col items-center">
-                    <span
-                      class="text-xs uppercase opacity-60 font-semibold tracking-wider mb-2"
-                    >
-                      {{ 'height' | translate }}
-                    </span>
-                    <div class="flex items-center gap-2">
-                      <span
-                        [tuiAvatar]="'@tui.arrow-up-right'"
-                        size="s"
-                        appearance="secondary"
-                      ></span>
-                      <span class="text-xl font-semibold"
-                        >{{ height || '--' }}m</span
-                      >
-                    </div>
-                  </div>
-                }
-
-                <div class="flex flex-col items-center">
-                  <span
-                    class="text-xs uppercase opacity-60 font-semibold tracking-wider mb-2"
-                  >
-                    {{ 'climbing_kind' | translate }}
-                  </span>
-                  <div class="flex items-center gap-2">
-                    <span
-                      [tuiAvatar]="
-                        climbingIcons[r.climbing_kind] || '@tui.mountain'
-                      "
-                      size="s"
-                      appearance="secondary"
-                    ></span>
-                    <span class="text-xl font-semibold">{{
-                      'climbingKinds.' + r.climbing_kind | translate
-                    }}</span>
-                  </div>
-                </div>
-
-                <div class="flex flex-col items-center">
-                  <span
-                    class="text-xs uppercase opacity-60 font-semibold tracking-wider mb-2"
-                  >
-                    {{ 'rating' | translate }}
-                  </span>
-                  <div class="flex items-center gap-2">
-                    <tui-rating
-                      [max]="5"
-                      [ngModel]="r.rating || 0"
-                      [readOnly]="true"
-                      [style.font-size.rem]="1.5"
-                    />
-                    @if (r.rating; as rating) {
-                      <span class="text-xl font-semibold">
-                        {{ rating | number: '1.1-1' }}
-                      </span>
-                    }
-                  </div>
-                </div>
               </div>
 
               @if (equippers().length > 0) {

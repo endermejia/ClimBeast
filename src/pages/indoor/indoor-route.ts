@@ -47,6 +47,7 @@ import {
   IndoorCenterDto,
 } from '../../models';
 import { ChartAscentsByGradeComponent } from '../../components/charts/chart-ascents-by-grade';
+import { ChartAscentsByStyleComponent } from '../../components/charts/chart-ascents-by-style';
 import { AscentCardComponent } from '../../components/ascent/ascent-card';
 
 @Component({
@@ -66,6 +67,7 @@ import { AscentCardComponent } from '../../components/ascent/ascent-card';
     GradeComponent,
     SectionHeaderComponent,
     ChartAscentsByGradeComponent,
+    ChartAscentsByStyleComponent,
     AscentCardComponent,
   ],
   template: `
@@ -127,15 +129,68 @@ import { AscentCardComponent } from '../../components/ascent/ascent-card';
 
         <!-- Chart and Stats Grid -->
         <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Left: Actions & Color circle visualizer -->
+          <!-- Left: Charts -->
           <div class="flex flex-col gap-6 items-center w-full">
-            <!-- Chart -->
-            <div class="flex items-center justify-center w-full">
+            <!-- Charts -->
+            <div class="flex flex-col gap-4 items-center justify-center w-full">
               <app-chart-ascents-by-grade
                 [ascents]="mappedAscents()"
                 [gradeLabel]="gradeLabel()"
                 class="w-full"
               />
+              <app-chart-ascents-by-style
+                [ascents]="mappedAscents()"
+                class="w-full"
+              />
+            </div>
+          </div>
+
+          <!-- Right: Stats & Actions -->
+          <div class="flex flex-col gap-6 justify-center">
+            <div class="flex flex-wrap justify-around gap-6">
+              <!-- Climbing Kind -->
+              <div class="flex flex-col items-center">
+                <span
+                  class="text-xs uppercase opacity-60 font-semibold tracking-wider mb-2"
+                >
+                  {{ 'climbing_kind' | translate }}
+                </span>
+                <div class="flex items-center gap-2">
+                  <span
+                    [tuiAvatar]="
+                      climbingIcons[r.climbing_kind ?? 'sport'] ||
+                      '@tui.mountain'
+                    "
+                    size="s"
+                    appearance="secondary"
+                  ></span>
+                  <span class="text-xl font-semibold capitalize">
+                    {{ 'climbingKinds.' + r.climbing_kind | translate }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Color -->
+              <div class="flex flex-col items-center">
+                <span
+                  class="text-xs uppercase opacity-60 font-semibold tracking-wider mb-2"
+                >
+                  {{ 'color' | translate }}
+                </span>
+                <div class="flex items-center gap-2">
+                  @if (r.color) {
+                    <span
+                      class="w-5 h-5 rounded-full border border-neutral-300 dark:border-neutral-700 block shrink-0"
+                      [style.backgroundColor]="r.color"
+                    ></span>
+                    <span class="text-xl font-semibold">
+                      {{ routeColorName() }}
+                    </span>
+                  } @else {
+                    <span class="opacity-50 text-base">-</span>
+                  }
+                </div>
+              </div>
             </div>
 
             <!-- Action Buttons -->
@@ -195,55 +250,6 @@ import { AscentCardComponent } from '../../components/ascent/ascent-card';
                   </button>
                 </div>
               }
-            </div>
-          </div>
-
-          <!-- Right: Stats -->
-          <div class="flex flex-col gap-6 justify-center">
-            <div class="flex flex-wrap justify-around gap-6">
-              <!-- Climbing Kind -->
-              <div class="flex flex-col items-center">
-                <span
-                  class="text-xs uppercase opacity-60 font-semibold tracking-wider mb-2"
-                >
-                  {{ 'climbing_kind' | translate }}
-                </span>
-                <div class="flex items-center gap-2">
-                  <span
-                    [tuiAvatar]="
-                      climbingIcons[r.climbing_kind ?? 'sport'] ||
-                      '@tui.mountain'
-                    "
-                    size="s"
-                    appearance="secondary"
-                  ></span>
-                  <span class="text-xl font-semibold capitalize">
-                    {{ 'climbingKinds.' + r.climbing_kind | translate }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Color -->
-              <div class="flex flex-col items-center">
-                <span
-                  class="text-xs uppercase opacity-60 font-semibold tracking-wider mb-2"
-                >
-                  {{ 'color' | translate }}
-                </span>
-                <div class="flex items-center gap-2">
-                  @if (r.color) {
-                    <span
-                      class="w-5 h-5 rounded-full border border-neutral-300 dark:border-neutral-700 block shrink-0"
-                      [style.backgroundColor]="r.color"
-                    ></span>
-                    <span class="text-xl font-semibold">
-                      {{ routeColorName() }}
-                    </span>
-                  } @else {
-                    <span class="opacity-50 text-base">-</span>
-                  }
-                </div>
-              </div>
             </div>
 
             <!-- Equippers -->
