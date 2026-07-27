@@ -2,9 +2,8 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
   inject,
-  Output,
+  output,
   signal,
 } from '@angular/core';
 
@@ -51,6 +50,7 @@ import type { CartProduct } from '../../models';
         (click)="closeOverlay.emit()"
         (keydown.enter)="closeOverlay.emit()"
         (keydown.space)="closeOverlay.emit()"
+        (keydown.escape)="closeOverlay.emit()"
       ></div>
 
       <!-- Panel -->
@@ -300,8 +300,8 @@ export class CartOverlayComponent {
   private readonly dialogs = inject(TuiDialogService);
   private readonly merchService = inject(MerchandiseService);
 
-  @Output() closeOverlay = new EventEmitter<void>();
-  @Output() checkout = new EventEmitter<void>();
+  readonly closeOverlay = output<void>();
+  readonly checkout = output<void>();
 
   protected readonly items = this.cartService.items;
   protected readonly totalItems = this.cartService.totalItems;
