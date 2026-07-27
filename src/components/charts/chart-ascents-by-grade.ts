@@ -1,110 +1,217 @@
-import { isPlatformBrowser, LowerCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  inject,
   input,
   InputSignal,
-  PLATFORM_ID,
-  signal,
   Signal,
-  WritableSignal,
 } from '@angular/core';
 
-import { TuiRingChart } from '@taiga-ui/addon-charts';
-import { TuiSkeleton } from '@taiga-ui/kit';
-
+import { TuiAppearance } from '@taiga-ui/core';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import {
-  GradeLabel,
-  RouteAscentWithExtras,
-  RoutesByGrade,
-  VERTICAL_LIFE_GRADES,
+  colorForGrade,
   GRADE_NUMBER_TO_LABEL,
+  GradeLabel,
+  ORDERED_GRADE_VALUES,
+  RouteAscentWithExtras,
+  VERTICAL_LIFE_GRADES,
 } from '../../models';
 
-import { computeGradeChartData } from '../../utils';
+export interface GradeAscentRow {
+  grade: GradeLabel;
+  gradeColor: string;
+  soft: number;
+  neutral: number;
+  hard: number;
+  total: number;
+  isHighest: boolean;
+}
 
 @Component({
   selector: 'app-chart-ascents-by-grade',
-  imports: [LowerCasePipe, TranslatePipe, TuiRingChart, TuiSkeleton],
+  imports: [TranslatePipe, TuiAppearance],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block' },
-  styles: [
-    `
-      :host {
-        /* Chart categorical palette mapped to difficulty bands: 5, 6, 7, 8, 9 */
-        --tui-chart-categorical-00: var(--tui-text-positive); /* < 6a */
-        --tui-chart-categorical-01: var(--tui-status-info); /* 6a–6c+ */
-        --tui-chart-categorical-02: var(--tui-status-warning); /* 7a–7c+ */
-        --tui-chart-categorical-03: var(--tui-status-negative); /* 8a–8c+ */
-        --tui-chart-categorical-04: var(
-          --tui-background-accent-opposite
-        ); /* 9a–9c */
-        --tui-chart-categorical-05: #cda4de; /* Project (?) */
-      }
-    `,
-  ],
+  host: { class: 'block w-full' },
   template: `
-    @let c = chart();
-    @if (isBrowser) {
-      <tui-ring-chart
-        [tuiSkeleton]="tuiSkeleton()"
-        [value]="c.values.length && c.total > 0 ? c.values : [1]"
-        [activeItemIndex]="activeItemIndex()"
-        [class.!opacity-20]="c.total === 0"
-        (activeItemIndexChange)="onActiveItemIndexChange($event)"
+    <div class="w-full max-w-sm mx-auto text-sm font-sans select-none">
+      <!-- Table Header -->
+      <div
+        class="grid grid-cols-[2.75rem_1fr_1fr_1fr_1.1fr] sm:grid-cols-[3.25rem_1fr_1fr_1fr_1.1fr] gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-(--tui-text-tertiary) text-center items-center"
       >
-        @if (c.hasActive) {
-          <span>
-            {{ c.activeBandTotal }}
-            {{ 'ascents' | translate | lowercase }}
-          </span>
-          <div [innerHtml]="c.breakdownText"></div>
+        <div class="text-left"></div>
+        <div class="truncate px-0.5" [title]="'ascent.soft' | translate">
+          {{ 'ascent.soft' | translate }}
+        </div>
+        <div class="truncate px-0.5" [title]="'ascent.neutral' | translate">
+          {{ 'ascent.neutral' | translate }}
+        </div>
+        <div class="truncate px-0.5" [title]="'ascent.hard' | translate">
+          {{ 'ascent.hard' | translate }}
+        </div>
+        <div
+          class="text-right font-bold truncate px-0.5"
+          [title]="'total' | translate"
+        >
+          {{ 'total' | translate }}
+        </div>
+      </div>
+
+      <!-- Table Body -->
+      <div class="flex flex-col gap-1">
+        @if (tuiSkeleton()) {
+          @for (i of [1, 2, 3]; track i) {
+            <div
+              class="grid grid-cols-[2.75rem_1fr_1fr_1fr_1.1fr] sm:grid-cols-[3.25rem_1fr_1fr_1fr_1.1fr] gap-1 sm:gap-2 px-2 sm:px-3 py-2 items-center animate-pulse"
+            >
+              <div
+                class="h-4 bg-(--tui-background-neutral-1) rounded w-8"
+              ></div>
+              <div
+                class="h-4 bg-(--tui-background-neutral-1) rounded w-6 mx-auto"
+              ></div>
+              <div
+                class="h-4 bg-(--tui-background-neutral-1) rounded w-6 mx-auto"
+              ></div>
+              <div
+                class="h-4 bg-(--tui-background-neutral-1) rounded w-6 mx-auto"
+              ></div>
+              <div
+                class="h-4 bg-(--tui-background-neutral-1) rounded w-6 ms-auto"
+              ></div>
+            </div>
+          }
         } @else {
-          <span class="text-xl font-semibold">
-            {{ gradeLabel() }}
-          </span>
-          @if (c.gradeRange; as gradeRange) {
-            <div class="text-sm">{{ gradeRange }}</div>
+          @for (row of rows(); track row.grade) {
+            <div
+              class="grid grid-cols-[2.75rem_1fr_1fr_1fr_1.1fr] sm:grid-cols-[3.25rem_1fr_1fr_1fr_1.1fr] gap-1 sm:gap-2 px-2 sm:px-3 py-2 items-center rounded-xl transition-all duration-200"
+              [tuiAppearance]="row.isHighest ? 'neutral' : 'none'"
+            >
+              <!-- Grade -->
+              <div
+                class="text-left font-bold text-base text-(--tui-text-primary)"
+              >
+                {{ row.grade }}
+              </div>
+
+              <!-- Soft -->
+              <div class="text-center font-medium text-(--tui-text-secondary)">
+                {{ row.soft }}
+              </div>
+
+              <!-- Neutral -->
+              <div class="text-center font-medium text-(--tui-text-secondary)">
+                {{ row.neutral }}
+              </div>
+
+              <!-- Hard -->
+              <div class="text-center font-medium text-(--tui-text-secondary)">
+                {{ row.hard }}
+              </div>
+
+              <!-- Total -->
+              <div
+                class="text-right font-bold text-base text-(--tui-text-primary)"
+              >
+                {{ row.total }}
+              </div>
+            </div>
           }
         }
-      </tui-ring-chart>
-    }
+      </div>
+    </div>
   `,
 })
 export class ChartAscentsByGradeComponent {
-  private readonly platformId = inject(PLATFORM_ID);
-  protected readonly isBrowser = isPlatformBrowser(this.platformId);
-
   ascents: InputSignal<RouteAscentWithExtras[]> =
     input.required<RouteAscentWithExtras[]>();
   gradeLabel: InputSignal<string> = input.required<string>();
   tuiSkeleton: InputSignal<boolean> = input(false);
-  activeItemIndex: WritableSignal<number> = signal<number>(-1);
 
-  // Compute counts directly from the ascents list
-  private readonly normalizedCounts: Signal<RoutesByGrade> = computed(() => {
-    const counts: RoutesByGrade = {};
-    for (const ascent of this.ascents()) {
+  protected readonly rows: Signal<GradeAscentRow[]> = computed<
+    GradeAscentRow[]
+  >(() => {
+    const list = this.ascents();
+    const defaultGrade = (this.gradeLabel() || '?') as GradeLabel;
+
+    if (!list || list.length === 0) {
+      return [
+        {
+          grade: defaultGrade,
+          gradeColor: colorForGrade(defaultGrade),
+          soft: 0,
+          neutral: 0,
+          hard: 0,
+          total: 0,
+          isHighest: true,
+        },
+      ];
+    }
+
+    const countsMap = new Map<
+      GradeLabel,
+      { soft: number; neutral: number; hard: number; total: number }
+    >();
+
+    for (const ascent of list) {
       const displayGrade = ascent.grade ?? ascent.route?.grade;
-      const g = GRADE_NUMBER_TO_LABEL[displayGrade as VERTICAL_LIFE_GRADES];
-      if (g) {
-        const gradeLabel = g as GradeLabel;
-        counts[gradeLabel] = (counts[gradeLabel] ?? 0) + 1;
+      const gLabel = (
+        displayGrade !== null && displayGrade !== undefined
+          ? (GRADE_NUMBER_TO_LABEL[displayGrade as VERTICAL_LIFE_GRADES] ??
+            defaultGrade)
+          : defaultGrade
+      ) as GradeLabel;
+
+      if (!countsMap.has(gLabel)) {
+        countsMap.set(gLabel, { soft: 0, neutral: 0, hard: 0, total: 0 });
+      }
+
+      const entry = countsMap.get(gLabel)!;
+      if (ascent.soft) {
+        entry.soft++;
+      } else if (ascent.hard) {
+        entry.hard++;
+      } else {
+        entry.neutral++;
+      }
+      entry.total++;
+    }
+
+    const result: GradeAscentRow[] = Array.from(countsMap.entries()).map(
+      ([grade, data]) => ({
+        grade,
+        gradeColor: colorForGrade(grade),
+        ...data,
+        isHighest: false,
+      }),
+    );
+
+    result.sort((a, b) => {
+      const idxA = ORDERED_GRADE_VALUES.indexOf(a.grade);
+      const idxB = ORDERED_GRADE_VALUES.indexOf(b.grade);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.grade.localeCompare(b.grade);
+    });
+
+    let maxTotal = 0;
+    for (const row of result) {
+      if (row.total > maxTotal) {
+        maxTotal = row.total;
       }
     }
-    return counts;
+
+    if (maxTotal > 0) {
+      const highestRow = result.find((r) => r.total === maxTotal);
+      if (highestRow) {
+        highestRow.isHighest = true;
+      }
+    } else if (result.length > 0) {
+      result[0].isHighest = true;
+    }
+
+    return result;
   });
-
-  protected readonly chart = computed(() =>
-    computeGradeChartData(this.normalizedCounts(), this.activeItemIndex()),
-  );
-
-  protected onActiveItemIndexChange(index: number): void {
-    const value = this.chart().values[index] ?? 0;
-    this.activeItemIndex.set(value > 0 ? index : -1);
-  }
 }

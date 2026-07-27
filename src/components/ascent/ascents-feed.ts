@@ -80,6 +80,7 @@ export interface ProcessedFeedItem {
               [showRoute]="showRoute()"
               [isFollowed]="processed.isFollowed"
               [priority]="true"
+              [highlightOwn]="highlightOwn()"
               (followEvent)="follow.emit($event)"
               (unfollowEvent)="unfollow.emit($event)"
             />
@@ -91,6 +92,7 @@ export interface ProcessedFeedItem {
                 [showRoute]="showRoute()"
                 [isFollowed]="processed.isFollowed"
                 [priority]="false"
+                [highlightOwn]="highlightOwn()"
                 (followEvent)="follow.emit($event)"
                 (unfollowEvent)="unfollow.emit($event)"
               />
@@ -136,6 +138,7 @@ export class AscentsFeedComponent {
   showRoute = input(true);
   followedIds = input<Set<string>>(new Set());
   columns = input<number>(1);
+  highlightOwn = input(false);
 
   loadMore = output<void>();
   follow = output<string>();

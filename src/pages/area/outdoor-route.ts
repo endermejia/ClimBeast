@@ -149,18 +149,20 @@ import { handleErrorToast } from '../../utils';
           <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Chart and Actions -->
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            <div class="flex flex-col gap-6 items-center w-full">
               <!-- Chart -->
-              <div class="flex items-center justify-center">
+              <div class="flex items-center justify-center w-full">
                 <app-chart-ascents-by-grade
                   [ascents]="ascents()"
                   [gradeLabel]="gradeLabel()"
-                  class="w-40 h-40"
+                  class="w-full"
                 />
               </div>
 
               <!-- Action Buttons -->
-              <div class="flex flex-col gap-3 justify-center">
+              <div
+                class="flex flex-col gap-3 justify-center w-full max-w-sm mx-auto"
+              >
                 @if (!r.climbed) {
                   <button
                     tuiButton
@@ -180,18 +182,31 @@ import { handleErrorToast } from '../../utils';
                           r.own_ascent.type || 'default'
                         ].background
                       "
-                      class="text-(--tui-text-primary-on-accent-1)! grow"
+                      class="group relative overflow-hidden text-(--tui-text-primary-on-accent-1)! grow transition-all duration-300"
                       size="m"
                       (click)="onEditAscent(r.own_ascent, r.name)"
                     >
-                      <tui-icon
-                        [icon]="
-                          ascentsService.ascentInfo()[
-                            r.own_ascent.type || 'default'
-                          ].icon
-                        "
-                      />
-                      {{ 'ascentTypes.' + r.own_ascent.type | translate }}
+                      <!-- Normal State -->
+                      <span
+                        class="flex items-center gap-2 transition-all duration-300 ease-out group-hover:opacity-0 group-hover:scale-90 group-hover:-translate-y-1"
+                      >
+                        <tui-icon
+                          [icon]="
+                            ascentsService.ascentInfo()[
+                              r.own_ascent.type || 'default'
+                            ].icon
+                          "
+                        />
+                        {{ 'ascentTypes.' + r.own_ascent.type | translate }}
+                      </span>
+
+                      <!-- Hover State -->
+                      <span
+                        class="absolute inset-0 flex items-center justify-center gap-2 opacity-0 scale-90 translate-y-1 transition-all duration-300 ease-out group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0 pointer-events-none"
+                      >
+                        <tui-icon icon="@tui.pencil" />
+                        {{ 'ascent.edit' | translate }}
+                      </span>
                     </button>
                     <button
                       tuiIconButton
@@ -359,6 +374,7 @@ import { handleErrorToast } from '../../utils';
               [hasMore]="hasMore()"
               [showRoute]="false"
               [followedIds]="followedIds()"
+              [highlightOwn]="true"
               (loadMore)="loadMore()"
               (follow)="onFollow($event)"
               (unfollow)="onUnfollow($event)"

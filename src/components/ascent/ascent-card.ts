@@ -81,7 +81,13 @@ import { getEmbedUrl } from '../../utils';
   template: `
     @let ascent = data();
     <div
-      [tuiAppearance]="ascent.is_duplicate ? 'negative' : 'flat-grayscale'"
+      [tuiAppearance]="
+        ascent.is_duplicate
+          ? 'negative'
+          : highlightOwn() && isOwnAscent()
+            ? 'positive'
+            : 'flat-grayscale'
+      "
       class="flex flex-col gap-1 p-4 sm:rounded-3xl rounded-none relative no-underline text-inherit hover:no-underline -mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full text-left"
     >
       <header
@@ -379,6 +385,11 @@ export class AscentCardComponent {
       (r as { center_slug?: string }).center_slug
     );
   });
+  protected readonly isOwnAscent = computed(() => {
+    const currentUserId = this.global.userProfile()?.id;
+    const ascentUserId = this.data()?.user_id;
+    return !!(currentUserId && ascentUserId && currentUserId === ascentUserId);
+  });
   protected readonly router = inject(Router);
   protected readonly sanitizer = inject(DomSanitizer);
   private readonly ascentsService = inject(AscentsService);
@@ -391,6 +402,7 @@ export class AscentCardComponent {
   showRoute = input(true);
   isFollowed = input(false);
   priority = input(false);
+  highlightOwn = input(false);
 
   followEvent = output<string>();
   unfollowEvent = output<string>();
