@@ -62,13 +62,17 @@ export class BreadcrumbsService {
         { caption: 'areas', routerLink: ['/area'] },
       ];
 
-      const area = this.topoData.selectedAreaSlug()
-        ? this.findAreaBySlug(this.topoData.selectedAreaSlug()!)
-        : null;
-      const crag = this.topoData.selectedCragSlug()
-        ? this.findCragBySlug(this.topoData.selectedCragSlug()!)
-        : null;
-      const route = this.topoData.routeDetail();
+      const areaSlug = this.topoData.selectedAreaSlug();
+      const area = areaSlug ? this.findAreaBySlug(areaSlug) : null;
+      const cragSlug = this.topoData.selectedCragSlug();
+      const crag = cragSlug ? this.findCragBySlug(cragSlug) : null;
+      const routeDetail = this.topoData.routeDetail();
+      const selectedRouteSlug = this.topoData.selectedRouteSlug();
+      const route = routeDetail
+        ? { name: routeDetail.name, slug: routeDetail.slug }
+        : selectedRouteSlug
+          ? { name: selectedRouteSlug, slug: selectedRouteSlug }
+          : null;
 
       if (area) {
         items.push({
@@ -85,8 +89,7 @@ export class BreadcrumbsService {
               caption: topo.name,
               routerLink: ['/area', area.slug, crag.slug, 'topo', topo.id],
             });
-          }
-          if (route) {
+          } else if (route) {
             items.push({
               caption: route.name,
               routerLink: ['/area', area.slug, crag.slug, route.slug],
@@ -103,14 +106,58 @@ export class BreadcrumbsService {
     this.breadcrumbs().slice(0, -1),
   );
 
-  // These are placeholder methods that should be implemented based on the actual data sources
-  private findAreaBySlug(_slug: string): { name: string; slug: string } | null {
-    // This should be connected to the actual areas list
-    return null;
+  private findAreaBySlug(slug: string): { name: string; slug: string } | null {
+    if (!slug) return null;
+
+    const cragDetail = this.topoData.cragDetail();
+    if (cragDetail?.area_slug === slug && cragDetail?.area_name) {
+      return { name: cragDetail.area_name, slug: cragDetail.area_slug };
+    }
+
+    const routeDetail = this.topoData.routeDetail();
+    if (routeDetail?.area_slug === slug && routeDetail?.area_name) {
+      return { name: routeDetail.area_name, slug: routeDetail.area_slug };
+    }
+
+    const topoDetail = this.topoData.topoDetail();
+    if (topoDetail?.crag?.area?.slug === slug) {
+      return {
+        name: topoDetail.crag.area.name,
+        slug: topoDetail.crag.area.slug,
+      };
+    }
+
+    const areaFromList = this.topoData.areasList().find((a) => a.slug === slug);
+    if (areaFromList) {
+      return { name: areaFromList.name, slug: areaFromList.slug };
+    }
+
+    return { name: slug, slug };
   }
 
-  private findCragBySlug(_slug: string): { name: string; slug: string } | null {
-    // This should be connected to the actual crags list
-    return null;
+  private findCragBySlug(slug: string): { name: string; slug: string } | null {
+    if (!slug) return null;
+
+    const cragDetail = this.topoData.cragDetail();
+    if (cragDetail?.slug === slug) {
+      return { name: cragDetail.name, slug: cragDetail.slug };
+    }
+
+    const routeDetail = this.topoData.routeDetail();
+    if (routeDetail?.crag_slug === slug && routeDetail?.crag_name) {
+      return { name: routeDetail.crag_name, slug: routeDetail.crag_slug };
+    }
+
+    const topoDetail = this.topoData.topoDetail();
+    if (topoDetail?.crag?.slug === slug) {
+      return { name: topoDetail.crag.name, slug: topoDetail.crag.slug };
+    }
+
+    const cragFromList = this.topoData.cragsList().find((c) => c.slug === slug);
+    if (cragFromList) {
+      return { name: cragFromList.name, slug: cragFromList.slug };
+    }
+
+    return { name: slug, slug };
   }
 }

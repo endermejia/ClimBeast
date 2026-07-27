@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import {
   AmountByEveryGrade,
+  AreaListItem,
   ClimbingKind,
   CragDetail,
   CragListItem,
@@ -41,6 +42,34 @@ export class TopoDataService {
   selectedTopoId: WritableSignal<string | null> = signal(null);
   selectedCenterSlug: WritableSignal<string | null> = signal(null);
   selectedRouteSlug: WritableSignal<string | null> = signal(null);
+
+  readonly areasListResource = resource({
+    loader: async () => {
+      if (!isPlatformBrowser(this.platformId)) {
+        return [] as AreaListItem[];
+      }
+      const cacheKey = CACHE_KEYS.areasList;
+      return this.cache.fetchOrCache(
+        cacheKey,
+        async () => {
+          await this.supabase.whenReady();
+          const { data, error } =
+            await this.supabase.client.rpc('get_areas_list');
+          if (error) {
+            throw error;
+          }
+          return ((data as AreaListItem[]) ?? []) as AreaListItem[];
+        },
+        { fallbackValue: [], logTag: 'TopoDataService' },
+      );
+    },
+  });
+
+  readonly areasList: Signal<AreaListItem[]> = computed(() => {
+    const val = this.areasListResource.value();
+    if (val !== undefined) return val;
+    return this.cache.get<AreaListItem[]>(CACHE_KEYS.areasList, []);
+  });
 
   /** List of sectors/crags for the selected area. */
   readonly cragsListResource = resource({

@@ -75,11 +75,7 @@ export function applyUserFilter<
     in(column: string, values: unknown[]): T;
     neq(column: string, value: unknown): T;
   },
->(
-  query: T,
-  options: FeedFilterOptions,
-  userFilterColumn: string = 'user_id',
-): T {
+>(query: T, options: FeedFilterOptions, userFilterColumn = 'user_id'): T {
   let q = query;
 
   // Exclude own ascents unless viewing 'all'
@@ -114,11 +110,7 @@ export function applyIndoorUserFilter<
     in(column: string, values: unknown[]): T;
     neq(column: string, value: unknown): T;
   },
->(
-  query: T,
-  options: FeedFilterOptions,
-  userFilterColumn: string = 'user_id',
-): T {
+>(query: T, options: FeedFilterOptions, userFilterColumn = 'user_id'): T {
   let q = query;
 
   if (options.filter !== 'all') {
@@ -140,8 +132,8 @@ export function applyCategoryFilter<
 >(
   query: T,
   categories: number[],
-  column: string = 'route.climbing_kind',
-  includeMultipitch: boolean = true,
+  column = 'route.climbing_kind',
+  includeMultipitch = true,
 ): T {
   if (categories.length === 0) return query;
 
@@ -160,7 +152,7 @@ export function applyCategoryFilter<
  */
 export function applyGradeFilter<
   T extends { in(column: string, values: unknown[]): T },
->(query: T, gradeRange: [number, number], column: string = 'route.grade'): T {
+>(query: T, gradeRange: [number, number], column = 'route.grade'): T {
   const [loIdx, hiIdx] = gradeRange;
   if (loIdx === 0 && hiIdx === ORDERED_GRADE_VALUES.length - 1) {
     return query; // Full range selected, no filter needed

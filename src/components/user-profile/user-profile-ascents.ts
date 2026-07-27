@@ -1,5 +1,5 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   ChangeDetectionStrategy,
@@ -59,6 +59,7 @@ import { getAscentDateFilterOptions, processAscentsToFeed } from '../../utils';
     AscentsFeedComponent,
     CommonModule,
     EmptyStateComponent,
+    FormsModule,
     ReactiveFormsModule,
     TranslatePipe,
     TuiAppearance,
@@ -130,8 +131,8 @@ import { getAscentDateFilterOptions, processAscentsToFeed } from '../../utils';
               <input
                 tuiSelect
                 id="date-filter"
-                [value]="dateFilterValue()"
-                (change)="onDateFilterChange($event)"
+                [ngModel]="dateFilterValue()"
+                (ngModelChange)="dateFilterValue.set($event)"
                 autocomplete="off"
               />
               <tui-data-list *tuiDropdown>
@@ -151,8 +152,8 @@ import { getAscentDateFilterOptions, processAscentsToFeed } from '../../utils';
               <input
                 tuiSelect
                 id="sort-filter"
-                [value]="sortFilterValue()"
-                (change)="onSortFilterChange($event)"
+                [ngModel]="sortFilterValue()"
+                (ngModelChange)="sortFilterValue.set($event)"
                 autocomplete="off"
               />
               <tui-data-list *tuiDropdown>
@@ -227,20 +228,6 @@ export class UserProfileAscentsComponent {
   protected readonly userProfilesService = inject(UserProfilesService);
   protected readonly dialogs = inject(TuiDialogService);
   private readonly platformId = inject(PLATFORM_ID);
-
-  protected toValue(event: Event): string {
-    return (event.target as HTMLSelectElement)?.value ?? '';
-  }
-
-  protected onDateFilterChange(event: Event): void {
-    const value = this.toValue(event) as 'last12' | 'all' | string;
-    this.dateFilterValue.set(value);
-  }
-
-  protected onSortFilterChange(event: Event): void {
-    const value = this.toValue(event) as 'grade' | 'date';
-    this.sortFilterValue.set(value);
-  }
 
   private readonly querySubject = new Subject<string>();
   protected readonly query = toSignal(

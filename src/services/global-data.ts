@@ -7,7 +7,6 @@ import {
   inject,
   Injectable,
   PLATFORM_ID,
-  resource,
   signal,
   Signal,
   untracked,
@@ -29,7 +28,6 @@ import { TranslateService } from '@ngx-translate/core';
 import { map, merge, startWith } from 'rxjs';
 
 import { AppNotificationsService } from './app-notifications.service';
-import { CacheService } from './cache.service';
 import { MessagingService } from './messaging.service';
 import { PushService } from './push.service';
 import { SupabaseService } from './supabase.service';
@@ -59,8 +57,6 @@ import {
   RouteWithExtras,
 } from '../models';
 
-import { CACHE_KEYS } from '../constants/cache-keys';
-
 /**
  * GlobalData is now a thin facade that delegates to domain services.
  * It maintains full backward compatibility while the domain services
@@ -81,7 +77,6 @@ import { CACHE_KEYS } from '../constants/cache-keys';
   providedIn: 'root',
 })
 export class GlobalData {
-  private readonly cache = inject(CacheService);
   private readonly messagingService = inject(MessagingService);
   private readonly notificationsService = inject(AppNotificationsService);
   private readonly platformId = inject(PLATFORM_ID);
@@ -269,33 +264,8 @@ export class GlobalData {
     const slug = this.selectedAreaSlug();
     return slug ? this.areasList().find((a) => a.slug === slug) || null : null;
   });
-  readonly areasListResource = resource({
-    params: () => ({ user: this.userProfile() }),
-    loader: async () => {
-      if (!isPlatformBrowser(this.platformId)) {
-        return [] as AreaListItem[];
-      }
-      const cacheKey = CACHE_KEYS.areasList;
-      return this.cache.fetchOrCache(
-        cacheKey,
-        async () => {
-          await this.supabase.whenReady();
-          const { data, error } =
-            await this.supabase.client.rpc('get_areas_list');
-          if (error) {
-            throw error;
-          }
-          return ((data as AreaListItem[]) ?? []) as AreaListItem[];
-        },
-        { fallbackValue: [], logTag: 'GlobalData' },
-      );
-    },
-  });
-  readonly areasList: Signal<AreaListItem[]> = computed(() => {
-    const val = this.areasListResource.value();
-    if (val !== undefined) return val;
-    return this.cache.get<AreaListItem[]>(CACHE_KEYS.areasList, []);
-  });
+  readonly areasListResource = this.topoData.areasListResource;
+  readonly areasList = this.topoData.areasList;
 
   // ---- Indoor Centers (delegated to IndoorCentersDataService) ----
   readonly indoorCentersResource = this.indoorCentersData.indoorCentersResource;

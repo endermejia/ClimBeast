@@ -1,4 +1,4 @@
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -50,6 +50,7 @@ import {
   selector: 'app-user-profile-statistics',
   standalone: true,
   imports: [
+    FormsModule,
     ReactiveFormsModule,
     TranslatePipe,
     TuiDataList,
@@ -83,8 +84,8 @@ import {
         >
           <input
             tuiSelect
-            [value]="dateFilterValue()"
-            (change)="onDateFilterChange($event)"
+            [ngModel]="dateFilterValue()"
+            (ngModelChange)="dateFilterValue.set($event)"
             autocomplete="off"
           />
           <tui-data-list *tuiDropdown>

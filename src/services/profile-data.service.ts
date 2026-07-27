@@ -20,7 +20,7 @@ import {
 } from '../models';
 import { SupabaseService } from './supabase.service';
 import { CacheService } from './cache.service';
-import { ORDERED_GRADE_VALUES } from '../models';
+import { ORDERED_GRADE_VALUES, LABEL_TO_VERTICAL_LIFE } from '../models';
 import { FilterStateService } from './filter-state.service';
 import {
   mapRouteToExtras,
@@ -231,10 +231,7 @@ export class ProfileDataService {
         if (minIdx > 0 || maxIdx < ORDERED_GRADE_VALUES.length - 1) {
           const allowedLabels = ORDERED_GRADE_VALUES.slice(minIdx, maxIdx + 1);
           const allowedDbGrades = allowedLabels
-            .map((label) => {
-              const map: Record<string, number> = {};
-              return map[label];
-            })
+            .map((label) => LABEL_TO_VERTICAL_LIFE[label])
             .filter((g): g is number => g !== undefined);
           if (!allowedDbGrades.includes(0)) {
             allowedDbGrades.push(0);
@@ -252,13 +249,6 @@ export class ProfileDataService {
             .map((i: number) => idxToKind[i])
             .filter((k): k is ClimbingKind => !!k);
           query = query.in('routes.climbing_kind', allowedKinds);
-        }
-
-        const currentUserId = this.supabase.authUser()?.id;
-        if (currentUserId) {
-          query = query
-            .eq('routes.liked.user_id', currentUserId)
-            .eq('routes.project.user_id', currentUserId);
         }
 
         let finalQuery = query;
@@ -296,7 +286,8 @@ export class ProfileDataService {
         });
 
         return { items, total: count ?? 0 };
-      } catch {
+      } catch (e) {
+        console.error('[ProfileDataService] userAscentsResource error', e);
         return { items: [], total: 0 };
       }
     },
@@ -317,7 +308,11 @@ export class ProfileDataService {
           return undefined;
         }
         return count ?? undefined;
-      } catch {
+      } catch (e) {
+        console.error(
+          '[ProfileDataService] userTotalAscentsCountResource error',
+          e,
+        );
         return undefined;
       }
     },

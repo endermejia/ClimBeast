@@ -77,7 +77,9 @@ export class ErrorLogService {
     if (isPlatformBrowser(this.platformId)) {
       try {
         localStorage.removeItem(this.storageKey);
-      } catch {}
+      } catch {
+        // ignore storage errors
+      }
     }
   }
 }
