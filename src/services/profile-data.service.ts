@@ -27,6 +27,7 @@ import {
   mapAscentRouteToExtras,
   RawRouteData,
 } from '../utils/route-mapper';
+import { CACHE_KEYS } from '../constants/cache-keys';
 
 @Injectable({ providedIn: 'root' })
 export class ProfileDataService {
@@ -117,7 +118,7 @@ export class ProfileDataService {
     const val = this.userProjectsResource.value();
     if (val !== undefined) return val as RouteWithExtras[];
     return this.cache.get<RouteWithExtras[]>(
-      `cached_user_projects_${this.supabase.authUserId()}_v2`,
+      CACHE_KEYS.userProjects(this.supabase.authUserId() ?? ''),
       [],
     );
   });

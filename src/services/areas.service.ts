@@ -40,6 +40,7 @@ import type {
 import { CacheService } from './cache.service';
 import { GlobalData } from './global-data';
 import { slugify } from '../utils';
+import { CACHE_KEYS } from '../constants/cache-keys';
 
 @Injectable({ providedIn: 'root' })
 export class AreasService {
@@ -201,7 +202,7 @@ export class AreasService {
   > {
     if (!isPlatformBrowser(this.platformId)) return [];
 
-    const cacheKey = 'cached_areas_simple_v1';
+    const cacheKey = CACHE_KEYS.areasSimple;
     return this.cache.fetchOrCache(
       cacheKey,
       async () => {

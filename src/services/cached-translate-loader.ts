@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { TranslateLoader } from '@ngx-translate/core';
 import { Observable, of } from 'rxjs';
 import { catchError, tap, timeout } from 'rxjs/operators';
+import { CACHE_KEYS } from '../constants/cache-keys';
 
 export class CachedTranslateLoader implements TranslateLoader {
   constructor(
@@ -11,7 +12,7 @@ export class CachedTranslateLoader implements TranslateLoader {
   ) {}
 
   public getTranslation(lang: string): Observable<Record<string, unknown>> {
-    const cacheKey = `cached_translation_${lang}_v1`;
+    const cacheKey = CACHE_KEYS.translation(lang);
 
     // Try to fetch from network first
     return this.http

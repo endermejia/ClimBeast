@@ -3,6 +3,7 @@ import { inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
 import { SupabaseService } from '../services/supabase.service';
+import { CACHE_KEYS } from '../constants/cache-keys';
 
 export const authGuard: CanMatchFn = async (
   route: Route,
@@ -44,7 +45,7 @@ export const authGuard: CanMatchFn = async (
           e,
         );
         try {
-          const cacheKey = `cached_user_profile_${session.user.id}_v1`;
+          const cacheKey = CACHE_KEYS.userProfile(session.user.id);
           const cached = localStorage.getItem(cacheKey);
           if (cached) {
             const parsed = JSON.parse(cached);

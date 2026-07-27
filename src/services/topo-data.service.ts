@@ -28,6 +28,7 @@ import {
 import { SupabaseService } from './supabase.service';
 import { CacheService } from './cache.service';
 import { mapCragToDetail, mapRouteToExtras, RawRouteData } from '../utils';
+import { CACHE_KEYS } from '../constants/cache-keys';
 
 @Injectable({ providedIn: 'root' })
 export class TopoDataService {
@@ -49,7 +50,7 @@ export class TopoDataService {
       if (!isPlatformBrowser(this.platformId)) {
         return [] as CragListItem[];
       }
-      const cacheKey = `cached_crags_list_${areaSlug}_v2`;
+      const cacheKey = CACHE_KEYS.cragsList(areaSlug);
       return this.cache.fetchOrCache(
         cacheKey,
         async () => {
@@ -83,10 +84,7 @@ export class TopoDataService {
     if (val !== undefined) return val;
     const areaSlug = this.selectedAreaSlug();
     if (!areaSlug) return [];
-    return this.cache.get<CragListItem[]>(
-      `cached_crags_list_${areaSlug}_v2`,
-      [],
-    );
+    return this.cache.get<CragListItem[]>(CACHE_KEYS.cragsList(areaSlug), []);
   });
 
   readonly areaToposResource = resource({
@@ -144,7 +142,7 @@ export class TopoDataService {
       }
 
       if (!areaSlug) return [];
-      const cacheKey = `cached_area_topos_${areaSlug}_v2`;
+      const cacheKey = CACHE_KEYS.areaTopos(areaSlug);
       return this.cache.fetchOrCache(
         cacheKey,
         async () => {
@@ -196,7 +194,7 @@ export class TopoDataService {
     if (val !== undefined)
       return val as (TopoListItem & { crag_slug: string })[];
     return this.cache.get<(TopoListItem & { crag_slug: string })[]>(
-      `cached_area_topos_${this.selectedAreaSlug()}_v2`,
+      CACHE_KEYS.areaTopos(this.selectedAreaSlug() ?? ''),
       [],
     );
   });
@@ -206,7 +204,7 @@ export class TopoDataService {
     loader: async ({ params: id }): Promise<TopoDetail | null> => {
       if (!id) return null;
       if (!isPlatformBrowser(this.platformId)) return null;
-      const cacheKey = `cached_topo_detail_${id}_v1`;
+      const cacheKey = CACHE_KEYS.topoDetail(id);
       return this.cache.fetchOrCache(
         cacheKey,
         async () => {
@@ -229,7 +227,7 @@ export class TopoDataService {
     const val = this.topoDetailResource.value();
     if (val !== undefined) return val as TopoDetail | null;
     return this.cache.get<TopoDetail | null>(
-      `cached_topo_detail_${this.selectedTopoId()}_v1`,
+      CACHE_KEYS.topoDetail(this.selectedTopoId() ?? 0),
       null,
     );
   });
@@ -244,7 +242,7 @@ export class TopoDataService {
     }): Promise<CragDetail | null> => {
       if (!cragSlug || !areaSlug) return null;
       if (!isPlatformBrowser(this.platformId)) return null;
-      const cacheKey = `cached_crag_detail_${areaSlug}_${cragSlug}_v2`;
+      const cacheKey = CACHE_KEYS.cragDetail(areaSlug, cragSlug);
       return this.cache.fetchOrCache(
         cacheKey,
         async () => {
@@ -300,7 +298,10 @@ export class TopoDataService {
     const val = this.cragDetailResource.value();
     if (val !== undefined) return val as CragDetail | null;
     return this.cache.get<CragDetail | null>(
-      `cached_crag_detail_${this.selectedAreaSlug()}_${this.selectedCragSlug()}_v2`,
+      CACHE_KEYS.cragDetail(
+        this.selectedAreaSlug() ?? '',
+        this.selectedCragSlug() ?? '',
+      ),
       null,
     );
   });
@@ -316,9 +317,7 @@ export class TopoDataService {
     }): Promise<RouteWithExtras | null> => {
       if (!cragId || !routeSlug) return null;
       if (!isPlatformBrowser(this.platformId)) return null;
-      const cacheKey = userId
-        ? `cached_route_detail_${routeSlug}_user_${userId}_v2`
-        : `cached_route_detail_${routeSlug}_v2`;
+      const cacheKey = CACHE_KEYS.routeDetail(routeSlug, userId);
       return this.cache.fetchOrCache(
         cacheKey,
         async () => {
@@ -376,7 +375,7 @@ export class TopoDataService {
     const val = this.routeDetailResource.value();
     if (val !== undefined) return val as RouteWithExtras | null;
     return this.cache.get<RouteWithExtras | null>(
-      `cached_route_detail_${this.selectedRouteSlug()}_v2`,
+      CACHE_KEYS.routeDetail(this.selectedRouteSlug() ?? ''),
       null,
     );
   });

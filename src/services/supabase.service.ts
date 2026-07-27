@@ -21,6 +21,7 @@ import { SupabaseNotInitializedError } from '../models';
 import { ENV_SUPABASE_URL } from '../environments/environment';
 import { CacheService } from './cache.service';
 import { LocalStorage } from './local-storage';
+import { CACHE_KEYS } from '../constants/cache-keys';
 
 export interface SupabaseConfig {
   url: string;
@@ -66,7 +67,7 @@ export class SupabaseService {
     params: () => this.authUserId(),
     loader: async ({ params: userId }) => {
       if (!userId || !isPlatformBrowser(this.platformId)) return null;
-      const cacheKey = `cached_user_profile_${userId}_v1`;
+      const cacheKey = CACHE_KEYS.userProfile(userId);
       return this.cache.fetchOrCache(
         cacheKey,
         async () => {
@@ -97,7 +98,7 @@ export class SupabaseService {
     const userId = this.authUserId();
     if (!userId) return null;
     return this.cache.get<UserProfileDto | null>(
-      `cached_user_profile_${userId}_v1`,
+      CACHE_KEYS.userProfile(userId),
       null,
     );
   });

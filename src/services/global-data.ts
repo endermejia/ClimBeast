@@ -2,10 +2,12 @@ import { isPlatformBrowser } from '@angular/common';
 import { toSignal, toObservable } from '@angular/core/rxjs-interop';
 import {
   computed,
+  DestroyRef,
   effect,
   inject,
   Injectable,
   PLATFORM_ID,
+  resource,
   signal,
   Signal,
   untracked,
@@ -28,7 +30,6 @@ import { map, merge, startWith } from 'rxjs';
 
 import { AppNotificationsService } from './app-notifications.service';
 import { CacheService } from './cache.service';
-import { FavoritesService } from './favorites.service';
 import { MessagingService } from './messaging.service';
 import { PushService } from './push.service';
 import { SupabaseService } from './supabase.service';
@@ -37,46 +38,40 @@ import { MapDataService } from './map-data.service';
 import { TopoDataService } from './topo-data.service';
 import { ProfileDataService } from './profile-data.service';
 
+// Extracted services
+import { AuthStateService } from './auth-state.service';
+import { AudioPreferencesService } from './audio-preferences.service';
+import { BreadcrumbsService } from './breadcrumbs.service';
+import { EquipperService } from './equipper.service';
+import { ThemeService } from './theme.service';
+import { FavoritesDataService } from './favorites-data.service';
+import { IndoorCentersDataService } from './indoor-centers-data.service';
+import { CragRoutesDataService } from './crag-routes-data.service';
+import { AdminParkingsService } from './admin-parkings.service';
+
 import {
   AreaListItem,
-  AscentType,
-  BreadcrumbItem,
-  CragDetail,
-  CragDto,
   CragListItem,
-  EquipperDto,
-  Language,
-  Languages,
-  MapIndoorCenterItem,
-  MapIndoorCenterRaw,
-  MapIndoorRouteRaw,
-  ParkingDto,
-  Theme,
-  Themes,
-  UserProfileDto,
   IndoorCenterDto,
   IndoorRouteWithExtras,
-  AmountByEveryGrade,
-  VERTICAL_LIFE_GRADES,
-  RouteAscentDto,
-  RouteDto,
+  Language,
+  Languages,
   RouteWithExtras,
 } from '../models';
 
-import { LocalStorage } from './local-storage';
-import {
-  triggerThemeTransition,
-  mapRouteToExtras,
-  RawRouteData,
-} from '../utils';
-import { resource } from '@angular/core';
+import { CACHE_KEYS } from '../constants/cache-keys';
 
 /**
- * GlobalData is now a facade that delegates to domain services.
+ * GlobalData is now a thin facade that delegates to domain services.
  * It maintains full backward compatibility while the domain services
  * are being adopted by consumers.
  *
  * New code should inject the domain services directly:
+ * - AuthStateService for auth roles and permissions
+ * - ThemeService for theme management
+ * - AudioPreferencesService for sound preferences
+ * - BreadcrumbsService for breadcrumb generation
+ * - EquipperService for equipper data
  * - FilterStateService for filter state
  * - MapDataService for map data
  * - TopoDataService for topo/crag/route data
@@ -87,14 +82,12 @@ import { resource } from '@angular/core';
 })
 export class GlobalData {
   private readonly cache = inject(CacheService);
-  private readonly favorites = inject(FavoritesService);
   private readonly messagingService = inject(MessagingService);
   private readonly notificationsService = inject(AppNotificationsService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly push = inject(PushService);
   private readonly supabase = inject(SupabaseService);
   private breakpointService = toObservable(inject(TUI_BREAKPOINT));
-  private localStorage = inject(LocalStorage);
   private translate = inject(TranslateService);
 
   // Domain services
@@ -102,6 +95,17 @@ export class GlobalData {
   readonly mapData = inject(MapDataService);
   readonly topoData = inject(TopoDataService);
   readonly profileData = inject(ProfileDataService);
+
+  // Extracted services (new)
+  readonly authState = inject(AuthStateService);
+  readonly audioPrefs = inject(AudioPreferencesService);
+  readonly breadcrumbsService = inject(BreadcrumbsService);
+  readonly equipperService = inject(EquipperService);
+  readonly themeService = inject(ThemeService);
+  readonly favoritesData = inject(FavoritesDataService);
+  readonly indoorCentersData = inject(IndoorCentersDataService);
+  readonly cragRoutesData = inject(CragRoutesDataService);
+  readonly adminParkingsData = inject(AdminParkingsService);
 
   readonly isMobile = toSignal(
     this.breakpointService.pipe(map((b) => b === 'mobile')),
@@ -119,7 +123,7 @@ export class GlobalData {
   readonly topoPhotoVersion: WritableSignal<number> = signal(0);
 
   // ---- Language ----
-  readonly i18nTick: WritableSignal<number> = signal(0);
+  readonly i18nTick = this.breadcrumbsService.i18nTick;
   readonly selectedLanguage: Signal<Language> = computed(
     () => this.userProfile()?.language || Languages.ES,
   );
@@ -145,214 +149,53 @@ export class GlobalData {
     }
   });
 
-  // ---- Theme ----
-  readonly theme = signal<Theme>(Themes.LIGHT);
-  readonly selectedTheme = this.theme.asReadonly();
+  // ---- Theme (delegated to ThemeService) ----
+  readonly theme = this.themeService.theme;
+  readonly selectedTheme = this.themeService.selectedTheme;
 
-  setTheme(newTheme: Theme, event?: MouseEvent) {
-    if (this.theme() === newTheme) return;
-    void triggerThemeTransition(event, () => {
-      this.theme.set(newTheme);
-    });
-  }
+  setTheme = this.themeService.setTheme.bind(this.themeService);
 
-  // ---- Breadcrumbs ----
-  breadcrumbs: Signal<BreadcrumbItem[]> = computed<BreadcrumbItem[]>(() => {
-    this.i18nTick();
-    const indoorCenter = this.selectedIndoorCenter();
-    const indoorRoute = this.selectedIndoorRoute();
-    const topo = this.topoDetail();
-    if (indoorCenter) {
-      const items: BreadcrumbItem[] = [
-        { caption: 'indoor.title', routerLink: ['/indoor'] },
-        {
-          caption: indoorCenter.name,
-          routerLink: ['/indoor', indoorCenter.slug],
-        },
-      ];
-      if (topo && topo.center_id === indoorCenter.id) {
-        items.push({
-          caption: topo.name,
-          routerLink: ['/indoor', indoorCenter.slug, 'topo', topo.id],
-        });
-      }
-      if (indoorRoute) {
-        items.push({
-          caption: indoorRoute.name,
-          routerLink: ['/indoor', indoorCenter.slug, 'route', indoorRoute.slug],
-        });
-      }
-      return items;
-    }
-
-    const items: BreadcrumbItem[] = [
-      { caption: 'areas', routerLink: ['/area'] },
-    ];
-
-    const area = this.selectedArea();
-    const crag = this.selectedCrag();
-    const route = this.routeDetail();
-
-    if (area) {
-      items.push({
-        caption: area.name,
-        routerLink: ['/area', area.slug],
-      });
-      if (crag) {
-        items.push({
-          caption: crag.name,
-          routerLink: ['/area', area.slug, crag.slug],
-        });
-        if (topo) {
-          items.push({
-            caption: topo.name,
-            routerLink: ['/area', area.slug, crag.slug, 'topo', topo.id],
-          });
-        }
-        if (route) {
-          items.push({
-            caption: route.name,
-            routerLink: ['/area', area.slug, crag.slug, route.slug],
-          });
-        }
-      }
-    }
-
-    return items.filter((i) => !!i.caption);
-  });
-
-  slicedBreadcrumbs: Signal<BreadcrumbItem[]> = computed(() =>
-    this.breadcrumbs().slice(0, -1),
-  );
+  // ---- Breadcrumbs (delegated to BreadcrumbsService) ----
+  readonly breadcrumbs = this.breadcrumbsService.breadcrumbs;
+  readonly slicedBreadcrumbs = this.breadcrumbsService.slicedBreadcrumbs;
 
   // Notifications and messages
   readonly unreadNotificationsCount = this.notificationsService.unreadCount;
   readonly unreadMessagesCount = this.messagingService.unreadMessagesCount;
 
-  // ---- Auth (roles) ----
-  readonly userProfile = computed(() => this.supabase.userProfile());
-  readonly editingMode = signal(false);
-  private readonly editingModeStorageKey = 'editing_mode_v2';
+  // ---- Auth (delegated to AuthStateService) ----
+  readonly userProfile = this.authState.userProfile;
+  readonly editingMode = this.authState.editingMode;
+  readonly isAdmin = this.authState.isAdmin;
+  readonly merchandisingFeature = this.authState.merchandisingFeature;
+  readonly indoorFeature = this.authState.indoorFeature;
+  readonly canEditAsAdmin = this.authState.canEditAsAdmin;
+  readonly isAreaAdmin = this.authState.isAreaAdmin;
+  readonly isIndoorAdmin = this.authState.isIndoorAdmin;
 
-  readonly isAdmin = computed(() => !!this.userProfile()?.is_admin);
-  readonly merchandisingFeature = computed(() => this.isAdmin());
-  readonly indoorFeature = computed(() => this.isAdmin());
-  readonly canEditAsAdmin = computed(
-    () => this.editingMode() && this.isAdmin(),
-  );
-  readonly isAreaAdmin = computed(() => this.adminAreas().length > 0);
-  readonly isIndoorAdmin = computed(() => this.adminIndoorCenters().length > 0);
+  readonly adminAreas = this.authState.adminAreas;
+  readonly adminIndoorCenters = this.authState.adminIndoorCenters;
 
-  readonly adminAreas = computed(() => this.supabase.adminAreas());
-  readonly adminIndoorCenters = computed(() =>
-    this.supabase.adminIndoorCenters(),
-  );
+  readonly pendingAdminRequestsResource =
+    this.authState.pendingAdminRequestsResource;
+  readonly pendingAdminRequestAreaIds =
+    this.authState.pendingAdminRequestAreaIds;
 
-  readonly pendingAdminRequestsResource = resource({
-    params: () => this.supabase.authUserId(),
-    loader: async ({ params: userId }) => {
-      if (!userId || !isPlatformBrowser(this.platformId)) return [] as number[];
-      await this.supabase.whenReady();
-      const { data, error } = await this.supabase.client
-        .from('area_admin_requests')
-        .select('area_id')
-        .eq('user_id', userId);
-      if (error) {
-        return [] as number[];
-      }
-      return (data ?? []).map((r) => r.area_id);
-    },
-  });
+  readonly canEditAsAreaAdmin = this.authState.canEditAsAreaAdmin;
 
-  readonly pendingAdminRequestAreaIds = computed(
-    () => new Set(this.pendingAdminRequestsResource.value() ?? []),
-  );
+  readonly areaAdminPermissions = this.authState.areaAdminPermissions;
+  readonly indoorAdminPermissions = this.authState.indoorAdminPermissions;
 
-  readonly canEditAsAreaAdmin = computed(
-    () => this.editingMode() && this.isAreaAdmin(),
-  );
-
-  readonly areaAdminPermissions = computed(() => {
-    const isAdmin = this.canEditAsAdmin();
-    const isEditing = this.editingMode();
-    const areas = this.adminAreas();
-
-    const res: Record<number, boolean> = {};
-    if (isEditing) {
-      areas.forEach((id) => (res[id] = true));
-    }
-
-    return isAdmin ? new Proxy(res, { get: () => true }) : res;
-  });
-
-  readonly indoorAdminPermissions = computed(() => {
-    const isAdmin = this.canEditAsAdmin();
-    const isEditing = this.editingMode();
-    const centers = this.adminIndoorCenters();
-
-    const res: Record<string, boolean> = {};
-    if (isEditing) {
-      centers.forEach((id) => (res[id] = true));
-    }
-
-    return isAdmin ? new Proxy(res, { get: () => true }) : res;
-  });
-
-  readonly checkAreaEditPermission = (
-    area:
-      | AreaListItem
-      | {
-          id: number;
-          user_creator_id?: string | null;
-          created_at?: string | null;
-        }
-      | null
-      | undefined,
-  ) => {
-    if (this.canEditAsAdmin() || this.areaAdminPermissions()[area?.id ?? -1])
-      return true;
-    const userId = this.userProfile()?.id;
-    if (!area || !userId || !this.editingMode()) return false;
-    const isCreator = area.user_creator_id === userId;
-    return isCreator && this.isWithinOneWeek(area.created_at);
-  };
+  readonly checkAreaEditPermission = this.authState.checkAreaEditPermission;
+  readonly checkCragEditPermission = this.authState.checkCragEditPermission;
+  readonly checkRouteEditPermission = this.authState.checkRouteEditPermission;
 
   readonly canEditArea = computed(() =>
     this.checkAreaEditPermission(this.selectedArea()),
   );
-
-  readonly checkCragEditPermission = (
-    crag: CragListItem | CragDetail | null | undefined,
-  ) => {
-    if (
-      this.canEditAsAdmin() ||
-      this.areaAdminPermissions()[crag?.area_id ?? -1]
-    )
-      return true;
-    const userId = this.userProfile()?.id;
-    if (!crag || !userId || !this.editingMode()) return false;
-    const isCreator = crag.user_creator_id === userId;
-    return isCreator && this.isWithinOneWeek(crag.created_at);
-  };
-
   readonly canEditCrag = computed(() =>
     this.checkCragEditPermission(this.cragDetail()),
   );
-
-  readonly checkRouteEditPermission = (
-    route: RouteWithExtras | null | undefined,
-  ) => {
-    if (
-      this.canEditAsAdmin() ||
-      this.areaAdminPermissions()[route?.area_id ?? -1]
-    )
-      return true;
-    const userId = this.userProfile()?.id;
-    if (!route || !userId || !this.editingMode()) return false;
-    const isCreator = route.user_creator_id === userId;
-    return isCreator && this.isWithinOneWeek(route.created_at);
-  };
-
   readonly canEditRoute = computed(() =>
     this.checkRouteEditPermission(this.routeDetail()),
   );
@@ -366,21 +209,13 @@ export class GlobalData {
     return res;
   });
 
-  private isWithinOneWeek(createdAt: string | null | undefined): boolean {
-    if (!createdAt) return true;
-    const date = new Date(createdAt);
-    const now = new Date();
-    const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
-    return now.getTime() - date.getTime() < oneWeekInMs;
-  }
-
   readonly userAvatar = computed(() =>
     this.supabase.buildAvatarUrl(this.userProfile()?.avatar),
   );
 
-  // ---- Audio Preferences ----
-  readonly messageSoundEnabled: WritableSignal<boolean> = signal(true);
-  readonly notificationSoundEnabled: WritableSignal<boolean> = signal(false);
+  // ---- Audio Preferences (delegated to AudioPreferencesService) ----
+  readonly messageSoundEnabled = this.audioPrefs.messageSoundEnabled;
+  readonly notificationSoundEnabled = this.audioPrefs.notificationSoundEnabled;
 
   // ---- Delegated to MapDataService ----
   readonly mapActive = this.mapData.mapActive;
@@ -404,243 +239,29 @@ export class GlobalData {
   feedShowIndoorAscents = this.filterState.feedShowIndoorAscents;
 
   // ---- Indoor Centers ----
-  selectedIndoorCenter: WritableSignal<IndoorCenterDto | null> = signal(null);
+  selectedIndoorCenter: WritableSignal<IndoorCenterDto | null> =
+    this.breadcrumbsService.selectedIndoorCenter;
   selectedIndoorRoute: WritableSignal<IndoorRouteWithExtras | null> =
-    signal(null);
+    this.breadcrumbsService.selectedIndoorRoute;
   indoorRoutesReloadTick: WritableSignal<number> = signal(0);
 
-  // ---- Liked / Favorites (Shared) ----
-  readonly likedAreasResource = resource({
-    params: () => this.supabase.authUserId(),
-    loader: async ({ params: userId }) => {
-      if (!userId || !isPlatformBrowser(this.platformId)) return [];
-      const cacheKey = `cached_liked_areas_${userId}_v2`;
-      return this.cache.fetchOrCache(
-        cacheKey,
-        async () => {
-          await this.supabase.whenReady();
-          return this.favorites.getLikedAreas(userId);
-        },
-        { fallbackValue: [], logTag: 'GlobalData' },
-      );
-    },
-  });
+  // ---- Liked / Favorites (delegated to FavoritesDataService) ----
+  readonly likedAreasResource = this.favoritesData.likedAreasResource;
+  readonly likedCragsResource = this.favoritesData.likedCragsResource;
+  readonly likedRoutesResource = this.favoritesData.likedRoutesResource;
+  readonly likedAreas = this.favoritesData.likedAreas;
+  readonly likedCrags = this.favoritesData.likedCrags;
+  readonly likedRoutes = this.favoritesData.likedRoutes;
+  readonly likedAreaIds = this.favoritesData.likedAreaIds;
+  readonly likedCragIds = this.favoritesData.likedCragIds;
+  readonly likedRouteIds = this.favoritesData.likedRouteIds;
 
-  readonly likedCragsResource = resource({
-    params: () => this.supabase.authUserId(),
-    loader: async ({ params: userId }) => {
-      if (!userId || !isPlatformBrowser(this.platformId)) return [];
-      const cacheKey = `cached_liked_crags_${userId}_v2`;
-      return this.cache.fetchOrCache(
-        cacheKey,
-        async () => {
-          await this.supabase.whenReady();
-          return this.favorites.getLikedCrags(userId);
-        },
-        { fallbackValue: [], logTag: 'GlobalData' },
-      );
-    },
-  });
-
-  readonly likedRoutesResource = resource({
-    params: () => this.supabase.authUserId(),
-    loader: async ({ params: userId }) => {
-      if (!userId || !isPlatformBrowser(this.platformId)) return [];
-      const cacheKey = `cached_liked_routes_${userId}_v2`;
-      return this.cache.fetchOrCache(
-        cacheKey,
-        async () => {
-          await this.supabase.whenReady();
-          return this.favorites.getLikedRoutes(userId);
-        },
-        { fallbackValue: [], logTag: 'GlobalData' },
-      );
-    },
-  });
-
-  readonly likedAreas = computed(() => {
-    const val = this.likedAreasResource.value();
-    if (val !== undefined) return val;
-    const userId = this.supabase.authUserId();
-    if (!userId) return [];
-    return this.cache.get<AreaListItem[]>(
-      `cached_liked_areas_${userId}_v2`,
-      [],
-    );
-  });
-  readonly likedCrags = computed(() => {
-    const val = this.likedCragsResource.value();
-    if (val !== undefined) return val;
-    const userId = this.supabase.authUserId();
-    if (!userId) return [];
-    return this.cache.get<CragListItem[]>(
-      `cached_liked_crags_${userId}_v2`,
-      [],
-    );
-  });
-  readonly likedRoutes = computed(() => {
-    const val = this.likedRoutesResource.value();
-    if (val !== undefined) return val;
-    const userId = this.supabase.authUserId();
-    if (!userId) return [];
-    return this.cache.get<RouteWithExtras[]>(
-      `cached_liked_routes_${userId}_v2`,
-      [],
-    );
-  });
-
-  readonly likedAreaIds = computed(() =>
-    this.likedAreas().map((a: AreaListItem) => a.id),
-  );
-  readonly likedCragIds = computed(() =>
-    this.likedCrags().map((c: CragListItem) => c.id),
-  );
-  readonly likedRouteIds = computed(() =>
-    this.likedRoutes().map((r: RouteWithExtras) => r.id),
-  );
-
-  // ---- Equippers ----
-  selectedEquipperId: WritableSignal<number | null> = signal(null);
-
-  readonly equipperDetailResource = resource({
-    params: () => this.selectedEquipperId(),
-    loader: async ({ params: id }) => {
-      if (!id || !isPlatformBrowser(this.platformId)) return null;
-      await this.supabase.whenReady();
-
-      const { data, error } = await this.supabase.client
-        .from('equippers')
-        .select('*, user_profile:user_profiles(*)')
-        .eq('id', id)
-        .single();
-
-      if (error) {
-        return null;
-      }
-
-      return data as EquipperDto & {
-        user_profile: UserProfileDto | null;
-      };
-    },
-  });
-
-  readonly equipperRoutesResource = resource({
-    params: () => this.selectedEquipperId(),
-    loader: async ({ params: id }) => {
-      if (!id || !isPlatformBrowser(this.platformId)) return [];
-      await this.supabase.whenReady();
-      const userId = this.supabase.authUser()?.id;
-
-      let query = this.supabase.client.from('route_equippers').select(
-        `
-          route:routes (
-            *,
-            liked:route_likes(id),
-            project:route_projects(id),
-            ascents:route_ascents(rate, type),
-            own_ascent:route_ascents(*),
-            crag:crags (
-              *,
-              area:areas (*)
-            ),
-            route_equippers(equipper:equippers(*)),
-            topo_routes(topo:topos(id, name, slug))
-          )
-        `,
-      );
-
-      if (userId) {
-        query = query
-          .eq('route.own_ascent.user_id', userId)
-          .eq('route.project.user_id', userId)
-          .eq('route.liked.user_id', userId);
-      }
-
-      const { data, error } = await query.eq('equipper_id', id);
-
-      if (error) {
-        return [];
-      }
-
-      return (data || [])
-        .map((d) => {
-          const r = d.route as
-            | (RouteDto & {
-                liked: { id: number }[];
-                project: { id: number }[];
-                ascents: { rate: number | null; type: AscentType }[];
-                own_ascent: RouteAscentDto[];
-                crag:
-                  | (CragDto & {
-                      area: { id: number; name: string; slug: string } | null;
-                    })
-                  | null;
-                route_equippers: { equipper: EquipperDto }[];
-                topo_routes: {
-                  topo: { id: number; name: string; slug: string };
-                }[];
-              })
-            | null;
-          if (!r) return null;
-
-          return mapRouteToExtras(r as RawRouteData, {
-            areaIdSource: 'crag.area.id',
-            includeEquippers: true,
-            includeTopos: true,
-          }) as RouteWithExtras;
-        })
-        .filter((r): r is RouteWithExtras => !!r);
-    },
-  });
-
-  readonly equipperIndoorRoutesResource = resource({
-    params: () => this.selectedEquipperId(),
-    loader: async ({ params: id }) => {
-      if (!id || !isPlatformBrowser(this.platformId)) return [];
-      await this.supabase.whenReady();
-      try {
-        const { data, error } = await this.supabase.client
-          .from('indoor_route_equippers')
-          .select(
-            `
-            route:indoor_routes (
-              *,
-              center:indoor_centers (
-                name,
-                slug
-              ),
-              equippers:indoor_route_equippers(equipper:equippers(*))
-            )
-          `,
-          )
-          .eq('equipper_id', id);
-
-        if (error) throw error;
-
-        return (data || [])
-          .map((d) => {
-            const r = d.route as
-              | (Record<string, unknown> & {
-                  equippers?: { equipper: EquipperDto }[];
-                  center?: { name: string; slug: string };
-                })
-              | null;
-            if (!r) return null;
-            return {
-              ...r,
-              center_name: r.center?.name || '',
-              center_slug: r.center?.slug || '',
-              equippers: (r.equippers || [])
-                .map((e) => e.equipper)
-                .filter(Boolean),
-            } as IndoorRouteWithExtras;
-          })
-          .filter((r): r is IndoorRouteWithExtras => r !== null);
-      } catch {
-        return [];
-      }
-    },
-  });
+  // ---- Equippers (delegated to EquipperService) ----
+  selectedEquipperId = this.equipperService.selectedEquipperId;
+  readonly equipperDetailResource = this.equipperService.equipperDetailResource;
+  readonly equipperRoutesResource = this.equipperService.equipperRoutesResource;
+  readonly equipperIndoorRoutesResource =
+    this.equipperService.equipperIndoorRoutesResource;
 
   // ---- Delegated to TopoDataService ----
   selectedAreaSlug = this.topoData.selectedAreaSlug;
@@ -654,7 +275,7 @@ export class GlobalData {
       if (!isPlatformBrowser(this.platformId)) {
         return [] as AreaListItem[];
       }
-      const cacheKey = 'cached_areas_list_v2';
+      const cacheKey = CACHE_KEYS.areasList;
       return this.cache.fetchOrCache(
         cacheKey,
         async () => {
@@ -673,50 +294,12 @@ export class GlobalData {
   readonly areasList: Signal<AreaListItem[]> = computed(() => {
     const val = this.areasListResource.value();
     if (val !== undefined) return val;
-    return this.cache.get<AreaListItem[]>('cached_areas_list_v2', []);
+    return this.cache.get<AreaListItem[]>(CACHE_KEYS.areasList, []);
   });
 
-  readonly indoorCentersResource = resource({
-    params: () => ({ user: this.userProfile() }),
-    loader: async () => {
-      if (!isPlatformBrowser(this.platformId)) {
-        return [] as MapIndoorCenterItem[];
-      }
-      try {
-        await this.supabase.whenReady();
-        const { data, error } = await this.supabase.client
-          .from('indoor_centers')
-          .select(
-            '*, topos:indoor_topos(id, name), routes:indoor_routes(grade)',
-          )
-          .order('name');
-
-        if (error) throw error;
-
-        return (data || []).map((c: MapIndoorCenterRaw) => {
-          const grades: AmountByEveryGrade = {};
-          (c.routes || []).forEach((r: MapIndoorRouteRaw) => {
-            const g = r.grade;
-            if (g != null && g >= 0) {
-              grades[g as VERTICAL_LIFE_GRADES] =
-                (grades[g as VERTICAL_LIFE_GRADES] ?? 0) + 1;
-            }
-          });
-          return {
-            ...c,
-            routes_count: c.routes?.length || 0,
-            grades,
-          } as MapIndoorCenterItem;
-        });
-      } catch {
-        return [];
-      }
-    },
-  });
-
-  indoorCentersList: Signal<MapIndoorCenterItem[]> = computed(
-    () => this.indoorCentersResource.value() ?? [],
-  );
+  // ---- Indoor Centers (delegated to IndoorCentersDataService) ----
+  readonly indoorCentersResource = this.indoorCentersData.indoorCentersResource;
+  readonly indoorCentersList = this.indoorCentersData.indoorCentersList;
 
   selectedCragSlug = this.topoData.selectedCragSlug;
   selectedCrag: Signal<CragListItem | null> = computed(() => {
@@ -740,96 +323,9 @@ export class GlobalData {
   readonly cragDetailResource = this.topoData.cragDetailResource;
   readonly cragDetail = this.topoData.cragDetail;
 
-  readonly cragRoutesResource = resource({
-    params: () => {
-      const crag = this.cragDetail();
-      const hasAccess = crag
-        ? crag.is_public ||
-          crag.purchased ||
-          this.canEditAsAdmin() ||
-          this.areaAdminPermissions()[crag.area_id]
-        : false;
-      return {
-        cragId: crag?.id,
-        cragSlug: crag?.slug,
-        areaSlug: crag?.area_slug,
-        filterTopos: crag
-          ? !crag.is_public &&
-            (crag.price === null || crag.price === 0) &&
-            !hasAccess
-          : false,
-      };
-    },
-    loader: async ({
-      params: { cragId, cragSlug, filterTopos },
-    }): Promise<RouteWithExtras[]> => {
-      if (!cragId) return [];
-      if (!isPlatformBrowser(this.platformId)) return [];
-      const cacheKey = `cached_crag_routes_${cragSlug}_v2`;
-      return this.cache.fetchOrCache(
-        cacheKey,
-        async () => {
-          await this.supabase.whenReady();
-          const userId = this.supabase.authUser()?.id;
-          let query = this.supabase.client
-            .from('routes')
-            .select(
-              `
-              *,
-              liked:route_likes(id),
-              project:route_projects(id),
-              ascents:route_ascents(rate, type),
-              own_ascent:route_ascents(*),
-              topo_routes(topo:topos(id, name, slug)),
-              route_equippers(equipper:equippers(*)),
-              crag:crags(
-                slug,
-                name,
-                area_id,
-                area:areas(slug, name)
-              )
-            `,
-            )
-            .eq('crag_id', cragId);
-
-          if (userId) {
-            query = query
-              .eq('own_ascent.user_id', userId)
-              .eq('project.user_id', userId)
-              .eq('liked.user_id', userId);
-          }
-
-          const { data, error } = await query;
-
-          if (error) {
-            throw error;
-          }
-
-          return (
-            data.map((r) =>
-              mapRouteToExtras(r as RawRouteData, {
-                areaIdSource: 'crag.area_id',
-                ratingFallback: filterTopos ? null : 0,
-                includeEquippers: true,
-                includeTopos: true,
-                filterTopos,
-              }),
-            ) ?? []
-          );
-        },
-        { fallbackValue: [], logTag: 'GlobalData' },
-      );
-    },
-  });
-
-  readonly cragRoutes = computed(() => {
-    const val = this.cragRoutesResource.value();
-    if (val !== undefined) return val as RouteWithExtras[];
-    return this.cache.get<RouteWithExtras[]>(
-      `cached_crag_routes_${this.selectedCragSlug()}_v2`,
-      [],
-    );
-  });
+  // ---- Crag Routes (delegated to CragRoutesDataService) ----
+  readonly cragRoutesResource = this.cragRoutesData.cragRoutesResource;
+  readonly cragRoutes = this.cragRoutesData.cragRoutes;
 
   // ---- Delegated to ProfileDataService ----
   selectedRouteSlug = this.topoData.selectedRouteSlug;
@@ -858,24 +354,8 @@ export class GlobalData {
 
   readonly routeAscentsResource = this.topoData.routeAscentsResource;
 
-  readonly adminParkingsResource = resource({
-    loader: async () => {
-      if (!isPlatformBrowser(this.platformId)) return [];
-      try {
-        await this.supabase.whenReady();
-        const { data, error } = await this.supabase.client
-          .from('parkings')
-          .select('*')
-          .order('name');
-        if (error) {
-          return [];
-        }
-        return (data as ParkingDto[]) ?? [];
-      } catch {
-        return [];
-      }
-    },
-  });
+  // ---- Admin Parkings (delegated to AdminParkingsService) ----
+  readonly adminParkingsResource = this.adminParkingsData.adminParkingsResource;
 
   // ---- Error state for interceptor ----
   errorMessage: WritableSignal<string | null> = signal(null);
@@ -895,6 +375,7 @@ export class GlobalData {
   );
 
   constructor() {
+    const destroyRef = inject(DestroyRef);
     this.translate.addLangs(Object.values(Languages));
 
     if (isPlatformBrowser(this.platformId)) {
@@ -903,6 +384,11 @@ export class GlobalData {
 
       window.addEventListener('online', onlineHandler);
       window.addEventListener('offline', offlineHandler);
+
+      destroyRef.onDestroy(() => {
+        window.removeEventListener('online', onlineHandler);
+        window.removeEventListener('offline', offlineHandler);
+      });
     }
 
     effect(() => {
@@ -911,38 +397,14 @@ export class GlobalData {
       }
     });
 
-    // Hydrate state from localStorage
-    try {
-      const rawEditingMode = this.localStorage.getItem(
-        this.editingModeStorageKey,
-      );
-      if (rawEditingMode) {
-        this.editingMode.set(rawEditingMode === 'true');
-      }
-
-      this.mapData.hydrateMapBounds();
-
-      const msgSound = this.localStorage.getItem('message_sound_enabled_v1');
-      if (msgSound !== null) {
-        this.messageSoundEnabled.set(msgSound === 'true');
-      }
-
-      const notifSound = this.localStorage.getItem(
-        'notification_sound_enabled_v1',
-      );
-      if (notifSound !== null) {
-        this.notificationSoundEnabled.set(notifSound === 'true');
-      }
-    } catch {
-      // Silent fail on hydration
-    }
+    // Hydrate state from services
+    this.authState.hydrateEditingMode();
+    this.audioPrefs.hydrate();
+    this.mapData.hydrateMapBounds();
 
     // Persist state to localStorage via effects
     effect(() => {
-      this.localStorage.setItem(
-        this.editingModeStorageKey,
-        String(this.editingMode()),
-      );
+      this.authState.persistEditingMode();
     });
 
     effect(() => {
@@ -950,17 +412,11 @@ export class GlobalData {
     });
 
     effect(() => {
-      this.localStorage.setItem(
-        'message_sound_enabled_v1',
-        String(this.messageSoundEnabled()),
-      );
+      this.audioPrefs.persistMessageSound();
     });
 
     effect(() => {
-      this.localStorage.setItem(
-        'notification_sound_enabled_v1',
-        String(this.notificationSoundEnabled()),
-      );
+      this.audioPrefs.persistNotificationSound();
     });
 
     // Language switching logic
@@ -977,23 +433,11 @@ export class GlobalData {
 
     // Sync state from user profile
     effect(() => {
-      const profile = this.userProfile();
-      if (!profile) return;
-
-      if (profile.theme) {
-        untracked(() => this.theme.set(profile.theme as Theme));
-      }
-      if (profile.editing_mode !== null) {
-        untracked(() => this.editingMode.set(!!profile.editing_mode));
-      }
-      if (profile.message_sound !== null) {
-        untracked(() => this.messageSoundEnabled.set(!!profile.message_sound));
-      }
-      if (profile.notification_sound !== null) {
-        untracked(() =>
-          this.notificationSoundEnabled.set(!!profile.notification_sound),
-        );
-      }
+      untracked(() => {
+        this.themeService.syncFromProfile();
+        this.authState.syncFromProfile();
+        this.audioPrefs.syncFromProfile();
+      });
     });
 
     // Automatically subscribe to push if supported

@@ -64,7 +64,6 @@ import { AreaDetail } from '../../models/area.model';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   ClimbingKinds,
-  ClimbingKind,
   isGradeRangeOverlap,
   normalizeRoutesByGrade,
   ORDERED_GRADE_VALUES,
@@ -72,6 +71,7 @@ import {
 
 import { IconSrcPipe } from '../../pipes/icon-src.pipe';
 import { handleErrorToast, matchesQuery } from '../../utils';
+import { RouteSearchResult } from '../../models/supabase-query.types';
 
 @Component({
   selector: 'app-area',
@@ -606,14 +606,7 @@ export class AreaComponent {
         console.error('[AreaComponent] Error searching routes:', error);
         return [];
       }
-      return data as {
-        id: number;
-        name: string;
-        slug: string;
-        grade: number;
-        climbing_kind: ClimbingKind;
-        crag: { id: number; name: string; slug: string };
-      }[];
+      return data as RouteSearchResult[];
     },
   });
 

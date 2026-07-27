@@ -55,6 +55,7 @@ import { ScrollService } from '../../services/scroll.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { VisitedCragsService } from '../../services/visited-crags.service';
 import { CartService } from '../../services/cart.service';
+import { CACHE_KEYS } from '../../constants/cache-keys';
 
 import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
 import { DropdownButtonComponent } from '../../components/ui/dropdown-button';
@@ -69,16 +70,26 @@ import {
 } from '../../components/dialogs/filter-dialog';
 
 import {
-  ClimbingKind,
-  ClimbingKinds,
   FeedItem,
-  LABEL_TO_VERTICAL_LIFE,
   ORDERED_GRADE_VALUES,
   RouteAscentFeedItem,
   RouteAscentRaw,
   RouteAscentWithExtras,
+  UserProfileBasicDto,
 } from '../../models';
 import { IndoorAscentRaw } from '../../models/indoor.model';
+import {
+  ActiveCrag,
+  AscentWithRouteJoin,
+  IndoorAscentWithRouteJoin,
+} from '../../models/supabase-query.types';
+import {
+  applyCategoryFilter,
+  applyGradeFilter,
+  applyIndoorUserFilter,
+  applyUserFilter,
+  FeedFilterOptions,
+} from '../../utils/feed-filters';
 
 export type HomeFeedFilter =
   | 'following'
@@ -442,7 +453,7 @@ export class HomeComponent implements OnDestroy {
                 promises.push(this.fetchIndoorAscents(page, filter));
               }
               const results = await Promise.all(promises);
-              let ascents = results.flat().sort((a, b) => {
+              const ascents = results.flat().sort((a, b) => {
                 const dateA = a.date ? new Date(a.date).getTime() : 0;
                 const dateB = b.date ? new Date(b.date).getTime() : 0;
                 return dateB - dateA;
@@ -493,7 +504,7 @@ export class HomeComponent implements OnDestroy {
     if (!this.isBrowser) {
       return;
     }
-    const cacheKey = 'cached_followed_ids_v1';
+    const cacheKey = CACHE_KEYS.followedIds;
     try {
       await this.supabase.whenReady();
       const ids = await this.followsService.getFollowedIds();
@@ -521,10 +532,10 @@ export class HomeComponent implements OnDestroy {
     }
   }
 
-  private async fetchActiveCrags() {
+  private async fetchActiveCrags(): Promise<ActiveCrag[]> {
     if (!this.isBrowser) return [];
 
-    const cacheKey = 'cached_active_crags_v1';
+    const cacheKey = CACHE_KEYS.activeCrags;
 
     try {
       await this.supabase.whenReady();
@@ -544,19 +555,11 @@ export class HomeComponent implements OnDestroy {
 
       if (error) throw error;
 
-      const cragsMap = new Map<
-        number,
-        { id: number; name: string; slug: string; area_slug: string }
-      >();
-      data?.forEach((d) => {
-        const route = d.route as {
-          crag?: {
-            id: number;
-            name: string;
-            slug: string;
-            area?: { slug: string } | { slug: string }[];
-          } | null;
-        } | null;
+      const cragsMap = new Map<number, ActiveCrag>();
+      const typedData = data as AscentWithRouteJoin[] | null;
+
+      typedData?.forEach((d) => {
+        const route = d.route;
         const rawCrag = route?.crag;
         const c = Array.isArray(rawCrag) ? rawCrag[0] : rawCrag;
         if (c && !cragsMap.has(c.id)) {
@@ -566,7 +569,7 @@ export class HomeComponent implements OnDestroy {
             id: c.id,
             name: c.name,
             slug: c.slug,
-            area_slug: area?.slug,
+            area_slug: area?.slug ?? '',
           });
         }
       });
@@ -579,7 +582,7 @@ export class HomeComponent implements OnDestroy {
       const cached = this.storage.getItem(cacheKey);
       if (cached) {
         try {
-          return JSON.parse(cached);
+          return JSON.parse(cached) as ActiveCrag[];
         } catch {
           console.error('[Home] Cache parse error');
         }
@@ -607,6 +610,26 @@ export class HomeComponent implements OnDestroy {
     const fromIdx = page * size;
     const toIdx = fromIdx + size - 1;
 
+    // Indoor queries don't support favorite_areas/favorite_crags/favorite_routes
+    if (
+      filter === 'favorite_crags' ||
+      filter === 'favorite_routes' ||
+      filter === 'favorite_areas'
+    ) {
+      return [];
+    }
+
+    const filterOptions: FeedFilterOptions = {
+      filter,
+      userId,
+      categories: this.global.feedCategories(),
+      gradeRange: this.global.feedGradeRange(),
+      followedIds: Array.from(this.followedIds()),
+      likedAreaIds: this.global.likedAreaIds(),
+      likedCragIds: this.global.likedCragIds(),
+      likedRouteIds: this.global.likedRouteIds(),
+    };
+
     let query = this.supabase.client.from('indoor_ascents').select(
       `
           *,
@@ -618,43 +641,14 @@ export class HomeComponent implements OnDestroy {
         `,
     );
 
-    if (filter !== 'all') {
-      query = query.neq('user_id', userId);
-    }
-
-    if (filter === 'following') {
-      const followed = Array.from(this.followedIds());
-      if (followed.length === 0) return [];
-      query = query.in('user_id', followed);
-    } else if (filter === 'favorite_crags') {
-      return []; // outdoor crags don't apply to indoor
-    } else if (filter === 'favorite_routes') {
-      return []; // outdoor liked routes don't apply to indoor
-    } else if (filter === 'favorite_areas') {
-      return []; // indoor centers don't belong to areas
-    }
-
-    const categories = this.global.feedCategories();
-    if (categories.length > 0) {
-      const kindsArray: ClimbingKind[] = [];
-      if (categories.includes(0)) kindsArray.push(ClimbingKinds.SPORT);
-      if (categories.includes(1)) kindsArray.push(ClimbingKinds.BOULDER);
-      if (kindsArray.length > 0) {
-        query = query.in('route.climbing_kind', kindsArray);
-      }
-    }
-
-    const [loIdx, hiIdx] = this.global.feedGradeRange();
-    if (loIdx > 0 || hiIdx < ORDERED_GRADE_VALUES.length - 1) {
-      const allowedLabels = ORDERED_GRADE_VALUES.slice(loIdx, hiIdx + 1);
-      const allowedDbGrades = allowedLabels
-        .map((label) => LABEL_TO_VERTICAL_LIFE[label])
-        .filter((g): g is number => g !== undefined);
-      if (!allowedDbGrades.includes(0)) {
-        allowedDbGrades.push(0);
-      }
-      query = query.in('route.grade', allowedDbGrades);
-    }
+    query = applyIndoorUserFilter(query, filterOptions);
+    query = applyCategoryFilter(
+      query,
+      filterOptions.categories,
+      'route.climbing_kind',
+      false,
+    );
+    query = applyGradeFilter(query, filterOptions.gradeRange, 'route.grade');
 
     try {
       const { data: ascents, error } = await query
@@ -670,10 +664,9 @@ export class HomeComponent implements OnDestroy {
         const { route, user, ...ascentRest } = a;
         let mappedRoute: RouteAscentWithExtras['route'] = undefined;
         if (route) {
-          const center = Array.isArray(route.center)
-            ? route.center[0]
-            : route.center;
-          const { center: _center, ...routeFields } = route;
+          const typedRoute = route as IndoorAscentWithRouteJoin['route'];
+          const center = typedRoute?.center;
+          const { center: _center, ...routeFields } = typedRoute ?? {};
           mappedRoute = {
             ...routeFields,
             crag_slug: center?.slug,
@@ -710,10 +703,47 @@ export class HomeComponent implements OnDestroy {
     const fromIdx = page * size;
     const toIdx = fromIdx + size - 1;
 
+    const filterOptions: FeedFilterOptions = {
+      filter,
+      userId,
+      categories: this.global.feedCategories(),
+      gradeRange: this.global.feedGradeRange(),
+      followedIds: Array.from(this.followedIds()),
+      likedAreaIds: this.global.likedAreaIds(),
+      likedCragIds: this.global.likedCragIds(),
+      likedRouteIds: this.global.likedRouteIds(),
+    };
+
+    // Check if we should proceed based on filter type
+    if (filter === 'following' && filterOptions.followedIds.length === 0) {
+      this.hasMore.set(false);
+      return [];
+    }
+    if (
+      filter === 'favorite_areas' &&
+      filterOptions.likedAreaIds.length === 0
+    ) {
+      this.hasMore.set(false);
+      return [];
+    }
+    if (
+      filter === 'favorite_crags' &&
+      filterOptions.likedCragIds.length === 0
+    ) {
+      this.hasMore.set(false);
+      return [];
+    }
+    if (
+      filter === 'favorite_routes' &&
+      filterOptions.likedRouteIds.length === 0
+    ) {
+      this.hasMore.set(false);
+      return [];
+    }
+
     let query = this.supabase.client.from('route_ascents').select(
       `
           *,
-          user:user_profiles(*),
           route:routes!inner(
             *,
             crag:crags!inner(
@@ -724,65 +754,16 @@ export class HomeComponent implements OnDestroy {
         `,
     );
 
-    if (filter !== 'all') {
-      query = query.neq('user_id', userId);
-    }
+    query = applyUserFilter(query, filterOptions);
+    query = applyCategoryFilter(
+      query,
+      filterOptions.categories,
+      'route.climbing_kind',
+      true,
+    );
+    query = applyGradeFilter(query, filterOptions.gradeRange, 'grade');
 
-    if (filter === 'following') {
-      const followed = Array.from(this.followedIds());
-      if (followed.length === 0) {
-        this.hasMore.set(false);
-        return [];
-      }
-      query = query.in('user_id', followed);
-    } else if (filter === 'favorite_areas') {
-      const areaIds = this.global.likedAreaIds();
-      if (areaIds.length === 0) {
-        this.hasMore.set(false);
-        return [];
-      }
-      query = query.in('route.crag.area_id', areaIds);
-    } else if (filter === 'favorite_crags') {
-      const cragIds = this.global.likedCragIds();
-      if (cragIds.length === 0) {
-        this.hasMore.set(false);
-        return [];
-      }
-      query = query.in('route.crag_id', cragIds);
-    } else if (filter === 'favorite_routes') {
-      const routeIds = this.global.likedRouteIds();
-      if (routeIds.length === 0) {
-        this.hasMore.set(false);
-        return [];
-      }
-      query = query.in('route_id', routeIds);
-    }
-
-    const categories = this.global.feedCategories();
-    if (categories.length > 0) {
-      const kindsArray: ClimbingKind[] = [];
-      if (categories.includes(0)) kindsArray.push(ClimbingKinds.SPORT);
-      if (categories.includes(1)) kindsArray.push(ClimbingKinds.BOULDER);
-      if (categories.includes(2)) kindsArray.push(ClimbingKinds.MULTIPITCH);
-      if (kindsArray.length > 0) {
-        query = query.in('route.climbing_kind', kindsArray);
-      }
-    }
-
-    const [loIdx, hiIdx] = this.global.feedGradeRange();
-    if (loIdx > 0 || hiIdx < ORDERED_GRADE_VALUES.length - 1) {
-      const allowedLabels = ORDERED_GRADE_VALUES.slice(loIdx, hiIdx + 1);
-      const allowedDbGrades = allowedLabels
-        .map((label) => LABEL_TO_VERTICAL_LIFE[label])
-        .filter((g): g is number => g !== undefined);
-      // Ensure projects (0) are always rendered for partial ranges
-      if (!allowedDbGrades.includes(0)) {
-        allowedDbGrades.push(0);
-      }
-      query = query.in('grade', allowedDbGrades);
-    }
-
-    const cacheKey = `cached_home_feed_${filter}_${page}_v1`;
+    const cacheKey = CACHE_KEYS.homeFeed(filter, page);
 
     try {
       const { data: ascents, error } = await query
@@ -802,8 +783,23 @@ export class HomeComponent implements OnDestroy {
         this.hasMore.set(false);
       }
 
+      // Fetch user profiles separately (no FK between route_ascents and user_profiles)
+      const userIds = [
+        ...new Set(ascents.map((a) => a.user_id).filter(Boolean)),
+      ];
+      let profileMap = new Map<string, UserProfileBasicDto>();
+      if (userIds.length > 0) {
+        const { data: profiles } = await this.supabase.client
+          .from('user_profiles')
+          .select('id, name, avatar')
+          .in('id', userIds);
+        if (profiles) {
+          profileMap = new Map(profiles.map((p) => [p.id, p]));
+        }
+      }
+
       const result = ascents.map((a) => {
-        const { route, user, ...ascentRest } = a;
+        const { route, user_id, ...ascentRest } = a;
         let mappedRoute: RouteAscentWithExtras['route'] = undefined;
         if (route) {
           const crag = route.crag;
@@ -821,7 +817,7 @@ export class HomeComponent implements OnDestroy {
         return {
           ...ascentRest,
           kind: 'ascent' as const,
-          user: user ?? undefined,
+          user: profileMap.get(user_id) ?? undefined,
           route: mappedRoute,
         } as unknown as RouteAscentFeedItem;
       });

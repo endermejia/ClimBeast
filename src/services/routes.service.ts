@@ -27,6 +27,7 @@ import type {
 } from '../models';
 
 import { normalizeNameStrict } from '../utils';
+import { CACHE_KEYS } from '../constants/cache-keys';
 
 export interface RouteSimple {
   id: number;
@@ -131,7 +132,7 @@ export class RoutesService {
   async getRoutesByAreaSimple(areaId: number): Promise<RouteSimple[]> {
     if (!isPlatformBrowser(this.platformId)) return [];
 
-    const cacheKey = `cached_routes_simple_area_${areaId}`;
+    const cacheKey = CACHE_KEYS.routesSimpleArea(areaId);
     return this.cache.fetchOrCache(
       cacheKey,
       async () => {
