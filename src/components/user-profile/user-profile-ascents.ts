@@ -8,6 +8,7 @@ import {
   effect,
   inject,
   input,
+  linkedSignal,
   PLATFORM_ID,
   signal,
   untracked,
@@ -237,7 +238,7 @@ export class UserProfileAscentsComponent {
   protected readonly dateFilterValue = signal<string>('last12');
   protected readonly dateFilter = this.dateFilterValue;
 
-  protected readonly sortFilterValue = signal<'grade' | 'date'>(
+  protected readonly sortFilterValue = linkedSignal<'grade' | 'date'>(() =>
     this.global.ascentsSort(),
   );
   protected readonly sortFilter = this.sortFilterValue;

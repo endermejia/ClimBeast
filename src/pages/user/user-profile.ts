@@ -27,6 +27,7 @@ import {
   TuiDataList,
   TuiDropdown,
   TuiLink,
+  TuiLoader,
   TuiScrollbar,
 } from '@taiga-ui/core';
 
@@ -71,6 +72,7 @@ import { UserInfoComponent } from '../../components/ui/user-info';
     TuiDataList,
     TuiDropdown,
     TuiLink,
+    TuiLoader,
     TuiPulse,
     TuiScrollbar,
     TuiScrollbar,
@@ -298,21 +300,39 @@ import { UserInfoComponent } from '../../components/ui/user-info';
               }
 
               @case ('projects') {
-                <app-user-profile-projects
-                  [userId]="profile()?.id || id() || ''"
-                  [startingYear]="profile()?.starting_climbing_year"
-                />
+                @defer (on viewport; hydrate on viewport) {
+                  <app-user-profile-projects
+                    [userId]="profile()?.id || id() || ''"
+                    [startingYear]="profile()?.starting_climbing_year"
+                  />
+                } @placeholder {
+                  <div class="flex items-center justify-center py-16 min-h-32">
+                    <tui-loader size="l" />
+                  </div>
+                }
               }
 
               @case ('statistics') {
-                <app-user-profile-statistics
-                  [userId]="id() || supabase.authUserId() || ''"
-                />
+                @defer (on viewport; hydrate on viewport) {
+                  <app-user-profile-statistics
+                    [userId]="id() || supabase.authUserId() || ''"
+                  />
+                } @placeholder {
+                  <div class="flex items-center justify-center py-16 min-h-32">
+                    <tui-loader size="l" />
+                  </div>
+                }
               }
               @case ('likes') {
-                <app-user-profile-likes
-                  [userId]="profile()?.id || id() || ''"
-                />
+                @defer (on viewport; hydrate on viewport) {
+                  <app-user-profile-likes
+                    [userId]="profile()?.id || id() || ''"
+                  />
+                } @placeholder {
+                  <div class="flex items-center justify-center py-16 min-h-32">
+                    <tui-loader size="l" />
+                  </div>
+                }
               }
             }
           } @else {

@@ -34,11 +34,23 @@
   ],
   "dataGroups": [
     {
+      "name": "map-tiles",
+      "urls": [
+        "https://*.tile.openstreetmap.org/**",
+        "https://*.basemaps.cartocdn.com/**"
+      ],
+      "cacheConfig": {
+        "maxSize": 500,
+        "maxAge": "30d",
+        "strategy": "performance"
+      }
+    },
+    {
       "name": "supabase-api",
       "urls": ["https://eswbehepsagigvlytfxv.supabase.co/rest/v1/**"],
       "cacheConfig": {
-        "maxSize": 100,
-        "maxAge": "3d",
+        "maxSize": 500,
+        "maxAge": "7d",
         "timeout": "3s",
         "strategy": "freshness"
       }
@@ -79,8 +91,8 @@
       "name": "open-meteo",
       "urls": ["https://api.open-meteo.com/**"],
       "cacheConfig": {
-        "maxSize": 5,
-        "maxAge": "6h",
+        "maxSize": 10,
+        "maxAge": "12h",
         "timeout": "5s",
         "strategy": "performance"
       }

@@ -203,16 +203,28 @@ import { handleErrorToast, mapLocationUrl } from '../../utils';
                     </button>
                   </div>
                 }
-                <app-chart-routes-by-grade
-                  class="md:hidden self-end"
-                  [grades]="c.grades"
-                />
+                @defer (on viewport; hydrate on viewport) {
+                  <app-chart-routes-by-grade
+                    class="md:hidden self-end"
+                    [grades]="c.grades"
+                  />
+                } @placeholder {
+                  <div class="h-20 md:hidden flex items-center justify-center">
+                    <tui-loader size="s" />
+                  </div>
+                }
               </div>
             </div>
-            <app-chart-routes-by-grade
-              class="hidden md:block self-end"
-              [grades]="c.grades"
-            />
+            @defer (on viewport; hydrate on viewport) {
+              <app-chart-routes-by-grade
+                class="hidden md:block self-end"
+                [grades]="c.grades"
+              />
+            } @placeholder {
+              <div class="hidden md:flex h-20 items-center justify-center">
+                <tui-loader size="s" />
+              </div>
+            }
           </div>
 
           @if (visibleTabs().length > 1) {
@@ -266,19 +278,37 @@ import { handleErrorToast, mapLocationUrl } from '../../utils';
                 <app-crag-routes [crag]="c" />
               }
               @case (1) {
-                <app-crag-topos
-                  [crag]="c"
-                  [areaSlug]="areaSlug()"
-                  [cragSlug]="cragSlug()"
-                />
+                @defer (on viewport; hydrate on viewport) {
+                  <app-crag-topos
+                    [crag]="c"
+                    [areaSlug]="areaSlug()"
+                    [cragSlug]="cragSlug()"
+                  />
+                } @placeholder {
+                  <div class="flex items-center justify-center py-16 min-h-32">
+                    <tui-loader size="l" />
+                  </div>
+                }
               }
               @case (2) {
-                <app-crag-parkings [crag]="c" />
+                @defer (on viewport; hydrate on viewport) {
+                  <app-crag-parkings [crag]="c" />
+                } @placeholder {
+                  <div class="flex items-center justify-center py-16 min-h-32">
+                    <tui-loader size="l" />
+                  </div>
+                }
               }
               @case (3) {
-                <app-weather-forecast
-                  [coords]="{ lat: c.latitude, lng: c.longitude }"
-                />
+                @defer (on viewport; hydrate on viewport) {
+                  <app-weather-forecast
+                    [coords]="{ lat: c.latitude, lng: c.longitude }"
+                  />
+                } @placeholder {
+                  <div class="flex items-center justify-center py-16 min-h-32">
+                    <tui-loader size="l" />
+                  </div>
+                }
               }
             }
           </div>

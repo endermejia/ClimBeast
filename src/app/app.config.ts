@@ -17,6 +17,7 @@ import {
   provideRouter,
   withComponentInputBinding,
   withPreloading,
+  withViewTransitions,
 } from '@angular/router';
 import {
   provideClientHydration,
@@ -62,6 +63,7 @@ export const appConfig: ApplicationConfig = {
       routes,
       withComponentInputBinding(),
       withPreloading(SelectivePreloadingStrategy),
+      withViewTransitions({ skipInitialTransition: true }),
     ),
     provideHttpClient(withFetch(), withInterceptors([errorInterceptor])),
     provideClientHydration(

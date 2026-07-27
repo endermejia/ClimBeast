@@ -253,7 +253,13 @@ import { RouteSearchResult } from '../../models/supabase-query.types';
                 }
               }
             </div>
-            <app-chart-routes-by-grade [grades]="area.grades" />
+            @defer (on viewport; hydrate on viewport) {
+              <app-chart-routes-by-grade [grades]="area.grades" />
+            } @placeholder {
+              <div class="h-20 flex items-center justify-center">
+                <tui-loader size="s" />
+              </div>
+            }
           </div>
 
           @let admins = areaAdmins();
