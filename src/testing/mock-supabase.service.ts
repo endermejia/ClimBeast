@@ -114,7 +114,13 @@ export class MockSupabaseService {
       getSession: () =>
         Promise.resolve({ data: { session: this._session() }, error: null }),
       onAuthStateChange: (_callback: (event: string) => void) => ({
-        data: { subscription: { unsubscribe: () => {} } },
+        data: {
+          subscription: {
+            unsubscribe: () => {
+              /* noop */
+            },
+          },
+        },
       }),
     },
   };
@@ -127,7 +133,9 @@ export class MockSupabaseService {
     this._userProfile.set(profile);
   }
 
-  async whenReady(): Promise<void> {}
+  async whenReady(): Promise<void> {
+    // Intentionally empty for mock
+  }
   async getSession(): Promise<Session | null> {
     return this._session();
   }

@@ -14,7 +14,13 @@ import { TranslateService, TranslateStore } from '@ngx-translate/core';
 const MOCK_TRANSLATE = {
   instant: (k: string) => k,
   get: (k: string) => k,
-  onTranslationChange: { subscribe: () => ({ unsubscribe: () => {} }) },
+  onTranslationChange: {
+    subscribe: () => ({
+      unsubscribe: () => {
+        /* noop */
+      },
+    }),
+  },
 };
 
 function createMockToast() {

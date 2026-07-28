@@ -18,8 +18,12 @@ export class MockTranslateService {
     return of(key);
   }
 
-  setDefaultLang(_lang: string): void {}
-  use(_lang: string): void {}
+  setDefaultLang(_lang: string): void {
+    // Intentionally empty for mock
+  }
+  use(_lang: string): void {
+    // Intentionally empty for mock
+  }
 }
 
 export class MockTranslatePipe {

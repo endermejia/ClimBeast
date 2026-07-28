@@ -16,5 +16,7 @@ export class MockGlobalData {
     signal<TuiLanguage | null>(null);
   readonly theme: WritableSignal<Theme> = signal(Themes.LIGHT);
 
-  setError(_msg: string): void {}
+  setError(_msg: string): void {
+    // Intentionally empty for mock
+  }
 }

@@ -9,11 +9,11 @@ import {
 } from './ascents.utils';
 import type { RouteAscentWithExtras } from '../models';
 
-type TestAscent = {
+interface TestAscent {
   date: string | null;
   route?: { name?: string };
   is_duplicate?: boolean;
-};
+}
 
 describe('markDuplicateAscents', () => {
   it('marks no duplicates for unique ascents', () => {
