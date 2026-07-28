@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
 
 import { AreasService } from './areas.service';
+import { IS_BROWSER } from '../app/is-browser';
 import { SupabaseService } from './supabase.service';
 import { GlobalData } from './global-data';
 import { CacheService } from './cache.service';
@@ -57,6 +58,7 @@ describe('AreasService', () => {
       providers: [
         AreasService,
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
         { provide: SupabaseService, useValue: mockSupabase },
         { provide: GlobalData, useClass: MockGlobalData },
         {
@@ -104,6 +106,7 @@ describe('AreasService', () => {
         providers: [
           AreasService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
@@ -127,6 +130,7 @@ describe('AreasService', () => {
         providers: [
           AreasService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
@@ -150,6 +154,7 @@ describe('AreasService', () => {
         providers: [
           AreasService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
@@ -173,6 +178,7 @@ describe('AreasService', () => {
         providers: [
           AreasService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
@@ -197,6 +203,7 @@ describe('AreasService', () => {
         providers: [
           AreasService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
@@ -220,6 +227,7 @@ describe('AreasService', () => {
         providers: [
           AreasService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
@@ -243,6 +251,7 @@ describe('AreasService', () => {
         providers: [
           AreasService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
@@ -266,6 +275,7 @@ describe('AreasService', () => {
         providers: [
           AreasService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },

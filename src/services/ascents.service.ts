@@ -1,5 +1,6 @@
-import { computed, inject, Injectable, PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { computed, inject, Injectable } from '@angular/core';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TuiDialogService } from '@taiga-ui/core';
@@ -34,7 +35,7 @@ import { GlobalData } from './global-data';
 
 @Injectable({ providedIn: 'root' })
 export class AscentsService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly global = inject(GlobalData);
   private readonly dialogs = inject(TuiDialogService);
@@ -83,7 +84,7 @@ export class AscentsService {
 
   async getAscentById(id: number): Promise<RouteAscentWithExtras | null> {
     if (!id || isNaN(id) || id <= 0) return null;
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('route_ascents')
@@ -154,7 +155,7 @@ export class AscentsService {
   }
 
   async getUserStats(userId: string): Promise<UserAscentStatRecord[]> {
-    if (!userId || !isPlatformBrowser(this.platformId)) return [];
+    if (!userId || !this.isBrowser) return [];
     await this.supabase.whenReady();
 
     const { data, error } = await this.supabase.client
@@ -242,7 +243,7 @@ export class AscentsService {
   async getUserAscentDates(
     userId: string,
   ): Promise<{ date: string; type: string }[]> {
-    if (!userId || !isPlatformBrowser(this.platformId)) return [];
+    if (!userId || !this.isBrowser) return [];
     await this.supabase.whenReady();
 
     const { data, error } = await this.supabase.client
@@ -269,7 +270,7 @@ export class AscentsService {
     year: number,
     month: number,
   ): Promise<UserAscentStatRecord[]> {
-    if (!userId || !isPlatformBrowser(this.platformId)) return [];
+    if (!userId || !this.isBrowser) return [];
     await this.supabase.whenReady();
 
     const from_ = `${year}-${String(month).padStart(2, '0')}-01`;
@@ -354,7 +355,7 @@ export class AscentsService {
   }
 
   async uploadPhoto(ascentId: number, file: File): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
 
     const toBase64 = (f: File) =>
       new Promise<string>((resolve, reject) => {
@@ -393,7 +394,7 @@ export class AscentsService {
   }
 
   async deletePhoto(ascentId: number): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
 
     const { error } = await this.supabase.client.functions.invoke(
@@ -457,7 +458,7 @@ export class AscentsService {
   async create(
     payload: Omit<RouteAscentInsertDto, 'created_at' | 'id'>,
   ): Promise<RouteAscentDto | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('route_ascents')
@@ -477,7 +478,7 @@ export class AscentsService {
     id: number,
     payload: Partial<Omit<RouteAscentUpdateDto, 'id' | 'created_at'>>,
   ): Promise<RouteAscentDto | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('route_ascents')
@@ -495,7 +496,7 @@ export class AscentsService {
   }
 
   async delete(id: number): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
 
     // 1. Delete photo from storage via Edge Function if exists
@@ -575,7 +576,7 @@ export class AscentsService {
   }
 
   async toggleLike(ascentId: number): Promise<boolean | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client.rpc(
       'toggle_route_ascent_like',
@@ -616,7 +617,7 @@ export class AscentsService {
     likes_count: number;
     user_liked: boolean;
   }> {
-    if (!isPlatformBrowser(this.platformId)) {
+    if (!this.isBrowser) {
       return { likes_count: 0, user_liked: false };
     }
     await this.supabase.whenReady();
@@ -662,7 +663,7 @@ export class AscentsService {
     pageSize = 20,
     query = '',
   ): Promise<{ items: UserProfileBasicDto[]; total: number }> {
-    if (!isPlatformBrowser(this.platformId)) return { items: [], total: 0 };
+    if (!this.isBrowser) return { items: [], total: 0 };
     await this.supabase.whenReady();
 
     return getPaginatedProfilesFromJunction(
@@ -678,7 +679,7 @@ export class AscentsService {
   }
 
   async getCommentsCount(ascentId: number): Promise<number> {
-    if (!isPlatformBrowser(this.platformId)) return 0;
+    if (!this.isBrowser) return 0;
     await this.supabase.whenReady();
 
     const { error, count } = await this.supabase.client
@@ -695,7 +696,7 @@ export class AscentsService {
   }
 
   async toggleCommentLike(commentId: number): Promise<boolean | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client.rpc(
       'toggle_comment_like',
@@ -719,7 +720,7 @@ export class AscentsService {
     pageSize = 20,
     query = '',
   ): Promise<{ items: UserProfileBasicDto[]; total: number }> {
-    if (!isPlatformBrowser(this.platformId)) return { items: [], total: 0 };
+    if (!this.isBrowser) return { items: [], total: 0 };
     await this.supabase.whenReady();
 
     return getPaginatedProfilesFromJunction(
@@ -737,7 +738,7 @@ export class AscentsService {
   async getLastComment(
     ascentId: number,
   ): Promise<RouteAscentCommentWithExtras | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
 
     // Reuse the logic from getComments but for one item
@@ -789,7 +790,7 @@ export class AscentsService {
   }
 
   async getComments(ascentId: number): Promise<RouteAscentCommentWithExtras[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
 
     type CommentWithLikes = RouteAscentCommentDto & {
@@ -870,7 +871,7 @@ export class AscentsService {
     ascentId: number,
     comment: string,
   ): Promise<RouteAscentCommentDto | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
 
     const userId = this.supabase.authUserId();
@@ -956,7 +957,7 @@ export class AscentsService {
   }
 
   async deleteComment(ascentId: number, commentId: number): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
 
     const { error } = await this.supabase.client

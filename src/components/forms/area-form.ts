@@ -38,7 +38,7 @@ import { ToastService } from '../../services/toast.service';
 
 import { CounterComponent } from '../ui/counter';
 
-import { SupabaseService } from '../../services/supabase.service';
+import { SlugService } from '../../services/slug.service';
 import { handleErrorToast, slugify } from '../../utils';
 
 interface MinimalArea {
@@ -384,7 +384,7 @@ export class AreaFormComponent {
   private readonly areas = inject(AreasService);
   protected readonly global = inject(GlobalData);
   private readonly location = inject(Location);
-  private readonly supabase = inject(SupabaseService);
+  private readonly slugService = inject(SlugService);
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly accountDialogTemplate =
@@ -502,7 +502,10 @@ export class AreaFormComponent {
       if (!name) return;
 
       const baseSlug = slugify(name);
-      const uniqueSlug = await this.supabase.getUniqueSlug('areas', baseSlug);
+      const uniqueSlug = await this.slugService.getUniqueSlug(
+        'areas',
+        baseSlug,
+      );
 
       untracked(() => {
         const currentSlug = this.model().slug;

@@ -42,6 +42,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { GlobalData } from '../../services/global-data';
 import { RoutesService } from '../../services/routes.service';
 import { SupabaseService } from '../../services/supabase.service';
+import { SlugService } from '../../services/slug.service';
 import { ToastService } from '../../services/toast.service';
 
 import { CounterComponent } from '../ui/counter';
@@ -332,6 +333,7 @@ export class RouteFormComponent {
   private readonly routes = inject(RoutesService);
   protected readonly global = inject(GlobalData);
   private readonly supabase = inject(SupabaseService);
+  private readonly slugService = inject(SlugService);
   private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
   private readonly location = inject(Location);
@@ -590,7 +592,7 @@ export class RouteFormComponent {
       if (!name) return;
 
       const baseSlug = slugify(name);
-      const uniqueSlug = await this.supabase.getUniqueSlug(
+      const uniqueSlug = await this.slugService.getUniqueSlug(
         'routes',
         baseSlug,
         crag?.slug || undefined,

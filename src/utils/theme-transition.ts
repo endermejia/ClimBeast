@@ -15,6 +15,12 @@ export async function triggerThemeTransition(
   event: MouseEvent | undefined,
   update: () => void | Promise<void>,
 ): Promise<void> {
+  // SSR guard — document is not available on server
+  if (typeof document === 'undefined') {
+    await update();
+    return;
+  }
+
   // Fallback for browsers that don't support View Transitions API
   if (!('startViewTransition' in document)) {
     await update();

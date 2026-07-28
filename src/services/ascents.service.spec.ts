@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
 
 import { AscentsService } from './ascents.service';
+import { IS_BROWSER } from '../app/is-browser';
 import { SupabaseService } from './supabase.service';
 import { GlobalData } from './global-data';
 import { ToastService } from './toast.service';
@@ -70,6 +71,7 @@ describe('AscentsService', () => {
       providers: [
         AscentsService,
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
         { provide: SupabaseService, useValue: mockSupabase },
         MockGlobalData,
         { provide: GlobalData, useExisting: MockGlobalData },
@@ -140,6 +142,7 @@ describe('AscentsService', () => {
         providers: [
           AscentsService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
@@ -160,6 +163,7 @@ describe('AscentsService', () => {
         providers: [
           AscentsService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
@@ -181,6 +185,7 @@ describe('AscentsService', () => {
         providers: [
           AscentsService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },

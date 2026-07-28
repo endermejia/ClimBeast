@@ -1,11 +1,6 @@
 import { NgOptimizedImage } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  OnInit,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import { TuiButton } from '@taiga-ui/core';
 
@@ -72,11 +67,11 @@ import { SeoService } from '../../services/seo.service';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LandingComponent implements OnInit {
+export class LandingComponent {
   private readonly seo = inject(SeoService);
   private readonly translate = inject(TranslateService);
 
-  ngOnInit(): void {
+  constructor() {
     this.seo.setPage({
       title: this.translate.instant('seo.title'),
       description:

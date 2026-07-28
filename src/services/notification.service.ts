@@ -6,7 +6,7 @@ import { TuiNotificationOptions, TuiNotificationService } from '@taiga-ui/core';
 
 import { TranslateService } from '@ngx-translate/core';
 
-import { firstValueFrom, switchMap } from 'rxjs';
+import { firstValueFrom, forkJoin, switchMap } from 'rxjs';
 
 import { GdprNotificationComponent } from '../components/notifications/gdpr-notification';
 
@@ -23,11 +23,22 @@ export class NotificationService {
     message: string,
     options?: Partial<TuiNotificationOptions>,
   ): void {
-    const translatedMessage = this.translate.instant(message);
+    const label = options?.label;
+    const requests$ = [this.translate.get(message)];
+    if (label) {
+      requests$.push(this.translate.get(label));
+    }
+
     void firstValueFrom(
-      this.alerts.open(translatedMessage, {
-        ...options,
-      }),
+      forkJoin(requests$).pipe(
+        switchMap(([translatedMessage, translatedLabel]) => {
+          const finalOptions = { ...options };
+          if (label && translatedLabel) {
+            finalOptions.label = translatedLabel;
+          }
+          return this.alerts.open(translatedMessage, finalOptions);
+        }),
+      ),
       { defaultValue: undefined },
     );
   }
@@ -39,7 +50,7 @@ export class NotificationService {
   ): void {
     this.show(message, {
       appearance: 'positive',
-      label: label ? this.translate.instant(label) : undefined,
+      label,
       autoClose: autoClose === false ? 0 : (autoClose as number | undefined),
     });
   }

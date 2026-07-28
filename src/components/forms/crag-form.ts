@@ -51,6 +51,7 @@ import { CragsService } from '../../services/crags.service';
 
 import { MapService } from '../../services/map.service';
 import { SupabaseService } from '../../services/supabase.service';
+import { SlugService } from '../../services/slug.service';
 import { ToastService } from '../../services/toast.service';
 
 import { CounterComponent } from '../ui/counter';
@@ -305,6 +306,7 @@ export class CragFormComponent {
   private readonly crags = inject(CragsService);
 
   private readonly supabase = inject(SupabaseService);
+  private readonly slugService = inject(SlugService);
   private readonly platformId = inject(PLATFORM_ID);
 
   private readonly location = inject(Location);
@@ -471,7 +473,7 @@ export class CragFormComponent {
       if (!name) return;
 
       const baseSlug = slugify(name);
-      const uniqueSlug = await this.supabase.getUniqueSlug(
+      const uniqueSlug = await this.slugService.getUniqueSlug(
         'crags',
         baseSlug,
         area?.slug || undefined,

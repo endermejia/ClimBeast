@@ -84,6 +84,10 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Prerender,
   },
   {
+    path: 'admin/requests',
+    renderMode: RenderMode.Prerender,
+  },
+  {
     path: 'chat/:roomId',
     renderMode: RenderMode.Server,
   },

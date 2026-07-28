@@ -1,4 +1,10 @@
-import { inject, Injectable, signal, WritableSignal } from '@angular/core';
+import {
+  computed,
+  inject,
+  Injectable,
+  signal,
+  WritableSignal,
+} from '@angular/core';
 
 import { Theme, Themes } from '../models';
 import { SupabaseService } from './supabase.service';
@@ -14,6 +20,15 @@ export class ThemeService {
 
   readonly theme: WritableSignal<Theme> = signal<Theme>(Themes.LIGHT);
   readonly selectedTheme = this.theme.asReadonly();
+
+  readonly isDark = computed(() => {
+    const t = this.theme();
+    if (t === Themes.DARK) return true;
+    if (t === Themes.LIGHT) return false;
+    // 'system' — check prefers-color-scheme
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
 
   setTheme(newTheme: Theme, event?: MouseEvent): void {
     if (this.theme() === newTheme) return;

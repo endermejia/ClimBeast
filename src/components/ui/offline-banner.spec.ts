@@ -7,6 +7,7 @@ import { OfflineBannerComponent } from './offline-banner';
 import { GlobalData } from '../../services/global-data';
 import { SupabaseService } from '../../services/supabase.service';
 import { LocalStorage } from '../../services/local-storage';
+import { IS_BROWSER } from '../../app/is-browser';
 import {
   MockGlobalData,
   MockSupabaseService,
@@ -20,6 +21,7 @@ describe('OfflineBannerComponent', () => {
       providers: [
         provideRouter([]),
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
         { provide: GlobalData, useClass: MockGlobalData },
         { provide: SupabaseService, useClass: MockSupabaseService },
         { provide: LocalStorage, useClass: MockLocalStorage },

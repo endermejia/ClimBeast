@@ -1,6 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
-import { PLATFORM_ID } from '@angular/core';
+import { IS_BROWSER } from '../app/is-browser';
 
 import { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -18,12 +17,12 @@ import {
 })
 export class AppNotificationsService {
   private readonly supabase = inject(SupabaseService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   readonly unreadCount = signal(0);
 
   async getNotifications(): Promise<NotificationWithActor[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
     const userId = this.supabase.authUserId();
     if (!userId) return [];
@@ -101,7 +100,7 @@ export class AppNotificationsService {
   }
 
   async createNotification(payload: NotificationInsertDto): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
 
     // Don't notify yourself
@@ -122,7 +121,7 @@ export class AppNotificationsService {
   }
 
   async createNotifications(payloads: NotificationInsertDto[]): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
 
     const validPayloads = payloads.filter((p) => p.user_id !== p.actor_id);
@@ -143,7 +142,7 @@ export class AppNotificationsService {
   }
 
   async markAsRead(id: string): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
 
     const { error } = await this.supabase.client
@@ -159,7 +158,7 @@ export class AppNotificationsService {
   }
 
   async markAllAsRead(): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
     const userId = this.supabase.authUserId();
     if (!userId) return;
@@ -178,7 +177,7 @@ export class AppNotificationsService {
   }
 
   async refreshUnreadCount(): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
     const userId = this.supabase.authUserId();
     if (!userId) return;
@@ -197,7 +196,7 @@ export class AppNotificationsService {
   watchNotifications(
     callback: (payload: NotificationInsertDto) => void,
   ): RealtimeChannel | null {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     const userId = this.supabase.authUserId();
     if (!userId) return null;
 

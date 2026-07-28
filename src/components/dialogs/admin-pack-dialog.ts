@@ -5,7 +5,6 @@ import {
   Component,
   inject,
   signal,
-  OnInit,
 } from '@angular/core';
 
 import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
@@ -321,7 +320,7 @@ interface SimpleArea {
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AdminPackDialogComponent implements OnInit {
+export class AdminPackDialogComponent {
   readonly context =
     injectContext<TuiDialogContext<boolean, AreaPackDetail | undefined>>();
   private readonly merchService = inject(MerchandiseService);
@@ -359,7 +358,11 @@ export class AdminPackDialogComponent implements OnInit {
 
   protected readonly strings = tuiIsString;
 
-  async ngOnInit() {
+  constructor() {
+    void this.loadData();
+  }
+
+  private async loadData() {
     try {
       const areas = await this.areasService.getAllAreasSimple();
       this.allAreas.set(areas);

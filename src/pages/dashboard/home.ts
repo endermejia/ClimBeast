@@ -1,13 +1,13 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   inject,
-  OnDestroy,
   PLATFORM_ID,
   resource,
   computed,
@@ -15,6 +15,7 @@ import {
   viewChild,
   input,
   effect,
+  untracked,
 } from '@angular/core';
 
 import {
@@ -33,19 +34,7 @@ import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 
-import {
-  combineLatest,
-  concatMap,
-  distinctUntilChanged,
-  filter,
-  map,
-  scan,
-  startWith,
-  Subject,
-  switchMap,
-  tap,
-  firstValueFrom,
-} from 'rxjs';
+import { Subject, firstValueFrom } from 'rxjs';
 
 import { DesnivelService } from '../../services/desnivel.service';
 import { FollowsService } from '../../services/follows.service';
@@ -308,7 +297,7 @@ export type HomeFeedFilter =
     class: 'flex flex-1 flex-col min-h-0',
   },
 })
-export class HomeComponent implements OnDestroy {
+export class HomeComponent {
   protected readonly global = inject(GlobalData);
   protected readonly cart = inject(CartService);
   protected readonly supabase = inject(SupabaseService);
@@ -400,6 +389,7 @@ export class HomeComponent implements OnDestroy {
 
   constructor() {
     this.loadFollowedIds();
+    inject(DestroyRef).onDestroy(() => this.loadMore$.complete());
 
     effect(() => {
       const id = this.roomId();
@@ -412,92 +402,91 @@ export class HomeComponent implements OnDestroy {
       this.scrollToTop();
     });
 
-    combineLatest([
-      toObservable(this.feedFilter),
-      toObservable(this.global.feedCategories),
-      toObservable(this.global.feedGradeRange),
-      toObservable(this.followsLoaded),
-      toObservable(this.global.likedAreaIds),
-      toObservable(this.global.likedCragIds),
-      toObservable(this.global.likedRouteIds),
-      toObservable(this.global.feedShowIndoorAscents),
-    ])
-      .pipe(
-        takeUntilDestroyed(),
-        filter(([, , , loaded]) => loaded),
-        map(
-          ([f, cat, grades, , areas, crags, routes, showIndoor]) =>
-            ({
-              filter: f,
-              categories: cat,
-              gradeRange: grades,
-              areas,
-              crags,
-              routes,
-              showIndoor,
-            }) as const,
-        ),
-        distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
-        switchMap(({ filter, showIndoor }) => {
-          this.ascents.set([]);
-          this.hasMore.set(true);
-          this.isLoading.set(true);
-          return this.loadMore$.pipe(
-            startWith(void 0),
-            scan((acc) => acc + 1, -1),
-            concatMap(async (page) => {
-              const promises: Promise<
-                (RouteAscentWithExtras & { kind: 'ascent' })[]
-              >[] = [this.fetchAscents(page, filter)];
-              if (showIndoor) {
-                promises.push(this.fetchIndoorAscents(page, filter));
-              }
-              const results = await Promise.all(promises);
-              const ascents = results.flat().sort((a, b) => {
-                const dateA = a.date ? new Date(a.date).getTime() : 0;
-                const dateB = b.date ? new Date(b.date).getTime() : 0;
-                return dateB - dateA;
-              });
-              if (filter === 'all') {
-                const beforeDate =
-                  page > 0
-                    ? (() => {
-                        const lastItem = this.ascents().slice(-1)[0];
-                        return lastItem?.date
-                          ? new Date(lastItem.date).toISOString()
-                          : undefined;
-                      })()
-                    : undefined;
-                const news = await this.desnivelService.getLatestPosts(
-                  5,
-                  beforeDate,
-                );
-                const all = [...ascents, ...news].sort((a, b) => {
-                  const dateA = a.date ? new Date(a.date).getTime() : 0;
-                  const dateB = b.date ? new Date(b.date).getTime() : 0;
-                  return dateB - dateA;
-                });
-                return all;
-              }
-              return ascents;
-            }),
-            tap(() => this.isLoading.set(false)),
-          );
-        }),
-      )
-      .subscribe((newAscents) => {
-        this.ascents.update((current) => {
-          const all = [...current, ...newAscents];
-          // Since we might be merging two separate paginated streams (indoor and outdoor),
-          // a simple append could lead to out-of-order items across page boundaries.
-          // Sorting the entire accumulated array guarantees chronological order.
-          return all.sort((a, b) => {
-            const dateA = a.date ? new Date(a.date).getTime() : 0;
-            const dateB = b.date ? new Date(b.date).getTime() : 0;
-            return dateB - dateA;
-          });
+    effect(() => {
+      if (!this.followsLoaded()) return;
+
+      // Track filter dependencies
+      this.feedFilter();
+      this.global.feedCategories();
+      this.global.feedGradeRange();
+      this.global.likedAreaIds();
+      this.global.likedCragIds();
+      this.global.likedRouteIds();
+      this.global.feedShowIndoorAscents();
+
+      untracked(() => {
+        this.fetchVersion.set(0);
+        this.resetFeed();
+      });
+    });
+
+    this.loadMore$.pipe(takeUntilDestroyed()).subscribe(() => {
+      void this.fetchNextPage();
+    });
+  }
+
+  private resetFeed() {
+    this.fetchVersion.set(this.fetchVersion() + 1);
+    this.ascents.set([]);
+    this.hasMore.set(true);
+    this.isLoading.set(true);
+    this.loadMore$.next();
+  }
+
+  private async fetchNextPage() {
+    const version = this.fetchVersion();
+    const filter = this.feedFilter();
+    const showIndoor = this.global.feedShowIndoorAscents();
+    const page = Math.floor(this.ascents().length / 10);
+
+    const promises: Promise<(RouteAscentWithExtras & { kind: 'ascent' })[]>[] =
+      [this.fetchAscents(page, filter)];
+    if (showIndoor) {
+      promises.push(this.fetchIndoorAscents(page, filter));
+    }
+    const results = await Promise.all(promises);
+    if (this.fetchVersion() !== version) return;
+
+    const ascents = results.flat().sort((a, b) => {
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      return dateB - dateA;
+    });
+    if (filter === 'all') {
+      const beforeDate =
+        page > 0
+          ? (() => {
+              const lastItem = this.ascents().slice(-1)[0];
+              return lastItem?.date
+                ? new Date(lastItem.date).toISOString()
+                : undefined;
+            })()
+          : undefined;
+      const news = await this.desnivelService.getLatestPosts(5, beforeDate);
+      const all = [...ascents, ...news].sort((a, b) => {
+        const dateA = a.date ? new Date(a.date).getTime() : 0;
+        const dateB = b.date ? new Date(b.date).getTime() : 0;
+        return dateB - dateA;
+      });
+      this.ascents.update((current) => {
+        const merged = [...current, ...all];
+        return merged.sort((a, b) => {
+          const dateA = a.date ? new Date(a.date).getTime() : 0;
+          const dateB = b.date ? new Date(b.date).getTime() : 0;
+          return dateB - dateA;
         });
       });
+    } else {
+      this.ascents.update((current) => {
+        const merged = [...current, ...ascents];
+        return merged.sort((a, b) => {
+          const dateA = a.date ? new Date(a.date).getTime() : 0;
+          const dateB = b.date ? new Date(b.date).getTime() : 0;
+          return dateB - dateA;
+        });
+      });
+    }
+    this.isLoading.set(false);
   }
 
   private async loadFollowedIds() {
@@ -593,6 +582,7 @@ export class HomeComponent implements OnDestroy {
 
   // Infinite Scroll & Async Pipe for Ascents
   private readonly loadMore$ = new Subject<void>();
+  private readonly fetchVersion = signal(0);
   protected readonly isLoading = signal(true);
   protected readonly hasMore = signal(true);
   protected readonly ascents = signal<FeedItem[]>([]);
@@ -939,9 +929,5 @@ export class HomeComponent implements OnDestroy {
     if (this.scrollbar()?.nativeElement) {
       this.scrollbar()!.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }
-
-  ngOnDestroy() {
-    this.loadMore$.complete();
   }
 }

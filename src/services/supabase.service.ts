@@ -21,6 +21,7 @@ import { SupabaseNotInitializedError } from '../models';
 import { ENV_SUPABASE_URL } from '../environments/environment';
 import { CacheService } from './cache.service';
 import { LocalStorage } from './local-storage';
+import { SignedUrlCache } from './signed-url-cache';
 import { CACHE_KEYS } from '../constants/cache-keys';
 
 export interface SupabaseConfig {
@@ -48,6 +49,7 @@ export class SupabaseService {
   private readonly router = inject(Router);
   private readonly localStorage = inject(LocalStorage);
   private readonly cache = inject(CacheService);
+  private readonly signedUrlCache = inject(SignedUrlCache);
 
   private _client: SupabaseClient<Database> | null = null;
   private _readyResolve: (() => void) | null = null;
@@ -194,20 +196,15 @@ export class SupabaseService {
     if (!path) return '';
     if (path.startsWith('http')) return path;
 
-    const cacheKey = `topo-url:${path}${version ? `:${version}` : ''}`;
-    const lastValidKey = `topo-last-valid:${path}`;
+    const cacheKey = SignedUrlCache.key(
+      'topo-url',
+      path,
+      version ? String(version) : undefined,
+    );
+    const lastValidKey = SignedUrlCache.key('topo-last-valid', path);
 
-    try {
-      const cached = this.localStorage.getItem(cacheKey);
-      if (cached) {
-        const { url, expiresAt } = JSON.parse(cached);
-        if (Date.now() < expiresAt) {
-          return url;
-        }
-      }
-    } catch (e) {
-      console.warn('[SupabaseService] Error reading cached topo url', e);
-    }
+    const cached = this.signedUrlCache.get(cacheKey);
+    if (cached) return cached.url;
 
     await this.whenReady();
 
@@ -220,21 +217,11 @@ export class SupabaseService {
         '[SupabaseService] getTopoSignedUrl error, trying fallback',
         error,
       );
-      // When offline, serve expired URLs — the NGSW supabase-storage cache
-      // may still have the actual image data even if the signed URL has expired.
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-      const lastValid = this.localStorage.getItem(lastValidKey);
+      const lastValid = this.signedUrlCache.get(lastValidKey);
       if (lastValid) {
-        try {
-          const { url, expiresAt } = JSON.parse(lastValid);
-          if (isOffline || Date.now() < expiresAt) {
-            return url;
-          }
-        } catch (e: unknown) {
-          console.warn(
-            '[SupabaseService] Error parsing last valid topo url cache',
-            e,
-          );
+        if (isOffline || Date.now() < lastValid.expiresAt) {
+          return lastValid.url;
         }
       }
       return '';
@@ -251,14 +238,10 @@ export class SupabaseService {
       }
     }
 
-    try {
-      const expiresAt = Date.now() + 31536000 * 1000 - 86400000; // 1 year - 1 day
-      const cacheData = JSON.stringify({ url: finalUrl, expiresAt });
-      this.localStorage.setItem(cacheKey, cacheData);
-      this.localStorage.setItem(lastValidKey, cacheData);
-    } catch (e) {
-      console.warn('[SupabaseService] Error caching topo url', e);
-    }
+    const expiresAt = Date.now() + 31536000 * 1000 - 86400000;
+    const entry = { url: finalUrl, expiresAt };
+    this.signedUrlCache.set(cacheKey, entry);
+    this.signedUrlCache.set(lastValidKey, entry);
 
     return finalUrl;
   }
@@ -281,20 +264,13 @@ export class SupabaseService {
     if (!path) return '';
     if (path.startsWith('http')) return path;
 
-    const cacheKey = `ascent-url:${path}${
-      options ? ':' + JSON.stringify(options) : ''
-    }`;
-    try {
-      const cached = this.localStorage.getItem(cacheKey);
-      if (cached) {
-        const { url, expiresAt } = JSON.parse(cached);
-        if (Date.now() < expiresAt) {
-          return url;
-        }
-      }
-    } catch (e) {
-      console.warn('[SupabaseService] Error reading cached ascent url', e);
-    }
+    const cacheKey = SignedUrlCache.key(
+      'ascent-url',
+      path,
+      options ? JSON.stringify(options) : undefined,
+    );
+    const cached = this.signedUrlCache.get(cacheKey);
+    if (cached) return cached.url;
 
     await this.whenReady();
 
@@ -308,35 +284,18 @@ export class SupabaseService {
 
     if (error) {
       console.warn('[SupabaseService] getAscentSignedUrl error', error);
-      // When offline, try returning the expired cached URL — the NGSW
-      // supabase-storage cache may still have the image data.
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       if (isOffline) {
-        try {
-          const cached = this.localStorage.getItem(cacheKey);
-          if (cached) {
-            const { url } = JSON.parse(cached);
-            return url;
-          }
-        } catch (e: unknown) {
-          console.warn(
-            '[SupabaseService] Error parsing cached ascent url during offline fallback',
-            e,
-          );
+        const cached = this.signedUrlCache.get(cacheKey);
+        if (cached) {
+          return cached.url;
         }
       }
       return '';
     }
 
-    try {
-      const expiresAt = Date.now() + 3600 * 1000 - 300000; // 1 hour - 5 minutes
-      this.localStorage.setItem(
-        cacheKey,
-        JSON.stringify({ url: data.signedUrl, expiresAt }),
-      );
-    } catch (e) {
-      console.warn('[SupabaseService] Error caching ascent url', e);
-    }
+    const expiresAt = Date.now() + 3600 * 1000 - 300000;
+    this.signedUrlCache.set(cacheKey, { url: data.signedUrl, expiresAt });
 
     return data.signedUrl;
   }
@@ -562,42 +521,5 @@ export class SupabaseService {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-  }
-
-  async checkSlugExists(
-    table: 'routes' | 'crags' | 'areas' | 'indoor_centers',
-    slug: string,
-  ): Promise<boolean> {
-    await this.whenReady();
-    const { count, error } = await this.client
-      .from(table)
-      .select('*', { count: 'exact', head: true })
-      .eq('slug', slug);
-    if (error) return false;
-    return (count ?? 0) > 0;
-  }
-
-  async getUniqueSlug(
-    table: 'routes' | 'crags' | 'areas' | 'indoor_centers',
-    baseSlug: string,
-    fallbackSuffix?: string,
-  ): Promise<string> {
-    let slug = baseSlug;
-    const exists = await this.checkSlugExists(table, slug);
-    if (!exists) return slug;
-
-    if (fallbackSuffix) {
-      slug = `${baseSlug}-${fallbackSuffix}`;
-      const existsFallback = await this.checkSlugExists(table, slug);
-      if (!existsFallback) return slug;
-    }
-
-    let counter = 1;
-    const originalBase = slug;
-    while (await this.checkSlugExists(table, slug)) {
-      slug = `${originalBase}-${counter}`;
-      counter++;
-    }
-    return slug;
   }
 }

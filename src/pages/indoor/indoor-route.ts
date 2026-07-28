@@ -3,10 +3,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   input,
-  OnDestroy,
   PLATFORM_ID,
   resource,
 } from '@angular/core';
@@ -319,7 +319,7 @@ import { AscentCardComponent } from '../../components/ascent/ascent-card';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex grow overflow-auto' },
 })
-export class IndoorRouteComponent implements OnDestroy {
+export class IndoorRouteComponent {
   centerSlug = input.required<string>();
   routeSlug = input.required<string>();
 
@@ -412,6 +412,11 @@ export class IndoorRouteComponent implements OnDestroy {
   });
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      this.global.selectedIndoorCenter.set(null);
+      this.global.selectedIndoorRoute.set(null);
+    });
+
     effect(() => {
       const r = this.route();
       if (r) {
@@ -426,11 +431,6 @@ export class IndoorRouteComponent implements OnDestroy {
         this.global.selectedIndoorRoute.set(null);
       }
     });
-  }
-
-  ngOnDestroy(): void {
-    this.global.selectedIndoorCenter.set(null);
-    this.global.selectedIndoorRoute.set(null);
   }
 
   async onLogAscent(): Promise<void> {

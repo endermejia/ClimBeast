@@ -13,10 +13,12 @@ import { TranslateService } from '@ngx-translate/core';
 import { SupabaseService } from '../services/supabase.service';
 import { GlobalData } from '../services/global-data';
 import { LocalStorage } from '../services/local-storage';
+import { IS_BROWSER } from '../app/is-browser';
 
 export const COMMON_TEST_PROVIDERS: (Provider | EnvironmentProviders)[] = [
   provideRouter([]),
   { provide: PLATFORM_ID, useValue: 'browser' },
+  { provide: IS_BROWSER, useValue: true },
   { provide: TranslateService, useClass: MockTranslateService },
   { provide: SupabaseService, useClass: MockSupabaseService },
   { provide: GlobalData, useClass: MockGlobalData },

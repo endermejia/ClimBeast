@@ -3,11 +3,10 @@ import {
   Component,
   DestroyRef,
   inject,
-  OnInit,
-  PLATFORM_ID,
   signal,
 } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+
+import { IS_BROWSER } from '../../app/is-browser';
 import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
@@ -46,8 +45,8 @@ import { TranslatePipe } from '@ngx-translate/core';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OfflineBannerComponent implements OnInit {
-  private readonly platformId = inject(PLATFORM_ID);
+export class OfflineBannerComponent {
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly isOffline = signal(false);
@@ -56,8 +55,8 @@ export class OfflineBannerComponent implements OnInit {
     this.isOffline.set(false);
   }
 
-  ngOnInit(): void {
-    if (!isPlatformBrowser(this.platformId)) return;
+  constructor() {
+    if (!this.isBrowser) return;
 
     this.isOffline.set(!navigator.onLine);
 

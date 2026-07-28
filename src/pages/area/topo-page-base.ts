@@ -1,10 +1,10 @@
 import {
   computed,
   Directive,
+  DestroyRef,
   effect,
   inject,
   input,
-  OnDestroy,
   signal,
   Signal,
 } from '@angular/core';
@@ -32,7 +32,7 @@ import {
 } from '../../utils/topo-styles.utils';
 
 @Directive()
-export abstract class TopoPageBase implements OnDestroy {
+export abstract class TopoPageBase {
   protected readonly global = inject(GlobalData);
   protected readonly supabase = inject(SupabaseService);
   protected readonly ascentsService = inject(AscentsService);
@@ -116,6 +116,12 @@ export abstract class TopoPageBase implements OnDestroy {
   protected readonly sorter = signal<TuiComparator<TopoRouteRow>>(() => 0);
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      if (this.isIndoor()) {
+        this.global.selectedIndoorCenter.set(null);
+      }
+    });
+
     effect(() => {
       const t = this.topo();
       if (this.isIndoor() && t) {
@@ -146,12 +152,6 @@ export abstract class TopoPageBase implements OnDestroy {
         this.global.selectedTopoId.set(topoId);
       }
     });
-  }
-
-  ngOnDestroy(): void {
-    if (this.isIndoor()) {
-      this.global.selectedIndoorCenter.set(null);
-    }
   }
 
   protected onSortChange(sort: TuiTableSortChange<TopoRouteRow>): void {

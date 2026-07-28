@@ -2,13 +2,13 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   inject,
   input,
   resource,
   signal,
   computed,
   effect,
-  OnDestroy,
   PLATFORM_ID,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -469,7 +469,7 @@ import { IndoorVouchersComponent } from '../../components/indoor/indoor-vouchers
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex grow min-h-0' },
 })
-export class IndoorCenterComponent implements OnDestroy {
+export class IndoorCenterComponent {
   protected readonly mappedAscents = computed(
     () =>
       (this.centerAscentsResource.value() ??
@@ -660,6 +660,10 @@ export class IndoorCenterComponent implements OnDestroy {
   protected readonly stringifyUser = (u: UserProfileBasicDto) => u.name || '';
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      this.global.selectedIndoorCenter.set(null);
+    });
+
     effect(() => {
       const c = this.center();
       this.global.selectedIndoorCenter.set(c);
@@ -684,10 +688,6 @@ export class IndoorCenterComponent implements OnDestroy {
         this.activeTabIndex.set(0);
       }
     });
-  }
-
-  ngOnDestroy(): void {
-    this.global.selectedIndoorCenter.set(null);
   }
 
   async addAdmin(user: UserProfileBasicDto): Promise<void> {

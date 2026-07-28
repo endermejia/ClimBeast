@@ -1,12 +1,7 @@
-import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
-import {
-  inject,
-  Injectable,
-  PLATFORM_ID,
-  signal,
-  WritableSignal,
-} from '@angular/core';
+import { inject, Injectable, signal, WritableSignal } from '@angular/core';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TuiDialogService } from '@taiga-ui/core';
@@ -44,7 +39,7 @@ import { CACHE_KEYS } from '../constants/cache-keys';
 
 @Injectable({ providedIn: 'root' })
 export class AreasService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly global = inject(GlobalData);
   private readonly cache = inject(CacheService);
@@ -142,7 +137,7 @@ export class AreasService {
   async create(
     payload: Omit<AreaInsertDto, 'created_at' | 'id'>,
   ): Promise<AreaDto | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('areas')
@@ -162,7 +157,7 @@ export class AreasService {
     id: number,
     payload: Omit<AreaUpdateDto, 'id' | 'created_at'>,
   ): Promise<AreaDto | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('areas')
@@ -180,7 +175,7 @@ export class AreasService {
   }
 
   async getById(id: number): Promise<{ data: AreaDto | null; error: unknown }> {
-    if (!isPlatformBrowser(this.platformId)) return { data: null, error: null };
+    if (!this.isBrowser) return { data: null, error: null };
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('areas')
@@ -200,7 +195,7 @@ export class AreasService {
   async getAllAreasSimple(): Promise<
     { id: number; name: string; slug: string }[]
   > {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
 
     const cacheKey = CACHE_KEYS.areasSimple;
     return this.cache.fetchOrCache(
@@ -244,7 +239,7 @@ export class AreasService {
     sourceAreaIds: number[],
     newName: string,
   ): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
     this.loading.set(true);
     try {
@@ -270,7 +265,7 @@ export class AreasService {
 
   /** Delete an area by id (client-only). Returns true if deleted. */
   async delete(id: number): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
     const { error } = await this.supabase.client
       .from('areas')
@@ -291,7 +286,7 @@ export class AreasService {
 
   /** Toggle like for an area using Supabase RPC toggle_area_like */
   async toggleAreaLike(areaId: number): Promise<boolean | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     try {
       if (!areaId) {
@@ -335,7 +330,7 @@ export class AreasService {
   }
 
   async syncAreaWith8a(areaId: number): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
 
     const { data: area, error } = await this.getById(areaId);
 
@@ -595,7 +590,7 @@ export class AreasService {
 
   // --- Area Admin Requests ---
   async requestAreaAdmin(areaId: number): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
     const userId = this.global.userProfile()?.id;
     if (!userId) return false;
@@ -634,7 +629,7 @@ export class AreasService {
       user: { id: string; name: string | null };
     }[]
   > {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('area_admin_requests')
@@ -655,7 +650,7 @@ export class AreasService {
     areaId: number,
     userId: string,
   ): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
     this.loading.set(true);
     try {
@@ -686,7 +681,7 @@ export class AreasService {
   }
 
   async rejectAreaAdminRequest(requestId: number): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
     this.loading.set(true);
     try {
@@ -716,7 +711,7 @@ export class AreasService {
     status?: string;
     accounts?: { id: number; name: string; stripe_account_id: string }[];
   } | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     try {
       const { data, error } = await this.supabase.client.functions.invoke(

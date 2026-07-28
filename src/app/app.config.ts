@@ -2,11 +2,13 @@ import { provideServiceWorker } from '@angular/service-worker';
 import {
   ApplicationConfig,
   ErrorHandler,
+  inject,
   isDevMode,
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
-  signal,
+  PLATFORM_ID,
 } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import {
   HttpClient,
   provideHttpClient,
@@ -40,9 +42,11 @@ import { CachedTranslateLoader } from '../services/cached-translate-loader';
 
 import { errorInterceptor } from '../services/error.interceptor';
 import { AppErrorHandler } from '../services/app-error-handler';
-import { GlobalData } from '../services/global-data';
+import { LanguageService } from '../services/language.service';
+import { ThemeService } from '../services/theme.service';
 import { provideSupabaseConfig } from '../services/supabase.service';
 import { SelectivePreloadingStrategy } from './selective-preloading.strategy';
+import { IS_BROWSER } from './is-browser';
 
 import { routes } from './app.routes';
 import {
@@ -59,6 +63,10 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZonelessChangeDetection(),
     { provide: ErrorHandler, useClass: AppErrorHandler },
+    {
+      provide: IS_BROWSER,
+      useFactory: () => isPlatformBrowser(inject(PLATFORM_ID)),
+    },
     provideRouter(
       routes,
       withComponentInputBinding(),
@@ -92,12 +100,13 @@ export const appConfig: ApplicationConfig = {
     },
     {
       provide: TUI_DARK_MODE,
-      useValue: signal(false),
+      useFactory: (theme: ThemeService) => theme.isDark,
+      deps: [ThemeService],
     },
     {
       provide: TUI_LANGUAGE,
-      useFactory: (global: GlobalData) => global.tuiLanguage,
-      deps: [GlobalData],
+      useFactory: (lang: LanguageService) => lang.tuiLanguage,
+      deps: [LanguageService],
     },
     provideSupabaseConfig({
       url: ENV_SUPABASE_URL,

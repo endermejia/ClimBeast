@@ -1,7 +1,5 @@
 import { Routes } from '@angular/router';
 
-import { LandingComponent } from '../pages/marketing/landing';
-
 import { adminGuard, areaAdminGuard } from '../guard/admin.guard';
 import { authGuard } from '../guard/auth.guard';
 import { noAuthGuard } from '../guard/no-auth.guard';
@@ -231,7 +229,8 @@ export const routes: Routes = [
   {
     path: 'info',
     canMatch: [noAuthGuard],
-    component: LandingComponent,
+    loadComponent: () =>
+      import('../pages/marketing/landing').then((m) => m.LandingComponent),
   },
   // SSR fallback routes
   {

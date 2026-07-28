@@ -2,10 +2,10 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  effect,
   inject,
   input,
   signal,
-  OnInit,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -192,7 +192,7 @@ import { scheduleToJson, scheduleFromJson } from '../../models/indoor.model';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class IndoorAdminInfoComponent implements OnInit {
+export class IndoorAdminInfoComponent {
   center = input.required<IndoorCenterDto>();
 
   protected readonly indoor = inject(IndoorService);
@@ -224,48 +224,50 @@ export class IndoorAdminInfoComponent implements OnInit {
     >
   >({});
 
-  ngOnInit() {
-    const c = this.center();
-    this.form.set({
-      name: c.name,
-      city: c.city,
-      description: c.description,
+  constructor() {
+    effect(() => {
+      const c = this.center();
+      this.form.set({
+        name: c.name,
+        city: c.city,
+        description: c.description,
+      });
+
+      const schedule = scheduleFromJson(c.schedule) || {
+        normal: {},
+      };
+      const defaultSchedule = this.weekDays.reduce(
+        (acc, day) => {
+          const s = schedule.normal?.[day] || {
+            closed: true,
+            open: '09:00',
+            close: '21:00',
+          };
+          acc[day] = {
+            closed: !!s.closed,
+            open: s.open || '09:00',
+            close: s.close || '21:00',
+            hasSplit: !!(s.open2 && s.close2),
+            open2: s.open2 || '16:00',
+            close2: s.close2 || '21:00',
+          };
+          return acc;
+        },
+        {} as Record<
+          string,
+          {
+            closed: boolean;
+            open: string;
+            close: string;
+            hasSplit: boolean;
+            open2: string;
+            close2: string;
+          }
+        >,
+      );
+
+      this.scheduleForm.set(defaultSchedule);
     });
-
-    const schedule = scheduleFromJson(c.schedule) || {
-      normal: {},
-    };
-    const defaultSchedule = this.weekDays.reduce(
-      (acc, day) => {
-        const s = schedule.normal?.[day] || {
-          closed: true,
-          open: '09:00',
-          close: '21:00',
-        };
-        acc[day] = {
-          closed: !!s.closed,
-          open: s.open || '09:00',
-          close: s.close || '21:00',
-          hasSplit: !!(s.open2 && s.close2),
-          open2: s.open2 || '16:00',
-          close2: s.close2 || '21:00',
-        };
-        return acc;
-      },
-      {} as Record<
-        string,
-        {
-          closed: boolean;
-          open: string;
-          close: string;
-          hasSplit: boolean;
-          open2: string;
-          close2: string;
-        }
-      >,
-    );
-
-    this.scheduleForm.set(defaultSchedule);
   }
 
   protected onClosedChange(day: string, closed: boolean): void {

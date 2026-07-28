@@ -45,6 +45,7 @@ import { IndoorService } from '../../services/indoor.service';
 import { GlobalData } from '../../services/global-data';
 import { ToastService } from '../../services/toast.service';
 import { SupabaseService } from '../../services/supabase.service';
+import { SlugService } from '../../services/slug.service';
 import { MapService } from '../../services/map.service';
 import {
   handleErrorToast,
@@ -594,6 +595,7 @@ export class IndoorCenterFormComponent {
   protected readonly global = inject(GlobalData);
   private readonly location = inject(Location);
   protected readonly supabase = inject(SupabaseService);
+  private readonly slugService = inject(SlugService);
   private readonly toast = inject(ToastService);
   protected readonly mapService = inject(MapService);
 
@@ -804,7 +806,7 @@ export class IndoorCenterFormComponent {
       if (!name) return;
 
       const baseSlug = slugify(name);
-      const uniqueSlug = await this.supabase.getUniqueSlug(
+      const uniqueSlug = await this.slugService.getUniqueSlug(
         'indoor_centers',
         baseSlug,
       );

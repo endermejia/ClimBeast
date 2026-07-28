@@ -1,4 +1,4 @@
-import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { DOCUMENT } from '@angular/common';
 import { Meta } from '@angular/platform-browser';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
@@ -11,8 +11,9 @@ import {
   effect,
   inject,
   OnDestroy,
-  PLATFORM_ID,
 } from '@angular/core';
+
+import { IS_BROWSER } from './is-browser';
 
 import { TuiRoot } from '@taiga-ui/core';
 
@@ -82,7 +83,7 @@ export class AppComponent implements OnDestroy {
   private translate = inject(TranslateService);
   private storage = inject(LocalStorage);
   private readonly notifications = inject(NotificationService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly doc = inject(DOCUMENT);
   private readonly seo = inject(SeoService);
   private readonly swUpdate = inject(SwUpdate);
@@ -101,17 +102,14 @@ export class AppComponent implements OnDestroy {
 
   constructor() {
     effect(() => {
-      if (
-        isPlatformBrowser(this.platformId) &&
-        this.storage.getItem(this.gdprKey) !== 'true'
-      ) {
+      if (this.isBrowser && this.storage.getItem(this.gdprKey) !== 'true') {
         this.notifications.showGdpr();
       }
     });
 
     afterNextRender(() => {
       if (
-        isPlatformBrowser(this.platformId) &&
+        this.isBrowser &&
         this.storage.getItem('lw_update_applied') === 'true'
       ) {
         this.storage.removeItem('lw_update_applied');
@@ -127,13 +125,13 @@ export class AppComponent implements OnDestroy {
 
     effect(() => {
       const theme = this.global.selectedTheme();
-      if (isPlatformBrowser(this.platformId)) {
+      if (this.isBrowser) {
         const color = theme === Themes.DARK ? '#0b1220' : '#ffffff';
         this.meta.updateTag({ name: 'theme-color', content: color });
       }
     });
 
-    if (isPlatformBrowser(this.platformId) && this.swUpdate.isEnabled) {
+    if (this.isBrowser && this.swUpdate.isEnabled) {
       // Check for updates on navigation
       this.router.events
         .pipe(
