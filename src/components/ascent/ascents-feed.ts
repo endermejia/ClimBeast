@@ -20,6 +20,7 @@ import {
 
 export interface ProcessedFeedItem {
   item: FeedItem;
+  trackKey: string;
   index: number;
   showRowBreak: boolean;
   showGradeHeader: boolean;
@@ -43,10 +44,7 @@ export interface ProcessedFeedItem {
       [class.md:grid-cols-2]="columns() >= 2"
       [class.lg:grid-cols-3]="columns() >= 3"
     >
-      @for (
-        processed of processedItems();
-        track processed.item.id || processed.index
-      ) {
+      @for (processed of processedItems(); track processed.trackKey) {
         @if (processed.showRowBreak) {
           <div
             [class.md:col-span-2]="columns() >= 2"
@@ -152,6 +150,11 @@ export class AscentsFeedComponent {
     const followed = this.followedIds();
 
     return list.map((item, index) => {
+      const trackKey =
+        item.kind === 'news'
+          ? `news-${item.id || item.link}`
+          : `ascent-${item.id}`;
+
       let showRowBreak = false;
       let showGradeHeader = false;
       let isFollowed = false;
@@ -193,6 +196,7 @@ export class AscentsFeedComponent {
 
       return {
         item,
+        trackKey,
         index,
         showRowBreak,
         showGradeHeader,

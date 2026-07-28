@@ -66,6 +66,20 @@ import {
   RouteAscentWithExtras,
   UserProfileBasicDto,
 } from '../../models';
+
+function deduplicateFeedItems(items: FeedItem[]): FeedItem[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key =
+      item.kind === 'news'
+        ? `news-${item.id || item.link}`
+        : `ascent-${item.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 import { IndoorAscentRaw } from '../../models/indoor.model';
 import {
   ActiveCrag,
@@ -437,7 +451,10 @@ export class HomeComponent {
     const version = this.fetchVersion();
     const filter = this.feedFilter();
     const showIndoor = this.global.feedShowIndoorAscents();
-    const page = Math.floor(this.ascents().length / 10);
+    const ascentCount = this.ascents().filter(
+      (i) => i.kind === 'ascent',
+    ).length;
+    const page = Math.floor(ascentCount / 10);
 
     const promises: Promise<(RouteAscentWithExtras & { kind: 'ascent' })[]>[] =
       [this.fetchAscents(page, filter)];
@@ -447,11 +464,9 @@ export class HomeComponent {
     const results = await Promise.all(promises);
     if (this.fetchVersion() !== version) return;
 
-    const ascents = results.flat().sort((a, b) => {
-      const dateA = a.date ? new Date(a.date).getTime() : 0;
-      const dateB = b.date ? new Date(b.date).getTime() : 0;
-      return dateB - dateA;
-    });
+    const ascents = results.flat();
+    let newItems: FeedItem[] = ascents;
+
     if (filter === 'all') {
       const beforeDate =
         page > 0
@@ -463,29 +478,19 @@ export class HomeComponent {
             })()
           : undefined;
       const news = await this.desnivelService.getLatestPosts(5, beforeDate);
-      const all = [...ascents, ...news].sort((a, b) => {
+      newItems = [...ascents, ...news];
+    }
+
+    if (this.fetchVersion() !== version) return;
+
+    this.ascents.update((current) => {
+      const merged = deduplicateFeedItems([...current, ...newItems]);
+      return merged.sort((a, b) => {
         const dateA = a.date ? new Date(a.date).getTime() : 0;
         const dateB = b.date ? new Date(b.date).getTime() : 0;
         return dateB - dateA;
       });
-      this.ascents.update((current) => {
-        const merged = [...current, ...all];
-        return merged.sort((a, b) => {
-          const dateA = a.date ? new Date(a.date).getTime() : 0;
-          const dateB = b.date ? new Date(b.date).getTime() : 0;
-          return dateB - dateA;
-        });
-      });
-    } else {
-      this.ascents.update((current) => {
-        const merged = [...current, ...ascents];
-        return merged.sort((a, b) => {
-          const dateA = a.date ? new Date(a.date).getTime() : 0;
-          const dateB = b.date ? new Date(b.date).getTime() : 0;
-          return dateB - dateA;
-        });
-      });
-    }
+    });
     this.isLoading.set(false);
   }
 
