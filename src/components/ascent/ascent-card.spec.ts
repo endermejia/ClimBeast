@@ -111,7 +111,8 @@ describe('AscentCardComponent', () => {
       providers: [
         provideRouter([]),
         { provide: PLATFORM_ID, useValue: 'browser' },
-        { provide: GlobalData, useClass: MockGlobalData },
+        MockGlobalData,
+        { provide: GlobalData, useExisting: MockGlobalData },
         { provide: SupabaseService, useClass: MockSupabaseService },
         { provide: AscentsService, useValue: mockAscentsService },
         {
@@ -161,7 +162,7 @@ describe('AscentCardComponent', () => {
 
   describe('computed properties', () => {
     it('isOwnAscent returns true when user_id matches current profile', async () => {
-      const mockGlobal = TestBed.inject(GlobalData) as MockGlobalData;
+      const mockGlobal = TestBed.inject(MockGlobalData);
       mockGlobal.userProfile.set({
         id: 'user-1',
         name: 'Alice',
@@ -177,7 +178,7 @@ describe('AscentCardComponent', () => {
     });
 
     it('isOwnAscent returns false for different user', async () => {
-      const mockGlobal = TestBed.inject(GlobalData) as MockGlobalData;
+      const mockGlobal = TestBed.inject(MockGlobalData);
       mockGlobal.userProfile.set({
         id: 'other-user',
         name: 'Other',

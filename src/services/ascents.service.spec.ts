@@ -65,7 +65,8 @@ describe('AscentsService', () => {
         AscentsService,
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: SupabaseService, useValue: mockSupabase },
-        { provide: GlobalData, useClass: MockGlobalData },
+        MockGlobalData,
+        { provide: GlobalData, useExisting: MockGlobalData },
         { provide: ToastService, useValue: mockToast },
         { provide: AppNotificationsService, useValue: mockNotifications },
         { provide: 'TuiDialogService', useValue: createMockDialogs() },
@@ -198,9 +199,7 @@ describe('AscentsService', () => {
 
   describe('refreshResources', () => {
     it('calls reload on global resources', () => {
-      const mockGlobal = TestBed.inject(
-        GlobalData,
-      ) as unknown as MockGlobalData;
+      const mockGlobal = TestBed.inject(MockGlobalData);
       const reloadFns = {
         userAscentsResource: vi.fn(),
         routeAscentsResource: vi.fn(),

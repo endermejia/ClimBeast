@@ -7,6 +7,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import {
   Component,
   DestroyRef,
+  afterNextRender,
   effect,
   inject,
   OnDestroy,
@@ -108,7 +109,7 @@ export class AppComponent implements OnDestroy {
       }
     });
 
-    effect(() => {
+    afterNextRender(() => {
       if (
         isPlatformBrowser(this.platformId) &&
         this.storage.getItem('lw_update_applied') === 'true'
