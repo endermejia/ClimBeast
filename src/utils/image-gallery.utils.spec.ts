@@ -20,7 +20,10 @@ describe('fileToDataUrl', () => {
     const file = new File([''], 'bad.png', { type: 'image/png' });
     vi.spyOn(FileReader.prototype, 'readAsDataURL').mockImplementation(
       function (this: FileReader) {
-        setTimeout(() => this.onerror?.(new ProgressEvent('error')), 0);
+        setTimeout(
+          () => (this.onerror as EventListener)?.(new ProgressEvent('error')),
+          0,
+        );
         return undefined as unknown as void;
       },
     );

@@ -4,11 +4,7 @@ import {
   gradeToVerticalLife,
   computeGradeChartData,
 } from './grade-chart';
-import {
-  VERTICAL_LIFE_GRADES,
-  PROJECT_GRADE_LABEL,
-  ORDERED_GRADE_VALUES,
-} from '../models';
+import { VERTICAL_LIFE_GRADES } from '../models';
 
 describe('gradeToNumber', () => {
   it('should convert grade label to number', () => {

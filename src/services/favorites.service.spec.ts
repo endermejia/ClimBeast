@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
 
@@ -29,7 +29,7 @@ function createMockSupabase() {
     ];
 
     for (const method of methods) {
-      chain[method] = vi.fn((...args: unknown[]) => {
+      chain[method] = vi.fn((..._args: unknown[]) => {
         if (method === 'insert' || method === 'upsert') {
           return {
             select: () => ({
@@ -56,14 +56,14 @@ function createMockSupabase() {
     }
 
     // Make chain thenable
-    chain.then = (resolve: (v: { data: unknown; error: null }) => void) =>
+    chain['then'] = (resolve: (v: { data: unknown; error: null }) => void) =>
       resolve({ data: [], error: null });
 
     lastChain = chain;
     return chain;
   };
 
-  mock.client = {
+  (mock as unknown as { client: Record<string, unknown> }).client = {
     from: vi.fn(() => chainable()),
     rpc: vi.fn(() => ({
       in: () => Promise.resolve({ data: [], error: null }),
@@ -131,7 +131,11 @@ describe('FavoritesService', () => {
         ),
       }));
 
-      mockWithRpcError.client = {
+      (
+        mockWithRpcError as unknown as {
+          client: typeof mockWithRpcError.client;
+        }
+      ).client = {
         ...mockWithRpcError.client,
         from: fromMock,
         rpc: rpcMock,

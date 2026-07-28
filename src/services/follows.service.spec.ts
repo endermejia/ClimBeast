@@ -17,46 +17,6 @@ function createMockToast() {
   };
 }
 
-function createClientChain(
-  data: unknown,
-  error: unknown = null,
-  count?: number,
-) {
-  const chain: Record<string, unknown> = {};
-  for (const method of [
-    'select',
-    'eq',
-    'in',
-    'ilike',
-    'order',
-    'range',
-    'limit',
-    'insert',
-    'delete',
-    'update',
-    'upsert',
-  ]) {
-    chain[method] = vi.fn((..._args: unknown[]) => {
-      if (method === 'insert')
-        return {
-          then: (resolve: (v: { error: unknown }) => void) =>
-            resolve({ error }),
-        };
-      if (method === 'delete')
-        return { eq: () => ({ eq: () => Promise.resolve({ data, error }) }) };
-      return chain;
-    });
-  }
-  chain.then = (
-    resolve: (v: {
-      data: unknown;
-      error: unknown;
-      count: number | null;
-    }) => void,
-  ) => resolve({ data, error, count: count ?? 0 });
-  return chain;
-}
-
 describe('FollowsService', () => {
   let service: FollowsService;
   let mockSupabase: MockSupabaseService;
@@ -212,7 +172,7 @@ describe('FollowsService', () => {
         ]) {
           chain[method] = vi.fn(() => chain);
         }
-        chain.then = (
+        chain['then'] = (
           resolve: (v: { data: unknown[]; error: null; count: number }) => void,
         ) => resolve({ data: [], error: null, count: 0 });
         return chain;
@@ -239,7 +199,7 @@ describe('FollowsService', () => {
         ]) {
           chain[method] = vi.fn(() => chain);
         }
-        chain.then = (
+        chain['then'] = (
           resolve: (v: { data: unknown[]; error: null; count: number }) => void,
         ) => resolve({ data: [], error: null, count: 0 });
         return chain;

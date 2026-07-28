@@ -137,7 +137,13 @@ describe('RoutesService', () => {
       });
       const svc = TestBed.inject(RoutesService);
       expect(
-        await svc.create({ name: 'test', crag_id: 1, slug: 'test' }),
+        await svc.create({
+          name: 'test',
+          crag_id: 1,
+          slug: 'test',
+          grade: 1,
+          climbing_kind: 'sport',
+        }),
       ).toBeNull();
     });
   });

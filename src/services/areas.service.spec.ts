@@ -110,7 +110,7 @@ describe('AreasService', () => {
         ],
       });
       const svc = TestBed.inject(AreasService);
-      expect(await svc.create({ name: 'test' })).toBeNull();
+      expect(await svc.create({ name: 'test', slug: 'test' })).toBeNull();
     });
   });
 

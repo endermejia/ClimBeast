@@ -3,7 +3,6 @@ import {
   getScore,
   getMaxGrade,
   calculateAscentTypeDistribution,
-  calculateGradeDistribution,
   calculatePeriodScore,
   filterAscentsByDate,
 } from './stats.utils';

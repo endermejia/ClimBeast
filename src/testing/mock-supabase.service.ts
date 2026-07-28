@@ -148,7 +148,7 @@ export class MockSupabaseService {
   async getTopoSignedUrl(path: string | null | undefined): Promise<string> {
     return path ? `https://mock.url/signed/${path}` : '';
   }
-  async getUserProfile(userId: string): Promise<UserProfileDto | null> {
+  async getUserProfile(_userId: string): Promise<UserProfileDto | null> {
     return this._userProfile();
   }
 }

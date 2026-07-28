@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { DomSanitizer } from '@angular/platform-browser';
 
 import { ShadeInfoPipe } from './shade-info.pipe';
 import { MapGetPipe } from './map-get.pipe';
@@ -16,9 +15,7 @@ import { MentionLinkPipe } from './mention-link.pipe';
 import { TopoImagePipe } from './topo-image.pipe';
 
 import { COMMON_TEST_PROVIDERS } from '../testing';
-import { SupabaseService } from '../services/supabase.service';
 import { GlobalData } from '../services/global-data';
-import { MockSupabaseService } from '../testing/mock-supabase.service';
 import { MockGlobalData } from '../testing/mock-global-data.service';
 
 describe('ShadeInfoPipe', () => {

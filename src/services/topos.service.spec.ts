@@ -25,7 +25,6 @@ function createMockToast() {
 }
 
 describe('ToposService', () => {
-  let service: ToposService;
   let mockSupabase: MockSupabaseService;
   let mockToast: ReturnType<typeof createMockToast>;
 
@@ -53,7 +52,6 @@ describe('ToposService', () => {
         { provide: TranslateStore, useValue: {} },
       ],
     });
-    service = TestBed.inject(ToposService);
   });
 
   describe('create', () => {
@@ -136,7 +134,7 @@ describe('ToposService', () => {
       const svc = TestBed.inject(ToposService);
       // Should not throw
       await expect(
-        svc.addRoute({ topo_id: 1, route_id: 1 }),
+        svc.addRoute({ topo_id: 1, route_id: 1, number: 1 }),
       ).resolves.toBeUndefined();
     });
   });

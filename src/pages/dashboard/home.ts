@@ -816,6 +816,7 @@ export class HomeComponent implements OnDestroy {
         }
         return {
           ...ascentRest,
+          user_id,
           kind: 'ascent' as const,
           user: profileMap.get(user_id) ?? undefined,
           route: mappedRoute,

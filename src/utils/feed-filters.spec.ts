@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   shouldProceedWithFilter,
   applyCategoryFilter,
   applyGradeFilter,
 } from './feed-filters';
-import { ORDERED_GRADE_VALUES, LABEL_TO_VERTICAL_LIFE } from '../models';
+import { ORDERED_GRADE_VALUES } from '../models';
 
 const mockFilterOptions = {
   filter: 'all',

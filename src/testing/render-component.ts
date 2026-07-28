@@ -1,5 +1,5 @@
-import { TestBed, ComponentFixture, Type } from '@angular/core/testing';
-import { Provider } from '@angular/core';
+import { TestBed, ComponentFixture } from '@angular/core/testing';
+import { Provider, Type } from '@angular/core';
 
 import { COMMON_TEST_PROVIDERS } from './test-providers';
 
@@ -22,8 +22,8 @@ export async function renderComponent<C>(
     providers: [...COMMON_TEST_PROVIDERS, ...(options.providers || [])],
   }).compileComponents();
 
-  const fixture = TestBed.createComponent(component);
-  const componentInstance = fixture.componentInstance;
+  const fixture: ComponentFixture<C> = TestBed.createComponent(component);
+  const componentInstance: C = fixture.componentInstance;
 
   if (options.inputs) {
     for (const [key, value] of Object.entries(options.inputs)) {

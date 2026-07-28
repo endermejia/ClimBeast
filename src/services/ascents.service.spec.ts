@@ -198,7 +198,9 @@ describe('AscentsService', () => {
 
   describe('refreshResources', () => {
     it('calls reload on global resources', () => {
-      const mockGlobal = TestBed.inject(GlobalData) as MockGlobalData;
+      const mockGlobal = TestBed.inject(
+        GlobalData,
+      ) as unknown as MockGlobalData;
       const reloadFns = {
         userAscentsResource: vi.fn(),
         routeAscentsResource: vi.fn(),

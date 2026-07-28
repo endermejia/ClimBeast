@@ -7,10 +7,17 @@ import {
   isNewsItem,
   isAscentItem,
 } from './ascents.utils';
+import type { RouteAscentWithExtras } from '../models';
+
+type TestAscent = {
+  date: string | null;
+  route?: { name?: string };
+  is_duplicate?: boolean;
+};
 
 describe('markDuplicateAscents', () => {
   it('marks no duplicates for unique ascents', () => {
-    const ascents = [
+    const ascents: TestAscent[] = [
       { date: '2024-01-01', route: { name: 'Route A' } },
       { date: '2024-01-01', route: { name: 'Route B' } },
     ];
@@ -20,7 +27,7 @@ describe('markDuplicateAscents', () => {
   });
 
   it('marks duplicate ascents on same date and normalized name', () => {
-    const ascents = [
+    const ascents: TestAscent[] = [
       { date: '2024-01-01', route: { name: 'Route A' } },
       { date: '2024-01-01', route: { name: 'Route A' } },
     ];
@@ -30,7 +37,7 @@ describe('markDuplicateAscents', () => {
   });
 
   it('does not mark duplicates on different dates', () => {
-    const ascents = [
+    const ascents: TestAscent[] = [
       { date: '2024-01-01', route: { name: 'Route A' } },
       { date: '2024-01-02', route: { name: 'Route A' } },
     ];
@@ -44,7 +51,7 @@ describe('markDuplicateAscents', () => {
   });
 
   it('handles ascents with undefined route name', () => {
-    const ascents = [
+    const ascents: TestAscent[] = [
       { date: '2024-01-01', route: undefined },
       { date: '2024-01-01', route: undefined },
     ];
@@ -54,7 +61,7 @@ describe('markDuplicateAscents', () => {
   });
 
   it('handles ascents with null date', () => {
-    const ascents = [
+    const ascents: TestAscent[] = [
       { date: null, route: { name: 'A' } },
       { date: null, route: { name: 'A' } },
     ];
@@ -64,7 +71,7 @@ describe('markDuplicateAscents', () => {
   });
 
   it('handles empty route name', () => {
-    const ascents = [
+    const ascents: TestAscent[] = [
       { date: '2024-01-01', route: { name: '' } },
       { date: '2024-01-01', route: { name: '' } },
     ];
@@ -97,7 +104,6 @@ describe('getAscentDateFilterOptions', () => {
     const result = getAscentDateFilterOptions(2018);
     expect(result).toContain('2020');
     expect(result).toContain('2024');
-    // Math.min(2020, 2018) = 2018, so years go from 2024 to 2018
     expect(result).toContain('2018');
   });
 
@@ -108,15 +114,14 @@ describe('getAscentDateFilterOptions', () => {
     const result = getAscentDateFilterOptions(2022);
     expect(result).toContain('2024');
     expect(result).toContain('2022');
-    // Math.min(2020, 2022) = 2020, so years go from 2024 to 2020
     expect(result).toContain('2020');
   });
 });
 
 describe('processAscentsToFeed', () => {
   it('wraps ascents with kind: ascent', () => {
-    const ascents = [{ id: 1, date: '2024-01-01' }] as never[];
-    const result = processAscentsToFeed(ascents as never[], false);
+    const ascents = [{ id: 1, date: '2024-01-01' }] as RouteAscentWithExtras[];
+    const result = processAscentsToFeed(ascents, false);
     expect(result).toHaveLength(1);
     expect(result[0]).toHaveProperty('kind', 'ascent');
   });
@@ -125,8 +130,10 @@ describe('processAscentsToFeed', () => {
     const ascents = [
       { date: '2024-01-01', route: { name: 'A' } },
       { date: '2024-01-01', route: { name: 'A' } },
-    ] as never[];
-    const result = processAscentsToFeed(ascents as never[]);
+    ] as RouteAscentWithExtras[];
+    const result = processAscentsToFeed(ascents) as (RouteAscentWithExtras & {
+      kind: 'ascent';
+    })[];
     expect(result[0].is_duplicate).toBe(false);
     expect(result[1].is_duplicate).toBe(true);
   });
@@ -135,8 +142,11 @@ describe('processAscentsToFeed', () => {
     const ascents = [
       { date: '2024-01-01', route: { name: 'A' } },
       { date: '2024-01-01', route: { name: 'A' } },
-    ] as never[];
-    const result = processAscentsToFeed(ascents as never[], false);
+    ] as RouteAscentWithExtras[];
+    const result = processAscentsToFeed(
+      ascents,
+      false,
+    ) as (RouteAscentWithExtras & { kind: 'ascent' })[];
     expect(result[0].is_duplicate).toBeUndefined();
     expect(result[1].is_duplicate).toBeUndefined();
   });

@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { signal } from '@angular/core';
 
 import { ThemeService } from './theme.service';
 import { SupabaseService } from './supabase.service';

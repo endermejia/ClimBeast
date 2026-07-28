@@ -1,4 +1,4 @@
-import { Provider, PLATFORM_ID } from '@angular/core';
+import { Provider, EnvironmentProviders, PLATFORM_ID } from '@angular/core';
 import { provideRouter } from '@angular/router';
 
 import {
@@ -14,7 +14,7 @@ import { SupabaseService } from '../services/supabase.service';
 import { GlobalData } from '../services/global-data';
 import { LocalStorage } from '../services/local-storage';
 
-export const COMMON_TEST_PROVIDERS: Provider[] = [
+export const COMMON_TEST_PROVIDERS: (Provider | EnvironmentProviders)[] = [
   provideRouter([]),
   { provide: PLATFORM_ID, useValue: 'browser' },
   { provide: TranslateService, useClass: MockTranslateService },
