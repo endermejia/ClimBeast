@@ -1,6 +1,5 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   ChangeDetectionStrategy,
@@ -18,18 +17,7 @@ import {
   untracked,
 } from '@angular/core';
 
-import {
-  TuiAppearance,
-  TuiButton,
-  TuiDataList,
-  TuiDialogService,
-  TuiScrollbar,
-} from '@taiga-ui/core';
-import {
-  TuiBadgeNotification,
-  TuiBadgedContent,
-  TuiSkeleton,
-} from '@taiga-ui/kit';
+import { TuiDataList, TuiDialogService, TuiScrollbar } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
@@ -47,7 +35,6 @@ import { CartService } from '../../services/cart.service';
 import { CACHE_KEYS } from '../../constants/cache-keys';
 
 import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
-import { DropdownButtonComponent } from '../../components/ui/dropdown-button';
 import { NotificationsDialogComponent } from '../../components/dialogs/notifications-dialog';
 import {
   ChatDialogComponent,
@@ -60,6 +47,7 @@ import {
 
 import {
   FeedItem,
+  NewsItem,
   ORDERED_GRADE_VALUES,
   RouteAscentFeedItem,
   RouteAscentRaw,
@@ -94,207 +82,111 @@ import {
   FeedFilterOptions,
 } from '../../utils/feed-filters';
 
+import { HomeCragsRowComponent } from '../../components/dashboard/home-crags-row';
+import { HomeFilterBarComponent } from '../../components/dashboard/home-filter-bar';
+import { HomeNewsGridComponent } from '../../components/dashboard/home-news-grid';
+import { HomeNewsSidebarComponent } from '../../components/dashboard/home-news-sidebar';
+
 export type HomeFeedFilter =
   | 'following'
   | 'all'
+  | 'news'
   | 'favorite_areas'
   | 'favorite_crags'
   | 'favorite_routes';
 
 @Component({
   selector: 'app-home',
+  standalone: true,
   imports: [
     AscentsFeedComponent,
     CommonModule,
-    DropdownButtonComponent,
-    FormsModule,
-    ReactiveFormsModule,
-    RouterLink,
+    HomeCragsRowComponent,
+    HomeFilterBarComponent,
+    HomeNewsGridComponent,
+    HomeNewsSidebarComponent,
     TranslatePipe,
-    TuiAppearance,
-    TuiBadgedContent,
-    TuiBadgeNotification,
-    TuiButton,
     TuiDataList,
     TuiScrollbar,
-    TuiSkeleton,
   ],
   template: `
-    <tui-scrollbar class="h-full">
-      <div class="flex flex-col gap-4 max-w-5xl mx-auto w-full pb-32 pt-2">
-        <div class="px-4 flex flex-col gap-4 relative">
-          <!-- Filter Segmented -->
-          <div class="flex justify-between items-center gap-2">
-            <!-- Left Side: Select and Filter -->
-            <div class="flex items-center gap-2">
-              @if (!followsLoaded()) {
-                <div
-                  [tuiSkeleton]="true"
-                  class="w-32 h-10 rounded-full opacity-60"
-                ></div>
-                <div
-                  [tuiSkeleton]="true"
-                  class="w-10 h-10 rounded-full opacity-60"
-                ></div>
-              } @else {
-                @if (
-                  followedIds().size > 0 ||
-                  global.likedAreaIds().length > 0 ||
-                  global.likedCragIds().length > 0 ||
-                  global.likedRouteIds().length > 0
-                ) {
-                  <app-dropdown-button
-                    appearance="flat-grayscale"
-                    size="xl"
-                    [content]="feedFilterDropdown"
-                    [(open)]="dropdownOpen"
-                  >
-                    {{ filterLabels[feedFilter()] | translate }}
-                  </app-dropdown-button>
-                }
-                <tui-badged-content [style.--tui-radius.%]="50">
-                  @if (hasActiveFilters()) {
-                    <tui-badge-notification
-                      tuiAppearance="accent"
-                      size="s"
-                      tuiSlot="top"
-                    />
-                  }
-                  <button
-                    tuiIconButton
-                    size="m"
-                    appearance="action-grayscale"
-                    iconStart="@tui.sliders-horizontal"
-                    (click.zoneless)="openFilters()"
-                    [attr.aria-label]="'filters' | translate"
-                    title="Filters"
-                  >
-                    <span class="tui-sr-only">{{ 'filters' | translate }}</span>
-                  </button>
-                </tui-badged-content>
-              }
-            </div>
+    <div class="flex w-full max-w-[1600px] mx-auto h-full overflow-hidden">
+      <!-- Main Content Area (Header + Ascents Feed) -->
+      <tui-scrollbar class="flex-1 min-w-0 h-full">
+        <div class="flex flex-col pb-32 px-4 sm:px-6 lg:px-8">
+          <!-- Unified Sticky Header: Filter + Crags -->
+          <div
+            class="xl:sticky xl:top-0 z-20 bg-(--tui-background-base) flex flex-col -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
+          >
+            <!-- Filter Bar -->
+            <app-home-filter-bar
+              [followsLoaded]="followsLoaded()"
+              [showFilterDropdown]="
+                followedIds().size > 0 ||
+                global.likedAreaIds().length > 0 ||
+                global.likedCragIds().length > 0 ||
+                global.likedRouteIds().length > 0
+              "
+              [feedFilterDropdown]="feedFilterDropdown"
+              [feedFilter]="feedFilter()"
+              [filterLabels]="filterLabels"
+              [(dropdownOpen)]="dropdownOpen"
+              [hasActiveFilters]="hasActiveFilters()"
+              [isAdmin]="global.isAdmin()"
+              [cartTotalItems]="cart.totalItems()"
+              [unreadNotificationsCount]="global.unreadNotificationsCount()"
+              (openFilters)="openFilters()"
+              (openNotifications)="openNotifications()"
+            />
 
-            @if (!followsLoaded()) {
-              <div
-                [tuiSkeleton]="true"
-                class="w-10 h-10 rounded-full opacity-60 mt-1"
-              ></div>
-            } @else {
-              <div class="flex items-center gap-2">
-                @if (global.isAdmin()) {
-                  <tui-badged-content [style.--tui-radius.%]="50">
-                    @if (cart.totalItems(); as totalItems) {
-                      <tui-badge-notification
-                        tuiAppearance="accent"
-                        size="s"
-                        tuiSlot="top"
-                      >
-                        {{ totalItems }}
-                      </tui-badge-notification>
-                    }
-                    <button
-                      tuiIconButton
-                      size="m"
-                      appearance="action-grayscale"
-                      iconStart="@tui.shopping-bag"
-                      [routerLink]="['/merchandising']"
-                      [attr.aria-label]="'nav.merchandising' | translate"
-                      title="Shop"
-                    >
-                      <span class="tui-sr-only">{{
-                        'nav.merchandising' | translate
-                      }}</span>
-                    </button>
-                  </tui-badged-content>
-                }
-                <tui-badged-content [style.--tui-radius.%]="50">
-                  @if (
-                    global.unreadNotificationsCount();
-                    as unreadNotifications
-                  ) {
-                    <tui-badge-notification
-                      tuiAppearance="accent"
-                      size="s"
-                      tuiSlot="top"
-                    >
-                      {{ unreadNotifications }}
-                    </tui-badge-notification>
-                  }
-                  <button
-                    tuiIconButton
-                    size="m"
-                    appearance="action-grayscale"
-                    iconStart="@tui.heart"
-                    (click.zoneless)="openNotifications()"
-                    [attr.aria-label]="'notifications' | translate"
-                    title="Notifications"
-                  >
-                    <span class="tui-sr-only">{{
-                      'notifications' | translate
-                    }}</span>
-                  </button>
-                </tui-badged-content>
-              </div>
+            <!-- Crags Row (when not in news mode) -->
+            @if (feedFilter() !== 'news') {
+              <app-home-crags-row
+                [followsLoaded]="followsLoaded()"
+                [isLoading]="activeCragsResource.isLoading()"
+                [crags]="activeCrags()"
+              />
             }
           </div>
-          <!-- Crags -->
-          @if (!followsLoaded() || activeCragsResource.isLoading()) {
-            <div class="flex flex-col gap-2 mt-2">
-              <div
-                [tuiSkeleton]="true"
-                class="w-24 h-4 rounded-full opacity-40 ml-1"
-              ></div>
-              <div
-                class="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"
-              >
-                @for (_ of [1, 2, 3, 4, 5, 6]; track $index) {
-                  <div
-                    [tuiSkeleton]="true"
-                    class="flex-none w-28 h-11 rounded-2xl opacity-30"
-                  ></div>
-                }
-              </div>
-            </div>
-          } @else if (activeCrags(); as crags) {
-            @if (crags.length > 0) {
-              <div class="flex flex-col gap-2 mt-2">
-                <span class="text-xs font-bold opacity-60 uppercase px-1">
-                  {{ 'crags' | translate }}
-                </span>
-                <div
-                  class="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"
-                >
-                  @for (c of crags; track c.id) {
-                    <a
-                      [routerLink]="['/area', c.area_slug, c.slug]"
-                      tuiAppearance="textfield"
-                      class="flex-none p-3 rounded-2xl"
-                    >
-                      <span class="whitespace-nowrap font-bold text-sm">{{
-                        c.name
-                      }}</span>
-                    </a>
-                  }
-                </div>
-              </div>
-            }
-          }
 
-          <!-- Ascents Feed -->
-          <app-ascents-feed
-            [ascents]="ascents()"
-            [isLoading]="isLoading()"
-            [hasMore]="hasMore()"
-            [followedIds]="followedIds()"
-            [columns]="2"
-            (loadMore)="loadMore()"
-            (follow)="onFollow($event)"
-            (unfollow)="onUnfollow($event)"
-          />
+          <!-- Main Content (Feed or News) -->
+          <main class="flex flex-col gap-4 min-w-0 mt-4">
+            @if (feedFilter() === 'news') {
+              <app-home-news-grid
+                [newsLoading]="newsLoading()"
+                [newsItems]="newsItems()"
+                [newsHasMore]="newsHasMore()"
+                [newsLoadingMore]="newsLoadingMore()"
+                (loadMoreNews)="loadMoreNews()"
+              />
+            } @else {
+              <!-- Ascents Feed -->
+              <app-ascents-feed
+                [ascents]="ascents()"
+                [isLoading]="isLoading()"
+                [hasMore]="hasMore()"
+                [followedIds]="followedIds()"
+                [columns]="2"
+                (loadMore)="loadMore()"
+                (follow)="onFollow($event)"
+                (unfollow)="onUnfollow($event)"
+              />
+            }
+          </main>
         </div>
-      </div>
-    </tui-scrollbar>
+      </tui-scrollbar>
+
+      <!-- Right Sidebar (News) - Completely OUTSIDE the main scrollbar -->
+      @if (feedFilter() !== 'news') {
+        <app-home-news-sidebar
+          [newsLoading]="newsLoading()"
+          [newsItems]="newsItems()"
+          [newsHasMore]="newsHasMore()"
+          [newsLoadingMore]="newsLoadingMore()"
+          (loadMoreNews)="loadMoreNews()"
+        />
+      }
+    </div>
 
     <ng-template #feedFilterDropdown>
       <tui-data-list size="l">
@@ -371,13 +263,18 @@ export class HomeComponent {
   protected readonly filterLabels: Record<HomeFeedFilter, string> = {
     following: 'following',
     all: 'all',
+    news: 'news',
     favorite_areas: 'likedAreas',
     favorite_crags: 'likedCrags',
     favorite_routes: 'likedRoutes',
   };
 
   protected readonly filterOptions = computed(() => {
-    const options: (keyof typeof this.filterLabels)[] = ['following', 'all'];
+    const options: (keyof typeof this.filterLabels)[] = [
+      'following',
+      'all',
+      'news',
+    ];
     if (this.global.likedAreaIds().length > 0) {
       options.push('favorite_areas');
     }
@@ -403,6 +300,7 @@ export class HomeComponent {
 
   constructor() {
     this.loadFollowedIds();
+    void this.loadNews();
     inject(DestroyRef).onDestroy(() => this.loadMore$.complete());
 
     effect(() => {
@@ -465,26 +363,9 @@ export class HomeComponent {
     if (this.fetchVersion() !== version) return;
 
     const ascents = results.flat();
-    let newItems: FeedItem[] = ascents;
-
-    if (filter === 'all') {
-      const beforeDate =
-        page > 0
-          ? (() => {
-              const lastItem = this.ascents().slice(-1)[0];
-              return lastItem?.date
-                ? new Date(lastItem.date).toISOString()
-                : undefined;
-            })()
-          : undefined;
-      const news = await this.desnivelService.getLatestPosts(5, beforeDate);
-      newItems = [...ascents, ...news];
-    }
-
-    if (this.fetchVersion() !== version) return;
 
     this.ascents.update((current) => {
-      const merged = deduplicateFeedItems([...current, ...newItems]);
+      const merged = deduplicateFeedItems([...current, ...ascents]);
       return merged.sort((a, b) => {
         const dateA = a.date ? new Date(a.date).getTime() : 0;
         const dateB = b.date ? new Date(b.date).getTime() : 0;
@@ -585,12 +466,70 @@ export class HomeComponent {
     }
   }
 
+  // Desnivel News (completely independent lifecycle & skeleton)
+  protected readonly newsItems = signal<NewsItem[]>([]);
+  protected readonly newsLoading = signal(true);
+  protected readonly newsLoadingMore = signal(false);
+  protected readonly newsHasMore = signal(true);
+
   // Infinite Scroll & Async Pipe for Ascents
   private readonly loadMore$ = new Subject<void>();
   private readonly fetchVersion = signal(0);
   protected readonly isLoading = signal(true);
   protected readonly hasMore = signal(true);
   protected readonly ascents = signal<FeedItem[]>([]);
+
+  private async loadNews(): Promise<void> {
+    if (!this.isBrowser) {
+      this.newsLoading.set(false);
+      return;
+    }
+    this.newsLoading.set(true);
+    try {
+      const posts = await this.desnivelService.getLatestPosts(12);
+      this.newsItems.set(posts);
+      if (posts.length < 12) {
+        this.newsHasMore.set(false);
+      }
+    } catch (e: unknown) {
+      console.warn('[Home] loadNews error', e);
+      this.newsItems.set([]);
+    } finally {
+      this.newsLoading.set(false);
+    }
+  }
+
+  protected async loadMoreNews(): Promise<void> {
+    if (this.newsLoadingMore() || !this.newsHasMore() || !this.isBrowser)
+      return;
+    this.newsLoadingMore.set(true);
+    try {
+      const lastItem = this.newsItems().slice(-1)[0];
+      const beforeDate = lastItem?.date
+        ? new Date(lastItem.date).toISOString()
+        : undefined;
+      const newPosts = await this.desnivelService.getLatestPosts(
+        12,
+        beforeDate,
+      );
+      if (newPosts.length === 0) {
+        this.newsHasMore.set(false);
+      } else {
+        if (newPosts.length < 12) {
+          this.newsHasMore.set(false);
+        }
+        this.newsItems.update((current) => {
+          const seen = new Set(current.map((n) => n.id));
+          const filtered = newPosts.filter((n) => !seen.has(n.id));
+          return [...current, ...filtered];
+        });
+      }
+    } catch (e: unknown) {
+      console.warn('[Home] loadMoreNews error', e);
+    } finally {
+      this.newsLoadingMore.set(false);
+    }
+  }
 
   private async fetchIndoorAscents(
     page: number,

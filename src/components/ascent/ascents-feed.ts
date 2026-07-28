@@ -106,7 +106,7 @@ export interface ProcessedFeedItem {
       }
 
       @if (isLoading()) {
-        @for (_ of [1, 2, 3, 4]; track $index) {
+        @for (_ of [1, 2, 3, 4, 5, 6, 7, 8]; track $index) {
           <app-ascent-card-skeleton
             [showUser]="showUser()"
             [showRoute]="showRoute()"

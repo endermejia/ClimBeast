@@ -25,7 +25,7 @@ import { NewsItem } from '../../models';
     @let data = item();
     <div
       tuiAppearance="flat-grayscale"
-      class="flex flex-col gap-1 p-4 sm:rounded-3xl rounded-none relative -mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full text-left overflow-hidden"
+      class="flex flex-col gap-1.5 p-4 sm:rounded-3xl rounded-none relative -mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full text-left overflow-hidden"
     >
       <header tuiHeader class="mt-0! flex justify-between items-center">
         <a
@@ -62,11 +62,11 @@ import { NewsItem } from '../../models';
         <a
           [href]="data.link"
           target="_blank"
-          class="-mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full bg-(--tui-background-neutral-1) sm:rounded-2xl overflow-hidden relative flex items-center justify-center aspect-video"
+          class="-mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full bg-(--tui-background-neutral-1) sm:rounded-2xl overflow-hidden relative block"
         >
           <img
             [src]="img"
-            class="w-full h-auto object-contain transition-transform duration-500 hover:scale-105"
+            class="w-full h-auto max-h-[500px] block transition-transform duration-500 hover:scale-[1.02]"
             [alt]="data.title"
             loading="lazy"
           />

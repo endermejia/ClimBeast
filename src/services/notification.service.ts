@@ -24,9 +24,9 @@ export class NotificationService {
     options?: Partial<TuiNotificationOptions>,
   ): void {
     const label = options?.label;
-    const requests$ = [this.translate.get(message)];
+    const requests$ = [this.translate.stream(message)];
     if (label) {
-      requests$.push(this.translate.get(label));
+      requests$.push(this.translate.stream(label));
     }
 
     void firstValueFrom(
