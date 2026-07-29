@@ -462,16 +462,16 @@ import { TourHintComponent } from './tour-hint';
                   }
 
                   <ng-template #itemTemplate let-item>
-                    <div class="flex items-center w-full">
+                    <div class="flex items-center w-full gap-3">
                       @if (item.grade !== undefined) {
                         <app-grade
                           [grade]="item.grade"
                           [kind]="item.climbing_kind"
-                          class="mr-2"
+                          class="shrink-0"
                         />
                       }
                       @if (item.type === 'user' || item.type === 'indoor') {
-                        <span tuiAvatar size="xs" class="mr-2">
+                        <span tuiAvatar size="xs" class="shrink-0">
                           @if (item.icon && !item.icon.startsWith('@tui.')) {
                             <img [src]="item.icon" [alt]="item.title" />
                           } @else {
@@ -486,9 +486,9 @@ import { TourHintComponent } from './tour-hint';
                           }
                         </span>
                       } @else if (item.icon && item.grade === undefined) {
-                        <tui-icon [icon]="item.icon" class="mr-2" />
+                        <tui-icon [icon]="item.icon" class="shrink-0" />
                       }
-                      <span tuiTitle>
+                      <span tuiTitle class="min-w-0 flex-1 truncate">
                         {{ item.title }}
                         @if (item.subtitle) {
                           <span tuiSubtitle>{{ item.subtitle }}</span>

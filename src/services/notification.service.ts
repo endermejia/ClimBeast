@@ -6,7 +6,7 @@ import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslateService } from '@ngx-translate/core';
 
-import { firstValueFrom, forkJoin, switchMap } from 'rxjs';
+import { catchError, firstValueFrom, of, switchMap, take } from 'rxjs';
 
 import { GdprNotificationComponent } from '../components/notifications/gdpr-notification';
 
@@ -24,17 +24,28 @@ export class NotificationService {
     options?: Partial<TuiNotificationOptions>,
   ): void {
     const label = options?.label;
-    const requests$ = [this.translate.stream(message)];
-    if (label) {
-      requests$.push(this.translate.stream(label));
-    }
+    const lang =
+      this.translate.currentLang || this.translate.defaultLang || 'es';
+
+    const translationReady$ = this.translate.getTranslation(lang).pipe(
+      catchError(() => of({})),
+      take(1),
+    );
 
     void firstValueFrom(
-      forkJoin(requests$).pipe(
-        switchMap(([translatedMessage, translatedLabel]) => {
+      translationReady$.pipe(
+        switchMap(() => {
+          const keys = [message];
+          if (label) {
+            keys.push(label);
+          }
+          return this.translate.get(keys);
+        }),
+        switchMap((translations: Record<string, string>) => {
+          const translatedMessage = translations[message] || message;
           const finalOptions = { ...options };
-          if (label && translatedLabel) {
-            finalOptions.label = translatedLabel;
+          if (label && translations[label]) {
+            finalOptions.label = translations[label];
           }
           return this.alerts.open(translatedMessage, finalOptions);
         }),
