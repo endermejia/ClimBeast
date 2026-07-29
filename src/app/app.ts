@@ -2,7 +2,6 @@ import { DOCUMENT } from '@angular/common';
 import {
   Component,
   DestroyRef,
-  afterNextRender,
   effect,
   inject,
   OnDestroy,
@@ -109,15 +108,13 @@ export class AppComponent implements OnDestroy {
       }
     });
 
-    afterNextRender(() => {
-      if (
-        this.isBrowser &&
-        this.storage.getItem('lw_update_applied') === 'true'
-      ) {
-        this.storage.removeItem('lw_update_applied');
-        this.notifications.success('updateApplied');
-      }
-    });
+    if (
+      this.isBrowser &&
+      this.storage.getItem('lw_update_applied') === 'true'
+    ) {
+      this.storage.removeItem('lw_update_applied');
+      setTimeout(() => this.notifications.success('updateApplied'), 500);
+    }
 
     effect(() => {
       if (this.langChange()) {
@@ -163,11 +160,9 @@ export class AppComponent implements OnDestroy {
           takeUntilDestroyed(this.destroyRef),
         )
         .subscribe(() => {
-          void this.swUpdate.activateUpdate().then((activated) => {
-            if (activated) {
-              this.storage.setItem('lw_update_applied', 'true');
-              window.location.reload();
-            }
+          void this.swUpdate.activateUpdate().finally(() => {
+            this.storage.setItem('lw_update_applied', 'true');
+            window.location.reload();
           });
         });
     }
