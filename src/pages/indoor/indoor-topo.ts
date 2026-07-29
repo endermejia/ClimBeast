@@ -41,7 +41,7 @@ import { TopoPageBase } from '../area/topo-page-base';
       <section class="flex flex-col w-full h-full md:p-4">
         @let isMobile = global.isMobile();
         @if (topo(); as t) {
-          <div class="mb-4 p-4 md:p-0">
+          <div class="px-4 pt-0 pb-1.5 md:p-0 md:mb-4 shrink-0">
             <app-section-header
               [title]="t.name"
               [showLike]="false"
@@ -106,7 +106,7 @@ import { TopoPageBase } from '../area/topo-page-base';
           </div>
 
           <div
-            class="grid grid-cols-1 grid-rows-2 lg:grid-cols-3 lg:grid-rows-1 w-full h-full gap-4 overflow-hidden"
+            class="grid grid-cols-1 grid-rows-[minmax(0,3fr)_minmax(0,2fr)] lg:grid-cols-3 lg:grid-rows-1 w-full flex-1 min-h-0 gap-0 lg:gap-4 overflow-hidden"
           >
             <app-topo-viewer
               class="relative w-full h-full lg:col-span-2"

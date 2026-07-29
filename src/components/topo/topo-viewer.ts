@@ -226,12 +226,14 @@ interface RenderedRoute extends TopoRouteWithRoute {
         <div class="absolute top-4 right-4 z-1001">
           <button
             tuiIconButton
+            type="button"
             appearance="floating"
-            size="l"
-            class="bg-(--tui-background-base) rounded-full!"
+            iconStart="@tui.x"
+            size="s"
+            class="rounded-full!"
             (click)="toggleFullscreen(false); $event.stopPropagation()"
           >
-            <tui-icon icon="@tui.x" />
+            {{ 'close' | translate }}
           </button>
         </div>
 

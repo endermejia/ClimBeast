@@ -8,7 +8,13 @@ import {
   resource,
 } from '@angular/core';
 
-import { TuiButton, TuiDataList, TuiIcon, TuiLoader } from '@taiga-ui/core';
+import {
+  TuiButton,
+  TuiDataList,
+  TuiHint,
+  TuiIcon,
+  TuiLoader,
+} from '@taiga-ui/core';
 import { TUI_CONFIRM, TuiBadge, type TuiConfirmData } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
@@ -37,6 +43,7 @@ import { TopoPageBase } from './topo-page-base';
     TuiBadge,
     TuiButton,
     TuiDataList,
+    TuiHint,
     TuiIcon,
     TuiLoader,
   ],
@@ -50,7 +57,7 @@ import { TopoPageBase } from './topo-page-base';
             t.crag
               ? global.areaAdminPermissions()[t.crag.area_id || -1]
               : false;
-          <div class="mb-4 p-4 md:p-0">
+          <div class="px-4 pt-0 pb-1.5 md:p-0 md:mb-4 shrink-0">
             <app-section-header
               [title]="t.name"
               [showLike]="false"
@@ -68,7 +75,20 @@ import { TopoPageBase } from './topo-page-base';
                   </span>
                 }
                 @if (t | shadeInfo; as info) {
-                  <tui-icon [icon]="info.icon" class="text-2xl opacity-70" />
+                  <tui-icon
+                    [icon]="info.icon"
+                    [tuiHint]="
+                      (info.label | translate) +
+                      (t.shade_change_hour
+                        ? ' (' +
+                          ('filters.shade.changeAt' | translate) +
+                          ' ' +
+                          t.shade_change_hour +
+                          ')'
+                        : '')
+                    "
+                    class="text-2xl opacity-70"
+                  />
                 }
               </ng-container>
 
@@ -152,7 +172,7 @@ import { TopoPageBase } from './topo-page-base';
             </div>
           } @else {
             <div
-              class="grid grid-cols-1 grid-rows-2 lg:grid-cols-3 lg:grid-rows-1 w-full h-full gap-4 overflow-hidden"
+              class="grid grid-cols-1 grid-rows-[minmax(0,3fr)_minmax(0,2fr)] lg:grid-cols-3 lg:grid-rows-1 w-full flex-1 min-h-0 gap-0 lg:gap-4 overflow-hidden"
             >
               <app-topo-viewer
                 class="relative w-full h-full lg:col-span-2"
