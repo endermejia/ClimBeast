@@ -134,6 +134,11 @@ export class AppComponent implements OnDestroy {
     });
 
     if (this.isBrowser && this.swUpdate.isEnabled) {
+      // Check for updates immediately on startup
+      void this.swUpdate.checkForUpdate().catch(() => {
+        // Ignore errors
+      });
+
       // Check for updates on navigation
       this.router.events
         .pipe(
@@ -141,7 +146,7 @@ export class AppComponent implements OnDestroy {
           takeUntilDestroyed(this.destroyRef),
         )
         .subscribe(() => {
-          this.swUpdate.checkForUpdate().catch(() => {
+          void this.swUpdate.checkForUpdate().catch(() => {
             // Ignore errors
           });
         });
@@ -149,7 +154,7 @@ export class AppComponent implements OnDestroy {
       // Check for updates every hour
       const oneHour = 60 * 60 * 1000;
       this.swCheckInterval = setInterval(() => {
-        this.swUpdate.checkForUpdate().catch(() => {
+        void this.swUpdate.checkForUpdate().catch(() => {
           // Ignore errors
         });
       }, oneHour);
@@ -163,12 +168,23 @@ export class AppComponent implements OnDestroy {
           takeUntilDestroyed(this.destroyRef),
         )
         .subscribe(() => {
-          void this.swUpdate.activateUpdate().then((activated) => {
-            if (activated) {
-              this.storage.setItem('lw_update_applied', 'true');
+          this.storage.setItem('lw_update_applied', 'true');
+          void this.swUpdate
+            .activateUpdate()
+            .then(() => {
               window.location.reload();
-            }
-          });
+            })
+            .catch(() => {
+              window.location.reload();
+            });
+        });
+
+      // Handle unrecoverable state (corrupted cache)
+      this.swUpdate.unrecoverable
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => {
+          this.storage.setItem('lw_update_applied', 'true');
+          window.location.reload();
         });
     }
   }
