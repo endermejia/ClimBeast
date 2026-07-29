@@ -25,7 +25,6 @@ import {
   TuiLoader,
   TuiDialogService,
   TuiInput,
-  TuiRadio,
 } from '@taiga-ui/core';
 import { TuiInputChip, TuiInputNumber } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
@@ -58,7 +57,6 @@ interface MinimalArea {
     FormsModule,
     TranslatePipe,
     TuiButton,
-    TuiRadio,
     TuiError,
     TuiIcon,
     TuiInput,
@@ -67,6 +65,86 @@ interface MinimalArea {
     TuiLabel,
     TuiLoader,
   ],
+  styles: `
+    .visibility-card {
+      position: relative;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.875rem;
+      border-radius: 1rem;
+      border: 2px solid var(--tui-border-normal);
+      background: var(--tui-background-neutral-1);
+      text-align: left;
+      cursor: pointer;
+      transition:
+        border-color 0.2s,
+        background 0.2s;
+      width: 100%;
+    }
+
+    .visibility-card:hover {
+      background: var(--tui-background-neutral-1-hover);
+    }
+
+    .visibility-card--selected {
+      border-color: var(--tui-border-focus);
+      background: color-mix(
+        in oklab,
+        var(--tui-background-accent-1) 12%,
+        var(--tui-background-base)
+      );
+    }
+
+    .visibility-card__icon {
+      flex-shrink: 0;
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 0.625rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--tui-background-neutral-2);
+      color: var(--tui-text-primary);
+      transition:
+        background 0.2s,
+        color 0.2s;
+    }
+
+    .visibility-card__icon--selected {
+      background: var(--tui-text-action);
+      color: #fff;
+    }
+
+    .visibility-card__body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .visibility-card__title {
+      font-weight: 700;
+      font-size: 0.8125rem;
+      line-height: 1.2;
+    }
+
+    .visibility-card__desc {
+      font-size: 0.8125rem;
+      opacity: 0.6;
+      line-height: 1.3;
+    }
+
+    .visibility-card__check {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      color: var(--tui-text-action);
+      font-size: 0.875rem;
+    }
+  `,
   template: `
     <form class="grid gap-4" (submit.zoneless)="onSubmit($event)">
       <tui-textfield class="block">
@@ -116,76 +194,127 @@ interface MinimalArea {
 
       <!-- Admin Settings / Payments Section -->
       @if (canEditAdminSettings()) {
-        <div class="border-t pt-6 mt-4">
-          <h3 class="font-bold text-xl mb-6">
-            {{ 'payments.title' | translate }}
-          </h3>
-
-          <div
-            class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 items-start"
-          >
-            <div class="flex flex-col gap-4 lg:gap-6">
-              <!-- Public Option -->
-              <label
-                tuiLabel
-                class="flex items-center gap-3 p-4 bg-(--tui-background-neutral-1) rounded-2xl border border-(--tui-border-normal) cursor-pointer hover:bg-(--tui-background-neutral-1-hover) transition-colors"
+        <div class="flex flex-col gap-4 pt-2">
+          <!-- Visibility cards — full width, 1 col mobile / 3 col desktop -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <!-- Public Option -->
+            <button
+              type="button"
+              class="visibility-card"
+              [class.visibility-card--selected]="visibilityMode() === 'public'"
+              (click.zoneless)="onVisibilityModeChange('public')"
+            >
+              <div
+                class="visibility-card__icon"
+                [class.visibility-card__icon--selected]="
+                  visibilityMode() === 'public'
+                "
               >
-                <input
-                  tuiRadio
-                  type="radio"
-                  [ngModel]="visibilityMode()"
-                  (ngModelChange)="onVisibilityModeChange($event)"
-                  value="public"
-                  name="visibility_mode"
+                <tui-icon icon="@tui.globe" />
+              </div>
+              <div class="visibility-card__body">
+                <span class="visibility-card__title">{{
+                  'payments.isPublic' | translate
+                }}</span>
+                <span class="visibility-card__desc">{{
+                  'payments.isPublic.desc' | translate
+                }}</span>
+              </div>
+              @if (visibilityMode() === 'public') {
+                <tui-icon
+                  icon="@tui.circle-check"
+                  class="visibility-card__check"
                 />
-                <div class="flex flex-col">
-                  <span class="font-bold text-sm lg:text-base">{{
-                    'payments.isPublic' | translate
-                  }}</span>
-                </div>
-              </label>
+              }
+            </button>
 
-              <!-- Paywalled Option -->
-              <label
-                tuiLabel
-                class="flex items-center gap-3 p-4 bg-(--tui-background-neutral-1) rounded-2xl border border-(--tui-border-normal) cursor-pointer hover:bg-(--tui-background-neutral-1-hover) transition-colors"
+            <!-- Secret Option -->
+            <button
+              type="button"
+              class="visibility-card"
+              [class.visibility-card--selected]="visibilityMode() === 'secret'"
+              (click.zoneless)="onVisibilityModeChange('secret')"
+            >
+              <div
+                class="visibility-card__icon"
+                [class.visibility-card__icon--selected]="
+                  visibilityMode() === 'secret'
+                "
               >
-                <input
-                  tuiRadio
-                  type="radio"
-                  [ngModel]="visibilityMode()"
-                  (ngModelChange)="onVisibilityModeChange($event)"
-                  value="paywalled"
-                  name="visibility_mode"
+                <tui-icon icon="@tui.mail" />
+              </div>
+              <div class="visibility-card__body">
+                <span class="visibility-card__title">{{
+                  'payments.isSecret' | translate
+                }}</span>
+                <span class="visibility-card__desc">{{
+                  'payments.isSecret.desc' | translate
+                }}</span>
+              </div>
+              @if (visibilityMode() === 'secret') {
+                <tui-icon
+                  icon="@tui.circle-check"
+                  class="visibility-card__check"
                 />
-                <div class="flex flex-col">
-                  <span class="font-bold text-sm lg:text-base">{{
-                    'payments.isPaywalled' | translate
-                  }}</span>
-                </div>
-              </label>
+              }
+            </button>
 
-              <!-- Secret Option -->
-              <label
-                tuiLabel
-                class="flex items-center gap-3 p-4 bg-(--tui-background-neutral-1) rounded-2xl border border-(--tui-border-normal) cursor-pointer hover:bg-(--tui-background-neutral-1-hover) transition-colors"
+            <!-- Paywalled Option -->
+            <button
+              type="button"
+              class="visibility-card"
+              [class.visibility-card--selected]="
+                visibilityMode() === 'paywalled'
+              "
+              (click.zoneless)="onVisibilityModeChange('paywalled')"
+            >
+              <div
+                class="visibility-card__icon"
+                [class.visibility-card__icon--selected]="
+                  visibilityMode() === 'paywalled'
+                "
               >
-                <input
-                  tuiRadio
-                  type="radio"
-                  [ngModel]="visibilityMode()"
-                  (ngModelChange)="onVisibilityModeChange($event)"
-                  value="secret"
-                  name="visibility_mode"
-                />
-                <div class="flex flex-col">
-                  <span class="font-bold text-sm lg:text-base">{{
-                    'payments.isSecret' | translate
-                  }}</span>
-                </div>
-              </label>
-
+                <tui-icon icon="@tui.coins" />
+              </div>
+              <div class="visibility-card__body">
+                <span class="visibility-card__title">{{
+                  'payments.isPaywalled' | translate
+                }}</span>
+                <span class="visibility-card__desc">{{
+                  'payments.isPaywalled.desc' | translate
+                }}</span>
+              </div>
               @if (visibilityMode() === 'paywalled') {
+                <tui-icon
+                  icon="@tui.circle-check"
+                  class="visibility-card__check"
+                />
+              }
+            </button>
+          </div>
+
+          <!-- Secret mode notice -->
+          @if (visibilityMode() === 'secret') {
+            <div
+              class="flex items-start gap-3 px-4 py-3 rounded-xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+            >
+              <tui-icon
+                icon="@tui.info"
+                class="text-(--tui-text-action) shrink-0 mt-0.5"
+              />
+              <p class="text-sm opacity-80 leading-relaxed">
+                {{ 'payments.isSecret.notice' | translate }}
+              </p>
+            </div>
+          }
+
+          <!-- Paywalled settings -->
+          @if (visibilityMode() === 'paywalled') {
+            <div
+              class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 items-start"
+            >
+              <!-- Left: price + stripe -->
+              <div class="flex flex-col gap-4 lg:gap-6">
                 <app-counter
                   label="payments.price"
                   suffix="€"
@@ -196,12 +325,10 @@ interface MinimalArea {
                   (ngModelChange)="onPriceChange($event)"
                   name="price"
                 />
-                <p class="text-[10px] opacity-60 mt-1">
+                <p class="text-xs opacity-60 mt-1">
                   {{ 'payments.priceHelp' | translate }}
                 </p>
-              }
 
-              @if (visibilityMode() === 'paywalled') {
                 <div class="flex flex-col gap-3">
                   <span
                     class="text-xs font-semibold opacity-60 uppercase tracking-wider"
@@ -221,10 +348,9 @@ interface MinimalArea {
                           <span class="text-sm font-bold leading-none">{{
                             'payments.stripeConnected' | translate
                           }}</span>
-                          <span
-                            class="text-[10px] lg:text-xs opacity-60 truncate font-mono"
-                            >{{ model().stripe_account_id }}</span
-                          >
+                          <span class="text-xs opacity-60 truncate font-mono">{{
+                            model().stripe_account_id
+                          }}</span>
                         </div>
                       </div>
                     }
@@ -253,10 +379,9 @@ interface MinimalArea {
                     </tui-loader>
                   </div>
                 </div>
-              }
-            </div>
+              </div>
 
-            @if (visibilityMode() === 'paywalled') {
+              <!-- Right: tutorial -->
               <div class="flex flex-col h-full">
                 <div
                   class="bg-(--tui-background-neutral-1) p-4 lg:p-6 rounded-2xl border border-(--tui-border-normal) flex flex-col gap-4"
@@ -297,15 +422,13 @@ interface MinimalArea {
                       <p>{{ 'payments.tutorial.step4' | translate }}</p>
                     </li>
                   </ul>
-                  <p
-                    class="text-[10px] lg:text-xs opacity-60 italic mt-2 py-3 border-t"
-                  >
+                  <p class="text-xs opacity-60 italic mt-2 py-3 border-t">
                     {{ 'payments.tutorial.footer' | translate }}
                   </p>
                 </div>
               </div>
-            }
-          </div>
+            </div>
+          }
         </div>
       }
 
