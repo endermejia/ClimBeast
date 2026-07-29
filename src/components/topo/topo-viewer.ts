@@ -14,7 +14,7 @@ import {
   viewChild,
 } from '@angular/core';
 
-import { TuiButton, TuiIcon } from '@taiga-ui/core';
+import { TuiButton } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -52,7 +52,6 @@ interface RenderedRoute extends TopoRouteWithRoute {
     IconSrcPipe,
     TranslatePipe,
     TuiButton,
-    TuiIcon,
   ],
   template: `
     <!-- Normal view -->
