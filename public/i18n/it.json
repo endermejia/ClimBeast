@@ -454,6 +454,7 @@
   "merchandising.success.summary": "Riepilogo",
   "merchandising.success.title": "Ordine Confermato!",
   "merchandising.success.total": "Totale",
+  "message": "Messaggio",
   "messages": "Messaggi",
   "messages.errorAcceptRequest": "Errore nell'accettare la richiesta di follow",
   "messages.errorBlock": "Si è verificato un errore nel bloccare l'utente",

@@ -1009,14 +1009,8 @@ export class UserProfileConfigComponent {
 
   protected lastEvent?: MouseEvent;
   readonly selectedEightAnuUser = resource<EightAnuUser | null, string | null>({
-    params: () => this.profile()?.['8anu_user_slug'] || null,
-    loader: async ({ params: slug }) => {
-      if (!slug) return null;
-      const res = await firstValueFrom(
-        this.eightAnuService.getUserBySlug(slug),
-      );
-      return res.items.find((u) => u.userSlug === slug) || null;
-    },
+    params: () => null,
+    loader: async () => null,
   });
   protected readonly userEmail = computed(
     () => this.supabase.authUser()?.email ?? '',

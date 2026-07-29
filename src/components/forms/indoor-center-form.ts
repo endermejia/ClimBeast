@@ -143,7 +143,6 @@ import { TuiDialogService, TuiIcon, TuiLoader } from '@taiga-ui/core';
                   [ngModel]="model().description"
                   (ngModelChange)="onDescriptionChange($event)"
                   name="description"
-                  class="h-32"
                 ></textarea>
               </tui-textfield>
 
@@ -157,7 +156,6 @@ import { TuiDialogService, TuiIcon, TuiLoader } from '@taiga-ui/core';
                   [ngModel]="model().warning"
                   (ngModelChange)="onWarningChange($event)"
                   name="warning"
-                  class="h-24"
                 ></textarea>
               </tui-textfield>
 
@@ -426,7 +424,6 @@ import { TuiDialogService, TuiIcon, TuiLoader } from '@taiga-ui/core';
                       [(ngModel)]="newVoucherDescription"
                       name="newVoucherDescription"
                       placeholder="Ej. Acceso libre por un día"
-                      class="h-20"
                     ></textarea>
                   </tui-textfield>
                 </div>

@@ -214,31 +214,25 @@ export interface ChatDialogData {
               </button>
             </div>
           } @else {
-            <tui-textfield
-              class="w-full"
-              tuiTextfieldSize="m"
-              [tuiTextfieldCleaner]="false"
-            >
-              <label tuiLabel for="new-message">{{
-                isRequestPending()
-                  ? ('messages.pendingRequest' | translate)
-                  : ('typeMessage' | translate)
-              }}</label>
-              <textarea
-                #messageTextarea
-                tuiTextarea
-                id="new-message"
-                autocomplete="off"
-                [placeholder]="
-                  isRequestPending()
-                    ? ('messages.pendingPlaceholder' | translate)
-                    : '...'
-                "
-                [(ngModel)]="newMessage"
-                (keydown.enter)="onEnter($event)"
-                [disabled]="isRequestPending()"
-                maxlength="250"
-              ></textarea>
+            <div class="flex items-center gap-2">
+              <tui-textfield class="w-full" [tuiTextfieldCleaner]="false">
+                <textarea
+                  #messageTextarea
+                  tuiTextarea
+                  id="new-message"
+                  autocomplete="off"
+                  [placeholder]="
+                    isRequestPending()
+                      ? ('messages.pendingPlaceholder' | translate)
+                      : ('message' | translate)
+                  "
+                  [(ngModel)]="newMessage"
+                  (keydown.enter)="onEnter($event)"
+                  [disabled]="isRequestPending()"
+                  maxlength="250"
+                  class="resize-none overflow-hidden max-h-36 font-sans text-sm focus:outline-hidden text-inherit border-0 outline-hidden focus:ring-0 ring-0 min-h-10"
+                ></textarea>
+              </tui-textfield>
               <button
                 tuiButton
                 type="button"
@@ -253,7 +247,7 @@ export interface ChatDialogData {
                   {{ 'send' | translate }}
                 </span>
               </button>
-            </tui-textfield>
+            </div>
             <div class="text-right text-xs opacity-50 mt-1">
               {{ newMessage().length }}/250
             </div>

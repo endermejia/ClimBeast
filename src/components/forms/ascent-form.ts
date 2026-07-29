@@ -190,13 +190,13 @@ import { handleErrorToast } from '../../utils';
 
         <!-- SHARE YOUR THOUGHTS -->
         <section class="grid gap-3">
+          <span class="text-sm font-semibold opacity-70 px-1">{{
+            'ascent.thoughts' | translate
+          }}</span>
           <tui-textfield
             [tuiTextfieldCleaner]="false"
             class="max-w-full overflow-hidden"
           >
-            <label tuiLabel for="ascentComment">{{
-              'ascent.thoughts' | translate
-            }}</label>
             <textarea
               tuiTextarea
               id="ascentComment"

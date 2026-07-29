@@ -454,6 +454,7 @@
   "merchandising.success.summary": "Resumen",
   "merchandising.success.title": "¡Pedido Confirmado!",
   "merchandising.success.total": "Total",
+  "message": "Mensaje",
   "messages": "Mensajes",
   "messages.errorAcceptRequest": "No se pudo aceptar la solicitud.",
   "messages.errorBlock": "Ha ocurrido un error al bloquear al usuario",

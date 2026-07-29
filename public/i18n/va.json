@@ -454,6 +454,7 @@
   "merchandising.success.summary": "Resum",
   "merchandising.success.title": "Comanda Confirmada!",
   "merchandising.success.total": "Total",
+  "message": "Missatge",
   "messages": "Missatges",
   "messages.errorAcceptRequest": "Error en acceptar la sol·licitud de seguiment",
   "messages.errorBlock": "Ha ocorregut un error en bloquejar a l'usuari",

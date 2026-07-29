@@ -71,7 +71,6 @@ import { scheduleToJson, scheduleFromJson } from '../../models/indoor.model';
             id="center-desc"
             [(ngModel)]="form().description"
             name="description"
-            class="h-32"
           ></textarea>
         </tui-textfield>
       </div>

@@ -32,6 +32,7 @@ import {
   TuiLabel,
   TuiNumberFormat,
   TuiInput,
+  TuiTextfield,
   TuiFilterByInputPipe,
 } from '@taiga-ui/core';
 import {
@@ -110,6 +111,7 @@ interface CragFormModel {
     TuiNumberFormat,
     TuiSelect,
     TuiTextarea,
+    TuiTextfield,
   ],
   template: `
     <form class="grid gap-4" (submit.zoneless)="onSubmit($event)">
@@ -223,36 +225,44 @@ interface CragFormModel {
       <tui-textfield [tuiTextfieldCleaner]="false">
         <label tuiLabel for="desc-es">{{ 'description_es' | translate }}</label>
         <textarea
+          tuiTextarea
           id="desc-es"
-          [formField]="cragForm.description_es"
-          rows="3"
+          [ngModel]="model().description_es"
+          (ngModelChange)="updateField('description_es', $event)"
+          name="description_es"
         ></textarea>
       </tui-textfield>
 
       <tui-textfield [tuiTextfieldCleaner]="false">
         <label tuiLabel for="desc-en">{{ 'description_en' | translate }}</label>
         <textarea
+          tuiTextarea
           id="desc-en"
-          [formField]="cragForm.description_en"
-          rows="3"
+          [ngModel]="model().description_en"
+          (ngModelChange)="updateField('description_en', $event)"
+          name="description_en"
         ></textarea>
       </tui-textfield>
 
       <tui-textfield [tuiTextfieldCleaner]="false">
         <label tuiLabel for="warn-es">{{ 'warning_es' | translate }}</label>
         <textarea
+          tuiTextarea
           id="warn-es"
-          [formField]="cragForm.warning_es"
-          rows="3"
+          [ngModel]="model().warning_es"
+          (ngModelChange)="updateField('warning_es', $event)"
+          name="warning_es"
         ></textarea>
       </tui-textfield>
 
       <tui-textfield [tuiTextfieldCleaner]="false">
         <label tuiLabel for="warn-en">{{ 'warning_en' | translate }}</label>
         <textarea
+          tuiTextarea
           id="warn-en"
-          [formField]="cragForm.warning_en"
-          rows="3"
+          [ngModel]="model().warning_en"
+          (ngModelChange)="updateField('warning_en', $event)"
+          name="warning_en"
         ></textarea>
       </tui-textfield>
 
@@ -486,6 +496,13 @@ export class CragFormComponent {
         }
       });
     });
+  }
+
+  protected updateField<K extends keyof CragFormModel>(
+    field: K,
+    val: CragFormModel[K],
+  ): void {
+    this.model.update((m) => ({ ...m, [field]: val }));
   }
 
   private async fetchFullCragData(id: number) {

@@ -454,6 +454,7 @@
   "merchandising.success.summary": "Summary",
   "merchandising.success.title": "Order Confirmed!",
   "merchandising.success.total": "Total",
+  "message": "Message",
   "messages": "Messages",
   "messages.errorAcceptRequest": "Error accepting follow request",
   "messages.errorBlock": "An error occurred while blocking the user",
