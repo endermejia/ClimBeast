@@ -67,7 +67,7 @@ import { matchesQuery } from '../../utils';
             </h1>
 
             <div class="flex gap-2 flex-wrap sm:flex-nowrap justify-end">
-              @if (global.canEditAsAdmin()) {
+              @if (global.isAdmin()) {
                 <button
                   tuiButton
                   appearance="textfield"

@@ -140,7 +140,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
             </div>
           }
 
-          @if (canEdit()) {
+          @if (canCreate()) {
             <button
               tuiButton
               appearance="textfield"
@@ -152,7 +152,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
             </button>
           }
         </div>
-      } @else if (canEdit()) {
+      } @else if (canCreate()) {
         <div class="flex justify-end px-3">
           <button
             tuiButton
@@ -474,6 +474,10 @@ export class IndoorRoutesComponent {
     return cols;
   });
 
+  protected readonly canCreate = computed(() => {
+    return this.global.canCreateIndoorInCenter(this.centerId());
+  });
+
   protected readonly canEdit = computed(() => {
     const id = this.centerId();
     return id ? !!this.global.indoorAdminPermissions()[id] : false;
@@ -706,8 +710,7 @@ export class IndoorRoutesComponent {
   async editAscent(
     route: IndoorRouteWithExtras | RouteItem,
     ascent:
-      | RouteAscentWithExtras
-      | { id: string | number; type: AscentType | null },
+      RouteAscentWithExtras | { id: string | number; type: AscentType | null },
   ): Promise<void> {
     const r = route as IndoorRouteWithExtras;
     const asc = ascent as { id: string | number; type: AscentType | null };

@@ -544,6 +544,7 @@ export class TopoDataService {
               grade: tr.route.grade ?? 0,
               climbing_kind: (tr.route.climbing_kind ??
                 'sport') as ClimbingKind,
+              color: tr.route.color ?? null,
               own_ascent: bestAscent,
               project: false,
             },

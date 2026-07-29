@@ -12,9 +12,7 @@ export interface ShadeInfo {
 export class ShadeInfoPipe implements PipeTransform {
   transform(
     item:
-      | { shade_morning: boolean; shade_afternoon: boolean }
-      | null
-      | undefined,
+      { shade_morning: boolean; shade_afternoon: boolean } | null | undefined,
   ): ShadeInfo | null {
     if (!item) return null;
 

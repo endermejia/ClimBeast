@@ -223,8 +223,7 @@ export class OutdoorRoutesTableComponent {
   protected onEditAscent(
     row: RoutesTableRow | RouteItem | IndoorRouteWithExtras,
     ascent:
-      | RouteAscentWithExtras
-      | { id: string | number; type: AscentType | null },
+      RouteAscentWithExtras | { id: string | number; type: AscentType | null },
   ): void {
     const r = '_ref' in row ? (row._ref as RouteItem) : (row as RouteItem);
     const a = ascent as RouteAscentWithExtras;

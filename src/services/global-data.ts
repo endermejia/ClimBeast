@@ -152,6 +152,7 @@ export class GlobalData {
 
   readonly areaAdminPermissions = this.authState.areaAdminPermissions;
   readonly indoorAdminPermissions = this.authState.indoorAdminPermissions;
+  readonly canCreateIndoorInCenter = this.authState.canCreateIndoorInCenter;
 
   readonly checkAreaEditPermission = this.authState.checkAreaEditPermission;
   readonly checkCragEditPermission = this.authState.checkCragEditPermission;

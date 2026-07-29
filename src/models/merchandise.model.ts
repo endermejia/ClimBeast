@@ -51,12 +51,7 @@ export interface CartProduct {
 }
 
 export type OrderStatus =
-  | 'pending'
-  | 'paid'
-  | 'shipped'
-  | 'delivered'
-  | 'cancelled'
-  | 'refunded';
+  'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
 
 export interface MerchandiseItemDetail extends MerchandiseItem {
   stock?: MerchandiseStock[];

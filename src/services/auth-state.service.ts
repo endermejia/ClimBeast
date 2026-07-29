@@ -101,6 +101,14 @@ export class AuthStateService {
     return isAdmin ? new Proxy(res, { get: () => true }) : res;
   });
 
+  readonly canCreateIndoorInCenter = (
+    centerId: string | number | null | undefined,
+  ): boolean => {
+    if (this.isAdmin()) return true;
+    if (!centerId) return false;
+    return this.adminIndoorCenters().includes(String(centerId));
+  };
+
   readonly checkAreaEditPermission = (
     area:
       | AreaListItem

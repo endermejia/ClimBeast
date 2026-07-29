@@ -62,8 +62,7 @@ export interface PyramidLevel {
   slotsCount: number;
   slots: (UserPyramidSlotDto & {
     route:
-      | (RouteDto & { crag?: { slug: string; area?: { slug: string } } })
-      | null;
+      (RouteDto & { crag?: { slug: string; area?: { slug: string } } }) | null;
     isCompleted: boolean;
     canModify: boolean;
     expectedGradeLabel: string;

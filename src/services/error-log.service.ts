@@ -40,8 +40,7 @@ export class ErrorLogService {
     } else if (error && typeof error === 'object') {
       const errorObj = error as Record<string, unknown>;
       const innerError = errorObj['error'] as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       message = String(
         errorObj['message'] ||
           innerError?.['message'] ||

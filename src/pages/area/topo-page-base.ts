@@ -98,6 +98,7 @@ export abstract class TopoPageBase {
         isSelected,
         isHovered,
         tr.route.grade,
+        tr.route.color || tr.path?.color,
       );
       const width = getRouteStrokeWidth(
         isSelected,

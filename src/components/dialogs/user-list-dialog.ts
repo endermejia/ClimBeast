@@ -40,10 +40,7 @@ import { AvatarUrlPipe } from '../../pipes';
 import { EmptyStateComponent } from '../ui/empty-state';
 
 export type UserListType =
-  | 'followers'
-  | 'following'
-  | 'ascent-likes'
-  | 'comment-likes';
+  'followers' | 'following' | 'ascent-likes' | 'comment-likes';
 
 export interface UserListDialogData {
   userId?: string;

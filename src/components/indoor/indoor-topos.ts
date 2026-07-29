@@ -66,7 +66,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
             </span>
           </label>
         </div>
-        @if (canEdit()) {
+        @if (canCreate()) {
           <button
             tuiButton
             appearance="textfield"
@@ -114,8 +114,12 @@ export class IndoorToposComponent {
   private readonly dialogs = inject(TuiDialogService);
   private readonly toast = inject(ToastService);
 
+  protected readonly canCreate = computed(() => {
+    return this.global.canCreateIndoorInCenter(this.centerId());
+  });
+
   protected readonly canEdit = computed(() => {
-    return this.global.indoorAdminPermissions()[this.centerId()];
+    return !!this.global.indoorAdminPermissions()[this.centerId()];
   });
 
   protected readonly showLegacyTopos = signal<boolean>(

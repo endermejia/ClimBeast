@@ -37,10 +37,7 @@ export interface FilterDialog {
   gradeRange: [number, number]; // indices into ORDERED_GRADE_VALUES
   // Shade/sun filters (multi-selection); if empty/undefined, it doesn't filter
   selectedShade?: (
-    | 'shade_morning'
-    | 'shade_afternoon'
-    | 'shade_all_day'
-    | 'sun_all_day'
+    'shade_morning' | 'shade_afternoon' | 'shade_all_day' | 'sun_all_day'
   )[];
   indoor?: boolean;
   outdoor?: boolean;

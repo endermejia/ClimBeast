@@ -31,6 +31,39 @@ textarea,
   }
 }
 
+/* ---- Topo Selected Animations ---- */
+@keyframes lineGlowPulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 3px currentColor) drop-shadow(0 0 8px currentColor);
+    opacity: 1;
+  }
+  50% {
+    filter: drop-shadow(0 0 7px currentColor) drop-shadow(0 0 16px currentColor);
+    opacity: 0.85;
+  }
+}
+
+@keyframes circlePulseScale {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.22);
+  }
+}
+
+.selected-line-glow {
+  animation: lineGlowPulse 1.8s ease-in-out infinite;
+}
+
+.selected-circle-pulse {
+  animation: circlePulseScale 1.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 .tabs {
   min-inline-size: 25rem;
   padding-block-end: env(safe-area-inset-bottom);

@@ -9,6 +9,7 @@ export interface RouteBasicDto extends Pick<
 > {
   id: string | number;
   height?: number | null;
+  color?: string | null;
 }
 
 export interface RouteBasicWithOwnData extends RouteBasicDto {

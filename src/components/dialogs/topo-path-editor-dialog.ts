@@ -168,37 +168,85 @@ export interface TopoPathEditorConfig {
                   </div>
                 }
               </div>
+
+              <!-- Tips inside scrollbar -->
+              <div class="tips">
+                <p class="tip">
+                  <tui-icon icon="@tui.mouse-pointer-2" class="tip-icon" />
+                  {{ 'topos.editor.addPoint' | translate }}
+                </p>
+                <p class="tip">
+                  <tui-icon icon="@tui.move" class="tip-icon" />
+                  {{ 'topos.editor.movePoint' | translate }}
+                </p>
+              </div>
             </tui-scrollbar>
 
-            <!-- Tips (desktop only) -->
-            <div class="tips">
-              <p class="tip">
-                <tui-icon icon="@tui.mouse-pointer-2" class="tip-icon" />
-                {{ 'topos.editor.addPoint' | translate }}
-              </p>
-              <p class="tip">
-                <tui-icon icon="@tui.move" class="tip-icon" />
-                {{ 'topos.editor.movePoint' | translate }}
-              </p>
-            </div>
-
-            <!-- Line Width Slider -->
-            <div class="line-width-control">
-              <div class="control-header">
-                <span class="control-label">{{
-                  'topos.editor.lineWidth' | translate
-                }}</span>
-                <span class="control-value">{{ lineWidth() }}</span>
+            <!-- Compact Fixed Bottom Controls -->
+            <div class="sidebar-controls">
+              <!-- Line Width Slider -->
+              <div class="line-width-control">
+                <div class="control-header">
+                  <span class="control-label">{{
+                    'topos.editor.lineWidth' | translate
+                  }}</span>
+                  <span class="control-value">{{ lineWidth() }}</span>
+                </div>
+                <input
+                  tuiSlider
+                  type="range"
+                  [min]="1"
+                  [max]="15"
+                  [step]="0.5"
+                  [ngModel]="lineWidth()"
+                  (ngModelChange)="lineWidth.set($event)"
+                />
               </div>
-              <input
-                tuiSlider
-                type="range"
-                [min]="1"
-                [max]="15"
-                [step]="0.5"
-                [ngModel]="lineWidth()"
-                (ngModelChange)="lineWidth.set($event)"
-              />
+
+              <!-- Path Type Selector -->
+              @if (selectedRoute()) {
+                <div class="path-type-control">
+                  <div class="control-header">
+                    <span class="control-label">{{
+                      'topos.editor.pathType' | translate
+                    }}</span>
+                  </div>
+                  <div class="flex gap-2">
+                    <button
+                      tuiButton
+                      type="button"
+                      size="s"
+                      [appearance]="
+                        selectedRoutePathType() === 'line'
+                          ? 'primary'
+                          : 'secondary'
+                      "
+                      class="flex-1 rounded-xl!"
+                      (click)="setSelectedRoutePathType('line')"
+                    >
+                      <tui-icon icon="@tui.minus" class="mr-1" />
+                      <span>{{ 'topos.editor.pathTypeLine' | translate }}</span>
+                    </button>
+                    <button
+                      tuiButton
+                      type="button"
+                      size="s"
+                      [appearance]="
+                        selectedRoutePathType() === 'circle'
+                          ? 'primary'
+                          : 'secondary'
+                      "
+                      class="flex-1 rounded-xl!"
+                      (click)="setSelectedRoutePathType('circle')"
+                    >
+                      <tui-icon icon="@tui.circle" class="mr-1" />
+                      <span>{{
+                        'topos.editor.pathTypeCircle' | translate
+                      }}</span>
+                    </button>
+                  </div>
+                </div>
+              }
             </div>
           </div>
         </aside>
@@ -256,64 +304,114 @@ export interface TopoPathEditorConfig {
                     $event.stopPropagation()
                   "
                 >
-                  <!-- Hit area -->
-                  <polyline
-                    [attr.points]="pointsStringMap()[routeId]"
-                    fill="none"
-                    stroke="transparent"
-                    [attr.stroke-width]="
-                      routeStrokeWidthMap()[routeId] * width() * 5
-                    "
-                    stroke-linejoin="round"
-                    stroke-linecap="round"
-                  />
-                  <!-- Shadow -->
-                  <polyline
-                    [attr.points]="pointsStringMap()[routeId]"
-                    fill="none"
-                    stroke="white"
-                    [style.opacity]="style.isDashed ? 1 : 0.7"
-                    [attr.stroke-width]="
-                      routeStrokeWidthMap()[routeId] * width() +
-                      (style.isDashed ? 2.5 : 1.5)
-                    "
-                    [attr.stroke-dasharray]="
-                      style.isDashed
-                        ? width() * 0.01 + ' ' + width() * 0.01
-                        : 'none'
-                    "
-                    stroke-linejoin="round"
-                    stroke-linecap="round"
-                  />
-                  <!-- Main line -->
-                  <polyline
-                    [attr.points]="pointsStringMap()[routeId]"
-                    fill="none"
-                    [attr.stroke]="style.stroke"
-                    [style.opacity]="style.opacity"
-                    [attr.stroke-width]="
-                      routeStrokeWidthMap()[routeId] * width()
-                    "
-                    [attr.stroke-dasharray]="
-                      style.isDashed
-                        ? width() * 0.01 + ' ' + width() * 0.01
-                        : 'none'
-                    "
-                    stroke-linejoin="round"
-                    stroke-linecap="round"
-                  />
-
-                  <!-- End dot -->
-                  @if (pathData.points[pathData.points.length - 1]; as last) {
-                    <circle
-                      [attr.cx]="last.x * width()"
-                      [attr.cy]="last.y * height()"
-                      [attr.r]="routeStrokeWidthMap()[routeId] * width()"
-                      fill="white"
-                      [style.opacity]="style.opacity"
-                      stroke="black"
-                      stroke-width="0.5"
+                  @if (pathData.type === 'circle') {
+                    @let strokeW = routeStrokeWidthMap()[routeId] * width();
+                    @let circleR = strokeW * 3.5;
+                    @for (pt of pathData.points; track $index) {
+                      <!-- Hit area circle -->
+                      <circle
+                        [attr.cx]="pt.x * width()"
+                        [attr.cy]="pt.y * height()"
+                        [attr.r]="circleR + strokeW * 2"
+                        fill="transparent"
+                      />
+                      <!-- Shadow circle -->
+                      <circle
+                        [attr.cx]="pt.x * width()"
+                        [attr.cy]="pt.y * height()"
+                        [attr.r]="circleR"
+                        fill="none"
+                        stroke="white"
+                        [style.opacity]="style.isDashed ? 1 : 0.7"
+                        [attr.stroke-width]="
+                          strokeW + (style.isDashed ? 2.5 : 1.5)
+                        "
+                        [attr.stroke-dasharray]="
+                          style.isDashed
+                            ? width() * 0.008 + ' ' + width() * 0.008
+                            : 'none'
+                        "
+                      />
+                      <!-- Main circle -->
+                      <circle
+                        [attr.cx]="pt.x * width()"
+                        [attr.cy]="pt.y * height()"
+                        [attr.r]="circleR"
+                        fill="rgba(0,0,0,0.05)"
+                        [attr.stroke]="style.stroke"
+                        [style.color]="style.stroke"
+                        [style.opacity]="style.opacity"
+                        [attr.stroke-width]="strokeW"
+                        [attr.stroke-dasharray]="
+                          style.isDashed
+                            ? width() * 0.008 + ' ' + width() * 0.008
+                            : 'none'
+                        "
+                        [class.selected-circle-pulse]="isSelected"
+                      />
+                    }
+                  } @else {
+                    <!-- Hit area -->
+                    <polyline
+                      [attr.points]="pointsStringMap()[routeId]"
+                      fill="none"
+                      stroke="transparent"
+                      [attr.stroke-width]="
+                        routeStrokeWidthMap()[routeId] * width() * 5
+                      "
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
                     />
+                    <!-- Shadow -->
+                    <polyline
+                      [attr.points]="pointsStringMap()[routeId]"
+                      fill="none"
+                      stroke="white"
+                      [style.opacity]="style.isDashed ? 1 : 0.7"
+                      [attr.stroke-width]="
+                        routeStrokeWidthMap()[routeId] * width() +
+                        (style.isDashed ? 2.5 : 1.5)
+                      "
+                      [attr.stroke-dasharray]="
+                        style.isDashed
+                          ? width() * 0.01 + ' ' + width() * 0.01
+                          : 'none'
+                      "
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                    />
+                    <!-- Main line -->
+                    <polyline
+                      [attr.points]="pointsStringMap()[routeId]"
+                      fill="none"
+                      [attr.stroke]="style.stroke"
+                      [style.color]="style.stroke"
+                      [style.opacity]="style.opacity"
+                      [attr.stroke-width]="
+                        routeStrokeWidthMap()[routeId] * width()
+                      "
+                      [attr.stroke-dasharray]="
+                        style.isDashed
+                          ? width() * 0.01 + ' ' + width() * 0.01
+                          : 'none'
+                      "
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                      [class.selected-line-glow]="isSelected"
+                    />
+
+                    <!-- End dot -->
+                    @if (pathData.points[pathData.points.length - 1]; as last) {
+                      <circle
+                        [attr.cx]="last.x * width()"
+                        [attr.cy]="last.y * height()"
+                        [attr.r]="routeStrokeWidthMap()[routeId] * width()"
+                        fill="white"
+                        [style.opacity]="style.opacity"
+                        stroke="black"
+                        stroke-width="0.5"
+                      />
+                    }
                   }
                 </g>
 
@@ -498,16 +596,16 @@ export interface TopoPathEditorConfig {
     }
 
     .sidebar-scroll {
-      display: block;
-      flex: 1;
+      flex: 1 1 0%;
       min-height: 0;
+      height: 0;
     }
 
     .route-list {
       display: flex;
       flex-direction: column;
       gap: 0.375rem;
-      padding: 0.25rem 0.75rem 1rem;
+      padding: 0.25rem 0.75rem 0.5rem;
     }
 
     .route-item {
@@ -612,14 +710,12 @@ export interface TopoPathEditorConfig {
     }
 
     .tips {
-      flex-shrink: 0;
-      padding: 1rem 1.25rem;
-      border-top: 1px solid var(--tui-border-normal);
-      background: var(--tui-background-base);
+      padding: 0.5rem 1.25rem 1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
-      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.03);
+      gap: 0.375rem;
+      border-top: 1px solid var(--tui-border-normal);
+      margin-top: 0.5rem;
     }
 
     .tip,
@@ -627,7 +723,7 @@ export interface TopoPathEditorConfig {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       opacity: 0.65;
     }
 
@@ -643,15 +739,22 @@ export interface TopoPathEditorConfig {
       font-size: 0.875rem;
     }
 
-    /* ── Line Width Control ── */
-    .line-width-control {
+    /* ── Controls Panel ── */
+    .sidebar-controls {
       flex-shrink: 0;
-      padding: 1rem 1.25rem;
       border-top: 1px solid var(--tui-border-normal);
       background: var(--tui-background-neutral-1);
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
+      padding: 0.875rem 1.25rem;
+    }
+
+    .line-width-control,
+    .path-type-control {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
     }
 
     .control-header {
@@ -825,11 +928,37 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       points: { x: number; y: number }[];
       color?: string;
       width?: number;
+      type?: 'line' | 'circle';
       _ref: TopoRouteWithRoute;
     }
   >();
   lineWidth = signal(5);
   private pathsVersion = signal(0);
+
+  protected readonly selectedRoutePathType = computed<'line' | 'circle'>(() => {
+    this.pathsVersion();
+    const selected = this.selectedRoute();
+    if (!selected) return 'line';
+    const path = this.pathsMap.get(selected.route_id);
+    return (path?.type as 'line' | 'circle') || 'line';
+  });
+
+  protected setSelectedRoutePathType(type: 'line' | 'circle'): void {
+    const selected = this.selectedRoute();
+    if (!selected) return;
+    const current = this.pathsMap.get(selected.route_id);
+    if (current) {
+      current.type = type;
+    } else {
+      this.pathsMap.set(selected.route_id, {
+        points: [],
+        type,
+        _ref: selected,
+      });
+    }
+    this.pathsVersion.update((v) => v + 1);
+    this.cdr.markForCheck();
+  }
 
   width = signal(0);
   height = signal(0);
@@ -855,6 +984,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         isSelected,
         false,
         entry._ref.route.grade.toString(),
+        entry._ref.route.color || entry.color || entry._ref.path?.color,
       );
     }
     return map;
@@ -906,6 +1036,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
           points: [...tr.path.points],
           color: tr.path.color,
           width: tr.path.width,
+          type: tr.path.type || 'line',
           _ref: tr,
         });
       }
@@ -1264,6 +1395,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
             points: path.points,
             color: path.color,
             width: this.lineWidth(),
+            type: path.type || 'line',
           } as TopoPath,
         }),
       );

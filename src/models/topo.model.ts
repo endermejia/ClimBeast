@@ -24,6 +24,7 @@ export interface TopoPath {
   points: { x: number; y: number }[];
   color?: string;
   width?: number;
+  type?: 'line' | 'circle';
   [key: string]: unknown;
 }
 

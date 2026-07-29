@@ -202,8 +202,7 @@ export class IndoorRoutesTableComponent {
   protected async editIndoorAscent(
     item: RoutesTableRow | RouteItem | IndoorRouteWithExtras,
     ascent:
-      | RouteAscentWithExtras
-      | { id: string | number; type: AscentType | null },
+      RouteAscentWithExtras | { id: string | number; type: AscentType | null },
   ): Promise<void> {
     const r =
       '_ref' in item

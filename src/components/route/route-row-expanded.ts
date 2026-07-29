@@ -350,8 +350,7 @@ export class RouteRowExpandedComponent {
   editAscent = output<{
     route: RouteItem | IndoorRouteWithExtras;
     own_ascent:
-      | RouteAscentWithExtras
-      | { id: string | number; type: AscentType | null };
+      RouteAscentWithExtras | { id: string | number; type: AscentType | null };
   }>();
   toggleProject = output<RoutesTableRow>();
   editRoute = output<RouteItem | IndoorRouteWithExtras>();

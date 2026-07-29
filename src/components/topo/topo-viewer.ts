@@ -104,62 +104,127 @@ interface RenderedRoute extends TopoRouteWithRoute {
             >
               @for (tr of renderedRoutes(); track tr.route_id) {
                 @if (tr.path && tr.path.points.length > 0) {
-                  <polyline
-                    class="pointer-events-auto cursor-pointer"
-                    (click)="onPathClick($event, tr); $event.stopPropagation()"
-                    (mouseenter)="onHoverRoute(tr.route_id)"
-                    (mouseleave)="onUnhoverRoute()"
-                    [attr.points]="tr.pointsString"
-                    fill="none"
-                    stroke="transparent"
-                    [attr.stroke-width]="
-                      (selectedRouteId() === tr.route_id ? 0.06 : 0.025) * 1000
-                    "
-                    stroke-linejoin="round"
-                    stroke-linecap="round"
-                  />
+                  @if (tr.path.type === 'circle') {
+                    @for (pt of tr.path.points; track $index) {
+                      <circle
+                        class="pointer-events-auto cursor-pointer"
+                        (click)="
+                          onPathClick($event, tr); $event.stopPropagation()
+                        "
+                        (mouseenter)="onHoverRoute(tr.route_id)"
+                        (mouseleave)="onUnhoverRoute()"
+                        [attr.cx]="pt.x * 1000"
+                        [attr.cy]="pt.y * hScale"
+                        [attr.r]="tr.width * 3500 + 10"
+                        fill="transparent"
+                      />
+                    }
+                  } @else {
+                    <polyline
+                      class="pointer-events-auto cursor-pointer"
+                      (click)="
+                        onPathClick($event, tr); $event.stopPropagation()
+                      "
+                      (mouseenter)="onHoverRoute(tr.route_id)"
+                      (mouseleave)="onUnhoverRoute()"
+                      [attr.points]="tr.pointsString"
+                      fill="none"
+                      stroke="transparent"
+                      [attr.stroke-width]="
+                        (selectedRouteId() === tr.route_id ? 0.06 : 0.025) *
+                        1000
+                      "
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                    />
+                  }
                 }
               }
               @for (tr of renderedRoutes(); track tr.route_id) {
                 @if (tr.path && tr.path.points.length > 0) {
-                  <polyline
-                    [attr.points]="tr.pointsString"
-                    fill="none"
-                    stroke="white"
-                    [style.opacity]="tr.style.isDashed ? 1 : 0.7"
-                    [attr.stroke-width]="
-                      tr.width * 1000 + (tr.style.isDashed ? 2.5 : 1.5)
-                    "
-                    [attr.stroke-dasharray]="
-                      tr.style.isDashed ? '10, 10' : 'none'
-                    "
-                    stroke-linejoin="round"
-                    stroke-linecap="round"
-                    class="transition-all duration-300"
-                  />
-                  <polyline
-                    [attr.points]="tr.pointsString"
-                    fill="none"
-                    [attr.stroke]="tr.style.stroke"
-                    [style.opacity]="tr.style.opacity"
-                    [attr.stroke-width]="tr.width * 1000"
-                    [attr.stroke-dasharray]="
-                      tr.style.isDashed ? '10, 10' : 'none'
-                    "
-                    stroke-linejoin="round"
-                    stroke-linecap="round"
-                    class="transition-all duration-300"
-                  />
-                  @if (tr.path.points[tr.path.points.length - 1]; as last) {
-                    <circle
-                      [attr.cx]="last.x * 1000"
-                      [attr.cy]="last.y * hScale"
-                      [attr.r]="tr.width * 1000"
-                      fill="white"
-                      [style.opacity]="tr.style.opacity"
-                      stroke="black"
-                      [attr.stroke-width]="0.5"
+                  @let circleR = tr.width * 3500;
+                  @let isSel =
+                    selectedRouteId() === tr.route_id ||
+                    hoveredRouteId() === tr.route_id;
+                  @if (tr.path.type === 'circle') {
+                    @for (pt of tr.path.points; track $index) {
+                      <circle
+                        [attr.cx]="pt.x * 1000"
+                        [attr.cy]="pt.y * hScale"
+                        [attr.r]="circleR"
+                        fill="none"
+                        stroke="white"
+                        [style.opacity]="tr.style.isDashed ? 1 : 0.7"
+                        [attr.stroke-width]="
+                          tr.width * 1000 + (tr.style.isDashed ? 2.5 : 1.5)
+                        "
+                        [attr.stroke-dasharray]="
+                          tr.style.isDashed ? '6, 6' : 'none'
+                        "
+                        stroke-linejoin="round"
+                        stroke-linecap="round"
+                        class="transition-all duration-300"
+                      />
+                      <circle
+                        [attr.cx]="pt.x * 1000"
+                        [attr.cy]="pt.y * hScale"
+                        [attr.r]="circleR"
+                        fill="rgba(0,0,0,0.05)"
+                        [attr.stroke]="tr.style.stroke"
+                        [style.color]="tr.style.stroke"
+                        [style.opacity]="tr.style.opacity"
+                        [attr.stroke-width]="tr.width * 1000"
+                        [attr.stroke-dasharray]="
+                          tr.style.isDashed ? '6, 6' : 'none'
+                        "
+                        stroke-linejoin="round"
+                        stroke-linecap="round"
+                        class="transition-all duration-300"
+                        [class.selected-circle-pulse]="isSel"
+                      />
+                    }
+                  } @else {
+                    <polyline
+                      [attr.points]="tr.pointsString"
+                      fill="none"
+                      stroke="white"
+                      [style.opacity]="tr.style.isDashed ? 1 : 0.7"
+                      [attr.stroke-width]="
+                        tr.width * 1000 + (tr.style.isDashed ? 2.5 : 1.5)
+                      "
+                      [attr.stroke-dasharray]="
+                        tr.style.isDashed ? '10, 10' : 'none'
+                      "
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                      class="transition-all duration-300"
                     />
+                    <polyline
+                      [attr.points]="tr.pointsString"
+                      fill="none"
+                      [attr.stroke]="tr.style.stroke"
+                      [style.color]="tr.style.stroke"
+                      [style.opacity]="tr.style.opacity"
+                      [attr.stroke-width]="tr.width * 1000"
+                      [attr.stroke-dasharray]="
+                        tr.style.isDashed ? '10, 10' : 'none'
+                      "
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                      class="transition-all duration-300"
+                      [class.selected-line-glow]="isSel"
+                    />
+                    @if (tr.path.points[tr.path.points.length - 1]; as last) {
+                      <circle
+                        [attr.cx]="last.x * 1000"
+                        [attr.cy]="last.y * hScale"
+                        [attr.r]="tr.width * 1000"
+                        fill="white"
+                        [style.opacity]="tr.style.opacity"
+                        stroke="black"
+                        [attr.stroke-width]="0.5"
+                      />
+                    }
                   }
                 }
               }
@@ -271,62 +336,127 @@ interface RenderedRoute extends TopoRouteWithRoute {
             >
               @for (tr of renderedRoutes(); track tr.route_id) {
                 @if (tr.path && tr.path.points.length > 0) {
-                  <polyline
-                    class="pointer-events-auto cursor-pointer"
-                    (click)="onPathClick($event, tr); $event.stopPropagation()"
-                    (mouseenter)="onHoverRoute(tr.route_id)"
-                    (mouseleave)="onUnhoverRoute()"
-                    [attr.points]="tr.pointsString"
-                    fill="none"
-                    stroke="transparent"
-                    [attr.stroke-width]="
-                      (selectedRouteId() === tr.route_id ? 0.06 : 0.025) * 1000
-                    "
-                    stroke-linejoin="round"
-                    stroke-linecap="round"
-                  />
+                  @if (tr.path.type === 'circle') {
+                    @for (pt of tr.path.points; track $index) {
+                      <circle
+                        class="pointer-events-auto cursor-pointer"
+                        (click)="
+                          onPathClick($event, tr); $event.stopPropagation()
+                        "
+                        (mouseenter)="onHoverRoute(tr.route_id)"
+                        (mouseleave)="onUnhoverRoute()"
+                        [attr.cx]="pt.x * 1000"
+                        [attr.cy]="pt.y * hScale"
+                        [attr.r]="tr.width * 3500 + 10"
+                        fill="transparent"
+                      />
+                    }
+                  } @else {
+                    <polyline
+                      class="pointer-events-auto cursor-pointer"
+                      (click)="
+                        onPathClick($event, tr); $event.stopPropagation()
+                      "
+                      (mouseenter)="onHoverRoute(tr.route_id)"
+                      (mouseleave)="onUnhoverRoute()"
+                      [attr.points]="tr.pointsString"
+                      fill="none"
+                      stroke="transparent"
+                      [attr.stroke-width]="
+                        (selectedRouteId() === tr.route_id ? 0.06 : 0.025) *
+                        1000
+                      "
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                    />
+                  }
                 }
               }
               @for (tr of renderedRoutes(); track tr.route_id) {
                 @if (tr.path && tr.path.points.length > 0) {
-                  <polyline
-                    [attr.points]="tr.pointsString"
-                    fill="none"
-                    stroke="white"
-                    [style.opacity]="tr.style.isDashed ? 1 : 0.7"
-                    [attr.stroke-width]="
-                      tr.width * 1000 + (tr.style.isDashed ? 2.5 : 1.5)
-                    "
-                    [attr.stroke-dasharray]="
-                      tr.style.isDashed ? '10, 10' : 'none'
-                    "
-                    stroke-linejoin="round"
-                    stroke-linecap="round"
-                    class="transition-all duration-300"
-                  />
-                  <polyline
-                    [attr.points]="tr.pointsString"
-                    fill="none"
-                    [attr.stroke]="tr.style.stroke"
-                    [style.opacity]="tr.style.opacity"
-                    [attr.stroke-width]="tr.width * 1000"
-                    [attr.stroke-dasharray]="
-                      tr.style.isDashed ? '10, 10' : 'none'
-                    "
-                    stroke-linejoin="round"
-                    stroke-linecap="round"
-                    class="transition-all duration-300"
-                  />
-                  @if (tr.path.points[tr.path.points.length - 1]; as last) {
-                    <circle
-                      [attr.cx]="last.x * 1000"
-                      [attr.cy]="last.y * hScale"
-                      [attr.r]="tr.width * 1000"
-                      fill="white"
-                      [style.opacity]="tr.style.opacity"
-                      stroke="black"
-                      [attr.stroke-width]="0.5"
+                  @let circleR = tr.width * 3500;
+                  @let isSel =
+                    selectedRouteId() === tr.route_id ||
+                    hoveredRouteId() === tr.route_id;
+                  @if (tr.path.type === 'circle') {
+                    @for (pt of tr.path.points; track $index) {
+                      <circle
+                        [attr.cx]="pt.x * 1000"
+                        [attr.cy]="pt.y * hScale"
+                        [attr.r]="circleR"
+                        fill="none"
+                        stroke="white"
+                        [style.opacity]="tr.style.isDashed ? 1 : 0.7"
+                        [attr.stroke-width]="
+                          tr.width * 1000 + (tr.style.isDashed ? 2.5 : 1.5)
+                        "
+                        [attr.stroke-dasharray]="
+                          tr.style.isDashed ? '6, 6' : 'none'
+                        "
+                        stroke-linejoin="round"
+                        stroke-linecap="round"
+                        class="transition-all duration-300"
+                      />
+                      <circle
+                        [attr.cx]="pt.x * 1000"
+                        [attr.cy]="pt.y * hScale"
+                        [attr.r]="circleR"
+                        fill="rgba(0,0,0,0.05)"
+                        [attr.stroke]="tr.style.stroke"
+                        [style.color]="tr.style.stroke"
+                        [style.opacity]="tr.style.opacity"
+                        [attr.stroke-width]="tr.width * 1000"
+                        [attr.stroke-dasharray]="
+                          tr.style.isDashed ? '6, 6' : 'none'
+                        "
+                        stroke-linejoin="round"
+                        stroke-linecap="round"
+                        class="transition-all duration-300"
+                        [class.selected-circle-pulse]="isSel"
+                      />
+                    }
+                  } @else {
+                    <polyline
+                      [attr.points]="tr.pointsString"
+                      fill="none"
+                      stroke="white"
+                      [style.opacity]="tr.style.isDashed ? 1 : 0.7"
+                      [attr.stroke-width]="
+                        tr.width * 1000 + (tr.style.isDashed ? 2.5 : 1.5)
+                      "
+                      [attr.stroke-dasharray]="
+                        tr.style.isDashed ? '10, 10' : 'none'
+                      "
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                      class="transition-all duration-300"
                     />
+                    <polyline
+                      [attr.points]="tr.pointsString"
+                      fill="none"
+                      [attr.stroke]="tr.style.stroke"
+                      [style.color]="tr.style.stroke"
+                      [style.opacity]="tr.style.opacity"
+                      [attr.stroke-width]="tr.width * 1000"
+                      [attr.stroke-dasharray]="
+                        tr.style.isDashed ? '10, 10' : 'none'
+                      "
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                      class="transition-all duration-300"
+                      [class.selected-line-glow]="isSel"
+                    />
+                    @if (tr.path.points[tr.path.points.length - 1]; as last) {
+                      <circle
+                        [attr.cx]="last.x * 1000"
+                        [attr.cy]="last.y * hScale"
+                        [attr.r]="tr.width * 1000"
+                        fill="white"
+                        [style.opacity]="tr.style.opacity"
+                        stroke="black"
+                        [attr.stroke-width]="0.5"
+                      />
+                    }
                   }
                 }
               }

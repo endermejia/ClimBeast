@@ -38,8 +38,7 @@ export interface PyramidSlotDialogData {
   expectedGrade?: number;
   currentRouteId?: number | null;
   currentRoute?:
-    | (RouteDto & { crag?: { slug: string; area?: { slug: string } } })
-    | null;
+    (RouteDto & { crag?: { slug: string; area?: { slug: string } } }) | null;
   isCompleted?: boolean;
   ascent?: { score: number; type: AscentType };
   userId: string;

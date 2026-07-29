@@ -404,7 +404,7 @@ import { handleErrorToast, mapLocationUrl } from '../../utils';
                       </div>
                     }
 
-                    @if (canEdit()) {
+                    @if (canCreateRoute()) {
                       <button
                         tuiButton
                         appearance="textfield"
@@ -579,10 +579,15 @@ export class IndoorCenterComponent {
     return this.global.isAdmin();
   });
 
+  protected readonly canCreateRoute = computed(() => {
+    const center = this.center();
+    return this.global.canCreateIndoorInCenter(center?.id);
+  });
+
   protected readonly canEdit = computed(() => {
     const center = this.center();
     if (!center) return false;
-    return this.global.indoorAdminPermissions()[center.id];
+    return !!this.global.indoorAdminPermissions()[center.id];
   });
 
   protected async openEditCenter(): Promise<void> {
