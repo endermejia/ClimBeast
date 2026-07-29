@@ -96,7 +96,7 @@ export interface ChatDialogData {
     TuiTextarea,
   ],
   template: `
-    <div class="flex h-[70dvh] min-h-[500px] -m-4">
+    <div class="flex h-[82dvh] min-h-[600px] -m-4">
       <!-- Sidebar: rooms list (always rendered, hidden on mobile when room selected) -->
       <div
         class="flex flex-col w-80 max-md:w-full border-r border-(--tui-border-normal) min-w-0 min-h-0"

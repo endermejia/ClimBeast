@@ -226,7 +226,7 @@ import { TourHintComponent } from './tour-hint';
               explore.isActive ? 'flat-destructive' : 'flat-grayscale'
             "
             [tuiSkeleton]="loading()"
-            class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full relative"
+            class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full relative group"
             [class.pointer-events-none]="global.isOffline()"
             [class.opacity-50]="global.isOffline()"
             [attr.aria-label]="'nav.explore' | translate"
@@ -296,7 +296,7 @@ import { TourHintComponent } from './tour-hint';
               [tuiAppearance]="
                 config.isActive ? 'flat-destructive' : 'flat-grayscale'
               "
-              class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full"
+              class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full group"
               [attr.aria-label]="
                 (global.canEditAsAdmin() ? 'config' : 'nav.my-areas')
                   | translate
@@ -330,7 +330,7 @@ import { TourHintComponent } from './tour-hint';
                 searchExpanded() ? 'flat-destructive' : 'flat-grayscale'
               "
               [tuiSkeleton]="loading()"
-              class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full cursor-pointer relative"
+              class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full cursor-pointer relative group"
               (click)="searchOpen = true"
               [attr.aria-label]="'search' | translate"
             >
@@ -510,7 +510,7 @@ import { TourHintComponent } from './tour-hint';
               profile.isActive ? 'flat-destructive' : 'flat-grayscale'
             "
             [tuiSkeleton]="loading()"
-            class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full lg:mt-auto"
+            class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full lg:mt-auto group"
             [attr.aria-label]="'nav.profile' | translate"
           >
             <span

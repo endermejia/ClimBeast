@@ -788,16 +788,13 @@ interface Country {
               @if (model().isPrivate) {
                 <button
                   tuiButton
+                  iconStart="@tui.users"
                   appearance="primary"
                   type="button"
                   size="m"
                   class="w-full justify-start group relative"
                   (click)="openFollowRequestsDialog()"
                 >
-                  <tui-icon
-                    icon="@tui.users"
-                    class="mr-2 group-hover:scale-110 transition-transform"
-                  />
                   {{ 'followRequests' | translate }}
                   @if (pendingRequestsCount() > 0) {
                     <span tuiBadge class="absolute -top-2 -right-2">{{
@@ -809,31 +806,25 @@ interface Country {
 
               <button
                 tuiButton
+                iconStart="@tui.receipt"
                 appearance="outline"
                 type="button"
                 size="m"
                 class="w-full justify-start group"
                 (click)="openPurchaseHistoryDialog()"
               >
-                <tui-icon
-                  icon="@tui.receipt"
-                  class="mr-2 group-hover:scale-110 transition-transform"
-                />
                 {{ 'purchaseHistory.view' | translate }}
               </button>
 
               <button
                 tuiButton
+                iconStart="@tui.download"
                 appearance="outline"
                 type="button"
                 size="m"
                 class="w-full justify-start group"
                 (click)="openImport8aDialog()"
               >
-                <tui-icon
-                  icon="@tui.download"
-                  class="mr-2 group-hover:scale-110 transition-transform"
-                />
                 {{ 'import8a.button' | translate }}
               </button>
             </div>
@@ -853,31 +844,25 @@ interface Country {
             <div class="flex flex-col gap-3">
               <button
                 tuiButton
+                iconStart="@tui.log-out"
                 appearance="secondary"
                 type="button"
                 size="m"
                 class="w-full justify-start group"
                 (click)="logout()"
               >
-                <tui-icon
-                  icon="@tui.log-out"
-                  class="mr-2 group-hover:scale-110 transition-transform"
-                />
                 {{ 'auth.logout' | translate }}
               </button>
 
               <button
                 tuiButton
+                iconStart="@tui.trash"
                 appearance="flat-destructive"
                 type="button"
                 size="m"
                 class="w-full justify-start group"
                 (click)="deleteAccount(deleteDialog)"
               >
-                <tui-icon
-                  icon="@tui.trash"
-                  class="mr-2 group-hover:scale-110 transition-transform"
-                />
                 {{ 'profile.deleteAccount.button' | translate }}
               </button>
             </div>
