@@ -207,7 +207,7 @@ interface RenderedRoute extends TopoRouteWithRoute {
     @if (isFullscreen()) {
       <div
         #fullscreenContainer
-        class="fixed inset-0 z-1000 flex items-center justify-center overflow-hidden touch-none backdrop-blur-xl cursor-grab active:cursor-grabbing"
+        class="fixed inset-0 z-1000 flex items-center justify-center overflow-hidden touch-none bg-black/80 backdrop-blur-xl cursor-grab active:cursor-grabbing"
         tabindex="0"
         (keydown.enter)="toggleFullscreen(false)"
         (click)="toggleFullscreen(false)"
