@@ -18,14 +18,14 @@ import {
   extractErrorMessage,
 } from '../../utils';
 
-import { injectContext, PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import { TuiDialogContext } from '@taiga-ui/core';
+import { injectContext } from '@taiga-ui/polymorpheus';
+import { TuiDialogContext, TuiDialogService } from '@taiga-ui/core';
+import { openImageEditor } from '../../utils/open-image-editor';
 import { TuiIdentityMatcher, tuiIsString } from '@taiga-ui/cdk';
 import {
   TuiButton,
   TuiLabel,
   TuiIcon,
-  TuiDialogService,
   TuiLoader,
   TuiDataList,
   TuiOptGroup,
@@ -48,14 +48,10 @@ import {
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import { firstValueFrom } from 'rxjs';
-
 import { AreasService } from '../../services/areas.service';
 import { MerchandiseService } from '../../services/merchandise.service';
 
 import { ToastService } from '../../services/toast.service';
-
-import { ImageEditorDialogComponent } from './image-editor-dialog';
 
 import { AreaPackDetail } from '../../models';
 
@@ -448,18 +444,7 @@ export class AdminPackDialogComponent {
       return;
     }
 
-    const result = await firstValueFrom(
-      this.dialogs.open<File | null>(
-        new PolymorpheusComponent(ImageEditorDialogComponent),
-        {
-          data,
-          appearance: 'fullscreen',
-          closable: false,
-          dismissible: false,
-        },
-      ),
-      { defaultValue: null },
-    );
+    const result = await openImageEditor(this.dialogs, data);
 
     this.isProcessingPhoto.set(false);
 

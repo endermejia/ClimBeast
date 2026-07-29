@@ -2,9 +2,20 @@ import { inject, Injectable, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { PLATFORM_ID } from '@angular/core';
 
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
+import { TuiDialogService } from '@taiga-ui/core';
+
+import { TranslateService } from '@ngx-translate/core';
+
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { firstValueFrom } from 'rxjs';
 
 import { SupabaseService } from './supabase.service';
+
+import {
+  ChatDialogComponent,
+  ChatDialogData,
+} from '../components/dialogs/chat-dialog';
 
 import {
   ChatMessageDto,
@@ -19,6 +30,8 @@ import {
 export class MessagingService {
   private readonly supabase = inject(SupabaseService);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly dialogs = inject(TuiDialogService);
+  private readonly translate = inject(TranslateService);
 
   readonly unreadMessagesCount = signal(0);
 
@@ -288,5 +301,16 @@ export class MessagingService {
         },
       )
       .subscribe();
+  }
+
+  openChatDialog(data?: ChatDialogData): void {
+    void firstValueFrom(
+      this.dialogs.open(new PolymorpheusComponent(ChatDialogComponent), {
+        label: this.translate.instant('messages'),
+        size: 'l',
+        data,
+      }),
+      { defaultValue: undefined },
+    );
   }
 }

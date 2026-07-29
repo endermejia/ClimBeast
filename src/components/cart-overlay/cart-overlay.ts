@@ -7,23 +7,13 @@ import {
   signal,
 } from '@angular/core';
 
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TuiBadge } from '@taiga-ui/kit';
-import {
-  TuiButton,
-  TuiDialogService,
-  TuiIcon,
-  TuiLoader,
-  TuiScrollbar,
-} from '@taiga-ui/core';
+import { TuiButton, TuiIcon, TuiLoader, TuiScrollbar } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { CartService } from '../../services/cart.service';
 import { MerchandiseService } from '../../services/merchandise.service';
-import { MerchandiseItemDialogComponent } from '../dialogs/merchandise-item-dialog';
-import { MerchandisePackDialogComponent } from '../dialogs/merchandise-pack-dialog';
-import { PurchaseHistoryDialogComponent } from '../dialogs/purchase-history-dialog';
 
 import type { CartProduct } from '../../models';
 
@@ -297,7 +287,6 @@ import type { CartProduct } from '../../models';
 })
 export class CartOverlayComponent {
   private readonly cartService = inject(CartService);
-  private readonly dialogs = inject(TuiDialogService);
   private readonly merchService = inject(MerchandiseService);
 
   readonly closeOverlay = output<void>();
@@ -315,24 +304,12 @@ export class CartOverlayComponent {
       if (item.type === 'merchandise') {
         const product = await this.merchService.getMerchandiseItemById(item.id);
         if (product) {
-          this.dialogs
-            .open(new PolymorpheusComponent(MerchandiseItemDialogComponent), {
-              data: product,
-              label: product.name,
-              size: 'l',
-            })
-            .subscribe();
+          this.merchService.openMerchandiseItem(product);
         }
       } else if (item.type === 'area_pack') {
         const pack = await this.merchService.getAreaPackById(item.id);
         if (pack) {
-          this.dialogs
-            .open(new PolymorpheusComponent(MerchandisePackDialogComponent), {
-              data: pack,
-              label: pack.name,
-              size: 'l',
-            })
-            .subscribe();
+          this.merchService.openMerchandisePack(pack);
         }
       }
     } finally {
@@ -341,11 +318,7 @@ export class CartOverlayComponent {
   }
 
   protected openPurchaseHistory(): void {
-    this.dialogs
-      .open(new PolymorpheusComponent(PurchaseHistoryDialogComponent), {
-        size: 'm',
-      })
-      .subscribe();
+    this.merchService.openPurchaseHistory();
   }
 
   removeItem(

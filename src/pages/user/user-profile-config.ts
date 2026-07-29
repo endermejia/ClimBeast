@@ -84,6 +84,7 @@ import {
 import { EightAnuService } from '../../services/eight-anu.service';
 import { FollowRequestsService } from '../../services/follow-requests.service';
 import { GlobalData } from '../../services/global-data';
+import { MerchandiseService } from '../../services/merchandise.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { TourService } from '../../services/tour.service';
@@ -92,7 +93,6 @@ import { UserProfilesService } from '../../services/user-profiles.service';
 
 import { FirstStepsDialogComponent } from '../../components/dialogs/first-steps-dialog';
 import { FollowRequestsDialogComponent } from '../../components/dialogs/follow-requests-dialog';
-import { PurchaseHistoryDialogComponent } from '../../components/dialogs/purchase-history-dialog';
 import { TourHintComponent } from '../../components/ui/tour-hint';
 
 import {
@@ -962,6 +962,7 @@ export class UserProfileConfigComponent {
   readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly dialogs = inject(TuiDialogService);
+  private readonly merchService = inject(MerchandiseService);
 
   /**
    * Used to coordinate the success toast with language changes.
@@ -1760,11 +1761,7 @@ export class UserProfileConfigComponent {
   }
 
   openPurchaseHistoryDialog(): void {
-    this.dialogs
-      .open(new PolymorpheusComponent(PurchaseHistoryDialogComponent), {
-        size: 'm',
-      })
-      .subscribe();
+    this.merchService.openPurchaseHistory();
   }
 
   async confirmDeleteAccount(observer: Observer<void>): Promise<void> {

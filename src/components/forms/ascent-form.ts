@@ -14,7 +14,7 @@ import {
   untracked,
 } from '@angular/core';
 
-import { injectContext, PolymorpheusComponent } from '@taiga-ui/polymorpheus';
+import { injectContext } from '@taiga-ui/polymorpheus';
 import { TuiDay } from '@taiga-ui/cdk';
 import {
   TUI_CONFIRM,
@@ -53,13 +53,11 @@ import { RoutesService } from '../../services/routes.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { IndoorService } from '../../services/indoor.service';
+import { openImageEditor } from '../../utils/open-image-editor';
 
 import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
 import { CounterComponent } from '../ui/counter';
-import {
-  ImageEditorDialogComponent,
-  ImageEditorConfig,
-} from '../dialogs/image-editor-dialog';
+import { ImageEditorConfig } from '../dialogs/image-editor-dialog';
 
 import {
   AscentDialogData,
@@ -1221,18 +1219,7 @@ export default class AscentFormComponent {
       return;
     }
 
-    const result = await firstValueFrom(
-      this.dialogs.open<File | null>(
-        new PolymorpheusComponent(ImageEditorDialogComponent),
-        {
-          data,
-          appearance: 'fullscreen',
-          closable: false,
-          dismissible: false,
-        },
-      ),
-      { defaultValue: null },
-    );
+    const result = await openImageEditor(this.dialogs, data);
 
     // Reset processing flag
     this.isProcessingPhoto.set(false);

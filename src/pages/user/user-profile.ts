@@ -39,15 +39,15 @@ import { BlockingService } from '../../services/blocking.service';
 import { FollowRequestsService } from '../../services/follow-requests.service';
 import { FollowsService } from '../../services/follows.service';
 import { GlobalData } from '../../services/global-data';
+import { MessagingService } from '../../services/messaging.service';
+import { openPhotoViewer } from '../../utils/open-photo-viewer';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { TourService } from '../../services/tour.service';
 import { TourStep } from '../../services/tour.service';
 
-import { ChatDialogComponent } from '../../components/dialogs/chat-dialog';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { MenuOptionsButtonComponent } from '../../components/ui/menu-options-button';
-import { PhotoViewerDialogComponent } from '../../components/dialogs/photo-viewer-dialog';
 import { TourHintComponent } from '../../components/ui/tour-hint';
 import { UserListDialogComponent } from '../../components/dialogs/user-list-dialog';
 import { UserProfileAscentsComponent } from '../../components/user-profile/user-profile-ascents';
@@ -370,6 +370,7 @@ import { UserInfoComponent } from '../../components/ui/user-info';
 })
 export class UserProfileComponent {
   protected readonly global = inject(GlobalData);
+  protected readonly messagingService = inject(MessagingService);
   protected readonly supabase = inject(SupabaseService);
   protected readonly router = inject(Router);
   protected readonly tourService = inject(TourService);
@@ -380,7 +381,6 @@ export class UserProfileComponent {
   protected readonly followsService = inject(FollowsService);
   private readonly blockingService = inject(BlockingService);
   private readonly toast = inject(ToastService);
-
   private readonly dialogs = inject(TuiDialogService);
 
   // Route param (optional)
@@ -917,27 +917,14 @@ export class UserProfileComponent {
     const userId = this.profile()?.id;
     if (!userId) return;
 
-    void firstValueFrom(
-      this.dialogs.open(new PolymorpheusComponent(ChatDialogComponent), {
-        data: { userId },
-        label: this.translate.instant('messages'),
-        size: 'm',
-      }),
-      { defaultValue: undefined },
-    );
+    this.messagingService.openChatDialog({ userId });
   }
 
   protected showEnlargedPhoto(): void {
     const avatar = this.profileAvatarSrc();
     if (!avatar) return;
 
-    void this.dialogs
-      .open(new PolymorpheusComponent(PhotoViewerDialogComponent), {
-        data: { imageUrl: avatar },
-        size: 'l',
-        appearance: 'flat',
-      })
-      .subscribe();
+    openPhotoViewer(this.dialogs, avatar);
   }
 }
 

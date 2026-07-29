@@ -16,8 +16,8 @@ import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
 
-import { LikesComponent } from './likes';
 import { UserListDialogComponent } from '../dialogs/user-list-dialog';
+import { LikesComponent } from './likes';
 
 @Component({
   selector: 'app-comment-likes',

@@ -8,9 +8,9 @@ import {
   resource,
 } from '@angular/core';
 
-import { injectContext, PolymorpheusComponent } from '@taiga-ui/polymorpheus';
+import { injectContext } from '@taiga-ui/polymorpheus';
 import { TuiAvatar, TuiBadgeNotification } from '@taiga-ui/kit';
-import { TuiDialogContext, TuiDialogService } from '@taiga-ui/core';
+import { TuiDialogContext } from '@taiga-ui/core';
 import {
   TuiAppearance,
   TuiButton,
@@ -26,9 +26,9 @@ import { firstValueFrom } from 'rxjs';
 import { AppNotificationsService } from '../../services/app-notifications.service';
 import { AscentsService } from '../../services/ascents.service';
 import { GlobalData } from '../../services/global-data';
+import { MessagingService } from '../../services/messaging.service';
 import { SupabaseService } from '../../services/supabase.service';
 
-import { ChatDialogComponent } from './chat-dialog';
 import { EmptyStateComponent } from '../ui/empty-state';
 
 import {
@@ -149,11 +149,11 @@ interface GroupedNotification {
 export class NotificationsDialogComponent {
   protected readonly supabase = inject(SupabaseService);
   private readonly notificationsService = inject(AppNotificationsService);
-  private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
   protected readonly context = injectContext<TuiDialogContext<void, void>>();
   private readonly ascentsService = inject(AscentsService);
   private readonly global = inject(GlobalData);
+  protected readonly messagingService = inject(MessagingService);
   private readonly router = inject(Router);
 
   protected readonly notificationsResource = resource<
@@ -268,14 +268,7 @@ export class NotificationsDialogComponent {
         });
       }
     } else if (group.type === NotificationTypes.MESSAGE) {
-      void firstValueFrom(
-        this.dialogs.open(new PolymorpheusComponent(ChatDialogComponent), {
-          label: this.translate.instant('nav.chat'),
-          size: 'm',
-          data: { userId: group.actor_id },
-        }),
-        { defaultValue: undefined },
-      );
+      this.messagingService.openChatDialog({ userId: group.actor_id });
     } else if (
       group.type === NotificationTypes.FOLLOW_REQUEST ||
       group.type === NotificationTypes.FOLLOW_ACCEPTED

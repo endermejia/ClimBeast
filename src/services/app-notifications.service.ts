@@ -1,9 +1,16 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { IS_BROWSER } from '../app/is-browser';
 
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
+import { TuiDialogService } from '@taiga-ui/core';
+
+import { TranslateService } from '@ngx-translate/core';
+
 import { RealtimeChannel } from '@supabase/supabase-js';
 
 import { SupabaseService } from './supabase.service';
+
+import { NotificationsDialogComponent } from '../components/dialogs/notifications-dialog';
 
 import {
   NotificationInsertDto,
@@ -18,6 +25,8 @@ import {
 export class AppNotificationsService {
   private readonly supabase = inject(SupabaseService);
   private readonly isBrowser = inject(IS_BROWSER);
+  private readonly dialogs = inject(TuiDialogService);
+  private readonly translate = inject(TranslateService);
 
   readonly unreadCount = signal(0);
 
@@ -214,6 +223,15 @@ export class AppNotificationsService {
           callback(payload.new as NotificationInsertDto);
         },
       )
+      .subscribe();
+  }
+
+  openNotifications(): void {
+    this.dialogs
+      .open(new PolymorpheusComponent(NotificationsDialogComponent), {
+        label: this.translate.instant('notifications'),
+        size: 'm',
+      })
       .subscribe();
   }
 }

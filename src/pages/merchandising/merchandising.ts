@@ -41,8 +41,6 @@ import { MerchandiseService } from '../../services/merchandise.service';
 
 import { AdminMerchandiseDialogComponent } from '../../components/dialogs/admin-merchandise-dialog';
 import { AdminPackDialogComponent } from '../../components/dialogs/admin-pack-dialog';
-import { MerchandiseItemDialogComponent } from '../../components/dialogs/merchandise-item-dialog';
-import { MerchandisePackDialogComponent } from '../../components/dialogs/merchandise-pack-dialog';
 import { MerchandiseCardComponent } from '../../components/merchandise/merchandise-card';
 import { PackCardComponent } from '../../components/merchandise/pack-card';
 
@@ -394,23 +392,11 @@ export class MerchandisingComponent {
   protected readonly isAdmin = this.global.isAdmin;
 
   protected openItemDetail(item: MerchandiseItemDetail): void {
-    this.dialogService
-      .open(new PolymorpheusComponent(MerchandiseItemDialogComponent), {
-        data: item,
-        label: this.translate.instant(item.name || 'merchandising.items.title'),
-        size: 'l',
-      })
-      .subscribe();
+    this.merchService.openMerchandiseItem(item);
   }
 
   protected openPackDetail(pack: AreaPackDetail): void {
-    this.dialogService
-      .open(new PolymorpheusComponent(MerchandisePackDialogComponent), {
-        data: pack,
-        label: pack.name,
-        size: 'l',
-      })
-      .subscribe();
+    this.merchService.openMerchandisePack(pack);
   }
 
   protected editItem(item?: MerchandiseItemDetail): void {

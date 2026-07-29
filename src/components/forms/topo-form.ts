@@ -15,7 +15,7 @@ import {
   untracked,
 } from '@angular/core';
 
-import { injectContext, PolymorpheusComponent } from '@taiga-ui/polymorpheus';
+import { injectContext } from '@taiga-ui/polymorpheus';
 import { TuiIdentityMatcher, tuiIsString, TuiTime } from '@taiga-ui/cdk';
 import { type TuiDialogContext } from '@taiga-ui/core';
 import {
@@ -51,13 +51,11 @@ import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
 import { IndoorService } from '../../services/indoor.service';
+import { openImageEditor } from '../../utils/open-image-editor';
 import { ShadeInfoPipe } from '../../pipes/shade-info.pipe';
 
 import { GradeComponent } from '../ui/avatar-grade';
-import {
-  ImageEditorDialogComponent,
-  ImageEditorConfig,
-} from '../dialogs/image-editor-dialog';
+import { ImageEditorConfig } from '../dialogs/image-editor-dialog';
 
 import {
   RouteDto,
@@ -1001,18 +999,7 @@ export class TopoFormComponent {
       return;
     }
 
-    const result = await firstValueFrom(
-      this.dialogs.open<File | null>(
-        new PolymorpheusComponent(ImageEditorDialogComponent),
-        {
-          data,
-          appearance: 'fullscreen',
-          closable: false,
-          dismissible: false,
-        },
-      ),
-      { defaultValue: null },
-    );
+    const result = await openImageEditor(this.dialogs, data);
 
     // Reset processing flag
     this.isProcessingPhoto.set(false);

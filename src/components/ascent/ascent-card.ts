@@ -12,8 +12,6 @@ import {
   resource,
   signal,
 } from '@angular/core';
-
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TuiDialogService } from '@taiga-ui/core';
 import { TuiHeader } from '@taiga-ui/layout';
 import {
@@ -33,6 +31,7 @@ import { firstValueFrom } from 'rxjs';
 import { AscentsService } from '../../services/ascents.service';
 import { FollowsService } from '../../services/follows.service';
 import { GlobalData } from '../../services/global-data';
+import { openPhotoViewer } from '../../utils/open-photo-viewer';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { AscentCommentsComponent } from './ascent-comments';
@@ -41,7 +40,6 @@ import { AscentLikesComponent } from './ascent-likes';
 import { AscentTypeComponent } from './ascent-type';
 import { CustomCarouselComponent } from '../ui/custom-carousel';
 import { GradeComponent } from '../ui/avatar-grade';
-import { PhotoViewerDialogComponent } from '../dialogs/photo-viewer-dialog';
 
 import {
   CLIMBING_ICONS,
@@ -527,14 +525,7 @@ export class AscentCardComponent {
       }
     }
 
-    await firstValueFrom(
-      this.dialogs.open(new PolymorpheusComponent(PhotoViewerDialogComponent), {
-        data: { imageUrl: fullUrl },
-        size: 'l',
-        appearance: 'flat',
-      }),
-      { defaultValue: undefined },
-    );
+    openPhotoViewer(this.dialogs, fullUrl);
   }
 
   async follow(userId: string) {

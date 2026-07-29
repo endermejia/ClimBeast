@@ -2,20 +2,19 @@ import { CommonModule, DecimalPipe, UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { injectContext, PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import { TuiDialogContext, TuiDialogService } from '@taiga-ui/core';
+import { injectContext } from '@taiga-ui/polymorpheus';
+import { TuiDialogContext } from '@taiga-ui/core';
 
 import { TuiIcon } from '@taiga-ui/core';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import {
   AreaPackDetail,
   MerchandiseItemDetail,
   OrderDetail,
 } from '../../models/merchandise.model';
-import { MerchandiseItemDialogComponent } from './merchandise-item-dialog';
-import { MerchandisePackDialogComponent } from './merchandise-pack-dialog';
+import { MerchandiseService } from '../../services/merchandise.service';
 
 @Component({
   selector: 'app-order-details-dialog',
@@ -167,9 +166,8 @@ export class OrderDetailsDialogComponent {
     injectContext<TuiDialogContext<void, OrderDetail>>();
   protected readonly order = this.context.data;
 
-  private readonly dialogService = inject(TuiDialogService);
-  private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
+  private readonly merchandiseService = inject(MerchandiseService);
 
   protected readonly statusColorClass = (() => {
     const status = this.order.status;
@@ -199,25 +197,15 @@ export class OrderDetailsDialogComponent {
     }
 
     if (item.item_type === 'merchandise' && item.product_data) {
-      this.dialogService
-        .open(new PolymorpheusComponent(MerchandiseItemDialogComponent), {
-          data: item.product_data as MerchandiseItemDetail,
-          label: this.translate.instant(
-            item.product_name || 'merchandising.items.title',
-          ),
-          size: 'l',
-        })
-        .subscribe();
+      this.merchandiseService.openMerchandiseItem(
+        item.product_data as MerchandiseItemDetail,
+      );
     }
 
     if (item.item_type === 'area_pack' && item.product_data) {
-      this.dialogService
-        .open(new PolymorpheusComponent(MerchandisePackDialogComponent), {
-          data: item.product_data as AreaPackDetail,
-          label: item.product_name || 'merchandising.packs.title',
-          size: 'l',
-        })
-        .subscribe();
+      this.merchandiseService.openMerchandisePack(
+        item.product_data as AreaPackDetail,
+      );
     }
   }
 }

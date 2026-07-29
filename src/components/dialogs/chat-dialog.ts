@@ -50,6 +50,7 @@ import {
 } from 'rxjs';
 
 import { BlockingService } from '../../services/blocking.service';
+import { GlobalData } from '../../services/global-data';
 import { MessagingService } from '../../services/messaging.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -95,166 +96,12 @@ export interface ChatDialogData {
     TuiTextarea,
   ],
   template: `
-    <div class="flex flex-col h-[70dvh] min-h-[500px] -m-4">
-      @if (selectedRoom(); as room) {
-        <!-- Messages View -->
-        <div
-          class="flex items-center p-2 border-b border-(--tui-border-normal) gap-2"
-        >
-          <button
-            tuiIconButton
-            type="button"
-            appearance="flat-grayscale"
-            size="s"
-            iconStart="@tui.chevron-left"
-            (click)="selectedRoom.set(null)"
-          >
-            {{ 'back' | translate }}
-          </button>
-          <button
-            type="button"
-            class="flex items-center gap-2 min-w-0 flex-1 hover:opacity-70 transition-opacity cursor-pointer bg-transparent border-0 p-0 text-left"
-            (click)="goToParticipantProfile(room.participant?.id)"
-          >
-            <span tuiAvatar size="s">
-              @if (room.participant?.avatar; as avatar) {
-                <img [src]="avatar | avatarUrl" alt="avatar" />
-              } @else {
-                <tui-icon icon="@tui.user" />
-              }
-            </span>
-            <span class="font-bold truncate text-sm">{{
-              room.participant?.name
-            }}</span>
-          </button>
-          <button
-            tuiIconButton
-            type="button"
-            [appearance]="
-              isBlockedByMe() ? 'primary-destructive' : 'flat-grayscale'
-            "
-            size="s"
-            [iconStart]="isBlockedByMe() ? '@tui.lock' : '@tui.lock-open'"
-            (click)="room.participant && toggleBlock(room.participant.id)"
-            class="ml-auto"
-          >
-            {{ (isBlockedByMe() ? 'unblock' : 'block') | translate }}
-          </button>
-        </div>
-
-        <tui-scrollbar
-          #scrollbar
-          class="grow min-h-0"
-          (scroll)="onScroll($event)"
-        >
-          <div class="flex flex-col gap-2 p-4">
-            @if (hasMore() && !loadingMessages()) {
-              <div class="flex justify-center">
-                <button
-                  tuiButton
-                  appearance="flat-grayscale"
-                  size="xs"
-                  (click)="loadMoreMessages()"
-                >
-                  {{ 'loadMore' | translate }}
-                </button>
-              </div>
-            }
-
-            @if (loadingMessages() && accumulatedMessages().length === 0) {
-              <div class="py-12 flex justify-center">
-                <tui-loader />
-              </div>
-            }
-
-            @for (msg of messages(); track msg.id) {
-              @let isMe = msg.sender_id === supabase.authUserId();
-              <div class="flex" [class.justify-end]="isMe">
-                <div
-                  [appearance]="isMe ? 'accent' : 'secondary-grayscale'"
-                  tuiMessage
-                  class="max-w-[85%]"
-                >
-                  <p class="whitespace-pre-wrap wrap-anywhere leading-tight">
-                    {{ msg.text }}
-                  </p>
-                  <div
-                    class="text-[10px] opacity-60 text-right mt-1 flex items-center justify-end gap-1"
-                  >
-                    {{ msg.created_at | date: 'HH:mm' }}
-                    @if (isMe) {
-                      <tui-icon
-                        [icon]="msg.read_at ? '@tui.check-check' : '@tui.check'"
-                        class="w-3! h-3!"
-                      />
-                    }
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        </tui-scrollbar>
-
-        <div class="p-4 border-t border-(--tui-border-normal)">
-          @if (isBlockedByMe()) {
-            <div
-              class="flex flex-col items-center justify-center p-4 gap-2 opacity-70"
-            >
-              <span class="text-sm">{{
-                'messages.userBlocked' | translate
-              }}</span>
-              <button
-                tuiButton
-                type="button"
-                appearance="flat"
-                size="s"
-                (click)="room.participant && toggleBlock(room.participant.id)"
-              >
-                {{ 'unblock' | translate }}
-              </button>
-            </div>
-          } @else {
-            <div class="flex items-center gap-2">
-              <tui-textfield class="w-full" [tuiTextfieldCleaner]="false">
-                <textarea
-                  #messageTextarea
-                  tuiTextarea
-                  id="new-message"
-                  autocomplete="off"
-                  [placeholder]="
-                    isRequestPending()
-                      ? ('messages.pendingPlaceholder' | translate)
-                      : ('message' | translate)
-                  "
-                  [(ngModel)]="newMessage"
-                  (keydown.enter)="onEnter($event)"
-                  [disabled]="isRequestPending()"
-                  maxlength="250"
-                  class="resize-none overflow-hidden max-h-36 font-sans text-sm focus:outline-hidden text-inherit border-0 outline-hidden focus:ring-0 ring-0 min-h-10"
-                ></textarea>
-              </tui-textfield>
-              <button
-                tuiButton
-                type="button"
-                appearance="primary"
-                size="s"
-                iconStart="@tui.send"
-                (click)="onSendMessage()"
-                [disabled]="!newMessage().trim() || isRequestPending()"
-                class="mt-auto mb-1"
-              >
-                <span class="hidden md:block">
-                  {{ 'send' | translate }}
-                </span>
-              </button>
-            </div>
-            <div class="text-right text-xs opacity-50 mt-1">
-              {{ newMessage().length }}/250
-            </div>
-          }
-        </div>
-      } @else {
-        <!-- Rooms View -->
+    <div class="flex h-[70dvh] min-h-[500px] -m-4">
+      <!-- Sidebar: rooms list (always rendered, hidden on mobile when room selected) -->
+      <div
+        class="flex flex-col w-80 max-md:w-full border-r border-(--tui-border-normal) min-w-0 min-h-0"
+        [class.max-md:hidden]="!!selectedRoom()"
+      >
         <div class="p-4 border-b border-(--tui-border-normal) relative z-50">
           <tui-textfield class="w-full" tuiTextfieldSize="m">
             <label tuiLabel for="user-search">{{
@@ -351,7 +198,183 @@ export interface ChatDialogData {
             }
           </div>
         </tui-scrollbar>
-      }
+      </div>
+
+      <!-- Main content: messages or empty state -->
+      <div class="flex flex-col flex-1 min-w-0 min-h-0">
+        @if (selectedRoom(); as room) {
+          <!-- Messages header -->
+          <div
+            class="flex items-center p-2 border-b border-(--tui-border-normal) gap-2"
+          >
+            <!-- Back button: mobile only -->
+            <button
+              tuiIconButton
+              type="button"
+              appearance="flat-grayscale"
+              size="s"
+              iconStart="@tui.chevron-left"
+              (click)="selectedRoom.set(null)"
+              class="md:hidden"
+            >
+              {{ 'back' | translate }}
+            </button>
+            <button
+              type="button"
+              class="flex items-center gap-2 min-w-0 flex-1 hover:opacity-70 transition-opacity cursor-pointer bg-transparent border-0 p-0 text-left"
+              (click)="goToParticipantProfile(room.participant?.id)"
+            >
+              <span tuiAvatar size="s">
+                @if (room.participant?.avatar; as avatar) {
+                  <img [src]="avatar | avatarUrl" alt="avatar" />
+                } @else {
+                  <tui-icon icon="@tui.user" />
+                }
+              </span>
+              <span class="font-bold truncate text-sm">{{
+                room.participant?.name
+              }}</span>
+            </button>
+            <button
+              tuiIconButton
+              type="button"
+              [appearance]="
+                isBlockedByMe() ? 'primary-destructive' : 'flat-grayscale'
+              "
+              size="s"
+              [iconStart]="isBlockedByMe() ? '@tui.lock' : '@tui.lock-open'"
+              (click)="room.participant && toggleBlock(room.participant.id)"
+              class="ml-auto"
+            >
+              {{ (isBlockedByMe() ? 'unblock' : 'block') | translate }}
+            </button>
+          </div>
+
+          <!-- Messages -->
+          <tui-scrollbar
+            #scrollbar
+            class="grow min-h-0"
+            (scroll)="onScroll($event)"
+          >
+            <div class="flex flex-col gap-2 p-4">
+              @if (hasMore() && !loadingMessages()) {
+                <div class="flex justify-center">
+                  <button
+                    tuiButton
+                    appearance="flat-grayscale"
+                    size="xs"
+                    (click)="loadMoreMessages()"
+                  >
+                    {{ 'loadMore' | translate }}
+                  </button>
+                </div>
+              }
+
+              @if (loadingMessages() && accumulatedMessages().length === 0) {
+                <div class="py-12 flex justify-center">
+                  <tui-loader />
+                </div>
+              }
+
+              @for (msg of messages(); track msg.id) {
+                @let isMe = msg.sender_id === supabase.authUserId();
+                <div class="flex" [class.justify-end]="isMe">
+                  <div
+                    [appearance]="isMe ? 'accent' : 'secondary-grayscale'"
+                    tuiMessage
+                    class="max-w-[85%]"
+                  >
+                    <p class="whitespace-pre-wrap wrap-anywhere leading-tight">
+                      {{ msg.text }}
+                    </p>
+                    <div
+                      class="text-[10px] opacity-60 text-right mt-1 flex items-center justify-end gap-1"
+                    >
+                      {{ msg.created_at | date: 'HH:mm' }}
+                      @if (isMe) {
+                        <tui-icon
+                          [icon]="
+                            msg.read_at ? '@tui.check-check' : '@tui.check'
+                          "
+                          class="w-3! h-3!"
+                        />
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </tui-scrollbar>
+
+          <!-- Input -->
+          <div class="p-4 border-t border-(--tui-border-normal)">
+            @if (isBlockedByMe()) {
+              <div
+                class="flex flex-col items-center justify-center p-4 gap-2 opacity-70"
+              >
+                <span class="text-sm">{{
+                  'messages.userBlocked' | translate
+                }}</span>
+                <button
+                  tuiButton
+                  type="button"
+                  appearance="flat"
+                  size="s"
+                  (click)="room.participant && toggleBlock(room.participant.id)"
+                >
+                  {{ 'unblock' | translate }}
+                </button>
+              </div>
+            } @else {
+              <div class="flex items-center gap-2">
+                <tui-textfield class="w-full" [tuiTextfieldCleaner]="false">
+                  <textarea
+                    #messageTextarea
+                    tuiTextarea
+                    id="new-message"
+                    autocomplete="off"
+                    [placeholder]="
+                      isRequestPending()
+                        ? ('messages.pendingPlaceholder' | translate)
+                        : ('message' | translate)
+                    "
+                    [(ngModel)]="newMessage"
+                    (keydown.enter)="onEnter($event)"
+                    [disabled]="isRequestPending()"
+                    maxlength="250"
+                    class="resize-none overflow-hidden max-h-36 font-sans text-sm focus:outline-hidden text-inherit border-0 outline-hidden focus:ring-0 ring-0 min-h-10"
+                  ></textarea>
+                </tui-textfield>
+                <button
+                  tuiButton
+                  type="button"
+                  appearance="primary"
+                  size="s"
+                  iconStart="@tui.send"
+                  (click)="onSendMessage()"
+                  [disabled]="!newMessage().trim() || isRequestPending()"
+                  class="mt-auto mb-1"
+                >
+                  <span class="hidden md:block">
+                    {{ 'send' | translate }}
+                  </span>
+                </button>
+              </div>
+              <div class="text-right text-xs opacity-50 mt-1">
+                {{ newMessage().length }}/250
+              </div>
+            }
+          </div>
+        } @else {
+          <!-- Empty state (desktop) / Rooms list fallback (mobile) -->
+          <div class="max-md:hidden grow flex items-center justify-center">
+            <app-empty-state
+              icon="@tui.message-circle"
+              message="selectConversation"
+            />
+          </div>
+        }
+      </div>
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -364,6 +387,7 @@ export class ChatDialogComponent implements OnDestroy {
   protected readonly toast = inject(ToastService);
   protected readonly translate = inject(TranslateService);
   protected readonly dialogs = inject(TuiDialogService);
+  protected readonly global = inject(GlobalData);
   private readonly router = inject(Router);
   protected readonly context =
     injectContext<TuiDialogContext<void, ChatDialogData>>();

@@ -703,6 +703,7 @@
   "securityAndSession": "Security & Session",
   "select": "Select",
   "selectAll": "Select all",
+  "selectConversation": "Select a conversation",
   "selected": "selected",
   "send": "Send",
   "sendMessage": "Send message",

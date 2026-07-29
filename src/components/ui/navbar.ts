@@ -17,7 +17,6 @@ import {
 
 import { TuiAutoFocus } from '@taiga-ui/cdk';
 import { TuiInputSearch, TUI_INPUT_SEARCH } from '@taiga-ui/layout';
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import {
   TuiAvatar,
   TuiBadge,
@@ -31,7 +30,6 @@ import {
 import {
   TuiAppearance,
   TuiDataList,
-  TuiDialogService,
   TuiDropdown,
   TuiIcon,
   TuiTextfield,
@@ -40,28 +38,22 @@ import {
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import {
-  debounceTime,
-  distinctUntilChanged,
-  firstValueFrom,
-  map,
-  switchMap,
-} from 'rxjs';
+import { debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs';
 
 import { AreasService } from '../../services/areas.service';
 import { CragsService } from '../../services/crags.service';
 import { GlobalData } from '../../services/global-data';
+import { MessagingService } from '../../services/messaging.service';
 import { RoutesService } from '../../services/routes.service';
 import { ScrollService } from '../../services/scroll.service';
 import { SearchService } from '../../services/search.service';
 import { TourService } from '../../services/tour.service';
 import { TourStep } from '../../services/tour.service';
 
-import { ChatDialogComponent } from '../dialogs/chat-dialog';
+import { AppNotificationsService } from '../../services/app-notifications.service';
 import { CartService } from '../../services/cart.service';
 import { GradeComponent } from './avatar-grade';
 import { MenuOptionsButtonComponent } from './menu-options-button';
-import { NotificationsDialogComponent } from '../dialogs/notifications-dialog';
 import { TourHintComponent } from './tour-hint';
 
 import { gradeToNumber } from '../../utils';
@@ -608,7 +600,9 @@ export class NavbarComponent {
     () => this.isLoading() || this.global.isNavLoading(),
   );
   protected global = inject(GlobalData);
+  protected readonly messagingService = inject(MessagingService);
   protected readonly cart = inject(CartService);
+  protected readonly notificationsService = inject(AppNotificationsService);
   protected readonly tourService = inject(TourService);
   protected readonly TourStep = TourStep;
   protected readonly tourDescription = computed(() => {
@@ -630,8 +624,6 @@ export class NavbarComponent {
   private readonly searchService = inject(SearchService);
   private readonly router = inject(Router);
   private readonly scrollService = inject(ScrollService);
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly translate = inject(TranslateService);
   private readonly areasService = inject(AreasService);
   private readonly cragsService = inject(CragsService);
   private readonly routesService = inject(RoutesService);
@@ -786,25 +778,10 @@ export class NavbarComponent {
   }
 
   protected openChat(): void {
-    void firstValueFrom(
-      this.dialogs.open(new PolymorpheusComponent(ChatDialogComponent), {
-        label: this.translate.instant('messages'),
-        size: 'm',
-      }),
-      { defaultValue: undefined },
-    );
+    this.messagingService.openChatDialog();
   }
 
   protected openNotifications(): void {
-    void firstValueFrom(
-      this.dialogs.open(
-        new PolymorpheusComponent(NotificationsDialogComponent),
-        {
-          label: this.translate.instant('notifications'),
-          size: 'm',
-        },
-      ),
-      { defaultValue: undefined },
-    );
+    this.notificationsService.openNotifications();
   }
 }

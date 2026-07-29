@@ -14,12 +14,11 @@ import {
   untracked,
 } from '@angular/core';
 import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
-import { firstValueFrom } from 'rxjs';
-
-import { injectContext, PolymorpheusComponent } from '@taiga-ui/polymorpheus';
+import { injectContext } from '@taiga-ui/polymorpheus';
 import { type TuiDialogContext } from '@taiga-ui/core';
 import {
   TuiButton,
+  TuiDialogService,
   TuiError,
   TuiLabel,
   TuiInput,
@@ -47,6 +46,7 @@ import { ToastService } from '../../services/toast.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { SlugService } from '../../services/slug.service';
 import { MapService } from '../../services/map.service';
+import { openImageEditor } from '../../utils/open-image-editor';
 import {
   handleErrorToast,
   slugify,
@@ -58,8 +58,7 @@ import {
 } from '../../utils';
 import { IndoorCenterDto, IndoorSchedule } from '../../models';
 import { scheduleToJson, scheduleFromJson } from '../../models/indoor.model';
-import { ImageEditorDialogComponent } from '../dialogs/image-editor-dialog';
-import { TuiDialogService, TuiIcon, TuiLoader } from '@taiga-ui/core';
+import { TuiIcon, TuiLoader } from '@taiga-ui/core';
 
 @Component({
   selector: 'app-indoor-center-form',
@@ -595,6 +594,7 @@ export class IndoorCenterFormComponent {
   private readonly slugService = inject(SlugService);
   private readonly toast = inject(ToastService);
   protected readonly mapService = inject(MapService);
+  private readonly dialogs = inject(TuiDialogService);
 
   private readonly _dialogCtx: TuiDialogContext<
     string | boolean | null,
@@ -630,7 +630,6 @@ export class IndoorCenterFormComponent {
   readonly isSaving = signal(false);
   readonly isUploading = signal(false);
   protected readonly newPhotos = signal<NewPhoto[]>([]);
-  private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
 
   model = signal<{
@@ -940,18 +939,7 @@ export class IndoorCenterFormComponent {
 
     if (!data.file && !data.imageUrl) return;
 
-    const result = await firstValueFrom(
-      this.dialogs.open<File | null>(
-        new PolymorpheusComponent(ImageEditorDialogComponent),
-        {
-          data,
-          appearance: 'fullscreen',
-          closable: false,
-          dismissible: false,
-        },
-      ),
-      { defaultValue: null },
-    );
+    const result = await openImageEditor(this.dialogs, data);
 
     if (result) {
       const preview = await fileToDataUrl(result);

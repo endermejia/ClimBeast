@@ -31,15 +31,12 @@ import { LocalStorage } from '../../services/local-storage';
 import { ScrollService } from '../../services/scroll.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { VisitedCragsService } from '../../services/visited-crags.service';
+import { AppNotificationsService } from '../../services/app-notifications.service';
 import { CartService } from '../../services/cart.service';
+import { MessagingService } from '../../services/messaging.service';
 import { CACHE_KEYS } from '../../constants/cache-keys';
 
 import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
-import { NotificationsDialogComponent } from '../../components/dialogs/notifications-dialog';
-import {
-  ChatDialogComponent,
-  ChatDialogData,
-} from '../../components/dialogs/chat-dialog';
 import {
   FilterDialog,
   FilterDialogComponent,
@@ -206,6 +203,8 @@ export type HomeFeedFilter =
 export class HomeComponent {
   protected readonly global = inject(GlobalData);
   protected readonly cart = inject(CartService);
+  protected readonly notificationsService = inject(AppNotificationsService);
+  protected readonly messagingService = inject(MessagingService);
   protected readonly supabase = inject(SupabaseService);
   private readonly desnivelService = inject(DesnivelService);
   private readonly dialogs = inject(TuiDialogService);
@@ -839,29 +838,11 @@ export class HomeComponent {
   }
 
   protected openNotifications(): void {
-    void firstValueFrom(
-      this.dialogs.open(
-        new PolymorpheusComponent(NotificationsDialogComponent),
-        {
-          label: this.translate.instant('notifications'),
-          size: 'm',
-        },
-      ),
-      { defaultValue: undefined },
-    );
+    this.notificationsService.openNotifications();
   }
 
   protected async openChat(roomId?: string): Promise<void> {
-    const data: ChatDialogData = { roomId };
-
-    await firstValueFrom(
-      this.dialogs.open(new PolymorpheusComponent(ChatDialogComponent), {
-        label: this.translate.instant('messages'),
-        size: 'm',
-        data,
-      }),
-      { defaultValue: undefined },
-    );
+    this.messagingService.openChatDialog({ roomId });
 
     // Clean up URL after closing
     if (this.roomId()) {
