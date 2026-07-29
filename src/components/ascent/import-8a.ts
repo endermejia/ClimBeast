@@ -235,6 +235,15 @@ interface ExistingUserAscentKey {
                       | translate: { count: ascents().length }
                   }}
                 </span>
+                @if (newAreasCount() > 0 || newCragsCount() > 0) {
+                  <div tuiNotification appearance="info" class="text-xs my-1">
+                    {{
+                      'import8a.newEntitiesNotice'
+                        | translate
+                          : { areas: newAreasCount(), crags: newCragsCount() }
+                    }}
+                  </div>
+                }
                 <div class="flex justify-between items-center w-full mt-2">
                   <label
                     class="text-xs opacity-60 flex items-center gap-1.5 select-none hover:opacity-100 transition-opacity cursor-pointer"
@@ -288,9 +297,28 @@ interface ExistingUserAscentKey {
                           <div class="font-semibold">
                             {{ ascent.name }}
                           </div>
-                          <div class="text-xs opacity-70">
-                            {{ ascent.sector_name }} -
-                            {{ ascent.date | date }}
+                          <div
+                            class="text-xs opacity-70 flex flex-wrap items-center gap-1 mt-0.5"
+                          >
+                            <span>{{ ascent.location_name }}</span>
+                            <span>•</span>
+                            <span>{{ ascent.sector_name }}</span>
+                            <span>•</span>
+                            <span>{{ ascent.date | date }}</span>
+                            @if (ascent._isNewArea) {
+                              <span
+                                class="px-1.5 py-0.5 text-[10px] leading-none rounded font-medium bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+                              >
+                                {{ 'import8a.newArea' | translate }}
+                              </span>
+                            }
+                            @if (ascent._isNewCrag) {
+                              <span
+                                class="px-1.5 py-0.5 text-[10px] leading-none rounded font-medium bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-500/30"
+                              >
+                                {{ 'import8a.newCrag' | translate }}
+                              </span>
+                            }
                           </div>
                           @if (ascent._resolvedData; as data) {
                             <div class="text-[10px] opacity-50 flex gap-2">
@@ -401,20 +429,77 @@ export class Import8aComponent {
   protected importing = signal(false);
   protected ascents = signal<EightAnuAscent[]>([]);
   protected selectedIndices = signal<Set<number>>(new Set());
+  protected existingAreaSlugsSet = signal<Set<string>>(new Set());
+  protected existingCragKeysSet = signal<Set<string>>(new Set());
 
   protected readonly ascentsWithResolved = computed(() => {
+    const existingAreas = this.existingAreaSlugsSet();
+    const existingCrags = this.existingCragKeysSet();
+
     return this.ascents().map(
       (
         a,
       ): EightAnuAscent & {
         _resolvedData: { slug: string; eightAnuSlugs: string[] } | undefined;
-      } => ({
-        ...a,
-        _resolvedData: this.resolvedSlugsMap.get(
-          `${slugify(a.location_name)}|${slugify(a.sector_name)}|${slugify(a.name)}`,
-        ),
-      }),
+        _isNewArea: boolean;
+        _isNewCrag: boolean;
+      } => {
+        const areaSlug = slugify(a.location_name);
+        const cragSlug = slugify(a.sector_name);
+        const isNewArea = !existingAreas.has(areaSlug);
+        const isNewCrag =
+          isNewArea || !existingCrags.has(`${areaSlug}|${cragSlug}`);
+
+        return {
+          ...a,
+          _resolvedData: this.resolvedSlugsMap.get(
+            `${areaSlug}|${cragSlug}|${slugify(a.name)}`,
+          ),
+          _isNewArea: isNewArea,
+          _isNewCrag: isNewCrag,
+        };
+      },
     );
+  });
+
+  protected readonly newAreasCount = computed(() => {
+    const selected = this.selectedIndices();
+    const ascents = this.ascents();
+    const existingAreas = this.existingAreaSlugsSet();
+    const uniqueSelectedNewAreas = new Set<string>();
+
+    ascents.forEach((a, i) => {
+      if (selected.has(i)) {
+        const areaSlug = slugify(a.location_name);
+        if (!existingAreas.has(areaSlug)) {
+          uniqueSelectedNewAreas.add(areaSlug);
+        }
+      }
+    });
+
+    return uniqueSelectedNewAreas.size;
+  });
+
+  protected readonly newCragsCount = computed(() => {
+    const selected = this.selectedIndices();
+    const ascents = this.ascents();
+    const existingAreas = this.existingAreaSlugsSet();
+    const existingCrags = this.existingCragKeysSet();
+    const uniqueSelectedNewCrags = new Set<string>();
+
+    ascents.forEach((a, i) => {
+      if (selected.has(i)) {
+        const areaSlug = slugify(a.location_name);
+        const cragKey = `${areaSlug}|${slugify(a.sector_name)}`;
+        const isNewArea = !existingAreas.has(areaSlug);
+        const isNewCrag = isNewArea || !existingCrags.has(cragKey);
+        if (isNewCrag) {
+          uniqueSelectedNewCrags.add(cragKey);
+        }
+      }
+    });
+
+    return uniqueSelectedNewCrags.size;
   });
 
   protected readonly selectedMap = computed(() => {
@@ -509,6 +594,8 @@ export class Import8aComponent {
     this.loadedFile.set(null);
     this.existingAscentKeysCache = null;
     this.existingAscentKeysCacheRange = null;
+    this.existingAreaSlugsSet.set(new Set());
+    this.existingCragKeysSet.set(new Set());
   }
 
   protected processFile(
@@ -541,6 +628,7 @@ export class Import8aComponent {
             }
 
             await this.resolveCsvAscentsWith8aData(parsedAscents);
+            await this.resolveExistingAreasAndCrags(parsedAscents);
             const { ascents } =
               await this.deduplicateCsvAscentsAgainstExisting(parsedAscents);
 
@@ -569,6 +657,66 @@ export class Import8aComponent {
         this.searching.set(false);
       }),
     );
+  }
+
+  private async resolveExistingAreasAndCrags(
+    ascents: EightAnuAscent[],
+  ): Promise<void> {
+    if (ascents.length === 0) return;
+
+    const allAreaSlugsInCSV = [
+      ...new Set(ascents.map((a) => slugify(a.location_name))),
+    ];
+    const allSectorSlugsInCSV = [
+      ...new Set(ascents.map((a) => slugify(a.sector_name))),
+    ];
+
+    const existingAreaSlugs = new Set<string>();
+    const existingCragKeys = new Set<string>();
+
+    if (allAreaSlugsInCSV.length > 0) {
+      const { data: existingAreas } = await this.supabase.client
+        .from('areas')
+        .select('slug, eight_anu_crag_slugs')
+        .in('slug', allAreaSlugsInCSV);
+
+      if (existingAreas) {
+        for (const area of existingAreas) {
+          existingAreaSlugs.add(area.slug);
+          if (area.eight_anu_crag_slugs) {
+            for (const s of area.eight_anu_crag_slugs) {
+              existingAreaSlugs.add(s);
+            }
+          }
+        }
+      }
+    }
+
+    if (allSectorSlugsInCSV.length > 0) {
+      const { data: existingCrags } = await this.supabase.client
+        .from('crags')
+        .select('slug, eight_anu_sector_slugs, area_id, areas!inner(slug)')
+        .in('slug', allSectorSlugsInCSV);
+
+      if (existingCrags) {
+        for (const crag of existingCrags) {
+          const areaSlug = Array.isArray(crag.areas)
+            ? crag.areas[0]?.slug
+            : crag.areas?.slug;
+          if (areaSlug) {
+            existingCragKeys.add(`${areaSlug}|${crag.slug}`);
+            if (crag.eight_anu_sector_slugs) {
+              for (const s of crag.eight_anu_sector_slugs) {
+                existingCragKeys.add(`${areaSlug}|${s}`);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    this.existingAreaSlugsSet.set(existingAreaSlugs);
+    this.existingCragKeysSet.set(existingCragKeys);
   }
 
   private parseCSV(text: string): EightAnuAscent[] {

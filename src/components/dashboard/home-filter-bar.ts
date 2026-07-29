@@ -4,6 +4,7 @@ import {
   Component,
   input,
   output,
+  TemplateRef,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
@@ -144,7 +145,7 @@ import { DropdownButtonComponent } from '../ui/dropdown-button';
 export class HomeFilterBarComponent {
   followsLoaded = input<boolean>(true);
   showFilterDropdown = input<boolean>(false);
-  feedFilterDropdown = input.required<any>();
+  feedFilterDropdown = input.required<TemplateRef<Record<string, unknown>>>();
   feedFilter = input.required<HomeFeedFilter>();
   filterLabels = input.required<Record<HomeFeedFilter, string>>();
   dropdownOpen = input<boolean>(false);
