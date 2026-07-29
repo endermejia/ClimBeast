@@ -1,5 +1,4 @@
 import { isPlatformBrowser, LowerCasePipe } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,23 +12,12 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
+import { Router, RouterLink } from '@angular/router';
+
 import { TuiDialogService } from '@taiga-ui/core';
-import {
-  TUI_CONFIRM,
-  TuiAvatar,
-  TuiBadgedContent,
-  TuiBadgeNotification,
-  TuiComboBox,
-  TuiChevron,
-  type TuiConfirmData,
-  TuiDataListWrapper,
-} from '@taiga-ui/kit';
 import { TuiDropdown } from '@taiga-ui/core';
-import { UserProfileBasicDto } from '../../models';
-import { UserProfilesService } from '../../services/user-profiles.service';
-import { AvatarUrlPipe } from '../../pipes';
 import {
   TuiAppearance,
   TuiButton,
@@ -40,38 +28,54 @@ import {
   TuiInput,
   TuiTextfield,
 } from '@taiga-ui/core';
+import {
+  TUI_CONFIRM,
+  TuiAvatar,
+  TuiBadgedContent,
+  TuiBadgeNotification,
+  TuiComboBox,
+  TuiChevron,
+  type TuiConfirmData,
+  TuiDataListWrapper,
+} from '@taiga-ui/kit';
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-
 import { firstValueFrom } from 'rxjs';
 
 import { AreasService } from '../../services/areas.service';
+
 import { CragsService } from '../../services/crags.service';
+
 import { FiltersService } from '../../services/filters.service';
 import { GlobalData } from '../../services/global-data';
 import { SeoService } from '../../services/seo.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
+import { UserProfilesService } from '../../services/user-profiles.service';
+
+import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
 
 import { CragCardComponent } from '../../components/crag/crag-card';
 import { AreaPaywallDialogComponent } from '../../components/paywall/area-paywall-dialog';
-import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
-import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { GradeComponent } from '../../components/ui/avatar-grade';
+import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { SectionHeaderComponent } from '../../components/ui/section-header';
 
-import { AreaDetail } from '../../models/area.model';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { UserProfileBasicDto } from '../../models';
+
 import {
   ClimbingKinds,
   isGradeRangeOverlap,
   normalizeRoutesByGrade,
   ORDERED_GRADE_VALUES,
 } from '../../models';
+import { AreaDetail } from '../../models/area.model';
+import { RouteSearchResult } from '../../models/supabase-query.types';
 
+import { AvatarUrlPipe } from '../../pipes';
 import { IconSrcPipe } from '../../pipes/icon-src.pipe';
 import { handleErrorToast, matchesQuery } from '../../utils';
-import { RouteSearchResult } from '../../models/supabase-query.types';
 
 @Component({
   selector: 'app-area',

@@ -1,5 +1,4 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,27 +11,9 @@ import {
   viewChildren,
   PLATFORM_ID,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
-import { GlobalData } from '../../services/global-data';
 
-import {
-  TuiLoader,
-  TuiButton,
-  TuiScrollbar,
-  TuiLink,
-  TuiHint,
-  TuiCheckbox,
-  TuiDialogService,
-} from '@taiga-ui/core';
-import {
-  TuiBadge,
-  TuiPin,
-  TuiChevron,
-  TUI_CONFIRM,
-  TuiConfirmData,
-} from '@taiga-ui/kit';
 import {
   TuiTable,
   TuiTableTbody,
@@ -47,9 +28,32 @@ import {
   TuiSortDirection,
 } from '@taiga-ui/addon-table';
 import type { TuiComparator } from '@taiga-ui/addon-table/types';
+import {
+  TuiLoader,
+  TuiButton,
+  TuiScrollbar,
+  TuiLink,
+  TuiHint,
+  TuiCheckbox,
+  TuiDialogService,
+} from '@taiga-ui/core';
 
-import { IndoorService } from '../../services/indoor.service';
+import {
+  TuiBadge,
+  TuiPin,
+  TuiChevron,
+  TUI_CONFIRM,
+  TuiConfirmData,
+} from '@taiga-ui/kit';
+
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
+
 import { AscentsService } from '../../services/ascents.service';
+
+import { GlobalData } from '../../services/global-data';
+import { IndoorService } from '../../services/indoor.service';
+
 import {
   IndoorRouteWithExtras,
   RouteItem,
@@ -59,12 +63,14 @@ import {
   INDOOR_ROUTE_COLORS,
   RoutesTableRow,
 } from '../../models';
-import { GradeComponent } from '../ui/avatar-grade';
+
 import { mapRouteToTableRow } from '../../utils';
-import { EmptyStateComponent } from '../ui/empty-state';
-import { IndoorRouteEquippersInputComponent } from '../route/indoor-route-equippers-input';
+
 import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
+import { IndoorRouteEquippersInputComponent } from '../route/indoor-route-equippers-input';
 import { RouteRowExpandedComponent } from '../route/route-row-expanded';
+import { GradeComponent } from '../ui/avatar-grade';
+import { EmptyStateComponent } from '../ui/empty-state';
 
 @Component({
   selector: 'app-indoor-routes',

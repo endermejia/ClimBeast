@@ -5,13 +5,17 @@ import {
   inject,
   input,
 } from '@angular/core';
+
 import { TuiButton, TuiIcon } from '@taiga-ui/core';
 import { TuiCopy } from '@taiga-ui/kit';
+
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { ParkingsService } from '../../services/parkings.service';
-import { AppCardComponent } from '../ui/card';
+
 import { ParkingDto } from '../../models';
+
+import { AppCardComponent } from '../ui/card';
 
 @Component({
   selector: 'app-parking-card',

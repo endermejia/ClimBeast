@@ -7,8 +7,9 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { TuiIcon } from '@taiga-ui/core';
 import { SafeResourceUrl } from '@angular/platform-browser';
+
+import { TuiIcon } from '@taiga-ui/core';
 
 export interface CarouselItem {
   type: 'image' | 'video';

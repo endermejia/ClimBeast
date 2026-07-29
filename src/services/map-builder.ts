@@ -1,5 +1,7 @@
-import { inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { inject, Injectable, PLATFORM_ID } from '@angular/core';
+
+import { LeafletEvent, LeafletNamespace, Map, Marker } from 'leaflet';
 
 import {
   MapAreaItem,
@@ -11,7 +13,6 @@ import {
 } from '../models';
 
 import { GlobalData } from './global-data';
-import { LeafletEvent, LeafletNamespace, Map, Marker } from 'leaflet';
 import { LocalStorage } from './local-storage';
 
 export interface MapBuilderCallbacks {

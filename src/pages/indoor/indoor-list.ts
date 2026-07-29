@@ -7,7 +7,6 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TranslatePipe } from '@ngx-translate/core';
 
 import {
   TuiAppearance,
@@ -18,12 +17,17 @@ import {
   TuiTextfield,
   TuiLabel,
 } from '@taiga-ui/core';
+
 import { TuiAvatar } from '@taiga-ui/kit';
 
-import { IndoorService } from '../../services/indoor.service';
+import { TranslatePipe } from '@ngx-translate/core';
+
 import { GlobalData } from '../../services/global-data';
+import { IndoorService } from '../../services/indoor.service';
+
 import { IndoorCenterCardComponent } from '../../components/indoor/indoor-center-card';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
+
 import { matchesQuery } from '../../utils';
 
 @Component({

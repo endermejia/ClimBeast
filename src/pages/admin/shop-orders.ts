@@ -15,17 +15,6 @@ import {
   signal,
 } from '@angular/core';
 
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import { TuiHeader } from '@taiga-ui/layout';
-import {
-  TuiButton,
-  TuiDataList,
-  TuiDialogService,
-  TuiDropdown,
-  TuiLoader,
-  TuiTitle,
-  TuiLink,
-} from '@taiga-ui/core';
 import {
   TuiTable,
   TuiTableTbody,
@@ -36,13 +25,26 @@ import {
   TuiTableHead,
   TuiTableCell,
 } from '@taiga-ui/addon-table';
+import {
+  TuiButton,
+  TuiDataList,
+  TuiDialogService,
+  TuiDropdown,
+  TuiLoader,
+  TuiTitle,
+  TuiLink,
+} from '@taiga-ui/core';
 import { TuiChevron } from '@taiga-ui/kit';
+import { TuiHeader } from '@taiga-ui/layout';
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { MerchandiseService } from '../../services/merchandise.service';
-import { OrderDetail, OrderStatus } from '../../models/merchandise.model';
+
 import { OrderDetailsDialogComponent } from '../../components/dialogs/order-details-dialog';
+
+import { OrderDetail, OrderStatus } from '../../models/merchandise.model';
 
 @Pipe({
   name: 'orderStatusColor',

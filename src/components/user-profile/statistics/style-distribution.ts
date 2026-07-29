@@ -7,9 +7,9 @@ import {
   signal,
 } from '@angular/core';
 
+import { TuiRingChart, TuiLegendItem } from '@taiga-ui/addon-charts';
 import { TuiHovered } from '@taiga-ui/cdk';
 import { TuiIcon } from '@taiga-ui/core';
-import { TuiRingChart, TuiLegendItem } from '@taiga-ui/addon-charts';
 
 import { TranslatePipe } from '@ngx-translate/core';
 

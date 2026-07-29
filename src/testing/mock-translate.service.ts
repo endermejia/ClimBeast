@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { signal, WritableSignal } from '@angular/core';
-import { of, Subject } from 'rxjs';
+
 import { LangChangeEvent } from '@ngx-translate/core';
+import { of, Subject } from 'rxjs';
 
 @Injectable()
 export class MockTranslateService {

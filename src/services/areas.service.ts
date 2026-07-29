@@ -1,23 +1,18 @@
-import { Router } from '@angular/router';
 import { inject, Injectable, signal, WritableSignal } from '@angular/core';
+import { Router } from '@angular/router';
 
-import { IS_BROWSER } from '../app/is-browser';
+import { TuiDialogService } from '@taiga-ui/core';
 
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import { TuiDialogService } from '@taiga-ui/core';
 
 import { TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
-import { EightAnuService } from './eight-anu.service';
-import { NotificationService } from './notification.service';
-import { SupabaseService } from './supabase.service';
-import { ToastService } from './toast.service';
+import { AreaAccessManagerDialogComponent } from '../components/dialogs/area-access-manager-dialog';
 
 import { AreaFormComponent } from '../components/forms/area-form';
 import { AreaUnifyComponent } from '../components/forms/area-unify';
-import { AreaAccessManagerDialogComponent } from '../components/dialogs/area-access-manager-dialog';
 
 import { ClimbingKinds, LABEL_TO_VERTICAL_LIFE } from '../models';
 import type {
@@ -32,10 +27,18 @@ import type {
   RouteInsertDto,
 } from '../models';
 
-import { CacheService } from './cache.service';
-import { GlobalData } from './global-data';
-import { slugify } from '../utils';
 import { CACHE_KEYS } from '../constants/cache-keys';
+import { slugify } from '../utils';
+
+import { IS_BROWSER } from '../app/is-browser';
+
+import { CacheService } from './cache.service';
+import { EightAnuService } from './eight-anu.service';
+
+import { GlobalData } from './global-data';
+import { NotificationService } from './notification.service';
+import { SupabaseService } from './supabase.service';
+import { ToastService } from './toast.service';
 
 @Injectable({ providedIn: 'root' })
 export class AreasService {

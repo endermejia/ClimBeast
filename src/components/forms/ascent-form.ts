@@ -1,6 +1,4 @@
 import { CommonModule } from '@angular/common';
-import { form, FormField, min, required, submit } from '@angular/forms/signals';
-import { FormsModule } from '@angular/forms';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,22 +11,10 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { form, FormField, min, required, submit } from '@angular/forms/signals';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
 import { TuiDay } from '@taiga-ui/cdk';
-import {
-  TUI_CONFIRM,
-  TuiConfirmData,
-  TuiChevron,
-  TuiDataListWrapper,
-  TuiInputDate,
-  TuiRating,
-  TuiSelect,
-  TuiTextarea,
-  TuiFiles,
-  TuiInputFiles,
-  TuiFileRejectedPipe,
-} from '@taiga-ui/kit';
 import {
   TuiAppearance,
   TuiButton,
@@ -42,6 +28,20 @@ import {
   TuiDialogService,
   TuiLoader,
 } from '@taiga-ui/core';
+import {
+  TUI_CONFIRM,
+  TuiConfirmData,
+  TuiChevron,
+  TuiDataListWrapper,
+  TuiInputDate,
+  TuiRating,
+  TuiSelect,
+  TuiTextarea,
+  TuiFiles,
+  TuiInputFiles,
+  TuiFileRejectedPipe,
+} from '@taiga-ui/kit';
+import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -49,15 +49,10 @@ import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
 import { GlobalData } from '../../services/global-data';
+import { IndoorService } from '../../services/indoor.service';
 import { RoutesService } from '../../services/routes.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
-import { IndoorService } from '../../services/indoor.service';
-import { openImageEditor } from '../../utils/open-image-editor';
-
-import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
-import { CounterComponent } from '../ui/counter';
-import { ImageEditorConfig } from '../dialogs/image-editor-dialog';
 
 import {
   AscentDialogData,
@@ -71,6 +66,13 @@ import {
 } from '../../models';
 
 import { handleErrorToast } from '../../utils';
+import { openImageEditor } from '../../utils/open-image-editor';
+
+import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
+
+import { ImageEditorConfig } from '../dialogs/image-editor-dialog';
+
+import { CounterComponent } from '../ui/counter';
 
 @Component({
   selector: 'app-ascent-form',

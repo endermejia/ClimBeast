@@ -1,5 +1,5 @@
-import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { Provider, Type } from '@angular/core';
+import { TestBed, ComponentFixture } from '@angular/core/testing';
 
 import { COMMON_TEST_PROVIDERS } from './test-providers';
 

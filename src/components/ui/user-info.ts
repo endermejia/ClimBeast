@@ -1,3 +1,4 @@
+import { CommonModule, LowerCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -5,11 +6,13 @@ import {
   inject,
   output,
 } from '@angular/core';
-import { CommonModule, LowerCasePipe } from '@angular/common';
-import { TuiAvatar, TuiSkeleton, TUI_COUNTRIES } from '@taiga-ui/kit';
+
 import { TuiIcon } from '@taiga-ui/core';
-import { TranslatePipe } from '@ngx-translate/core';
 import { TuiCountryIsoCode } from '@taiga-ui/i18n';
+import { TuiAvatar, TuiSkeleton, TUI_COUNTRIES } from '@taiga-ui/kit';
+
+import { TranslatePipe } from '@ngx-translate/core';
+
 import { AvatarUrlPipe } from '../../pipes/avatar-url.pipe';
 
 @Component({

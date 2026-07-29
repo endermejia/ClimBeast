@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
-import { TuiCardLarge, TuiHeader } from '@taiga-ui/layout';
 import { TuiSkeleton } from '@taiga-ui/kit';
+import { TuiCardLarge, TuiHeader } from '@taiga-ui/layout';
 
 @Component({
   selector: 'app-area-card-skeleton',

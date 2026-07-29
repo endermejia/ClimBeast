@@ -9,6 +9,7 @@ import {
   Signal,
   WritableSignal,
 } from '@angular/core';
+
 import {
   AmountByEveryGrade,
   AreaListItem,
@@ -26,10 +27,12 @@ import {
   TopoRouteWithRoute,
   VERTICAL_LIFE_GRADES,
 } from '../models';
-import { SupabaseService } from './supabase.service';
-import { CacheService } from './cache.service';
-import { mapCragToDetail, mapRouteToExtras, RawRouteData } from '../utils';
+
 import { CACHE_KEYS } from '../constants/cache-keys';
+import { mapCragToDetail, mapRouteToExtras, RawRouteData } from '../utils';
+
+import { CacheService } from './cache.service';
+import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
 export class TopoDataService {

@@ -20,12 +20,16 @@
     "lint": "ng lint",
     "lint:fix": "ng lint --fix",
     "format": "prettier --write ./src",
+    "check:imports": "node scripts/check-imports.mjs",
     "check:i18n": "node scripts/check-translations.mjs",
     "prepare": "husky"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,html,css,scss,md,json}": [
       "prettier --write"
+    ],
+    "*.ts": [
+      "node scripts/check-imports.mjs"
     ]
   },
   "private": true,

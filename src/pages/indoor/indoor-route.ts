@@ -11,8 +11,6 @@ import {
   resource,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
 
 import {
   TuiButton,
@@ -29,12 +27,20 @@ import {
   TuiConfirmData,
 } from '@taiga-ui/kit';
 
-import { IndoorService } from '../../services/indoor.service';
-import { GlobalData } from '../../services/global-data';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
+
 import { AscentsService } from '../../services/ascents.service';
+import { GlobalData } from '../../services/global-data';
+import { IndoorService } from '../../services/indoor.service';
 import { ToastService } from '../../services/toast.service';
+
+import { AscentCardComponent } from '../../components/ascent/ascent-card';
+import { ChartAscentsByGradeComponent } from '../../components/charts/chart-ascents-by-grade';
+import { ChartAscentsByStyleComponent } from '../../components/charts/chart-ascents-by-style';
 import { GradeComponent } from '../../components/ui/avatar-grade';
 import { SectionHeaderComponent } from '../../components/ui/section-header';
+
 import {
   CLIMBING_ICONS,
   GRADE_NUMBER_TO_LABEL,
@@ -46,9 +52,6 @@ import {
   IndoorAscentWithExtras,
   IndoorCenterDto,
 } from '../../models';
-import { ChartAscentsByGradeComponent } from '../../components/charts/chart-ascents-by-grade';
-import { ChartAscentsByStyleComponent } from '../../components/charts/chart-ascents-by-style';
-import { AscentCardComponent } from '../../components/ascent/ascent-card';
 
 @Component({
   selector: 'app-indoor-route',

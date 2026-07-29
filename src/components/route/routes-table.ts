@@ -1,6 +1,4 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,26 +10,9 @@ import {
   TemplateRef,
   viewChildren,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
-import {
-  TuiBadge,
-  TuiChevron,
-  TuiInputNumber,
-  TuiPin,
-  TuiRating,
-} from '@taiga-ui/kit';
-import {
-  TuiButton,
-  TuiDataList,
-  TuiDropdown,
-  TuiGroup,
-  TuiHint,
-  TuiIcon,
-  TuiLink,
-  TuiScrollbar,
-  TuiCell,
-  TuiInput,
-} from '@taiga-ui/core';
 import {
   TuiSortDirection,
   TuiTable,
@@ -47,12 +28,27 @@ import {
   TuiTableSortPipe,
 } from '@taiga-ui/addon-table';
 import type { TuiComparator } from '@taiga-ui/addon-table/types';
+import {
+  TuiButton,
+  TuiDataList,
+  TuiDropdown,
+  TuiGroup,
+  TuiHint,
+  TuiIcon,
+  TuiLink,
+  TuiScrollbar,
+  TuiCell,
+  TuiInput,
+} from '@taiga-ui/core';
+import {
+  TuiBadge,
+  TuiChevron,
+  TuiInputNumber,
+  TuiPin,
+  TuiRating,
+} from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
-
-import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
-import { EmptyStateComponent } from '../ui/empty-state';
-import { GradeComponent } from '../ui/avatar-grade';
 
 import {
   RoutesTableKey,
@@ -63,6 +59,11 @@ import {
 
 import { IncludesIdPipe } from '../../pipes';
 import { ROUTE_TABLE_SORTERS } from '../../utils';
+
+import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
+
+import { GradeComponent } from '../ui/avatar-grade';
+import { EmptyStateComponent } from '../ui/empty-state';
 
 @Component({
   selector: 'app-routes-table',

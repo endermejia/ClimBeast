@@ -1,4 +1,8 @@
-import { Router, RouterLink } from '@angular/router';
+import {
+  isPlatformBrowser,
+  LowerCasePipe,
+  NgTemplateOutlet,
+} from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,14 +16,9 @@ import {
   viewChild,
   WritableSignal,
 } from '@angular/core';
-import {
-  isPlatformBrowser,
-  LowerCasePipe,
-  NgTemplateOutlet,
-} from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
 
 import { TuiBottomSheet } from '@taiga-ui/addon-mobile';
-import { TuiHeader } from '@taiga-ui/layout';
 import { TuiDropdown } from '@taiga-ui/core';
 import {
   TuiAppearance,
@@ -33,6 +32,7 @@ import {
   TuiBadgedContent,
   TuiBadgeNotification,
 } from '@taiga-ui/kit';
+import { TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -45,11 +45,11 @@ import { TourStep } from '../../services/tour.service';
 
 import { AreaCardComponent } from '../../components/area/area-card';
 import { CragCardComponent } from '../../components/crag/crag-card';
+import { IndoorCenterCardComponent } from '../../components/indoor/indoor-center-card';
+import { MapComponent } from '../../components/location/map';
 import { ParkingCardComponent } from '../../components/location/parking-card';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
-import { MapComponent } from '../../components/location/map';
 import { TourHintComponent } from '../../components/ui/tour-hint';
-import { IndoorCenterCardComponent } from '../../components/indoor/indoor-center-card';
 
 import {
   ClimbingKinds,
@@ -63,8 +63,8 @@ import {
   ParkingDto,
 } from '../../models';
 
-import { mapLocationUrl, remToPx } from '../../utils';
 import { IconSrcPipe } from '../../pipes/icon-src.pipe';
+import { mapLocationUrl, remToPx } from '../../utils';
 
 @Component({
   selector: 'app-home',

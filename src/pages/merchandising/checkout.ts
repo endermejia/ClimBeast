@@ -1,16 +1,13 @@
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
   inject,
 } from '@angular/core';
-import { IS_BROWSER } from '../../app/is-browser';
-import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 
-import { TuiDataListWrapper, TuiSelect, TuiChevron } from '@taiga-ui/kit';
-import { TuiHeader } from '@taiga-ui/layout';
 import {
   TuiButton,
   TuiNotification,
@@ -22,11 +19,17 @@ import {
   TuiInput,
 } from '@taiga-ui/core';
 
+import { TuiDataListWrapper, TuiSelect, TuiChevron } from '@taiga-ui/kit';
+import { TuiHeader } from '@taiga-ui/layout';
+
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { CartService } from '../../services/cart.service';
+
 import { CheckoutService } from '../../services/checkout.service';
 import { SupabaseService } from '../../services/supabase.service';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-checkout',

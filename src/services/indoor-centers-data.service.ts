@@ -7,8 +7,6 @@ import {
   computed,
 } from '@angular/core';
 
-import { SupabaseService } from './supabase.service';
-
 import {
   AmountByEveryGrade,
   MapIndoorCenterItem,
@@ -16,6 +14,8 @@ import {
   MapIndoorRouteRaw,
   VERTICAL_LIFE_GRADES,
 } from '../models';
+
+import { SupabaseService } from './supabase.service';
 
 /**
  * Manages indoor centers list data with signals.

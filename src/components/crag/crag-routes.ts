@@ -1,4 +1,3 @@
-import { FormsModule } from '@angular/forms';
 import { LowerCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -9,6 +8,7 @@ import {
   resource,
   signal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 import {
   TuiAppearance,
@@ -31,10 +31,6 @@ import { FiltersService } from '../../services/filters.service';
 import { GlobalData } from '../../services/global-data';
 import { RoutesService } from '../../services/routes.service';
 
-import { EmptyStateComponent } from '../ui/empty-state';
-import { GradeComponent } from '../ui/avatar-grade';
-import { OutdoorRoutesTableComponent } from '../route/outdoor-routes-table';
-
 import {
   ClimbingKind,
   ClimbingKinds,
@@ -50,6 +46,11 @@ import {
 
 import { IconSrcPipe } from '../../pipes/icon-src.pipe';
 import { gradeToVerticalLife, matchesQuery, slugify } from '../../utils';
+
+import { OutdoorRoutesTableComponent } from '../route/outdoor-routes-table';
+
+import { GradeComponent } from '../ui/avatar-grade';
+import { EmptyStateComponent } from '../ui/empty-state';
 
 @Component({
   selector: 'app-crag-routes',

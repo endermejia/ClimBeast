@@ -1,4 +1,3 @@
-import { toSignal } from '@angular/core/rxjs-interop';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,6 +8,7 @@ import {
   Signal,
   WritableSignal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
   FormControl,
   FormGroup,
@@ -16,20 +16,21 @@ import {
   ReactiveFormsModule,
 } from '@angular/forms';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
 import { TuiButton, TuiLink, TuiKeySteps, TuiCheckbox } from '@taiga-ui/core';
+import { type TuiDialogContext } from '@taiga-ui/core';
 import { TuiFilter, TuiRange } from '@taiga-ui/kit';
 import { TuiForm } from '@taiga-ui/layout';
-import { type TuiDialogContext } from '@taiga-ui/core';
+import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { map, merge, startWith } from 'rxjs';
 
+import { GlobalData } from '../../services/global-data';
+
 import { ORDERED_GRADE_VALUES } from '../../models';
 
 import { clamp } from '../../utils';
-import { GlobalData } from '../../services/global-data';
 
 export interface FilterDialog {
   categories: number[]; // 0=Sport, 1=Boulder, 2=Multipitch

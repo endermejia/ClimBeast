@@ -1,10 +1,10 @@
+import { ClimbingKind } from './app-enums.model';
 import { IndoorRouteDto } from './indoor.model';
 import {
   RouteAscentDto,
   RouteDto,
   UserProfileDto,
 } from './supabase-interfaces';
-import { ClimbingKind } from './app-enums.model';
 
 // ---- Home Feed Queries ----
 

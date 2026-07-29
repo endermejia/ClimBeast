@@ -2,9 +2,7 @@ import { CommonModule, DatePipe, CurrencyPipe } from '@angular/common';
 import { Component, inject, resource, Injector } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
 import { TuiDialogContext } from '@taiga-ui/core';
-import { TuiHeader } from '@taiga-ui/layout';
 import {
   TuiScrollbar,
   TuiIcon,
@@ -14,16 +12,22 @@ import {
   TuiTitle,
 } from '@taiga-ui/core';
 import { TUI_CONFIRM } from '@taiga-ui/kit';
+import { TuiHeader } from '@taiga-ui/layout';
+import { injectContext } from '@taiga-ui/polymorpheus';
+
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+
 import { firstValueFrom } from 'rxjs';
 
 import { GlobalData } from '../../services/global-data';
-import { SupabaseService } from '../../services/supabase.service';
 import { MerchandiseService } from '../../services/merchandise.service';
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import { OrderDetailsDialogComponent } from './order-details-dialog';
+import { SupabaseService } from '../../services/supabase.service';
+
 import { OrderDetail } from '../../models/merchandise.model';
+
+import { OrderDetailsDialogComponent } from './order-details-dialog';
 
 interface PurchaseRecord {
   id: string;

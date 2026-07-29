@@ -1,5 +1,4 @@
 import { CommonModule, DatePipe } from '@angular/common';
-import { Router } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,9 +6,8 @@ import {
   inject,
   resource,
 } from '@angular/core';
+import { Router } from '@angular/router';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
-import { TuiAvatar, TuiBadgeNotification } from '@taiga-ui/kit';
 import { TuiDialogContext } from '@taiga-ui/core';
 import {
   TuiAppearance,
@@ -18,6 +16,8 @@ import {
   TuiScrollbar,
   TuiIcon,
 } from '@taiga-ui/core';
+import { TuiAvatar, TuiBadgeNotification } from '@taiga-ui/kit';
+import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -29,8 +29,6 @@ import { GlobalData } from '../../services/global-data';
 import { MessagingService } from '../../services/messaging.service';
 import { SupabaseService } from '../../services/supabase.service';
 
-import { EmptyStateComponent } from '../ui/empty-state';
-
 import {
   NotificationWithActor,
   NotificationTypes,
@@ -38,6 +36,8 @@ import {
 } from '../../models';
 
 import { AvatarUrlPipe } from '../../pipes';
+
+import { EmptyStateComponent } from '../ui/empty-state';
 
 interface GroupedNotification {
   id: string;

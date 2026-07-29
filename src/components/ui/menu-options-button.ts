@@ -1,12 +1,13 @@
-import { FormsModule } from '@angular/forms';
 import {
   ChangeDetectionStrategy,
   Component,
   inject,
   input,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 import { TuiDialogService } from '@taiga-ui/core';
+import { TuiAppearance, TuiButton, TuiDropdown, TuiIcon } from '@taiga-ui/core';
 import {
   TUI_CONFIRM,
   TuiConfirmData,
@@ -14,7 +15,6 @@ import {
   TuiSkeleton,
   TuiSwitch,
 } from '@taiga-ui/kit';
-import { TuiAppearance, TuiButton, TuiDropdown, TuiIcon } from '@taiga-ui/core';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 

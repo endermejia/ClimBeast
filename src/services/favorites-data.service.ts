@@ -7,12 +7,14 @@ import {
   computed,
 } from '@angular/core';
 
+import { AreaListItem, CragListItem, RouteWithExtras } from '../models';
+
+import { CACHE_KEYS } from '../constants/cache-keys';
+
 import { CacheService } from './cache.service';
+
 import { FavoritesService } from './favorites.service';
 import { SupabaseService } from './supabase.service';
-
-import { AreaListItem, CragListItem, RouteWithExtras } from '../models';
-import { CACHE_KEYS } from '../constants/cache-keys';
 
 /**
  * Manages favorites/liked data with caching and signals.

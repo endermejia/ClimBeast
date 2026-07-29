@@ -18,8 +18,10 @@ import {
   RouteWithExtras,
   UserProfileDto,
 } from '../models';
-import { SupabaseService } from './supabase.service';
+
 import { mapRouteToExtras, RawRouteData } from '../utils';
+
+import { SupabaseService } from './supabase.service';
 
 /**
  * Manages equipper-related data and queries.

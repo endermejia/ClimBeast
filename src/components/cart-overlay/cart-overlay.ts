@@ -7,8 +7,8 @@ import {
   signal,
 } from '@angular/core';
 
-import { TuiBadge } from '@taiga-ui/kit';
 import { TuiButton, TuiIcon, TuiLoader, TuiScrollbar } from '@taiga-ui/core';
+import { TuiBadge } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 

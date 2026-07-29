@@ -1,5 +1,5 @@
+import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,21 +7,11 @@ import {
   signal,
 } from '@angular/core';
 
-import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
+import { FormsModule } from '@angular/forms';
 
-import {
-  COMMON_IMAGE_EDITOR_CONFIG,
-  createNewPhoto,
-  fileToDataUrl,
-  NewPhoto,
-  reorderGallery,
-  extractErrorMessage,
-} from '../../utils';
-
-import { injectContext } from '@taiga-ui/polymorpheus';
-import { TuiDialogContext, TuiDialogService } from '@taiga-ui/core';
-import { openImageEditor } from '../../utils/open-image-editor';
 import { TuiIdentityMatcher, tuiIsString } from '@taiga-ui/cdk';
+
+import { TuiDialogContext, TuiDialogService } from '@taiga-ui/core';
 import {
   TuiButton,
   TuiLabel,
@@ -45,15 +35,28 @@ import {
   TuiChevron,
   TuiMultiSelect,
 } from '@taiga-ui/kit';
+import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { AreasService } from '../../services/areas.service';
+
 import { MerchandiseService } from '../../services/merchandise.service';
 
 import { ToastService } from '../../services/toast.service';
 
 import { AreaPackDetail } from '../../models';
+
+import {
+  COMMON_IMAGE_EDITOR_CONFIG,
+  createNewPhoto,
+  fileToDataUrl,
+  NewPhoto,
+  reorderGallery,
+  extractErrorMessage,
+} from '../../utils';
+
+import { openImageEditor } from '../../utils/open-image-editor';
 
 interface SimpleArea {
   id: number;

@@ -1,4 +1,3 @@
-import { ActivatedRoute, Router } from '@angular/router';
 import { isPlatformBrowser, NgOptimizedImage } from '@angular/common';
 import {
   afterNextRender,
@@ -10,9 +9,8 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 
-import { TuiCardLarge, TuiForm, TuiHeader } from '@taiga-ui/layout';
-import { TuiPassword } from '@taiga-ui/kit';
 import {
   TuiButton,
   TuiIcon,
@@ -20,6 +18,8 @@ import {
   TuiTitle,
   TuiInput,
 } from '@taiga-ui/core';
+import { TuiPassword } from '@taiga-ui/kit';
+import { TuiCardLarge, TuiForm, TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
 

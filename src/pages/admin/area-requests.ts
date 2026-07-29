@@ -1,5 +1,4 @@
 import { isPlatformBrowser } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,7 +8,14 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
+import {
+  TuiSortDirection,
+  TuiTable,
+  TuiTableSortChange,
+} from '@taiga-ui/addon-table';
+import type { TuiComparator } from '@taiga-ui/addon-table/types';
 import { tuiDefaultSort } from '@taiga-ui/cdk';
 import {
   TuiAppearance,
@@ -23,12 +29,6 @@ import {
   TuiBadgedContentComponent,
   TuiSkeleton,
 } from '@taiga-ui/kit';
-import {
-  TuiSortDirection,
-  TuiTable,
-  TuiTableSortChange,
-} from '@taiga-ui/addon-table';
-import type { TuiComparator } from '@taiga-ui/addon-table/types';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 

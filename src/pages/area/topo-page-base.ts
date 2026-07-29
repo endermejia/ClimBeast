@@ -9,22 +9,28 @@ import {
   Signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { TuiDialogService } from '@taiga-ui/core';
+
 import {
   TuiSortDirection,
   type TuiTableSortChange,
 } from '@taiga-ui/addon-table';
 import type { TuiComparator } from '@taiga-ui/addon-table/types';
+import { TuiDialogService } from '@taiga-ui/core';
+
 import { TranslateService } from '@ngx-translate/core';
+
 import { AscentsService } from '../../services/ascents.service';
 import { GlobalData } from '../../services/global-data';
+import { IndoorService } from '../../services/indoor.service';
 import { RoutesService } from '../../services/routes.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
-import { IndoorService } from '../../services/indoor.service';
+
 import type { TopoRouteRow } from '../../components/topo/topo.types';
+
 import type { TopoDetail, TopoListItem } from '../../models';
+
 import {
   getRouteStyleProperties,
   getRouteStrokeWidth,

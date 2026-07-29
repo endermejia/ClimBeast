@@ -1,9 +1,4 @@
 import { DOCUMENT } from '@angular/common';
-import { Meta } from '@angular/platform-browser';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { toSignal } from '@angular/core/rxjs-interop';
 import {
   Component,
   DestroyRef,
@@ -12,8 +7,11 @@ import {
   inject,
   OnDestroy,
 } from '@angular/core';
-
-import { IS_BROWSER } from './is-browser';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { Meta } from '@angular/platform-browser';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 
 import { TuiRoot } from '@taiga-ui/core';
 
@@ -22,16 +20,20 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { filter, map, merge, startWith } from 'rxjs';
 
 import { GlobalData } from '../services/global-data';
+
 import { LocalStorage } from '../services/local-storage';
 import { NotificationService } from '../services/notification.service';
 import { SeoService } from '../services/seo.service';
 import { SupabaseService } from '../services/supabase.service';
 
 import { CartOverlayComponent } from '../components/cart-overlay/cart-overlay';
+
 import { NavbarComponent } from '../components/ui/navbar';
 import { OfflineBannerComponent } from '../components/ui/offline-banner';
 
 import { Themes } from '../models';
+
+import { IS_BROWSER } from './is-browser';
 
 @Component({
   selector: 'app-root',

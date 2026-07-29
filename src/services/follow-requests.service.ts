@@ -1,10 +1,11 @@
-import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-
-import { SupabaseService } from './supabase.service';
-import { ToastService } from './toast.service';
+import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 
 import { PopulatedFollowRequestDto } from '../models';
+
+import { SupabaseService } from './supabase.service';
+
+import { ToastService } from './toast.service';
 
 @Injectable({
   providedIn: 'root',

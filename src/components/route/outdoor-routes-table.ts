@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,23 +7,21 @@ import {
   inject,
   input,
 } from '@angular/core';
+import { PLATFORM_ID } from '@angular/core';
 import { Router } from '@angular/router';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
+
+import { TuiSortDirection } from '@taiga-ui/addon-table';
 import { TuiDialogService } from '@taiga-ui/core';
 import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit';
-import { isPlatformBrowser } from '@angular/common';
-import { PLATFORM_ID } from '@angular/core';
-import { TuiSortDirection } from '@taiga-ui/addon-table';
+
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
 import { GlobalData } from '../../services/global-data';
 import { RoutesService } from '../../services/routes.service';
-import { ToposService } from '../../services/topos.service';
 import { ToastService } from '../../services/toast.service';
-
-import { RoutesTableComponent } from './routes-table';
-import { RouteRowExpandedComponent } from './route-row-expanded';
+import { ToposService } from '../../services/topos.service';
 
 import {
   RouteItem,
@@ -32,7 +31,11 @@ import {
   RoutesTableKey,
   IndoorRouteWithExtras,
 } from '../../models';
+
 import { mapRouteToTableRow, handleErrorToast } from '../../utils';
+
+import { RouteRowExpandedComponent } from './route-row-expanded';
+import { RoutesTableComponent } from './routes-table';
 
 @Component({
   selector: 'app-outdoor-routes-table',

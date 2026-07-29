@@ -1,4 +1,5 @@
 import { inject, Injectable } from '@angular/core';
+
 import { LocalStorage } from './local-storage';
 
 export interface SignedUrlEntry {

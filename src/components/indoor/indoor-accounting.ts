@@ -7,11 +7,13 @@ import {
   input,
   resource,
 } from '@angular/core';
-import { TranslateModule } from '@ngx-translate/core';
 
 import { TuiAppearance, TuiLoader } from '@taiga-ui/core';
 
+import { TranslateModule } from '@ngx-translate/core';
+
 import { IndoorService } from '../../services/indoor.service';
+
 import { IndoorSaleDto } from '../../models';
 
 @Component({

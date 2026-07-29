@@ -1,6 +1,5 @@
+import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
 import { CommonModule, Location } from '@angular/common';
-import { form, FormField, required, submit } from '@angular/forms/signals';
-import { FormsModule } from '@angular/forms';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,8 +12,9 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
-import { injectContext } from '@taiga-ui/polymorpheus';
+import { FormsModule } from '@angular/forms';
+import { form, FormField, required, submit } from '@angular/forms/signals';
+
 import { type TuiDialogContext } from '@taiga-ui/core';
 import {
   TuiButton,
@@ -28,6 +28,7 @@ import {
   TuiAppearance,
   TuiDropdown,
 } from '@taiga-ui/core';
+import { TuiIcon, TuiLoader } from '@taiga-ui/core';
 import {
   TuiTextarea,
   TuiInputNumber,
@@ -38,15 +39,20 @@ import {
   TuiChevron,
 } from '@taiga-ui/kit';
 
+import { injectContext } from '@taiga-ui/polymorpheus';
+
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import { IndoorService } from '../../services/indoor.service';
 import { GlobalData } from '../../services/global-data';
-import { ToastService } from '../../services/toast.service';
-import { SupabaseService } from '../../services/supabase.service';
-import { SlugService } from '../../services/slug.service';
+import { IndoorService } from '../../services/indoor.service';
 import { MapService } from '../../services/map.service';
-import { openImageEditor } from '../../utils/open-image-editor';
+import { SlugService } from '../../services/slug.service';
+import { SupabaseService } from '../../services/supabase.service';
+import { ToastService } from '../../services/toast.service';
+
+import { IndoorCenterDto, IndoorSchedule } from '../../models';
+import { scheduleToJson, scheduleFromJson } from '../../models/indoor.model';
+
 import {
   handleErrorToast,
   slugify,
@@ -56,9 +62,7 @@ import {
   NewPhoto,
   reorderGallery,
 } from '../../utils';
-import { IndoorCenterDto, IndoorSchedule } from '../../models';
-import { scheduleToJson, scheduleFromJson } from '../../models/indoor.model';
-import { TuiIcon, TuiLoader } from '@taiga-ui/core';
+import { openImageEditor } from '../../utils/open-image-editor';
 
 @Component({
   selector: 'app-indoor-center-form',

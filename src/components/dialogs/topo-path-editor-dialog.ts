@@ -1,5 +1,3 @@
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import {
   CdkDrag,
   CdkDragDrop,
@@ -8,6 +6,7 @@ import {
   CdkDropList,
   moveItemInArray,
 } from '@angular/cdk/drag-drop';
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -19,9 +18,8 @@ import {
   AfterViewInit,
   ChangeDetectorRef,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
-import { TUI_CONFIRM } from '@taiga-ui/kit';
 import {
   TuiButton,
   TuiDialogContext,
@@ -31,6 +29,8 @@ import {
   TuiScrollbar,
   TuiSlider,
 } from '@taiga-ui/core';
+import { TUI_CONFIRM } from '@taiga-ui/kit';
+import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
@@ -39,8 +39,6 @@ import { firstValueFrom } from 'rxjs';
 import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
 
-import { GradeComponent } from '../ui/avatar-grade';
-
 import {
   TopoRouteWithRoute,
   TopoPath,
@@ -48,6 +46,13 @@ import {
 } from '../../models';
 
 import { TopoHasPathPipe } from '../../pipes/topo-path.pipe';
+
+import {
+  removePoint,
+  addPointToPath,
+  startDragPointMouse,
+  startDragPointTouch,
+} from '../../utils/drawing.utils';
 import {
   getRouteStyleProperties,
   getRouteStrokeWidth,
@@ -61,12 +66,8 @@ import {
   setupEditorTouchPanPinch,
   attachWheelListener,
 } from '../../utils/zoom-pan.utils';
-import {
-  removePoint,
-  addPointToPath,
-  startDragPointMouse,
-  startDragPointTouch,
-} from '../../utils/drawing.utils';
+
+import { GradeComponent } from '../ui/avatar-grade';
 
 export interface TopoPathEditorConfig {
   imageUrl: string;

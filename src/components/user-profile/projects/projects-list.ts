@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
-import { TuiSkeleton } from '@taiga-ui/kit';
 import { TuiSortDirection } from '@taiga-ui/addon-table';
-
-import { OutdoorRoutesTableComponent } from '../../route/outdoor-routes-table';
+import { TuiSkeleton } from '@taiga-ui/kit';
 
 import { RouteWithExtras } from '../../../models/route.model';
+
+import { OutdoorRoutesTableComponent } from '../../route/outdoor-routes-table';
 
 @Component({
   selector: 'app-user-profile-projects-list',

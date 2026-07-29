@@ -1,5 +1,4 @@
 import { isPlatformBrowser } from '@angular/common';
-import { Router } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,9 +7,10 @@ import {
   input,
   PLATFORM_ID,
 } from '@angular/core';
+import { Router } from '@angular/router';
 
-import { TuiAvatar, TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit';
 import { TuiDialogService, TuiButton } from '@taiga-ui/core';
+import { TuiAvatar, TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -21,12 +21,13 @@ import { ParkingsService } from '../../services/parkings.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 
-import { EmptyStateComponent } from '../ui/empty-state';
-import { ParkingCardComponent } from '../location/parking-card';
-
 import { CragDetail, ParkingDto } from '../../models';
 
 import { handleErrorToast, mapLocationUrl } from '../../utils';
+
+import { ParkingCardComponent } from '../location/parking-card';
+
+import { EmptyStateComponent } from '../ui/empty-state';
 
 @Component({
   selector: 'app-crag-parkings',

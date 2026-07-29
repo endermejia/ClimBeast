@@ -1,4 +1,3 @@
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,8 +7,8 @@ import {
   resource,
   signal,
 } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
-import { TuiDataListWrapper, TuiSelect } from '@taiga-ui/kit';
 import {
   TuiDataList,
   TuiLoader,
@@ -17,17 +16,13 @@ import {
   TuiPoint,
   TuiInput,
 } from '@taiga-ui/core';
+import { TuiDataListWrapper, TuiSelect } from '@taiga-ui/kit';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { AscentsService } from '../../services/ascents.service';
 import { GlobalData } from '../../services/global-data';
 import { SupabaseService } from '../../services/supabase.service';
-
-import { UserProfileStatsPyramidComponent } from './statistics/grade-pyramid';
-import { UserProfileStatsScoreComponent } from './statistics/score-card';
-import { UserProfileStatsStylesComponent } from './statistics/style-distribution';
-import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
 
 import { UserAscentStatRecord } from '../../models';
 import {
@@ -45,6 +40,13 @@ import {
   filterAscentsByDate,
   getMaxGrade,
 } from '../../utils';
+
+import { UserProfileStatsPyramidComponent } from './statistics/grade-pyramid';
+
+import { UserProfileStatsScoreComponent } from './statistics/score-card';
+import { UserProfileStatsStylesComponent } from './statistics/style-distribution';
+
+import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
 
 @Component({
   selector: 'app-user-profile-statistics',

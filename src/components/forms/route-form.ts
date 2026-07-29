@@ -1,6 +1,4 @@
 import { CommonModule, isPlatformBrowser, Location } from '@angular/common';
-import { form, FormField, required, submit } from '@angular/forms/signals';
-import { FormsModule } from '@angular/forms';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -15,8 +13,9 @@ import {
   Signal,
   untracked,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { form, FormField, required, submit } from '@angular/forms/signals';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
 import { TuiIdentityMatcher } from '@taiga-ui/cdk';
 import { type TuiDialogContext } from '@taiga-ui/core';
 import {
@@ -36,16 +35,15 @@ import {
   TuiComboBox,
   TuiSelect,
 } from '@taiga-ui/kit';
+import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { GlobalData } from '../../services/global-data';
 import { RoutesService } from '../../services/routes.service';
-import { SupabaseService } from '../../services/supabase.service';
 import { SlugService } from '../../services/slug.service';
+import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
-
-import { CounterComponent } from '../ui/counter';
 
 import {
   ClimbingKind,
@@ -59,6 +57,8 @@ import {
 } from '../../models';
 
 import { handleErrorToast, slugify } from '../../utils';
+
+import { CounterComponent } from '../ui/counter';
 
 interface MinimalRoute {
   id?: number;

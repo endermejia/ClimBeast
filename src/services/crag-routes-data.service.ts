@@ -7,14 +7,16 @@ import {
   computed,
 } from '@angular/core';
 
+import { RouteWithExtras } from '../models';
+
+import { CACHE_KEYS } from '../constants/cache-keys';
+import { mapRouteToExtras, RawRouteData } from '../utils/route-mapper';
+
 import { AuthStateService } from './auth-state.service';
+
 import { CacheService } from './cache.service';
 import { SupabaseService } from './supabase.service';
 import { TopoDataService } from './topo-data.service';
-
-import { RouteWithExtras } from '../models';
-import { mapRouteToExtras, RawRouteData } from '../utils/route-mapper';
-import { CACHE_KEYS } from '../constants/cache-keys';
 
 /**
  * Manages crag routes data with caching and signals.

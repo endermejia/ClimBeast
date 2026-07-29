@@ -1,5 +1,4 @@
 import { isPlatformBrowser } from '@angular/common';
-import { Router } from '@angular/router';
 import {
   inject,
   Injectable,
@@ -7,16 +6,14 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
+import { Router } from '@angular/router';
 
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TuiDialogService } from '@taiga-ui/core';
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
-
-import { SupabaseService } from './supabase.service';
-import { ToastService } from './toast.service';
 
 import { CragFormComponent } from '../components/forms/crag-form';
 import { CragUnifyComponent } from '../components/forms/crag-unify';
@@ -29,6 +26,10 @@ import type {
 } from '../models';
 
 import { GlobalData } from './global-data';
+
+import { SupabaseService } from './supabase.service';
+
+import { ToastService } from './toast.service';
 
 export interface CragSimple {
   id: number;

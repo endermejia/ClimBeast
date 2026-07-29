@@ -15,7 +15,9 @@ import { TuiBadge } from '@taiga-ui/kit';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { GlobalData } from '../../services/global-data';
+
 import { AreaPackDetail } from '../../models';
+
 import { CarouselItem, CustomCarouselComponent } from '../ui/custom-carousel';
 
 @Component({

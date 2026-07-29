@@ -1,6 +1,4 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -16,9 +14,9 @@ import {
   viewChild,
   viewChildren,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import { TuiDataListWrapper, TuiSelect, TuiSkeleton } from '@taiga-ui/kit';
 import {
   TuiAppearance,
   TuiDataList,
@@ -29,6 +27,8 @@ import {
   TuiScrollbar,
   TuiInput,
 } from '@taiga-ui/core';
+import { TuiDataListWrapper, TuiSelect, TuiSkeleton } from '@taiga-ui/kit';
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -37,10 +37,6 @@ import { GlobalData } from '../../services/global-data';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
-
-import { AscentTypeComponent } from '../ascent/ascent-type';
-import { GradeComponent } from '../ui/avatar-grade';
-import { PyramidSlotDialogComponent } from '../dialogs/pyramid-slot-dialog';
 
 import {
   AscentType,
@@ -54,6 +50,12 @@ import {
 } from '../../models';
 
 import { getScore } from '../../utils';
+
+import { AscentTypeComponent } from '../ascent/ascent-type';
+
+import { PyramidSlotDialogComponent } from '../dialogs/pyramid-slot-dialog';
+
+import { GradeComponent } from '../ui/avatar-grade';
 
 export interface PyramidLevel {
   level: number;

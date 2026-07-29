@@ -4,9 +4,6 @@ import { TranslateService } from '@ngx-translate/core';
 
 import { catchError, from, map, Observable, of } from 'rxjs';
 
-import { EightAnuService } from './eight-anu.service';
-import { SupabaseService } from './supabase.service';
-
 import {
   SearchData,
   SearchItem,
@@ -19,6 +16,10 @@ import {
 } from '../models';
 
 import { gradeToNumber } from '../utils';
+
+import { EightAnuService } from './eight-anu.service';
+
+import { SupabaseService } from './supabase.service';
 
 interface DbArea {
   title: string;

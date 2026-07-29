@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
+
 import {
   TuiButton,
   TuiDataList,
@@ -21,11 +21,9 @@ import {
 } from '@taiga-ui/core';
 import { TuiPin } from '@taiga-ui/kit';
 
+import { TranslateModule } from '@ngx-translate/core';
+
 import { GlobalData } from '../../services/global-data';
-import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
-import { RouteEquippersInputComponent } from './route-equippers-input';
-import { IndoorRouteEquippersInputComponent } from './indoor-route-equippers-input';
-import { IncludesIdPipe } from '../../pipes/includes-id.pipe';
 
 import {
   RoutesTableRow,
@@ -35,6 +33,13 @@ import {
   AscentType,
   INDOOR_ROUTE_COLORS,
 } from '../../models';
+
+import { IncludesIdPipe } from '../../pipes/includes-id.pipe';
+
+import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
+import { IndoorRouteEquippersInputComponent } from './indoor-route-equippers-input';
+
+import { RouteEquippersInputComponent } from './route-equippers-input';
 
 @Component({
   selector: 'app-route-row-expanded',

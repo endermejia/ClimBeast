@@ -1,4 +1,10 @@
-import { provideServiceWorker } from '@angular/service-worker';
+import { isPlatformBrowser } from '@angular/common';
+import {
+  HttpClient,
+  provideHttpClient,
+  withFetch,
+  withInterceptors,
+} from '@angular/common/http';
 import {
   ApplicationConfig,
   ErrorHandler,
@@ -8,51 +14,47 @@ import {
   provideZonelessChangeDetection,
   PLATFORM_ID,
 } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
-import {
-  HttpClient,
-  provideHttpClient,
-  withFetch,
-  withInterceptors,
-} from '@angular/common/http';
-import {
-  provideRouter,
-  withComponentInputBinding,
-  withPreloading,
-  withViewTransitions,
-} from '@angular/router';
 import {
   provideClientHydration,
   withEventReplay,
   withIncrementalHydration,
   withHttpTransferCacheOptions,
 } from '@angular/platform-browser';
+import {
+  provideRouter,
+  withComponentInputBinding,
+  withPreloading,
+  withViewTransitions,
+} from '@angular/router';
+import { provideServiceWorker } from '@angular/service-worker';
 
+import { TUI_PLATFORM } from '@taiga-ui/cdk';
 import {
   provideTaiga,
   TUI_DARK_MODE,
   tuiHintOptionsProvider,
 } from '@taiga-ui/core';
 import { provideEventPlugins } from '@taiga-ui/event-plugins';
-import { TUI_PLATFORM } from '@taiga-ui/cdk';
 import { TUI_LANGUAGE } from '@taiga-ui/i18n';
 
 import { provideTranslateService, TranslateLoader } from '@ngx-translate/core';
-import { CachedTranslateLoader } from '../services/cached-translate-loader';
 
-import { errorInterceptor } from '../services/error.interceptor';
 import { AppErrorHandler } from '../services/app-error-handler';
-import { LanguageService } from '../services/language.service';
-import { ThemeService } from '../services/theme.service';
-import { provideSupabaseConfig } from '../services/supabase.service';
-import { SelectivePreloadingStrategy } from './selective-preloading.strategy';
-import { IS_BROWSER } from './is-browser';
 
-import { routes } from './app.routes';
+import { CachedTranslateLoader } from '../services/cached-translate-loader';
+import { errorInterceptor } from '../services/error.interceptor';
+import { LanguageService } from '../services/language.service';
+import { provideSupabaseConfig } from '../services/supabase.service';
+import { ThemeService } from '../services/theme.service';
+
 import {
   ENV_SUPABASE_ANON_KEY,
   ENV_SUPABASE_URL,
 } from '../environments/environment';
+import { routes } from './app.routes';
+
+import { IS_BROWSER } from './is-browser';
+import { SelectivePreloadingStrategy } from './selective-preloading.strategy';
 
 const httpLoaderFactory: (http: HttpClient) => CachedTranslateLoader = (
   http: HttpClient,

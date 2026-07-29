@@ -1,5 +1,5 @@
-import { ActivatedRoute, Router } from '@angular/router';
 import { Component, inject } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { TuiLoader } from '@taiga-ui/core';
 

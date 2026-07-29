@@ -7,8 +7,10 @@ import {
 } from '@angular/core';
 
 import { Theme, Themes } from '../models';
-import { SupabaseService } from './supabase.service';
+
 import { triggerThemeTransition } from '../utils';
+
+import { SupabaseService } from './supabase.service';
 
 /**
  * Manages theme state and transitions.

@@ -1,6 +1,4 @@
 import { CommonModule, Location } from '@angular/common';
-import { form, FormField, required, submit } from '@angular/forms/signals';
-import { FormsModule } from '@angular/forms';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -15,9 +13,9 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { form, FormField, required, submit } from '@angular/forms/signals';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
-import { TuiInputChip, TuiInputNumber } from '@taiga-ui/kit';
 import { type TuiDialogContext } from '@taiga-ui/core';
 import {
   TuiButton,
@@ -29,17 +27,20 @@ import {
   TuiInput,
   TuiRadio,
 } from '@taiga-ui/core';
+import { TuiInputChip, TuiInputNumber } from '@taiga-ui/kit';
+import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AreasService } from '../../services/areas.service';
 import { GlobalData } from '../../services/global-data';
+import { SlugService } from '../../services/slug.service';
+
 import { ToastService } from '../../services/toast.service';
 
-import { CounterComponent } from '../ui/counter';
-
-import { SlugService } from '../../services/slug.service';
 import { handleErrorToast, slugify } from '../../utils';
+
+import { CounterComponent } from '../ui/counter';
 
 interface MinimalArea {
   id?: number;

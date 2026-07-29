@@ -1,5 +1,4 @@
 import { DatePipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,10 +8,11 @@ import {
   signal,
   TemplateRef,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
-import { TuiBreadcrumbs } from '@taiga-ui/kit';
-import { TuiButton, TuiLink } from '@taiga-ui/core';
 import { TuiItem } from '@taiga-ui/cdk';
+import { TuiButton, TuiLink } from '@taiga-ui/core';
+import { TuiBreadcrumbs } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 

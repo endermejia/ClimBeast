@@ -1,6 +1,4 @@
 import { isPlatformBrowser, LowerCasePipe } from '@angular/common';
-import { ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -14,13 +12,10 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { ReactiveFormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import { TUI_CONFIRM } from '@taiga-ui/kit';
-import { TuiCountryIsoCode } from '@taiga-ui/i18n';
 import { TuiDialogService } from '@taiga-ui/core';
-
-import { TuiConfirmData, TuiTabs, TuiPulse, TuiSkeleton } from '@taiga-ui/kit';
 import {
   TuiAppearance,
   TuiButton,
@@ -30,6 +25,11 @@ import {
   TuiLoader,
   TuiScrollbar,
 } from '@taiga-ui/core';
+import { TuiCountryIsoCode } from '@taiga-ui/i18n';
+import { TUI_CONFIRM } from '@taiga-ui/kit';
+
+import { TuiConfirmData, TuiTabs, TuiPulse, TuiSkeleton } from '@taiga-ui/kit';
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -40,21 +40,23 @@ import { FollowRequestsService } from '../../services/follow-requests.service';
 import { FollowsService } from '../../services/follows.service';
 import { GlobalData } from '../../services/global-data';
 import { MessagingService } from '../../services/messaging.service';
-import { openPhotoViewer } from '../../utils/open-photo-viewer';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { TourService } from '../../services/tour.service';
 import { TourStep } from '../../services/tour.service';
 
+import { UserListDialogComponent } from '../../components/dialogs/user-list-dialog';
+
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { MenuOptionsButtonComponent } from '../../components/ui/menu-options-button';
 import { TourHintComponent } from '../../components/ui/tour-hint';
-import { UserListDialogComponent } from '../../components/dialogs/user-list-dialog';
+import { UserInfoComponent } from '../../components/ui/user-info';
 import { UserProfileAscentsComponent } from '../../components/user-profile/user-profile-ascents';
 import { UserProfileLikesComponent } from '../../components/user-profile/user-profile-likes';
 import { UserProfileProjectsComponent } from '../../components/user-profile/user-profile-projects';
 import { UserProfileStatisticsComponent } from '../../components/user-profile/user-profile-statistics';
-import { UserInfoComponent } from '../../components/ui/user-info';
+
+import { openPhotoViewer } from '../../utils/open-photo-viewer';
 
 @Component({
   selector: 'app-user-profile',

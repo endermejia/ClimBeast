@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TuiHeader } from '@taiga-ui/layout';
-import { TuiTabs } from '@taiga-ui/kit';
 import { TuiTitle, TuiIcon } from '@taiga-ui/core';
+import { TuiTabs } from '@taiga-ui/kit';
+import { TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
 

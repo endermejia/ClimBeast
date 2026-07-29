@@ -1,4 +1,3 @@
-import { toSignal, toObservable } from '@angular/core/rxjs-interop';
 import {
   computed,
   effect,
@@ -9,33 +8,11 @@ import {
   untracked,
   WritableSignal,
 } from '@angular/core';
+import { toSignal, toObservable } from '@angular/core/rxjs-interop';
 
 import { TUI_BREAKPOINT } from '@taiga-ui/core';
 
 import { map } from 'rxjs';
-
-import { AppNotificationsService } from './app-notifications.service';
-import { MessagingService } from './messaging.service';
-import { SupabaseService } from './supabase.service';
-import { FilterStateService } from './filter-state.service';
-import { MapDataService } from './map-data.service';
-import { TopoDataService } from './topo-data.service';
-import { ProfileDataService } from './profile-data.service';
-
-// Extracted services
-import { AuthStateService } from './auth-state.service';
-import { AudioPreferencesService } from './audio-preferences.service';
-import { BreadcrumbsService } from './breadcrumbs.service';
-import { EquipperService } from './equipper.service';
-import { ThemeService } from './theme.service';
-import { FavoritesDataService } from './favorites-data.service';
-import { IndoorCentersDataService } from './indoor-centers-data.service';
-import { CragRoutesDataService } from './crag-routes-data.service';
-import { AdminParkingsService } from './admin-parkings.service';
-import { LanguageService } from './language.service';
-import { OnlineStatusService } from './online-status.service';
-import { RealtimeService } from './realtime.service';
-import { PushSubscriptionService } from './push-subscription.service';
 
 import {
   AreaListItem,
@@ -45,6 +22,30 @@ import {
   Language,
   RouteWithExtras,
 } from '../models';
+
+import { AdminParkingsService } from './admin-parkings.service';
+import { AppNotificationsService } from './app-notifications.service';
+import { AudioPreferencesService } from './audio-preferences.service';
+import { AuthStateService } from './auth-state.service';
+import { BreadcrumbsService } from './breadcrumbs.service';
+import { CragRoutesDataService } from './crag-routes-data.service';
+
+// Extracted services
+import { EquipperService } from './equipper.service';
+import { FavoritesDataService } from './favorites-data.service';
+import { FilterStateService } from './filter-state.service';
+import { IndoorCentersDataService } from './indoor-centers-data.service';
+import { LanguageService } from './language.service';
+import { MapDataService } from './map-data.service';
+import { MessagingService } from './messaging.service';
+import { OnlineStatusService } from './online-status.service';
+import { ProfileDataService } from './profile-data.service';
+import { PushSubscriptionService } from './push-subscription.service';
+import { RealtimeService } from './realtime.service';
+import { SupabaseService } from './supabase.service';
+import { ThemeService } from './theme.service';
+
+import { TopoDataService } from './topo-data.service';
 
 /**
  * GlobalData is now a thin facade that delegates to domain services.

@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
-import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
-import { TuiButton } from '@taiga-ui/core';
 import { TuiPortalContext } from '@taiga-ui/cdk';
+import { TuiButton } from '@taiga-ui/core';
 import { TuiToast, TuiToastOptions } from '@taiga-ui/kit';
+import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
 

@@ -1,5 +1,4 @@
 import { DecimalPipe, isPlatformBrowser } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,9 +7,22 @@ import {
   PLATFORM_ID,
   signal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
+import {
+  TuiSortDirection,
+  TuiTable,
+  TuiTableSortChange,
+} from '@taiga-ui/addon-table';
+import type { TuiComparator } from '@taiga-ui/addon-table/types';
 import { tuiDefaultSort } from '@taiga-ui/cdk';
 import { TuiDialogService } from '@taiga-ui/core';
+import {
+  TuiAppearance,
+  TuiButton,
+  TuiScrollbar,
+  TuiInput,
+} from '@taiga-ui/core';
 import {
   TUI_CONFIRM,
   TuiAvatar,
@@ -20,18 +32,6 @@ import {
   TuiSkeleton,
   type TuiConfirmData,
 } from '@taiga-ui/kit';
-import {
-  TuiAppearance,
-  TuiButton,
-  TuiScrollbar,
-  TuiInput,
-} from '@taiga-ui/core';
-import {
-  TuiSortDirection,
-  TuiTable,
-  TuiTableSortChange,
-} from '@taiga-ui/addon-table';
-import type { TuiComparator } from '@taiga-ui/addon-table/types';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 

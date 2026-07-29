@@ -1,7 +1,5 @@
-import { inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-
-import { SupabaseService } from './supabase.service';
+import { inject, Injectable, PLATFORM_ID } from '@angular/core';
 
 import {
   AreaListItem,
@@ -12,7 +10,10 @@ import {
   RouteWithExtras,
   RouteWithJoins,
 } from '../models';
+
 import { mapRouteToExtras, RawRouteData } from '../utils/route-mapper';
+
+import { SupabaseService } from './supabase.service';
 
 @Injectable({
   providedIn: 'root',

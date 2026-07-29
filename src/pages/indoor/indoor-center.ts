@@ -11,11 +11,8 @@ import {
   effect,
   PLATFORM_ID,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { RouteAscentWithExtras } from '../../models';
 import { FormsModule } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
+import { Router, RouterLink } from '@angular/router';
 
 import {
   TuiAppearance,
@@ -38,27 +35,36 @@ import {
   TUI_CONFIRM,
   TuiConfirmData,
 } from '@taiga-ui/kit';
-import { AvatarUrlPipe } from '../../pipes/avatar-url.pipe';
-import { AscentCardComponent } from '../../components/ascent/ascent-card';
-import { UserProfilesService } from '../../services/user-profiles.service';
-import { ToastService } from '../../services/toast.service';
-import { UserProfileBasicDto } from '../../models';
-import { handleErrorToast, mapLocationUrl } from '../../utils';
+
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+
+import { firstValueFrom } from 'rxjs';
 
 import { GlobalData } from '../../services/global-data';
 import { IndoorService } from '../../services/indoor.service';
 import { SupabaseService } from '../../services/supabase.service';
-import { IndoorCenterDto } from '../../models';
+import { ToastService } from '../../services/toast.service';
+import { UserProfilesService } from '../../services/user-profiles.service';
+
+import { AscentCardComponent } from '../../components/ascent/ascent-card';
 import { IndoorToposComponent } from '../../components/indoor/indoor-topos';
+
+import { IndoorVouchersComponent } from '../../components/indoor/indoor-vouchers';
 import { IndoorRoutesTableComponent } from '../../components/route/indoor-routes-table';
-import { AnyToSchedulePipe } from '../../pipes/any-to-schedule.pipe';
 import {
   CustomCarouselComponent,
   CarouselItem,
 } from '../../components/ui/custom-carousel';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { SectionHeaderComponent } from '../../components/ui/section-header';
-import { IndoorVouchersComponent } from '../../components/indoor/indoor-vouchers';
+
+import { RouteAscentWithExtras } from '../../models';
+import { UserProfileBasicDto } from '../../models';
+import { IndoorCenterDto } from '../../models';
+
+import { AnyToSchedulePipe } from '../../pipes/any-to-schedule.pipe';
+import { AvatarUrlPipe } from '../../pipes/avatar-url.pipe';
+import { handleErrorToast, mapLocationUrl } from '../../utils';
 
 @Component({
   selector: 'app-indoor-center',

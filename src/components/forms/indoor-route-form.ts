@@ -9,9 +9,10 @@ import {
   signal,
   PLATFORM_ID,
 } from '@angular/core';
-import { form, FormField, required, submit } from '@angular/forms/signals';
 import { FormsModule } from '@angular/forms';
-import { injectContext } from '@taiga-ui/polymorpheus';
+import { form, FormField, required, submit } from '@angular/forms/signals';
+
+import { TuiIdentityMatcher } from '@taiga-ui/cdk';
 import {
   type TuiDialogContext,
   TuiDataList,
@@ -33,11 +34,14 @@ import {
   TuiInputChip,
   TuiPin,
 } from '@taiga-ui/kit';
-import { TuiIdentityMatcher } from '@taiga-ui/cdk';
+import { injectContext } from '@taiga-ui/polymorpheus';
+
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+
 import { IndoorService } from '../../services/indoor.service';
-import { ToastService } from '../../services/toast.service';
 import { SupabaseService } from '../../services/supabase.service';
+import { ToastService } from '../../services/toast.service';
+
 import {
   IndoorRouteDto,
   IndoorTopoDto,
@@ -49,6 +53,7 @@ import {
   INDOOR_ROUTE_COLORS,
   INDOOR_ROUTE_COLORS_LIST,
 } from '../../models';
+
 import { slugify } from '../../utils/slugify';
 
 export interface IndoorRouteFormData {

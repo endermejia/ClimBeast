@@ -9,11 +9,8 @@ import {
   signal,
   effect,
 } from '@angular/core';
-import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
-import { GlobalData } from '../../services/global-data';
+import { Router } from '@angular/router';
 
 import {
   TuiAppearance,
@@ -24,12 +21,20 @@ import {
 } from '@taiga-ui/core';
 import { TUI_CONFIRM, TuiConfirmData } from '@taiga-ui/kit';
 
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+
+import { firstValueFrom } from 'rxjs';
+
+import { GlobalData } from '../../services/global-data';
+
 import { IndoorService } from '../../services/indoor.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
-import { EmptyStateComponent } from '../ui/empty-state';
-import { TopoCardComponent } from '../topo/topo-card';
+
 import type { IndoorTopoListItem } from '../../models/indoor.model';
+
+import { TopoCardComponent } from '../topo/topo-card';
+import { EmptyStateComponent } from '../ui/empty-state';
 
 @Component({
   selector: 'app-indoor-topos',

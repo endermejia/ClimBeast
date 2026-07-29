@@ -1,13 +1,12 @@
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   input,
   output,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
-import { TranslatePipe } from '@ngx-translate/core';
 import { TuiAppearance, TuiButton } from '@taiga-ui/core';
 import {
   TuiBadgeNotification,
@@ -15,8 +14,10 @@ import {
   TuiSkeleton,
 } from '@taiga-ui/kit';
 
-import { DropdownButtonComponent } from '../ui/dropdown-button';
+import { TranslatePipe } from '@ngx-translate/core';
+
 import { HomeFeedFilter } from '../../pages/dashboard/home';
+import { DropdownButtonComponent } from '../ui/dropdown-button';
 
 @Component({
   selector: 'app-home-filter-bar',

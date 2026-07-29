@@ -7,7 +7,8 @@ import {
   resource,
   computed,
 } from '@angular/core';
-import { TranslateModule } from '@ngx-translate/core';
+
+import { TuiAmountPipe } from '@taiga-ui/addon-commerce';
 
 import {
   TuiAppearance,
@@ -16,10 +17,12 @@ import {
   TuiLoader,
   TuiNumberFormat,
 } from '@taiga-ui/core';
-import { TuiAmountPipe } from '@taiga-ui/addon-commerce';
+
+import { TranslateModule } from '@ngx-translate/core';
 
 import { GlobalData } from '../../services/global-data';
 import { IndoorService } from '../../services/indoor.service';
+
 import { IndoorVoucherDto, IndoorVoucherPurchaseDto } from '../../models';
 
 @Component({

@@ -1,7 +1,4 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-
-import { toSignal } from '@angular/core/rxjs-interop';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,9 +10,10 @@ import {
   signal,
 } from '@angular/core';
 
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
+
 import { TuiDialogService } from '@taiga-ui/core';
-import { TuiHeader } from '@taiga-ui/layout';
 import {
   TuiAppearance,
   TuiButton,
@@ -30,6 +28,8 @@ import {
   TuiBadgedContentComponent,
   TuiBadgeNotification,
 } from '@taiga-ui/kit';
+import { TuiHeader } from '@taiga-ui/layout';
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 

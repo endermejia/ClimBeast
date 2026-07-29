@@ -1,13 +1,16 @@
 import { LowerCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+
 import { TuiLink } from '@taiga-ui/core';
 
-import { ChartRoutesByGradeComponent } from '../charts/chart-routes-by-grade';
-import { AppCardComponent } from '../ui/card';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { AreaListItem } from '../../models';
+
+import { ChartRoutesByGradeComponent } from '../charts/chart-routes-by-grade';
+
+import { AppCardComponent } from '../ui/card';
 
 @Component({
   selector: 'app-area-card',

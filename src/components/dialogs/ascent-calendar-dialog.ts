@@ -1,11 +1,8 @@
 import { CommonModule, DatePipe, LowerCasePipe } from '@angular/common';
 import { Component, computed, inject, resource, signal } from '@angular/core';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
-import { TuiBadge } from '@taiga-ui/kit';
 import { TuiDay, TuiBooleanHandler, TuiMonth } from '@taiga-ui/cdk';
 import { TuiDialogContext } from '@taiga-ui/core';
-import { TuiHeader } from '@taiga-ui/layout';
 import {
   TuiCalendar,
   TuiMarkerHandler,
@@ -13,13 +10,14 @@ import {
   TuiIcon,
   TuiLoader,
 } from '@taiga-ui/core';
+import { TuiBadge } from '@taiga-ui/kit';
+import { TuiHeader } from '@taiga-ui/layout';
+import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AscentsService } from '../../services/ascents.service';
 import { GlobalData } from '../../services/global-data';
-
-import { AscentCardComponent } from '../ascent/ascent-card';
 
 import {
   AscentType,
@@ -27,6 +25,8 @@ import {
   UserProfileBasicDto,
   RouteAscentWithExtras,
 } from '../../models';
+
+import { AscentCardComponent } from '../ascent/ascent-card';
 
 /** Data passed when opening the dialog. */
 export interface AscentCalendarDialogData {

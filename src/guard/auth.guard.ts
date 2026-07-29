@@ -1,8 +1,9 @@
-import { CanMatchFn, Route, Router, UrlTree } from '@angular/router';
-import { inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { inject, PLATFORM_ID } from '@angular/core';
+import { CanMatchFn, Route, Router, UrlTree } from '@angular/router';
 
 import { SupabaseService } from '../services/supabase.service';
+
 import { CACHE_KEYS } from '../constants/cache-keys';
 
 export const authGuard: CanMatchFn = async (

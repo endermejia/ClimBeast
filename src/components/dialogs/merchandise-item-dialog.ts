@@ -7,16 +7,17 @@ import {
   signal,
 } from '@angular/core';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
 import { TuiButton, TuiDialogContext, TuiIcon } from '@taiga-ui/core';
+import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { CustomCarouselComponent } from '../ui/custom-carousel';
 import { CartService } from '../../services/cart.service';
 import { GlobalData } from '../../services/global-data';
 
 import { MerchandiseItemDetail } from '../../models';
+
+import { CustomCarouselComponent } from '../ui/custom-carousel';
 
 @Component({
   selector: 'app-merchandise-item-dialog',

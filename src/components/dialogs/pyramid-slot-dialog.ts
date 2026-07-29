@@ -1,14 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
   inject,
   signal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
-import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 import { TuiDialogContext } from '@taiga-ui/core';
 import {
   TuiButton,
@@ -17,13 +16,11 @@ import {
   TuiScrollbar,
   TuiInput,
 } from '@taiga-ui/core';
+import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { RoutesService } from '../../services/routes.service';
-
-import { AscentTypeComponent } from '../ascent/ascent-type';
-import { GradeComponent } from '../ui/avatar-grade';
 
 import {
   AscentType,
@@ -31,6 +28,10 @@ import {
   ClimbingKind,
   ClimbingKinds,
 } from '../../models';
+
+import { AscentTypeComponent } from '../ascent/ascent-type';
+
+import { GradeComponent } from '../ui/avatar-grade';
 
 export interface PyramidSlotDialogData {
   level: number;

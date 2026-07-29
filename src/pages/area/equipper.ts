@@ -1,4 +1,4 @@
-import { TuiCountryIsoCode } from '@taiga-ui/i18n';
+import { LowerCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,18 +8,20 @@ import {
   input,
   untracked,
 } from '@angular/core';
-import { LowerCasePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 
 import { TuiLink, TuiScrollbar } from '@taiga-ui/core';
+
+import { TuiCountryIsoCode } from '@taiga-ui/i18n';
 import { TUI_COUNTRIES, TuiSkeleton } from '@taiga-ui/kit';
+
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { GlobalData } from '../../services/global-data';
 import { SupabaseService } from '../../services/supabase.service';
 
-import { OutdoorRoutesTableComponent } from '../../components/route/outdoor-routes-table';
 import { IndoorRoutesComponent } from '../../components/indoor/indoor-routes';
+import { OutdoorRoutesTableComponent } from '../../components/route/outdoor-routes-table';
 
 import { UserInfoComponent } from '../../components/ui/user-info';
 

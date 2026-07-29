@@ -1,4 +1,3 @@
-import { UserAscentStatRecord } from '../models/route-ascent.model';
 import {
   AscentType,
   AscentTypes,
@@ -7,6 +6,7 @@ import {
   PROJECT_GRADE_LABEL,
   VERTICAL_LIFE_GRADES,
 } from '../models';
+import { UserAscentStatRecord } from '../models/route-ascent.model';
 import {
   RouteScore,
   AscentTypeDistribution,

@@ -1,6 +1,4 @@
 import { isPlatformBrowser } from '@angular/common';
-import { Router, ActivatedRoute } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,15 +10,11 @@ import {
   PLATFORM_ID,
   signal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { Router, ActivatedRoute } from '@angular/router';
 
 import { TuiDialogService } from '@taiga-ui/core';
 
-import {
-  TUI_CONFIRM,
-  TuiTabs,
-  TuiPulse,
-  type TuiConfirmData,
-} from '@taiga-ui/kit';
 import {
   TuiButton,
   TuiDataList,
@@ -30,6 +24,12 @@ import {
   TuiNotification,
   TuiScrollbar,
 } from '@taiga-ui/core';
+import {
+  TUI_CONFIRM,
+  TuiTabs,
+  TuiPulse,
+  type TuiConfirmData,
+} from '@taiga-ui/kit';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 

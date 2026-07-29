@@ -1,7 +1,4 @@
-import { FormsModule } from '@angular/forms';
 import { isPlatformBrowser, Location, NgOptimizedImage } from '@angular/common';
-import { Router } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,6 +10,8 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import {
   form,
   required,
@@ -21,12 +20,25 @@ import {
   min,
   max,
 } from '@angular/forms/signals';
+import { Router } from '@angular/router';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import { PolymorpheusContent } from '@taiga-ui/polymorpheus';
 import { TuiDay, TuiStringMatcher } from '@taiga-ui/cdk';
-import { TuiHeader } from '@taiga-ui/layout';
+import {
+  TuiButton,
+  tuiDateFormatProvider,
+  TuiIcon,
+  TuiNotification,
+  TuiScrollbar,
+  TuiTitle,
+  TuiDropdown,
+  TuiError,
+  TuiCalendar,
+  TuiCalendarYear,
+  TuiInput,
+  TuiFilterByInputPipe,
+  TuiDialogService,
+  type TuiDialogContext,
+} from '@taiga-ui/core';
 import {
   TUI_CONFIRM,
   TUI_COUNTRIES,
@@ -50,22 +62,10 @@ import {
   type TuiConfirmData,
   TuiFlagPipe,
 } from '@taiga-ui/kit';
-import {
-  TuiButton,
-  tuiDateFormatProvider,
-  TuiIcon,
-  TuiNotification,
-  TuiScrollbar,
-  TuiTitle,
-  TuiDropdown,
-  TuiError,
-  TuiCalendar,
-  TuiCalendarYear,
-  TuiInput,
-  TuiFilterByInputPipe,
-  TuiDialogService,
-  type TuiDialogContext,
-} from '@taiga-ui/core';
+import { TuiHeader } from '@taiga-ui/layout';
+import { injectContext } from '@taiga-ui/polymorpheus';
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
+import { PolymorpheusContent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 

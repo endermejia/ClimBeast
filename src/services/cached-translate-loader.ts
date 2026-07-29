@@ -1,7 +1,9 @@
 import { HttpClient } from '@angular/common/http';
+
 import { TranslateLoader } from '@ngx-translate/core';
 import { Observable, of } from 'rxjs';
 import { catchError, tap, timeout } from 'rxjs/operators';
+
 import { CACHE_KEYS } from '../constants/cache-keys';
 
 export class CachedTranslateLoader implements TranslateLoader {

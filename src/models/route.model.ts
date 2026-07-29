@@ -1,7 +1,7 @@
-import { EquipperDto, RouteAscentDto, RouteDto } from './supabase-interfaces';
-import { IndoorRouteWithExtras } from './indoor.model';
 import { AscentType } from './app-enums.model';
 import { CragDto } from './crag.model';
+import { IndoorRouteWithExtras } from './indoor.model';
+import { EquipperDto, RouteAscentDto, RouteDto } from './supabase-interfaces';
 
 export interface RouteBasicDto extends Pick<
   RouteDto,

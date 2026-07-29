@@ -1,6 +1,6 @@
-import { GradeLabel } from './grade.model';
-
 import { AscentType } from './app-enums.model';
+
+import { GradeLabel } from './grade.model';
 
 export interface RouteScore {
   name: string;

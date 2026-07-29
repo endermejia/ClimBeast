@@ -1,7 +1,4 @@
 import { CommonModule } from '@angular/common';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,8 +9,12 @@ import {
   resource,
   signal,
 } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { Router, RouterLink } from '@angular/router';
+
 import { TuiDialogService } from '@taiga-ui/core';
-import { TuiHeader } from '@taiga-ui/layout';
+import { TuiAppearance, TuiButton, TuiHint, TuiIcon } from '@taiga-ui/core';
 import {
   TUI_CONFIRM,
   TuiAvatar,
@@ -22,7 +23,7 @@ import {
   TuiRating,
   TuiSkeleton,
 } from '@taiga-ui/kit';
-import { TuiAppearance, TuiButton, TuiHint, TuiIcon } from '@taiga-ui/core';
+import { TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -31,15 +32,7 @@ import { firstValueFrom } from 'rxjs';
 import { AscentsService } from '../../services/ascents.service';
 import { FollowsService } from '../../services/follows.service';
 import { GlobalData } from '../../services/global-data';
-import { openPhotoViewer } from '../../utils/open-photo-viewer';
 import { SupabaseService } from '../../services/supabase.service';
-
-import { AscentCommentsComponent } from './ascent-comments';
-import { AscentLastCommentComponent } from './ascent-last-comment';
-import { AscentLikesComponent } from './ascent-likes';
-import { AscentTypeComponent } from './ascent-type';
-import { CustomCarouselComponent } from '../ui/custom-carousel';
-import { GradeComponent } from '../ui/avatar-grade';
 
 import {
   CLIMBING_ICONS,
@@ -49,6 +42,16 @@ import {
 
 import { AscentDatePipe, AvatarUrlPipe } from '../../pipes';
 import { getEmbedUrl } from '../../utils';
+import { openPhotoViewer } from '../../utils/open-photo-viewer';
+
+import { GradeComponent } from '../ui/avatar-grade';
+import { CustomCarouselComponent } from '../ui/custom-carousel';
+import { AscentCommentsComponent } from './ascent-comments';
+
+import { AscentLastCommentComponent } from './ascent-last-comment';
+
+import { AscentLikesComponent } from './ascent-likes';
+import { AscentTypeComponent } from './ascent-type';
 
 @Component({
   selector: 'app-ascent-card',

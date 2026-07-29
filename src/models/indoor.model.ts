@@ -1,3 +1,4 @@
+import { AscentType } from './app-enums.model';
 import {
   Json,
   TableInsert,
@@ -6,7 +7,6 @@ import {
   EquipperDto,
   UserProfileDto,
 } from './supabase-interfaces';
-import { AscentType } from './app-enums.model';
 
 // --- Indoor DTOs ---
 export type IndoorCenterDto = TableRow<'indoor_centers'>;

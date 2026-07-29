@@ -9,12 +9,15 @@ import { RouterLink } from '@angular/router';
 
 import { TuiLink, TuiIcon } from '@taiga-ui/core';
 
+import { TranslatePipe } from '@ngx-translate/core';
+
 import { GlobalData } from '../../services/global-data';
 import { SupabaseService } from '../../services/supabase.service';
+
 import { AmountByEveryGrade } from '../../models';
-import { TranslatePipe } from '@ngx-translate/core';
-import { AppCardComponent } from '../ui/card';
+
 import { ChartRoutesByGradeComponent } from '../charts/chart-routes-by-grade';
+import { AppCardComponent } from '../ui/card';
 
 export interface IndoorCenterCardItem {
   id: string;

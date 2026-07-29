@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,25 +7,22 @@ import {
   inject,
   input,
 } from '@angular/core';
+import { PLATFORM_ID } from '@angular/core';
+import { RouterLink } from '@angular/router';
+
+import { TuiDialogService } from '@taiga-ui/core';
+import { TuiLink } from '@taiga-ui/core';
+import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit';
+
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
-import { TuiDialogService } from '@taiga-ui/core';
-import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit';
-import { isPlatformBrowser } from '@angular/common';
-import { PLATFORM_ID } from '@angular/core';
 
 import { AscentsService } from '../../services/ascents.service';
 import { GlobalData } from '../../services/global-data';
 import { IndoorService } from '../../services/indoor.service';
-import { ToastService } from '../../services/toast.service';
+
 import { SupabaseService } from '../../services/supabase.service';
-
-import { RoutesTableComponent } from './routes-table';
-import { IndoorRouteEquippersInputComponent } from './indoor-route-equippers-input';
-import { RouteRowExpandedComponent } from './route-row-expanded';
-
-import { RouterLink } from '@angular/router';
-import { TuiLink } from '@taiga-ui/core';
+import { ToastService } from '../../services/toast.service';
 
 import {
   IndoorRouteWithExtras,
@@ -33,7 +31,13 @@ import {
   AscentType,
   RouteItem,
 } from '../../models';
+
 import { mapRouteToTableRow, handleErrorToast } from '../../utils';
+
+import { IndoorRouteEquippersInputComponent } from './indoor-route-equippers-input';
+
+import { RouteRowExpandedComponent } from './route-row-expanded';
+import { RoutesTableComponent } from './routes-table';
 
 @Component({
   selector: 'app-indoor-routes-table',

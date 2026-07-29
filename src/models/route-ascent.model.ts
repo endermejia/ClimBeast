@@ -1,10 +1,10 @@
-import { RouteDto } from './supabase-interfaces';
-import { CragDto } from './crag.model';
 import { AreaDto } from './area.model';
+import { CragDto } from './crag.model';
 import { RouteWithExtras } from './route.model';
-import { UserProfileBasicDto } from './user.model';
-
+import { RouteDto } from './supabase-interfaces';
 import { RouteAscentCommentDto, RouteAscentDto } from './supabase-interfaces';
+
+import { UserProfileBasicDto } from './user.model';
 
 export interface RouteAscentRaw extends RouteAscentDto {
   user?: UserProfileBasicDto;

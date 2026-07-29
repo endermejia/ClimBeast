@@ -1,5 +1,5 @@
+import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,20 +8,10 @@ import {
   signal,
 } from '@angular/core';
 
-import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
+import { FormsModule } from '@angular/forms';
 
-import {
-  COMMON_IMAGE_EDITOR_CONFIG,
-  createNewPhoto,
-  fileToDataUrl,
-  NewPhoto,
-  reorderGallery,
-  extractErrorMessage,
-} from '../../utils';
-
-import { injectContext } from '@taiga-ui/polymorpheus';
 import { TuiDialogContext, TuiDialogService } from '@taiga-ui/core';
-import { openImageEditor } from '../../utils/open-image-editor';
+
 import {
   TuiButton,
   TuiLabel,
@@ -40,6 +30,7 @@ import {
   TuiChevron,
   TuiFiles,
 } from '@taiga-ui/kit';
+import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -48,6 +39,17 @@ import { MerchandiseService } from '../../services/merchandise.service';
 import { ToastService } from '../../services/toast.service';
 
 import { MerchandiseItemDetail, MerchandiseStock } from '../../models';
+
+import {
+  COMMON_IMAGE_EDITOR_CONFIG,
+  createNewPhoto,
+  fileToDataUrl,
+  NewPhoto,
+  reorderGallery,
+  extractErrorMessage,
+} from '../../utils';
+
+import { openImageEditor } from '../../utils/open-image-editor';
 
 const MERCHANDISE_CATEGORIES = [
   'camiseta',

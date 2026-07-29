@@ -16,13 +16,15 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { GlobalData } from '../../services/global-data';
 
-import { ChartRoutesByGradeComponent } from '../charts/chart-routes-by-grade';
+import { TopoListItem } from '../../models';
+
+import { IndoorTopoListItem } from '../../models/indoor.model';
 
 import { IconSrcPipe } from '../../pipes/icon-src.pipe';
 import { ShadeInfoPipe } from '../../pipes/shade-info.pipe';
 import { TopoImagePipe } from '../../pipes/topo-image.pipe';
-import { TopoListItem } from '../../models';
-import { IndoorTopoListItem } from '../../models/indoor.model';
+
+import { ChartRoutesByGradeComponent } from '../charts/chart-routes-by-grade';
 
 @Component({
   selector: 'app-topo-card',

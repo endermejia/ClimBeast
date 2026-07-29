@@ -1,5 +1,4 @@
 import { isPlatformBrowser } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -10,9 +9,8 @@ import {
   resource,
   signal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
-import { TuiAvatar, TuiConfirmData, TUI_CONFIRM } from '@taiga-ui/kit';
 import {
   TuiButton,
   TuiDialogContext,
@@ -24,6 +22,8 @@ import {
   TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
+import { TuiAvatar, TuiConfirmData, TUI_CONFIRM } from '@taiga-ui/kit';
+import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -33,10 +33,11 @@ import { AscentsService } from '../../services/ascents.service';
 import { FollowsService } from '../../services/follows.service';
 import { SupabaseService } from '../../services/supabase.service';
 
-import { EmptyStateComponent } from '../ui/empty-state';
-
 import { UserProfileBasicDto, UserProfileDto } from '../../models';
+
 import { AvatarUrlPipe } from '../../pipes';
+
+import { EmptyStateComponent } from '../ui/empty-state';
 
 export type UserListType =
   | 'followers'

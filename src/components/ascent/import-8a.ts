@@ -1,5 +1,4 @@
 import { AsyncPipe, DatePipe } from '@angular/common';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,6 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   FormControl,
   FormsModule,
@@ -14,9 +14,6 @@ import {
   Validators,
 } from '@angular/forms';
 
-import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
-import { TuiAvatar } from '@taiga-ui/kit';
-import { TuiHeader, TuiSlides } from '@taiga-ui/layout';
 import {
   TuiButton,
   TuiDialogContext,
@@ -24,6 +21,7 @@ import {
   TuiNotification,
   TuiCheckbox,
 } from '@taiga-ui/core';
+import { TuiAvatar } from '@taiga-ui/kit';
 import {
   type TuiFileLike,
   TuiFileRejectedPipe,
@@ -32,6 +30,8 @@ import {
   TuiSkeleton,
   TuiStepper,
 } from '@taiga-ui/kit';
+import { TuiHeader, TuiSlides } from '@taiga-ui/layout';
+import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -53,10 +53,6 @@ import { NotificationService } from '../../services/notification.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 
-import { SanitizeHtmlPipe } from '../../pipes/sanitize-html.pipe';
-import { GradeComponent } from '../ui/avatar-grade';
-
-import { Json } from '../../models/supabase-generated';
 import {
   AscentType,
   AscentTypes,
@@ -67,8 +63,12 @@ import {
   GradeLabel,
   LABEL_TO_VERTICAL_LIFE,
 } from '../../models';
+import { Json } from '../../models/supabase-generated';
 
+import { SanitizeHtmlPipe } from '../../pipes/sanitize-html.pipe';
 import { slugify } from '../../utils';
+
+import { GradeComponent } from '../ui/avatar-grade';
 
 class EmptyCsvError extends Error {
   constructor(message: string) {

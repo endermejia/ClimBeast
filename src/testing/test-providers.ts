@@ -1,19 +1,20 @@
 import { Provider, EnvironmentProviders, PLATFORM_ID } from '@angular/core';
 import { provideRouter } from '@angular/router';
 
+import { TranslateService } from '@ngx-translate/core';
+
+import { GlobalData } from '../services/global-data';
+import { LocalStorage } from '../services/local-storage';
+import { SupabaseService } from '../services/supabase.service';
+
+import { IS_BROWSER } from '../app/is-browser';
+import { MockGlobalData } from './mock-global-data.service';
+import { MockLocalStorage } from './mock-local-storage';
+import { MockSupabaseService } from './mock-supabase.service';
 import {
   MockTranslateService,
   MockTranslatePipe,
 } from './mock-translate.service';
-import { MockSupabaseService } from './mock-supabase.service';
-import { MockGlobalData } from './mock-global-data.service';
-import { MockLocalStorage } from './mock-local-storage';
-
-import { TranslateService } from '@ngx-translate/core';
-import { SupabaseService } from '../services/supabase.service';
-import { GlobalData } from '../services/global-data';
-import { LocalStorage } from '../services/local-storage';
-import { IS_BROWSER } from '../app/is-browser';
 
 export const COMMON_TEST_PROVIDERS: (Provider | EnvironmentProviders)[] = [
   provideRouter([]),

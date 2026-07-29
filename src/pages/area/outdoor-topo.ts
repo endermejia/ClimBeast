@@ -7,16 +7,22 @@ import {
   PLATFORM_ID,
   resource,
 } from '@angular/core';
-import { TUI_CONFIRM, TuiBadge, type TuiConfirmData } from '@taiga-ui/kit';
+
 import { TuiButton, TuiDataList, TuiIcon, TuiLoader } from '@taiga-ui/core';
+import { TUI_CONFIRM, TuiBadge, type TuiConfirmData } from '@taiga-ui/kit';
+
 import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
-import { ShadeInfoPipe } from '../../pipes';
-import { TopoViewerComponent } from '../../components/topo/topo-viewer';
+
 import { TopoRoutesTableComponent } from '../../components/topo/topo-routes-table';
-import { SectionHeaderComponent } from '../../components/ui/section-header';
-import type { TopoDetail } from '../../models';
+import { TopoViewerComponent } from '../../components/topo/topo-viewer';
 import type { TopoRouteRow } from '../../components/topo/topo.types';
+import { SectionHeaderComponent } from '../../components/ui/section-header';
+
+import type { TopoDetail } from '../../models';
+
+import { ShadeInfoPipe } from '../../pipes';
+
 import { TopoPageBase } from './topo-page-base';
 
 @Component({

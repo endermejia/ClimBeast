@@ -1,6 +1,7 @@
 import { inject, Pipe, PipeTransform } from '@angular/core';
 
 import { GlobalData } from '../services/global-data';
+
 import { IconName } from '../models';
 
 @Pipe({

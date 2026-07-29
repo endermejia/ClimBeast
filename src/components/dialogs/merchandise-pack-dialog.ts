@@ -7,14 +7,14 @@ import {
   signal,
 } from '@angular/core';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
-import { TuiBadge } from '@taiga-ui/kit';
 import {
   TuiButton,
   TuiCarousel,
   TuiDialogContext,
   TuiIcon,
 } from '@taiga-ui/core';
+import { TuiBadge } from '@taiga-ui/kit';
+import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
 

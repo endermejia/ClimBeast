@@ -2,19 +2,20 @@ import { CommonModule, DecimalPipe, UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
 import { TuiDialogContext } from '@taiga-ui/core';
-
 import { TuiIcon } from '@taiga-ui/core';
 
+import { injectContext } from '@taiga-ui/polymorpheus';
+
 import { TranslatePipe } from '@ngx-translate/core';
+
+import { MerchandiseService } from '../../services/merchandise.service';
 
 import {
   AreaPackDetail,
   MerchandiseItemDetail,
   OrderDetail,
 } from '../../models/merchandise.model';
-import { MerchandiseService } from '../../services/merchandise.service';
 
 @Component({
   selector: 'app-order-details-dialog',

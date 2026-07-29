@@ -1,5 +1,4 @@
 import { isPlatformBrowser } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,10 +6,11 @@ import {
   PLATFORM_ID,
   resource,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
+import { TuiIcon, TuiTitle } from '@taiga-ui/core';
 import { TuiAvatar, TuiAvatarStack } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
-import { TuiIcon, TuiTitle } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 

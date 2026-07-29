@@ -9,8 +9,6 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
-import { TuiAvatar, TuiConfirmData, TUI_CONFIRM } from '@taiga-ui/kit';
 import {
   TuiButton,
   TuiDialogContext,
@@ -22,15 +20,19 @@ import {
   TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
+import { TuiAvatar, TuiConfirmData, TUI_CONFIRM } from '@taiga-ui/kit';
+import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
-import { EmptyStateComponent } from '../ui/empty-state';
+
 import { AvatarUrlPipe } from '../../pipes';
 import { handleErrorToast } from '../../utils';
+
+import { EmptyStateComponent } from '../ui/empty-state';
 
 interface AccessUser {
   purchaseId: string;

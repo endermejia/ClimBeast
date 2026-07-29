@@ -1,5 +1,4 @@
 import { CommonModule } from '@angular/common';
-import { DomSanitizer } from '@angular/platform-browser';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,6 +7,7 @@ import {
   inject,
   input,
 } from '@angular/core';
+import { DomSanitizer } from '@angular/platform-browser';
 
 import { TuiAppearance, TuiButton } from '@taiga-ui/core';
 import { TuiAvatar } from '@taiga-ui/kit';

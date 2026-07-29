@@ -1,18 +1,18 @@
 import { CommonModule, LowerCasePipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
   input,
   model,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import { TuiIcon, TuiHint, TuiScrollbar, TuiButton } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { GradeDistribution } from '../../../models/user-stats.model';
 import { AscentTypes } from '../../../models';
+import { GradeDistribution } from '../../../models/user-stats.model';
 
 @Component({
   selector: 'app-user-profile-stats-pyramid',

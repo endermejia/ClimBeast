@@ -1,3 +1,4 @@
+import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,10 +13,13 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+
 import { TuiButton, TuiIcon } from '@taiga-ui/core';
+
 import { TranslatePipe } from '@ngx-translate/core';
-import { GradeComponent } from '../ui/avatar-grade';
+
+import type { TopoRouteWithRoute } from '../../models';
+
 import { GradeLabelPipe } from '../../pipes';
 import { IconSrcPipe } from '../../pipes';
 import {
@@ -30,7 +34,8 @@ import {
   handleViewerMouseMove,
   centerViewerOnPoint,
 } from '../../utils';
-import type { TopoRouteWithRoute } from '../../models';
+
+import { GradeComponent } from '../ui/avatar-grade';
 
 interface RenderedRoute extends TopoRouteWithRoute {
   style: { stroke: string; opacity: number; isDashed: boolean };

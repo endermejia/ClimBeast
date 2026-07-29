@@ -15,9 +15,11 @@ import { TuiCardLarge } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { CustomCarouselComponent } from '../ui/custom-carousel';
 import { GlobalData } from '../../services/global-data';
+
 import { MerchandiseItemDetail } from '../../models';
+
+import { CustomCarouselComponent } from '../ui/custom-carousel';
 
 @Component({
   selector: 'app-merchandise-card',

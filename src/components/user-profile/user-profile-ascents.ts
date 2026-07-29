@@ -1,6 +1,4 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { toSignal } from '@angular/core/rxjs-interop';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,8 +11,9 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import {
   TuiAppearance,
   TuiButton,
@@ -29,6 +28,7 @@ import {
   TuiDataListWrapper,
   TuiSelect,
 } from '@taiga-ui/kit';
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -40,10 +40,6 @@ import { GlobalData } from '../../services/global-data';
 import { SupabaseService } from '../../services/supabase.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
 
-import { AscentCalendarDialogComponent } from '../dialogs/ascent-calendar-dialog';
-import { AscentsFeedComponent } from '../ascent/ascents-feed';
-import { EmptyStateComponent } from '../ui/empty-state';
-
 import {
   FeedItem,
   ORDERED_GRADE_VALUES,
@@ -52,6 +48,12 @@ import {
 } from '../../models';
 
 import { getAscentDateFilterOptions, processAscentsToFeed } from '../../utils';
+
+import { AscentsFeedComponent } from '../ascent/ascents-feed';
+
+import { AscentCalendarDialogComponent } from '../dialogs/ascent-calendar-dialog';
+
+import { EmptyStateComponent } from '../ui/empty-state';
 
 @Component({
   selector: 'app-user-profile-ascents',

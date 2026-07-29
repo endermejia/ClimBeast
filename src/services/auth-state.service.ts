@@ -14,8 +14,9 @@ import {
   CragListItem,
   RouteWithExtras,
 } from '../models';
-import { SupabaseService } from './supabase.service';
+
 import { LocalStorage } from './local-storage';
+import { SupabaseService } from './supabase.service';
 
 /**
  * Manages auth state, roles, and edit permissions.

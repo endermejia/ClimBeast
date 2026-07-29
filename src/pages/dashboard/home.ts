@@ -1,6 +1,4 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { Router } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -16,6 +14,8 @@ import {
   effect,
   untracked,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
 
 import { TuiDataList, TuiDialogService, TuiScrollbar } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
@@ -24,19 +24,38 @@ import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 
 import { Subject, firstValueFrom } from 'rxjs';
 
+import { AppNotificationsService } from '../../services/app-notifications.service';
+import { CartService } from '../../services/cart.service';
 import { DesnivelService } from '../../services/desnivel.service';
 import { FollowsService } from '../../services/follows.service';
 import { GlobalData } from '../../services/global-data';
 import { LocalStorage } from '../../services/local-storage';
+import { MessagingService } from '../../services/messaging.service';
 import { ScrollService } from '../../services/scroll.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { VisitedCragsService } from '../../services/visited-crags.service';
-import { AppNotificationsService } from '../../services/app-notifications.service';
-import { CartService } from '../../services/cart.service';
-import { MessagingService } from '../../services/messaging.service';
-import { CACHE_KEYS } from '../../constants/cache-keys';
 
 import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
+
+import { HomeCragsRowComponent } from '../../components/dashboard/home-crags-row';
+import { HomeFilterBarComponent } from '../../components/dashboard/home-filter-bar';
+
+import { HomeNewsGridComponent } from '../../components/dashboard/home-news-grid';
+
+function deduplicateFeedItems(items: FeedItem[]): FeedItem[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key =
+      item.kind === 'news'
+        ? `news-${item.id || item.link}`
+        : `ascent-${item.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+import { HomeNewsSidebarComponent } from '../../components/dashboard/home-news-sidebar';
 import {
   FilterDialog,
   FilterDialogComponent,
@@ -52,25 +71,14 @@ import {
   UserProfileBasicDto,
 } from '../../models';
 
-function deduplicateFeedItems(items: FeedItem[]): FeedItem[] {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    const key =
-      item.kind === 'news'
-        ? `news-${item.id || item.link}`
-        : `ascent-${item.id}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
 import { IndoorAscentRaw } from '../../models/indoor.model';
 import {
   ActiveCrag,
   AscentWithRouteJoin,
   IndoorAscentWithRouteJoin,
 } from '../../models/supabase-query.types';
+
+import { CACHE_KEYS } from '../../constants/cache-keys';
 import {
   applyCategoryFilter,
   applyGradeFilter,
@@ -78,11 +86,6 @@ import {
   applyUserFilter,
   FeedFilterOptions,
 } from '../../utils/feed-filters';
-
-import { HomeCragsRowComponent } from '../../components/dashboard/home-crags-row';
-import { HomeFilterBarComponent } from '../../components/dashboard/home-filter-bar';
-import { HomeNewsGridComponent } from '../../components/dashboard/home-news-grid';
-import { HomeNewsSidebarComponent } from '../../components/dashboard/home-news-sidebar';
 
 export type HomeFeedFilter =
   | 'following'

@@ -1,6 +1,4 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { form, required, submit } from '@angular/forms/signals';
-import { FormsModule } from '@angular/forms';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -10,9 +8,9 @@ import {
   resource,
   signal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { form, required, submit } from '@angular/forms/signals';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
-import { TuiChevron, TuiInputChip, TuiMultiSelect } from '@taiga-ui/kit';
 import { TuiIdentityMatcher, tuiIsString } from '@taiga-ui/cdk';
 import { type TuiDialogContext } from '@taiga-ui/core';
 import {
@@ -26,6 +24,8 @@ import {
   TuiInput,
   TuiFilterByInputPipe,
 } from '@taiga-ui/core';
+import { TuiChevron, TuiInputChip, TuiMultiSelect } from '@taiga-ui/kit';
+import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
 

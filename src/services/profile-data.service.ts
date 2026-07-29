@@ -8,6 +8,7 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
+
 import {
   AscentType,
   ClimbingKind,
@@ -18,16 +19,18 @@ import {
   RouteDto,
   RouteWithExtras,
 } from '../models';
-import { SupabaseService } from './supabase.service';
-import { CacheService } from './cache.service';
 import { ORDERED_GRADE_VALUES, LABEL_TO_VERTICAL_LIFE } from '../models';
-import { FilterStateService } from './filter-state.service';
+
+import { CACHE_KEYS } from '../constants/cache-keys';
 import {
   mapRouteToExtras,
   mapAscentRouteToExtras,
   RawRouteData,
 } from '../utils/route-mapper';
-import { CACHE_KEYS } from '../constants/cache-keys';
+
+import { CacheService } from './cache.service';
+import { FilterStateService } from './filter-state.service';
+import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
 export class ProfileDataService {

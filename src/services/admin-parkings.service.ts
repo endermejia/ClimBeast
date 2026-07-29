@@ -1,9 +1,9 @@
 import { isPlatformBrowser } from '@angular/common';
 import { inject, Injectable, PLATFORM_ID, resource } from '@angular/core';
 
-import { SupabaseService } from './supabase.service';
-
 import { ParkingDto } from '../models';
+
+import { SupabaseService } from './supabase.service';
 
 /**
  * Manages admin parkings data.

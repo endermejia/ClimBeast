@@ -10,21 +10,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { TuiDialogService } from '@taiga-ui/core';
-import {
-  TUI_CONFIRM,
-  TuiAvatar,
-  type TuiConfirmData,
-  TuiInputNumber,
-} from '@taiga-ui/kit';
-import {
-  TuiButton,
-  TuiIcon,
-  TuiLink,
-  TuiTextfield,
-  TuiScrollbar,
-  TuiCell,
-} from '@taiga-ui/core';
+
 import {
   TuiSortDirection,
   TuiTable,
@@ -36,25 +22,45 @@ import {
   TuiTableHead,
   TuiTableCell,
 } from '@taiga-ui/addon-table';
-import type { TuiComparator } from '@taiga-ui/addon-table/types';
 import type { TuiTableSortChange } from '@taiga-ui/addon-table';
+import type { TuiComparator } from '@taiga-ui/addon-table/types';
+import { TuiDialogService } from '@taiga-ui/core';
+import {
+  TuiButton,
+  TuiIcon,
+  TuiLink,
+  TuiTextfield,
+  TuiScrollbar,
+  TuiCell,
+} from '@taiga-ui/core';
+import {
+  TUI_CONFIRM,
+  TuiAvatar,
+  type TuiConfirmData,
+  TuiInputNumber,
+} from '@taiga-ui/kit';
+
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
+
 import { AscentsService } from '../../services/ascents.service';
+import { GlobalData } from '../../services/global-data';
 import { RoutesService } from '../../services/routes.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
-import { GlobalData } from '../../services/global-data';
-import { GradeComponent } from '../ui/avatar-grade';
-import { EmptyStateComponent } from '../ui/empty-state';
-import { PaywallComponent } from '../paywall/paywall';
+
+import type { TopoRouteWithRoute } from '../../models';
+import { topoPathToJson } from '../../models/topo.model';
+
 import { AscentInfoPipe } from '../../pipes/ascent-info.pipe';
 import { TableSorterPipe } from '../../pipes/table-sorter.pipe';
 import { handleErrorToast } from '../../utils';
+
+import { PaywallComponent } from '../paywall/paywall';
+import { GradeComponent } from '../ui/avatar-grade';
+import { EmptyStateComponent } from '../ui/empty-state';
 import type { TopoRouteRow } from './topo.types';
-import type { TopoRouteWithRoute } from '../../models';
-import { topoPathToJson } from '../../models/topo.model';
 
 @Component({
   selector: 'app-topo-routes-table',

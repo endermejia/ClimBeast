@@ -1,12 +1,15 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+
 import { TuiButton, TuiIcon, TuiLink } from '@taiga-ui/core';
 
-import { ChartRoutesByGradeComponent } from '../charts/chart-routes-by-grade';
-import { AppCardComponent } from '../ui/card';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { CragListItem } from '../../models';
+
+import { ChartRoutesByGradeComponent } from '../charts/chart-routes-by-grade';
+
+import { AppCardComponent } from '../ui/card';
 
 @Component({
   selector: 'app-crag-card',

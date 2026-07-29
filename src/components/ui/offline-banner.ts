@@ -6,8 +6,9 @@ import {
   signal,
 } from '@angular/core';
 
-import { IS_BROWSER } from '../../app/is-browser';
 import { TranslatePipe } from '@ngx-translate/core';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-offline-banner',

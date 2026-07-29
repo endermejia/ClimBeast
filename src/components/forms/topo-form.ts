@@ -1,6 +1,4 @@
 import { CommonModule, Location } from '@angular/common';
-import { form, FormField, required, submit } from '@angular/forms/signals';
-import { FormsModule } from '@angular/forms';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -14,8 +12,9 @@ import {
   Signal,
   untracked,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { form, FormField, required, submit } from '@angular/forms/signals';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
 import { TuiIdentityMatcher, tuiIsString, TuiTime } from '@taiga-ui/cdk';
 import { type TuiDialogContext } from '@taiga-ui/core';
 import {
@@ -41,21 +40,17 @@ import {
   TuiFiles,
   TuiInputFiles,
 } from '@taiga-ui/kit';
+import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
 import { GlobalData } from '../../services/global-data';
+import { IndoorService } from '../../services/indoor.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
-import { IndoorService } from '../../services/indoor.service';
-import { openImageEditor } from '../../utils/open-image-editor';
-import { ShadeInfoPipe } from '../../pipes/shade-info.pipe';
-
-import { GradeComponent } from '../ui/avatar-grade';
-import { ImageEditorConfig } from '../dialogs/image-editor-dialog';
 
 import {
   RouteDto,
@@ -70,9 +65,17 @@ import {
   SelectedRoute,
 } from '../../models';
 import type { IndoorRouteDto } from '../../models/indoor.model';
+
 import type { TopoPath, TopoRouteWithRoute } from '../../models/topo.model';
 
+import { ShadeInfoPipe } from '../../pipes/shade-info.pipe';
+
 import { handleErrorToast, slugify } from '../../utils';
+import { openImageEditor } from '../../utils/open-image-editor';
+
+import { ImageEditorConfig } from '../dialogs/image-editor-dialog';
+
+import { GradeComponent } from '../ui/avatar-grade';
 
 @Component({
   selector: 'app-topo-form',

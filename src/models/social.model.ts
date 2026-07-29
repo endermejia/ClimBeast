@@ -1,6 +1,4 @@
 import { NotificationType } from './notifications.model';
-import { UserProfileBasicDto } from './user.model';
-
 import {
   ChatMessageDto,
   ChatRoomDto,
@@ -8,6 +6,8 @@ import {
   UserProfileDto,
   FollowRequestDto,
 } from './supabase-interfaces';
+
+import { UserProfileBasicDto } from './user.model';
 
 export interface ChatRoomWithParticipant extends ChatRoomDto {
   participant?: UserProfileBasicDto;

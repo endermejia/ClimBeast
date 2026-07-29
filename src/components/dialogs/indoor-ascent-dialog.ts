@@ -1,11 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
+import { FormsModule } from '@angular/forms';
+
+import { TuiDay } from '@taiga-ui/cdk';
 import { TuiDialogContext, TuiLabel, TuiButton } from '@taiga-ui/core';
 import { TuiChevron, TuiSelect, TuiInputDate } from '@taiga-ui/kit';
+import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
+
 import { TranslatePipe } from '@ngx-translate/core';
-import { TuiDay } from '@taiga-ui/cdk';
 
 export interface IndoorAscentDialogData {
   routeId: string;

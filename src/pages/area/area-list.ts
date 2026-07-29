@@ -1,5 +1,4 @@
 import { LowerCasePipe } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,6 +7,7 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 
 import { TuiDropdown } from '@taiga-ui/core';
 import {

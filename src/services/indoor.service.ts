@@ -1,14 +1,16 @@
-import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { TranslateService } from '@ngx-translate/core';
+import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+
 import { TuiDialogService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
+
+import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
-import { GlobalData } from './global-data';
-import { SupabaseService } from './supabase.service';
+
 import { IndoorCenterFormComponent } from '../components/forms/indoor-center-form';
 import IndoorRouteFormComponent from '../components/forms/indoor-route-form';
 import TopoFormComponent from '../components/forms/topo-form';
+
 import {
   IndoorCenterDto,
   IndoorVoucherDto,
@@ -28,8 +30,12 @@ import {
   IndoorTopoListItem,
 } from '../models';
 import type { TopoPath } from '../models/topo.model';
-import { ToastService } from './toast.service';
+
 import { handleErrorToast } from '../utils';
+
+import { GlobalData } from './global-data';
+import { SupabaseService } from './supabase.service';
+import { ToastService } from './toast.service';
 
 type CenterRouteQuery = IndoorRouteDto & {
   ascents: Pick<IndoorAscentDto, 'id' | 'type' | 'user_id' | 'rate'>[];

@@ -1,7 +1,4 @@
 import { CommonModule, DatePipe } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -15,8 +12,10 @@ import {
   OnDestroy,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
-import { injectContext } from '@taiga-ui/polymorpheus';
 import { TuiDialogContext, TuiDialogService } from '@taiga-ui/core';
 import {
   TuiAppearance,
@@ -36,9 +35,10 @@ import {
   TUI_CONFIRM,
   TuiTextarea,
 } from '@taiga-ui/kit';
+import { injectContext } from '@taiga-ui/polymorpheus';
 
-import { RealtimeChannel } from '@supabase/supabase-js';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 import {
   debounceTime,
@@ -56,8 +56,6 @@ import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
 
-import { EmptyStateComponent } from '../ui/empty-state';
-
 import {
   ChatMessageDto,
   ChatRoomWithParticipant,
@@ -65,6 +63,8 @@ import {
 } from '../../models';
 
 import { AvatarUrlPipe } from '../../pipes';
+
+import { EmptyStateComponent } from '../ui/empty-state';
 
 export interface ChatDialogData {
   userId?: string;

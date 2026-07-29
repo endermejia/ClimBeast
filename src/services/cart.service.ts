@@ -8,9 +8,9 @@ import {
   signal,
 } from '@angular/core';
 
-import { SupabaseService } from './supabase.service';
-
 import type { CartProduct } from '../models';
+
+import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
 export class CartService {

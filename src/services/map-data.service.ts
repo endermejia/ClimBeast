@@ -9,6 +9,7 @@ import {
   Signal,
   WritableSignal,
 } from '@angular/core';
+
 import {
   AmountByEveryGrade,
   ClimbingKinds,
@@ -24,8 +25,9 @@ import {
   ParkingDto,
   VERTICAL_LIFE_GRADES,
 } from '../models';
-import { SupabaseService } from './supabase.service';
+
 import { LocalStorage } from './local-storage';
+import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
 export class MapDataService {

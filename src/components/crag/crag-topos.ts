@@ -1,5 +1,4 @@
 import { LowerCasePipe } from '@angular/common';
-import { Router } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,21 +6,24 @@ import {
   inject,
   input,
 } from '@angular/core';
+import { Router } from '@angular/router';
 
-import { TuiAvatar } from '@taiga-ui/kit';
 import { TuiButton, TuiIcon } from '@taiga-ui/core';
+import { TuiAvatar } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { GlobalData } from '../../services/global-data';
 import { ToposService } from '../../services/topos.service';
 
-import { EmptyStateComponent } from '../ui/empty-state';
-import { PaywallComponent } from '../paywall/paywall';
-import { TopoCardComponent } from '../topo/topo-card';
+import { CragDetail } from '../../models';
 
 import { IconSrcPipe } from '../../pipes/icon-src.pipe';
-import { CragDetail } from '../../models';
+
+import { PaywallComponent } from '../paywall/paywall';
+
+import { TopoCardComponent } from '../topo/topo-card';
+import { EmptyStateComponent } from '../ui/empty-state';
 
 @Component({
   selector: 'app-crag-topos',

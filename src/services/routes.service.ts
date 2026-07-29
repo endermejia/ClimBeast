@@ -1,16 +1,16 @@
-import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TuiDialogService } from '@taiga-ui/core';
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
-import { GlobalData } from '../services/global-data';
 import { CacheService } from '../services/cache.service';
+import { GlobalData } from '../services/global-data';
 import { SupabaseService } from '../services/supabase.service';
 import { ToastService } from '../services/toast.service';
 
@@ -26,8 +26,8 @@ import type {
   RouteSimpleRow,
 } from '../models';
 
-import { normalizeNameStrict } from '../utils';
 import { CACHE_KEYS } from '../constants/cache-keys';
+import { normalizeNameStrict } from '../utils';
 
 export interface RouteSimple {
   id: number;

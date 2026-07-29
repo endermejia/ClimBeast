@@ -6,7 +6,6 @@ import {
   input,
 } from '@angular/core';
 
-import { TuiBadge } from '@taiga-ui/kit';
 import {
   TuiHint,
   TuiIcon,
@@ -14,6 +13,7 @@ import {
   TuiSizeS,
   TuiSizeXS,
 } from '@taiga-ui/core';
+import { TuiBadge } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 

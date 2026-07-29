@@ -1,4 +1,3 @@
-import { toSignal } from '@angular/core/rxjs-interop';
 import {
   computed,
   effect,
@@ -8,6 +7,7 @@ import {
   Signal,
   untracked,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 import {
   TUI_ENGLISH_LANGUAGE,
@@ -17,10 +17,12 @@ import {
   TUI_SPANISH_LANGUAGE,
   TuiLanguage,
 } from '@taiga-ui/i18n';
+
 import { TranslateService } from '@ngx-translate/core';
 import { map, merge, startWith } from 'rxjs';
 
 import { Language, Languages } from '../models';
+
 import { AuthStateService } from './auth-state.service';
 
 @Injectable({ providedIn: 'root' })

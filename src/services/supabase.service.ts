@@ -15,14 +15,15 @@ import { Router } from '@angular/router';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 
 import { UserProfileDto } from '../models';
-import { Database } from '../models/supabase-generated';
 import { SupabaseNotInitializedError } from '../models';
+import { Database } from '../models/supabase-generated';
+
+import { CACHE_KEYS } from '../constants/cache-keys';
 
 import { ENV_SUPABASE_URL } from '../environments/environment';
 import { CacheService } from './cache.service';
 import { LocalStorage } from './local-storage';
 import { SignedUrlCache } from './signed-url-cache';
-import { CACHE_KEYS } from '../constants/cache-keys';
 
 export interface SupabaseConfig {
   url: string;

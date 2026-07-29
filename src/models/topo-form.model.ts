@@ -1,6 +1,6 @@
-import { RouteDto } from './supabase-interfaces';
-import { RouteWithExtras } from './route.model';
 import { IndoorRouteDto } from './indoor.model';
+import { RouteWithExtras } from './route.model';
+import { RouteDto } from './supabase-interfaces';
 
 /**
  * Modelo para datos de topo indoor

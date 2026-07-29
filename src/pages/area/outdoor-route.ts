@@ -1,5 +1,9 @@
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import {
+  DecimalPipe,
+  isPlatformBrowser,
+  Location,
+  LowerCasePipe,
+} from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,20 +17,10 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import {
-  DecimalPipe,
-  isPlatformBrowser,
-  Location,
-  LowerCasePipe,
-} from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
 import { TuiDialogService } from '@taiga-ui/core';
-import {
-  TUI_CONFIRM,
-  TuiAvatar,
-  type TuiConfirmData,
-  TuiRating,
-} from '@taiga-ui/kit';
 import {
   TuiButton,
   TuiIcon,
@@ -35,6 +29,12 @@ import {
   TuiHint,
   TuiScrollbar,
 } from '@taiga-ui/core';
+import {
+  TUI_CONFIRM,
+  TuiAvatar,
+  type TuiConfirmData,
+  TuiRating,
+} from '@taiga-ui/kit';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 

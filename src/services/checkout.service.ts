@@ -1,10 +1,12 @@
-import { extractErrorMessage } from '../utils';
 import { inject, Injectable, signal } from '@angular/core';
 
-import { CartService } from './cart.service';
-import { SupabaseService } from './supabase.service';
-
 import type { OrderDetail } from '../models';
+
+import { extractErrorMessage } from '../utils';
+
+import { CartService } from './cart.service';
+
+import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
 export class CheckoutService {

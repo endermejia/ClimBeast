@@ -1,18 +1,19 @@
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   input,
   output,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { NewsItem } from '../../models';
+
 import { InfiniteScrollTriggerComponent } from '../ui/infinite-scroll-trigger';
 import { NewsCardComponent } from '../ui/news-card';
-import { NewsCardSkeletonComponent } from '../ui/news-card-skeleton';
 
-import { NewsItem } from '../../models';
+import { NewsCardSkeletonComponent } from '../ui/news-card-skeleton';
 
 @Component({
   selector: 'app-home-news-grid',

@@ -1,5 +1,5 @@
-import { inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { inject, PLATFORM_ID } from '@angular/core';
 
 import { SsrError } from '../errors/ssr.error';
 

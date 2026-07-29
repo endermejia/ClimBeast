@@ -1,6 +1,7 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { tuiDefaultSort } from '@taiga-ui/cdk';
+
 import type { TuiComparator } from '@taiga-ui/addon-table/types';
+import { tuiDefaultSort } from '@taiga-ui/cdk';
 
 import { TopoRouteWithRoute } from '../models';
 

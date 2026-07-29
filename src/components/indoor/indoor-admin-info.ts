@@ -8,7 +8,6 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TranslateModule } from '@ngx-translate/core';
 import { Router } from '@angular/router';
 
 import {
@@ -18,9 +17,13 @@ import {
   TuiTextfield,
   TuiCheckbox,
 } from '@taiga-ui/core';
+
 import { TuiTextarea } from '@taiga-ui/kit';
 
+import { TranslateModule } from '@ngx-translate/core';
+
 import { IndoorService } from '../../services/indoor.service';
+
 import { IndoorCenterDto } from '../../models';
 import { scheduleToJson, scheduleFromJson } from '../../models/indoor.model';
 

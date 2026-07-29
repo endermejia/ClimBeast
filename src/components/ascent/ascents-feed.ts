@@ -7,16 +7,17 @@ import {
   output,
 } from '@angular/core';
 
-import { AscentCardComponent } from './ascent-card';
-import { AscentCardSkeletonComponent } from './ascent-card-skeleton';
-import { InfiniteScrollTriggerComponent } from '../ui/infinite-scroll-trigger';
-import { NewsCardComponent } from '../ui/news-card';
-
 import {
   FeedItem,
   VERTICAL_LIFE_GRADES,
   GRADE_NUMBER_TO_LABEL,
 } from '../../models';
+
+import { InfiniteScrollTriggerComponent } from '../ui/infinite-scroll-trigger';
+import { NewsCardComponent } from '../ui/news-card';
+import { AscentCardComponent } from './ascent-card';
+
+import { AscentCardSkeletonComponent } from './ascent-card-skeleton';
 
 export interface ProcessedFeedItem {
   item: FeedItem;

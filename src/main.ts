@@ -1,7 +1,7 @@
-import { bootstrapApplication } from '@angular/platform-browser';
 import { registerLocaleData } from '@angular/common';
 import localeEn from '@angular/common/locales/en';
 import localeEs from '@angular/common/locales/es';
+import { bootstrapApplication } from '@angular/platform-browser';
 
 import { injectSpeedInsights } from '@vercel/speed-insights';
 

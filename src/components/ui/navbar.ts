@@ -1,7 +1,4 @@
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgOptimizedImage, NgTemplateOutlet } from '@angular/common';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { toSignal, toObservable } from '@angular/core/rxjs-interop';
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -14,9 +11,19 @@ import {
   TemplateRef,
   viewChild,
 } from '@angular/core';
+import { toSignal, toObservable } from '@angular/core/rxjs-interop';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 import { TuiAutoFocus } from '@taiga-ui/cdk';
-import { TuiInputSearch, TUI_INPUT_SEARCH } from '@taiga-ui/layout';
+import {
+  TuiAppearance,
+  TuiDataList,
+  TuiDropdown,
+  TuiIcon,
+  TuiTextfield,
+  TuiTitle,
+} from '@taiga-ui/core';
 import {
   TuiAvatar,
   TuiBadge,
@@ -27,36 +34,24 @@ import {
   TuiTab,
   TuiTabs,
 } from '@taiga-ui/kit';
-import {
-  TuiAppearance,
-  TuiDataList,
-  TuiDropdown,
-  TuiIcon,
-  TuiTextfield,
-  TuiTitle,
-} from '@taiga-ui/core';
+import { TuiInputSearch, TUI_INPUT_SEARCH } from '@taiga-ui/layout';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs';
 
+import { AppNotificationsService } from '../../services/app-notifications.service';
 import { AreasService } from '../../services/areas.service';
+import { CartService } from '../../services/cart.service';
 import { CragsService } from '../../services/crags.service';
 import { GlobalData } from '../../services/global-data';
 import { MessagingService } from '../../services/messaging.service';
 import { RoutesService } from '../../services/routes.service';
 import { ScrollService } from '../../services/scroll.service';
 import { SearchService } from '../../services/search.service';
+
 import { TourService } from '../../services/tour.service';
 import { TourStep } from '../../services/tour.service';
-
-import { AppNotificationsService } from '../../services/app-notifications.service';
-import { CartService } from '../../services/cart.service';
-import { GradeComponent } from './avatar-grade';
-import { MenuOptionsButtonComponent } from './menu-options-button';
-import { TourHintComponent } from './tour-hint';
-
-import { gradeToNumber } from '../../utils';
 
 import {
   SearchAreaItem,
@@ -65,6 +60,14 @@ import {
   SearchItem,
   SearchRouteItem,
 } from '../../models';
+
+import { gradeToNumber } from '../../utils';
+
+import { GradeComponent } from './avatar-grade';
+
+import { MenuOptionsButtonComponent } from './menu-options-button';
+
+import { TourHintComponent } from './tour-hint';
 
 @Component({
   selector: 'app-navbar',

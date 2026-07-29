@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 
 import { APP_NAME, APP_TITLE, BASE_URL, DEFAULT_IMAGE } from '../models';

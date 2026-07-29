@@ -8,8 +8,8 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TuiAccordion } from '@taiga-ui/kit';
 import { TuiButton, TuiLoader } from '@taiga-ui/core';
+import { TuiAccordion } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 

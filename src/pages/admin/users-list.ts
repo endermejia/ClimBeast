@@ -1,7 +1,4 @@
-import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { isPlatformBrowser } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,7 +9,16 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
+import {
+  TuiSortDirection,
+  TuiTable,
+  TuiTableSortChange,
+} from '@taiga-ui/addon-table';
+import type { TuiComparator } from '@taiga-ui/addon-table/types';
 import { tuiDefaultSort, TuiIdentityMatcher, tuiIsString } from '@taiga-ui/cdk';
 import {
   TuiAppearance,
@@ -38,25 +44,21 @@ import {
   TuiSelect,
   TuiSkeleton,
 } from '@taiga-ui/kit';
-import {
-  TuiSortDirection,
-  TuiTable,
-  TuiTableSortChange,
-} from '@taiga-ui/addon-table';
-import type { TuiComparator } from '@taiga-ui/addon-table/types';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { WaIntersectionObserver } from '@ng-web-apis/intersection-observer';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { GlobalData } from '../../services/global-data';
+import { IndoorService } from '../../services/indoor.service';
+
 import { SupabaseService } from '../../services/supabase.service';
 
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 
 import { AreaListItem, IndoorCenterDto } from '../../models';
+
 import { AvatarUrlPipe } from '../../pipes';
 import { matchesQuery } from '../../utils';
-import { IndoorService } from '../../services/indoor.service';
 
 interface UserWithRole {
   id: string;

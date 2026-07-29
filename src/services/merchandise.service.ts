@@ -1,15 +1,14 @@
-import { inject, Injectable, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { inject, Injectable, signal } from '@angular/core';
 import { PLATFORM_ID } from '@angular/core';
 
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TuiDialogService } from '@taiga-ui/core';
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslateService } from '@ngx-translate/core';
 
-import { SupabaseService } from './supabase.service';
-
 import { MerchandiseItemDialogComponent } from '../components/dialogs/merchandise-item-dialog';
+
 import { MerchandisePackDialogComponent } from '../components/dialogs/merchandise-pack-dialog';
 import { OrderDetailsDialogComponent } from '../components/dialogs/order-details-dialog';
 import { PurchaseHistoryDialogComponent } from '../components/dialogs/purchase-history-dialog';
@@ -24,6 +23,8 @@ import type {
   OrderItem,
   OrderStatus,
 } from '../models';
+
+import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
 export class MerchandiseService {

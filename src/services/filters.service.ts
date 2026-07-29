@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TuiDialogService } from '@taiga-ui/core';
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslateService } from '@ngx-translate/core';
 
@@ -14,9 +14,9 @@ import {
 
 import { ORDERED_GRADE_VALUES } from '../models';
 
-import { GlobalData } from './global-data';
-
 import { clamp } from '../utils';
+
+import { GlobalData } from './global-data';
 
 @Injectable({ providedIn: 'root' })
 export class FiltersService {
