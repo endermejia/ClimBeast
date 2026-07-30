@@ -133,8 +133,8 @@ import { TourHintComponent } from './tour-hint';
     GradeComponent,
   ],
   styles: `
-    nav tui-icon svg {
-      stroke-width: 2.5;
+    ::ng-deep nav tui-icon svg {
+      stroke-width: 2.5 !important;
     }
   `,
   template: `
