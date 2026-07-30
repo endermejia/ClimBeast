@@ -132,6 +132,11 @@ import { TourHintComponent } from './tour-hint';
     TuiTitle,
     GradeComponent,
   ],
+  styles: `
+    nav tui-icon svg {
+      stroke-width: 2.5;
+    }
+  `,
   template: `
     <aside
       class="w-full md:w-20 md:hover:w-64 md:h-full bg-(--tui-background-base) transition-[width] duration-300 z-100 group flex flex-col border-t md:border xl:border-none border-(--tui-border-normal) md:absolute md:left-0 md:top-0 md:bottom-0 overflow-hidden sm:rounded-2xl select-none"
@@ -198,7 +203,6 @@ import { TourHintComponent } from './tour-hint';
               }
               <tui-icon
                 icon="@tui.home"
-                size="l"
                 [style.color]="
                   home.isActive
                     ? 'var(--tui-text-negative)'
@@ -242,7 +246,6 @@ import { TourHintComponent } from './tour-hint';
             }
             <tui-icon
               icon="@tui.map"
-              size="l"
               [style.color]="
                 explore.isActive
                   ? 'var(--tui-text-negative)'
@@ -277,7 +280,6 @@ import { TourHintComponent } from './tour-hint';
               }
               <tui-icon
                 icon="@tui.send"
-                size="l"
                 [style.color]="
                   messagingService.chatOpen()
                     ? 'var(--tui-text-negative)'
@@ -309,7 +311,6 @@ import { TourHintComponent } from './tour-hint';
             >
               <tui-icon
                 icon="@tui.cog"
-                size="l"
                 [style.color]="
                   config.isActive
                     ? 'var(--tui-text-negative)'
@@ -352,7 +353,6 @@ import { TourHintComponent } from './tour-hint';
               }
               <tui-icon
                 icon="@tui.search"
-                size="l"
                 [style.color]="
                   searchOpen()
                     ? 'var(--tui-text-negative)'
@@ -545,7 +545,6 @@ import { TourHintComponent } from './tour-hint';
               } @else {
                 <tui-icon
                   icon="@tui.user"
-                  size="l"
                   [style.color]="
                     profile.isActive
                       ? 'var(--tui-text-negative)'
@@ -586,7 +585,6 @@ import { TourHintComponent } from './tour-hint';
                 }
                 <tui-icon
                   icon="@tui.shopping-bag"
-                  size="l"
                   [style.color]="
                     shop.isActive
                       ? 'var(--tui-text-negative)'
