@@ -8,7 +8,7 @@ import {
   OnDestroy,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Meta } from '@angular/platform-browser';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
@@ -17,7 +17,7 @@ import { TuiRoot } from '@taiga-ui/core';
 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
-import { filter, map, merge, startWith } from 'rxjs';
+import { combineLatest, filter, map, merge, startWith } from 'rxjs';
 
 import { GlobalData } from '../services/global-data';
 
@@ -51,10 +51,7 @@ import { IS_BROWSER } from './is-browser';
       <div
         class="fixed inset-0 w-full h-full overflow-hidden flex flex-col-reverse md:flex-row"
       >
-        @if (
-          !['/login', '/signup'].includes(router.url) &&
-          !router.url.startsWith('/reset-password')
-        ) {
+        @if (showNavbar()) {
           <app-navbar />
         }
         <main class="flex-1 min-h-0 relative flex flex-col overflow-y-auto">
@@ -93,6 +90,27 @@ export class AppComponent implements OnDestroy {
   private readonly gdprKey = 'lw_gdpr_accepted';
 
   protected readonly supabase = inject(SupabaseService);
+
+  protected readonly showNavbar = toSignal(
+    combineLatest([
+      this.router.events.pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        map((e) => e.urlAfterRedirects),
+      ),
+      toObservable(this.supabase.session),
+    ]).pipe(
+      map(([url, session]) => {
+        const path = url.split('?')[0].split('#')[0];
+        return (
+          !!session &&
+          !['/login', '/signup', '/info', '/reset-password'].some((p) =>
+            path.startsWith(p),
+          )
+        );
+      }),
+    ),
+    { initialValue: false },
+  );
 
   private readonly langChange = toSignal(
     merge(
