@@ -198,6 +198,7 @@ import { TourHintComponent } from './tour-hint';
               }
               <tui-icon
                 icon="@tui.home"
+                size="l"
                 [style.color]="
                   home.isActive
                     ? 'var(--tui-text-negative)'
@@ -241,6 +242,7 @@ import { TourHintComponent } from './tour-hint';
             }
             <tui-icon
               icon="@tui.map"
+              size="l"
               [style.color]="
                 explore.isActive
                   ? 'var(--tui-text-negative)'
@@ -275,6 +277,7 @@ import { TourHintComponent } from './tour-hint';
               }
               <tui-icon
                 icon="@tui.send"
+                size="l"
                 [style.color]="
                   messagingService.chatOpen()
                     ? 'var(--tui-text-negative)'
@@ -306,6 +309,7 @@ import { TourHintComponent } from './tour-hint';
             >
               <tui-icon
                 icon="@tui.cog"
+                size="l"
                 [style.color]="
                   config.isActive
                     ? 'var(--tui-text-negative)'
@@ -348,6 +352,7 @@ import { TourHintComponent } from './tour-hint';
               }
               <tui-icon
                 icon="@tui.search"
+                size="l"
                 [style.color]="
                   searchOpen()
                     ? 'var(--tui-text-negative)'
@@ -540,6 +545,7 @@ import { TourHintComponent } from './tour-hint';
               } @else {
                 <tui-icon
                   icon="@tui.user"
+                  size="l"
                   [style.color]="
                     profile.isActive
                       ? 'var(--tui-text-negative)'
@@ -580,6 +586,7 @@ import { TourHintComponent } from './tour-hint';
                 }
                 <tui-icon
                   icon="@tui.shopping-bag"
+                  size="l"
                   [style.color]="
                     shop.isActive
                       ? 'var(--tui-text-negative)'
