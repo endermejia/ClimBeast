@@ -168,9 +168,7 @@ import { TourHintComponent } from './tour-hint';
             #home="routerLinkActive"
             routerLink="/home"
             routerLinkActive
-            [tuiAppearance]="
-              home.isActive ? 'flat-destructive' : 'flat-grayscale'
-            "
+            tuiAppearance="flat-grayscale"
             [tuiSkeleton]="loading()"
             class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full relative group"
             (click)="scrollToTop($event)"
@@ -201,7 +199,6 @@ import { TourHintComponent } from './tour-hint';
               }
               <tui-icon
                 icon="@tui.home"
-                class="transition-transform duration-300"
                 [style.color]="
                   home.isActive
                     ? 'var(--tui-text-negative)'
@@ -222,9 +219,7 @@ import { TourHintComponent } from './tour-hint';
             #explore="routerLinkActive"
             [routerLink]="global.isOffline() ? null : '/explore'"
             routerLinkActive
-            [tuiAppearance]="
-              explore.isActive ? 'flat-destructive' : 'flat-grayscale'
-            "
+            tuiAppearance="flat-grayscale"
             [tuiSkeleton]="loading()"
             class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full relative group"
             [class.pointer-events-none]="global.isOffline()"
@@ -245,7 +240,14 @@ import { TourHintComponent } from './tour-hint';
             ) {
               <tui-pulse />
             }
-            <tui-icon icon="@tui.map" />
+            <tui-icon
+              icon="@tui.map"
+              [style.color]="
+                explore.isActive
+                  ? 'var(--tui-text-negative)'
+                  : 'var(--tui-text-primary)'
+              "
+            />
             <span
               class="hidden md:group-hover:block transition-opacity duration-300 whitespace-nowrap overflow-hidden"
             >
@@ -256,7 +258,7 @@ import { TourHintComponent } from './tour-hint';
           <!-- Messages -->
           <button
             type="button"
-            [tuiAppearance]="'flat-grayscale'"
+            tuiAppearance="flat-grayscale"
             [tuiSkeleton]="loading()"
             class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full cursor-pointer relative group"
             (click)="openChat()"
@@ -274,8 +276,11 @@ import { TourHintComponent } from './tour-hint';
               }
               <tui-icon
                 icon="@tui.send"
-                class="transition-transform duration-300"
-                [style.color]="'var(--tui-text-primary)'"
+                [style.color]="
+                  messagingService.chatOpen()
+                    ? 'var(--tui-text-negative)'
+                    : 'var(--tui-text-primary)'
+                "
               />
             </tui-badged-content>
             <span
@@ -293,16 +298,21 @@ import { TourHintComponent } from './tour-hint';
               #config="routerLinkActive"
               [routerLink]="global.canEditAsAdmin() ? '/admin' : '/my-areas'"
               routerLinkActive
-              [tuiAppearance]="
-                config.isActive ? 'flat-destructive' : 'flat-grayscale'
-              "
+              tuiAppearance="flat-grayscale"
               class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full group"
               [attr.aria-label]="
                 (global.canEditAsAdmin() ? 'config' : 'nav.my-areas')
                   | translate
               "
             >
-              <tui-icon icon="@tui.cog" />
+              <tui-icon
+                icon="@tui.cog"
+                [style.color]="
+                  config.isActive
+                    ? 'var(--tui-text-negative)'
+                    : 'var(--tui-text-primary)'
+                "
+              />
               <span
                 class="hidden md:group-hover:block transition-opacity duration-300 whitespace-nowrap overflow-hidden"
               >
@@ -326,12 +336,10 @@ import { TourHintComponent } from './tour-hint';
               tuiDropdownDirection="bottom"
             ></div>
             <button
-              [tuiAppearance]="
-                searchExpanded() ? 'flat-destructive' : 'flat-grayscale'
-              "
+              tuiAppearance="flat-grayscale"
               [tuiSkeleton]="loading()"
               class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full cursor-pointer relative group"
-              (click)="searchOpen = true"
+              (click)="searchOpen.set(true)"
               [attr.aria-label]="'search' | translate"
             >
               @if (
@@ -339,7 +347,14 @@ import { TourHintComponent } from './tour-hint';
               ) {
                 <tui-pulse />
               }
-              <tui-icon icon="@tui.search" />
+              <tui-icon
+                icon="@tui.search"
+                [style.color]="
+                  searchOpen()
+                    ? 'var(--tui-text-negative)'
+                    : 'var(--tui-text-primary)'
+                "
+              />
               <span
                 class="hidden md:group-hover:block transition-opacity duration-300 whitespace-nowrap overflow-hidden"
               >
@@ -506,9 +521,7 @@ import { TourHintComponent } from './tour-hint';
             #profile="routerLinkActive"
             routerLink="/profile"
             routerLinkActive
-            [tuiAppearance]="
-              profile.isActive ? 'flat-destructive' : 'flat-grayscale'
-            "
+            tuiAppearance="flat-grayscale"
             [tuiSkeleton]="loading()"
             class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full lg:mt-auto group"
             [attr.aria-label]="'nav.profile' | translate"
@@ -526,7 +539,14 @@ import { TourHintComponent } from './tour-hint';
               @if (global.userAvatar(); as avatar) {
                 <img [src]="avatar" [alt]="global.userProfile()?.name || ''" />
               } @else {
-                <tui-icon icon="@tui.user" />
+                <tui-icon
+                  icon="@tui.user"
+                  [style.color]="
+                    profile.isActive
+                      ? 'var(--tui-text-negative)'
+                      : 'var(--tui-text-primary)'
+                  "
+                />
               }
             </span>
             <span
@@ -545,9 +565,7 @@ import { TourHintComponent } from './tour-hint';
               #shop="routerLinkActive"
               routerLink="/merchandising"
               routerLinkActive
-              [tuiAppearance]="
-                shop.isActive ? 'flat-destructive' : 'flat-grayscale'
-              "
+              tuiAppearance="flat-grayscale"
               class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full group"
               [attr.aria-label]="'nav.merchandising' | translate"
             >
@@ -563,7 +581,6 @@ import { TourHintComponent } from './tour-hint';
                 }
                 <tui-icon
                   icon="@tui.shopping-bag"
-                  class="transition-transform duration-300"
                   [style.color]="
                     shop.isActive
                       ? 'var(--tui-text-negative)'
@@ -631,9 +648,8 @@ export class NavbarComponent {
   private readonly cragsService = inject(CragsService);
   private readonly routesService = inject(RoutesService);
 
-  protected readonly searchExpanded = signal(false);
   protected readonly searchValue = signal('');
-  protected searchOpen = false;
+  protected readonly searchOpen = signal(false);
   protected activeSearchTab = signal(0);
 
   protected readonly searchTemplate =
@@ -646,8 +662,7 @@ export class NavbarComponent {
       if (step === TourStep.SEARCH) {
         // Wait a bit to let the dropdown initialize, then programmatically open and type "Millena"
         setTimeout(() => {
-          this.searchOpen = true;
-          this.searchExpanded.set(true);
+          this.searchOpen.set(true);
           this.searchValue.set('Millena');
           cdr.markForCheck();
         }, 500);
@@ -655,7 +670,7 @@ export class NavbarComponent {
     });
 
     effect(() => {
-      if (this.searchOpen) {
+      if (this.searchOpen()) {
         this.activeSearchTab.set(0);
       }
     });
@@ -760,7 +775,7 @@ export class NavbarComponent {
       }
     }
 
-    this.searchOpen = false;
+    this.searchOpen.set(false);
     this.searchValue.set('');
   }
 
@@ -773,8 +788,7 @@ export class NavbarComponent {
 
   protected onTourNext(): void {
     if (this.tourService.step() === TourStep.SEARCH) {
-      this.searchOpen = false;
-      this.searchExpanded.set(false);
+      this.searchOpen.set(false);
       this.searchValue.set('');
     }
     this.tourService.next();

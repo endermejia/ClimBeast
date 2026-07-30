@@ -34,6 +34,7 @@ export class MessagingService {
   private readonly translate = inject(TranslateService);
 
   readonly unreadMessagesCount = signal(0);
+  readonly chatOpen = signal(false);
 
   async getRooms(): Promise<ChatRoomWithParticipant[]> {
     if (!isPlatformBrowser(this.platformId)) return [];
@@ -304,6 +305,7 @@ export class MessagingService {
   }
 
   openChatDialog(data?: ChatDialogData): void {
+    this.chatOpen.set(true);
     void firstValueFrom(
       this.dialogs.open(new PolymorpheusComponent(ChatDialogComponent), {
         label: this.translate.instant('messages'),
@@ -311,6 +313,8 @@ export class MessagingService {
         data,
       }),
       { defaultValue: undefined },
-    );
+    ).then(() => {
+      this.chatOpen.set(false);
+    });
   }
 }
