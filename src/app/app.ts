@@ -52,7 +52,6 @@ import { IS_BROWSER } from './is-browser';
         class="fixed inset-0 w-full h-full overflow-hidden flex flex-col-reverse md:flex-row"
       >
         @if (
-          (global.userProfile() || !!this.supabase.session()) &&
           !['/login', '/signup'].includes(router.url) &&
           !router.url.startsWith('/reset-password')
         ) {
