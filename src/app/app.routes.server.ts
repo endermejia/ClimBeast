@@ -10,6 +10,10 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'info', renderMode: RenderMode.Prerender },
   { path: 'explore', renderMode: RenderMode.Prerender },
   {
+    path: 'equipper/:id',
+    renderMode: RenderMode.Server,
+  },
+  {
     path: 'profile/config',
     renderMode: RenderMode.Prerender,
   },
@@ -26,6 +30,7 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Prerender,
   },
   { path: 'area', renderMode: RenderMode.Prerender },
+  { path: 'area/redirect', renderMode: RenderMode.Server },
   {
     path: 'area/:areaSlug',
     renderMode: RenderMode.Prerender,
@@ -86,6 +91,39 @@ export const serverRoutes: ServerRoute[] = [
   {
     path: 'admin/requests',
     renderMode: RenderMode.Prerender,
+  },
+  {
+    path: 'admin/orders',
+    renderMode: RenderMode.Prerender,
+  },
+  // INDOOR
+  {
+    path: 'indoor',
+    renderMode: RenderMode.Prerender,
+  },
+  {
+    path: 'indoor/:slug',
+    renderMode: RenderMode.Prerender,
+    fallback: PrerenderFallback.Server,
+    async getPrerenderParams() {
+      return [];
+    },
+  },
+  {
+    path: 'indoor/:centerSlug/route/:routeSlug',
+    renderMode: RenderMode.Prerender,
+    fallback: PrerenderFallback.Server,
+    async getPrerenderParams() {
+      return [];
+    },
+  },
+  {
+    path: 'indoor/:centerSlug/topo/:id',
+    renderMode: RenderMode.Prerender,
+    fallback: PrerenderFallback.Server,
+    async getPrerenderParams() {
+      return [];
+    },
   },
   {
     path: 'chat/:roomId',

@@ -159,6 +159,15 @@ export abstract class TopoPageBase {
         this.global.selectedTopoId.set(topoId);
       }
     });
+
+    effect(() => {
+      const loading = this.global.topoDetailResource.isLoading();
+      if (loading) return;
+      const t = this.topo();
+      if (!t) {
+        this.router.navigateByUrl('/page-not-found');
+      }
+    });
   }
 
   protected onSortChange(sort: TuiTableSortChange<TopoRouteRow>): void {

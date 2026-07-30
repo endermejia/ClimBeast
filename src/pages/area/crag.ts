@@ -470,6 +470,17 @@ export class CragComponent {
     });
 
     effect(() => {
+      const areaLoading = this.global.areasListResource.isLoading();
+      const cragLoading = this.global.cragDetailResource.isLoading();
+      if (areaLoading || cragLoading) return;
+      const area = this.global.selectedArea();
+      const crag = this.global.cragDetail();
+      if (!area || !crag) {
+        this.router.navigateByUrl('/page-not-found');
+      }
+    });
+
+    effect(() => {
       const crag = this.cragDetail();
       const area = this.global.selectedArea();
       const aSlug = this.areaSlug();

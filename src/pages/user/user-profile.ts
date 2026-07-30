@@ -635,6 +635,17 @@ export class UserProfileComponent {
       this.global.isNavLoading.set(isLoading);
     });
 
+    effect(() => {
+      const paramId = this.id();
+      if (!paramId) return;
+      const loading = this.loading();
+      if (loading) return;
+      const profile = this.profile();
+      if (!profile) {
+        this.router.navigateByUrl('/page-not-found');
+      }
+    });
+
     destroyRef.onDestroy(() => {
       this.global.isNavLoading.set(false);
     });

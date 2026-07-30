@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Location } from '@angular/common';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TuiButton } from '@taiga-ui/core';
+import { TuiButton, TuiIcon } from '@taiga-ui/core';
 import { TuiBlockStatus } from '@taiga-ui/layout';
 
 import { TranslateModule } from '@ngx-translate/core';
@@ -16,6 +17,7 @@ import { IconSrcPipe } from '../../pipes/icon-src.pipe';
     TranslateModule,
     TuiBlockStatus,
     TuiButton,
+    TuiIcon,
   ],
   template: `
     <div class="flex h-full items-center justify-center">
@@ -30,14 +32,30 @@ import { IconSrcPipe } from '../../pipes/icon-src.pipe';
 
         <p class="description">{{ 'notFound.description' | translate }}</p>
 
-        <a
-          tuiButton
-          type="button"
-          appearance="primary"
-          [routerLink]="['/home']"
-        >
-          {{ 'notFound.goHome' | translate }}
-        </a>
+        <div class="flex flex-col sm:flex-row justify-center gap-2 mt-4">
+          <button tuiButton type="button" appearance="flat" (click)="refresh()">
+            <tui-icon icon="@tui.refresh-cw" class="mr-2" />
+            {{ 'notFound.refresh' | translate }}
+          </button>
+          <button
+            tuiButton
+            type="button"
+            appearance="flat"
+            (click)="location.back()"
+          >
+            <tui-icon icon="@tui.arrow-left" class="mr-2" />
+            {{ 'notFound.goBack' | translate }}
+          </button>
+          <a
+            tuiButton
+            type="button"
+            appearance="primary"
+            [routerLink]="['/home']"
+          >
+            <tui-icon icon="@tui.home" class="mr-2" />
+            {{ 'notFound.goHome' | translate }}
+          </a>
+        </div>
       </tui-block-status>
     </div>
   `,
@@ -46,4 +64,10 @@ import { IconSrcPipe } from '../../pipes/icon-src.pipe';
     class: 'h-full',
   },
 })
-export class PageNotFoundComponent {}
+export class PageNotFoundComponent {
+  protected readonly location = inject(Location);
+
+  protected refresh(): void {
+    window.location.reload();
+  }
+}

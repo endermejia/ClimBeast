@@ -799,6 +799,14 @@ export class AreaComponent {
       this.global.selectedAreaSlug.set(slug);
     });
 
+    effect(() => {
+      const loading = this.global.areasListResource.isLoading();
+      const area = this.global.selectedArea();
+      if (!loading && !area) {
+        this.router.navigateByUrl('/page-not-found');
+      }
+    });
+
     // Update SEO tags when the area data is available
     effect(() => {
       const area = this.global.selectedArea();

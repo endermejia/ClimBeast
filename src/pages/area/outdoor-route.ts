@@ -509,6 +509,19 @@ export class OutdoorRouteComponent {
       this.global.selectedRouteSlug.set(rSlug);
     });
 
+    effect(() => {
+      const areaLoading = this.global.areasListResource.isLoading();
+      const cragLoading = this.global.cragDetailResource.isLoading();
+      const routeLoading = this.global.routeDetailResource.isLoading();
+      if (areaLoading || cragLoading || routeLoading) return;
+      const area = this.global.selectedArea();
+      const crag = this.global.cragDetail();
+      const route = this.route();
+      if (!area || !crag || !route) {
+        this.router.navigateByUrl('/page-not-found');
+      }
+    });
+
     // Update SEO tags when route data is available
     effect(() => {
       const r = this.route();
