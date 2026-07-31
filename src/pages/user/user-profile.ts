@@ -636,6 +636,7 @@ export class UserProfileComponent {
     });
 
     effect(() => {
+      if (!isPlatformBrowser(this.platformId)) return;
       const paramId = this.id();
       if (!paramId) return;
       const loading = this.loading();

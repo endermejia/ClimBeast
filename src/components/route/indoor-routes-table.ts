@@ -29,6 +29,7 @@ import {
   RoutesTableRow,
   RouteAscentWithExtras,
   AscentType,
+  ClimbingKind,
   RouteItem,
 } from '../../models';
 
@@ -190,6 +191,7 @@ export class IndoorRoutesTableComponent {
         routeId: r.id,
         routeName: r.name,
         isIndoor: true,
+        climbingKind: r.climbing_kind as ClimbingKind | undefined,
         grade: r.grade ?? undefined,
       }),
       { defaultValue: false },
@@ -204,10 +206,7 @@ export class IndoorRoutesTableComponent {
     ascent:
       RouteAscentWithExtras | { id: string | number; type: AscentType | null },
   ): Promise<void> {
-    const asc = ascent as { id: string | number; type: AscentType | null };
-    void firstValueFrom(this.ascentsService.openAscentDialog(Number(asc.id)), {
-      defaultValue: undefined,
-    });
+    this.ascentsService.viewAscent(ascent.id);
   }
 
   protected async editIndoorRoute(

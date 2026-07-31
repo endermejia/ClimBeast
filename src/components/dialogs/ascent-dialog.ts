@@ -11,7 +11,7 @@ import { AscentCardSkeletonComponent } from '../ascent/ascent-card-skeleton';
 import { EmptyStateComponent } from '../ui/empty-state';
 
 export interface AscentDialogData {
-  ascentId: number;
+  ascentId: number | string;
 }
 
 @Component({
@@ -51,7 +51,7 @@ export class AscentDialogComponent {
   protected readonly ascentResource = resource({
     params: () => {
       const id = this.ascentId;
-      return id > 0 ? id : null;
+      return id ? id : null;
     },
     loader: ({ params: id }) => {
       if (!id) return Promise.resolve(null);

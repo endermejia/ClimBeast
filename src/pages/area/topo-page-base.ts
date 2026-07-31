@@ -1,3 +1,4 @@
+import { isPlatformBrowser } from '@angular/common';
 import {
   computed,
   Directive,
@@ -5,6 +6,7 @@ import {
   effect,
   inject,
   input,
+  PLATFORM_ID,
   signal,
   Signal,
 } from '@angular/core';
@@ -46,6 +48,7 @@ export abstract class TopoPageBase {
   protected readonly indoorService = inject(IndoorService);
   protected readonly routesService = inject(RoutesService);
   protected readonly router = inject(Router);
+  protected readonly platformId = inject(PLATFORM_ID);
   protected readonly dialogs = inject(TuiDialogService);
   protected readonly translate = inject(TranslateService);
   protected readonly toast = inject(ToastService);
@@ -161,6 +164,7 @@ export abstract class TopoPageBase {
     });
 
     effect(() => {
+      if (!isPlatformBrowser(this.platformId)) return;
       const loading = this.global.topoDetailResource.isLoading();
       if (loading) return;
       const t = this.topo();

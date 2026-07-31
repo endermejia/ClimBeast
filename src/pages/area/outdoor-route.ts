@@ -510,6 +510,7 @@ export class OutdoorRouteComponent {
     });
 
     effect(() => {
+      if (!isBrowser) return;
       const areaLoading = this.global.areasListResource.isLoading();
       const cragLoading = this.global.cragDetailResource.isLoading();
       const routeLoading = this.global.routeDetailResource.isLoading();
@@ -586,10 +587,7 @@ export class OutdoorRouteComponent {
   }
 
   onViewAscent(ascent: RouteAscentWithExtras): void {
-    void firstValueFrom(
-      this.ascentsService.openAscentDialog(Number(ascent.id)),
-      { defaultValue: undefined },
-    );
+    this.ascentsService.viewAscent(ascent.id);
   }
 
   openEditRoute(): void {

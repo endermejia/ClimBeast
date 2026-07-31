@@ -225,10 +225,7 @@ export class OutdoorRoutesTableComponent {
     ascent:
       RouteAscentWithExtras | { id: string | number; type: AscentType | null },
   ): void {
-    const a = ascent as RouteAscentWithExtras;
-    void firstValueFrom(this.ascentsService.openAscentDialog(Number(a.id)), {
-      defaultValue: undefined,
-    });
+    this.ascentsService.viewAscent(ascent.id);
   }
 
   protected onToggleProject(item: RoutesTableRow): void {

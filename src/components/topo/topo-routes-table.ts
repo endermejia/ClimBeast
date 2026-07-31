@@ -452,10 +452,7 @@ export class TopoRoutesTableComponent {
   protected onViewAscent(
     ascent: NonNullable<TopoRouteRow['_ref']['route']['own_ascent']>,
   ): void {
-    void firstValueFrom(
-      this.ascentsService.openAscentDialog(Number(ascent.id)),
-      { defaultValue: undefined },
-    );
+    this.ascentsService.viewAscent(ascent.id);
   }
 
   protected async onToggleProject(item: TopoRouteRow): Promise<void> {

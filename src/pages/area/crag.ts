@@ -470,6 +470,7 @@ export class CragComponent {
     });
 
     effect(() => {
+      if (!isPlatformBrowser(this.platformId)) return;
       const areaLoading = this.global.areasListResource.isLoading();
       const cragLoading = this.global.cragDetailResource.isLoading();
       if (areaLoading || cragLoading) return;

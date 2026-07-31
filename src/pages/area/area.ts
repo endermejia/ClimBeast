@@ -800,6 +800,7 @@ export class AreaComponent {
     });
 
     effect(() => {
+      if (!isPlatformBrowser(this.platformId)) return;
       const loading = this.global.areasListResource.isLoading();
       const area = this.global.selectedArea();
       if (!loading && !area) {

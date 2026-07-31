@@ -3,8 +3,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  inject,
-  PLATFORM_ID,
   resource,
 } from '@angular/core';
 
@@ -221,8 +219,6 @@ import { TopoPageBase } from './topo-page-base';
   },
 })
 export class OutdoorTopoComponent extends TopoPageBase {
-  private readonly platformId = inject(PLATFORM_ID);
-
   override isIndoor = computed(() => false);
 
   protected readonly areaId = computed(

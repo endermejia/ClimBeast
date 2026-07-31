@@ -6,7 +6,15 @@ import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslateService } from '@ngx-translate/core';
 
-import { defer, from, Observable, Subject, switchMap, tap } from 'rxjs';
+import {
+  defer,
+  firstValueFrom,
+  from,
+  Observable,
+  Subject,
+  switchMap,
+  tap,
+} from 'rxjs';
 
 import {
   AscentDialogData,
@@ -84,76 +92,140 @@ export class AscentsService {
     return info;
   });
 
-  async getAscentById(id: number): Promise<RouteAscentWithExtras | null> {
-    if (!id || isNaN(id) || id <= 0) return null;
+  async getAscentById(
+    id: number | string,
+  ): Promise<RouteAscentWithExtras | null> {
+    if (!id) return null;
     if (!this.isBrowser) return null;
     await this.supabase.whenReady();
-    const { data, error } = await this.supabase.client
-      .from('route_ascents')
+
+    const isNumericId = typeof id === 'number' || /^\d+$/.test(String(id));
+
+    // Try outdoor ascents first (only for numeric IDs)
+    if (isNumericId) {
+      const { data } = await this.supabase.client
+        .from('route_ascents')
+        .select(
+          `
+          *,
+          route:routes(
+            *,
+            crag:crags(
+              slug,
+              name,
+              area_id,
+              area:areas(slug, name)
+            )
+          )
+        `,
+        )
+        .eq('id', id as number)
+        .maybeSingle()
+        .overrideTypes<
+          (RouteAscentDto & { route: Record<string, unknown> | null }) | null
+        >();
+
+      if (data) {
+        const a = data;
+
+        const { data: user } = await this.supabase.client
+          .from('user_profiles')
+          .select('id, name, avatar')
+          .eq('id', a.user_id)
+          .maybeSingle();
+
+        let mappedRoute: RouteWithExtras | undefined = undefined;
+        if (a.route) {
+          const routeRaw = Array.isArray(a.route) ? a.route[0] : a.route;
+          const routeData = routeRaw as Record<string, unknown>;
+          const cragData = (
+            Array.isArray(routeData['crag'])
+              ? routeData['crag'][0]
+              : routeData['crag']
+          ) as Record<string, unknown> | undefined;
+          const areaData = (
+            Array.isArray(cragData?.['area'])
+              ? cragData?.['area'][0]
+              : cragData?.['area']
+          ) as Record<string, unknown> | undefined;
+
+          mappedRoute = {
+            ...(routeData as unknown as RouteWithExtras),
+            area_id: cragData?.['area_id'] as number,
+            crag_slug: cragData?.['slug'] as string,
+            crag_name: cragData?.['name'] as string,
+            area_slug: areaData?.['slug'] as string,
+            area_name: areaData?.['name'] as string,
+          } as RouteWithExtras;
+        }
+
+        return {
+          ...a,
+          user: (user as UserProfileBasicDto) || undefined,
+          route: mappedRoute,
+        } as RouteAscentWithExtras;
+      }
+    }
+
+    // Fallback: try indoor ascents
+    const { data: indoorData, error: indoorError } = await this.supabase.client
+      .from('indoor_ascents')
       .select(
         `
         *,
-        route:routes(
-          *,
-          crag:crags(
-            slug,
-            name,
-            area_id,
-            area:areas(slug, name)
-          )
+        route:indoor_routes(
+          id, name, grade, climbing_kind,
+          center:indoor_centers(id, name, slug)
         )
       `,
       )
-      .eq('id', id)
-      .maybeSingle()
-      .overrideTypes<
-        (RouteAscentDto & { route: Record<string, unknown> | null }) | null
-      >();
+      .eq('id', String(id))
+      .maybeSingle();
 
-    if (error || !data) {
-      if (error) console.error('[AscentsService] getAscentById error', error);
+    if (indoorError || !indoorData) {
+      if (indoorError)
+        console.error(
+          '[AscentsService] getAscentById indoor error',
+          indoorError,
+        );
       return null;
     }
 
-    const a = data;
+    const ia = indoorData as Record<string, unknown>;
+    const iRoute = Array.isArray(ia['route'])
+      ? (ia['route'][0] as Record<string, unknown> | undefined)
+      : (ia['route'] as Record<string, unknown> | undefined);
+    const iCenter = iRoute
+      ? Array.isArray(iRoute['center'])
+        ? (iRoute['center'][0] as Record<string, unknown> | undefined)
+        : (iRoute['center'] as Record<string, unknown> | undefined)
+      : undefined;
 
-    // Fetch user separately
-    const { data: user } = await this.supabase.client
+    const { data: indoorUser } = await this.supabase.client
       .from('user_profiles')
       .select('id, name, avatar')
-      .eq('id', a.user_id)
+      .eq('id', ia['user_id'] as string)
       .maybeSingle();
 
-    let mappedRoute: RouteWithExtras | undefined = undefined;
-    if (a.route) {
-      const routeRaw = Array.isArray(a.route) ? a.route[0] : a.route;
-      const routeData = routeRaw as Record<string, unknown>;
-      const cragData = (
-        Array.isArray(routeData['crag'])
-          ? routeData['crag'][0]
-          : routeData['crag']
-      ) as Record<string, unknown> | undefined;
-      const areaData = (
-        Array.isArray(cragData?.['area'])
-          ? cragData?.['area'][0]
-          : cragData?.['area']
-      ) as Record<string, unknown> | undefined;
-
-      mappedRoute = {
-        ...(routeData as unknown as RouteWithExtras),
-        area_id: cragData?.['area_id'] as number,
-        crag_slug: cragData?.['slug'] as string,
-        crag_name: cragData?.['name'] as string,
-        area_slug: areaData?.['slug'] as string,
-        area_name: areaData?.['name'] as string,
-      } as RouteWithExtras;
-    }
+    const mappedIndoorRoute = iRoute
+      ? ({
+          id: iRoute['id'],
+          name: iRoute['name'],
+          grade: iRoute['grade'],
+          climbing_kind: iRoute['climbing_kind'],
+          center_slug: iCenter?.['slug'],
+          center_name: iCenter?.['name'],
+          slug: iRoute['name'],
+          liked: false,
+          project: false,
+        } as unknown as RouteWithExtras)
+      : undefined;
 
     return {
-      ...a,
-      user: (user as UserProfileBasicDto) || undefined,
-      route: mappedRoute,
-    } as RouteAscentWithExtras;
+      ...ia,
+      user: (indoorUser as UserProfileBasicDto) || undefined,
+      route: mappedIndoorRoute,
+    } as unknown as RouteAscentWithExtras;
   }
 
   async getUserStats(userId: string): Promise<UserAscentStatRecord[]> {
@@ -417,7 +489,7 @@ export class AscentsService {
     this.refreshResources(ascentId);
   }
 
-  openAscentDialog(ascentId: number): Observable<void> {
+  openAscentDialog(ascentId: number | string): Observable<void> {
     return defer(() =>
       from(import('../components/dialogs/ascent-dialog')),
     ).pipe(
@@ -432,6 +504,12 @@ export class AscentsService {
         ),
       ),
     );
+  }
+
+  viewAscent(ascentId: number | string): void {
+    void firstValueFrom(this.openAscentDialog(ascentId), {
+      defaultValue: undefined,
+    });
   }
 
   openAscentForm(data: AscentDialogData): Observable<boolean> {

@@ -712,9 +712,6 @@ export class IndoorRoutesComponent {
     ascent:
       RouteAscentWithExtras | { id: string | number; type: AscentType | null },
   ): Promise<void> {
-    const asc = ascent as { id: string | number; type: AscentType | null };
-    void firstValueFrom(this.ascentsService.openAscentDialog(Number(asc.id)), {
-      defaultValue: undefined,
-    });
+    this.ascentsService.viewAscent(ascent.id);
   }
 }

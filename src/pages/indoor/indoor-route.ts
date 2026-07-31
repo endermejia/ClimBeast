@@ -455,10 +455,7 @@ export class IndoorRouteComponent {
   }
 
   async onViewAscent(ascent: IndoorAscentWithExtras): Promise<void> {
-    void firstValueFrom(
-      this.ascentsService.openAscentDialog(Number(ascent.id)),
-      { defaultValue: undefined },
-    );
+    this.ascentsService.viewAscent(ascent.id);
   }
 
   async onDeleteAscent(ascentId: string): Promise<void> {
