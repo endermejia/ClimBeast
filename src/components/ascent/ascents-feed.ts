@@ -143,8 +143,6 @@ export class AscentsFeedComponent {
   follow = output<string>();
   unfollow = output<string>();
 
-  protected readonly gradeLabelByNumber = GRADE_NUMBER_TO_LABEL;
-
   protected readonly processedItems = computed<ProcessedFeedItem[]>(() => {
     const list = this.ascents();
     const groupByGrade = this.groupByGrade();

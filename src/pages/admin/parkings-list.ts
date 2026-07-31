@@ -1,10 +1,9 @@
-import { DecimalPipe, isPlatformBrowser } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   inject,
-  PLATFORM_ID,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -38,6 +37,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { GlobalData } from '../../services/global-data';
+
 import { ParkingsService } from '../../services/parkings.service';
 import { ToastService } from '../../services/toast.service';
 
@@ -46,6 +46,8 @@ import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { ParkingDto } from '../../models';
 
 import { handleErrorToast, matchesQuery } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-admin-parkings-list',
@@ -224,7 +226,7 @@ import { handleErrorToast, matchesQuery } from '../../utils';
 })
 export class AdminParkingsListComponent {
   protected readonly global = inject(GlobalData);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
@@ -271,7 +273,7 @@ export class AdminParkingsListComponent {
 
   constructor() {
     this.global.resetDataByPage('home');
-    if (isPlatformBrowser(this.platformId)) {
+    if (this.isBrowser) {
       this.global.adminParkingsResource.reload();
     }
   }

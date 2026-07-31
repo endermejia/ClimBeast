@@ -1,11 +1,9 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
   inject,
-  PLATFORM_ID,
   resource,
   signal,
 } from '@angular/core';
@@ -22,6 +20,7 @@ import {
   TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
+
 import { TuiAvatar, TuiConfirmData, TUI_CONFIRM } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
@@ -30,12 +29,15 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
+
 import { FollowsService } from '../../services/follows.service';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { UserProfileBasicDto, UserProfileDto } from '../../models';
 
 import { AvatarUrlPipe } from '../../pipes';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 import { EmptyStateComponent } from '../ui/empty-state';
 
@@ -167,7 +169,7 @@ export interface UserListDialogData {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserListDialogComponent {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   protected readonly supabase = inject(SupabaseService);
   private readonly followsService = inject(FollowsService);
   private readonly ascentsService = inject(AscentsService);
@@ -197,7 +199,7 @@ export class UserListDialogComponent {
       page: this.page(),
     }),
     loader: async ({ params }) => {
-      if (!isPlatformBrowser(this.platformId)) return { items: [], total: 0 };
+      if (!this.isBrowser) return { items: [], total: 0 };
 
       switch (params.type) {
         case 'followers':
@@ -288,7 +290,7 @@ export class UserListDialogComponent {
   }
 
   protected async loadFollowedIds() {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     const ids = await this.followsService.getFollowedIds();
     this.followedIds.set(new Set(ids));
   }

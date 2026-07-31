@@ -1,8 +1,9 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, PLATFORM_ID } from '@angular/core';
+import { inject } from '@angular/core';
 import { CanActivateFn, Router, UrlTree } from '@angular/router';
 
 import { SupabaseService } from '../services/supabase.service';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 /**
  * Guard that redirects authenticated users to /home and non-authenticated users to /info.
@@ -13,10 +14,10 @@ export const rootRedirectGuard: CanActivateFn = async (): Promise<
 > => {
   const router = inject(Router);
   const supabase = inject(SupabaseService);
-  const platformId = inject(PLATFORM_ID);
+  const isBrowser = inject(IS_BROWSER);
 
   // On the server, redirect to /info (landing page) by default
-  if (!isPlatformBrowser(platformId)) {
+  if (!isBrowser) {
     return router.createUrlTree(['/info']);
   }
 

@@ -1,8 +1,4 @@
-import {
-  isPlatformBrowser,
-  LowerCasePipe,
-  NgTemplateOutlet,
-} from '@angular/common';
+import { LowerCasePipe, NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -10,7 +6,6 @@ import {
   effect,
   ElementRef,
   inject,
-  PLATFORM_ID,
   signal,
   Signal,
   viewChild,
@@ -37,6 +32,7 @@ import { TuiHeader } from '@taiga-ui/layout';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AreasService } from '../../services/areas.service';
+
 import { FiltersService } from '../../services/filters.service';
 import { GlobalData } from '../../services/global-data';
 import { ParkingsService } from '../../services/parkings.service';
@@ -44,6 +40,7 @@ import { TourService } from '../../services/tour.service';
 import { TourStep } from '../../services/tour.service';
 
 import { AreaCardComponent } from '../../components/area/area-card';
+
 import { CragCardComponent } from '../../components/crag/crag-card';
 import { IndoorCenterCardComponent } from '../../components/indoor/indoor-center-card';
 import { MapComponent } from '../../components/location/map';
@@ -63,8 +60,11 @@ import {
   ParkingDto,
 } from '../../models';
 
-import { IconSrcPipe } from '../../pipes/icon-src.pipe';
+import { IconSrcPipe } from '../../pipes';
+
 import { mapLocationUrl, remToPx } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-home',
@@ -528,7 +528,7 @@ export class ExploreComponent {
   private readonly filtersService = inject(FiltersService);
   private readonly parkingsService = inject(ParkingsService);
   protected readonly areasService = inject(AreasService);
-  private readonly _platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   protected readonly mapLocationUrl = mapLocationUrl;
 
@@ -701,10 +701,6 @@ export class ExploreComponent {
     this.areasService.openUnifyAreas(visibleAreas);
   }
 
-  private isBrowser(): boolean {
-    return isPlatformBrowser(this._platformId) && typeof window !== 'undefined';
-  }
-
   private computeBottomSheetTargetTop(node: HTMLElement): number {
     const offsetPx = remToPx(this.stops[0] as string) || 0;
     const clientHeight = node.clientHeight || 0;
@@ -731,7 +727,7 @@ export class ExploreComponent {
   }
 
   protected onSheetScroll(event: Event): void {
-    if (!this.isBrowser() || this._sheetClosing) return;
+    if (!this.isBrowser || this._sheetClosing) return;
     const target =
       (event?.target as HTMLElement) || this.sheetRef()?.nativeElement;
     if (!target) return;
@@ -743,7 +739,7 @@ export class ExploreComponent {
       return;
     }
 
-    if (!isPlatformBrowser(this._platformId) || typeof window === 'undefined') {
+    if (!this.isBrowser || typeof window === 'undefined') {
       return;
     }
 
@@ -843,7 +839,7 @@ export class ExploreComponent {
   }
 
   protected openExternal(url: string): void {
-    if (isPlatformBrowser(this._platformId)) {
+    if (this.isBrowser) {
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   }

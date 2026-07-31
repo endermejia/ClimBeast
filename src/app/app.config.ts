@@ -2,7 +2,6 @@ import { isPlatformBrowser } from '@angular/common';
 import {
   HttpClient,
   provideHttpClient,
-  withFetch,
   withInterceptors,
 } from '@angular/common/http';
 import {
@@ -17,7 +16,6 @@ import {
 import {
   provideClientHydration,
   withEventReplay,
-  withIncrementalHydration,
   withHttpTransferCacheOptions,
 } from '@angular/platform-browser';
 import {
@@ -75,10 +73,9 @@ export const appConfig: ApplicationConfig = {
       withPreloading(SelectivePreloadingStrategy),
       withViewTransitions({ skipInitialTransition: true }),
     ),
-    provideHttpClient(withFetch(), withInterceptors([errorInterceptor])),
+    provideHttpClient(withInterceptors([errorInterceptor])),
     provideClientHydration(
       withEventReplay(),
-      withIncrementalHydration(),
       withHttpTransferCacheOptions({
         includePostRequests: true,
       }),

@@ -1,5 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { TuiDialogService } from '@taiga-ui/core';
@@ -10,11 +9,13 @@ import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { CacheService } from '../services/cache.service';
+
 import { GlobalData } from '../services/global-data';
 import { SupabaseService } from '../services/supabase.service';
 import { ToastService } from '../services/toast.service';
 
 import { RouteFormComponent } from '../components/forms/route-form';
+
 import { RouteUnifyComponent } from '../components/forms/route-unify';
 
 import type {
@@ -27,7 +28,10 @@ import type {
 } from '../models';
 
 import { CACHE_KEYS } from '../constants/cache-keys';
+
 import { normalizeNameStrict } from '../utils';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 export interface RouteSimple {
   id: number;
@@ -45,7 +49,7 @@ export interface RouteSimple {
 
 @Injectable({ providedIn: 'root' })
 export class RoutesService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly global = inject(GlobalData);
   private readonly cache = inject(CacheService);
@@ -130,7 +134,7 @@ export class RoutesService {
   }
 
   async getRoutesByAreaSimple(areaId: number): Promise<RouteSimple[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
 
     const cacheKey = CACHE_KEYS.routesSimpleArea(areaId);
     return this.cache.fetchOrCache(
@@ -188,7 +192,7 @@ export class RoutesService {
   async getRoutesByAreaWithDetails(
     areaId: number,
   ): Promise<Partial<RouteWithExtras>[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
 
     let allRoutes: Partial<RouteWithExtras>[] = [];
@@ -252,7 +256,7 @@ export class RoutesService {
   async getAreasWithDuplicateRoutes(): Promise<
     { id: number; name: string; slug: string }[]
   > {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
 
     const areasWithDupes = new Map<
@@ -317,7 +321,7 @@ export class RoutesService {
       duplicateGroups: RouteSimple[][];
     }[]
   > {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
 
     const areaMap = new Map<
@@ -412,7 +416,7 @@ export class RoutesService {
   async getAllRoutesWithDuplicateEightAnuSlugs(): Promise<
     { eightAnuSlug: string; routes: RouteSimple[] }[]
   > {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
 
     const slugToRoutes = new Map<string, RouteSimple[]>();
@@ -483,7 +487,7 @@ export class RoutesService {
   }
 
   async searchRoutes(query: string): Promise<Partial<RouteWithExtras>[]> {
-    if (!isPlatformBrowser(this.platformId) || query.length < 2) return [];
+    if (!this.isBrowser || query.length < 2) return [];
     await this.supabase.whenReady();
 
     const { data, error } = await this.supabase.client
@@ -527,7 +531,7 @@ export class RoutesService {
     sourceRouteIds: number[],
     newName: string,
   ): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
     this.loading.set(true);
     try {
@@ -571,7 +575,7 @@ export class RoutesService {
     routeId: number,
     equippers: readonly (EquipperDto | string)[],
   ): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
 
     try {
@@ -671,7 +675,7 @@ export class RoutesService {
   async create(
     payload: Omit<RouteInsertDto, 'created_at' | 'id'>,
   ): Promise<RouteDto | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('routes')
@@ -694,7 +698,7 @@ export class RoutesService {
     payload: Partial<Omit<RouteUpdateDto, 'id' | 'created_at'>>,
     silent = false,
   ): Promise<RouteDto | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('routes')
@@ -717,7 +721,7 @@ export class RoutesService {
   async getById(
     id: number,
   ): Promise<{ data: RouteDto | null; error: unknown }> {
-    if (!isPlatformBrowser(this.platformId)) return { data: null, error: null };
+    if (!this.isBrowser) return { data: null, error: null };
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('routes')
@@ -728,7 +732,7 @@ export class RoutesService {
   }
 
   async delete(id: number): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
     const { error } = await this.supabase.client
       .from('routes')
@@ -748,7 +752,7 @@ export class RoutesService {
     routeId: number,
     currentRoute?: RouteWithExtras,
   ): Promise<boolean | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     try {
       const { data, error } = await this.supabase.client.rpc(
@@ -780,7 +784,7 @@ export class RoutesService {
   }
 
   async removeRouteProject(routeId: number): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
     try {
       const { data, error } = await this.supabase.client
@@ -807,7 +811,7 @@ export class RoutesService {
     routeId: number,
     currentRoute?: Partial<RouteWithExtras>,
   ): Promise<boolean | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     try {
       const { data, error } = await this.supabase.client.rpc(

@@ -1,11 +1,9 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   DestroyRef,
   inject,
-  PLATFORM_ID,
   signal,
   WritableSignal,
 } from '@angular/core';
@@ -49,8 +47,8 @@ import { WaIntersectionObserver } from '@ng-web-apis/intersection-observer';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { GlobalData } from '../../services/global-data';
-import { IndoorService } from '../../services/indoor.service';
 
+import { IndoorService } from '../../services/indoor.service';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { EmptyStateComponent } from '../../components/ui/empty-state';
@@ -58,7 +56,10 @@ import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { AreaListItem, IndoorCenterDto } from '../../models';
 
 import { AvatarUrlPipe } from '../../pipes';
+
 import { matchesQuery } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 interface UserWithRole {
   id: string;
@@ -428,7 +429,7 @@ export class AdminUsersListComponent {
   protected readonly supabase = inject(SupabaseService);
   private readonly indoor = inject(IndoorService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
 
   protected readonly columns = ['user', 'role', 'areas', 'centers'];
@@ -508,7 +509,7 @@ export class AdminUsersListComponent {
   }
 
   constructor() {
-    if (isPlatformBrowser(this.platformId)) {
+    if (this.isBrowser) {
       void this.loadUsers();
     }
 

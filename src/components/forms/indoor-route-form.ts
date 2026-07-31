@@ -1,4 +1,4 @@
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,7 +7,6 @@ import {
   inject,
   resource,
   signal,
-  PLATFORM_ID,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { form, FormField, required, submit } from '@angular/forms/signals';
@@ -39,6 +38,7 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { IndoorService } from '../../services/indoor.service';
+
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 
@@ -55,6 +55,8 @@ import {
 } from '../../models';
 
 import { slugify } from '../../utils/slugify';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 export interface IndoorRouteFormData {
   centerId: string;
@@ -284,7 +286,7 @@ export interface IndoorRouteFormData {
 export default class IndoorRouteFormComponent {
   private readonly indoor = inject(IndoorService);
   private readonly supabase = inject(SupabaseService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly toast = inject(ToastService);
   protected readonly translate = inject(TranslateService);
 
@@ -389,8 +391,7 @@ export default class IndoorRouteFormComponent {
   protected readonly allEquippers = resource<EquipperDto[], { query: string }>({
     params: () => ({ query: this.searchQuery() }),
     loader: async ({ params: { query } }) => {
-      if (!query || query.length <= 2 || !isPlatformBrowser(this.platformId))
-        return [];
+      if (!query || query.length <= 2 || !this.isBrowser) return [];
       try {
         await this.supabase.whenReady();
         const { data, error } = await this.supabase.client

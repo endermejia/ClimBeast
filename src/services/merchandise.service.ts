@@ -1,6 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
 import { inject, Injectable, signal } from '@angular/core';
-import { PLATFORM_ID } from '@angular/core';
 
 import { TuiDialogService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
@@ -10,6 +8,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { MerchandiseItemDialogComponent } from '../components/dialogs/merchandise-item-dialog';
 
 import { MerchandisePackDialogComponent } from '../components/dialogs/merchandise-pack-dialog';
+
 import { OrderDetailsDialogComponent } from '../components/dialogs/order-details-dialog';
 import { PurchaseHistoryDialogComponent } from '../components/dialogs/purchase-history-dialog';
 
@@ -24,11 +23,13 @@ import type {
   OrderStatus,
 } from '../models';
 
+import { IS_BROWSER } from '../app/is-browser';
+
 import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
 export class MerchandiseService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
@@ -39,7 +40,7 @@ export class MerchandiseService {
     onlyActive = true,
     includeStock = false,
   ): Promise<MerchandiseItemDetail[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
 
     let query = this.supabase.client
@@ -69,7 +70,7 @@ export class MerchandiseService {
   }
 
   async getAreaPacks(onlyActive = true): Promise<AreaPackDetail[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
 
     let query = this.supabase.client
@@ -102,7 +103,7 @@ export class MerchandiseService {
   async getMerchandiseItemById(
     id: string,
   ): Promise<MerchandiseItemDetail | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
 
     const { data, error } = await this.supabase.client
@@ -116,7 +117,7 @@ export class MerchandiseService {
   }
 
   async getAreaPackById(id: string): Promise<AreaPackDetail | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
 
     const { data, error } = await this.supabase.client
@@ -132,7 +133,7 @@ export class MerchandiseService {
   async upsertMerchandiseItem(
     item: Partial<MerchandiseItemDetail>,
   ): Promise<MerchandiseItem | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     this.loading.set(true);
 
@@ -177,7 +178,7 @@ export class MerchandiseService {
     size: string,
     stock: number,
   ): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
 
     const { error } = await this.supabase.client
@@ -188,7 +189,7 @@ export class MerchandiseService {
   }
 
   async getUserOrders(): Promise<OrderDetail[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
 
     const { data, error } = await this.supabase.client
@@ -204,7 +205,7 @@ export class MerchandiseService {
   }
 
   async getAllOrders(): Promise<OrderDetail[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
 
     const { data, error } = await this.supabase.client
@@ -326,7 +327,7 @@ export class MerchandiseService {
     orderId: string,
     status: OrderStatus,
   ): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
 
     try {
@@ -420,7 +421,7 @@ export class MerchandiseService {
   }
 
   async upsertAreaPack(pack: Partial<AreaPackDetail>): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
     this.loading.set(true);
 
@@ -468,7 +469,7 @@ export class MerchandiseService {
   }
 
   async uploadShopImage(file: File): Promise<string | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
 
     const fileName = `${Date.now()}_${file.name}`;

@@ -1,7 +1,8 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 
 import { UserProfileDto } from '../models';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { SupabaseService } from './supabase.service';
 
@@ -12,7 +13,7 @@ import { ToastService } from './toast.service';
 })
 export class FollowsService {
   private readonly supabase = inject(SupabaseService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly toast = inject(ToastService);
 
   readonly followChange = signal<number>(0);
@@ -26,7 +27,7 @@ export class FollowsService {
     filterColumn: string,
     filterValue: string,
   ): Promise<string[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
 
     const allIds: string[] = [];
     let page = 0;
@@ -62,7 +63,7 @@ export class FollowsService {
   }
 
   async follow(followedUserId: string): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     const userId = this.supabase.authUserId();
     if (!userId) return false;
 
@@ -83,7 +84,7 @@ export class FollowsService {
   }
 
   async unfollow(followedUserId: string): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     const userId = this.supabase.authUserId();
     if (!userId) return false;
 
@@ -107,7 +108,7 @@ export class FollowsService {
   }
 
   async getFollowersCount(userId: string): Promise<number> {
-    if (!isPlatformBrowser(this.platformId)) return 0;
+    if (!this.isBrowser) return 0;
     const { count, error } = await this.supabase.client
       .from('user_follows')
       .select('id', { count: 'exact', head: true })
@@ -121,7 +122,7 @@ export class FollowsService {
   }
 
   async getFollowingCount(userId: string): Promise<number> {
-    if (!isPlatformBrowser(this.platformId)) return 0;
+    if (!this.isBrowser) return 0;
     const { count, error } = await this.supabase.client
       .from('user_follows')
       .select('id', { count: 'exact', head: true })
@@ -135,7 +136,7 @@ export class FollowsService {
   }
 
   async getFollowedIds(): Promise<string[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     const userId = this.supabase.authUserId();
     if (!userId) return [];
 
@@ -148,7 +149,7 @@ export class FollowsService {
     pageSize: number,
     query?: string,
   ): Promise<{ items: UserProfileDto[]; total: number }> {
-    if (!isPlatformBrowser(this.platformId)) return { items: [], total: 0 };
+    if (!this.isBrowser) return { items: [], total: 0 };
 
     // 1. Get all follower IDs (no pagination here to allow filtering by name in next step)
     const followerIds = await this.getAllIds(
@@ -196,7 +197,7 @@ export class FollowsService {
     pageSize: number,
     query?: string,
   ): Promise<{ items: UserProfileDto[]; total: number }> {
-    if (!isPlatformBrowser(this.platformId)) return { items: [], total: 0 };
+    if (!this.isBrowser) return { items: [], total: 0 };
 
     // 1. Get all followed user IDs
     const followedIds = await this.getAllIds(

@@ -1,4 +1,4 @@
-import { CommonModule, isPlatformBrowser, Location } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,7 +7,6 @@ import {
   inject,
   input,
   InputSignal,
-  PLATFORM_ID,
   resource,
   signal,
   Signal,
@@ -40,6 +39,7 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { GlobalData } from '../../services/global-data';
+
 import { RoutesService } from '../../services/routes.service';
 import { SlugService } from '../../services/slug.service';
 import { SupabaseService } from '../../services/supabase.service';
@@ -57,6 +57,8 @@ import {
 } from '../../models';
 
 import { handleErrorToast, slugify } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 import { CounterComponent } from '../ui/counter';
 
@@ -329,7 +331,7 @@ interface RouteFormModel {
   host: { class: 'block w-full' },
 })
 export class RouteFormComponent {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly routes = inject(RoutesService);
   protected readonly global = inject(GlobalData);
   private readonly supabase = inject(SupabaseService);
@@ -432,7 +434,7 @@ export class RouteFormComponent {
   protected readonly areaOptions = resource<AreaDto[], undefined>({
     loader: async () => {
       await this.supabase.whenReady();
-      if (!isPlatformBrowser(this.platformId)) return [];
+      if (!this.isBrowser) return [];
       const { data } = await this.supabase.client
         .from('areas')
         .select('*')
@@ -445,7 +447,7 @@ export class RouteFormComponent {
     params: () => this.model().area?.id ?? null,
     loader: async ({ params: areaId }) => {
       await this.supabase.whenReady();
-      if (!isPlatformBrowser(this.platformId) || !areaId) return [];
+      if (!this.isBrowser || !areaId) return [];
 
       // 2. Get all crags of that area
       const { data: crags } = await this.supabase.client
@@ -473,7 +475,7 @@ export class RouteFormComponent {
   protected readonly allEquippers = resource<EquipperDto[], undefined>({
     loader: async () => {
       await this.supabase.whenReady();
-      if (!isPlatformBrowser(this.platformId)) return [];
+      if (!this.isBrowser) return [];
       const { data } = await this.supabase.client
         .from('equippers')
         .select('*')

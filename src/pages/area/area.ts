@@ -1,4 +1,4 @@
-import { isPlatformBrowser, LowerCasePipe } from '@angular/common';
+import { LowerCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,7 +7,6 @@ import {
   inject,
   input,
   InputSignal,
-  PLATFORM_ID,
   resource,
   signal,
   WritableSignal,
@@ -48,6 +47,7 @@ import { AreasService } from '../../services/areas.service';
 import { CragsService } from '../../services/crags.service';
 
 import { FiltersService } from '../../services/filters.service';
+
 import { GlobalData } from '../../services/global-data';
 import { SeoService } from '../../services/seo.service';
 import { SupabaseService } from '../../services/supabase.service';
@@ -57,25 +57,26 @@ import { UserProfilesService } from '../../services/user-profiles.service';
 import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
 
 import { CragCardComponent } from '../../components/crag/crag-card';
+
 import { AreaPaywallDialogComponent } from '../../components/paywall/area-paywall-dialog';
 import { GradeComponent } from '../../components/ui/avatar-grade';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { SectionHeaderComponent } from '../../components/ui/section-header';
 
-import { UserProfileBasicDto } from '../../models';
-
 import {
+  AreaDetail,
   ClimbingKinds,
   isGradeRangeOverlap,
   normalizeRoutesByGrade,
   ORDERED_GRADE_VALUES,
+  RouteSearchResult,
+  UserProfileBasicDto,
 } from '../../models';
-import { AreaDetail } from '../../models/area.model';
-import { RouteSearchResult } from '../../models/supabase-query.types';
 
-import { AvatarUrlPipe } from '../../pipes';
-import { IconSrcPipe } from '../../pipes/icon-src.pipe';
+import { AvatarUrlPipe, IconSrcPipe } from '../../pipes';
 import { handleErrorToast, matchesQuery } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-area',
@@ -530,7 +531,7 @@ export class AreaComponent {
   protected readonly global = inject(GlobalData);
   protected readonly router = inject(Router);
   protected readonly toast = inject(ToastService);
-  protected readonly platformId = inject(PLATFORM_ID);
+  protected readonly isBrowser = inject(IS_BROWSER);
   protected readonly areas = inject(AreasService);
   protected readonly cragsService = inject(CragsService);
   protected readonly supabase = inject(SupabaseService);
@@ -800,7 +801,7 @@ export class AreaComponent {
     });
 
     effect(() => {
-      if (!isPlatformBrowser(this.platformId)) return;
+      if (!this.isBrowser) return;
       const loading = this.global.areasListResource.isLoading();
       const area = this.global.selectedArea();
       if (!loading && !area) {
@@ -832,7 +833,7 @@ export class AreaComponent {
   }
 
   onToggleLike(): void {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     const area = this.global.selectedArea();
     if (!area) return;
     void this.areas.toggleAreaLike(area.id);
@@ -841,7 +842,7 @@ export class AreaComponent {
   async deleteArea(): Promise<void> {
     const area = this.global.selectedArea();
     if (!area) return;
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
 
     const t = await firstValueFrom(
       this.translate.get(['areas.deleteTitle', 'areas.deleteConfirm'], {
@@ -944,7 +945,7 @@ export class AreaComponent {
   async requestAdmin(): Promise<void> {
     const area = this.global.selectedArea();
     if (!area) return;
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
 
     const t = await firstValueFrom(
       this.translate.get([

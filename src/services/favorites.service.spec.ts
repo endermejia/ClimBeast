@@ -1,10 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import { IS_BROWSER } from '../app/is-browser';
+
+import { MockSupabaseService } from '../testing/mock-supabase.service';
 import { FavoritesService } from './favorites.service';
 import { SupabaseService } from './supabase.service';
-import { MockSupabaseService } from '../testing/mock-supabase.service';
 
 function createMockSupabase() {
   const mock = new MockSupabaseService();
@@ -87,6 +90,7 @@ describe('FavoritesService', () => {
       providers: [
         FavoritesService,
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
         { provide: SupabaseService, useValue: createMockSupabase().mock },
       ],
     });
@@ -146,6 +150,7 @@ describe('FavoritesService', () => {
         providers: [
           FavoritesService,
           { provide: PLATFORM_ID, useValue: 'browser' },
+          { provide: IS_BROWSER, useValue: true },
           { provide: SupabaseService, useValue: mockWithRpcError },
         ],
       });

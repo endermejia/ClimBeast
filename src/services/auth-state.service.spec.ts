@@ -1,12 +1,15 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
-import { AuthStateService } from './auth-state.service';
-import { SupabaseService } from './supabase.service';
-import { LocalStorage } from './local-storage';
-import { MockSupabaseService } from '../testing/mock-supabase.service';
+import { describe, it, expect, beforeEach } from 'vitest';
+
+import { IS_BROWSER } from '../app/is-browser';
+
 import { MockLocalStorage } from '../testing/mock-local-storage';
+import { MockSupabaseService } from '../testing/mock-supabase.service';
+import { AuthStateService } from './auth-state.service';
+import { LocalStorage } from './local-storage';
+import { SupabaseService } from './supabase.service';
 
 describe('AuthStateService', () => {
   let service: AuthStateService;
@@ -21,6 +24,7 @@ describe('AuthStateService', () => {
       providers: [
         AuthStateService,
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
         { provide: SupabaseService, useValue: mockSupabase },
         { provide: LocalStorage, useValue: mockStorage },
       ],

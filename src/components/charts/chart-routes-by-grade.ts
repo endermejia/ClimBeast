@@ -1,4 +1,4 @@
-import { isPlatformBrowser, LowerCasePipe } from '@angular/common';
+import { LowerCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,7 +6,6 @@ import {
   inject,
   input,
   InputSignal,
-  PLATFORM_ID,
   signal,
   Signal,
   WritableSignal,
@@ -24,6 +23,8 @@ import {
 } from '../../models';
 
 import { computeGradeChartData } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-chart-routes-by-grade',
@@ -78,8 +79,7 @@ import { computeGradeChartData } from '../../utils';
   `,
 })
 export class ChartRoutesByGradeComponent {
-  private readonly platformId = inject(PLATFORM_ID);
-  protected readonly isBrowser = isPlatformBrowser(this.platformId);
+  protected readonly isBrowser = inject(IS_BROWSER);
 
   grades: InputSignal<AmountByEveryGrade> =
     input.required<AmountByEveryGrade>();

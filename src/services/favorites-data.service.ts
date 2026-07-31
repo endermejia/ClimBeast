@@ -1,15 +1,10 @@
-import { isPlatformBrowser } from '@angular/common';
-import {
-  inject,
-  Injectable,
-  PLATFORM_ID,
-  resource,
-  computed,
-} from '@angular/core';
+import { inject, Injectable, resource, computed } from '@angular/core';
 
 import { AreaListItem, CragListItem, RouteWithExtras } from '../models';
 
 import { CACHE_KEYS } from '../constants/cache-keys';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { CacheService } from './cache.service';
 
@@ -26,14 +21,14 @@ import { SupabaseService } from './supabase.service';
 export class FavoritesDataService {
   private readonly cache = inject(CacheService);
   private readonly favorites = inject(FavoritesService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
 
   // ---- Liked Areas ----
   readonly likedAreasResource = resource({
     params: () => this.supabase.authUserId(),
     loader: async ({ params: userId }) => {
-      if (!userId || !isPlatformBrowser(this.platformId)) return [];
+      if (!userId || !this.isBrowser) return [];
       const cacheKey = CACHE_KEYS.likedAreas(userId);
       return this.cache.fetchOrCache(
         cacheKey,
@@ -60,7 +55,7 @@ export class FavoritesDataService {
   readonly likedCragsResource = resource({
     params: () => this.supabase.authUserId(),
     loader: async ({ params: userId }) => {
-      if (!userId || !isPlatformBrowser(this.platformId)) return [];
+      if (!userId || !this.isBrowser) return [];
       const cacheKey = CACHE_KEYS.likedCrags(userId);
       return this.cache.fetchOrCache(
         cacheKey,
@@ -87,7 +82,7 @@ export class FavoritesDataService {
   readonly likedRoutesResource = resource({
     params: () => this.supabase.authUserId(),
     loader: async ({ params: userId }) => {
-      if (!userId || !isPlatformBrowser(this.platformId)) return [];
+      if (!userId || !this.isBrowser) return [];
       const cacheKey = CACHE_KEYS.likedRoutes(userId);
       return this.cache.fetchOrCache(
         cacheKey,

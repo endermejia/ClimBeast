@@ -1,20 +1,26 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
-import { provideRouter } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
-import { TuiDialogService } from '@taiga-ui/core';
-import { Subject, of } from 'rxjs';
 import { signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 
-import { AscentCardComponent } from './ascent-card';
+import { TuiDialogService } from '@taiga-ui/core';
+
+import { TranslateModule } from '@ngx-translate/core';
+import { Subject, of } from 'rxjs';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
 import { AscentsService } from '../../services/ascents.service';
+
 import { FollowsService } from '../../services/follows.service';
 import { GlobalData } from '../../services/global-data';
 import { SupabaseService } from '../../services/supabase.service';
-import { MockGlobalData } from '../../testing/mock-global-data.service';
-import { MockSupabaseService } from '../../testing/mock-supabase.service';
+
 import { RouteAscentWithExtras } from '../../models';
+
+import { IS_BROWSER } from '../../app/is-browser';
+import { MockGlobalData } from '../../testing';
+import { MockSupabaseService } from '../../testing';
+import { AscentCardComponent } from './ascent-card';
 
 function createMockAscent(
   overrides: Partial<RouteAscentWithExtras> = {},
@@ -111,6 +117,7 @@ describe('AscentCardComponent', () => {
       providers: [
         provideRouter([]),
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
         MockGlobalData,
         { provide: GlobalData, useExisting: MockGlobalData },
         { provide: SupabaseService, useClass: MockSupabaseService },

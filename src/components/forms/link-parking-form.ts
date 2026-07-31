@@ -1,10 +1,9 @@
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   inject,
-  PLATFORM_ID,
   resource,
   signal,
 } from '@angular/core';
@@ -30,9 +29,12 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { ParkingsService } from '../../services/parkings.service';
+
 import { SupabaseService } from '../../services/supabase.service';
 
 import { ParkingDto } from '../../models';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-link-parking-form',
@@ -120,7 +122,7 @@ import { ParkingDto } from '../../models';
 export class LinkParkingFormComponent {
   private readonly parkingsService = inject(ParkingsService);
   private readonly supabase = inject(SupabaseService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   private readonly context =
     injectContext<
@@ -140,7 +142,7 @@ export class LinkParkingFormComponent {
 
   protected readonly allParkings = resource({
     loader: async () => {
-      if (!isPlatformBrowser(this.platformId)) return [];
+      if (!this.isBrowser) return [];
       await this.supabase.whenReady();
       return this.parkingsService.getAll();
     },

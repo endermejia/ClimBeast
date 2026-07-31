@@ -1,16 +1,20 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
+import { TuiDialogService } from '@taiga-ui/core';
+
+import { TranslateService, TranslateStore } from '@ngx-translate/core';
+
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import { IS_BROWSER } from '../app/is-browser';
+import { MockGlobalData } from '../testing/mock-global-data.service';
+import { MockSupabaseService } from '../testing/mock-supabase.service';
+import { CacheService } from './cache.service';
+import { GlobalData } from './global-data';
 import { RoutesService } from './routes.service';
 import { SupabaseService } from './supabase.service';
-import { GlobalData } from './global-data';
-import { CacheService } from './cache.service';
 import { ToastService } from './toast.service';
-import { MockSupabaseService } from '../testing/mock-supabase.service';
-import { MockGlobalData } from '../testing/mock-global-data.service';
-import { TuiDialogService } from '@taiga-ui/core';
-import { TranslateService, TranslateStore } from '@ngx-translate/core';
 
 const MOCK_TRANSLATE = {
   instant: (k: string) => k,
@@ -53,6 +57,7 @@ describe('RoutesService', () => {
       providers: [
         RoutesService,
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
         { provide: SupabaseService, useValue: mockSupabase },
         { provide: GlobalData, useClass: MockGlobalData },
         {
@@ -85,6 +90,7 @@ describe('RoutesService', () => {
         providers: [
           RoutesService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
@@ -111,6 +117,7 @@ describe('RoutesService', () => {
         providers: [
           RoutesService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
@@ -132,6 +139,7 @@ describe('RoutesService', () => {
         providers: [
           RoutesService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
@@ -161,6 +169,7 @@ describe('RoutesService', () => {
         providers: [
           RoutesService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
@@ -182,6 +191,7 @@ describe('RoutesService', () => {
         providers: [
           RoutesService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
@@ -203,6 +213,7 @@ describe('RoutesService', () => {
         providers: [
           RoutesService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
@@ -225,6 +236,7 @@ describe('RoutesService', () => {
         providers: [
           RoutesService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },

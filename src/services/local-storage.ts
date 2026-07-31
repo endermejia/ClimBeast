@@ -1,5 +1,6 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 @Injectable({
   providedIn: 'root',
@@ -10,7 +11,7 @@ export class LocalStorage {
   private readonly memoryStorage = new Map<string, string>();
 
   constructor() {
-    this.isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+    this.isBrowser = inject(IS_BROWSER);
     let available = false;
 
     if (this.isBrowser) {

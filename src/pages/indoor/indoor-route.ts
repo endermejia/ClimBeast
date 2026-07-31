@@ -1,4 +1,4 @@
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,7 +7,6 @@ import {
   effect,
   inject,
   input,
-  PLATFORM_ID,
   resource,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -31,11 +30,13 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
+
 import { GlobalData } from '../../services/global-data';
 import { IndoorService } from '../../services/indoor.service';
 import { ToastService } from '../../services/toast.service';
 
 import { AscentCardComponent } from '../../components/ascent/ascent-card';
+
 import { ChartAscentsByGradeComponent } from '../../components/charts/chart-ascents-by-grade';
 import { ChartAscentsByStyleComponent } from '../../components/charts/chart-ascents-by-style';
 import { GradeComponent } from '../../components/ui/avatar-grade';
@@ -52,6 +53,8 @@ import {
   IndoorAscentWithExtras,
   IndoorCenterDto,
 } from '../../models';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-indoor-route',
@@ -332,7 +335,7 @@ export class IndoorRouteComponent {
   protected readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly dialogs = inject(TuiDialogService);
 
   protected readonly climbingIcons = CLIMBING_ICONS;
@@ -459,7 +462,7 @@ export class IndoorRouteComponent {
   }
 
   async onDeleteAscent(ascentId: string): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
 
     void firstValueFrom(
       this.dialogs.open<boolean>(TUI_CONFIRM, {
@@ -502,7 +505,7 @@ export class IndoorRouteComponent {
 
   async deleteRoute(): Promise<void> {
     const r = this.route();
-    if (!r || !isPlatformBrowser(this.platformId)) return;
+    if (!r || !this.isBrowser) return;
 
     void firstValueFrom(
       this.dialogs.open<boolean>(TUI_CONFIRM, {

@@ -1,10 +1,8 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   computed,
   inject,
   Injectable,
   InjectionToken,
-  PLATFORM_ID,
   Provider,
   resource,
   signal,
@@ -15,10 +13,13 @@ import { Router } from '@angular/router';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 
 import { UserProfileDto } from '../models';
+
 import { SupabaseNotInitializedError } from '../models';
 import { Database } from '../models/supabase-generated';
 
 import { CACHE_KEYS } from '../constants/cache-keys';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { ENV_SUPABASE_URL } from '../environments/environment';
 import { CacheService } from './cache.service';
@@ -44,7 +45,7 @@ export function provideSupabaseConfig(config: SupabaseConfig): Provider[] {
 
 @Injectable({ providedIn: 'root' })
 export class SupabaseService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly url = inject(SUPABASE_URL, { optional: true });
   private readonly anonKey = inject(SUPABASE_ANON_KEY, { optional: true });
   private readonly router = inject(Router);
@@ -69,7 +70,7 @@ export class SupabaseService {
   readonly userProfileResource = resource({
     params: () => this.authUserId(),
     loader: async ({ params: userId }) => {
-      if (!userId || !isPlatformBrowser(this.platformId)) return null;
+      if (!userId || !this.isBrowser) return null;
       const cacheKey = CACHE_KEYS.userProfile(userId);
       return this.cache.fetchOrCache(
         cacheKey,
@@ -305,7 +306,7 @@ export class SupabaseService {
     this._ready = new Promise<void>(
       (resolve) => (this._readyResolve = resolve),
     );
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
+    if (this.isBrowser && typeof window !== 'undefined') {
       // Fire and forget; guard/UI can await whenReady() if needed
       void this.initClient();
     } else {

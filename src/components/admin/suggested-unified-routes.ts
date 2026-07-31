@@ -74,8 +74,8 @@ import { RouteDto } from '../../models';
                               <a
                                 [routerLink]="[
                                   '/area',
-                                  route.crag!.area_slug,
-                                  route.crag!.slug,
+                                  route.crag.area_slug,
+                                  route.crag.slug,
                                   route.slug,
                                 ]"
                                 target="_blank"
@@ -135,8 +135,8 @@ import { RouteDto } from '../../models';
                           <a
                             [routerLink]="[
                               '/area',
-                              route.crag!.area_slug,
-                              route.crag!.slug,
+                              route.crag.area_slug,
+                              route.crag.slug,
                               route.slug,
                             ]"
                             target="_blank"
@@ -149,11 +149,11 @@ import { RouteDto } from '../../models';
                         <span class="opacity-50 ml-1">
                           @if (route.crag?.area_slug) {
                             <a
-                              [routerLink]="['/area', route.crag!.area_slug]"
+                              [routerLink]="['/area', route.crag.area_slug]"
                               target="_blank"
                               class="underline underline-offset-2 hover:opacity-100"
                               >{{
-                                route.crag.area_name || route.crag!.area_slug
+                                route.crag.area_name || route.crag.area_slug
                               }}</a
                             >
                           } @else {
@@ -164,8 +164,8 @@ import { RouteDto } from '../../models';
                             <a
                               [routerLink]="[
                                 '/area',
-                                route.crag!.area_slug,
-                                route.crag!.slug,
+                                route.crag.area_slug,
+                                route.crag.slug,
                               ]"
                               target="_blank"
                               class="underline underline-offset-2 hover:opacity-100"

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { clamp, progressPercent } from './number.utils';
 
 describe('clamp', () => {

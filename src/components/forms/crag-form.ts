@@ -1,4 +1,4 @@
-import { CommonModule, Location, isPlatformBrowser } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,7 +7,6 @@ import {
   inject,
   input,
   InputSignal,
-  PLATFORM_ID,
   resource,
   signal,
   Signal,
@@ -48,9 +47,10 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { CragsService } from '../../services/crags.service';
-import { GlobalData } from '../../services/global-data';
 
+import { GlobalData } from '../../services/global-data';
 import { MapService } from '../../services/map.service';
+
 import { SlugService } from '../../services/slug.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -58,6 +58,8 @@ import { ToastService } from '../../services/toast.service';
 import { AreaDto } from '../../models';
 
 import { handleErrorToast, slugify } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 import { CounterComponent } from '../ui/counter';
 
@@ -317,7 +319,7 @@ export class CragFormComponent {
 
   private readonly supabase = inject(SupabaseService);
   private readonly slugService = inject(SlugService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   private readonly location = inject(Location);
   private readonly toast = inject(ToastService);
@@ -392,7 +394,7 @@ export class CragFormComponent {
   protected readonly areaOptions = resource<AreaDto[], undefined>({
     loader: async () => {
       await this.supabase.whenReady();
-      if (!isPlatformBrowser(this.platformId)) return [];
+      if (!this.isBrowser) return [];
       const { data } = await this.supabase.client
         .from('areas')
         .select('*')

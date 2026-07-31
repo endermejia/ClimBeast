@@ -1,11 +1,9 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   effect,
   inject,
   input,
-  PLATFORM_ID,
   resource,
   signal,
 } from '@angular/core';
@@ -18,10 +16,13 @@ import { TuiChevron, TuiHideSelectedPipe, TuiInputChip } from '@taiga-ui/kit';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { RoutesService } from '../../services/routes.service';
+
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 
 import { EquipperDto, RouteWithExtras } from '../../models';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-route-equippers-input',
@@ -81,7 +82,7 @@ import { EquipperDto, RouteWithExtras } from '../../models';
 export class RouteEquippersInputComponent {
   private readonly routes = inject(RoutesService);
   private readonly supabase = inject(SupabaseService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly toast = inject(ToastService);
 
   route = input.required<RouteWithExtras>();
@@ -103,7 +104,7 @@ export class RouteEquippersInputComponent {
   protected readonly allEquippers = resource<EquipperDto[], { query: string }>({
     params: () => ({ query: this.searchQuery() }),
     loader: async ({ params: { query } }) => {
-      if (query.length <= 2 || !isPlatformBrowser(this.platformId)) return [];
+      if (query.length <= 2 || !this.isBrowser) return [];
       await this.supabase.whenReady();
       const { data } = await this.supabase.client
         .from('equippers')

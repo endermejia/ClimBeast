@@ -1,11 +1,9 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
   inject,
-  PLATFORM_ID,
   resource,
   signal,
 } from '@angular/core';
@@ -19,11 +17,14 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { FollowRequestsService } from '../../services/follow-requests.service';
+
 import { SupabaseService } from '../../services/supabase.service';
 
 import { PopulatedFollowRequestDto } from '../../models';
 
 import { AvatarUrlPipe } from '../../pipes';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 import { EmptyStateComponent } from '../ui/empty-state';
 
@@ -120,7 +121,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FollowRequestsDialogComponent {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   protected readonly supabase = inject(SupabaseService);
   private readonly followRequestsService = inject(FollowRequestsService);
   protected readonly context = injectContext<TuiDialogContext<boolean, void>>();
@@ -136,7 +137,7 @@ export class FollowRequestsDialogComponent {
       change: this.followRequestsService.requestsChange(),
     }),
     loader: async ({ params }) => {
-      if (!isPlatformBrowser(this.platformId)) return { items: [], total: 0 };
+      if (!this.isBrowser) return { items: [], total: 0 };
 
       return await this.followRequestsService.getIncomingRequestsPaginated(
         params.page,

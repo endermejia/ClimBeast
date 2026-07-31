@@ -1,5 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 
 import { TuiDialogService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
@@ -25,6 +24,8 @@ import type {
 } from '../models';
 import { topoPathToJson } from '../models/topo.model';
 
+import { IS_BROWSER } from '../app/is-browser';
+
 import { GlobalData } from './global-data';
 import { SupabaseService } from './supabase.service';
 
@@ -32,7 +33,7 @@ import { ToastService } from './toast.service';
 
 @Injectable({ providedIn: 'root' })
 export class ToposService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly global = inject(GlobalData);
   private readonly toast = inject(ToastService);
@@ -71,7 +72,7 @@ export class ToposService {
   async create(
     payload: Omit<TopoInsertDto, 'created_at' | 'id'>,
   ): Promise<TopoDto | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('topos')
@@ -91,7 +92,7 @@ export class ToposService {
     id: string | number,
     payload: Partial<Omit<TopoUpdateDto, 'id' | 'created_at'>>,
   ): Promise<TopoDto | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('topos')
@@ -110,7 +111,7 @@ export class ToposService {
   }
 
   async delete(id: string | number): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
 
     // 1. Delete photo from storage via Edge Function if exists
@@ -140,7 +141,7 @@ export class ToposService {
   }
 
   async deletePhoto(topoId: string | number): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
 
     const { error } = await this.supabase.client.functions.invoke(
@@ -164,7 +165,7 @@ export class ToposService {
   }
 
   async addRoute(payload: TopoRouteInsertDto, reload = true): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
     const { error } = await this.supabase.client
       .from('topo_routes')
@@ -184,7 +185,7 @@ export class ToposService {
     routeId: string | number,
     reload = true,
   ): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
     const { error } = await this.supabase.client
       .from('topo_routes')
@@ -206,7 +207,7 @@ export class ToposService {
     number: number,
     reload = true,
   ): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
     const { error } = await this.supabase.client
       .from('topo_routes')
@@ -223,7 +224,7 @@ export class ToposService {
   }
 
   async uploadPhoto(topoId: string | number, file: File): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
 
     const toBase64 = (f: File) =>
       new Promise<string>((resolve, reject) => {
@@ -266,7 +267,7 @@ export class ToposService {
   async openTopoPathEditor(
     data: TopoPathEditorConfig,
   ): Promise<TopoPathEditorResult | boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
 
     return firstValueFrom(
       this.dialogs.open<TopoPathEditorResult | boolean>(
@@ -298,7 +299,7 @@ export class ToposService {
     path: TopoPath,
     reload = true,
   ): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
     const { error } = await this.supabase.client
       .from('topo_routes')
@@ -320,7 +321,7 @@ export class ToposService {
     paths: { routeId: string | number; path: TopoPath }[],
     reload = true,
   ): Promise<void> {
-    if (!isPlatformBrowser(this.platformId) || !paths.length) return;
+    if (!this.isBrowser || !paths.length) return;
     await this.supabase.whenReady();
 
     const results = await Promise.all(

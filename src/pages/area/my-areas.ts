@@ -40,7 +40,7 @@ import {
   ORDERED_GRADE_VALUES,
 } from '../../models';
 
-import { IconSrcPipe } from '../../pipes/icon-src.pipe';
+import { IconSrcPipe } from '../../pipes';
 import { matchesQuery } from '../../utils';
 
 @Component({

@@ -337,8 +337,7 @@ function findTsFiles(dir) {
       results.push(...findTsFiles(fullPath));
     } else if (
       entry.name.endsWith('.ts') &&
-      !entry.name.endsWith('.d.ts') &&
-      !entry.name.includes('.spec.')
+      !entry.name.endsWith('.d.ts')
     ) {
       results.push(fullPath);
     }

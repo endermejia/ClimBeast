@@ -1,11 +1,12 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { LocalStorage } from './local-storage';
 
 @Injectable({ providedIn: 'root' })
 export class CacheService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly localStorage = inject(LocalStorage);
 
   /**
@@ -13,7 +14,7 @@ export class CacheService {
    * otherwise returns `defaultValue`. SSR-safe (always returns defaultValue on server).
    */
   get<T>(key: string, defaultValue: T): T {
-    if (!isPlatformBrowser(this.platformId)) return defaultValue;
+    if (!this.isBrowser) return defaultValue;
     const raw = this.localStorage.getItem(key);
     if (raw) {
       try {
@@ -30,7 +31,7 @@ export class CacheService {
    * Returns null if no timestamp is found or on server.
    */
   getLastUpdated(key: string): number | null {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     const raw = this.localStorage.getItem(`${key}:_ts`);
     if (!raw) return null;
     const ts = Number(raw);

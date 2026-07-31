@@ -6,13 +6,13 @@ import {
   PROJECT_GRADE_LABEL,
   VERTICAL_LIFE_GRADES,
 } from '../models';
-import { UserAscentStatRecord } from '../models/route-ascent.model';
+import { UserAscentStatRecord } from '../models';
 import {
   RouteScore,
   AscentTypeDistribution,
   GradeDistribution,
   TrendSourcePoint,
-} from '../models/user-stats.model';
+} from '../models';
 
 /**
  * Calculates a score for a given grade and ascent type.

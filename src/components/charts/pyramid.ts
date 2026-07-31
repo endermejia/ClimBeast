@@ -1,4 +1,4 @@
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -8,7 +8,6 @@ import {
   ElementRef,
   inject,
   input,
-  PLATFORM_ID,
   resource,
   signal,
   viewChild,
@@ -33,6 +32,7 @@ import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { AscentsService } from '../../services/ascents.service';
+
 import { GlobalData } from '../../services/global-data';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -50,6 +50,8 @@ import {
 } from '../../models';
 
 import { getScore } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 import { AscentTypeComponent } from '../ascent/ascent-type';
 
@@ -309,7 +311,7 @@ export class PyramidComponent implements AfterViewInit {
   private toast = inject(ToastService);
   protected ascentsService = inject(AscentsService);
   private router = inject(Router);
-  protected platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   global = inject(GlobalData);
 
   protected readonly pyramidContainer =
@@ -322,7 +324,7 @@ export class PyramidComponent implements AfterViewInit {
     () =>
       this.slotsResource.isLoading() ||
       this.completedRoutesResource.isLoading() ||
-      (!this.isCentered() && isPlatformBrowser(this.platformId)),
+      (!this.isCentered() && this.isBrowser),
   );
 
   currentYear = new Date().getFullYear();
@@ -332,7 +334,7 @@ export class PyramidComponent implements AfterViewInit {
     effect(() => {
       // Trigger when year changes
       this.selectedYear();
-      if (isPlatformBrowser(this.platformId)) {
+      if (this.isBrowser) {
         this.isCentered.set(false);
         setTimeout(() => this.centerPyramid(), 100);
       }
@@ -341,14 +343,14 @@ export class PyramidComponent implements AfterViewInit {
     effect(() => {
       // Re-center when data actually arrives and potentially changes widths
       const slots = this.slotsResource.value();
-      if (slots && isPlatformBrowser(this.platformId)) {
+      if (slots && this.isBrowser) {
         setTimeout(() => this.centerPyramid(), 150);
       }
     });
   }
 
   ngAfterViewInit(): void {
-    if (isPlatformBrowser(this.platformId)) {
+    if (this.isBrowser) {
       setTimeout(() => this.centerPyramid(), 50);
     }
   }
@@ -383,7 +385,7 @@ export class PyramidComponent implements AfterViewInit {
   completedRoutesResource = resource({
     params: () => ({ userId: this.userId(), year: this.selectedYear() }),
     loader: async ({ params }) => {
-      if (!isPlatformBrowser(this.platformId)) return [];
+      if (!this.isBrowser) return [];
       await this.supabase.whenReady();
       const { data, error } = await this.supabase.client
         .from('route_ascents')

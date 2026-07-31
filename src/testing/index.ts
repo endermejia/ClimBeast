@@ -6,4 +6,3 @@ export {
 export { MockSupabaseService } from './mock-supabase.service';
 export { MockGlobalData } from './mock-global-data.service';
 export { MockLocalStorage } from './mock-local-storage';
-export { renderComponent, type RenderResult } from './render-component';

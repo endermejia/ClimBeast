@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { extractMentionIds, MENTION_PATTERN } from './mentions.utils';
 
 describe('extractMentionIds', () => {

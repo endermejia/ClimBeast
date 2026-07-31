@@ -29,3 +29,5 @@ export * from './user.model';
 export * from './weather.model';
 export * from './indoor.model';
 export * from './app-enums.model';
+export * from './user-stats.model';
+export * from './supabase-query.types';

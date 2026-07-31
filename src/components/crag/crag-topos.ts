@@ -18,7 +18,7 @@ import { ToposService } from '../../services/topos.service';
 
 import { CragDetail } from '../../models';
 
-import { IconSrcPipe } from '../../pipes/icon-src.pipe';
+import { IconSrcPipe } from '../../pipes';
 
 import { PaywallComponent } from '../paywall/paywall';
 

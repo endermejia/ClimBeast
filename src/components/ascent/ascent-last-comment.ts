@@ -16,9 +16,7 @@ import { firstValueFrom } from 'rxjs';
 import { AscentsService } from '../../services/ascents.service';
 import { SupabaseService } from '../../services/supabase.service';
 
-import { AvatarUrlPipe } from '../../pipes';
-
-import { MentionLinkPipe } from '../../pipes/mention-link.pipe';
+import { AvatarUrlPipe, MentionLinkPipe } from '../../pipes';
 
 import { CommentLikesComponent } from '../social/comment-likes';
 

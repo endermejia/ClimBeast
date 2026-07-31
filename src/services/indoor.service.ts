@@ -1,5 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 
 import { TuiDialogService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
@@ -8,6 +7,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { IndoorCenterFormComponent } from '../components/forms/indoor-center-form';
+
 import IndoorRouteFormComponent from '../components/forms/indoor-route-form';
 import TopoFormComponent from '../components/forms/topo-form';
 
@@ -29,9 +29,12 @@ import {
   IndoorTopoRouteWithRoute,
   IndoorTopoListItem,
 } from '../models';
+
 import type { TopoPath } from '../models/topo.model';
 
 import { handleErrorToast } from '../utils';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { GlobalData } from './global-data';
 import { SupabaseService } from './supabase.service';
@@ -53,7 +56,7 @@ export class IndoorService {
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
 
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   loading = signal(false);
 
   /** Signals to outdoor/indoor consumers that routes should be reloaded */
@@ -62,7 +65,7 @@ export class IndoorService {
   }
 
   async getAllCenters(): Promise<IndoorCenterDto[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
     this.loading.set(true);
     try {
@@ -118,7 +121,7 @@ export class IndoorService {
   }
 
   async getCenterBySlug(slug: string): Promise<IndoorCenterDto | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     this.loading.set(true);
     try {
@@ -136,7 +139,7 @@ export class IndoorService {
   }
 
   async getCenterVouchers(centerId: string): Promise<IndoorVoucherDto[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('indoor_vouchers')
@@ -167,7 +170,7 @@ export class IndoorService {
     centerId: string,
     showLegacy = false,
   ): Promise<IndoorRouteWithExtras[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
     let query = this.supabase.client
       .from('indoor_routes')
@@ -222,7 +225,7 @@ export class IndoorService {
     centerId: string,
     showLegacyTopos = false,
   ): Promise<IndoorTopoListItem[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
     let query = this.supabase.client
       .from('indoor_topos')
@@ -352,7 +355,7 @@ export class IndoorService {
   }
 
   async uploadAsset(centerId: string, file: File): Promise<string | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const fileName = `${Date.now()}_${file.name}`;
     const filePath = `centers/${centerId}/${fileName}`;
@@ -551,7 +554,7 @@ export class IndoorService {
     centerSlug: string,
     routeSlug: string,
   ): Promise<IndoorRouteWithExtras | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('indoor_routes')
@@ -576,7 +579,7 @@ export class IndoorService {
   }
 
   async getRouteEquippers(routeId: string): Promise<EquipperDto[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('indoor_route_equippers')
@@ -592,7 +595,7 @@ export class IndoorService {
     routeId: string,
     equippers: readonly (EquipperDto | string)[],
   ): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
 
     try {
@@ -679,7 +682,7 @@ export class IndoorService {
   }
 
   async getRouteAscents(routeId: string): Promise<IndoorAscentWithExtras[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('indoor_ascents')
@@ -708,7 +711,7 @@ export class IndoorService {
   }
 
   async getCenterAscents(centerId: string): Promise<IndoorAscentWithExtras[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
 
     // First, let's get all route IDs for this center

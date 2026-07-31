@@ -1,7 +1,8 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 
 import { PopulatedFollowRequestDto } from '../models';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { SupabaseService } from './supabase.service';
 
@@ -12,7 +13,7 @@ import { ToastService } from './toast.service';
 })
 export class FollowRequestsService {
   private readonly supabase = inject(SupabaseService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly toast = inject(ToastService);
 
   readonly requestsChange = signal<number>(0);
@@ -22,7 +23,7 @@ export class FollowRequestsService {
   }
 
   async requestFollow(followedUserId: string): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     const userId = this.supabase.authUserId();
     if (!userId) return false;
 
@@ -45,7 +46,7 @@ export class FollowRequestsService {
   }
 
   async cancelRequest(followedUserId: string): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     const userId = this.supabase.authUserId();
     if (!userId) return false;
 
@@ -67,7 +68,7 @@ export class FollowRequestsService {
   }
 
   async acceptRequestByFollower(followerId: string): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     const userId = this.supabase.authUserId();
     if (!userId) return false;
 
@@ -85,7 +86,7 @@ export class FollowRequestsService {
   }
 
   async acceptRequest(requestId: number): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
 
     const { error } = await this.supabase.client.rpc('accept_follow_request', {
       p_request_id: requestId,
@@ -103,7 +104,7 @@ export class FollowRequestsService {
   }
 
   async rejectRequest(requestId: number): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
 
     const { error } = await this.supabase.client.rpc('reject_follow_request', {
       p_request_id: requestId,
@@ -121,7 +122,7 @@ export class FollowRequestsService {
   }
 
   async getPendingOutgoingRequestIds(): Promise<string[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     const userId = this.supabase.authUserId();
     if (!userId) return [];
 
@@ -143,7 +144,7 @@ export class FollowRequestsService {
   }
 
   async getPendingIncomingRequestIds(): Promise<string[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     const userId = this.supabase.authUserId();
     if (!userId) return [];
 
@@ -165,7 +166,7 @@ export class FollowRequestsService {
   }
 
   async getIncomingRequestsCount(): Promise<number> {
-    if (!isPlatformBrowser(this.platformId)) return 0;
+    if (!this.isBrowser) return 0;
     const userId = this.supabase.authUserId();
     if (!userId) return 0;
 
@@ -190,7 +191,7 @@ export class FollowRequestsService {
     page: number,
     pageSize: number,
   ): Promise<{ items: PopulatedFollowRequestDto[]; total: number }> {
-    if (!isPlatformBrowser(this.platformId)) return { items: [], total: 0 };
+    if (!this.isBrowser) return { items: [], total: 0 };
     const userId = this.supabase.authUserId();
     if (!userId) return { items: [], total: 0 };
 

@@ -1,22 +1,22 @@
-import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 
-import { ShadeInfoPipe } from './shade-info.pipe';
-import { MapGetPipe } from './map-get.pipe';
-import { TopoPathPointsPipe, TopoHasPathPipe } from './topo-path.pipe';
-import { PointsToSvgPipe } from './points-to-svg.pipe';
-import { AnyToSchedulePipe } from './any-to-schedule.pipe';
-import { TableSorterPipe } from './table-sorter.pipe';
-import { AvatarUrlPipe } from './avatar-url.pipe';
-import { IconSrcPipe } from './icon-src.pipe';
-import { AscentDatePipe } from './ascent-date.pipe';
-import { SanitizeHtmlPipe } from './sanitize-html.pipe';
-import { MentionLinkPipe } from './mention-link.pipe';
-import { TopoImagePipe } from './topo-image.pipe';
+import { describe, it, expect, beforeEach } from 'vitest';
+
+import { GlobalData } from '../services/global-data';
 
 import { COMMON_TEST_PROVIDERS } from '../testing';
-import { GlobalData } from '../services/global-data';
 import { MockGlobalData } from '../testing/mock-global-data.service';
+import { AnyToSchedulePipe } from './any-to-schedule.pipe';
+import { AscentDatePipe } from './ascent-date.pipe';
+import { AvatarUrlPipe } from './avatar-url.pipe';
+import { IconSrcPipe } from './icon-src.pipe';
+import { MentionLinkPipe } from './mention-link.pipe';
+import { SanitizeHtmlPipe } from './sanitize-html.pipe';
+import { ShadeInfoPipe } from './shade-info.pipe';
+
+import { TableSorterPipe } from './table-sorter.pipe';
+import { TopoImagePipe } from './topo-image.pipe';
+import { TopoHasPathPipe } from './topo-path.pipe';
 
 describe('ShadeInfoPipe', () => {
   const pipe = new ShadeInfoPipe();
@@ -71,64 +71,6 @@ describe('ShadeInfoPipe', () => {
   });
 });
 
-describe('MapGetPipe', () => {
-  const pipe = new MapGetPipe();
-
-  it('returns value for existing key', () => {
-    const map = new Map([
-      ['a', 1],
-      ['b', 2],
-    ]);
-    expect(pipe.transform('a', map)).toBe(1);
-  });
-
-  it('returns undefined for missing key', () => {
-    const map = new Map([['a', 1]]);
-    expect(pipe.transform('z', map)).toBeUndefined();
-  });
-
-  it('returns undefined for null map', () => {
-    expect(pipe.transform('a', null)).toBeUndefined();
-  });
-
-  it('returns undefined for undefined map', () => {
-    expect(pipe.transform('a', undefined)).toBeUndefined();
-  });
-});
-
-describe('TopoPathPointsPipe', () => {
-  const pipe = new TopoPathPointsPipe();
-
-  it('parses space-separated x,y points', () => {
-    expect(pipe.transform('10,20 30,40')).toEqual([
-      { x: 10, y: 20 },
-      { x: 30, y: 40 },
-    ]);
-  });
-
-  it('returns empty array for undefined', () => {
-    expect(pipe.transform(undefined)).toEqual([]);
-  });
-
-  it('returns empty array for empty string', () => {
-    expect(pipe.transform('')).toEqual([]);
-  });
-
-  it('filters out invalid points', () => {
-    expect(pipe.transform('10,20 abc 30,40')).toEqual([
-      { x: 10, y: 20 },
-      { x: 30, y: 40 },
-    ]);
-  });
-
-  it('handles leading/trailing whitespace', () => {
-    expect(pipe.transform('  10,20  30,40  ')).toEqual([
-      { x: 10, y: 20 },
-      { x: 30, y: 40 },
-    ]);
-  });
-});
-
 describe('TopoHasPathPipe', () => {
   const pipe = new TopoHasPathPipe();
 
@@ -155,29 +97,6 @@ describe('TopoHasPathPipe', () => {
   it('returns false when route not in map', () => {
     const map = new Map<number, { points: { x: number; y: number }[] }>();
     expect(pipe.transform(1, map)).toBe(false);
-  });
-});
-
-describe('PointsToSvgPipe', () => {
-  const pipe = new PointsToSvgPipe();
-
-  it('converts points to SVG string', () => {
-    const path = {
-      points: [
-        { x: 0, y: 0 },
-        { x: 100, y: 200 },
-      ],
-    };
-    expect(pipe.transform(path)).toBe('0,0 100,200');
-  });
-
-  it('applies scale factors', () => {
-    const path = { points: [{ x: 10, y: 20 }] };
-    expect(pipe.transform(path, 2, 3)).toBe('20,60');
-  });
-
-  it('returns empty string for undefined path', () => {
-    expect(pipe.transform(undefined)).toBe('');
   });
 });
 

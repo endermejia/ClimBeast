@@ -1,11 +1,9 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   inject,
   input,
-  PLATFORM_ID,
 } from '@angular/core';
 import { Router } from '@angular/router';
 
@@ -17,6 +15,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { GlobalData } from '../../services/global-data';
+
 import { ParkingsService } from '../../services/parkings.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -24,6 +23,8 @@ import { ToastService } from '../../services/toast.service';
 import { CragDetail, ParkingDto } from '../../models';
 
 import { handleErrorToast, mapLocationUrl } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 import { ParkingCardComponent } from '../location/parking-card';
 
@@ -160,7 +161,7 @@ export class CragParkingsComponent {
   protected readonly translate = inject(TranslateService);
   protected readonly dialogs = inject(TuiDialogService);
   protected readonly toast = inject(ToastService);
-  protected readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   protected readonly router = inject(Router);
 
   protected readonly mapLocationUrl = mapLocationUrl;
@@ -203,7 +204,7 @@ export class CragParkingsComponent {
 
   removeParking(parking: ParkingDto): void {
     const c = this.crag();
-    if (!c || !isPlatformBrowser(this.platformId)) return;
+    if (!c || !this.isBrowser) return;
 
     void firstValueFrom(
       this.dialogs.open<boolean>(TUI_CONFIRM, {
@@ -264,7 +265,7 @@ export class CragParkingsComponent {
   }
 
   protected openExternal(url: string): void {
-    if (isPlatformBrowser(this.platformId)) {
+    if (this.isBrowser) {
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   }

@@ -1,4 +1,4 @@
-import { NewsItem, RouteAscentWithExtras, FeedItem } from '../models';
+import { RouteAscentWithExtras, FeedItem } from '../models';
 
 import { normalizeName } from './index';
 
@@ -49,20 +49,4 @@ export function processAscentsToFeed(
     ...i,
     kind: 'ascent' as const,
   }));
-}
-
-/**
- * Type guard for NewsItems in a feed.
- */
-export function isNewsItem(item: FeedItem): item is NewsItem {
-  return item.kind === 'news';
-}
-
-/**
- * Type guard for RouteAscentWithExtras in a feed.
- */
-export function isAscentItem(
-  item: FeedItem,
-): item is RouteAscentWithExtras & { kind: 'ascent' } {
-  return item.kind === 'ascent';
 }

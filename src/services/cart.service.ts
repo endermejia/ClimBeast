@@ -1,20 +1,14 @@
-import { isPlatformBrowser } from '@angular/common';
-import {
-  computed,
-  effect,
-  inject,
-  Injectable,
-  PLATFORM_ID,
-  signal,
-} from '@angular/core';
+import { computed, effect, inject, Injectable, signal } from '@angular/core';
 
 import type { CartProduct } from '../models';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
 
   // Cart state
@@ -33,13 +27,13 @@ export class CartService {
   private _syncedUserId: string | null = null;
 
   constructor() {
-    if (isPlatformBrowser(this.platformId)) {
+    if (this.isBrowser) {
       this.loadCart();
     }
 
     // Auto-save to localStorage
     effect(() => {
-      if (isPlatformBrowser(this.platformId)) {
+      if (this.isBrowser) {
         localStorage.setItem(
           this.CART_STORAGE_KEY,
           JSON.stringify(this._items()),

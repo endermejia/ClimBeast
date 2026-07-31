@@ -1,20 +1,21 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, PLATFORM_ID } from '@angular/core';
+import { inject } from '@angular/core';
 import { CanMatchFn, Route, Router, UrlTree } from '@angular/router';
 
 import { SupabaseService } from '../services/supabase.service';
 
 import { CACHE_KEYS } from '../constants/cache-keys';
 
+import { IS_BROWSER } from '../app/is-browser';
+
 export const authGuard: CanMatchFn = async (
   route: Route,
 ): Promise<boolean | UrlTree> => {
   const router = inject(Router);
   const supabase = inject(SupabaseService);
-  const platformId = inject(PLATFORM_ID);
+  const isBrowser = inject(IS_BROWSER);
 
   // On the server, allow matching to render pages; actual redirects should be handled in serverRoutes if needed
-  if (!isPlatformBrowser(platformId)) {
+  if (!isBrowser) {
     return true;
   }
 

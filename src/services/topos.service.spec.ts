@@ -1,15 +1,19 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
-import { ToposService } from './topos.service';
-import { SupabaseService } from './supabase.service';
-import { GlobalData } from './global-data';
-import { ToastService } from './toast.service';
-import { MockSupabaseService } from '../testing/mock-supabase.service';
-import { MockGlobalData } from '../testing/mock-global-data.service';
 import { TuiDialogService } from '@taiga-ui/core';
+
 import { TranslateService, TranslateStore } from '@ngx-translate/core';
+
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import { IS_BROWSER } from '../app/is-browser';
+import { MockGlobalData } from '../testing/mock-global-data.service';
+import { MockSupabaseService } from '../testing/mock-supabase.service';
+import { GlobalData } from './global-data';
+import { SupabaseService } from './supabase.service';
+import { ToastService } from './toast.service';
+import { ToposService } from './topos.service';
 
 const MOCK_TRANSLATE = {
   instant: (k: string) => k,
@@ -50,6 +54,7 @@ describe('ToposService', () => {
       providers: [
         ToposService,
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
         { provide: SupabaseService, useValue: mockSupabase },
         { provide: GlobalData, useClass: MockGlobalData },
         { provide: ToastService, useValue: mockToast },
@@ -67,6 +72,7 @@ describe('ToposService', () => {
         providers: [
           ToposService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
@@ -89,6 +95,7 @@ describe('ToposService', () => {
         providers: [
           ToposService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
@@ -109,6 +116,7 @@ describe('ToposService', () => {
         providers: [
           ToposService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
@@ -129,6 +137,7 @@ describe('ToposService', () => {
         providers: [
           ToposService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
@@ -152,6 +161,7 @@ describe('ToposService', () => {
         providers: [
           ToposService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
@@ -172,6 +182,7 @@ describe('ToposService', () => {
         providers: [
           ToposService,
           { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },

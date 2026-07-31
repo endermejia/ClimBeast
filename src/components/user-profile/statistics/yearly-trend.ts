@@ -11,10 +11,9 @@ import { TuiIcon, TuiScrollbar } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { AscentTypes } from '../../../models';
-import { TrendData, TrendDetail } from '../../../models/user-stats.model';
+import { AscentTypes, TrendData, TrendDetail } from '../../../models';
 
-import { ContextIndexPipe } from '../../../pipes/context-index.pipe';
+import { ContextIndexPipe } from '../../../pipes';
 
 @Component({
   selector: 'app-user-profile-stats-trends',

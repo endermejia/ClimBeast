@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
+
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import {
   fileToDataUrl,

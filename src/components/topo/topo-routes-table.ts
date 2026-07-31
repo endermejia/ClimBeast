@@ -50,11 +50,9 @@ import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
 
-import type { TopoRouteWithRoute } from '../../models';
-import { topoPathToJson } from '../../models/topo.model';
+import { topoPathToJson, type TopoRouteWithRoute } from '../../models';
 
-import { AscentInfoPipe } from '../../pipes/ascent-info.pipe';
-import { TableSorterPipe } from '../../pipes/table-sorter.pipe';
+import { AscentInfoPipe, TableSorterPipe } from '../../pipes';
 import { handleErrorToast } from '../../utils';
 
 import { PaywallComponent } from '../paywall/paywall';

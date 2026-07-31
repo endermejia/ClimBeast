@@ -1,19 +1,21 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
-import { AreasService } from './areas.service';
-import { IS_BROWSER } from '../app/is-browser';
-import { SupabaseService } from './supabase.service';
-import { GlobalData } from './global-data';
-import { CacheService } from './cache.service';
-import { ToastService } from './toast.service';
-import { EightAnuService } from './eight-anu.service';
-import { NotificationService } from './notification.service';
-import { MockSupabaseService } from '../testing/mock-supabase.service';
-import { MockGlobalData } from '../testing/mock-global-data.service';
 import { TuiDialogService } from '@taiga-ui/core';
+
 import { TranslateService, TranslateStore } from '@ngx-translate/core';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import { IS_BROWSER } from '../app/is-browser';
+import { MockGlobalData } from '../testing/mock-global-data.service';
+import { MockSupabaseService } from '../testing/mock-supabase.service';
+import { AreasService } from './areas.service';
+import { CacheService } from './cache.service';
+import { EightAnuService } from './eight-anu.service';
+import { GlobalData } from './global-data';
+import { NotificationService } from './notification.service';
+import { SupabaseService } from './supabase.service';
+import { ToastService } from './toast.service';
 
 const MOCK_TRANSLATE = {
   instant: (k: string) => k,

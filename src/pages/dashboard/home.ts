@@ -1,11 +1,10 @@
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
   ElementRef,
   inject,
-  PLATFORM_ID,
   resource,
   computed,
   signal,
@@ -25,6 +24,7 @@ import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { Subject, firstValueFrom } from 'rxjs';
 
 import { AppNotificationsService } from '../../services/app-notifications.service';
+
 import { CartService } from '../../services/cart.service';
 import { DesnivelService } from '../../services/desnivel.service';
 import { FollowsService } from '../../services/follows.service';
@@ -38,9 +38,11 @@ import { VisitedCragsService } from '../../services/visited-crags.service';
 import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
 
 import { HomeCragsRowComponent } from '../../components/dashboard/home-crags-row';
-import { HomeFilterBarComponent } from '../../components/dashboard/home-filter-bar';
 
+import { HomeFilterBarComponent } from '../../components/dashboard/home-filter-bar';
 import { HomeNewsGridComponent } from '../../components/dashboard/home-news-grid';
+
+import { HomeNewsSidebarComponent } from '../../components/dashboard/home-news-sidebar';
 
 function deduplicateFeedItems(items: FeedItem[]): FeedItem[] {
   const seen = new Set<string>();
@@ -55,7 +57,6 @@ function deduplicateFeedItems(items: FeedItem[]): FeedItem[] {
   });
 }
 
-import { HomeNewsSidebarComponent } from '../../components/dashboard/home-news-sidebar';
 import {
   FilterDialog,
   FilterDialogComponent,
@@ -72,6 +73,7 @@ import {
 } from '../../models';
 
 import { IndoorAscentRaw } from '../../models/indoor.model';
+
 import {
   ActiveCrag,
   AscentWithRouteJoin,
@@ -79,6 +81,7 @@ import {
 } from '../../models/supabase-query.types';
 
 import { CACHE_KEYS } from '../../constants/cache-keys';
+
 import {
   applyCategoryFilter,
   applyGradeFilter,
@@ -86,6 +89,8 @@ import {
   applyUserFilter,
   FeedFilterOptions,
 } from '../../utils/feed-filters';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 export type HomeFeedFilter =
   | 'following'
@@ -212,7 +217,7 @@ export class HomeComponent {
   private readonly desnivelService = inject(DesnivelService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly followsService = inject(FollowsService);
-  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly router = inject(Router);
   private readonly scrollService = inject(ScrollService);
   private readonly storage = inject(LocalStorage);

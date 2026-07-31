@@ -1,8 +1,11 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+
 import { TranslateModule } from '@ngx-translate/core';
+import { describe, it, expect, beforeEach } from 'vitest';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 import { EmptyStateComponent } from './empty-state';
 
@@ -13,6 +16,7 @@ describe('EmptyStateComponent', () => {
       providers: [
         provideRouter([]),
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
       ],
     }).compileComponents();
   });

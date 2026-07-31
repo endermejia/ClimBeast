@@ -1,5 +1,6 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 export interface AppErrorLog {
   id: string;
@@ -13,13 +14,13 @@ export interface AppErrorLog {
   providedIn: 'root',
 })
 export class ErrorLogService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly storageKey = 'app_error_logs_v2';
 
   readonly errors = signal<AppErrorLog[]>(this.loadErrors());
 
   private loadErrors(): AppErrorLog[] {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     try {
       const data = localStorage.getItem(this.storageKey);
       return data ? JSON.parse(data) : [];
@@ -29,7 +30,7 @@ export class ErrorLogService {
   }
 
   logError(error: unknown): void {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
 
     let message = 'Unexpected error';
     let stack: string | undefined;
@@ -73,7 +74,7 @@ export class ErrorLogService {
 
   clearErrors(): void {
     this.errors.set([]);
-    if (isPlatformBrowser(this.platformId)) {
+    if (this.isBrowser) {
       try {
         localStorage.removeItem(this.storageKey);
       } catch {

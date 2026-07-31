@@ -1,4 +1,3 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -11,7 +10,6 @@ import {
   OnDestroy,
   output,
   OutputEmitterRef,
-  PLATFORM_ID,
   signal,
   Signal,
   viewChild,
@@ -22,6 +20,7 @@ import { TuiButton } from '@taiga-ui/core';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { GlobalData } from '../../services/global-data';
+
 import { MapBuilder, MapBuilderCallbacks } from '../../services/map-builder';
 
 import type {
@@ -32,6 +31,8 @@ import type {
   MapOptions,
   ParkingDto,
 } from '../../models';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-map',
@@ -96,7 +97,7 @@ import type {
   providers: [MapBuilder],
 })
 export class MapComponent implements AfterViewInit, OnDestroy {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowserToken = inject(IS_BROWSER);
   private readonly mapBuilder = inject(MapBuilder);
   protected readonly global = inject(GlobalData);
 
@@ -220,7 +221,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   }
 
   private isBrowser(): boolean {
-    return isPlatformBrowser(this.platformId) && typeof window !== 'undefined';
+    return this.isBrowserToken && typeof window !== 'undefined';
   }
 
   private tryInit(): void {

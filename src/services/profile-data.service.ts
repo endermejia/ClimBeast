@@ -1,9 +1,7 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   computed,
   inject,
   Injectable,
-  PLATFORM_ID,
   resource,
   signal,
   WritableSignal,
@@ -22,11 +20,14 @@ import {
 import { ORDERED_GRADE_VALUES, LABEL_TO_VERTICAL_LIFE } from '../models';
 
 import { CACHE_KEYS } from '../constants/cache-keys';
+
 import {
   mapRouteToExtras,
   mapAscentRouteToExtras,
   RawRouteData,
 } from '../utils/route-mapper';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { CacheService } from './cache.service';
 import { FilterStateService } from './filter-state.service';
@@ -34,7 +35,7 @@ import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
 export class ProfileDataService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly cache = inject(CacheService);
   private readonly filters = inject(FilterStateService);
@@ -52,7 +53,7 @@ export class ProfileDataService {
   readonly userProjectsResource = resource({
     params: () => this.profileUserId(),
     loader: async ({ params: userId }): Promise<RouteWithExtras[]> => {
-      if (!userId || !isPlatformBrowser(this.platformId)) return [];
+      if (!userId || !this.isBrowser) return [];
       try {
         await this.supabase.whenReady();
         const currentUserId = this.supabase.authUser()?.id;
@@ -129,7 +130,7 @@ export class ProfileDataService {
   readonly firstAscentYearResource = resource({
     params: () => this.profileUserId(),
     loader: async ({ params: userId }) => {
-      if (!userId || !isPlatformBrowser(this.platformId)) return null;
+      if (!userId || !this.isBrowser) return null;
       try {
         await this.supabase.whenReady();
         const { data, error } = await this.supabase.client
@@ -184,8 +185,7 @@ export class ProfileDataService {
         categories,
         sort,
       } = params;
-      if (!userId || !isPlatformBrowser(this.platformId))
-        return { items: [], total: 0 };
+      if (!userId || !this.isBrowser) return { items: [], total: 0 };
       try {
         await this.supabase.whenReady();
         const from = page * size;
@@ -299,7 +299,7 @@ export class ProfileDataService {
   readonly userTotalAscentsCountResource = resource({
     params: () => this.profileUserId(),
     loader: async ({ params: userId }): Promise<number | undefined> => {
-      if (!userId || !isPlatformBrowser(this.platformId)) return undefined;
+      if (!userId || !this.isBrowser) return undefined;
       try {
         await this.supabase.whenReady();
         const { count, error } = await this.supabase.client

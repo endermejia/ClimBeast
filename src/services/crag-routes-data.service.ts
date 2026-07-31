@@ -1,16 +1,12 @@
-import { isPlatformBrowser } from '@angular/common';
-import {
-  inject,
-  Injectable,
-  PLATFORM_ID,
-  resource,
-  computed,
-} from '@angular/core';
+import { inject, Injectable, resource, computed } from '@angular/core';
 
 import { RouteWithExtras } from '../models';
 
 import { CACHE_KEYS } from '../constants/cache-keys';
+
 import { mapRouteToExtras, RawRouteData } from '../utils/route-mapper';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { AuthStateService } from './auth-state.service';
 
@@ -27,7 +23,7 @@ import { TopoDataService } from './topo-data.service';
 })
 export class CragRoutesDataService {
   private readonly cache = inject(CacheService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly topoData = inject(TopoDataService);
   private readonly authState = inject(AuthStateService);
@@ -55,7 +51,7 @@ export class CragRoutesDataService {
       params: { cragId, cragSlug, filterTopos },
     }): Promise<RouteWithExtras[]> => {
       if (!cragId || !cragSlug) return [];
-      if (!isPlatformBrowser(this.platformId)) return [];
+      if (!this.isBrowser) return [];
       const cacheKey = CACHE_KEYS.cragRoutes(cragSlug);
       return this.cache.fetchOrCache(
         cacheKey,

@@ -13,7 +13,7 @@ import { TuiAvatar, TuiSkeleton, TUI_COUNTRIES } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { AvatarUrlPipe } from '../../pipes/avatar-url.pipe';
+import { AvatarUrlPipe } from '../../pipes';
 
 @Component({
   selector: 'app-user-info',

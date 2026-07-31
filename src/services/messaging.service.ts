@@ -1,6 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
 import { inject, Injectable, signal } from '@angular/core';
-import { PLATFORM_ID } from '@angular/core';
 
 import { TuiDialogService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
@@ -22,6 +20,8 @@ import {
   UserProfileBasicDto,
 } from '../models';
 
+import { IS_BROWSER } from '../app/is-browser';
+
 import { SupabaseService } from './supabase.service';
 
 @Injectable({
@@ -29,7 +29,7 @@ import { SupabaseService } from './supabase.service';
 })
 export class MessagingService {
   private readonly supabase = inject(SupabaseService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
 
@@ -37,7 +37,7 @@ export class MessagingService {
   readonly chatOpen = signal(false);
 
   async getRooms(): Promise<ChatRoomWithParticipant[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
     const userId = this.supabase.authUserId();
     if (!userId) return [];
@@ -122,7 +122,7 @@ export class MessagingService {
     limit = 20,
     offset = 0,
   ): Promise<ChatMessageDto[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
 
     const { data, error } = await this.supabase.client
@@ -144,7 +144,7 @@ export class MessagingService {
     roomId: string,
     text: string,
   ): Promise<ChatMessageDto | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const userId = this.supabase.authUserId();
     if (!userId) return null;
@@ -176,7 +176,7 @@ export class MessagingService {
   }
 
   async getOrCreateRoom(otherUserId: string): Promise<string | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const userId = this.supabase.authUserId();
     if (!userId) return null;
@@ -215,7 +215,7 @@ export class MessagingService {
   }
 
   async markAsRead(roomId: string): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
     const userId = this.supabase.authUserId();
     if (!userId) return;
@@ -233,7 +233,7 @@ export class MessagingService {
   }
 
   async refreshUnreadCount(): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
     const userId = this.supabase.authUserId();
     if (!userId) return;
@@ -266,7 +266,7 @@ export class MessagingService {
     roomId: string,
     callback: (message: ChatMessageDto) => void,
   ): RealtimeChannel | null {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     return this.supabase.client
       .channel(`room-${roomId}`)
       .on(
@@ -287,7 +287,7 @@ export class MessagingService {
   watchUnreadCount(
     callback: (payload: ChatMessageDto) => void,
   ): RealtimeChannel | null {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     return this.supabase.client
       .channel(`unread-messages-${crypto.randomUUID()}`)
       .on(

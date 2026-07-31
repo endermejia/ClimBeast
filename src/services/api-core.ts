@@ -1,5 +1,6 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, PLATFORM_ID } from '@angular/core';
+import { inject } from '@angular/core';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { SsrError } from '../errors/ssr.error';
 
@@ -10,8 +11,7 @@ export interface HttpOptions {
 }
 
 export class ApiCore {
-  private readonly platformId = inject(PLATFORM_ID);
-  private readonly isBrowser = isPlatformBrowser(this.platformId);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   constructor(private readonly baseUrl = '') {}
 

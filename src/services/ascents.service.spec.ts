@@ -1,16 +1,18 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
-import { AscentsService } from './ascents.service';
-import { IS_BROWSER } from '../app/is-browser';
-import { SupabaseService } from './supabase.service';
-import { GlobalData } from './global-data';
-import { ToastService } from './toast.service';
-import { AppNotificationsService } from './app-notifications.service';
-import { MockSupabaseService } from '../testing/mock-supabase.service';
-import { MockGlobalData } from '../testing/mock-global-data.service';
 import { TranslateService, TranslateStore } from '@ngx-translate/core';
+
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import { IS_BROWSER } from '../app/is-browser';
+import { MockGlobalData } from '../testing/mock-global-data.service';
+import { MockSupabaseService } from '../testing/mock-supabase.service';
+import { AppNotificationsService } from './app-notifications.service';
+import { AscentsService } from './ascents.service';
+import { GlobalData } from './global-data';
+import { SupabaseService } from './supabase.service';
+import { ToastService } from './toast.service';
 
 const MOCK_TRANSLATE = {
   instant: (k: string) => k,

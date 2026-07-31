@@ -1,11 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
-import {
-  inject,
-  Injectable,
-  PLATFORM_ID,
-  resource,
-  computed,
-} from '@angular/core';
+import { inject, Injectable, resource, computed } from '@angular/core';
 
 import {
   AmountByEveryGrade,
@@ -14,6 +7,8 @@ import {
   MapIndoorRouteRaw,
   VERTICAL_LIFE_GRADES,
 } from '../models';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { SupabaseService } from './supabase.service';
 
@@ -25,12 +20,12 @@ import { SupabaseService } from './supabase.service';
   providedIn: 'root',
 })
 export class IndoorCentersDataService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
 
   readonly indoorCentersResource = resource({
     loader: async () => {
-      if (!isPlatformBrowser(this.platformId)) {
+      if (!this.isBrowser) {
         return [] as MapIndoorCenterItem[];
       }
       try {

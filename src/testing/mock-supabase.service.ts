@@ -21,6 +21,13 @@ function createMockResource<T>(
   return ref;
 }
 
+function mockResult<T>(data: T, error: unknown = null) {
+  const p = Promise.resolve({ data, error });
+  return Object.assign(p, {
+    overrideTypes: () => p,
+  });
+}
+
 @Injectable()
 export class MockSupabaseService {
   private readonly _session: WritableSignal<Session | null> = signal(null);
@@ -44,34 +51,37 @@ export class MockSupabaseService {
     from: (_table: string) => ({
       select: (_cols?: string) => ({
         eq: (_col: string, _val: unknown) => ({
-          maybeSingle: () => Promise.resolve({ data: null, error: null }),
-          single: () => Promise.resolve({ data: null, error: null }),
+          maybeSingle: () => mockResult(null),
+          single: () => mockResult(null),
+          overrideTypes: () => mockResult(null),
           then: (resolve: (v: { data: unknown; error: null }) => void) =>
             resolve({ data: null, error: null }),
         }),
         in: (_col: string, _vals: unknown[]) => ({
-          maybeSingle: () => Promise.resolve({ data: null, error: null }),
-          single: () => Promise.resolve({ data: null, error: null }),
+          maybeSingle: () => mockResult(null),
+          single: () => mockResult(null),
+          overrideTypes: () => mockResult([]),
         }),
         ilike: (_col: string, _pattern: string) => ({
           eq: (_col2: string, _val: unknown) => ({
-            maybeSingle: () => Promise.resolve({ data: null, error: null }),
+            maybeSingle: () => mockResult(null),
           }),
         }),
         order: (_col: string, _opts?: { ascending: boolean }) => ({
           range: (_from: number, _to: number) =>
             Promise.resolve({ data: [], error: null, count: 0 }),
-          maybeSingle: () => Promise.resolve({ data: null, error: null }),
+          maybeSingle: () => mockResult(null),
         }),
         limit: (_count: number) => ({
-          maybeSingle: () => Promise.resolve({ data: null, error: null }),
+          maybeSingle: () => mockResult(null),
         }),
+        overrideTypes: () => mockResult([]),
         then: (resolve: (v: { data: unknown[]; error: null }) => void) =>
           resolve({ data: [], error: null }),
       }),
       insert: (_data: unknown) => ({
         select: () => ({
-          single: () => Promise.resolve({ data: null, error: null }),
+          single: () => mockResult(null),
         }),
         then: (resolve: (v: { data: unknown; error: null }) => void) =>
           resolve({ data: null, error: null }),
@@ -79,19 +89,18 @@ export class MockSupabaseService {
       update: (_data: unknown) => ({
         eq: (_col: string, _val: unknown) => ({
           select: () => ({
-            single: () => Promise.resolve({ data: null, error: null }),
+            single: () => mockResult(null),
           }),
           then: (resolve: (v: { data: unknown; error: null }) => void) =>
             resolve({ data: null, error: null }),
         }),
       }),
       delete: () => ({
-        eq: (_col: string, _val: unknown) =>
-          Promise.resolve({ data: null, error: null }),
+        eq: (_col: string, _val: unknown) => mockResult(null),
       }),
       upsert: (_data: unknown) => ({
         select: () => ({
-          single: () => Promise.resolve({ data: null, error: null }),
+          single: () => mockResult(null),
         }),
         then: (resolve: (v: { data: unknown; error: null }) => void) =>
           resolve({ data: null, error: null }),

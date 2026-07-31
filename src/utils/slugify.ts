@@ -27,7 +27,7 @@ export function normalizeNameStrict(input: string | undefined | null): string {
   return value
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[''´`]/g, '')
+    .replace(/['´`]/g, '')
     .toLowerCase()
     .trim()
     .replace(/\s+/g, ' ');

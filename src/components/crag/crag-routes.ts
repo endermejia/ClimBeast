@@ -44,7 +44,7 @@ import {
   VERTICAL_LIFE_GRADES,
 } from '../../models';
 
-import { IconSrcPipe } from '../../pipes/icon-src.pipe';
+import { IconSrcPipe } from '../../pipes';
 import { gradeToVerticalLife, matchesQuery, slugify } from '../../utils';
 
 import { OutdoorRoutesTableComponent } from '../route/outdoor-routes-table';

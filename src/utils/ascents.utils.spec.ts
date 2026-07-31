@@ -1,13 +1,12 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
+import type { RouteAscentWithExtras } from '../models';
+
 import {
   markDuplicateAscents,
   getAscentDateFilterOptions,
   processAscentsToFeed,
-  isNewsItem,
-  isAscentItem,
 } from './ascents.utils';
-import type { RouteAscentWithExtras } from '../models';
 
 interface TestAscent {
   date: string | null;
@@ -149,25 +148,5 @@ describe('processAscentsToFeed', () => {
     ) as (RouteAscentWithExtras & { kind: 'ascent' })[];
     expect(result[0].is_duplicate).toBeUndefined();
     expect(result[1].is_duplicate).toBeUndefined();
-  });
-});
-
-describe('isNewsItem', () => {
-  it('returns true for news items', () => {
-    expect(isNewsItem({ kind: 'news' } as never)).toBe(true);
-  });
-
-  it('returns false for ascent items', () => {
-    expect(isNewsItem({ kind: 'ascent' } as never)).toBe(false);
-  });
-});
-
-describe('isAscentItem', () => {
-  it('returns true for ascent items', () => {
-    expect(isAscentItem({ kind: 'ascent' } as never)).toBe(true);
-  });
-
-  it('returns false for news items', () => {
-    expect(isAscentItem({ kind: 'news' } as never)).toBe(false);
   });
 });

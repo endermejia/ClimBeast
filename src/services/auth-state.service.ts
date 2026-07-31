@@ -1,11 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
-import {
-  inject,
-  Injectable,
-  PLATFORM_ID,
-  signal,
-  WritableSignal,
-} from '@angular/core';
+import { inject, Injectable, signal, WritableSignal } from '@angular/core';
 import { computed, resource } from '@angular/core';
 
 import {
@@ -14,6 +7,8 @@ import {
   CragListItem,
   RouteWithExtras,
 } from '../models';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { LocalStorage } from './local-storage';
 import { SupabaseService } from './supabase.service';
@@ -24,7 +19,7 @@ import { SupabaseService } from './supabase.service';
  */
 @Injectable({ providedIn: 'root' })
 export class AuthStateService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly localStorage = inject(LocalStorage);
 
@@ -53,7 +48,7 @@ export class AuthStateService {
   readonly pendingAdminRequestsResource = resource({
     params: () => this.supabase.authUserId(),
     loader: async ({ params: userId }) => {
-      if (!userId || !isPlatformBrowser(this.platformId)) return [] as number[];
+      if (!userId || !this.isBrowser) return [] as number[];
       await this.supabase.whenReady();
       const { data, error } = await this.supabase.client
         .from('area_admin_requests')

@@ -1,11 +1,10 @@
-import { isPlatformBrowser, Location, NgOptimizedImage } from '@angular/common';
+import { Location, NgOptimizedImage } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
   inject,
-  PLATFORM_ID,
   resource,
   signal,
   untracked,
@@ -82,6 +81,7 @@ import {
 } from 'rxjs';
 
 import { EightAnuService } from '../../services/eight-anu.service';
+
 import { FollowRequestsService } from '../../services/follow-requests.service';
 import { GlobalData } from '../../services/global-data';
 import { MerchandiseService } from '../../services/merchandise.service';
@@ -92,6 +92,7 @@ import { TourStep } from '../../services/tour.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
 
 import { FirstStepsDialogComponent } from '../../components/dialogs/first-steps-dialog';
+
 import { FollowRequestsDialogComponent } from '../../components/dialogs/follow-requests-dialog';
 import { TourHintComponent } from '../../components/ui/tour-hint';
 
@@ -105,6 +106,8 @@ import {
   Themes,
   UserProfileDto,
 } from '../../models';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 interface Country {
   id: string;
@@ -935,7 +938,7 @@ interface Country {
 })
 export class UserProfileConfigComponent {
   protected readonly global = inject(GlobalData);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
 
   private readonly userProfilesService = inject(UserProfilesService);
@@ -1149,7 +1152,7 @@ export class UserProfileConfigComponent {
   protected readonly pendingRequestsCountResource = resource({
     params: () => this.followRequestsService.requestsChange(),
     loader: async () => {
-      if (!isPlatformBrowser(this.platformId)) return 0;
+      if (!this.isBrowser) return 0;
       return await this.followRequestsService.getIncomingRequestsCount();
     },
   });
@@ -1189,7 +1192,7 @@ export class UserProfileConfigComponent {
         this.isFirstSteps() &&
         !this.hasOpenedWelcome &&
         this.tourService.step() === TourStep.OFF &&
-        isPlatformBrowser(this.platformId)
+        this.isBrowser
       ) {
         // Double check with latest profile data or force a check if needed,
         // but currently isFirstSteps() relies on computed signal.
@@ -1217,7 +1220,7 @@ export class UserProfileConfigComponent {
   }
 
   async loadProfile(): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
 
     const profile = this.profile();
     if (!profile) return;
@@ -1498,7 +1501,7 @@ export class UserProfileConfigComponent {
   }
 
   async uploadAvatar(): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
 
     // Create a file input element
     const input = document.createElement('input');
@@ -1719,7 +1722,7 @@ export class UserProfileConfigComponent {
   }
 
   async logout(): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     this.close();
     await this.supabase.logout();
   }

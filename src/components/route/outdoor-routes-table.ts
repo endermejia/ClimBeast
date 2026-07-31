@@ -1,5 +1,4 @@
 import { CommonModule } from '@angular/common';
-import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,7 +6,6 @@ import {
   inject,
   input,
 } from '@angular/core';
-import { PLATFORM_ID } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { TuiSortDirection } from '@taiga-ui/addon-table';
@@ -18,6 +16,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
+
 import { GlobalData } from '../../services/global-data';
 import { RoutesService } from '../../services/routes.service';
 import { ToastService } from '../../services/toast.service';
@@ -33,6 +32,8 @@ import {
 } from '../../models';
 
 import { mapRouteToTableRow, handleErrorToast } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 import { RouteRowExpandedComponent } from './route-row-expanded';
 import { RoutesTableComponent } from './routes-table';
@@ -96,7 +97,7 @@ export class OutdoorRoutesTableComponent {
   protected readonly toposService = inject(ToposService);
   protected readonly ascentsService = inject(AscentsService);
   protected readonly router = inject(Router);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
@@ -254,7 +255,7 @@ export class OutdoorRoutesTableComponent {
   protected deleteRoute(
     row: RoutesTableRow | RouteItem | IndoorRouteWithExtras,
   ): void {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     const r = '_ref' in row ? (row._ref as RouteItem) : (row as RouteItem);
 
     firstValueFrom(

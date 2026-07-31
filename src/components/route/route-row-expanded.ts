@@ -34,7 +34,7 @@ import {
   INDOOR_ROUTE_COLORS,
 } from '../../models';
 
-import { IncludesIdPipe } from '../../pipes/includes-id.pipe';
+import { IncludesIdPipe } from '../../pipes';
 
 import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
 import { IndoorRouteEquippersInputComponent } from './indoor-route-equippers-input';

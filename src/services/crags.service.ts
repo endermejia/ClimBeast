@@ -1,11 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
-import {
-  inject,
-  Injectable,
-  PLATFORM_ID,
-  signal,
-  WritableSignal,
-} from '@angular/core';
+import { inject, Injectable, signal, WritableSignal } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { TuiDialogService } from '@taiga-ui/core';
@@ -25,6 +18,8 @@ import type {
   CragSimpleRow,
 } from '../models';
 
+import { IS_BROWSER } from '../app/is-browser';
+
 import { GlobalData } from './global-data';
 
 import { SupabaseService } from './supabase.service';
@@ -41,7 +36,7 @@ export interface CragSimple {
 
 @Injectable({ providedIn: 'root' })
 export class CragsService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly global = inject(GlobalData);
   private readonly toast = inject(ToastService);
@@ -125,7 +120,7 @@ export class CragsService {
   }
 
   async getAllCragsSimple(): Promise<CragSimple[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
 
     let allCrags: CragSimple[] = [];
@@ -173,7 +168,7 @@ export class CragsService {
     sourceCragIds: number[],
     newName: string,
   ): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
     this.loading.set(true);
     try {
@@ -200,7 +195,7 @@ export class CragsService {
   async create(
     payload: Omit<CragInsertDto, 'created_at' | 'id'>,
   ): Promise<CragDto | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('crags')
@@ -221,7 +216,7 @@ export class CragsService {
     id: number,
     payload: Omit<CragUpdateDto, 'id' | 'created_at'>,
   ): Promise<CragDto | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('crags')
@@ -241,7 +236,7 @@ export class CragsService {
   }
 
   async getById(id: number): Promise<{ data: CragDto | null; error: unknown }> {
-    if (!isPlatformBrowser(this.platformId)) return { data: null, error: null };
+    if (!this.isBrowser) return { data: null, error: null };
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('crags')
@@ -252,7 +247,7 @@ export class CragsService {
   }
 
   async delete(id: number): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
     const { error } = await this.supabase.client
       .from('crags')
@@ -269,7 +264,7 @@ export class CragsService {
   }
 
   async toggleCragLike(cragId: number): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
     try {
       const { data: liked, error } = await this.supabase.client.rpc(

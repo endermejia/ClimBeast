@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 
-import { mapCragToDetail } from './crag-mappers';
 import { VERTICAL_LIFE_GRADES } from '../models';
+
+import { mapCragToDetail } from './crag-mappers';
 
 describe('mapCragToDetail', () => {
   const baseRawData = {

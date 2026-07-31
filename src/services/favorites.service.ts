@@ -1,5 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 
 import {
   AreaListItem,
@@ -13,6 +12,8 @@ import {
 
 import { mapRouteToExtras, RawRouteData } from '../utils/route-mapper';
 
+import { IS_BROWSER } from '../app/is-browser';
+
 import { SupabaseService } from './supabase.service';
 
 @Injectable({
@@ -20,10 +21,10 @@ import { SupabaseService } from './supabase.service';
 })
 export class FavoritesService {
   private readonly supabase = inject(SupabaseService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   async getLikedAreas(userId: string): Promise<AreaListItem[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
 
     const { data: areaLikes } = await this.supabase.client
       .from('area_likes')
@@ -59,7 +60,7 @@ export class FavoritesService {
   }
 
   async getLikedCrags(userId: string): Promise<CragListItem[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
 
     const { data: cragLikes } = await this.supabase.client
       .from('crag_likes')
@@ -91,7 +92,7 @@ export class FavoritesService {
   }
 
   async getLikedRoutes(userId: string): Promise<RouteWithExtras[]> {
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
 
     const { data: routeLikes } = await this.supabase.client
       .from('route_likes')

@@ -1,9 +1,7 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   computed,
   inject,
   Injectable,
-  PLATFORM_ID,
   resource,
   signal,
   Signal,
@@ -29,14 +27,17 @@ import {
 } from '../models';
 
 import { CACHE_KEYS } from '../constants/cache-keys';
+
 import { mapCragToDetail, mapRouteToExtras, RawRouteData } from '../utils';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { CacheService } from './cache.service';
 import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
 export class TopoDataService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly cache = inject(CacheService);
 
@@ -48,7 +49,7 @@ export class TopoDataService {
 
   readonly areasListResource = resource({
     loader: async () => {
-      if (!isPlatformBrowser(this.platformId)) {
+      if (!this.isBrowser) {
         return [] as AreaListItem[];
       }
       const cacheKey = CACHE_KEYS.areasList;
@@ -79,7 +80,7 @@ export class TopoDataService {
     params: () => this.selectedAreaSlug(),
     loader: async ({ params: areaSlug }) => {
       if (!areaSlug) return [];
-      if (!isPlatformBrowser(this.platformId)) {
+      if (!this.isBrowser) {
         return [] as CragListItem[];
       }
       const cacheKey = CACHE_KEYS.cragsList(areaSlug);
@@ -128,7 +129,7 @@ export class TopoDataService {
       params,
     }): Promise<(TopoListItem & { crag_slug: string })[]> => {
       const { areaSlug, centerSlug } = params;
-      if (!isPlatformBrowser(this.platformId)) return [];
+      if (!this.isBrowser) return [];
 
       if (centerSlug) {
         try {
@@ -235,7 +236,7 @@ export class TopoDataService {
     params: () => this.selectedTopoId(),
     loader: async ({ params: id }): Promise<TopoDetail | null> => {
       if (!id) return null;
-      if (!isPlatformBrowser(this.platformId)) return null;
+      if (!this.isBrowser) return null;
       const cacheKey = CACHE_KEYS.topoDetail(id);
       return this.cache.fetchOrCache(
         cacheKey,
@@ -273,7 +274,7 @@ export class TopoDataService {
       params: { cragSlug, areaSlug },
     }): Promise<CragDetail | null> => {
       if (!cragSlug || !areaSlug) return null;
-      if (!isPlatformBrowser(this.platformId)) return null;
+      if (!this.isBrowser) return null;
       const cacheKey = CACHE_KEYS.cragDetail(areaSlug, cragSlug);
       return this.cache.fetchOrCache(
         cacheKey,
@@ -348,7 +349,7 @@ export class TopoDataService {
       params: { cragId, routeSlug, userId },
     }): Promise<RouteWithExtras | null> => {
       if (!cragId || !routeSlug) return null;
-      if (!isPlatformBrowser(this.platformId)) return null;
+      if (!this.isBrowser) return null;
       const cacheKey = CACHE_KEYS.routeDetail(routeSlug, userId);
       return this.cache.fetchOrCache(
         cacheKey,
@@ -423,7 +424,7 @@ export class TopoDataService {
     }): Promise<{ items: RouteAscentWithExtras[]; total: number }> => {
       const { routeId, route } = params;
       if (!routeId) return { items: [], total: 0 };
-      if (!isPlatformBrowser(this.platformId)) return { items: [], total: 0 };
+      if (!this.isBrowser) return { items: [], total: 0 };
       try {
         await this.supabase.whenReady();
 

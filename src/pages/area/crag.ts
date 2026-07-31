@@ -1,4 +1,3 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,7 +6,6 @@ import {
   inject,
   input,
   InputSignal,
-  PLATFORM_ID,
   signal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -36,6 +34,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { CragsService } from '../../services/crags.service';
+
 import { GlobalData } from '../../services/global-data';
 import { SeoService } from '../../services/seo.service';
 import { SupabaseService } from '../../services/supabase.service';
@@ -44,6 +43,7 @@ import { TourService, TourStep } from '../../services/tour.service';
 import { VisitedCragsService } from '../../services/visited-crags.service';
 
 import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
+
 import { CragParkingsComponent } from '../../components/crag/crag-parkings';
 import { CragRoutesComponent } from '../../components/crag/crag-routes';
 import { CragToposComponent } from '../../components/crag/crag-topos';
@@ -58,6 +58,8 @@ import {
 } from '../../models';
 
 import { handleErrorToast, mapLocationUrl } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-crag',
@@ -346,7 +348,7 @@ export class CragComponent {
   protected readonly supabase = inject(SupabaseService);
   protected readonly router = inject(Router);
   protected readonly cragsService = inject(CragsService);
-  protected readonly platformId = inject(PLATFORM_ID);
+  protected readonly isBrowser = inject(IS_BROWSER);
   protected readonly toast = inject(ToastService);
   protected readonly translate = inject(TranslateService);
   protected readonly dialogs = inject(TuiDialogService);
@@ -470,7 +472,7 @@ export class CragComponent {
     });
 
     effect(() => {
-      if (!isPlatformBrowser(this.platformId)) return;
+      if (!this.isBrowser) return;
       const areaLoading = this.global.areasListResource.isLoading();
       const cragLoading = this.global.cragDetailResource.isLoading();
       if (areaLoading || cragLoading) return;
@@ -575,7 +577,7 @@ export class CragComponent {
   }
 
   onToggleLike(): void {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     const c = this.cragDetail();
     if (!c) return;
     this.cragsService.toggleCragLike(c.id);
@@ -584,7 +586,7 @@ export class CragComponent {
   async deleteCrag(): Promise<void> {
     const c = this.cragDetail();
     if (!c) return;
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
 
     const t = await firstValueFrom(
       this.translate.get(['crags.deleteTitle', 'crags.deleteConfirm'], {
@@ -639,7 +641,7 @@ export class CragComponent {
   }
 
   protected openExternal(url: string): void {
-    if (isPlatformBrowser(this.platformId)) {
+    if (this.isBrowser) {
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   }

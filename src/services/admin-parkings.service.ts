@@ -1,7 +1,8 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID, resource } from '@angular/core';
+import { inject, Injectable, resource } from '@angular/core';
 
 import { ParkingDto } from '../models';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { SupabaseService } from './supabase.service';
 
@@ -13,12 +14,12 @@ import { SupabaseService } from './supabase.service';
   providedIn: 'root',
 })
 export class AdminParkingsService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
 
   readonly adminParkingsResource = resource({
     loader: async () => {
-      if (!isPlatformBrowser(this.platformId)) return [];
+      if (!this.isBrowser) return [];
       try {
         await this.supabase.whenReady();
         const { data, error } = await this.supabase.client

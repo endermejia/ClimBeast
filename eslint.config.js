@@ -5,6 +5,9 @@ import angular from "angular-eslint";
 
 export default tseslint.config(
   {
+    ignores: ["src/models/supabase-generated.ts", "dist/**"],
+  },
+  {
     files: ["**/*.ts"],
     extends: [
       eslint.configs.recommended,

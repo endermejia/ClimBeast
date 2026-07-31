@@ -1,18 +1,19 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, PLATFORM_ID } from '@angular/core';
+import { inject } from '@angular/core';
 import { CanMatchFn, Router, UrlTree } from '@angular/router';
 
 import { SupabaseService } from '../services/supabase.service';
 
 import { waitForResource } from '../utils';
 
+import { IS_BROWSER } from '../app/is-browser';
+
 /** Allows route matching only for admin users. On server, always allow. */
 export const adminGuard: CanMatchFn = async (): Promise<boolean | UrlTree> => {
   const router = inject(Router);
   const supabase = inject(SupabaseService);
-  const platformId = inject(PLATFORM_ID);
+  const isBrowser = inject(IS_BROWSER);
 
-  if (!isPlatformBrowser(platformId)) return true;
+  if (!isBrowser) return true;
 
   // Ensure the client is initialized and session is loaded
   await supabase.whenReady();
@@ -49,9 +50,9 @@ export const areaAdminGuard: CanMatchFn = async (): Promise<
 > => {
   const router = inject(Router);
   const supabase = inject(SupabaseService);
-  const platformId = inject(PLATFORM_ID);
+  const isBrowser = inject(IS_BROWSER);
 
-  if (!isPlatformBrowser(platformId)) return true;
+  if (!isBrowser) return true;
 
   await supabase.whenReady();
   const session = await supabase.getSession();

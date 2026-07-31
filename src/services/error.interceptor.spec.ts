@@ -1,16 +1,19 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { PLATFORM_ID } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+
+import { IS_BROWSER } from '../app/is-browser';
+
+import { MockGlobalData, MockSupabaseService } from '../testing';
 import { errorInterceptor } from './error.interceptor';
 import { GlobalData } from './global-data';
 import { SupabaseService } from './supabase.service';
-import { MockGlobalData, MockSupabaseService } from '../testing';
 
 describe('errorInterceptor', () => {
   let httpMock: HttpTestingController;
@@ -21,6 +24,7 @@ describe('errorInterceptor', () => {
         { provide: GlobalData, useClass: MockGlobalData },
         { provide: SupabaseService, useClass: MockSupabaseService },
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
         provideHttpClient(withInterceptors([errorInterceptor])),
         provideHttpClientTesting(),
       ],

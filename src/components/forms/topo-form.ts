@@ -53,25 +53,24 @@ import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
 
 import {
+  GRADE_NUMBER_TO_LABEL,
+  IndoorRouteDto,
+  IndoorTopoFormData,
   RouteDto,
   RouteWithExtras,
+  SelectedRoute,
   TopoDetail,
   TopoDto,
   TopoInsertDto,
+  TopoPath,
+  TopoRouteWithRoute,
   TopoUpdateDto,
   VERTICAL_LIFE_GRADES,
-  GRADE_NUMBER_TO_LABEL,
-  IndoorTopoFormData,
-  SelectedRoute,
 } from '../../models';
-import type { IndoorRouteDto } from '../../models/indoor.model';
 
-import type { TopoPath, TopoRouteWithRoute } from '../../models/topo.model';
+import { ShadeInfoPipe } from '../../pipes';
 
-import { ShadeInfoPipe } from '../../pipes/shade-info.pipe';
-
-import { handleErrorToast, slugify } from '../../utils';
-import { openImageEditor } from '../../utils/open-image-editor';
+import { handleErrorToast, openImageEditor, slugify } from '../../utils';
 
 import { ImageEditorConfig } from '../dialogs/image-editor-dialog';
 

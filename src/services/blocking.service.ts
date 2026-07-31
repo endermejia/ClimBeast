@@ -1,5 +1,6 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { SupabaseService } from './supabase.service';
 import { ToastService } from './toast.service';
@@ -14,7 +15,7 @@ export interface BlockState {
 })
 export class BlockingService {
   private readonly supabase = inject(SupabaseService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly toast = inject(ToastService);
 
   readonly blockChange = signal<number>(0);
@@ -24,8 +25,7 @@ export class BlockingService {
   }
 
   async getBlockState(targetUserId: string): Promise<BlockState> {
-    if (!isPlatformBrowser(this.platformId))
-      return { blockMessages: false, blockAscents: false };
+    if (!this.isBrowser) return { blockMessages: false, blockAscents: false };
     const userId = this.supabase.authUserId();
     if (!userId) return { blockMessages: false, blockAscents: false };
 
@@ -82,7 +82,7 @@ export class BlockingService {
     blockMessages: boolean,
     blockAscents: boolean,
   ): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     const userId = this.supabase.authUserId();
     if (!userId) return false;
 

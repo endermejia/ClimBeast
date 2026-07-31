@@ -1,11 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
-import {
-  inject,
-  Injectable,
-  PLATFORM_ID,
-  signal,
-  WritableSignal,
-} from '@angular/core';
+import { inject, Injectable, signal, WritableSignal } from '@angular/core';
 import { resource } from '@angular/core';
 
 import {
@@ -21,6 +14,8 @@ import {
 
 import { mapRouteToExtras, RawRouteData } from '../utils';
 
+import { IS_BROWSER } from '../app/is-browser';
+
 import { SupabaseService } from './supabase.service';
 
 /**
@@ -29,7 +24,7 @@ import { SupabaseService } from './supabase.service';
  */
 @Injectable({ providedIn: 'root' })
 export class EquipperService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
 
   readonly selectedEquipperId: WritableSignal<number | null> = signal(null);
@@ -37,7 +32,7 @@ export class EquipperService {
   readonly equipperDetailResource = resource({
     params: () => this.selectedEquipperId(),
     loader: async ({ params: id }) => {
-      if (!id || !isPlatformBrowser(this.platformId)) return null;
+      if (!id || !this.isBrowser) return null;
       await this.supabase.whenReady();
 
       const { data, error } = await this.supabase.client
@@ -59,7 +54,7 @@ export class EquipperService {
   readonly equipperRoutesResource = resource({
     params: () => this.selectedEquipperId(),
     loader: async ({ params: id }) => {
-      if (!id || !isPlatformBrowser(this.platformId)) return [];
+      if (!id || !this.isBrowser) return [];
       await this.supabase.whenReady();
       const userId = this.supabase.authUser()?.id;
 
@@ -128,7 +123,7 @@ export class EquipperService {
   readonly equipperIndoorRoutesResource = resource({
     params: () => this.selectedEquipperId(),
     loader: async ({ params: id }) => {
-      if (!id || !isPlatformBrowser(this.platformId)) return [];
+      if (!id || !this.isBrowser) return [];
       await this.supabase.whenReady();
       try {
         const { data, error } = await this.supabase.client

@@ -1,9 +1,4 @@
-import {
-  DecimalPipe,
-  isPlatformBrowser,
-  Location,
-  LowerCasePipe,
-} from '@angular/common';
+import { DecimalPipe, Location, LowerCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,7 +7,6 @@ import {
   inject,
   input,
   InputSignal,
-  PLATFORM_ID,
   resource,
   signal,
   untracked,
@@ -41,6 +35,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
+
 import { FollowsService } from '../../services/follows.service';
 import { GlobalData } from '../../services/global-data';
 import { RoutesService } from '../../services/routes.service';
@@ -50,6 +45,7 @@ import { TourService } from '../../services/tour.service';
 import { TourStep } from '../../services/tour.service';
 
 import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
+
 import { ChartAscentsByGradeComponent } from '../../components/charts/chart-ascents-by-grade';
 import { ChartAscentsByStyleComponent } from '../../components/charts/chart-ascents-by-style';
 import { GradeComponent } from '../../components/ui/avatar-grade';
@@ -66,6 +62,8 @@ import {
 } from '../../models';
 
 import { handleErrorToast } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-route',
@@ -416,7 +414,7 @@ export class OutdoorRouteComponent {
   protected readonly TourStep = TourStep;
   private readonly followsService = inject(FollowsService);
   protected readonly router = inject(Router);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly toast = inject(ToastService);
@@ -491,8 +489,7 @@ export class OutdoorRouteComponent {
   );
 
   constructor() {
-    const isBrowser = isPlatformBrowser(this.platformId);
-    if (isBrowser) {
+    if (this.isBrowser) {
       void this.followsService
         .getFollowedIds()
         .then((ids) => this.followedIds.set(new Set(ids)));
@@ -510,7 +507,7 @@ export class OutdoorRouteComponent {
     });
 
     effect(() => {
-      if (!isBrowser) return;
+      if (!this.isBrowser) return;
       const areaLoading = this.global.areasListResource.isLoading();
       const cragLoading = this.global.cragDetailResource.isLoading();
       const routeLoading = this.global.routeDetailResource.isLoading();
@@ -609,7 +606,7 @@ export class OutdoorRouteComponent {
 
   deleteRoute(): void {
     const r = this.route();
-    if (!r || !isPlatformBrowser(this.platformId)) return;
+    if (!r || !this.isBrowser) return;
 
     void firstValueFrom(
       this.dialogs.open<boolean>(TUI_CONFIRM, {

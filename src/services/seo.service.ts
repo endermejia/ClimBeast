@@ -1,9 +1,10 @@
 import { DOCUMENT } from '@angular/common';
-import { isPlatformBrowser } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 
 import { APP_NAME, APP_TITLE, BASE_URL, DEFAULT_IMAGE } from '../models';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 export interface SeoPageData {
   title: string;
@@ -20,7 +21,7 @@ export class SeoService {
   private readonly title = inject(Title);
   private readonly meta = inject(Meta);
   private readonly doc = inject(DOCUMENT);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   /**
    * Update all SEO-related tags for the current page.
@@ -69,7 +70,7 @@ export class SeoService {
   }
 
   private getCurrentUrl(): string {
-    if (isPlatformBrowser(this.platformId)) {
+    if (this.isBrowser) {
       return this.doc.location.href.split('?')[0].split('#')[0];
     }
     return BASE_URL;

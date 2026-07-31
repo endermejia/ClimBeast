@@ -1,9 +1,8 @@
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   Inject,
-  PLATFORM_ID,
   inject,
   signal,
   ChangeDetectorRef,
@@ -23,6 +22,8 @@ import {
 } from 'ngx-image-cropper';
 
 import { ToastService } from '../../services/toast.service';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 export interface ImageEditorConfig {
   file?: File;
@@ -334,7 +335,7 @@ export class ImageEditorDialogComponent {
   constructor(
     @Inject(POLYMORPHEUS_CONTEXT)
     private readonly context: TuiDialogContext<File | null, ImageEditorConfig>,
-    @Inject(PLATFORM_ID) private readonly platformId: object,
+    @Inject(IS_BROWSER) private readonly isBrowser: boolean,
     private readonly cdr: ChangeDetectorRef,
   ) {
     const data = this.context.data;
@@ -357,7 +358,7 @@ export class ImageEditorDialogComponent {
 
     if (data.file) {
       this.imageFile = data.file;
-    } else if (data.imageUrl && isPlatformBrowser(this.platformId)) {
+    } else if (data.imageUrl && this.isBrowser) {
       this.loadFromUrl(data.imageUrl);
     } else {
       this.cropperVisible.set(true);

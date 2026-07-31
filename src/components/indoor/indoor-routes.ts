@@ -1,4 +1,4 @@
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,7 +9,6 @@ import {
   signal,
   effect,
   viewChildren,
-  PLATFORM_ID,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -27,6 +26,7 @@ import {
   TuiTableSortChange,
   TuiSortDirection,
 } from '@taiga-ui/addon-table';
+
 import type { TuiComparator } from '@taiga-ui/addon-table/types';
 import {
   TuiLoader,
@@ -37,7 +37,6 @@ import {
   TuiCheckbox,
   TuiDialogService,
 } from '@taiga-ui/core';
-
 import {
   TuiBadge,
   TuiPin,
@@ -47,11 +46,13 @@ import {
 } from '@taiga-ui/kit';
 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+
 import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
 
 import { GlobalData } from '../../services/global-data';
+
 import { IndoorService } from '../../services/indoor.service';
 
 import {
@@ -65,6 +66,8 @@ import {
 } from '../../models';
 
 import { mapRouteToTableRow } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
 import { IndoorRouteEquippersInputComponent } from '../route/indoor-route-equippers-input';
@@ -449,7 +452,7 @@ export class IndoorRoutesComponent {
   protected readonly global = inject(GlobalData);
   private readonly translate = inject(TranslateService);
   protected readonly ascentsService = inject(AscentsService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly dialogs = inject(TuiDialogService);
 
   protected readonly columns = computed(() => {
@@ -573,7 +576,7 @@ export class IndoorRoutesComponent {
   }
 
   async deleteRoute(route: IndoorRouteWithExtras | RouteItem): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     const r = route as IndoorRouteWithExtras;
 
     void firstValueFrom(

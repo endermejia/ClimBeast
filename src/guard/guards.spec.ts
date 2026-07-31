@@ -1,16 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { PLATFORM_ID } from '@angular/core';
 
-import { authGuard } from './auth.guard';
-import { adminGuard, areaAdminGuard } from './admin.guard';
-import { noAuthGuard } from './no-auth.guard';
-import { rootRedirectGuard } from './root-redirect.guard';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { SupabaseService } from '../services/supabase.service';
+
+import { IS_BROWSER } from '../app/is-browser';
 import { MockSupabaseService } from '../testing';
+import { adminGuard, areaAdminGuard } from './admin.guard';
+import { authGuard } from './auth.guard';
+
+import { noAuthGuard } from './no-auth.guard';
+import { rootRedirectGuard } from './root-redirect.guard';
 
 function createMockSession(userId = 'user-1', email = 'test@example.com') {
   return {
@@ -43,6 +46,7 @@ describe('authGuard', () => {
         ]),
         { provide: SupabaseService, useClass: MockSupabaseService },
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
       ],
     });
     mockSupabase = TestBed.inject(
@@ -140,6 +144,7 @@ describe('authGuard', () => {
         ]),
         { provide: SupabaseService, useClass: MockSupabaseService },
         { provide: PLATFORM_ID, useValue: 'server' },
+        { provide: IS_BROWSER, useValue: false },
       ],
     });
     const router = TestBed.inject(Router);
@@ -167,6 +172,7 @@ describe('noAuthGuard', () => {
         ]),
         { provide: SupabaseService, useClass: MockSupabaseService },
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
       ],
     });
     mockSupabase = TestBed.inject(
@@ -212,6 +218,7 @@ describe('rootRedirectGuard', () => {
         ]),
         { provide: SupabaseService, useClass: MockSupabaseService },
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
       ],
     });
     mockSupabase = TestBed.inject(
@@ -257,6 +264,7 @@ describe('adminGuard', () => {
         ]),
         { provide: SupabaseService, useClass: MockSupabaseService },
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
       ],
     });
     mockSupabase = TestBed.inject(
@@ -314,6 +322,7 @@ describe('adminGuard', () => {
         ]),
         { provide: SupabaseService, useClass: MockSupabaseService },
         { provide: PLATFORM_ID, useValue: 'server' },
+        { provide: IS_BROWSER, useValue: false },
       ],
     });
     const router = TestBed.inject(Router);
@@ -345,6 +354,7 @@ describe('areaAdminGuard', () => {
         ]),
         { provide: SupabaseService, useClass: MockSupabaseService },
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
       ],
     });
     mockSupabase = TestBed.inject(
@@ -427,6 +437,7 @@ describe('areaAdminGuard', () => {
         ]),
         { provide: SupabaseService, useClass: MockSupabaseService },
         { provide: PLATFORM_ID, useValue: 'server' },
+        { provide: IS_BROWSER, useValue: false },
       ],
     });
     const router = TestBed.inject(Router);

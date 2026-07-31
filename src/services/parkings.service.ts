@@ -1,5 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 
 import { TuiDialogService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
@@ -9,11 +8,14 @@ import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import LinkParkingFormComponent from '../components/forms/link-parking-form';
+
 import ParkingFormComponent from '../components/forms/parking-form';
 
 import type { ParkingDto, ParkingInsertDto, ParkingUpdateDto } from '../models';
 
 import { mapLocationUrl } from '../utils';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { GlobalData } from './global-data';
 
@@ -22,7 +24,7 @@ import { ToastService } from './toast.service';
 
 @Injectable({ providedIn: 'root' })
 export class ParkingsService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly global = inject(GlobalData);
   private readonly toast = inject(ToastService);
@@ -96,7 +98,7 @@ export class ParkingsService {
   async create(
     payload: Omit<ParkingInsertDto, 'id' | 'created_at'>,
   ): Promise<ParkingDto | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('parkings')
@@ -115,7 +117,7 @@ export class ParkingsService {
     id: number,
     payload: Partial<Omit<ParkingUpdateDto, 'id' | 'created_at'>>,
   ): Promise<ParkingDto | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('parkings')
@@ -132,7 +134,7 @@ export class ParkingsService {
   }
 
   async delete(id: number): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+    if (!this.isBrowser) return false;
     await this.supabase.whenReady();
     const { error } = await this.supabase.client
       .from('parkings')
@@ -149,7 +151,7 @@ export class ParkingsService {
   }
 
   async addParkingToCrag(cragId: number, parkingId: number): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
     const { error } = await this.supabase.client
       .from('crag_parkings')
@@ -166,7 +168,7 @@ export class ParkingsService {
     cragId: number,
     parkingId: number,
   ): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     await this.supabase.whenReady();
     const { error } = await this.supabase.client
       .from('crag_parkings')
@@ -193,7 +195,7 @@ export class ParkingsService {
   }
 
   openExternal(url: string): void {
-    if (isPlatformBrowser(this.platformId)) {
+    if (this.isBrowser) {
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   }

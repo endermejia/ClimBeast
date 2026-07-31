@@ -1,11 +1,10 @@
-import { isPlatformBrowser, NgOptimizedImage } from '@angular/common';
+import { NgOptimizedImage } from '@angular/common';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   inject,
-  PLATFORM_ID,
   signal,
   WritableSignal,
 } from '@angular/core';
@@ -26,6 +25,8 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { take } from 'rxjs';
 
 import { SupabaseService } from '../../services/supabase.service';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-login',
@@ -320,7 +321,7 @@ export class LoginComponent {
   private readonly supabase = inject(SupabaseService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   email: WritableSignal<string> = signal('');
   password: WritableSignal<string> = signal('');
@@ -333,7 +334,7 @@ export class LoginComponent {
   readonly isRecovery = computed(() => {
     if (this.supabase.lastAuthEvent() === 'PASSWORD_RECOVERY') return true;
     // Fallback: check URL hash/query for type=recovery (browser only)
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
+    if (this.isBrowser && typeof window !== 'undefined') {
       const hash = window.location.hash || '';
       const search = window.location.search || '';
       return hash.includes('type=recovery') || search.includes('type=recovery');
@@ -382,7 +383,7 @@ export class LoginComponent {
     });
 
     // Ensure that when entering from a recovery link, the token is exchanged and there is an active session
-    if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
+    if (this.isBrowser && typeof window !== 'undefined') {
       afterNextRender(() => {
         if (this.isRecovery()) {
           void this.supabase.whenReady().then(() => this.supabase.getSession());
@@ -481,7 +482,7 @@ export class LoginComponent {
     try {
       await this.supabase.whenReady();
       let redirectTo: string | undefined = undefined;
-      if (isPlatformBrowser(this.platformId) && typeof window !== 'undefined') {
+      if (this.isBrowser && typeof window !== 'undefined') {
         // Important: we redirect to /login with recovery_flag to avoid falling into '/home'
         // by the root redirect in both SSR and client router.
         // Supabase will add its hash with tokens and 'type=recovery', which this component detects.

@@ -1,4 +1,3 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,7 +8,6 @@ import {
   input,
   linkedSignal,
   output,
-  PLATFORM_ID,
   signal,
   viewChild,
 } from '@angular/core';
@@ -21,6 +19,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import type { TopoRouteWithRoute } from '../../models';
 
 import { GradeLabelPipe } from '../../pipes';
+
 import { IconSrcPipe } from '../../pipes';
 import {
   ViewerZoomPanState,
@@ -34,6 +33,8 @@ import {
   handleViewerMouseMove,
   centerViewerOnPoint,
 } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 import { GradeComponent } from '../ui/avatar-grade';
 
@@ -550,7 +551,7 @@ interface RenderedRoute extends TopoRouteWithRoute {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TopoViewerComponent {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   topoImage = input<string | null | undefined>(null);
   topoName = input<string>('');
@@ -745,7 +746,7 @@ export class TopoViewerComponent {
 
   private centerOnRoute(): void {
     const els = this.getViewerElements();
-    if (!els || !isPlatformBrowser(this.platformId)) return;
+    if (!els || !this.isBrowser) return;
     const { img: imgEl } = els;
     if (imgEl.naturalWidth === 0 || imgEl.offsetWidth === 0) return;
     const info = this.selectedRouteInfo();

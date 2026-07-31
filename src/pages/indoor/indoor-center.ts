@@ -1,4 +1,4 @@
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,7 +9,6 @@ import {
   signal,
   computed,
   effect,
-  PLATFORM_ID,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -41,15 +40,17 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { GlobalData } from '../../services/global-data';
+
 import { IndoorService } from '../../services/indoor.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
 
 import { AscentCardComponent } from '../../components/ascent/ascent-card';
-import { IndoorToposComponent } from '../../components/indoor/indoor-topos';
 
+import { IndoorToposComponent } from '../../components/indoor/indoor-topos';
 import { IndoorVouchersComponent } from '../../components/indoor/indoor-vouchers';
+
 import { IndoorRoutesTableComponent } from '../../components/route/indoor-routes-table';
 import {
   CustomCarouselComponent,
@@ -58,13 +59,16 @@ import {
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { SectionHeaderComponent } from '../../components/ui/section-header';
 
-import { RouteAscentWithExtras } from '../../models';
-import { UserProfileBasicDto } from '../../models';
-import { IndoorCenterDto } from '../../models';
+import {
+  IndoorCenterDto,
+  RouteAscentWithExtras,
+  UserProfileBasicDto,
+} from '../../models';
 
-import { AnyToSchedulePipe } from '../../pipes/any-to-schedule.pipe';
-import { AvatarUrlPipe } from '../../pipes/avatar-url.pipe';
+import { AnyToSchedulePipe, AvatarUrlPipe } from '../../pipes';
 import { handleErrorToast, mapLocationUrl } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-indoor-center',
@@ -492,7 +496,7 @@ export class IndoorCenterComponent {
   private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
   private readonly dialogs = inject(TuiDialogService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   protected readonly activeTabIndex = signal(0);
   protected readonly galleryIndex = signal(0);
@@ -771,7 +775,7 @@ export class IndoorCenterComponent {
   async deleteCenter(): Promise<void> {
     const c = this.center();
     if (!c) return;
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
 
     const t = await firstValueFrom(
       this.translate.get(['indoor.deleteTitle', 'indoor.deleteConfirm'], {

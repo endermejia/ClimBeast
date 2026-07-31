@@ -1,11 +1,14 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
+import { describe, it, expect, beforeEach } from 'vitest';
+
+import { ORDERED_GRADE_VALUES } from '../models';
+
+import { IS_BROWSER } from '../app/is-browser';
+import { MockLocalStorage } from '../testing';
 import { FilterStateService } from './filter-state.service';
 import { LocalStorage } from './local-storage';
-import { MockLocalStorage } from '../testing';
-import { ORDERED_GRADE_VALUES } from '../models';
 
 describe('FilterStateService', () => {
   let service: FilterStateService;
@@ -16,6 +19,7 @@ describe('FilterStateService', () => {
         FilterStateService,
         { provide: LocalStorage, useClass: MockLocalStorage },
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
       ],
     });
     service = TestBed.inject(FilterStateService);

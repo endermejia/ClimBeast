@@ -1,11 +1,10 @@
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
   inject,
-  PLATFORM_ID,
   resource,
   signal,
 } from '@angular/core';
@@ -36,15 +35,19 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { startWith } from 'rxjs';
 
 import { CartService } from '../../services/cart.service';
+
 import { GlobalData } from '../../services/global-data';
 import { MerchandiseService } from '../../services/merchandise.service';
 
 import { AdminMerchandiseDialogComponent } from '../../components/dialogs/admin-merchandise-dialog';
+
 import { AdminPackDialogComponent } from '../../components/dialogs/admin-pack-dialog';
 import { MerchandiseCardComponent } from '../../components/merchandise/merchandise-card';
 import { PackCardComponent } from '../../components/merchandise/pack-card';
 
 import { AreaPackDetail, MerchandiseItemDetail } from '../../models';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-merchandising',
@@ -289,7 +292,7 @@ export class MerchandisingComponent {
   private readonly merchService = inject(MerchandiseService);
   protected readonly global = inject(GlobalData);
   private readonly translate = inject(TranslateService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly dialogService = inject(TuiDialogService);
 
   protected readonly itemsResource = resource<
@@ -351,7 +354,7 @@ export class MerchandisingComponent {
    */
   protected readonly availableCategories = computed<string[]>(() => {
     this.langChange(); // React to language changes
-    if (!isPlatformBrowser(this.platformId)) return [];
+    if (!this.isBrowser) return [];
 
     const cats = new Set<string>();
     for (const item of this.items()) {

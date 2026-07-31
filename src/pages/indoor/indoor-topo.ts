@@ -1,4 +1,3 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -220,7 +219,7 @@ export class IndoorTopoComponent extends TopoPageBase {
   });
 
   protected openEditTopo(topo: TopoDetail): void {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     const centerId = topo.center_id as string;
     const topoId = this.id();
     if (!topoId || !centerId) return;
@@ -242,7 +241,7 @@ export class IndoorTopoComponent extends TopoPageBase {
   }
 
   protected deleteTopo(topo: TopoDetail): void {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
     void firstValueFrom(
       this.dialogs.open<boolean>(TUI_CONFIRM, {
         label: this.translate.instant('topos.deleteTitle'),

@@ -1,21 +1,16 @@
-import { isPlatformBrowser } from '@angular/common';
-import {
-  DestroyRef,
-  inject,
-  Injectable,
-  PLATFORM_ID,
-  signal,
-} from '@angular/core';
+import { DestroyRef, inject, Injectable, signal } from '@angular/core';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 @Injectable({ providedIn: 'root' })
 export class OnlineStatusService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   readonly isOffline = signal(
     typeof navigator !== 'undefined' ? !navigator.onLine : false,
   );
 
   constructor() {
-    if (isPlatformBrowser(this.platformId)) {
+    if (this.isBrowser) {
       const destroyRef = inject(DestroyRef);
       const onlineHandler = () => this.isOffline.set(false);
       const offlineHandler = () => this.isOffline.set(true);

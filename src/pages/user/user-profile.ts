@@ -1,4 +1,4 @@
-import { isPlatformBrowser, LowerCasePipe } from '@angular/common';
+import { LowerCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,7 +7,6 @@ import {
   effect,
   inject,
   input,
-  PLATFORM_ID,
   resource,
   signal,
   untracked,
@@ -36,6 +35,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { BlockingService } from '../../services/blocking.service';
+
 import { FollowRequestsService } from '../../services/follow-requests.service';
 import { FollowsService } from '../../services/follows.service';
 import { GlobalData } from '../../services/global-data';
@@ -48,6 +48,7 @@ import { TourStep } from '../../services/tour.service';
 import { UserListDialogComponent } from '../../components/dialogs/user-list-dialog';
 
 import { EmptyStateComponent } from '../../components/ui/empty-state';
+
 import { MenuOptionsButtonComponent } from '../../components/ui/menu-options-button';
 import { TourHintComponent } from '../../components/ui/tour-hint';
 import { UserInfoComponent } from '../../components/ui/user-info';
@@ -56,7 +57,9 @@ import { UserProfileLikesComponent } from '../../components/user-profile/user-pr
 import { UserProfileProjectsComponent } from '../../components/user-profile/user-profile-projects';
 import { UserProfileStatisticsComponent } from '../../components/user-profile/user-profile-statistics';
 
-import { openPhotoViewer } from '../../utils/open-photo-viewer';
+import { openPhotoViewer } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-user-profile',
@@ -377,7 +380,7 @@ export class UserProfileComponent {
   protected readonly router = inject(Router);
   protected readonly tourService = inject(TourService);
   protected readonly TourStep = TourStep;
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
   protected readonly followRequestsService = inject(FollowRequestsService);
   protected readonly followsService = inject(FollowsService);
@@ -410,7 +413,7 @@ export class UserProfileComponent {
   private readonly externalProfileResource = resource({
     params: () => this.id(),
     loader: async ({ params: paramId }) => {
-      if (!paramId || !isPlatformBrowser(this.platformId)) return null;
+      if (!paramId || !this.isBrowser) return null;
 
       // If param is the same as the current user id, we use our own profile (computed below)
       const currentId = this.supabase.authUserId();
@@ -433,7 +436,7 @@ export class UserProfileComponent {
   readonly equipperResource = resource({
     params: () => this.profile()?.id,
     loader: async ({ params: userId }) => {
-      if (!userId || !isPlatformBrowser(this.platformId)) return null;
+      if (!userId || !this.isBrowser) return null;
       const { data: equipper, error } = await this.supabase.client
         .from('equippers')
         .select('id')
@@ -501,7 +504,7 @@ export class UserProfileComponent {
       change: this.blockingService.blockChange(),
     }),
     loader: async ({ params }) => {
-      if (!params.userId || !isPlatformBrowser(this.platformId))
+      if (!params.userId || !this.isBrowser)
         return { blockMessages: false, blockAscents: false };
       return this.blockingService.getBlockState(params.userId);
     },
@@ -518,7 +521,7 @@ export class UserProfileComponent {
   readonly hasProjectsDataResource = resource({
     params: () => this.profile()?.id,
     loader: async ({ params: userId }) => {
-      if (!userId || !isPlatformBrowser(this.platformId)) return false;
+      if (!userId || !this.isBrowser) return false;
       await this.supabase.whenReady();
 
       const { count: pyramidCount } = await this.supabase.client
@@ -602,7 +605,7 @@ export class UserProfileComponent {
     }),
     loader: async ({ params }) => {
       const userId = params.userId;
-      if (!userId || !isPlatformBrowser(this.platformId)) return 0;
+      if (!userId || !this.isBrowser) return 0;
       return await this.followsService.getFollowersCount(userId);
     },
   });
@@ -614,7 +617,7 @@ export class UserProfileComponent {
     }),
     loader: async ({ params }) => {
       const userId = params.userId;
-      if (!userId || !isPlatformBrowser(this.platformId)) return 0;
+      if (!userId || !this.isBrowser) return 0;
       return await this.followsService.getFollowingCount(userId);
     },
   });
@@ -636,7 +639,7 @@ export class UserProfileComponent {
     });
 
     effect(() => {
-      if (!isPlatformBrowser(this.platformId)) return;
+      if (!this.isBrowser) return;
       const paramId = this.id();
       if (!paramId) return;
       const loading = this.loading();
@@ -696,7 +699,7 @@ export class UserProfileComponent {
     effect(() => {
       this.followsService.followChange();
       this.followRequestsService.requestsChange();
-      if (isPlatformBrowser(this.platformId)) {
+      if (this.isBrowser) {
         void this.followsService
           .getFollowedIds()
           .then((ids) => this.followedIds.set(new Set(ids)));

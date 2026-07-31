@@ -1,10 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
+import { describe, it, expect, beforeEach } from 'vitest';
+
+import { IS_BROWSER } from '../app/is-browser';
+
+import { MockLocalStorage } from '../testing';
 import { CacheService } from './cache.service';
 import { LocalStorage } from './local-storage';
-import { MockLocalStorage } from '../testing';
 
 describe('CacheService', () => {
   let service: CacheService;
@@ -16,6 +19,7 @@ describe('CacheService', () => {
         CacheService,
         { provide: LocalStorage, useClass: MockLocalStorage },
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
       ],
     });
     service = TestBed.inject(CacheService);

@@ -1,4 +1,8 @@
 import { describe, it, expect } from 'vitest';
+
+import { AscentTypes, VERTICAL_LIFE_GRADES } from '../models';
+import type { UserAscentStatRecord } from '../models/route-ascent.model';
+
 import {
   getScore,
   getMaxGrade,
@@ -6,8 +10,6 @@ import {
   calculatePeriodScore,
   filterAscentsByDate,
 } from './stats.utils';
-import { AscentTypes, VERTICAL_LIFE_GRADES } from '../models';
-import type { UserAscentStatRecord } from '../models/route-ascent.model';
 
 function makeAscent(
   overrides: Partial<UserAscentStatRecord> = {},

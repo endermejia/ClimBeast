@@ -61,11 +61,11 @@ import {
   EightAnuAscent,
   EightAnuRoute,
   GradeLabel,
+  Json,
   LABEL_TO_VERTICAL_LIFE,
 } from '../../models';
-import { Json } from '../../models/supabase-generated';
 
-import { SanitizeHtmlPipe } from '../../pipes/sanitize-html.pipe';
+import { SanitizeHtmlPipe } from '../../pipes';
 import { slugify } from '../../utils';
 
 import { GradeComponent } from '../ui/avatar-grade';
@@ -523,10 +523,6 @@ export class Import8aComponent {
     });
   }
 
-  protected isSelected(index: number): boolean {
-    return this.selectedIndices().has(index);
-  }
-
   protected toggleAll(checked: boolean): void {
     const current = this.ascents();
     if (checked) {
@@ -546,13 +542,6 @@ export class Import8aComponent {
     string,
     { slug: string; eightAnuSlugs: string[] }
   >();
-
-  protected getResolvedData(
-    ascent: EightAnuAscent,
-  ): { slug: string; eightAnuSlugs: string[] } | undefined {
-    const key = `${slugify(ascent.location_name)}|${slugify(ascent.sector_name)}|${slugify(ascent.name)}`;
-    return this.resolvedSlugsMap.get(key);
-  }
 
   protected async onStep(step: number): Promise<void> {
     this.direction = step - this.index;
@@ -745,10 +734,7 @@ export class Import8aComponent {
           lines.push(currentLine);
         }
         currentLine = '';
-      } else if (char === '\r') {
-        // Skip carriage returns
-        continue;
-      } else {
+      } else if (char !== '\r') {
         currentLine += char;
       }
     }
@@ -1320,7 +1306,7 @@ export class Import8aComponent {
           `,
           )
           .in('name', names)
-          .returns<
+          .overrideTypes<
             {
               name: string;
               slug: string;

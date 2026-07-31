@@ -1,4 +1,4 @@
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,7 +7,6 @@ import {
   inject,
   input,
   linkedSignal,
-  PLATFORM_ID,
   signal,
   untracked,
 } from '@angular/core';
@@ -22,6 +21,7 @@ import {
   TuiInput,
   TuiLabel,
 } from '@taiga-ui/core';
+
 import {
   TuiBadgedContent,
   TuiBadgeNotification,
@@ -35,6 +35,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { debounceTime, Subject } from 'rxjs';
 
 import { FiltersService } from '../../services/filters.service';
+
 import { FollowsService } from '../../services/follows.service';
 import { GlobalData } from '../../services/global-data';
 import { SupabaseService } from '../../services/supabase.service';
@@ -48,6 +49,8 @@ import {
 } from '../../models';
 
 import { getAscentDateFilterOptions, processAscentsToFeed } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 import { AscentsFeedComponent } from '../ascent/ascents-feed';
 
@@ -230,7 +233,7 @@ export class UserProfileAscentsComponent {
   protected readonly filtersService = inject(FiltersService);
   protected readonly userProfilesService = inject(UserProfilesService);
   protected readonly dialogs = inject(TuiDialogService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   private readonly querySubject = new Subject<string>();
   protected readonly query = toSignal(
@@ -295,7 +298,7 @@ export class UserProfileAscentsComponent {
   constructor() {
     effect(() => {
       this.followsService.followChange();
-      if (isPlatformBrowser(this.platformId)) {
+      if (this.isBrowser) {
         void this.followsService
           .getFollowedIds()
           .then((ids) => this.followedIds.set(new Set(ids)));

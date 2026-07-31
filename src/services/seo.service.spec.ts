@@ -1,7 +1,10 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { DOCUMENT, PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Meta, Title } from '@angular/platform-browser';
-import { DOCUMENT, PLATFORM_ID } from '@angular/core';
+
+import { describe, it, expect, beforeEach } from 'vitest';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { SeoService } from './seo.service';
 
@@ -18,6 +21,7 @@ describe('SeoService', () => {
         Title,
         { provide: DOCUMENT, useValue: document },
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
       ],
     });
     service = TestBed.inject(SeoService);

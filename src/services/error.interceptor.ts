@@ -1,14 +1,15 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   HttpErrorResponse,
   HttpEvent,
   HttpInterceptorFn,
 } from '@angular/common/http';
-import { inject, Injector, PLATFORM_ID } from '@angular/core';
+import { inject, Injector } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { Observable, throwError } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { GlobalData } from './global-data';
 
@@ -19,11 +20,11 @@ export const errorInterceptor: HttpInterceptorFn = (
   next,
 ): Observable<HttpEvent<unknown>> => {
   const injector = inject(Injector);
-  const platformId = inject(PLATFORM_ID);
-  const router = isPlatformBrowser(platformId)
+  const isBrowser = inject(IS_BROWSER);
+  const router = isBrowser
     ? injector.get(Router, null, { optional: true })
     : null;
-  const supabase = isPlatformBrowser(platformId)
+  const supabase = isBrowser
     ? injector.get(SupabaseService, null, { optional: true })
     : null;
 
@@ -66,7 +67,6 @@ export const errorInterceptor: HttpInterceptorFn = (
       }
 
       // Skip redirect logic on the server and for static/i18n assets
-      const isBrowser = isPlatformBrowser(platformId);
       const isStatic =
         url.startsWith('/i18n/') ||
         url.startsWith('/assets/') ||

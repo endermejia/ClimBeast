@@ -41,8 +41,7 @@ import {
 } from '../../models';
 
 import { AscentDatePipe, AvatarUrlPipe } from '../../pipes';
-import { getEmbedUrl } from '../../utils';
-import { openPhotoViewer } from '../../utils/open-photo-viewer';
+import { getEmbedUrl, openPhotoViewer } from '../../utils';
 
 import { GradeComponent } from '../ui/avatar-grade';
 import { CustomCarouselComponent } from '../ui/custom-carousel';
@@ -410,17 +409,7 @@ export class AscentCardComponent {
 
   protected readonly loading = signal(false);
 
-  protected onNext(): void {
-    this.index.update((i) => (i + 1) % this.mediaItems().length);
-  }
-
-  protected onPrev(): void {
-    this.index.update(
-      (i) => (i - 1 + this.mediaItems().length) % this.mediaItems().length,
-    );
-  }
-
-  protected readonly index = signal(0);
+  protected index = signal(0);
 
   protected readonly ascentPhotoResource = resource({
     params: () => this.data().photo_path,
@@ -465,12 +454,6 @@ export class AscentCardComponent {
     { key: 'top_out', label: 'ascent.boulder.top_out' },
     { key: 'highball', label: 'ascent.boulder.highball' },
   ];
-
-  protected readonly activeMedia = computed(() => {
-    const items = this.mediaItems();
-    const idx = this.index();
-    return items.length > 0 ? items[idx] : null;
-  });
 
   protected readonly moreInfoBadges = computed(() => {
     const a = this.data();

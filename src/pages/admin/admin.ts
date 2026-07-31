@@ -1,9 +1,7 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   inject,
-  PLATFORM_ID,
   resource,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -15,6 +13,8 @@ import { TuiHeader } from '@taiga-ui/layout';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { SupabaseService } from '../../services/supabase.service';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-admin',
@@ -148,11 +148,11 @@ import { SupabaseService } from '../../services/supabase.service';
 })
 export class AdminComponent {
   private readonly supabase = inject(SupabaseService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   readonly usersSampleResource = resource({
     loader: async () => {
-      if (!isPlatformBrowser(this.platformId)) return [];
+      if (!this.isBrowser) return [];
 
       try {
         await this.supabase.whenReady();

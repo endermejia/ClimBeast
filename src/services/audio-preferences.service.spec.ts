@@ -1,11 +1,14 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
+import { describe, it, expect, beforeEach } from 'vitest';
+
+import { IS_BROWSER } from '../app/is-browser';
+
+import { MockLocalStorage, MockSupabaseService } from '../testing';
 import { AudioPreferencesService } from './audio-preferences.service';
 import { LocalStorage } from './local-storage';
 import { SupabaseService } from './supabase.service';
-import { MockLocalStorage, MockSupabaseService } from '../testing';
 
 describe('AudioPreferencesService', () => {
   let service: AudioPreferencesService;
@@ -17,6 +20,7 @@ describe('AudioPreferencesService', () => {
         { provide: LocalStorage, useClass: MockLocalStorage },
         { provide: SupabaseService, useClass: MockSupabaseService },
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
       ],
     });
     service = TestBed.inject(AudioPreferencesService);

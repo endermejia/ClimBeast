@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 
-import { ThemeService } from './theme.service';
-import { SupabaseService } from './supabase.service';
+import { describe, it, expect, beforeEach } from 'vitest';
+
 import { Themes } from '../models';
+
 import { MockSupabaseService } from '../testing';
+import { SupabaseService } from './supabase.service';
+import { ThemeService } from './theme.service';
 
 describe('ThemeService', () => {
   let service: ThemeService;

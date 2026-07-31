@@ -36,9 +36,7 @@ import { UserProfilesService } from '../../services/user-profiles.service';
 
 import { UserProfileBasicDto } from '../../models';
 
-import { AvatarUrlPipe } from '../../pipes';
-
-import { MentionLinkPipe } from '../../pipes/mention-link.pipe';
+import { AvatarUrlPipe, MentionLinkPipe } from '../../pipes';
 
 import { CommentLikesComponent } from '../social/comment-likes';
 import { EmptyStateComponent } from '../ui/empty-state';

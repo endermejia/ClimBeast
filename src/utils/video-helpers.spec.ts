@@ -1,10 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import {
-  extractYoutubeId,
-  getEmbedUrl,
-  getThumbnailUrl,
-} from './video-helpers';
+import { extractYoutubeId, getEmbedUrl } from './video-helpers';
 
 describe('extractYoutubeId', () => {
   it('extracts id from youtu.be short URL', () => {
@@ -67,17 +63,5 @@ describe('getEmbedUrl', () => {
 
   it('returns null for invalid URL', () => {
     expect(getEmbedUrl('https://example.com')).toBeNull();
-  });
-});
-
-describe('getThumbnailUrl', () => {
-  it('returns thumbnail URL for valid YouTube URL', () => {
-    expect(getThumbnailUrl('https://youtu.be/dQw4w9WgXcQ')).toBe(
-      'https://img.youtube.com/vi/dQw4w9WgXcQ/0.jpg',
-    );
-  });
-
-  it('returns null for invalid URL', () => {
-    expect(getThumbnailUrl('not-a-url')).toBeNull();
   });
 });

@@ -1,5 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 
 import { LeafletEvent, LeafletNamespace, Map, Marker } from 'leaflet';
 
@@ -11,6 +10,8 @@ import {
   MapOptions,
   ParkingDto,
 } from '../models';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { GlobalData } from './global-data';
 import { LocalStorage } from './local-storage';
@@ -52,7 +53,7 @@ const CLUSTER_CONFIG = [
 
 @Injectable({ providedIn: 'root' })
 export class MapBuilder {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowserEnv = inject(IS_BROWSER);
   private readonly global = inject(GlobalData);
   private readonly localStorage = inject(LocalStorage);
   private map!: Map;
@@ -69,7 +70,7 @@ export class MapBuilder {
   private animateClustersOnNextBuild = true;
 
   private isBrowser(): boolean {
-    return isPlatformBrowser(this.platformId) && typeof window !== 'undefined';
+    return this.isBrowserEnv && typeof window !== 'undefined';
   }
 
   /**

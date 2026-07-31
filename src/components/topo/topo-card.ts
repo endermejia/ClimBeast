@@ -16,13 +16,9 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { GlobalData } from '../../services/global-data';
 
-import { TopoListItem } from '../../models';
+import { IndoorTopoListItem, TopoListItem } from '../../models';
 
-import { IndoorTopoListItem } from '../../models/indoor.model';
-
-import { IconSrcPipe } from '../../pipes/icon-src.pipe';
-import { ShadeInfoPipe } from '../../pipes/shade-info.pipe';
-import { TopoImagePipe } from '../../pipes/topo-image.pipe';
+import { IconSrcPipe, ShadeInfoPipe, TopoImagePipe } from '../../pipes';
 
 import { ChartRoutesByGradeComponent } from '../charts/chart-routes-by-grade';
 

@@ -1,4 +1,3 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   computed,
   Directive,
@@ -6,7 +5,6 @@ import {
   effect,
   inject,
   input,
-  PLATFORM_ID,
   signal,
   Signal,
 } from '@angular/core';
@@ -22,6 +20,7 @@ import { TuiDialogService } from '@taiga-ui/core';
 import { TranslateService } from '@ngx-translate/core';
 
 import { AscentsService } from '../../services/ascents.service';
+
 import { GlobalData } from '../../services/global-data';
 import { IndoorService } from '../../services/indoor.service';
 import { RoutesService } from '../../services/routes.service';
@@ -39,6 +38,8 @@ import {
   getPointsString as getPointsStringUtil,
 } from '../../utils/topo-styles.utils';
 
+import { IS_BROWSER } from '../../app/is-browser';
+
 @Directive()
 export abstract class TopoPageBase {
   protected readonly global = inject(GlobalData);
@@ -48,7 +49,7 @@ export abstract class TopoPageBase {
   protected readonly indoorService = inject(IndoorService);
   protected readonly routesService = inject(RoutesService);
   protected readonly router = inject(Router);
-  protected readonly platformId = inject(PLATFORM_ID);
+  protected readonly isBrowser = inject(IS_BROWSER);
   protected readonly dialogs = inject(TuiDialogService);
   protected readonly translate = inject(TranslateService);
   protected readonly toast = inject(ToastService);
@@ -164,7 +165,7 @@ export abstract class TopoPageBase {
     });
 
     effect(() => {
-      if (!isPlatformBrowser(this.platformId)) return;
+      if (!this.isBrowser) return;
       const loading = this.global.topoDetailResource.isLoading();
       if (loading) return;
       const t = this.topo();

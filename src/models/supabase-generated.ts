@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export interface Database {
+export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
@@ -1088,7 +1088,9 @@ export interface Database {
         ];
       };
     };
-    Views: Record<never, never>;
+    Views: {
+      [_ in never]: never;
+    };
     Functions: {
       email: { Args: never; Returns: string };
       jwt: { Args: never; Returns: Json };
@@ -1112,7 +1114,9 @@ export interface Database {
         | 'email_change_token_current'
         | 'phone_change_token';
     };
-    CompositeTypes: Record<never, never>;
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
   public: {
     Tables: {
@@ -4818,7 +4822,9 @@ export interface Database {
         ];
       };
     };
-    Views: Record<never, never>;
+    Views: {
+      [_ in never]: never;
+    };
     Functions: {
       allow_any_operation: {
         Args: { expected_operations: string[] };
@@ -4947,9 +4953,11 @@ export interface Database {
     Enums: {
       buckettype: 'STANDARD' | 'ANALYTICS' | 'VECTOR';
     };
-    CompositeTypes: Record<never, never>;
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
-}
+};
 
 type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>;
 

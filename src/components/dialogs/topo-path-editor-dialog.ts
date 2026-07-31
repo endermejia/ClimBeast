@@ -45,27 +45,22 @@ import {
   TopoPathEditorResult,
 } from '../../models';
 
-import { TopoHasPathPipe } from '../../pipes/topo-path.pipe';
+import { TopoHasPathPipe } from '../../pipes';
 
 import {
-  removePoint,
   addPointToPath,
-  startDragPointMouse,
-  startDragPointTouch,
-} from '../../utils/drawing.utils';
-import {
-  getRouteStyleProperties,
-  getRouteStrokeWidth,
-  getPointsString as getPointsStringUtil,
-} from '../../utils/topo-styles.utils';
-
-import {
-  handleWheelZoom,
+  attachWheelListener,
   constrainTranslation,
+  getPointsString as getPointsStringUtil,
+  getRouteStrokeWidth,
+  getRouteStyleProperties,
+  handleWheelZoom,
+  removePoint,
   setupEditorMousePan,
   setupEditorTouchPanPinch,
-  attachWheelListener,
-} from '../../utils/zoom-pan.utils';
+  startDragPointMouse,
+  startDragPointTouch,
+} from '../../utils';
 
 import { GradeComponent } from '../ui/avatar-grade';
 

@@ -1,10 +1,11 @@
-import { isPlatformBrowser } from '@angular/common';
-import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { SwPush } from '@angular/service-worker';
 
 import { firstValueFrom } from 'rxjs';
 
 import { Json } from '../models/supabase-generated';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { ENV_VAPID_PUBLIC_KEY } from '../environments/environment';
 
@@ -16,13 +17,13 @@ import { SupabaseService } from './supabase.service';
 export class PushService {
   private readonly swPush = inject(SwPush);
   private readonly supabase = inject(SupabaseService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   readonly isSubscribed = signal<boolean>(false);
   readonly isSupported = signal<boolean>(false);
 
   constructor() {
-    if (isPlatformBrowser(this.platformId)) {
+    if (this.isBrowser) {
       this.isSupported.set(this.swPush.isEnabled);
       this.checkSubscription();
     }

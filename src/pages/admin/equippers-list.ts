@@ -1,10 +1,8 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   inject,
-  PLATFORM_ID,
   resource,
   signal,
   WritableSignal,
@@ -43,6 +41,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { GlobalData } from '../../services/global-data';
+
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 
@@ -51,6 +50,8 @@ import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { EquipperDto } from '../../models';
 
 import { handleErrorToast, matchesQuery } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-admin-equippers-list',
@@ -259,7 +260,7 @@ import { handleErrorToast, matchesQuery } from '../../utils';
 export class AdminEquippersListComponent {
   protected readonly global = inject(GlobalData);
   protected readonly supabase = inject(SupabaseService);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
@@ -334,7 +335,7 @@ export class AdminEquippersListComponent {
   }
 
   constructor() {
-    if (isPlatformBrowser(this.platformId)) {
+    if (this.isBrowser) {
       void this.loadEquippers();
     }
     this.global.resetDataByPage('home');

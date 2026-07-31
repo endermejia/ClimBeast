@@ -1,9 +1,7 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   computed,
   inject,
   Injectable,
-  PLATFORM_ID,
   resource,
   signal,
   Signal,
@@ -26,12 +24,14 @@ import {
   VERTICAL_LIFE_GRADES,
 } from '../models';
 
+import { IS_BROWSER } from '../app/is-browser';
+
 import { LocalStorage } from './local-storage';
 import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
 export class MapDataService {
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly localStorage = inject(LocalStorage);
 
@@ -49,7 +49,7 @@ export class MapDataService {
       if (
         !bounds ||
         !active ||
-        !isPlatformBrowser(this.platformId) ||
+        !this.isBrowser ||
         typeof window === 'undefined' ||
         !bounds
       ) {
@@ -267,7 +267,7 @@ export class MapDataService {
       ];
     },
     loader: async ({ params: slugs }) => {
-      if (!slugs.length || !isPlatformBrowser(this.platformId)) return [];
+      if (!slugs.length || !this.isBrowser) return [];
 
       try {
         await this.supabase.whenReady();

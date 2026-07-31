@@ -1,6 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+
+import { describe, it, expect, beforeEach } from 'vitest';
+
+import { IS_BROWSER } from '../app/is-browser';
 
 import { LocalStorage } from './local-storage';
 
@@ -9,7 +12,11 @@ describe('LocalStorage', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [LocalStorage, { provide: PLATFORM_ID, useValue: 'browser' }],
+      providers: [
+        LocalStorage,
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
+      ],
     });
     service = TestBed.inject(LocalStorage);
   });

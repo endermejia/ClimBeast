@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
+
+import { VERTICAL_LIFE_GRADES } from '../models';
+
 import {
   gradeToNumber,
   gradeToVerticalLife,
   computeGradeChartData,
 } from './grade-chart';
-import { VERTICAL_LIFE_GRADES } from '../models';
 
 describe('gradeToNumber', () => {
   it('should convert grade label to number', () => {
