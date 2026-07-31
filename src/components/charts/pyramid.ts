@@ -31,8 +31,6 @@ import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import { AscentsService } from '../../services/ascents.service';
-
 import { GlobalData } from '../../services/global-data';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -309,7 +307,6 @@ export class PyramidComponent implements AfterViewInit {
   private dialogs = inject(TuiDialogService);
   private translate = inject(TranslateService);
   private toast = inject(ToastService);
-  protected ascentsService = inject(AscentsService);
   private router = inject(Router);
   private readonly isBrowser = inject(IS_BROWSER);
   global = inject(GlobalData);

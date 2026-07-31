@@ -390,7 +390,6 @@ export class MerchandisingComponent {
   private readonly cartService = inject(CartService);
 
   protected readonly cartItems = this.cartService.totalItems;
-  protected readonly cartTotal = this.cartService.totalPrice;
 
   protected readonly isAdmin = this.global.isAdmin;
 

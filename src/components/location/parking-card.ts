@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  inject,
   input,
 } from '@angular/core';
 
@@ -10,8 +9,6 @@ import { TuiButton, TuiIcon } from '@taiga-ui/core';
 import { TuiCopy } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
-
-import { ParkingsService } from '../../services/parkings.service';
 
 import { ParkingDto } from '../../models';
 
@@ -80,8 +77,6 @@ import { AppCardComponent } from '../ui/card';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ParkingCardComponent {
-  protected readonly parkingsService = inject(ParkingsService);
-
   parking = input.required<ParkingDto>();
   appearance = input<string>('outline');
 

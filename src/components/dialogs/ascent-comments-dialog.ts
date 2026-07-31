@@ -268,8 +268,6 @@ export class AscentCommentsDialogComponent {
     viewChild.required<ElementRef<HTMLDivElement>>('editor');
   protected readonly containerRef =
     viewChild.required<ElementRef<HTMLDivElement>>('container');
-  protected readonly mentionListRef =
-    viewChild<ElementRef<HTMLDivElement>>('mentionList');
   private readonly mentionActions =
     viewChildren<ElementRef<HTMLButtonElement>>('mentionAction');
 

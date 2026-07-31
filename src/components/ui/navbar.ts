@@ -8,8 +8,6 @@ import {
   inject,
   input,
   signal,
-  TemplateRef,
-  viewChild,
 } from '@angular/core';
 import { toSignal, toObservable } from '@angular/core/rxjs-interop';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -655,9 +653,6 @@ export class NavbarComponent {
   protected readonly searchValue = signal('');
   protected readonly searchOpen = signal(false);
   protected activeSearchTab = signal(0);
-
-  protected readonly searchTemplate =
-    viewChild<TemplateRef<object>>('searchContent');
 
   constructor() {
     const cdr = inject(ChangeDetectorRef);

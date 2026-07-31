@@ -13,7 +13,7 @@ import { Router, RouterLink } from '@angular/router';
 import { TuiLink, TuiScrollbar } from '@taiga-ui/core';
 
 import { TuiCountryIsoCode } from '@taiga-ui/i18n';
-import { TUI_COUNTRIES, TuiSkeleton } from '@taiga-ui/kit';
+import { TuiSkeleton } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -106,8 +106,6 @@ export class EquipperComponent {
 
   // Route param
   id = input.required<string>();
-
-  protected readonly countriesNames = inject(TUI_COUNTRIES);
 
   readonly profileCountry = computed(
     () =>
