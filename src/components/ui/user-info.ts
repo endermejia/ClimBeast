@@ -28,8 +28,8 @@ import { AvatarUrlPipe } from '../../pipes';
     TuiSkeleton,
   ],
   template: `
-    <div class="flex items-start gap-4">
-      <div class="relative">
+    <div class="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-4">
+      <div class="relative sm:row-span-2">
         <span
           tuiAvatar
           [tuiSkeleton]="loading()"
@@ -55,8 +55,8 @@ import { AvatarUrlPipe } from '../../pipes';
         <ng-content select="[badge]" />
       </div>
 
-      <div class="grow min-w-0">
-        <div class="flex items-center justify-between gap-2">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-x-2">
           <div class="flex items-center gap-2 min-w-0">
             <h1
               class="text-xl font-semibold wrap-anywhere min-w-0"
@@ -66,6 +66,10 @@ import { AvatarUrlPipe } from '../../pipes';
             </h1>
             <ng-content select="[nameActions]" />
           </div>
+
+          @if (hasActions()) {
+            <ng-content select="[actions]" />
+          }
         </div>
 
         <div class="flex items-center gap-x-2 flex-wrap">
@@ -90,29 +94,23 @@ import { AvatarUrlPipe } from '../../pipes';
             </span>
           }
         </div>
+      </div>
 
-        <div class="mt-2 opacity-80">
-          <span
-            class="wrap-anywhere"
-            [tuiSkeleton]="
-              loading()
-                ? 'This text serves as the content behind the skeleton and adjusts the width.'
-                : false
-            "
-          >
-            {{ bio() }}
-          </span>
-        </div>
+      <div class="col-span-full mt-2 sm:col-[2_/_3]">
+        <span
+          class="wrap-anywhere opacity-80"
+          [tuiSkeleton]="
+            loading()
+              ? 'This text serves as the content behind the skeleton and adjusts the width.'
+              : false
+          "
+        >
+          {{ bio() }}
+        </span>
 
         <ng-content select="[extraInfo]" />
       </div>
     </div>
-
-    @if (hasActions()) {
-      <div class="flex flex-wrap gap-2 mt-4">
-        <ng-content select="[actions]" />
-      </div>
-    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
