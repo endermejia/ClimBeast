@@ -456,9 +456,9 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                 [type]="ascent.type"
                                 [active]="true"
                                 class="cursor-pointer"
-                                [tuiHint]="'ascent.edit' | translate"
+                                [tuiHint]="'ascent.view' | translate"
                                 (click.zoneless)="
-                                  editAscent.emit({ row: item, ascent: ascent })
+                                  viewAscent.emit({ row: item, ascent: ascent })
                                 "
                               />
                             } @else {
@@ -593,7 +593,7 @@ export class RoutesTableComponent {
     isAttached: boolean;
   }>();
   logAscent = output<RoutesTableRow>();
-  editAscent = output<{
+  viewAscent = output<{
     row: RoutesTableRow;
     ascent: { id: number | string; type: AscentType | null };
   }>();

@@ -117,9 +117,9 @@ import { RouteEquippersInputComponent } from './route-equippers-input';
                 [type]="ascent.type"
                 [active]="true"
                 class="cursor-pointer"
-                [tuiHint]="'ascent.edit' | translate"
+                [tuiHint]="'ascent.view' | translate"
                 (click.zoneless)="
-                  editAscent.emit({ route: item._ref, own_ascent: ascent });
+                  viewAscent.emit({ route: item._ref, own_ascent: ascent });
                   $event.stopPropagation()
                 "
               />
@@ -347,7 +347,7 @@ export class RouteRowExpandedComponent {
   availableTopos = input<{ id: number | string; name: string }[]>([]);
 
   logAscent = output<RouteItem | IndoorRouteWithExtras>();
-  editAscent = output<{
+  viewAscent = output<{
     route: RouteItem | IndoorRouteWithExtras;
     own_ascent:
       RouteAscentWithExtras | { id: string | number; type: AscentType | null };

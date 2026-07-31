@@ -62,7 +62,7 @@ import { RoutesTableComponent } from './routes-table';
       [equippersTemplate]="equippersTpl"
       [expandedTemplate]="expandedTpl"
       (logAscent)="logIndoorAscent($event)"
-      (editAscent)="editIndoorAscent($event.row, $event.ascent)"
+      (viewAscent)="viewIndoorAscent($event.row, $event.ascent)"
       (editRoute)="editIndoorRoute($event)"
       (deleteRoute)="deleteIndoorRoute($event)"
       (toggleRouteOnTopo)="
@@ -101,7 +101,7 @@ import { RoutesTableComponent } from './routes-table';
         [showAddRouteToTopo]="true"
         [availableTopos]="availableTopos()"
         (logAscent)="logIndoorAscent($event)"
-        (editAscent)="editIndoorAscent($event.route, $event.own_ascent)"
+        (viewAscent)="viewIndoorAscent($event.route, $event.own_ascent)"
         (editRoute)="editIndoorRoute($event)"
         (deleteRoute)="deleteIndoorRoute($event)"
         (toggleRouteOnTopo)="
@@ -199,39 +199,15 @@ export class IndoorRoutesTableComponent {
     }
   }
 
-  protected async editIndoorAscent(
-    item: RoutesTableRow | RouteItem | IndoorRouteWithExtras,
+  protected async viewIndoorAscent(
+    _item: RoutesTableRow | RouteItem | IndoorRouteWithExtras,
     ascent:
       RouteAscentWithExtras | { id: string | number; type: AscentType | null },
   ): Promise<void> {
-    const r =
-      '_ref' in item
-        ? (item._ref as IndoorRouteWithExtras)
-        : (item as IndoorRouteWithExtras);
     const asc = ascent as { id: string | number; type: AscentType | null };
-    const success = await firstValueFrom(
-      this.ascentsService.openAscentForm({
-        ascentData: {
-          ...asc,
-          route: {
-            id: r.id,
-            name: r.name,
-            climbing_kind: r.climbing_kind,
-            grade: r.grade,
-            center_name: r.center_name,
-            center_slug: r.center_slug,
-          },
-        } as unknown as RouteAscentWithExtras,
-        routeId: r.id,
-        routeName: r.name,
-        isIndoor: true,
-        grade: r.grade ?? undefined,
-      }),
-      { defaultValue: false },
-    );
-    if (success) {
-      this.indoorService.reloadCenterRoutes();
-    }
+    void firstValueFrom(this.ascentsService.openAscentDialog(Number(asc.id)), {
+      defaultValue: undefined,
+    });
   }
 
   protected async editIndoorRoute(

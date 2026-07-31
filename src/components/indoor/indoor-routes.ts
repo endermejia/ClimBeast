@@ -359,8 +359,8 @@ import { EmptyStateComponent } from '../ui/empty-state';
                               [type]="ascent.type"
                               [active]="true"
                               class="cursor-pointer"
-                              [tuiHint]="'ascent.edit' | translate"
-                              (click.zoneless)="editAscent(item, ascent)"
+                              [tuiHint]="'ascent.view' | translate"
+                              (click.zoneless)="viewAscent(item, ascent)"
                             />
                           } @else {
                             <button
@@ -418,8 +418,8 @@ import { EmptyStateComponent } from '../ui/empty-state';
                       <app-route-row-expanded
                         [route]="routeRowMap()['' + item.id]"
                         (logAscent)="logAscent($event)"
-                        (editAscent)="
-                          editAscent($event.route, $event.own_ascent)
+                        (viewAscent)="
+                          viewAscent($event.route, $event.own_ascent)
                         "
                         (editRoute)="editRoute($event)"
                         (deleteRoute)="deleteRoute($event)"
@@ -707,36 +707,14 @@ export class IndoorRoutesComponent {
     }
   }
 
-  async editAscent(
-    route: IndoorRouteWithExtras | RouteItem,
+  async viewAscent(
+    _route: IndoorRouteWithExtras | RouteItem,
     ascent:
       RouteAscentWithExtras | { id: string | number; type: AscentType | null },
   ): Promise<void> {
-    const r = route as IndoorRouteWithExtras;
     const asc = ascent as { id: string | number; type: AscentType | null };
-    const success = await firstValueFrom(
-      this.ascentsService.openAscentForm({
-        ascentData: {
-          ...asc,
-          route: {
-            id: r.id,
-            name: r.name,
-            climbing_kind: r.climbing_kind,
-            grade: r.grade,
-            center_name: r.center_name,
-            center_slug: r.center_slug,
-          },
-        } as unknown as RouteAscentWithExtras,
-        routeId: r.id,
-        routeName: r.name,
-        isIndoor: true,
-        climbingKind: r.climbing_kind as ClimbingKind | undefined,
-        grade: r.grade || undefined,
-      }),
-      { defaultValue: false },
-    );
-    if (success && this.centerId()) {
-      this.routesResource.reload();
-    }
+    void firstValueFrom(this.ascentsService.openAscentDialog(Number(asc.id)), {
+      defaultValue: undefined,
+    });
   }
 }

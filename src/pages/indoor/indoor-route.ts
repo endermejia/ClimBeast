@@ -218,7 +218,7 @@ import {
                     [style.background]="ownAscentInfo()?.background"
                     class="group relative overflow-hidden text-(--tui-text-primary-on-accent-1)! grow transition-all duration-300"
                     size="m"
-                    (click.zoneless)="ownAscent() && onEditAscent(ownAscent()!)"
+                    (click.zoneless)="ownAscent() && onViewAscent(ownAscent()!)"
                   >
                     <!-- Normal State -->
                     <span
@@ -234,8 +234,8 @@ import {
                     <span
                       class="absolute inset-0 flex items-center justify-center gap-2 opacity-0 scale-90 translate-y-1 transition-all duration-300 ease-out group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0 pointer-events-none"
                     >
-                      <tui-icon icon="@tui.pencil" />
-                      {{ 'ascent.edit' | translate }}
+                      <tui-icon icon="@tui.eye" />
+                      {{ 'ascent.view' | translate }}
                     </span>
                   </button>
                   <button
@@ -454,36 +454,11 @@ export class IndoorRouteComponent {
     }
   }
 
-  async onEditAscent(ascent: IndoorAscentWithExtras): Promise<void> {
-    const r = this.route();
-    if (!r) return;
-    const success = await firstValueFrom(
-      this.ascentsService.openAscentForm({
-        ascentData: {
-          ...ascent,
-          user: ascent.user_profile,
-          comment: ascent.notes,
-          grade: r.grade,
-          route: {
-            id: r.id,
-            name: r.name,
-            climbing_kind: r.climbing_kind,
-            grade: r.grade,
-            center_name: r.center_name,
-            center_slug: r.center_slug,
-          },
-        } as unknown as RouteAscentWithExtras,
-        routeId: r.id,
-        routeName: r.name,
-        isIndoor: true,
-        climbingKind: r.climbing_kind as ClimbingKind | undefined,
-        grade: r.grade || undefined,
-      }),
-      { defaultValue: false },
+  async onViewAscent(ascent: IndoorAscentWithExtras): Promise<void> {
+    void firstValueFrom(
+      this.ascentsService.openAscentDialog(Number(ascent.id)),
+      { defaultValue: undefined },
     );
-    if (success) {
-      this.ascentsResource.reload();
-    }
   }
 
   async onDeleteAscent(ascentId: string): Promise<void> {

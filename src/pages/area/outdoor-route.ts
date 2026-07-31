@@ -258,7 +258,7 @@ import { handleErrorToast } from '../../utils';
                       "
                       class="group relative overflow-hidden text-(--tui-text-primary-on-accent-1)! grow transition-all duration-300"
                       size="m"
-                      (click)="onEditAscent(r.own_ascent, r.name)"
+                      (click)="onViewAscent(r.own_ascent)"
                     >
                       <!-- Normal State -->
                       <span
@@ -278,8 +278,8 @@ import { handleErrorToast } from '../../utils';
                       <span
                         class="absolute inset-0 flex items-center justify-center gap-2 opacity-0 scale-90 translate-y-1 transition-all duration-300 ease-out group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0 pointer-events-none"
                       >
-                        <tui-icon icon="@tui.pencil" />
-                        {{ 'ascent.edit' | translate }}
+                        <tui-icon icon="@tui.eye" />
+                        {{ 'ascent.view' | translate }}
                       </span>
                     </button>
                     <button
@@ -585,13 +585,9 @@ export class OutdoorRouteComponent {
     );
   }
 
-  onEditAscent(ascent: RouteAscentWithExtras, routeName?: string): void {
+  onViewAscent(ascent: RouteAscentWithExtras): void {
     void firstValueFrom(
-      this.ascentsService.openAscentForm({
-        routeId: ascent.route_id,
-        routeName,
-        ascentData: ascent,
-      }),
+      this.ascentsService.openAscentDialog(Number(ascent.id)),
       { defaultValue: undefined },
     );
   }

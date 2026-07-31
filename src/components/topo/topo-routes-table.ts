@@ -303,11 +303,11 @@ import type { TopoRouteRow } from './topo.types';
                                   "
                                   tabindex="0"
                                   (click.zoneless)="
-                                    onEditAscent(ascentToEdit, item.name);
+                                    onViewAscent(ascentToEdit);
                                     $event.stopPropagation()
                                   "
                                   (keydown.enter)="
-                                    onEditAscent(ascentToEdit, item.name);
+                                    onViewAscent(ascentToEdit);
                                     $event.stopPropagation()
                                   "
                                 >
@@ -449,17 +449,11 @@ export class TopoRoutesTableComponent {
     );
   }
 
-  protected onEditAscent(
+  protected onViewAscent(
     ascent: NonNullable<TopoRouteRow['_ref']['route']['own_ascent']>,
-    routeName?: string,
   ): void {
     void firstValueFrom(
-      this.ascentsService.openAscentForm({
-        routeId: ascent.route_id,
-        routeName,
-        ascentData: ascent,
-        isIndoor: this.isIndoor(),
-      }),
+      this.ascentsService.openAscentDialog(Number(ascent.id)),
       { defaultValue: undefined },
     );
   }

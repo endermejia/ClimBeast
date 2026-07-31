@@ -64,7 +64,7 @@ import { RoutesTableComponent } from './routes-table';
         toggleRouteOnTopo($event.topoId, $event.routeId, $event.isAttached)
       "
       (logAscent)="onLogAscent($event)"
-      (editAscent)="onEditAscent($event.row, $event.ascent)"
+      (viewAscent)="onViewAscent($event.row, $event.ascent)"
       (toggleProject)="onToggleProject($event)"
       (editRoute)="openEditRoute($event)"
       (deleteRoute)="deleteRoute($event)"
@@ -78,7 +78,7 @@ import { RoutesTableComponent } from './routes-table';
         [showAddRouteToTopo]="showAddRouteToTopo()"
         [availableTopos]="availableTopos()"
         (logAscent)="onLogAscent($event)"
-        (editAscent)="onEditAscent($event.route, $event.own_ascent)"
+        (viewAscent)="onViewAscent($event.route, $event.own_ascent)"
         (toggleProject)="onToggleProject($event)"
         (editRoute)="openEditRoute($event)"
         (deleteRoute)="deleteRoute($event)"
@@ -220,21 +220,15 @@ export class OutdoorRoutesTableComponent {
     );
   }
 
-  protected onEditAscent(
-    row: RoutesTableRow | RouteItem | IndoorRouteWithExtras,
+  protected onViewAscent(
+    _row: RoutesTableRow | RouteItem | IndoorRouteWithExtras,
     ascent:
       RouteAscentWithExtras | { id: string | number; type: AscentType | null },
   ): void {
-    const r = '_ref' in row ? (row._ref as RouteItem) : (row as RouteItem);
     const a = ascent as RouteAscentWithExtras;
-    void firstValueFrom(
-      this.ascentsService.openAscentForm({
-        routeId: a.route_id,
-        routeName: r.name,
-        ascentData: a,
-      }),
-      { defaultValue: undefined },
-    );
+    void firstValueFrom(this.ascentsService.openAscentDialog(Number(a.id)), {
+      defaultValue: undefined,
+    });
   }
 
   protected onToggleProject(item: RoutesTableRow): void {
