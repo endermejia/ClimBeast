@@ -3,10 +3,10 @@ import {
   effect,
   inject,
   Injectable,
-  signal,
   Signal,
   untracked,
   WritableSignal,
+  signal,
 } from '@angular/core';
 import { toSignal, toObservable } from '@angular/core/rxjs-interop';
 
@@ -40,8 +40,6 @@ import { MapDataService } from './map-data.service';
 import { MessagingService } from './messaging.service';
 import { OnlineStatusService } from './online-status.service';
 import { ProfileDataService } from './profile-data.service';
-import { PushSubscriptionService } from './push-subscription.service';
-import { RealtimeService } from './realtime.service';
 import { SupabaseService } from './supabase.service';
 import { ThemeService } from './theme.service';
 
@@ -76,26 +74,24 @@ export class GlobalData {
   private readonly supabase = inject(SupabaseService);
   private breakpointService = toObservable(inject(TUI_BREAKPOINT));
 
-  // Domain services
-  readonly filterState = inject(FilterStateService);
-  readonly mapData = inject(MapDataService);
+  // Domain services (private — access via their exposed properties below)
+  private readonly filterState = inject(FilterStateService);
+  private readonly mapData = inject(MapDataService);
   readonly topoData = inject(TopoDataService);
-  readonly profileData = inject(ProfileDataService);
+  private readonly profileData = inject(ProfileDataService);
 
-  // Extracted services (new)
+  // Extracted services (private — access via their exposed properties below)
   readonly authState = inject(AuthStateService);
-  readonly audioPrefs = inject(AudioPreferencesService);
-  readonly breadcrumbsService = inject(BreadcrumbsService);
-  readonly equipperService = inject(EquipperService);
-  readonly themeService = inject(ThemeService);
-  readonly favoritesData = inject(FavoritesDataService);
-  readonly indoorCentersData = inject(IndoorCentersDataService);
-  readonly cragRoutesData = inject(CragRoutesDataService);
-  readonly adminParkingsData = inject(AdminParkingsService);
-  readonly languageService = inject(LanguageService);
-  readonly onlineStatus = inject(OnlineStatusService);
-  readonly realtime = inject(RealtimeService);
-  readonly pushSubscription = inject(PushSubscriptionService);
+  private readonly audioPrefs = inject(AudioPreferencesService);
+  private readonly breadcrumbsService = inject(BreadcrumbsService);
+  private readonly equipperService = inject(EquipperService);
+  private readonly themeService = inject(ThemeService);
+  private readonly favoritesData = inject(FavoritesDataService);
+  private readonly indoorCentersData = inject(IndoorCentersDataService);
+  private readonly cragRoutesData = inject(CragRoutesDataService);
+  private readonly adminParkingsData = inject(AdminParkingsService);
+  private readonly languageService = inject(LanguageService);
+  private readonly onlineStatus = inject(OnlineStatusService);
 
   readonly isMobile = toSignal(
     this.breakpointService.pipe(map((b) => b === 'mobile')),
@@ -114,7 +110,6 @@ export class GlobalData {
   readonly selectedLanguage: Signal<Language> =
     this.languageService.selectedLanguage;
   readonly currentLang = this.languageService.currentLang;
-  readonly tuiLanguage = this.languageService.tuiLanguage;
 
   // ---- Theme (delegated to ThemeService) ----
   readonly theme = this.themeService.theme;
@@ -123,7 +118,6 @@ export class GlobalData {
   setTheme = this.themeService.setTheme.bind(this.themeService);
 
   // ---- Breadcrumbs (delegated to BreadcrumbsService) ----
-  readonly breadcrumbs = this.breadcrumbsService.breadcrumbs;
   readonly slicedBreadcrumbs = this.breadcrumbsService.slicedBreadcrumbs;
 
   // Notifications and messages
@@ -138,10 +132,8 @@ export class GlobalData {
   readonly indoorFeature = this.authState.indoorFeature;
   readonly canEditAsAdmin = this.authState.canEditAsAdmin;
   readonly isAreaAdmin = this.authState.isAreaAdmin;
-  readonly isIndoorAdmin = this.authState.isIndoorAdmin;
 
   readonly adminAreas = this.authState.adminAreas;
-  readonly adminIndoorCenters = this.authState.adminIndoorCenters;
 
   readonly pendingAdminRequestsResource =
     this.authState.pendingAdminRequestsResource;
@@ -154,25 +146,21 @@ export class GlobalData {
   readonly indoorAdminPermissions = this.authState.indoorAdminPermissions;
   readonly canCreateIndoorInCenter = this.authState.canCreateIndoorInCenter;
 
-  readonly checkAreaEditPermission = this.authState.checkAreaEditPermission;
-  readonly checkCragEditPermission = this.authState.checkCragEditPermission;
-  readonly checkRouteEditPermission = this.authState.checkRouteEditPermission;
-
   readonly canEditArea = computed(() =>
-    this.checkAreaEditPermission(this.selectedArea()),
+    this.authState.checkAreaEditPermission(this.selectedArea()),
   );
   readonly canEditCrag = computed(() =>
-    this.checkCragEditPermission(this.cragDetail()),
+    this.authState.checkCragEditPermission(this.cragDetail()),
   );
   readonly canEditRoute = computed(() =>
-    this.checkRouteEditPermission(this.routeDetail()),
+    this.authState.checkRouteEditPermission(this.topoData.routeDetail()),
   );
 
   readonly canEditCragRoutes = computed(() => {
     const res: Record<number, boolean> = {};
     const routes = this.cragRoutes() ?? [];
     routes.forEach((r: RouteWithExtras) => {
-      res[r.id] = this.checkRouteEditPermission(r);
+      res[r.id] = this.authState.checkRouteEditPermission(r);
     });
     return res;
   });
@@ -261,7 +249,6 @@ export class GlobalData {
   readonly areaTopos = this.topoData.areaTopos;
 
   readonly topoDetailResource = this.topoData.topoDetailResource;
-  readonly topoDetail = this.topoData.topoDetail;
 
   readonly cragDetailResource = this.topoData.cragDetailResource;
   readonly cragDetail = this.topoData.cragDetail;
@@ -276,14 +263,11 @@ export class GlobalData {
   profileActiveTab = this.profileData.profileActiveTab;
 
   readonly userProjectsResource = this.profileData.userProjectsResource;
-  readonly userProjects = this.profileData.userProjects;
 
-  readonly firstAscentYearResource = this.profileData.firstAscentYearResource;
   readonly effectiveStartingClimbingYear =
     this.profileData.effectiveStartingClimbingYear;
 
   readonly ascentsPage = this.profileData.ascentsPage;
-  readonly ascentsSize = this.profileData.ascentsSize;
   readonly ascentsDateFilter = this.profileData.ascentsDateFilter;
   readonly ascentsQuery = this.profileData.ascentsQuery;
   readonly ascentsSort = this.profileData.ascentsSort;
@@ -293,18 +277,11 @@ export class GlobalData {
     this.profileData.userTotalAscentsCountResource;
 
   readonly routeDetailResource = this.topoData.routeDetailResource;
-  readonly routeDetail = this.topoData.routeDetail;
 
   readonly routeAscentsResource = this.topoData.routeAscentsResource;
 
   // ---- Admin Parkings (delegated to AdminParkingsService) ----
   readonly adminParkingsResource = this.adminParkingsData.adminParkingsResource;
-
-  // ---- Error state for interceptor ----
-  error: WritableSignal<string | null> = signal(null);
-  setError(message: string | null) {
-    this.error.set(message);
-  }
 
   constructor() {
     // Hydrate state from services

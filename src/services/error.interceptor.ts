@@ -11,8 +11,6 @@ import { catchError, timeout } from 'rxjs/operators';
 
 import { IS_BROWSER } from '../app/is-browser';
 
-import { GlobalData } from './global-data';
-
 import { SupabaseService } from './supabase.service';
 
 export const errorInterceptor: HttpInterceptorFn = (
@@ -44,26 +42,8 @@ export const errorInterceptor: HttpInterceptorFn = (
       const httpErr = err as HttpErrorResponse | null;
       const status = httpErr?.status ?? 0;
 
-      // Derive a message for global error state
-      let msg =
-        (httpErr?.error as { message?: string } | undefined)?.message ||
-        httpErr?.message ||
-        'errors.unexpected';
-
-      // Handle network errors (0 status = no connection)
-      if (status === 0 || err?.constructor?.name === 'TimeoutError') {
-        msg = 'errors.network';
-      }
-
-      // Update global error state (best-effort)
-      try {
-        const global = injector.get(GlobalData);
-        global?.setError?.(msg);
-        if (typeof console !== 'undefined') {
-          console.error('HTTP Error:', err);
-        }
-      } catch {
-        // no-op
+      if (typeof console !== 'undefined') {
+        console.error('HTTP Error:', err);
       }
 
       // Skip redirect logic on the server and for static/i18n assets
