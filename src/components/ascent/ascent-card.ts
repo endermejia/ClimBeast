@@ -30,8 +30,8 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
+import { AuthStateService } from '../../services/auth-state.service';
 import { FollowsService } from '../../services/follows.service';
-import { GlobalData } from '../../services/global-data';
 import { SupabaseService } from '../../services/supabase.service';
 
 import {
@@ -373,7 +373,7 @@ import { AscentTypeComponent } from './ascent-type';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AscentCardComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
   protected readonly climbingIcons = CLIMBING_ICONS;
   protected readonly supabase = inject(SupabaseService);
 
@@ -386,7 +386,7 @@ export class AscentCardComponent {
     );
   });
   protected readonly isOwnAscent = computed(() => {
-    const currentUserId = this.global.userProfile()?.id;
+    const currentUserId = this.authState.userProfile()?.id;
     const ascentUserId = this.data()?.user_id;
     return !!(currentUserId && ascentUserId && currentUserId === ascentUserId);
   });

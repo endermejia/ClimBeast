@@ -31,8 +31,7 @@ import {
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { AreasService } from '../../services/areas.service';
-
-import { GlobalData } from '../../services/global-data';
+import { LayoutService } from '../../services/layout.service';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { EmptyStateComponent } from '../../components/ui/empty-state';
@@ -95,7 +94,7 @@ interface AreaAdminRequest {
       <tui-scrollbar class="flex grow">
         @if (requests().length > 0) {
           <table
-            [size]="global.isMobile() ? 's' : 'l'"
+            [size]="layoutService.isMobile() ? 's' : 'l'"
             tuiTable
             class="w-full"
             [columns]="columns()"
@@ -225,7 +224,7 @@ interface AreaAdminRequest {
   host: { class: 'flex grow min-h-0' },
 })
 export class AdminAreaRequestsComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly layoutService = inject(LayoutService);
   protected readonly supabase = inject(SupabaseService);
   protected readonly areas = inject(AreasService);
   private readonly isBrowser = inject(IS_BROWSER);

@@ -26,7 +26,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { map, merge, startWith } from 'rxjs';
 
-import { GlobalData } from '../../services/global-data';
+import { AuthStateService } from '../../services/auth-state.service';
 
 import { ORDERED_GRADE_VALUES } from '../../models';
 
@@ -64,7 +64,7 @@ export interface FilterDialog {
   ],
   template: `
     <form tuiForm [formGroup]="form">
-      @if (showIndoorOutdoor && global.indoorFeature()) {
+      @if (showIndoorOutdoor && authState.indoorFeature()) {
         <section>
           <tui-filter
             formControlName="indoorOutdoor"
@@ -123,7 +123,7 @@ export interface FilterDialog {
         </section>
       }
 
-      @if (showIndoorAscents && global.indoorFeature()) {
+      @if (showIndoorAscents && authState.indoorFeature()) {
         <section class="flex flex-col gap-3">
           <label class="flex items-center gap-2">
             <input
@@ -156,7 +156,7 @@ export interface FilterDialog {
 })
 export class FilterDialogComponent {
   private readonly translate = inject(TranslateService);
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
   protected readonly context =
     injectContext<TuiDialogContext<FilterDialog, FilterDialog>>();
 
@@ -402,13 +402,13 @@ export class FilterDialogComponent {
           : rawGradeRange[1],
       ],
       selectedShade,
-      indoor: this.global.indoorFeature() ? indoor : false,
+      indoor: this.authState.indoorFeature() ? indoor : false,
       outdoor,
       showCategories: this.context.data?.showCategories,
       showShade: this.context.data?.showShade,
       showGradeRange: this.context.data?.showGradeRange,
       showIndoorOutdoor: this.context.data?.showIndoorOutdoor,
-      showIndoorAscents: this.global.indoorFeature()
+      showIndoorAscents: this.authState.indoorFeature()
         ? this.form.value.showIndoorAscents
         : false,
     };
@@ -426,7 +426,7 @@ export class FilterDialogComponent {
       categories: [],
       gradeRange: [this.minIndex, ORDERED_GRADE_VALUES.length - 1],
       selectedShade: [],
-      indoor: this.global.indoorFeature(),
+      indoor: this.authState.indoorFeature(),
       outdoor: true,
       showCategories: this.context.data?.showCategories,
       showShade: this.context.data?.showShade,

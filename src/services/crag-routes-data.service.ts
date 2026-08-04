@@ -11,8 +11,8 @@ import { IS_BROWSER } from '../app/is-browser';
 import { AuthStateService } from './auth-state.service';
 
 import { CacheService } from './cache.service';
+import { OutdoorDataService } from './outdoor-data.service';
 import { SupabaseService } from './supabase.service';
-import { TopoDataService } from './topo-data.service';
 
 /**
  * Manages crag routes data with caching and signals.
@@ -25,12 +25,12 @@ export class CragRoutesDataService {
   private readonly cache = inject(CacheService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
-  private readonly topoData = inject(TopoDataService);
+  private readonly outdoorData = inject(OutdoorDataService);
   private readonly authState = inject(AuthStateService);
 
   readonly cragRoutesResource = resource({
     params: () => {
-      const crag = this.topoData.cragDetail();
+      const crag = this.outdoorData.cragDetail();
       const hasAccess = crag
         ? crag.is_public ||
           crag.purchased ||
@@ -113,7 +113,7 @@ export class CragRoutesDataService {
     const val = this.cragRoutesResource.value();
     if (val !== undefined) return val as RouteWithExtras[];
     return this.cache.get<RouteWithExtras[]>(
-      CACHE_KEYS.cragRoutes(this.topoData.selectedCragSlug() ?? ''),
+      CACHE_KEYS.cragRoutes(this.outdoorData.selectedCragSlug() ?? ''),
       [],
     );
   });

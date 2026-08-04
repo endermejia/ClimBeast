@@ -21,7 +21,7 @@ import { TuiDataListWrapper, TuiSelect } from '@taiga-ui/kit';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { AscentsService } from '../../services/ascents.service';
-import { GlobalData } from '../../services/global-data';
+import { LayoutService } from '../../services/layout.service';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { UserAscentStatRecord } from '../../models';
@@ -157,7 +157,7 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
 export class UserProfileStatisticsComponent {
   private readonly ascentsService = inject(AscentsService);
   private readonly translate = inject(TranslateService);
-  protected readonly global = inject(GlobalData);
+  protected readonly layout = inject(LayoutService);
   protected readonly supabase = inject(SupabaseService);
 
   userId = input.required<string | undefined>();
@@ -328,7 +328,7 @@ export class UserProfileStatisticsComponent {
     const years = this.trendData().years;
     if (years.length === 0) return [];
 
-    const isMobile = this.global.isMobile();
+    const isMobile = this.layout.isMobile();
     const maxLabels = isMobile ? 5 : 10;
 
     if (years.length <= maxLabels) return years;

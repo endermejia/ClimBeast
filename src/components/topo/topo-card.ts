@@ -14,7 +14,7 @@ import { TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { GlobalData } from '../../services/global-data';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 
 import { IndoorTopoListItem, TopoListItem } from '../../models';
 
@@ -68,7 +68,7 @@ import { ChartRoutesByGradeComponent } from '../charts/chart-routes-by-grade';
                 [src]="
                   ({
                     path: photo,
-                    version: global.topoPhotoVersion(),
+                    version: this.outdoorData.topoPhotoVersion(),
                     isIndoor: isIndoor(),
                   }
                     | topoImage
@@ -147,7 +147,7 @@ import { ChartRoutesByGradeComponent } from '../charts/chart-routes-by-grade';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TopoCardComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly outdoorData = inject(OutdoorDataService);
   topo = input.required<TopoListItem | IndoorTopoListItem>();
   isIndoor = input<boolean>(false);
   pendingRoutes = input<number | null>(null);

@@ -25,7 +25,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
-import { GlobalData } from '../../services/global-data';
+import { AuthStateService } from '../../services/auth-state.service';
 
 import { IndoorService } from '../../services/indoor.service';
 import { SupabaseService } from '../../services/supabase.service';
@@ -108,18 +108,18 @@ export class IndoorToposComponent {
 
   protected readonly indoor = inject(IndoorService);
   protected readonly supabase = inject(SupabaseService);
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
   private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
   private readonly dialogs = inject(TuiDialogService);
   private readonly toast = inject(ToastService);
 
   protected readonly canCreate = computed(() => {
-    return this.global.canCreateIndoorInCenter(this.centerId());
+    return this.authState.canCreateIndoorInCenter(this.centerId());
   });
 
   protected readonly canEdit = computed(() => {
-    return !!this.global.indoorAdminPermissions()[this.centerId()];
+    return !!this.authState.indoorAdminPermissions()[this.centerId()];
   });
 
   protected readonly showLegacyTopos = signal<boolean>(

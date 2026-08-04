@@ -28,8 +28,10 @@ import { TuiHeader } from '@taiga-ui/layout';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AreasService } from '../../services/areas.service';
+import { AuthStateService } from '../../services/auth-state.service';
+import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
-import { GlobalData } from '../../services/global-data';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 
 import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
@@ -181,22 +183,24 @@ import { matchesQuery } from '../../utils';
   host: { class: 'flex grow min-h-0' },
 })
 export class MyAreasComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
   protected readonly router = inject(Router);
   protected readonly areasService = inject(AreasService);
+  protected readonly outdoorData = inject(OutdoorDataService);
+  private readonly filterState = inject(FilterStateService);
   private readonly filtersService = inject(FiltersService);
 
   readonly loading = computed(() => this.areasService.loading());
-  readonly myAreaIds = this.global.adminAreas;
+  readonly myAreaIds = this.authState.adminAreas;
   readonly areas = computed(() => {
     const ids = this.myAreaIds();
-    return this.global.areasList().filter((a) => ids.includes(a.id));
+    return this.outdoorData.areasList().filter((a) => ids.includes(a.id));
   });
 
   readonly query: WritableSignal<string> = signal('');
-  readonly selectedGradeRange = this.global.areaListGradeRange;
-  readonly selectedCategories = this.global.areaListCategories;
-  readonly selectedShade = this.global.areaListShade;
+  readonly selectedGradeRange = this.filterState.areaListGradeRange;
+  readonly selectedCategories = this.filterState.areaListCategories;
+  readonly selectedShade = this.filterState.areaListShade;
 
   readonly hasActiveFilters = computed(() => {
     const [lo, hi] = this.selectedGradeRange();
@@ -259,10 +263,6 @@ export class MyAreasComponent {
         textMatches(a) && gradeMatches(a) && kindMatches(a) && shadeMatches(a),
     );
   });
-
-  constructor() {
-    this.global.resetDataByPage('home');
-  }
 
   onQuery(v: string) {
     this.query.set(v);

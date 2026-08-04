@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   resource,
 } from '@angular/core';
 
@@ -10,6 +11,11 @@ import { TUI_CONFIRM, TuiBadge, type TuiConfirmData } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
+
+import { AuthStateService } from '../../services/auth-state.service';
+import { IndoorDataService } from '../../services/indoor-data.service';
+import { IndoorService } from '../../services/indoor.service';
+import { LayoutService } from '../../services/layout.service';
 
 import { TopoRoutesTableComponent } from '../../components/topo/topo-routes-table';
 import { TopoViewerComponent } from '../../components/topo/topo-viewer';
@@ -36,7 +42,7 @@ import { TopoPageBase } from '../area/topo-page-base';
   template: `
     <div class="h-full w-full">
       <section class="flex flex-col w-full h-full md:p-4">
-        @let isMobile = global.isMobile();
+        @let isMobile = layoutService.isMobile();
         @if (topo(); as t) {
           <div class="px-4 pt-0 pb-1.5 md:p-0 md:mb-4 shrink-0">
             <app-section-header
@@ -149,11 +155,16 @@ import { TopoPageBase } from '../area/topo-page-base';
   },
 })
 export class IndoorTopoComponent extends TopoPageBase {
+  protected readonly authState = inject(AuthStateService);
+  protected override readonly indoorData = inject(IndoorDataService);
+  protected readonly layoutService = inject(LayoutService);
+  protected readonly indoorService = inject(IndoorService);
+
   override isIndoor = computed(() => true);
 
   protected readonly canEditAsAdmin = computed(() => {
     const centerId = this.topo()?.center_id ?? '';
-    return !!this.global.indoorAdminPermissions()[centerId];
+    return !!this.authState.indoorAdminPermissions()[centerId];
   });
 
   protected readonly topoImageResource = resource({
@@ -170,17 +181,17 @@ export class IndoorTopoComponent extends TopoPageBase {
 
   protected readonly canEdit = computed(() => {
     const centerId = this.topo()?.center_id ?? '';
-    return !!this.global.indoorAdminPermissions()[centerId];
+    return !!this.authState.indoorAdminPermissions()[centerId];
   });
 
   protected readonly columns = computed(() => {
-    const isMobile = this.global.isMobile();
+    const isMobile = this.layoutService.isMobile();
     const base = isMobile
       ? ['index', 'grade', 'name']
       : ['index', 'grade', 'name', 'actions'];
     const t = this.topo();
     const centerId = t?.center_id ?? '';
-    if (!isMobile && this.global.indoorAdminPermissions()[centerId]) {
+    if (!isMobile && this.authState.indoorAdminPermissions()[centerId]) {
       base.push('admin_actions');
     }
     return base;
@@ -235,8 +246,8 @@ export class IndoorTopoComponent extends TopoPageBase {
         end_date: null,
         start_date: null,
       } as IndoorTopoDto)
-      .then((success) => {
-        if (success) this.global.topoDetailResource.reload();
+      .then((success: boolean) => {
+        if (success) this.indoorData.topoDetailResource.reload();
       });
   }
 

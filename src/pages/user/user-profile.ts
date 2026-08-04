@@ -38,8 +38,10 @@ import { BlockingService } from '../../services/blocking.service';
 
 import { FollowRequestsService } from '../../services/follow-requests.service';
 import { FollowsService } from '../../services/follows.service';
-import { GlobalData } from '../../services/global-data';
+import { LayoutService } from '../../services/layout.service';
 import { MessagingService } from '../../services/messaging.service';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
+import { ProfileDataService } from '../../services/profile-data.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { TourService } from '../../services/tour.service';
@@ -374,8 +376,10 @@ import { IS_BROWSER } from '../../app/is-browser';
   host: { class: 'flex grow min-h-0' },
 })
 export class UserProfileComponent {
-  protected readonly global = inject(GlobalData);
   protected readonly messagingService = inject(MessagingService);
+  protected readonly profileData = inject(ProfileDataService);
+  protected readonly outdoorData = inject(OutdoorDataService);
+  protected readonly layout = inject(LayoutService);
   protected readonly supabase = inject(SupabaseService);
   protected readonly router = inject(Router);
   protected readonly tourService = inject(TourService);
@@ -394,7 +398,7 @@ export class UserProfileComponent {
   protected dropdownOpen = signal(false);
   protected readonly followLoading = signal(false);
 
-  protected readonly activeTab = this.global.profileActiveTab;
+  protected readonly activeTab = this.profileData.profileActiveTab;
   protected readonly followedIds = signal<Set<string>>(new Set());
   protected readonly requestedIds = signal<Set<string>>(new Set());
   protected readonly incomingRequestIds = signal<Set<string>>(new Set());
@@ -550,7 +554,7 @@ export class UserProfileComponent {
 
   readonly hasAscents = computed(() => {
     if (this.isOwnProfile()) return true;
-    const count = this.global.userTotalAscentsCountResource.value();
+    const count = this.profileData.userTotalAscentsCountResource.value();
     return count === undefined || count !== 0;
   });
 
@@ -635,7 +639,7 @@ export class UserProfileComponent {
     // Update global loading state
     effect(() => {
       const isLoading = this.loading();
-      this.global.isNavLoading.set(isLoading);
+      this.layout.isNavLoading.set(isLoading);
     });
 
     effect(() => {
@@ -651,7 +655,7 @@ export class UserProfileComponent {
     });
 
     destroyRef.onDestroy(() => {
-      this.global.isNavLoading.set(false);
+      this.layout.isNavLoading.set(false);
     });
 
     // Handle tour steps and tab switches
@@ -689,9 +693,14 @@ export class UserProfileComponent {
       const profileId = this.profile()?.id;
       this.id(); // Track the id signal to trigger on param change
 
-      if (profileId && profileId !== this.global.profileUserId()) {
-        this.global.resetDataByPage('profile');
-        this.global.profileUserId.set(profileId);
+      if (profileId) {
+        this.profileData.profileUserId.set(profileId);
+        this.profileData.profileUserId.set(profileId);
+        this.profileData.resetPagination();
+        this.outdoorData.selectedAreaSlug.set(null);
+        this.outdoorData.selectedCragSlug.set(null);
+        this.outdoorData.selectedRouteSlug.set(null);
+        this.profileData.profileActiveTab.set(0);
       }
     });
 

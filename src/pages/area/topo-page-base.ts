@@ -20,17 +20,19 @@ import { TuiDialogService } from '@taiga-ui/core';
 import { TranslateService } from '@ngx-translate/core';
 
 import { AscentsService } from '../../services/ascents.service';
+import { BreadcrumbsService } from '../../services/breadcrumbs.service';
 
-import { GlobalData } from '../../services/global-data';
-import { IndoorService } from '../../services/indoor.service';
+import { IndoorDataService } from '../../services/indoor-data.service';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { RoutesService } from '../../services/routes.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
 
-import type { TopoRouteRow } from '../../components/topo/topo.types';
-
+import { TopoRouteWithRoute } from '../../models';
 import type { TopoDetail, TopoListItem } from '../../models';
+
+import { TopoRouteRow } from '../../pipes/table-sorter.pipe';
 
 import {
   getRouteStyleProperties,
@@ -42,11 +44,13 @@ import { IS_BROWSER } from '../../app/is-browser';
 
 @Directive()
 export abstract class TopoPageBase {
-  protected readonly global = inject(GlobalData);
+  protected readonly outdoorData = inject(OutdoorDataService);
+  protected readonly indoorData = inject(IndoorDataService);
+  protected readonly breadcrumbsService = inject(BreadcrumbsService);
   protected readonly supabase = inject(SupabaseService);
   protected readonly ascentsService = inject(AscentsService);
   protected readonly toposService = inject(ToposService);
-  protected readonly indoorService = inject(IndoorService);
+
   protected readonly routesService = inject(RoutesService);
   protected readonly router = inject(Router);
   protected readonly isBrowser = inject(IS_BROWSER);
@@ -63,9 +67,17 @@ export abstract class TopoPageBase {
   id = input<string | undefined>();
   sectorSlug = input<string | undefined>();
 
-  protected readonly topo = this.global.topoDetailResource.value;
-  protected readonly crag = this.global.cragDetailResource.value;
-  protected readonly allAreaTopos = this.global.areaToposResource.value;
+  protected readonly topo = computed(() => {
+    return this.isIndoor()
+      ? this.indoorData.topoDetailResource.value()
+      : this.outdoorData.topoDetailResource.value();
+  });
+  protected readonly crag = this.outdoorData.cragDetailResource.value;
+  protected readonly allAreaTopos = computed(() => {
+    return this.isIndoor()
+      ? this.indoorData.centerToposResource.value()
+      : this.outdoorData.areaToposResource.value();
+  });
 
   protected readonly selectedRouteId = signal<string | number | null>(null);
   protected readonly hoveredRouteId = signal<string | number | null>(null);
@@ -74,7 +86,11 @@ export abstract class TopoPageBase {
     const routeId = this.selectedRouteId();
     const topo = this.topo();
     if (!routeId || !topo || !topo.topo_routes) return null;
-    return topo.topo_routes.find((r) => r?.route_id === routeId) || null;
+    return (
+      topo.topo_routes.find(
+        (r: TopoRouteWithRoute) => r?.route_id === routeId,
+      ) || null
+    );
   });
 
   protected readonly imageRatio = signal(1);
@@ -129,14 +145,14 @@ export abstract class TopoPageBase {
   constructor() {
     inject(DestroyRef).onDestroy(() => {
       if (this.isIndoor()) {
-        this.global.selectedIndoorCenter.set(null);
+        this.breadcrumbsService.selectedIndoorCenter.set(null);
       }
     });
 
     effect(() => {
       const t = this.topo();
       if (this.isIndoor() && t) {
-        this.global.selectedIndoorCenter.set({
+        this.breadcrumbsService.selectedIndoorCenter.set({
           id: t.center_id || '',
           name: t.crag?.name || '',
           slug: t.crag?.slug || '',
@@ -145,29 +161,30 @@ export abstract class TopoPageBase {
     });
 
     effect(() => {
-      this.global.resetDataByPage('topo');
+      this.outdoorData.selectedRouteSlug.set(null);
       const topoId = this.id();
       if (this.isIndoor()) {
         const center = this.centerSlug();
-        this.global.selectedCenterSlug.set(center || null);
-        this.global.selectedAreaSlug.set(null);
-        this.global.selectedCragSlug.set(null);
+        this.indoorData.selectedCenterSlug.set(center || null);
+        this.outdoorData.selectedAreaSlug.set(null);
+        this.outdoorData.selectedCragSlug.set(null);
       } else {
-        const aSlug = this.areaSlug();
-        const cSlug = this.cragSlug();
-        this.global.selectedAreaSlug.set(aSlug || null);
-        this.global.selectedCragSlug.set(cSlug || null);
-        this.global.selectedCenterSlug.set(null);
+        const area = this.areaSlug();
+        const crag = this.cragSlug();
+        this.indoorData.selectedCenterSlug.set(null);
+        this.outdoorData.selectedAreaSlug.set(area || null);
+        this.outdoorData.selectedCragSlug.set(crag || null);
       }
-      if (topoId) {
-        this.global.selectedTopoId.set(topoId);
-      }
+      this.outdoorData.selectedTopoId.set(topoId ?? null);
+      this.indoorData.selectedTopoId.set(topoId ?? null);
     });
 
     effect(() => {
       if (!this.isBrowser) return;
-      const loading = this.global.topoDetailResource.isLoading();
-      if (loading) return;
+      const isLoading = this.isIndoor()
+        ? this.indoorData.topoDetailResource.isLoading()
+        : this.outdoorData.topoDetailResource.isLoading();
+      if (isLoading) return;
       const t = this.topo();
       if (!t) {
         this.router.navigateByUrl('/page-not-found');

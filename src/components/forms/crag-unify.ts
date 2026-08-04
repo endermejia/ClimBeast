@@ -30,7 +30,7 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { CragsService } from '../../services/crags.service';
-import { GlobalData } from '../../services/global-data';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 
 import { CragDto } from '../../models';
 
@@ -164,7 +164,7 @@ import { CragDto } from '../../models';
   host: { class: 'block w-full' },
 })
 export class CragUnifyComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly outdoorData = inject(OutdoorDataService);
   protected readonly context =
     injectContext<TuiDialogContext<boolean, { candidates?: CragDto[] }>>();
   private readonly cragsService = inject(CragsService);
@@ -199,7 +199,7 @@ export class CragUnifyComponent {
 
   protected readonly availableCrags = computed(() => {
     const candidates = this.context.data?.candidates ?? [];
-    const globalList = this.global.cragsList();
+    const globalList = this.outdoorData.cragsList();
     const map = new Map();
     // Prioritize candidates
     candidates.forEach((c) => map.set(c.id, c));

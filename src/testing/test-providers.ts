@@ -3,12 +3,10 @@ import { provideRouter } from '@angular/router';
 
 import { TranslateService } from '@ngx-translate/core';
 
-import { GlobalData } from '../services/global-data';
 import { LocalStorage } from '../services/local-storage';
 import { SupabaseService } from '../services/supabase.service';
 
 import { IS_BROWSER } from '../app/is-browser';
-import { MockGlobalData } from './mock-global-data.service';
 import { MockLocalStorage } from './mock-local-storage';
 import { MockSupabaseService } from './mock-supabase.service';
 import {
@@ -22,11 +20,9 @@ export const COMMON_TEST_PROVIDERS: (Provider | EnvironmentProviders)[] = [
   { provide: IS_BROWSER, useValue: true },
   { provide: TranslateService, useClass: MockTranslateService },
   { provide: SupabaseService, useClass: MockSupabaseService },
-  { provide: GlobalData, useClass: MockGlobalData },
   { provide: LocalStorage, useClass: MockLocalStorage },
 ];
 
 export { MockTranslateService, MockTranslatePipe };
 export { MockSupabaseService };
-export { MockGlobalData };
 export { MockLocalStorage };

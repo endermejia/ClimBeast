@@ -22,7 +22,8 @@ import { TuiAvatar } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { GlobalData } from '../../services/global-data';
+import { AuthStateService } from '../../services/auth-state.service';
+import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 import { IndoorService } from '../../services/indoor.service';
 
 import { IndoorCenterCardComponent } from '../../components/indoor/indoor-center-card';
@@ -67,7 +68,7 @@ import { matchesQuery } from '../../utils';
             </h1>
 
             <div class="flex gap-2 flex-wrap sm:flex-nowrap justify-end">
-              @if (global.isAdmin()) {
+              @if (authState.isAdmin()) {
                 <button
                   tuiButton
                   appearance="textfield"
@@ -104,7 +105,7 @@ import { matchesQuery } from '../../utils';
             </tui-textfield>
           </div>
 
-          @if (global.indoorCentersResource.isLoading()) {
+          @if (indoorCentersData.indoorCentersResource.isLoading()) {
             <tui-loader size="xxl" class="mt-20" />
           } @else {
             @if (count > 0) {
@@ -130,13 +131,14 @@ import { matchesQuery } from '../../utils';
   host: { class: 'flex grow min-h-0' },
 })
 export class IndoorListComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
   protected readonly indoor = inject(IndoorService);
+  protected readonly indoorCentersData = inject(IndoorCentersDataService);
 
   protected readonly query = signal('');
 
   protected readonly filtered = computed(() => {
-    const list = this.global.indoorCentersList();
+    const list = this.indoorCentersData.indoorCentersList();
     const q = this.query();
 
     if (!q) return list;

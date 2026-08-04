@@ -2,6 +2,8 @@ import { inject, Injectable, signal } from '@angular/core';
 
 import { IS_BROWSER } from '../app/is-browser';
 
+import { LocalStorage } from './local-storage';
+
 export interface AppErrorLog {
   id: string;
   timestamp: string;
@@ -15,6 +17,7 @@ export interface AppErrorLog {
 })
 export class ErrorLogService {
   private readonly isBrowser = inject(IS_BROWSER);
+  private readonly localStorage = inject(LocalStorage);
   private readonly storageKey = 'app_error_logs_v2';
 
   readonly errors = signal<AppErrorLog[]>(this.loadErrors());
@@ -22,7 +25,7 @@ export class ErrorLogService {
   private loadErrors(): AppErrorLog[] {
     if (!this.isBrowser) return [];
     try {
-      const data = localStorage.getItem(this.storageKey);
+      const data = this.localStorage.getItem(this.storageKey);
       return data ? JSON.parse(data) : [];
     } catch {
       return [];
@@ -58,13 +61,13 @@ export class ErrorLogService {
       timestamp: new Date().toISOString(),
       message,
       stack,
-      url: window.location.href,
+      url: this.isBrowser ? window.location.href : undefined,
     };
 
     this.errors.update((logs) => {
       const updated = [newError, ...logs].slice(0, 100);
       try {
-        localStorage.setItem(this.storageKey, JSON.stringify(updated));
+        this.localStorage.setItem(this.storageKey, JSON.stringify(updated));
       } catch {
         // Storage full or disabled
       }
@@ -76,7 +79,7 @@ export class ErrorLogService {
     this.errors.set([]);
     if (this.isBrowser) {
       try {
-        localStorage.removeItem(this.storageKey);
+        this.localStorage.removeItem(this.storageKey);
       } catch {
         // ignore storage errors
       }

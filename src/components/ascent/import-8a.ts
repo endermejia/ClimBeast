@@ -47,9 +47,12 @@ import {
 } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
+import { CragRoutesDataService } from '../../services/crag-routes-data.service';
 import { EightAnuService } from '../../services/eight-anu.service';
-import { GlobalData } from '../../services/global-data';
+
+import { MapDataService } from '../../services/map-data.service';
 import { NotificationService } from '../../services/notification.service';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 
@@ -413,11 +416,13 @@ interface ExistingUserAscentKey {
 export class Import8aComponent {
   private readonly supabase = inject(SupabaseService);
   private readonly eightAnuService = inject(EightAnuService);
-  private readonly global = inject(GlobalData);
   protected readonly ascentsService = inject(AscentsService);
   private readonly toast = inject(ToastService);
   private readonly notification = inject(NotificationService);
   private readonly translate = inject(TranslateService);
+  private readonly outdoorData = inject(OutdoorDataService);
+  private readonly mapData = inject(MapDataService);
+  private readonly cragRoutesData = inject(CragRoutesDataService);
   private readonly context = inject(
     POLYMORPHEUS_CONTEXT,
   ) as TuiDialogContext<boolean>;
@@ -1185,12 +1190,12 @@ export class Import8aComponent {
 
       // 4. Reload resources
       this.ascentsService.refreshResources();
-      this.global.areasListResource.reload();
-      this.global.areasMapResource.reload();
-      this.global.mapResource.reload();
-      this.global.cragsListResource.reload();
-      this.global.cragDetailResource.reload();
-      this.global.cragRoutesResource.reload();
+      this.outdoorData.areasListResource.reload();
+      this.mapData.areasMapResource.reload();
+      this.mapData.mapResource.reload();
+      this.outdoorData.cragsListResource.reload();
+      this.outdoorData.cragDetailResource.reload();
+      this.cragRoutesData.cragRoutesResource.reload();
       progress$.next(100);
 
       // 5. Show success message

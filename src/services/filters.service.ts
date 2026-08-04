@@ -16,13 +16,13 @@ import { ORDERED_GRADE_VALUES } from '../models';
 
 import { clamp } from '../utils';
 
-import { GlobalData } from './global-data';
+import { FilterStateService } from './filter-state.service';
 
 @Injectable({ providedIn: 'root' })
 export class FiltersService {
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
-  private readonly global = inject(GlobalData);
+  private readonly filterState = inject(FilterStateService);
 
   openFilters(
     options: {
@@ -33,11 +33,11 @@ export class FiltersService {
     } = {},
   ): void {
     const data: FilterDialog = {
-      categories: this.global.areaListCategories(),
-      gradeRange: this.global.areaListGradeRange(),
-      selectedShade: this.global.areaListShade(),
-      indoor: this.global.areaListShowIndoor(),
-      outdoor: this.global.areaListShowOutdoor(),
+      categories: this.filterState.areaListCategories(),
+      gradeRange: this.filterState.areaListGradeRange(),
+      selectedShade: this.filterState.areaListShade(),
+      indoor: this.filterState.areaListShowIndoor(),
+      outdoor: this.filterState.areaListShowOutdoor(),
       showCategories: options.showCategories ?? true,
       showShade: options.showShade ?? true,
       showGradeRange: options.showGradeRange ?? true,
@@ -63,16 +63,19 @@ export class FiltersService {
       const lo = clamp(Math.round(a), 0, ORDERED_GRADE_VALUES.length - 1);
       const hi = clamp(Math.round(b), 0, ORDERED_GRADE_VALUES.length - 1);
 
-      this.global.areaListGradeRange.set([Math.min(lo, hi), Math.max(lo, hi)]);
+      this.filterState.areaListGradeRange.set([
+        Math.min(lo, hi),
+        Math.max(lo, hi),
+      ]);
 
-      this.global.areaListCategories.set(result.categories ?? []);
-      this.global.areaListShade.set(result.selectedShade ?? []);
+      this.filterState.areaListCategories.set(result.categories ?? []);
+      this.filterState.areaListShade.set(result.selectedShade ?? []);
 
       if (result.indoor !== undefined) {
-        this.global.areaListShowIndoor.set(result.indoor);
+        this.filterState.areaListShowIndoor.set(result.indoor);
       }
       if (result.outdoor !== undefined) {
-        this.global.areaListShowOutdoor.set(result.outdoor);
+        this.filterState.areaListShowOutdoor.set(result.outdoor);
       }
     });
   }

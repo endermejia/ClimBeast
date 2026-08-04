@@ -16,7 +16,9 @@ import { TuiBreadcrumbs } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { GlobalData } from '../../services/global-data';
+import { BreadcrumbsService } from '../../services/breadcrumbs.service';
+import { LayoutService } from '../../services/layout.service';
+import { OnlineStatusService } from '../../services/online-status.service';
 
 import { DropdownButtonComponent } from './dropdown-button';
 
@@ -34,8 +36,8 @@ import { DropdownButtonComponent } from './dropdown-button';
   ],
   template: `
     <header class="flex flex-col w-full">
-      @let breadcrumbs = global.slicedBreadcrumbs();
-      @let isMobile = global.isMobile();
+      @let breadcrumbs = breadcrumbsService.slicedBreadcrumbs();
+      @let isMobile = layoutService.isMobile();
 
       <div class="flex flex-wrap items-start justify-between gap-3">
         <!-- Breadcrumb -->
@@ -60,7 +62,7 @@ import { DropdownButtonComponent } from './dropdown-button';
         <!-- Actions container -->
         <div class="flex flex-wrap items-center gap-2 shrink-0 ms-auto">
           <!-- Offline last updated indicator -->
-          @if (global.isOffline() && lastUpdated()) {
+          @if (onlineStatusService.isOffline() && lastUpdated()) {
             <span
               class="text-xs opacity-50 whitespace-nowrap"
               [title]="lastUpdated()! | date: 'medium'"
@@ -112,7 +114,9 @@ import { DropdownButtonComponent } from './dropdown-button';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SectionHeaderComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly layoutService = inject(LayoutService);
+  protected readonly onlineStatusService = inject(OnlineStatusService);
+  protected readonly breadcrumbsService = inject(BreadcrumbsService);
 
   title = input.required<string>();
   titleDropdown = input<TemplateRef<Record<string, unknown>> | null>(null);

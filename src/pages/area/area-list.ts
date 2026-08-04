@@ -25,8 +25,10 @@ import {
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AreasService } from '../../services/areas.service';
+import { AuthStateService } from '../../services/auth-state.service';
+import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
-import { GlobalData } from '../../services/global-data';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { TourService } from '../../services/tour.service';
 import { TourStep } from '../../services/tour.service';
 
@@ -92,7 +94,7 @@ import { matchesQuery } from '../../utils';
             </h1>
 
             <div class="flex gap-2 flex-wrap sm:flex-nowrap justify-end">
-              @if (global.canEditAsAdmin()) {
+              @if (authState.canEditAsAdmin()) {
                 <button
                   tuiButton
                   appearance="textfield"
@@ -206,20 +208,22 @@ import { matchesQuery } from '../../utils';
   host: { class: 'flex grow min-h-0' },
 })
 export class AreaListComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
   protected readonly router = inject(Router);
   protected readonly areasService = inject(AreasService);
+  protected readonly filtersService = inject(FiltersService);
+  protected readonly outdoorData = inject(OutdoorDataService);
   protected readonly tourService = inject(TourService);
   protected readonly TourStep = TourStep;
-  private readonly filtersService = inject(FiltersService);
+  private readonly filterState = inject(FilterStateService);
 
   readonly loading = computed(() => this.areasService.loading());
-  readonly areas = computed(() => this.global.areasList());
+  readonly areas = computed(() => this.outdoorData.areasList());
 
   readonly query: WritableSignal<string> = signal('');
-  readonly selectedGradeRange = this.global.areaListGradeRange;
-  readonly selectedCategories = this.global.areaListCategories;
-  readonly selectedShade = this.global.areaListShade;
+  readonly selectedGradeRange = this.filterState.areaListGradeRange;
+  readonly selectedCategories = this.filterState.areaListCategories;
+  readonly selectedShade = this.filterState.areaListShade;
 
   readonly hasActiveFilters = computed(() => {
     const [lo, hi] = this.selectedGradeRange();
@@ -283,10 +287,6 @@ export class AreaListComponent {
         textMatches(a) && gradeMatches(a) && kindMatches(a) && shadeMatches(a),
     );
   });
-
-  constructor() {
-    this.global.resetDataByPage('home');
-  }
 
   onQuery(v: string) {
     this.query.set(v);

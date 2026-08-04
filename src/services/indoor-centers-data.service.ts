@@ -1,4 +1,4 @@
-import { inject, Injectable, resource, computed } from '@angular/core';
+import { inject, Injectable, resource, computed, signal } from '@angular/core';
 
 import {
   AmountByEveryGrade,
@@ -22,6 +22,8 @@ import { SupabaseService } from './supabase.service';
 export class IndoorCentersDataService {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
+
+  readonly indoorRoutesReloadTick = signal(0);
 
   readonly indoorCentersResource = resource({
     loader: async () => {

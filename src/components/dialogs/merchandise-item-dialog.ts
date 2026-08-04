@@ -13,7 +13,6 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { CartService } from '../../services/cart.service';
-import { GlobalData } from '../../services/global-data';
 
 import { MerchandiseItemDetail } from '../../models';
 
@@ -212,7 +211,7 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
 })
 export class MerchandiseItemDialogComponent {
   private readonly cartService = inject(CartService);
-  private readonly global = inject(GlobalData);
+
   protected readonly context =
     injectContext<TuiDialogContext<void, MerchandiseItemDetail>>();
   protected readonly item: MerchandiseItemDetail = this.context.data;
@@ -285,7 +284,7 @@ export class MerchandiseItemDialogComponent {
       maxStock: this.stockForSelection(),
     });
 
-    this.global.showCart.set(true);
+    this.cartService.showCart.set(true);
     this.context.completeWith();
   }
 }

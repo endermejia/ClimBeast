@@ -19,9 +19,8 @@
     "test:coverage": "vitest run --coverage",
     "lint": "ng lint",
     "lint:fix": "ng lint --fix",
-    "format": "prettier --write ./src",
+    "format": "prettier --write \"src/**/*.{ts,html,css,scss,json}\" package.json scripts/**/*.mjs *.md",
     "check:imports": "node scripts/check-imports.mjs",
-    "check:global-data": "node scripts/check-global-data.mjs",
     "check:i18n": "node scripts/check-translations.mjs",
     "sync:i18n": "node scripts/sync-translations.mjs",
     "prepare": "husky"

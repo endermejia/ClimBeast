@@ -29,7 +29,7 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { GlobalData } from '../../services/global-data';
+import { CragRoutesDataService } from '../../services/crag-routes-data.service';
 import { RoutesService } from '../../services/routes.service';
 
 import { RouteDto } from '../../models';
@@ -167,7 +167,7 @@ import { RouteDto } from '../../models';
   host: { class: 'block w-full' },
 })
 export class RouteUnifyComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly cragRoutesData = inject(CragRoutesDataService);
   protected readonly context =
     injectContext<TuiDialogContext<boolean, { candidates?: RouteDto[] }>>();
   private readonly routesService = inject(RoutesService);
@@ -205,7 +205,7 @@ export class RouteUnifyComponent {
     if (candidates && candidates.length > 0) {
       return candidates;
     }
-    return this.global.cragRoutes() ?? [];
+    return this.cragRoutesData.cragRoutes() ?? [];
   });
 
   protected readonly isInvalidRoute = (item: RouteDto): boolean =>

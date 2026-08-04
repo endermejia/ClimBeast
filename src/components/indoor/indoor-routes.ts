@@ -50,10 +50,9 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
-
-import { GlobalData } from '../../services/global-data';
-
+import { AuthStateService } from '../../services/auth-state.service';
 import { IndoorService } from '../../services/indoor.service';
+import { LayoutService } from '../../services/layout.service';
 
 import {
   IndoorRouteWithExtras,
@@ -449,14 +448,15 @@ export class IndoorRoutesComponent {
   customRoutes = input<IndoorRouteWithExtras[] | null>(null);
 
   protected readonly indoor = inject(IndoorService);
-  protected readonly global = inject(GlobalData);
+  protected readonly layoutService = inject(LayoutService);
+  protected readonly authState = inject(AuthStateService);
   private readonly translate = inject(TranslateService);
   protected readonly ascentsService = inject(AscentsService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly dialogs = inject(TuiDialogService);
 
   protected readonly columns = computed(() => {
-    if (this.global.isMobile()) {
+    if (this.layoutService.isMobile()) {
       return ['expand', 'grade', 'route'];
     }
     const cols = [
@@ -478,12 +478,12 @@ export class IndoorRoutesComponent {
   });
 
   protected readonly canCreate = computed(() => {
-    return this.global.canCreateIndoorInCenter(this.centerId());
+    return this.authState.canCreateIndoorInCenter(this.centerId());
   });
 
   protected readonly canEdit = computed(() => {
     const id = this.centerId();
-    return id ? !!this.global.indoorAdminPermissions()[id] : false;
+    return id ? !!this.authState.indoorAdminPermissions()[id] : false;
   });
 
   protected readonly showLegacyRoutes = signal<boolean>(

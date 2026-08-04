@@ -32,9 +32,8 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AreasService } from '../../services/areas.service';
-import { GlobalData } from '../../services/global-data';
+import { AuthStateService } from '../../services/auth-state.service';
 import { SlugService } from '../../services/slug.service';
-
 import { ToastService } from '../../services/toast.service';
 
 import { handleErrorToast, slugify } from '../../utils';
@@ -161,7 +160,7 @@ interface MinimalArea {
         <tui-error [error]="'errors.required' | translate" />
       }
 
-      @if (isEdit() && global.isAdmin()) {
+      @if (isEdit() && authState.isAdmin()) {
         <tui-textfield class="block">
           <label tuiLabel for="area-slug">{{ 'slug' | translate }}</label>
           <input
@@ -444,7 +443,7 @@ interface MinimalArea {
         <button
           [disabled]="
             areaForm.name().invalid() ||
-            (isEdit() && global.isAdmin() && areaForm.slug().invalid())
+            (isEdit() && authState.isAdmin() && areaForm.slug().invalid())
           "
           tuiButton
           appearance="primary"
@@ -506,7 +505,7 @@ interface MinimalArea {
 })
 export class AreaFormComponent {
   private readonly areas = inject(AreasService);
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
   private readonly location = inject(Location);
   private readonly slugService = inject(SlugService);
   private readonly toast = inject(ToastService);
@@ -542,13 +541,13 @@ export class AreaFormComponent {
   readonly isEdit: Signal<boolean> = computed(
     () => !!this.effectiveAreaData()?.id,
   );
-  readonly isAdmin: Signal<boolean> = computed(() => this.global.isAdmin());
+  readonly isAdmin: Signal<boolean> = computed(() => this.authState.isAdmin());
 
   readonly canEditAdminSettings: Signal<boolean> = computed(() => {
-    const isAdmin = this.global.canEditAsAdmin() || this.global.isAdmin();
+    const isAdmin = this.authState.canEditAsAdmin() || this.authState.isAdmin();
     const areaId = this.editingId;
     const isAreaAdmin = areaId
-      ? !!this.global.areaAdminPermissions()[areaId]
+      ? !!this.authState.areaAdminPermissions()[areaId]
       : false;
     return isAdmin || isAreaAdmin;
   });
@@ -590,7 +589,7 @@ export class AreaFormComponent {
   areaForm = form(this.model, (path) => {
     required(path.name);
     required(path.slug, {
-      when: () => this.isEdit() && this.global.isAdmin(),
+      when: () => this.isEdit() && this.authState.isAdmin(),
     });
   });
 

@@ -46,9 +46,10 @@ import {
 import { WaIntersectionObserver } from '@ng-web-apis/intersection-observer';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import { GlobalData } from '../../services/global-data';
-
 import { IndoorService } from '../../services/indoor.service';
+import { LanguageService } from '../../services/language.service';
+import { LayoutService } from '../../services/layout.service';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { EmptyStateComponent } from '../../components/ui/empty-state';
@@ -163,7 +164,7 @@ interface UserWithRole {
       <tui-scrollbar waIntersectionRoot class="flex grow">
         @if (filteredUsers().length > 0) {
           <table
-            [size]="global.isMobile() ? 's' : 'l'"
+            [size]="layout.isMobile() ? 's' : 'l'"
             tuiTable
             class="w-full"
             [columns]="columns"
@@ -425,9 +426,11 @@ interface UserWithRole {
   host: { class: 'flex grow min-h-0' },
 })
 export class AdminUsersListComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly layout = inject(LayoutService);
   protected readonly supabase = inject(SupabaseService);
   private readonly indoor = inject(IndoorService);
+  private readonly languageService = inject(LanguageService);
+  private readonly outdoorData = inject(OutdoorDataService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
@@ -437,7 +440,7 @@ export class AdminUsersListComponent {
   protected readonly roleOptions = [false, true];
 
   protected readonly stringifyRole = computed(() => {
-    this.global.i18nTick();
+    this.languageService.i18nTick();
     return (x: unknown): string => {
       const isAdmin = !!x;
       const key = isAdmin ? 'options.roles.admin' : 'options.roles.climber';
@@ -477,7 +480,9 @@ export class AdminUsersListComponent {
   protected readonly loading: WritableSignal<boolean> = signal(true);
   protected readonly users: WritableSignal<UserWithRole[]> = signal([]);
 
-  protected readonly availableAreas = computed(() => this.global.areasList());
+  protected readonly availableAreas = computed(() =>
+    this.outdoorData.areasList(),
+  );
   protected readonly stringifyArea = (a: AreaListItem) => a.name;
   protected readonly areaIdentityMatcher: TuiIdentityMatcher<AreaListItem> = (
     a,
@@ -509,11 +514,12 @@ export class AdminUsersListComponent {
   }
 
   constructor() {
+    this.outdoorData.selectedAreaSlug.set(null);
+    this.outdoorData.selectedCragSlug.set(null);
+    this.outdoorData.selectedRouteSlug.set(null);
     if (this.isBrowser) {
       void this.loadUsers();
     }
-
-    this.global.resetDataByPage('home');
   }
 
   private async loadUsers(): Promise<void> {
@@ -522,13 +528,13 @@ export class AdminUsersListComponent {
       await this.supabase.whenReady();
 
       // 1. Load areas if not already loaded
-      if (this.global.areasList().length === 0) {
+      if (this.outdoorData.areasList().length === 0) {
         // Wait for areas to load if needed
-        while (this.global.areasListResource.isLoading()) {
+        while (this.outdoorData.areasListResource.isLoading()) {
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
       }
-      const areas = this.global.areasList();
+      const areas = this.outdoorData.areasList();
       const areasMap = new Map(areas.map((a) => [a.id, a]));
 
       // 2. Fetch user profiles (including is_admin)

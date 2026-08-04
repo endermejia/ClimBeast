@@ -14,7 +14,7 @@ import { TuiBadge } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { GlobalData } from '../../services/global-data';
+import { AuthStateService } from '../../services/auth-state.service';
 
 import { AreaPackDetail } from '../../models';
 
@@ -71,7 +71,7 @@ import { CarouselItem, CustomCarouselComponent } from '../ui/custom-carousel';
           </span>
         </div>
 
-        @if (isAdmin() && global.editingMode()) {
+        @if (isAdmin() && authState.editingMode()) {
           <div class="absolute top-4 left-4 flex flex-col gap-2 z-10">
             <button
               tuiIconButton
@@ -125,8 +125,8 @@ import { CarouselItem, CustomCarouselComponent } from '../ui/custom-carousel';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PackCardComponent {
-  protected readonly global = inject(GlobalData);
-  protected readonly isAdmin = this.global.isAdmin;
+  protected readonly authState = inject(AuthStateService);
+  protected readonly isAdmin = this.authState.isAdmin;
 
   pack = input.required<AreaPackDetail>();
   clicked = output<AreaPackDetail>();

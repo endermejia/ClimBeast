@@ -25,10 +25,12 @@ import { Subject, firstValueFrom } from 'rxjs';
 
 import { AppNotificationsService } from '../../services/app-notifications.service';
 
+import { AuthStateService } from '../../services/auth-state.service';
 import { CartService } from '../../services/cart.service';
 import { DesnivelService } from '../../services/desnivel.service';
+import { FavoritesDataService } from '../../services/favorites-data.service';
+import { FilterStateService } from '../../services/filter-state.service';
 import { FollowsService } from '../../services/follows.service';
-import { GlobalData } from '../../services/global-data';
 import { LocalStorage } from '../../services/local-storage';
 import { MessagingService } from '../../services/messaging.service';
 import { ScrollService } from '../../services/scroll.service';
@@ -128,18 +130,18 @@ export type HomeFeedFilter =
               [followsLoaded]="followsLoaded()"
               [showFilterDropdown]="
                 followedIds().size > 0 ||
-                global.likedAreaIds().length > 0 ||
-                global.likedCragIds().length > 0 ||
-                global.likedRouteIds().length > 0
+                favoritesData.likedAreaIds().length > 0 ||
+                favoritesData.likedCragIds().length > 0 ||
+                favoritesData.likedRouteIds().length > 0
               "
               [feedFilterDropdown]="feedFilterDropdown"
               [feedFilter]="feedFilter()"
               [filterLabels]="filterLabels"
               [(dropdownOpen)]="dropdownOpen"
               [hasActiveFilters]="hasActiveFilters()"
-              [isAdmin]="global.isAdmin()"
+              [isAdmin]="authState.isAdmin()"
               [cartTotalItems]="cart.totalItems()"
-              [unreadNotificationsCount]="global.unreadNotificationsCount()"
+              [unreadNotificationsCount]="notificationsService.unreadCount()"
               (openFilters)="openFilters()"
               (openNotifications)="openNotifications()"
             />
@@ -209,8 +211,10 @@ export type HomeFeedFilter =
   },
 })
 export class HomeComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
   protected readonly cart = inject(CartService);
+  protected readonly favoritesData = inject(FavoritesDataService);
+  protected readonly filterState = inject(FilterStateService);
   protected readonly notificationsService = inject(AppNotificationsService);
   protected readonly messagingService = inject(MessagingService);
   protected readonly supabase = inject(SupabaseService);
@@ -282,13 +286,13 @@ export class HomeComponent {
       'all',
       'news',
     ];
-    if (this.global.likedAreaIds().length > 0) {
+    if (this.favoritesData.likedAreaIds().length > 0) {
       options.push('favorite_areas');
     }
-    if (this.global.likedCragIds().length > 0) {
+    if (this.favoritesData.likedCragIds().length > 0) {
       options.push('favorite_crags');
     }
-    if (this.global.likedRouteIds().length > 0) {
+    if (this.favoritesData.likedRouteIds().length > 0) {
       options.push('favorite_routes');
     }
     return options;
@@ -300,9 +304,9 @@ export class HomeComponent {
   }
 
   protected readonly hasActiveFilters = computed(() => {
-    const [lo, hi] = this.global.feedGradeRange();
+    const [lo, hi] = this.filterState.feedGradeRange();
     const gradeActive = !(lo === 0 && hi === ORDERED_GRADE_VALUES.length - 1);
-    return gradeActive || this.global.feedCategories().length > 0;
+    return gradeActive || this.filterState.feedCategories().length > 0;
   });
 
   constructor() {
@@ -326,12 +330,12 @@ export class HomeComponent {
 
       // Track filter dependencies
       this.feedFilter();
-      this.global.feedCategories();
-      this.global.feedGradeRange();
-      this.global.likedAreaIds();
-      this.global.likedCragIds();
-      this.global.likedRouteIds();
-      this.global.feedShowIndoorAscents();
+      this.filterState.feedCategories();
+      this.filterState.feedGradeRange();
+      this.favoritesData.likedAreaIds();
+      this.favoritesData.likedCragIds();
+      this.favoritesData.likedRouteIds();
+      this.filterState.feedShowIndoorAscents();
 
       untracked(() => {
         this.fetchVersion.set(0);
@@ -355,7 +359,7 @@ export class HomeComponent {
   private async fetchNextPage() {
     const version = this.fetchVersion();
     const filter = this.feedFilter();
-    const showIndoor = this.global.feedShowIndoorAscents();
+    const showIndoor = this.filterState.feedShowIndoorAscents();
     const ascentCount = this.ascents().filter(
       (i) => i.kind === 'ascent',
     ).length;
@@ -563,12 +567,12 @@ export class HomeComponent {
     const filterOptions: FeedFilterOptions = {
       filter,
       userId,
-      categories: this.global.feedCategories(),
-      gradeRange: this.global.feedGradeRange(),
+      categories: this.filterState.feedCategories(),
+      gradeRange: this.filterState.feedGradeRange(),
       followedIds: Array.from(this.followedIds()),
-      likedAreaIds: this.global.likedAreaIds(),
-      likedCragIds: this.global.likedCragIds(),
-      likedRouteIds: this.global.likedRouteIds(),
+      likedAreaIds: this.favoritesData.likedAreaIds(),
+      likedCragIds: this.favoritesData.likedCragIds(),
+      likedRouteIds: this.favoritesData.likedRouteIds(),
     };
 
     let query = this.supabase.client.from('indoor_ascents').select(
@@ -647,12 +651,12 @@ export class HomeComponent {
     const filterOptions: FeedFilterOptions = {
       filter,
       userId,
-      categories: this.global.feedCategories(),
-      gradeRange: this.global.feedGradeRange(),
+      categories: this.filterState.feedCategories(),
+      gradeRange: this.filterState.feedGradeRange(),
       followedIds: Array.from(this.followedIds()),
-      likedAreaIds: this.global.likedAreaIds(),
-      likedCragIds: this.global.likedCragIds(),
-      likedRouteIds: this.global.likedRouteIds(),
+      likedAreaIds: this.favoritesData.likedAreaIds(),
+      likedCragIds: this.favoritesData.likedCragIds(),
+      likedRouteIds: this.favoritesData.likedRouteIds(),
     };
 
     // Check if we should proceed based on filter type
@@ -814,12 +818,12 @@ export class HomeComponent {
 
   async openFilters() {
     const data: FilterDialog = {
-      categories: this.global.feedCategories(),
-      gradeRange: this.global.feedGradeRange(),
+      categories: this.filterState.feedCategories(),
+      gradeRange: this.filterState.feedGradeRange(),
       showCategories: true,
       showGradeRange: true,
       showShade: false,
-      showIndoorAscents: this.global.feedShowIndoorAscents(),
+      showIndoorAscents: this.filterState.feedShowIndoorAscents(),
     };
 
     const result = await firstValueFrom(
@@ -836,12 +840,12 @@ export class HomeComponent {
     );
 
     if (!result) return;
-    this.global.feedCategories.set(result.categories ?? []);
+    this.filterState.feedCategories.set(result.categories ?? []);
     if (result.gradeRange) {
-      this.global.feedGradeRange.set(result.gradeRange);
+      this.filterState.feedGradeRange.set(result.gradeRange);
     }
     if (result.showIndoorAscents !== undefined) {
-      this.global.feedShowIndoorAscents.set(result.showIndoorAscents);
+      this.filterState.feedShowIndoorAscents.set(result.showIndoorAscents);
     }
   }
 

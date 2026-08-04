@@ -13,8 +13,8 @@ import {
 
 import { IS_BROWSER } from '../app/is-browser';
 
-import { GlobalData } from './global-data';
 import { LocalStorage } from './local-storage';
+import { MapDataService } from './map-data.service';
 
 export interface MapBuilderCallbacks {
   onSelectedCragChange: (mapCragItem: MapCragItem | null) => void;
@@ -54,7 +54,7 @@ const CLUSTER_CONFIG = [
 @Injectable({ providedIn: 'root' })
 export class MapBuilder {
   private readonly isBrowserEnv = inject(IS_BROWSER);
-  private readonly global = inject(GlobalData);
+  private readonly mapData = inject(MapDataService);
   private readonly localStorage = inject(LocalStorage);
   private map!: Map;
   private initialized = false;
@@ -123,7 +123,7 @@ export class MapBuilder {
     // Try to restore saved viewport
     if (!options.ignoreSavedViewport) {
       // First, try to get from GlobalData
-      savedViewport = this.global.mapBounds();
+      savedViewport = this.mapData.mapBounds();
 
       // If not in GlobalData, try LocalStorage
       if (!savedViewport || !this.areBoundsValid(savedViewport)) {
@@ -134,7 +134,7 @@ export class MapBuilder {
             if (this.areBoundsValid(parsed)) {
               savedViewport = parsed;
               // Sync to GlobalData
-              this.global.mapBounds.set(parsed);
+              this.mapData.mapBounds.set(parsed);
             }
           } catch {
             savedViewport = null;

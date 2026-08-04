@@ -16,6 +16,8 @@ import { ToastService } from '../../services/toast.service';
 
 import { handleErrorToast } from '../../utils';
 
+import { IS_BROWSER } from '../../app/is-browser';
+
 @Component({
   selector: 'app-paywall',
   imports: [CommonModule, TranslatePipe, TuiButton, TuiLoader],
@@ -84,6 +86,7 @@ export class PaywallComponent {
 
   private readonly supabase = inject(SupabaseService);
   private readonly toast = inject(ToastService);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   async contributeNow() {
     this.loading.set(true);
@@ -99,7 +102,7 @@ export class PaywallComponent {
       );
 
       if (error) throw error;
-      if (data?.url) {
+      if (data?.url && this.isBrowser) {
         window.location.href = data.url;
       }
     } catch (e) {

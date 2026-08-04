@@ -26,9 +26,11 @@ import {
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { AuthStateService } from '../../services/auth-state.service';
+import { CragRoutesDataService } from '../../services/crag-routes-data.service';
 import { EightAnuService } from '../../services/eight-anu.service';
+import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
-import { GlobalData } from '../../services/global-data';
 import { RoutesService } from '../../services/routes.service';
 
 import {
@@ -244,20 +246,22 @@ import { EmptyStateComponent } from '../ui/empty-state';
 export class CragRoutesComponent {
   crag = input.required<CragDetail | null>();
 
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
+  protected readonly cragRoutesData = inject(CragRoutesDataService);
   protected readonly routesService = inject(RoutesService);
   protected readonly filtersService = inject(FiltersService);
+  protected readonly filterState = inject(FilterStateService);
   protected readonly eightAnuService = inject(EightAnuService);
 
   readonly query = signal('');
-  readonly selectedGradeRange = this.global.areaListGradeRange;
-  readonly selectedCategories = this.global.areaListCategories;
+  readonly selectedGradeRange = this.filterState.areaListGradeRange;
+  readonly selectedCategories = this.filterState.areaListCategories;
 
-  readonly canEditAsAdmin = this.global.canEditAsAdmin;
+  readonly canEditAsAdmin = this.authState.canEditAsAdmin;
   readonly canAreaAdmin = computed(() => {
     const c = this.crag();
     if (!c) return false;
-    return this.global.areaAdminPermissions()[c.area_id];
+    return this.authState.areaAdminPermissions()[c.area_id];
   });
 
   readonly hasActiveFilters = computed(() => {
@@ -284,7 +288,7 @@ export class CragRoutesComponent {
     const allowedLabels = ORDERED_GRADE_VALUES.slice(minIdx, maxIdx + 1);
     const categories = this.selectedCategories();
     const crag = this.crag();
-    const localList = this.global.cragRoutes() ?? [];
+    const localList = this.cragRoutesData.cragRoutes() ?? [];
 
     const textMatches = (r: Partial<RouteWithExtras>) => {
       const nameMatch = matchesQuery(r.name, query);
@@ -369,7 +373,7 @@ export class CragRoutesComponent {
         if (existingSlugs.has(itemSlug) || existingEightAnuSlugs.has(itemSlug))
           continue;
 
-        const currentCragRoutes = this.global.cragRoutes() || [];
+        const currentCragRoutes = this.cragRoutesData.cragRoutes() || [];
         const matchingLocals = currentCragRoutes.filter(
           (r) => slugify(r.name) === itemSlug,
         );
@@ -378,7 +382,7 @@ export class CragRoutesComponent {
           for (const local of matchingLocals) {
             const currentSlugs = local.eight_anu_route_slugs || [];
             if (!currentSlugs.includes(itemSlug)) {
-              if (this.global.editingMode()) {
+              if (this.authState.editingMode()) {
                 updatePromises.push(
                   this.routesService.update(
                     local.id,
@@ -411,7 +415,7 @@ export class CragRoutesComponent {
   protected readonly routesCount = computed(() => this.filteredRoutes().length);
 
   protected readonly cragKind = computed(() => {
-    const routes = this.global.cragRoutes() ?? [];
+    const routes = this.cragRoutesData.cragRoutes() ?? [];
     if (routes.length === 0) return ClimbingKinds.SPORT;
 
     const counts: Record<string, number> = {

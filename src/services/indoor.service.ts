@@ -36,7 +36,9 @@ import { handleErrorToast } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 
-import { GlobalData } from './global-data';
+import { AuthStateService } from './auth-state.service';
+import { IndoorCentersDataService } from './indoor-centers-data.service';
+import { IndoorDataService } from './indoor-data.service';
 import { SupabaseService } from './supabase.service';
 import { ToastService } from './toast.service';
 
@@ -51,7 +53,9 @@ type CenterRouteQuery = IndoorRouteDto & {
 })
 export class IndoorService {
   private readonly supabase = inject(SupabaseService);
-  private readonly global = inject(GlobalData);
+  private readonly indoorCentersData = inject(IndoorCentersDataService);
+  private readonly authState = inject(AuthStateService);
+  private readonly indoorData = inject(IndoorDataService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
@@ -61,7 +65,7 @@ export class IndoorService {
 
   /** Signals to outdoor/indoor consumers that routes should be reloaded */
   reloadCenterRoutes(): void {
-    this.global.indoorRoutesReloadTick.update((v) => v + 1);
+    this.indoorCentersData.indoorRoutesReloadTick.update((v) => v + 1);
   }
 
   async getAllCenters(): Promise<IndoorCenterDto[]> {
@@ -100,7 +104,7 @@ export class IndoorService {
       { defaultValue: null },
     ).then((result) => {
       if (result) {
-        this.global.indoorCentersResource.reload();
+        this.indoorCentersData.indoorCentersResource.reload();
         return true;
       }
       return false;
@@ -188,7 +192,7 @@ export class IndoorService {
     if (error) throw error;
     if (!data) return [];
 
-    const userId = this.global.userProfile()?.id;
+    const userId = this.authState.userProfile()?.id;
     const routes = data as CenterRouteQuery[];
     return routes.map((route) => {
       const ratedAscents = route.ascents.filter(
@@ -241,7 +245,7 @@ export class IndoorService {
     const { data, error } = await query;
     if (error) throw error;
 
-    const userId = this.global.userProfile()?.id;
+    const userId = this.authState.userProfile()?.id;
     return (data || []).map((t) => {
       const row = t as IndoorTopoQueryRow;
       const grades: Record<number, number> = {};
@@ -329,7 +333,7 @@ export class IndoorService {
       .eq('id', centerId);
 
     if (error) throw error;
-    this.global.indoorCentersResource.reload();
+    this.indoorCentersData.indoorCentersResource.reload();
     return true;
   }
 
@@ -857,8 +861,8 @@ export class IndoorService {
             handleErrorToast(undoError, this.toast);
           } else {
             this.reloadCenterRoutes();
-            this.global.routeDetailResource.reload();
-            this.global.topoDetailResource.reload();
+            this.indoorData.indoorRouteDetailResource.reload();
+            this.indoorData.topoDetailResource.reload();
           }
         });
     });

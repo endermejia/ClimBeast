@@ -15,8 +15,8 @@ import { TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { FavoritesDataService } from '../../services/favorites-data.service';
 import { FavoritesService } from '../../services/favorites.service';
-import { GlobalData } from '../../services/global-data';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { AreaListItem, CragListItem, RouteWithExtras } from '../../models';
@@ -195,7 +195,7 @@ export class UserProfileLikesComponent {
   userId = input.required<string>();
 
   private readonly favorites = inject(FavoritesService);
-  protected readonly global = inject(GlobalData);
+  protected readonly favoritesData = inject(FavoritesDataService);
   protected readonly supabase = inject(SupabaseService);
   protected readonly router = inject(Router);
 
@@ -206,19 +206,19 @@ export class UserProfileLikesComponent {
 
   protected readonly likedRoutes = computed<RouteWithExtras[]>(() =>
     this.isOwnProfile()
-      ? (this.global.likedRoutes() as RouteWithExtras[])
+      ? (this.favoritesData.likedRoutes() as RouteWithExtras[])
       : (this.likedRoutesResource.value() ?? []),
   );
 
   protected readonly likedCrags = computed<CragListItem[]>(() =>
     this.isOwnProfile()
-      ? (this.global.likedCrags() as CragListItem[])
+      ? (this.favoritesData.likedCrags() as CragListItem[])
       : (this.likedCragsResource.value() ?? []),
   );
 
   protected readonly likedAreas = computed<AreaListItem[]>(() =>
     this.isOwnProfile()
-      ? (this.global.likedAreas() as AreaListItem[])
+      ? (this.favoritesData.likedAreas() as AreaListItem[])
       : (this.likedAreasResource.value() ?? []),
   );
 

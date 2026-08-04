@@ -30,7 +30,7 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AreasService } from '../../services/areas.service';
-import { GlobalData } from '../../services/global-data';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 
 import { AreaDto, AreaListItem } from '../../models';
 
@@ -165,7 +165,7 @@ import { AreaDto, AreaListItem } from '../../models';
   host: { class: 'block w-full' },
 })
 export class AreaUnifyComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly outdoorData = inject(OutdoorDataService);
   protected readonly context =
     injectContext<
       TuiDialogContext<boolean, AreaDto[] | AreaListItem[] | undefined>
@@ -204,14 +204,14 @@ export class AreaUnifyComponent {
 
   protected readonly availableAreas = computed(() => {
     const candidates = this.context.data;
-    const globalList = this.global.areasList();
+    const globalList = this.outdoorData.areasList();
     const map = new Map();
     // Prioritize candidates
     if (candidates && candidates.length > 0) {
       candidates.forEach((c) => map.set(c.id, c));
     }
     // Add global items if not present
-    globalList.forEach((c) => {
+    globalList.forEach((c: AreaListItem) => {
       if (!map.has(c.id)) map.set(c.id, c);
     });
     return Array.from(map.values()) as AreaDto[];

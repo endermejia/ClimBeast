@@ -17,8 +17,8 @@ import { mapLocationUrl } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 
-import { GlobalData } from './global-data';
-
+import { AdminParkingsService } from './admin-parkings.service';
+import { OutdoorDataService } from './outdoor-data.service';
 import { SupabaseService } from './supabase.service';
 import { ToastService } from './toast.service';
 
@@ -26,7 +26,8 @@ import { ToastService } from './toast.service';
 export class ParkingsService {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
-  private readonly global = inject(GlobalData);
+  private readonly outdoorData = inject(OutdoorDataService);
+  private readonly adminParkings = inject(AdminParkingsService);
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
@@ -53,9 +54,9 @@ export class ParkingsService {
     ).then((result) => {
       if (result) {
         if (data.cragId) {
-          this.global.cragDetailResource.reload();
+          this.outdoorData.cragDetailResource.reload();
         }
-        this.global.adminParkingsResource.reload();
+        this.adminParkings.adminParkingsResource.reload();
       }
     });
   }
@@ -77,7 +78,7 @@ export class ParkingsService {
       { defaultValue: false },
     ).then((result) => {
       if (result) {
-        this.global.cragDetailResource.reload();
+        this.outdoorData.cragDetailResource.reload();
       }
     });
   }
@@ -145,8 +146,8 @@ export class ParkingsService {
       throw error;
     }
     this.toast.success('messages.toasts.parkingDeleted');
-    this.global.adminParkingsResource.reload();
-    this.global.cragDetailResource.reload();
+    this.adminParkings.adminParkingsResource.reload();
+    this.outdoorData.cragDetailResource.reload();
     return true;
   }
 
@@ -160,7 +161,7 @@ export class ParkingsService {
       console.error('[ParkingsService] addParkingToCrag error', error);
       throw error;
     }
-    this.global.cragDetailResource.reload();
+    this.outdoorData.cragDetailResource.reload();
     this.toast.success('messages.toasts.parkingLinked');
   }
 
@@ -178,7 +179,7 @@ export class ParkingsService {
       console.error('[ParkingsService] removeParkingFromCrag error', error);
       throw error;
     }
-    this.global.cragDetailResource.reload();
+    this.outdoorData.cragDetailResource.reload();
     this.toast.success('messages.toasts.parkingUnlinked');
   }
 

@@ -6,7 +6,7 @@ import {
   input,
 } from '@angular/core';
 
-import { GlobalData } from '../../services/global-data';
+import { ProfileDataService } from '../../services/profile-data.service';
 
 import { PyramidComponent } from '../charts/pyramid';
 import { UserProfileProjectsListComponent } from './projects/projects-list';
@@ -34,7 +34,7 @@ export class UserProfileProjectsComponent {
   userId = input.required<string>();
   startingYear = input<number | null | undefined>();
 
-  protected readonly global = inject(GlobalData);
-  readonly projectsResource = this.global.userProjectsResource;
+  protected readonly profileData = inject(ProfileDataService);
+  readonly projectsResource = this.profileData.userProjectsResource;
   readonly projects = computed(() => this.projectsResource.value() ?? []);
 }

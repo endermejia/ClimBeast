@@ -8,13 +8,15 @@ import {
   untracked,
 } from '@angular/core';
 
+import { IS_BROWSER } from '../app/is-browser';
+
 @Directive({
   selector: '[appCountUp]',
-  standalone: true,
   exportAs: 'appCountUp',
 })
 export class CountUpDirective {
   private readonly destroyRef = inject(DestroyRef);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   // The target number to count up to
   readonly target = input.required<number>({ alias: 'appCountUp' });
@@ -38,13 +40,18 @@ export class CountUpDirective {
     });
 
     this.destroyRef.onDestroy(() => {
-      if (this.animationFrameId) {
+      if (this.isBrowser && this.animationFrameId) {
         cancelAnimationFrame(this.animationFrameId);
       }
     });
   }
 
   private startAnimation(end: number, durationMS: number) {
+    if (!this.isBrowser) {
+      this.currentValue.set(end);
+      return;
+    }
+
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
     }

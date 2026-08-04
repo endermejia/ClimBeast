@@ -6,12 +6,10 @@ import { TranslateModule } from '@ngx-translate/core';
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { BreadcrumbsService } from '../../services/breadcrumbs.service';
-
-import { GlobalData } from '../../services/global-data';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { IS_BROWSER } from '../../app/is-browser';
-import { MockGlobalData, MockSupabaseService } from '../../testing';
+import { MockSupabaseService } from '../../testing';
 import { SectionHeaderComponent } from './section-header';
 
 describe('SectionHeaderComponent', () => {
@@ -22,7 +20,6 @@ describe('SectionHeaderComponent', () => {
         provideRouter([]),
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: IS_BROWSER, useValue: true },
-        { provide: GlobalData, useClass: MockGlobalData },
         { provide: SupabaseService, useClass: MockSupabaseService },
         {
           provide: BreadcrumbsService,

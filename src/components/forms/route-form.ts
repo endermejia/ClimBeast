@@ -38,8 +38,7 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import { GlobalData } from '../../services/global-data';
-
+import { AuthStateService } from '../../services/auth-state.service';
 import { RoutesService } from '../../services/routes.service';
 import { SlugService } from '../../services/slug.service';
 import { SupabaseService } from '../../services/supabase.service';
@@ -169,7 +168,7 @@ interface RouteFormModel {
         />
       </tui-textfield>
 
-      @if (global.isAdmin()) {
+      @if (authState.isAdmin()) {
         <tui-textfield [tuiTextfieldCleaner]="false">
           <label tuiLabel for="slug">{{ 'slug' | translate }}</label>
           <input
@@ -333,7 +332,7 @@ interface RouteFormModel {
 export class RouteFormComponent {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly routes = inject(RoutesService);
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
   private readonly supabase = inject(SupabaseService);
   private readonly slugService = inject(SlugService);
   private readonly toast = inject(ToastService);
@@ -502,32 +501,67 @@ export class RouteFormComponent {
     }
   }
 
-  constructor() {
-    // 1. If we have a target crag ID, ensure we find its area and set it
-    effect(async () => {
+  protected readonly targetCragAreaIdResource = resource({
+    params: () => {
       const initialCragId = this.effectiveCragId();
       const inputCragId = this.effectiveRouteData()?.crag_id;
-      const targetCragId = inputCragId ?? initialCragId;
-      const areaOptions = this.areaOptions.value();
-
-      if (!targetCragId || !areaOptions?.length) return;
-
-      const currentArea = untracked(() => this.model().area);
-      if (currentArea) return;
-
+      return inputCragId ?? initialCragId;
+    },
+    loader: async ({ params: targetCragId }) => {
+      if (!targetCragId) return null;
+      await this.supabase.whenReady();
+      if (!this.isBrowser) return null;
       const { data: crag } = await this.supabase.client
         .from('crags')
         .select('area_id')
         .eq('id', targetCragId)
         .maybeSingle();
+      return crag?.area_id ?? null;
+    },
+  });
 
-      if (crag?.area_id) {
-        const area = areaOptions.find((a) => a.id === crag.area_id);
-        if (area) {
-          untracked(() => {
-            this.model.update((m) => ({ ...m, area }));
-          });
-        }
+  protected readonly routeEquippersResource = resource({
+    params: () => this.effectiveRouteData()?.id,
+    loader: async ({ params: routeId }) => {
+      if (!routeId) return [];
+      return (await this.routes.getRouteEquippers(routeId)) || [];
+    },
+  });
+
+  protected readonly autoSlugResource = resource({
+    params: () => {
+      if (this.isEdit()) return null;
+      const name = this.model().name;
+      const crag = this.model().crag;
+      if (!name) return null;
+      return { baseSlug: slugify(name), cragSlug: crag?.slug || undefined };
+    },
+    loader: async ({ params }) => {
+      if (!params) return null;
+      return this.slugService.getUniqueSlug(
+        'routes',
+        params.baseSlug,
+        params.cragSlug,
+      );
+    },
+  });
+
+  constructor() {
+    // 1. If we have a target crag ID, ensure we find its area and set it
+    effect(() => {
+      const areaId = this.targetCragAreaIdResource.value();
+      const areaOptions = this.areaOptions.value();
+
+      if (!areaId || !areaOptions?.length) return;
+
+      const currentArea = untracked(() => this.model().area);
+      if (currentArea) return;
+
+      const area = areaOptions.find((a) => a.id === areaId);
+      if (area) {
+        untracked(() => {
+          this.model.update((m) => ({ ...m, area }));
+        });
       }
     });
 
@@ -556,12 +590,17 @@ export class RouteFormComponent {
 
             if (data.id) {
               this.fetchFullRouteData(data.id);
-              this.routes.getRouteEquippers(data.id).then((equippers) => {
-                this.model.update((m) => ({ ...m, equippers }));
-              });
             }
             this.isInitialized = true;
           }
+        });
+      }
+
+      // Sync equippers from resource
+      const equippers = this.routeEquippersResource.value();
+      if (equippers && equippers.length > 0) {
+        untracked(() => {
+          this.model.update((m) => ({ ...m, equippers }));
         });
       }
 
@@ -587,19 +626,9 @@ export class RouteFormComponent {
     });
 
     // 3. Auto-slug generation
-    effect(async () => {
-      if (this.isEdit()) return;
-      const name = this.model().name;
-      const crag = this.model().crag;
-      if (!name) return;
-
-      const baseSlug = slugify(name);
-      const uniqueSlug = await this.slugService.getUniqueSlug(
-        'routes',
-        baseSlug,
-        crag?.slug || undefined,
-      );
-
+    effect(() => {
+      const uniqueSlug = this.autoSlugResource.value();
+      if (!uniqueSlug) return;
       untracked(() => {
         const currentSlug = this.model().slug;
         if (currentSlug !== uniqueSlug) {

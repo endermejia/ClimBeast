@@ -17,7 +17,7 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AscentsService } from '../../services/ascents.service';
-import { GlobalData } from '../../services/global-data';
+import { LanguageService } from '../../services/language.service';
 
 import {
   AscentType,
@@ -79,7 +79,10 @@ interface AscentDateMarker {
           <span class="font-bold text-base">
             {{
               selectedDay().toLocalNativeDate()
-                | date: 'longDate' : undefined : global.selectedLanguage()
+                | date
+                  : 'longDate'
+                  : undefined
+                  : languageService.selectedLanguage()
             }}
           </span>
           <span
@@ -127,7 +130,7 @@ interface AscentDateMarker {
   ],
 })
 export class AscentCalendarDialogComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly languageService = inject(LanguageService);
   private readonly ascentsService = inject(AscentsService);
   protected readonly context =
     injectContext<TuiDialogContext<void, AscentCalendarDialogData>>();

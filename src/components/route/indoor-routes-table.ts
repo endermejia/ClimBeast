@@ -16,9 +16,9 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
-
-import { GlobalData } from '../../services/global-data';
+import { AuthStateService } from '../../services/auth-state.service';
 import { IndoorService } from '../../services/indoor.service';
+import { LayoutService } from '../../services/layout.service';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { ToastService } from '../../services/toast.service';
@@ -43,7 +43,6 @@ import { RoutesTableComponent } from './routes-table';
 
 @Component({
   selector: 'app-indoor-routes-table',
-  standalone: true,
   imports: [
     CommonModule,
     TranslateModule,
@@ -60,7 +59,7 @@ import { RoutesTableComponent } from './routes-table';
       [showAddRouteToTopo]="true"
       [availableTopos]="availableTopos()"
       [ascentInfo]="ascentsService.ascentInfo()"
-      [isMobile]="global.isMobile()"
+      [isMobile]="layoutService.isMobile()"
       [equippersTemplate]="equippersTpl"
       [expandedTemplate]="expandedTpl"
       (logAscent)="logIndoorAscent($event)"
@@ -115,7 +114,8 @@ import { RoutesTableComponent } from './routes-table';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IndoorRoutesTableComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly layoutService = inject(LayoutService);
+  protected readonly authState = inject(AuthStateService);
   protected readonly indoorService = inject(IndoorService);
   protected readonly ascentsService = inject(AscentsService);
   private readonly supabaseService = inject(SupabaseService);
@@ -132,7 +132,7 @@ export class IndoorRoutesTableComponent {
   protected canEditIndoor(): boolean {
     const cid = this.centerId();
     if (!cid) return false;
-    return !!this.global.indoorAdminPermissions()[cid];
+    return !!this.authState.indoorAdminPermissions()[cid];
   }
 
   protected readonly mappedData = computed(() => {

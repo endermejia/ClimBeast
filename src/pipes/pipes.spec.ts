@@ -2,10 +2,12 @@ import { TestBed } from '@angular/core/testing';
 
 import { describe, it, expect, beforeEach } from 'vitest';
 
-import { GlobalData } from '../services/global-data';
+import { LanguageService } from '../services/language.service';
+import { ThemeService } from '../services/theme.service';
 
 import { COMMON_TEST_PROVIDERS } from '../testing';
-import { MockGlobalData } from '../testing/mock-global-data.service';
+import { MockLanguageService } from '../testing/mock-language.service';
+import { MockThemeService } from '../testing/mock-theme.service';
 import { AnyToSchedulePipe } from './any-to-schedule.pipe';
 import { AscentDatePipe } from './ascent-date.pipe';
 import { AvatarUrlPipe } from './avatar-url.pipe';
@@ -13,7 +15,6 @@ import { IconSrcPipe } from './icon-src.pipe';
 import { MentionLinkPipe } from './mention-link.pipe';
 import { SanitizeHtmlPipe } from './sanitize-html.pipe';
 import { ShadeInfoPipe } from './shade-info.pipe';
-
 import { TableSorterPipe } from './table-sorter.pipe';
 import { TopoImagePipe } from './topo-image.pipe';
 import { TopoHasPathPipe } from './topo-path.pipe';
@@ -175,7 +176,7 @@ describe('IconSrcPipe (with DI)', () => {
     TestBed.configureTestingModule({
       providers: [
         ...COMMON_TEST_PROVIDERS,
-        { provide: GlobalData, useClass: MockGlobalData },
+        { provide: ThemeService, useClass: MockThemeService },
         IconSrcPipe,
       ],
     });
@@ -196,7 +197,7 @@ describe('AscentDatePipe (with DI)', () => {
     TestBed.configureTestingModule({
       providers: [
         ...COMMON_TEST_PROVIDERS,
-        { provide: GlobalData, useClass: MockGlobalData },
+        { provide: LanguageService, useClass: MockLanguageService },
         AscentDatePipe,
       ],
     });

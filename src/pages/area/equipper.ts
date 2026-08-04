@@ -1,4 +1,3 @@
-import { LowerCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,18 +5,18 @@ import {
   effect,
   inject,
   input,
-  untracked,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
-import { TuiLink, TuiScrollbar } from '@taiga-ui/core';
+import { TuiScrollbar } from '@taiga-ui/core';
 
 import { TuiCountryIsoCode } from '@taiga-ui/i18n';
 import { TuiSkeleton } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { GlobalData } from '../../services/global-data';
+import { EquipperService } from '../../services/equipper.service';
+import { LayoutService } from '../../services/layout.service';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { IndoorRoutesComponent } from '../../components/indoor/indoor-routes';
@@ -27,14 +26,10 @@ import { UserInfoComponent } from '../../components/ui/user-info';
 
 @Component({
   selector: 'app-equipper',
-  standalone: true,
   imports: [
-    LowerCasePipe,
-    RouterLink,
     OutdoorRoutesTableComponent,
     IndoorRoutesComponent,
     TranslatePipe,
-    TuiLink,
     TuiScrollbar,
     TuiSkeleton,
     UserInfoComponent,
@@ -42,56 +37,61 @@ import { UserInfoComponent } from '../../components/ui/user-info';
   template: `
     <tui-scrollbar class="flex grow">
       <section class="w-full max-w-5xl mx-auto p-4 grid gap-4">
-        @let equipper = global.equipperDetailResource.value();
-        @let profile = equipper?.user_profile;
-        @let loading = global.equipperDetailResource.isLoading();
-
-        <app-user-info
-          [loading]="loading"
-          [avatar]="profile?.avatar"
-          [name]="equipper?.name"
-          [city]="profile?.city"
-          [country]="profileCountry()"
-          [age]="profileAge()"
-          [startingClimbingYear]="profile?.starting_climbing_year"
-          [bio]="equipper?.description || profile?.bio"
-          defaultIcon="@tui.hammer"
-        >
-          <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2" extraInfo>
-            @if (profile?.id; as id) {
-              <a
-                tuiLink
-                [tuiSkeleton]="loading"
-                [routerLink]="['/profile', id]"
-              >
-                {{ 'nav.viewProfile' | translate }}
-              </a>
-            }
+        @let equipper = equipperService.equipperDetailResource.value();
+        @let loading = equipperService.equipperDetailResource.isLoading();
+        @if (loading) {
+          <div class="flex items-center gap-4">
+            <div
+              class="w-16 h-16 rounded-full border border-white/10"
+              [tuiSkeleton]="true"
+            ></div>
+            <div class="space-y-2">
+              <div
+                class="w-48 h-6 rounded border border-white/10"
+                [tuiSkeleton]="true"
+              ></div>
+              <div
+                class="w-32 h-4 rounded border border-white/10"
+                [tuiSkeleton]="true"
+              ></div>
+            </div>
           </div>
-        </app-user-info>
-
-        <div class="mt-4">
-          <h2 class="text-xl font-semibold mb-2" [tuiSkeleton]="loading">
-            {{ global.equipperRoutesResource.value()?.length || 0 }}
-            {{ 'routes' | translate | lowercase }}
-          </h2>
-
-          <app-outdoor-routes-table
-            [data]="global.equipperRoutesResource.value() || []"
-            [showLocation]="true"
+        } @else if (equipper) {
+          <app-user-info
+            [name]="equipper.user_profile?.name || equipper.name"
+            [avatar]="equipper.user_profile?.avatar"
+            [country]="profileCountry()"
+            [city]="equipper.user_profile?.city"
+            [bio]="equipper.user_profile?.bio"
+            [age]="profileAge()"
           />
-        </div>
+        }
 
-        @let indoorRoutes = global.equipperIndoorRoutesResource.value() || [];
+        <!-- Equipper Routes Table -->
+        <section class="mt-4">
+          <h2 class="text-xl font-bold mb-4">
+            {{ 'equipper.routes' | translate }} ({{
+              equipperService.equipperRoutesResource.value()?.length || 0
+            }})
+          </h2>
+          <app-outdoor-routes-table
+            [data]="equipperService.equipperRoutesResource.value() || []"
+            [showAdminActions]="false"
+          />
+        </section>
+
+        <!-- Equipper Indoor Routes -->
+        @let indoorRoutes =
+          equipperService.equipperIndoorRoutesResource.value() || [];
         @if (indoorRoutes.length > 0) {
-          <div class="mt-6">
-            <h2 class="text-xl font-semibold mb-2">
-              {{ indoorRoutes.length }}
-              {{ 'indoor.routes' | translate | lowercase }}
+          <section class="mt-4">
+            <h2 class="text-xl font-bold mb-4">
+              {{ 'equipper.indoorRoutes' | translate }} ({{
+                indoorRoutes.length
+              }})
             </h2>
-
             <app-indoor-routes [customRoutes]="indoorRoutes" />
-          </div>
+          </section>
         }
       </section>
     </tui-scrollbar>
@@ -100,7 +100,8 @@ import { UserInfoComponent } from '../../components/ui/user-info';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EquipperComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly equipperService = inject(EquipperService);
+  protected readonly layoutService = inject(LayoutService);
   protected readonly supabase = inject(SupabaseService);
   protected readonly router = inject(Router);
 
@@ -109,13 +110,14 @@ export class EquipperComponent {
 
   readonly profileCountry = computed(
     () =>
-      this.global.equipperDetailResource.value()?.user_profile
+      this.equipperService.equipperDetailResource.value()?.user_profile
         ?.country as TuiCountryIsoCode,
   );
 
   readonly profileAge = computed(() => {
     const bd =
-      this.global.equipperDetailResource.value()?.user_profile?.birth_date;
+      this.equipperService.equipperDetailResource.value()?.user_profile
+        ?.birth_date;
     if (!bd) return null;
     const d = new Date(bd);
     if (Number.isNaN(d.getTime())) return null;
@@ -130,14 +132,13 @@ export class EquipperComponent {
     effect(() => {
       const idStr = this.id();
       if (idStr) {
-        untracked(() => this.global.resetDataByPage('equipper'));
-        this.global.selectedEquipperId.set(parseInt(idStr, 10));
+        this.equipperService.selectedEquipperId.set(parseInt(idStr, 10));
       }
     });
 
     effect(() => {
-      this.global.isNavLoading.set(
-        this.global.equipperDetailResource.isLoading(),
+      this.layoutService.isNavLoading.set(
+        this.equipperService.equipperDetailResource.isLoading(),
       );
     });
   }

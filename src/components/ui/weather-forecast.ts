@@ -21,7 +21,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { filter, switchMap } from 'rxjs';
 
-import { GlobalData } from '../../services/global-data';
+import { LanguageService } from '../../services/language.service';
 import { WeatherService } from '../../services/weather.service';
 
 @Component({
@@ -73,7 +73,10 @@ import { WeatherService } from '../../services/weather.service';
                 <span class="text-xs opacity-70 capitalize">
                   {{
                     day.date
-                      | date: 'EEE' : undefined : global.selectedLanguage()
+                      | date
+                        : 'EEE'
+                        : undefined
+                        : languageService.selectedLanguage()
                   }}
                 </span>
                 <tui-icon [icon]="day.icon" class="size-8!" />
@@ -246,7 +249,7 @@ import { WeatherService } from '../../services/weather.service';
 })
 export class WeatherForecastComponent {
   private readonly weatherService = inject(WeatherService);
-  protected readonly global = inject(GlobalData);
+  protected readonly languageService = inject(LanguageService);
   protected readonly selectedDayIdx = signal(0);
   protected readonly hoursSkeleton = Array.from({ length: 24 }, (_, i) => i);
 

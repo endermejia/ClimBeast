@@ -50,7 +50,6 @@ import {
 } from 'rxjs';
 
 import { BlockingService } from '../../services/blocking.service';
-import { GlobalData } from '../../services/global-data';
 import { MessagingService } from '../../services/messaging.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -387,7 +386,6 @@ export class ChatDialogComponent implements OnDestroy {
   protected readonly toast = inject(ToastService);
   protected readonly translate = inject(TranslateService);
   protected readonly dialogs = inject(TuiDialogService);
-  protected readonly global = inject(GlobalData);
   private readonly router = inject(Router);
   protected readonly context =
     injectContext<TuiDialogContext<void, ChatDialogData>>();

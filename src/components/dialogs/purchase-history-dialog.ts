@@ -21,7 +21,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
-import { GlobalData } from '../../services/global-data';
+import { LanguageService } from '../../services/language.service';
 import { MerchandiseService } from '../../services/merchandise.service';
 import { SupabaseService } from '../../services/supabase.service';
 
@@ -100,7 +100,7 @@ interface PurchaseRecord {
                             | date
                               : 'medium'
                               : undefined
-                              : global.selectedLanguage()
+                              : languageService.selectedLanguage()
                         }}
                       </span>
                     </div>
@@ -115,7 +115,7 @@ interface PurchaseRecord {
                             : 'EUR'
                             : 'symbol'
                             : '1.2-2'
-                            : global.selectedLanguage()
+                            : languageService.selectedLanguage()
                       }}
                     </span>
                     @if (p.status) {
@@ -215,7 +215,7 @@ interface PurchaseRecord {
   ],
 })
 export class PurchaseHistoryDialogComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly languageService = inject(LanguageService);
   private readonly supabase = inject(SupabaseService);
   private readonly router = inject(Router);
   private readonly merchService = inject(MerchandiseService);

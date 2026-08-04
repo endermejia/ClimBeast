@@ -19,7 +19,6 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { CartService } from '../../services/cart.service';
-import { GlobalData } from '../../services/global-data';
 
 import { AreaPackDetail } from '../../models';
 
@@ -177,7 +176,6 @@ import { AreaPackDetail } from '../../models';
 })
 export class MerchandisePackDialogComponent {
   private readonly cartService = inject(CartService);
-  private readonly global = inject(GlobalData);
   protected readonly context =
     injectContext<TuiDialogContext<void, AreaPackDetail>>();
 
@@ -201,7 +199,7 @@ export class MerchandisePackDialogComponent {
       type: 'area_pack',
     });
 
-    this.global.showCart.set(true);
+    this.cartService.showCart.set(true);
     this.context.completeWith();
   }
 }

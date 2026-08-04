@@ -14,6 +14,7 @@ export class CartService {
   // Cart state
   private readonly _items = signal<CartProduct[]>([]);
   readonly items = this._items.asReadonly();
+  readonly showCart = signal(false);
 
   readonly totalItems = computed(() =>
     this._items().reduce((acc, item) => acc + item.quantity, 0),

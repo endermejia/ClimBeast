@@ -43,12 +43,15 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AreasService } from '../../services/areas.service';
+import { AuthStateService } from '../../services/auth-state.service';
 
 import { CragsService } from '../../services/crags.service';
 
+import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
 
-import { GlobalData } from '../../services/global-data';
+import { MapDataService } from '../../services/map-data.service';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { SeoService } from '../../services/seo.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -112,11 +115,11 @@ import { IS_BROWSER } from '../../app/is-browser';
   template: `
     <tui-scrollbar class="flex grow">
       <section class="w-full max-w-5xl mx-auto p-4">
-        @let canEditAsAdmin = global.canEditAsAdmin();
-        @if (global.selectedArea(); as area) {
-          @let canAreaAdmin = global.areaAdminPermissions()[area.id];
+        @let canEditAsAdmin = authState.canEditAsAdmin();
+        @if (outdoorData.selectedArea(); as area) {
+          @let canAreaAdmin = authState.areaAdminPermissions()[area.id];
           @let hasPendingRequest =
-            global.pendingAdminRequestAreaIds().has(area.id);
+            authState.pendingAdminRequestAreaIds().has(area.id);
           <div class="mb-4">
             <app-section-header
               class="w-full"
@@ -124,7 +127,7 @@ import { IS_BROWSER } from '../../app/is-browser';
               [liked]="area.liked"
               (toggleLike)="onToggleLike()"
             >
-              @if (global.canEditArea()) {
+              @if (authState.canEditArea()) {
                 <div actionButtons class="flex gap-2">
                   @if (!isPublic()) {
                     <button
@@ -165,7 +168,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                   }
                 </div>
               } @else if (
-                global.editingMode() &&
+                authState.editingMode() &&
                 !canEditAsAdmin &&
                 !canAreaAdmin &&
                 !hasPendingRequest
@@ -528,7 +531,10 @@ import { IS_BROWSER } from '../../app/is-browser';
   host: { class: 'flex grow min-h-0' },
 })
 export class AreaComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
+  protected readonly outdoorData = inject(OutdoorDataService);
+  protected readonly filterState = inject(FilterStateService);
+  protected readonly mapData = inject(MapDataService);
   protected readonly router = inject(Router);
   protected readonly toast = inject(ToastService);
   protected readonly isBrowser = inject(IS_BROWSER);
@@ -544,9 +550,9 @@ export class AreaComponent {
   areaSlug: InputSignal<string> = input.required<string>();
   readonly query: WritableSignal<string> = signal('');
   protected readonly userSearchQuery = signal('');
-  readonly selectedGradeRange = this.global.areaListGradeRange;
-  readonly selectedCategories = this.global.areaListCategories;
-  readonly selectedShade = this.global.areaListShade;
+  readonly selectedGradeRange = this.filterState.areaListGradeRange;
+  readonly selectedCategories = this.filterState.areaListCategories;
+  readonly selectedShade = this.filterState.areaListShade;
 
   readonly hasActiveFilters = computed(() => {
     const [lo, hi] = this.selectedGradeRange();
@@ -559,11 +565,11 @@ export class AreaComponent {
   });
 
   protected readonly hasTopos = computed(() => {
-    return (this.global.selectedArea()?.topos_count ?? 0) > 0;
+    return (this.outdoorData.selectedArea()?.topos_count ?? 0) > 0;
   });
 
   protected readonly areaDetailResource = resource({
-    params: () => this.global.selectedArea()?.id,
+    params: () => this.outdoorData.selectedArea()?.id,
     loader: async ({ params: id }) => {
       if (!id) return null;
       const { data } = await this.areas.getById(id);
@@ -576,10 +582,10 @@ export class AreaComponent {
   );
 
   protected readonly canEditAsAdmin = computed(() =>
-    this.global.canEditAsAdmin(),
+    this.authState.canEditAsAdmin(),
   );
 
-  protected readonly canEditArea = computed(() => this.global.canEditArea());
+  protected readonly canEditArea = computed(() => this.authState.canEditArea());
 
   protected readonly isPublic = computed(
     () => this.areaDetail()?.is_public ?? true,
@@ -588,7 +594,7 @@ export class AreaComponent {
   protected readonly routesResource = resource({
     params: () => {
       const q = this.query().trim();
-      const area = this.global.selectedArea();
+      const area = this.outdoorData.selectedArea();
       if (q.length >= 3 && area) {
         return { q, areaId: area.id };
       }
@@ -626,7 +632,7 @@ export class AreaComponent {
   readonly filteredCrags = computed(() => {
     const query = this.query();
     const [minIdx, maxIdx] = this.selectedGradeRange();
-    const list = this.global.cragsList();
+    const list = this.outdoorData.cragsList();
 
     const textMatches = (c: (typeof list)[number]) =>
       matchesQuery(c.name, query) || matchesQuery(c.slug, query);
@@ -680,7 +686,7 @@ export class AreaComponent {
   );
 
   protected readonly areaAdminsResource = resource({
-    params: () => this.global.selectedArea()?.id,
+    params: () => this.outdoorData.selectedArea()?.id,
     loader: async ({ params: areaId }) => {
       if (!areaId) return [];
       await this.supabase.whenReady();
@@ -745,7 +751,7 @@ export class AreaComponent {
   protected readonly stringifyUser = (u: UserProfileBasicDto) => u.name || '';
 
   async addAdmin(user: UserProfileBasicDto): Promise<void> {
-    const areaId = this.global.selectedArea()?.id;
+    const areaId = this.outdoorData.selectedArea()?.id;
     if (!areaId) return;
 
     const { error } = await this.supabase.client
@@ -768,7 +774,7 @@ export class AreaComponent {
   }
 
   async removeAdmin(userId: string): Promise<void> {
-    const areaId = this.global.selectedArea()?.id;
+    const areaId = this.outdoorData.selectedArea()?.id;
     if (!areaId) return;
 
     const { error } = await this.supabase.client
@@ -796,14 +802,15 @@ export class AreaComponent {
   constructor() {
     effect(() => {
       const slug = this.areaSlug();
-      this.global.resetDataByPage('area');
-      this.global.selectedAreaSlug.set(slug);
+      this.outdoorData.selectedCragSlug.set(null);
+      this.outdoorData.selectedRouteSlug.set(null);
+      this.outdoorData.selectedAreaSlug.set(slug);
     });
 
     effect(() => {
       if (!this.isBrowser) return;
-      const loading = this.global.areasListResource.isLoading();
-      const area = this.global.selectedArea();
+      const loading = this.outdoorData.areasListResource.isLoading();
+      const area = this.outdoorData.selectedArea();
       if (!loading && !area) {
         this.router.navigateByUrl('/page-not-found');
       }
@@ -811,7 +818,7 @@ export class AreaComponent {
 
     // Update SEO tags when the area data is available
     effect(() => {
-      const area = this.global.selectedArea();
+      const area = this.outdoorData.selectedArea();
       const slug = this.areaSlug();
       if (!area) return;
       const cragsCount = this.filteredCrags().length;
@@ -834,13 +841,13 @@ export class AreaComponent {
 
   onToggleLike(): void {
     if (!this.isBrowser) return;
-    const area = this.global.selectedArea();
+    const area = this.outdoorData.selectedArea();
     if (!area) return;
     void this.areas.toggleAreaLike(area.id);
   }
 
   async deleteArea(): Promise<void> {
-    const area = this.global.selectedArea();
+    const area = this.outdoorData.selectedArea();
     if (!area) return;
     if (!this.isBrowser) return;
 
@@ -878,7 +885,7 @@ export class AreaComponent {
   }
 
   openEditArea(): void {
-    const area = this.global.selectedArea();
+    const area = this.outdoorData.selectedArea();
     if (!area) return;
     this.areas.openAreaForm({
       areaData: { id: area.id, name: area.name, slug: area.slug },
@@ -886,25 +893,25 @@ export class AreaComponent {
   }
 
   openAccessManager(): void {
-    const area = this.global.selectedArea();
+    const area = this.outdoorData.selectedArea();
     if (!area) return;
     this.areas.openAreaAccessManager(area.id, area.name);
   }
 
   openCreateCrag(): void {
-    const current = this.global.selectedArea();
+    const current = this.outdoorData.selectedArea();
     if (!current) return;
     this.cragsService.openCragForm({ areaId: current.id });
   }
 
   async onSync8a(): Promise<void> {
-    const area = this.global.selectedArea();
+    const area = this.outdoorData.selectedArea();
     if (!area) return;
     await this.areas.syncAreaWith8a(area.id);
   }
 
   async viewOnMap(): Promise<void> {
-    const area = this.global.selectedArea();
+    const area = this.outdoorData.selectedArea();
     if (!area) return;
 
     await this.supabase.whenReady();
@@ -932,7 +939,7 @@ export class AreaComponent {
       if (c.longitude! > maxLng) maxLng = c.longitude!;
     });
 
-    this.global.mapBounds.set({
+    this.mapData.mapBounds.set({
       south_west_latitude: minLat,
       south_west_longitude: minLng,
       north_east_latitude: maxLat,
@@ -943,7 +950,7 @@ export class AreaComponent {
   }
 
   async requestAdmin(): Promise<void> {
-    const area = this.global.selectedArea();
+    const area = this.outdoorData.selectedArea();
     if (!area) return;
     if (!this.isBrowser) return;
 
@@ -976,14 +983,14 @@ export class AreaComponent {
 
     const success = await this.areas.requestAreaAdmin(area.id);
     if (success) {
-      this.global.pendingAdminRequestsResource.reload();
+      this.authState.pendingAdminRequestsResource.reload();
     }
   }
 
   viewFirstTopo(): void {
-    const topos = this.global.areaTopos();
+    const topos = this.outdoorData.areaTopos();
     if (!topos || topos.length === 0) return;
-    const area = this.global.selectedArea();
+    const area = this.outdoorData.selectedArea();
     if (!area) return;
 
     // Find first topo crag

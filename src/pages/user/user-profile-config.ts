@@ -80,12 +80,15 @@ import {
   Observer,
 } from 'rxjs';
 
+import { AudioPreferencesService } from '../../services/audio-preferences.service';
+import { AuthStateService } from '../../services/auth-state.service';
 import { EightAnuService } from '../../services/eight-anu.service';
 
 import { FollowRequestsService } from '../../services/follow-requests.service';
-import { GlobalData } from '../../services/global-data';
+import { LanguageService } from '../../services/language.service';
 import { MerchandiseService } from '../../services/merchandise.service';
 import { SupabaseService } from '../../services/supabase.service';
+import { ThemeService } from '../../services/theme.service';
 import { ToastService } from '../../services/toast.service';
 import { TourService } from '../../services/tour.service';
 import { TourStep } from '../../services/tour.service';
@@ -190,7 +193,9 @@ interface Country {
               [class.ring-primary]="isFirstSteps()"
               class="rounded-full hover:shadow-lg transition-shadow duration-300"
             >
-              @if (userEmail() && (profile()?.avatar || global.userAvatar())) {
+              @if (
+                userEmail() && (profile()?.avatar || authState.userAvatar())
+              ) {
                 <button
                   tuiButton
                   appearance="action-destructive"
@@ -937,7 +942,10 @@ interface Country {
   `,
 })
 export class UserProfileConfigComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
+  protected readonly audioPrefs = inject(AudioPreferencesService);
+  protected readonly languageService = inject(LanguageService);
+  protected readonly themeService = inject(ThemeService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
 
@@ -970,7 +978,7 @@ export class UserProfileConfigComponent {
       }
     })();
 
-  protected readonly profile = computed(() => this.global.userProfile());
+  protected readonly profile = computed(() => this.authState.userProfile());
   protected readonly isFirstSteps = computed(
     () => this.profile()?.first_steps ?? false,
   );
@@ -1010,8 +1018,8 @@ export class UserProfileConfigComponent {
     return profile?.name === email && email !== '';
   });
   protected isUploadingAvatar = signal(false);
-  protected avatarSrc = computed<string | null>(() => {
-    return this.global.userAvatar() || null;
+  protected readonly avatarSrc = computed<string | null>(() => {
+    return this.authState.userAvatar() || null;
   });
 
   protected readonly model = signal({
@@ -1089,7 +1097,7 @@ export class UserProfileConfigComponent {
 
   // Language selector
   protected readonly languages = computed(() => {
-    this.global.i18nTick();
+    this.languageService.i18nTick();
     const allLangs = Object.values(Languages) as Language[];
     return allLangs.sort((a, b) => {
       const labelA = this.translate.instant(`options.language.${a}`);
@@ -1099,7 +1107,7 @@ export class UserProfileConfigComponent {
   });
   readonly stringifyLanguage = computed(() => {
     this.profile();
-    this.global.i18nTick();
+    this.languageService.i18nTick();
     return (x: unknown): string => {
       if (typeof x !== 'string') return String(x);
       const key = `options.language.${x}`;
@@ -1112,7 +1120,7 @@ export class UserProfileConfigComponent {
   readonly sexes: Sex[] = [Sexes.MALE, Sexes.FEMALE, Sexes.OTHER];
   readonly stringifySex = computed(() => {
     this.profile();
-    this.global.i18nTick();
+    this.languageService.i18nTick();
     return (x: unknown): string => {
       if (typeof x !== 'string') return String(x);
       const key = `options.sex.${x}`;
@@ -1174,7 +1182,7 @@ export class UserProfileConfigComponent {
       }
 
       // Track the current active language (from service)
-      const currentLang = this.global.currentLang();
+      const currentLang = this.languageService.currentLang();
 
       // Only show the toast when it matches our target language
       if (currentLang === pending.lang) {
@@ -1250,10 +1258,12 @@ export class UserProfileConfigComponent {
       birth_date,
       eightAnuUser: this.selectedEightAnuUser.value() || null,
       deleteEmail: '',
-      messageSound: profile.message_sound ?? this.global.messageSoundEnabled(),
+      messageSound:
+        profile.message_sound ?? this.audioPrefs.messageSoundEnabled(),
       notificationSound:
-        profile.notification_sound ?? this.global.notificationSoundEnabled(),
-      editingMode: profile.editing_mode ?? this.global.editingMode(),
+        profile.notification_sound ??
+        this.audioPrefs.notificationSoundEnabled(),
+      editingMode: profile.editing_mode ?? this.authState.editingMode(),
       restartFirstSteps: false,
     });
   }
@@ -1347,7 +1357,7 @@ export class UserProfileConfigComponent {
       return;
     }
     this.model.update((m) => ({ ...m, theme: newTheme }));
-    this.global.setTheme(newTheme, this.lastEvent);
+    this.themeService.setTheme(newTheme, this.lastEvent);
     await this.updateProfile({ theme: newTheme }, 'profile.updated.theme');
   }
 
@@ -1627,7 +1637,7 @@ export class UserProfileConfigComponent {
       { message_sound: enabled },
       'profile.updated.message_sound',
     );
-    this.global.messageSoundEnabled.set(enabled);
+    this.audioPrefs.messageSoundEnabled.set(enabled);
   }
 
   async onNotificationSoundChange(enabled: boolean): Promise<void> {
@@ -1636,7 +1646,7 @@ export class UserProfileConfigComponent {
       { notification_sound: enabled },
       'profile.updated.notification_sound',
     );
-    this.global.notificationSoundEnabled.set(enabled);
+    this.audioPrefs.notificationSoundEnabled.set(enabled);
   }
 
   async onEditingModeChange(enabled: boolean): Promise<void> {
@@ -1655,7 +1665,7 @@ export class UserProfileConfigComponent {
     } else {
       // Disabling is always allowed without confirmation
       this.updateModel('editingMode', false);
-      this.global.editingMode.set(false);
+      this.authState.editingMode.set(false);
       await this.updateProfile(
         { editing_mode: false },
         'profile.updated.editing_mode',
@@ -1680,18 +1690,18 @@ export class UserProfileConfigComponent {
     } else if (toastKey) {
       this.pendingSuccessToast.set({
         key: toastKey,
-        lang: updates.language || this.global.selectedLanguage(),
+        lang: updates.language || this.languageService.selectedLanguage(),
       });
     }
   }
 
   async toggleEditingMode(enabled: boolean): Promise<boolean> {
-    if (this.global.editingMode() === enabled) {
+    if (this.authState.editingMode() === enabled) {
       return true;
     }
 
-    if (enabled && !this.global.isAdmin()) {
-      const hasPermissions = this.global.isAreaAdmin();
+    if (enabled && !this.authState.isAdmin()) {
+      const hasPermissions = this.authState.isAreaAdmin();
       const messageKey = hasPermissions
         ? 'profile.editing.confirmationEquipper'
         : 'profile.editing.confirmationUser';
@@ -1712,12 +1722,12 @@ export class UserProfileConfigComponent {
       if (!confirmed) {
         // Force the switch to stay false
         this.updateModel('editingMode', false);
-        this.global.editingMode.set(false);
+        this.authState.editingMode.set(false);
         return false;
       }
     }
 
-    this.global.editingMode.set(enabled);
+    this.authState.editingMode.set(enabled);
     return true;
   }
 

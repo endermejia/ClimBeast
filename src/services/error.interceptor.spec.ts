@@ -10,9 +10,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 import { IS_BROWSER } from '../app/is-browser';
 
-import { MockGlobalData, MockSupabaseService } from '../testing';
+import { MockSupabaseService } from '../testing';
 import { errorInterceptor } from './error.interceptor';
-import { GlobalData } from './global-data';
 import { SupabaseService } from './supabase.service';
 
 describe('errorInterceptor', () => {
@@ -21,7 +20,6 @@ describe('errorInterceptor', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        { provide: GlobalData, useClass: MockGlobalData },
         { provide: SupabaseService, useClass: MockSupabaseService },
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: IS_BROWSER, useValue: true },

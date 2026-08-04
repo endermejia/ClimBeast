@@ -7,12 +7,10 @@ import { TranslateService, TranslateStore } from '@ngx-translate/core';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { IS_BROWSER } from '../app/is-browser';
-import { MockGlobalData } from '../testing/mock-global-data.service';
 import { MockSupabaseService } from '../testing/mock-supabase.service';
 import { AreasService } from './areas.service';
 import { CacheService } from './cache.service';
 import { EightAnuService } from './eight-anu.service';
-import { GlobalData } from './global-data';
 import { NotificationService } from './notification.service';
 import { SupabaseService } from './supabase.service';
 import { ToastService } from './toast.service';
@@ -62,7 +60,6 @@ describe('AreasService', () => {
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: IS_BROWSER, useValue: true },
         { provide: SupabaseService, useValue: mockSupabase },
-        { provide: GlobalData, useClass: MockGlobalData },
         {
           provide: CacheService,
           useValue: {
@@ -110,7 +107,6 @@ describe('AreasService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
@@ -134,7 +130,6 @@ describe('AreasService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
@@ -158,7 +153,6 @@ describe('AreasService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
@@ -182,7 +176,6 @@ describe('AreasService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
@@ -207,7 +200,6 @@ describe('AreasService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
@@ -231,7 +223,6 @@ describe('AreasService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
@@ -255,7 +246,6 @@ describe('AreasService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
@@ -279,7 +269,6 @@ describe('AreasService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },

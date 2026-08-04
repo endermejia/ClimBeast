@@ -12,13 +12,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AscentsService } from '../../services/ascents.service';
 
 import { FollowsService } from '../../services/follows.service';
-import { GlobalData } from '../../services/global-data';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { RouteAscentWithExtras } from '../../models';
 
 import { IS_BROWSER } from '../../app/is-browser';
-import { MockGlobalData } from '../../testing';
 import { MockSupabaseService } from '../../testing';
 import { AscentCardComponent } from './ascent-card';
 
@@ -118,8 +116,6 @@ describe('AscentCardComponent', () => {
         provideRouter([]),
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: IS_BROWSER, useValue: true },
-        MockGlobalData,
-        { provide: GlobalData, useExisting: MockGlobalData },
         { provide: SupabaseService, useClass: MockSupabaseService },
         { provide: AscentsService, useValue: mockAscentsService },
         {
@@ -169,8 +165,10 @@ describe('AscentCardComponent', () => {
 
   describe('computed properties', () => {
     it('isOwnAscent returns true when user_id matches current profile', async () => {
-      const mockGlobal = TestBed.inject(MockGlobalData);
-      mockGlobal.userProfile.set({
+      const mockSupabase = TestBed.inject(
+        SupabaseService,
+      ) as unknown as MockSupabaseService;
+      mockSupabase.setUserProfile({
         id: 'user-1',
         name: 'Alice',
         avatar: null,
@@ -185,8 +183,10 @@ describe('AscentCardComponent', () => {
     });
 
     it('isOwnAscent returns false for different user', async () => {
-      const mockGlobal = TestBed.inject(MockGlobalData);
-      mockGlobal.userProfile.set({
+      const mockSupabase = TestBed.inject(
+        SupabaseService,
+      ) as unknown as MockSupabaseService;
+      mockSupabase.setUserProfile({
         id: 'other-user',
         name: 'Other',
         avatar: null,

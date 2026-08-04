@@ -8,10 +8,8 @@ import { TranslateService, TranslateStore } from '@ngx-translate/core';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { IS_BROWSER } from '../app/is-browser';
-import { MockGlobalData } from '../testing/mock-global-data.service';
 import { MockSupabaseService } from '../testing/mock-supabase.service';
 import { CragsService } from './crags.service';
-import { GlobalData } from './global-data';
 import { SupabaseService } from './supabase.service';
 import { ToastService } from './toast.service';
 
@@ -59,7 +57,6 @@ describe('CragsService', () => {
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: IS_BROWSER, useValue: true },
         { provide: SupabaseService, useValue: mockSupabase },
-        { provide: GlobalData, useClass: MockGlobalData },
         { provide: ToastService, useValue: mockToast },
         { provide: TuiDialogService, useValue: { open: vi.fn() } },
         { provide: TranslateService, useValue: MOCK_TRANSLATE },
@@ -87,10 +84,9 @@ describe('CragsService', () => {
       TestBed.configureTestingModule({
         providers: [
           CragsService,
-          { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: PLATFORM_ID, useValue: 'browser' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
@@ -108,10 +104,9 @@ describe('CragsService', () => {
       TestBed.configureTestingModule({
         providers: [
           CragsService,
-          { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: PLATFORM_ID, useValue: 'browser' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
@@ -131,10 +126,9 @@ describe('CragsService', () => {
       TestBed.configureTestingModule({
         providers: [
           CragsService,
-          { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: PLATFORM_ID, useValue: 'browser' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
@@ -152,10 +146,9 @@ describe('CragsService', () => {
       TestBed.configureTestingModule({
         providers: [
           CragsService,
-          { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: PLATFORM_ID, useValue: 'browser' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
@@ -173,10 +166,9 @@ describe('CragsService', () => {
       TestBed.configureTestingModule({
         providers: [
           CragsService,
-          { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: PLATFORM_ID, useValue: 'browser' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
@@ -195,10 +187,9 @@ describe('CragsService', () => {
       TestBed.configureTestingModule({
         providers: [
           CragsService,
-          { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: PLATFORM_ID, useValue: 'browser' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
@@ -216,10 +207,9 @@ describe('CragsService', () => {
       TestBed.configureTestingModule({
         providers: [
           CragsService,
-          { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: PLATFORM_ID, useValue: 'browser' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },

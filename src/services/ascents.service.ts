@@ -36,10 +36,11 @@ import {
 import { extractMentionIds, getPaginatedProfilesFromJunction } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
+
 import { AppNotificationsService } from './app-notifications.service';
-
-import { GlobalData } from './global-data';
-
+import { CragRoutesDataService } from './crag-routes-data.service';
+import { OutdoorDataService } from './outdoor-data.service';
+import { ProfileDataService } from './profile-data.service';
 import { SupabaseService } from './supabase.service';
 import { ToastService } from './toast.service';
 
@@ -47,7 +48,9 @@ import { ToastService } from './toast.service';
 export class AscentsService {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
-  private readonly global = inject(GlobalData);
+  private readonly profileData = inject(ProfileDataService);
+  private readonly outdoorData = inject(OutdoorDataService);
+  private readonly cragRoutesData = inject(CragRoutesDataService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
@@ -625,13 +628,13 @@ export class AscentsService {
     };
 
     // Specifically target the user ascents resource which powers the profile list
-    if (this.global.userAscentsResource.value()) {
-      this.global.userAscentsResource.update(removeFn);
+    if (this.profileData.userAscentsResource.value()) {
+      this.profileData.userAscentsResource.update(removeFn);
     }
 
     // Also update route ascents if present
-    if (this.global.routeAscentsResource.value()) {
-      this.global.routeAscentsResource.update(removeFn);
+    if (this.outdoorData.routeAscentsResource.value()) {
+      this.outdoorData.routeAscentsResource.update(removeFn);
     }
 
     this.refreshResources();
@@ -1104,17 +1107,17 @@ export class AscentsService {
         };
       };
 
-      this.global.userAscentsResource.update(updateFn);
-      this.global.routeAscentsResource.update(updateFn);
+      this.profileData.userAscentsResource.update(updateFn);
+      this.outdoorData.routeAscentsResource.update(updateFn);
     } else {
-      this.global.userAscentsResource.reload();
-      this.global.routeAscentsResource.reload();
+      this.profileData.userAscentsResource.reload();
+      this.outdoorData.routeAscentsResource.reload();
     }
 
-    this.global.routeDetailResource.reload();
-    this.global.cragRoutesResource.reload();
-    this.global.topoDetailResource.reload();
-    this.global.userProjectsResource.reload();
-    this.global.userTotalAscentsCountResource.reload();
+    this.outdoorData.routeDetailResource.reload();
+    this.cragRoutesData.cragRoutesResource.reload();
+    this.outdoorData.topoDetailResource.reload();
+    this.profileData.userProjectsResource.reload();
+    this.profileData.userTotalAscentsCountResource.reload();
   }
 }

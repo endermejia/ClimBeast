@@ -20,10 +20,9 @@ import type {
 
 import { IS_BROWSER } from '../app/is-browser';
 
-import { GlobalData } from './global-data';
-
+import { FavoritesDataService } from './favorites-data.service';
+import { OutdoorDataService } from './outdoor-data.service';
 import { SupabaseService } from './supabase.service';
-
 import { ToastService } from './toast.service';
 
 export interface CragSimple {
@@ -38,7 +37,8 @@ export interface CragSimple {
 export class CragsService {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
-  private readonly global = inject(GlobalData);
+  private readonly outdoorData = inject(OutdoorDataService);
+  private readonly favoritesData = inject(FavoritesDataService);
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
@@ -81,8 +81,8 @@ export class CragsService {
       { defaultValue: null },
     ).then((result) => {
       if (result) {
-        this.global.cragsListResource.reload();
-        this.global.cragDetailResource.reload();
+        this.outdoorData.cragsListResource.reload();
+        this.outdoorData.cragDetailResource.reload();
 
         if (
           isEdit &&
@@ -90,8 +90,8 @@ export class CragsService {
           typeof result === 'string' &&
           result !== oldSlug
         ) {
-          const areaSlug = this.global.selectedAreaSlug();
-          if (areaSlug && this.global.selectedCragSlug() === oldSlug) {
+          const areaSlug = this.outdoorData.selectedAreaSlug();
+          if (areaSlug && this.outdoorData.selectedCragSlug() === oldSlug) {
             void this.router.navigate(['/area', areaSlug, result]);
           }
         }
@@ -113,7 +113,7 @@ export class CragsService {
       { defaultValue: false },
     ).then((result) => {
       if (result) {
-        this.global.cragsListResource.reload();
+        this.outdoorData.cragsListResource.reload();
       }
       return result;
     });
@@ -180,7 +180,7 @@ export class CragsService {
 
       if (error) throw error;
 
-      this.global.cragsListResource.reload();
+      this.outdoorData.cragsListResource.reload();
       this.toast.success('messages.toasts.cragsUnified');
       return true;
     } catch (e) {
@@ -207,7 +207,7 @@ export class CragsService {
       throw error;
     }
     // After creating, reload the crags list for the selected area
-    this.global.cragsListResource.reload();
+    this.outdoorData.cragsListResource.reload();
     this.toast.success('messages.toasts.cragCreated');
     return data as CragDto;
   }
@@ -229,8 +229,8 @@ export class CragsService {
       throw error;
     }
     // Reload the crags list for the selected area and the current crag detail
-    this.global.cragsListResource.reload();
-    this.global.cragDetailResource.reload();
+    this.outdoorData.cragsListResource.reload();
+    this.outdoorData.cragDetailResource.reload();
     this.toast.success('messages.toasts.cragUpdated');
     return data as CragDto;
   }
@@ -258,7 +258,7 @@ export class CragsService {
       throw error;
     }
     // Reload the crags list
-    this.global.cragsListResource.reload();
+    this.outdoorData.cragsListResource.reload();
     this.toast.success('messages.toasts.cragDeleted');
     return true;
   }
@@ -275,7 +275,7 @@ export class CragsService {
       if (error) throw error;
 
       // Update local state
-      this.global.cragsListResource.update((curr) => {
+      this.outdoorData.cragsListResource.update((curr) => {
         return (curr || [])
           .map((item) => (item.id === cragId ? { ...item, liked } : item))
           .sort((a, b) => {
@@ -288,7 +288,7 @@ export class CragsService {
       });
 
       // Update crag detail if it matches
-      this.global.cragDetailResource.update((curr) => {
+      this.outdoorData.cragDetailResource.update((curr) => {
         if (curr?.id === cragId) {
           return { ...curr, liked };
         }
@@ -303,7 +303,7 @@ export class CragsService {
         this.toast.success('messages.toasts.favoriteAdded');
       }
 
-      this.global.likedCragsResource.reload();
+      this.favoritesData.likedCragsResource.reload();
 
       return liked;
     } catch (e) {

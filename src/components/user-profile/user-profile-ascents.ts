@@ -34,10 +34,10 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { debounceTime, Subject } from 'rxjs';
 
+import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
-
 import { FollowsService } from '../../services/follows.service';
-import { GlobalData } from '../../services/global-data';
+import { ProfileDataService } from '../../services/profile-data.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
 
@@ -80,13 +80,13 @@ import { EmptyStateComponent } from '../ui/empty-state';
   ],
   template: `
     @if (
-      global.userTotalAscentsCountResource.isLoading() ||
+      profileData.userTotalAscentsCountResource.isLoading() ||
       hasAscents() ||
       query() ||
       hasActiveFilters()
     ) {
       <div class="min-w-0">
-        @if (!global.userTotalAscentsCountResource.isLoading()) {
+        @if (!profileData.userTotalAscentsCountResource.isLoading()) {
           <div class="flex flex-wrap items-center gap-2 mb-4">
             <tui-textfield
               class="grow min-w-48"
@@ -186,7 +186,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
           [isLoading]="
             isLoading() ||
             ascentsResource.isLoading() ||
-            global.userTotalAscentsCountResource.isLoading()
+            profileData.userTotalAscentsCountResource.isLoading()
           "
           [hasMore]="hasMore()"
           [showUser]="false"
@@ -226,7 +226,8 @@ export class UserProfileAscentsComponent {
   isOwnProfile = input(false);
   profile = input<UserProfileDto | null | undefined>();
 
-  protected readonly global = inject(GlobalData);
+  protected readonly profileData = inject(ProfileDataService);
+  protected readonly filterState = inject(FilterStateService);
   protected readonly supabase = inject(SupabaseService);
   protected readonly translate = inject(TranslateService);
   protected readonly followsService = inject(FollowsService);
@@ -244,12 +245,12 @@ export class UserProfileAscentsComponent {
   protected readonly dateFilter = this.dateFilterValue;
 
   protected readonly sortFilterValue = linkedSignal<'grade' | 'date'>(() =>
-    this.global.ascentsSort(),
+    this.profileData.ascentsSort(),
   );
   protected readonly sortFilter = this.sortFilterValue;
 
-  protected readonly selectedGradeRange = this.global.areaListGradeRange;
-  protected readonly selectedCategories = this.global.areaListCategories;
+  protected readonly selectedGradeRange = this.filterState.areaListGradeRange;
+  protected readonly selectedCategories = this.filterState.areaListCategories;
 
   protected readonly hasActiveFilters = computed(() => {
     const [lo, hi] = this.selectedGradeRange();
@@ -259,7 +260,7 @@ export class UserProfileAscentsComponent {
 
   protected readonly dateFilterOptions = computed(() => {
     return getAscentDateFilterOptions(
-      this.global.effectiveStartingClimbingYear(),
+      this.profileData.effectiveStartingClimbingYear(),
     );
   });
 
@@ -283,7 +284,7 @@ export class UserProfileAscentsComponent {
   protected readonly isLoading = signal(true);
   protected readonly followedIds = signal<Set<string>>(new Set());
 
-  readonly ascentsResource = this.global.userAscentsResource;
+  readonly ascentsResource = this.profileData.userAscentsResource;
   readonly totalAscents = computed(
     () => this.ascentsResource.value()?.total ?? 0,
   );
@@ -291,7 +292,7 @@ export class UserProfileAscentsComponent {
     return this.accumulatedAscents().length < this.totalAscents();
   });
   readonly hasAscents = computed(() => {
-    const count = this.global.userTotalAscentsCountResource.value();
+    const count = this.profileData.userTotalAscentsCountResource.value();
     return count !== undefined && count !== 0;
   });
 
@@ -308,7 +309,7 @@ export class UserProfileAscentsComponent {
     effect(() => {
       const res = this.ascentsResource.value();
       if (res) {
-        const page = untracked(() => this.global.ascentsPage());
+        const page = untracked(() => this.profileData.ascentsPage());
         if (page === 0) {
           const processed = processAscentsToFeed(res.items);
           this.accumulatedAscents.set(processed);
@@ -332,18 +333,18 @@ export class UserProfileAscentsComponent {
       this.selectedCategories();
 
       this.isLoading.set(true);
-      this.global.ascentsPage.set(0);
+      this.profileData.ascentsPage.set(0);
 
-      this.global.ascentsDateFilter.set(dateFilter!);
-      this.global.ascentsQuery.set(query || null);
-      this.global.ascentsSort.set(sort as 'grade' | 'date');
+      this.profileData.ascentsDateFilter.set(dateFilter!);
+      this.profileData.ascentsQuery.set(query || null);
+      this.profileData.ascentsSort.set(sort as 'grade' | 'date');
     });
   }
 
   loadMore() {
     if (this.hasMore() && !this.isLoading()) {
       this.isLoading.set(true);
-      this.global.ascentsPage.update((p) => p + 1);
+      this.profileData.ascentsPage.update((p) => p + 1);
     }
   }
 

@@ -9,8 +9,10 @@ import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { CacheService } from '../services/cache.service';
-
-import { GlobalData } from '../services/global-data';
+import { CragRoutesDataService } from '../services/crag-routes-data.service';
+import { FavoritesDataService } from '../services/favorites-data.service';
+import { OutdoorDataService } from '../services/outdoor-data.service';
+import { ProfileDataService } from '../services/profile-data.service';
 import { SupabaseService } from '../services/supabase.service';
 import { ToastService } from '../services/toast.service';
 
@@ -51,7 +53,10 @@ export interface RouteSimple {
 export class RoutesService {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
-  private readonly global = inject(GlobalData);
+  private readonly outdoorData = inject(OutdoorDataService);
+  private readonly favoritesData = inject(FavoritesDataService);
+  private readonly profileData = inject(ProfileDataService);
+  private readonly cragRoutesData = inject(CragRoutesDataService);
   private readonly cache = inject(CacheService);
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
@@ -90,8 +95,8 @@ export class RoutesService {
       { defaultValue: null },
     ).then((result) => {
       if (result) {
-        this.global.cragRoutesResource.reload();
-        this.global.routeDetailResource.reload();
+        this.cragRoutesData.cragRoutesResource.reload();
+        this.outdoorData.routeDetailResource.reload();
 
         if (
           isEdit &&
@@ -99,12 +104,12 @@ export class RoutesService {
           typeof result === 'string' &&
           result !== oldSlug
         ) {
-          const areaSlug = this.global.selectedAreaSlug();
-          const cragSlug = this.global.selectedCragSlug();
+          const areaSlug = this.outdoorData.selectedAreaSlug();
+          const cragSlug = this.outdoorData.selectedCragSlug();
           if (
             areaSlug &&
             cragSlug &&
-            this.global.selectedRouteSlug() === oldSlug
+            this.outdoorData.selectedRouteSlug() === oldSlug
           ) {
             void this.router.navigate(['/area', areaSlug, cragSlug, result]);
           }
@@ -127,7 +132,7 @@ export class RoutesService {
       { defaultValue: false },
     ).then((result) => {
       if (result) {
-        this.global.cragRoutesResource.reload();
+        this.cragRoutesData.cragRoutesResource.reload();
       }
       return result;
     });
@@ -543,7 +548,7 @@ export class RoutesService {
 
       if (error) throw error;
 
-      this.global.cragRoutesResource.reload();
+      this.cragRoutesData.cragRoutesResource.reload();
       this.toast.success('messages.toasts.routesUnified');
       return true;
     } catch (e) {
@@ -687,8 +692,8 @@ export class RoutesService {
       throw error;
     }
     // Refresh routes list for the current crag and current route
-    this.global.cragRoutesResource.reload();
-    this.global.routeDetailResource.reload();
+    this.cragRoutesData.cragRoutesResource.reload();
+    this.outdoorData.routeDetailResource.reload();
     this.toast.success('messages.toasts.routeCreated');
     return data as RouteDto;
   }
@@ -710,9 +715,9 @@ export class RoutesService {
       console.error('[RoutesService] update error', error);
       throw error;
     }
-    this.global.cragRoutesResource.reload();
-    this.global.routeDetailResource.reload();
-    this.global.topoDetailResource.reload();
+    this.cragRoutesData.cragRoutesResource.reload();
+    this.outdoorData.routeDetailResource.reload();
+    this.outdoorData.topoDetailResource.reload();
     this.syncResources(id, payload);
     if (!silent) this.toast.success('messages.toasts.routeUpdated');
     return data as RouteDto;
@@ -742,8 +747,8 @@ export class RoutesService {
       console.error('[RoutesService] delete error', error);
       throw error;
     }
-    this.global.cragRoutesResource.reload();
-    this.global.routeDetailResource.reload();
+    this.cragRoutesData.cragRoutesResource.reload();
+    this.outdoorData.routeDetailResource.reload();
     this.toast.success('messages.toasts.routeDeleted');
     return true;
   }
@@ -774,7 +779,7 @@ export class RoutesService {
       }
 
       this.syncResources(routeId, { liked: isLiked }, currentRoute);
-      this.global.likedRoutesResource.reload();
+      this.favoritesData.likedRoutesResource.reload();
 
       return isLiked;
     } catch (e) {
@@ -852,12 +857,12 @@ export class RoutesService {
       );
 
     // 1. Update cragRoutesResource
-    this.global.cragRoutesResource.update(updateFn);
+    this.cragRoutesData.cragRoutesResource.update(updateFn);
 
     // 2. Update userProjectsResource
     if (changes.project !== undefined) {
       const isProject = changes.project;
-      this.global.userProjectsResource.update((current) => {
+      this.profileData.userProjectsResource.update((current) => {
         if (isProject) {
           const exists = (current ?? []).find((route) => route.id === routeId);
           if (exists) return updateFn(current);
@@ -879,16 +884,16 @@ export class RoutesService {
         }
       });
     } else {
-      this.global.userProjectsResource.update(updateFn);
+      this.profileData.userProjectsResource.update(updateFn);
     }
 
     // 3. Update routeDetailResource
-    this.global.routeDetailResource.update((r) =>
+    this.outdoorData.routeDetailResource.update((r) =>
       r?.id === routeId ? { ...r, ...changes } : r,
     );
 
     // 4. Update topoDetailResource
-    this.global.topoDetailResource.update((current) => {
+    this.outdoorData.topoDetailResource.update((current) => {
       if (!current) return current;
       return {
         ...current,

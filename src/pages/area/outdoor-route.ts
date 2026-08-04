@@ -35,9 +35,11 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
+import { AuthStateService } from '../../services/auth-state.service';
 
 import { FollowsService } from '../../services/follows.service';
-import { GlobalData } from '../../services/global-data';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
+import { ProfileDataService } from '../../services/profile-data.service';
 import { RoutesService } from '../../services/routes.service';
 import { SeoService } from '../../services/seo.service';
 import { ToastService } from '../../services/toast.service';
@@ -90,7 +92,7 @@ import { IS_BROWSER } from '../../app/is-browser';
   template: `
     <tui-scrollbar class="h-full">
       <section class="w-full max-w-5xl mx-auto p-4">
-        @let canEditAsAdmin = global.canEditAsAdmin();
+        @let canEditAsAdmin = authState.canEditAsAdmin();
         @if (route(); as r) {
           <div
             class="mb-4 flex items-center justify-between gap-2"
@@ -112,10 +114,10 @@ import { IS_BROWSER } from '../../app/is-browser';
                 size="l"
                 titleInfo
               />
-              @if (global.canEditRoute()) {
+              @if (authState.canEditRoute()) {
                 <div actionButtons class="flex gap-2">
                   @let canAreaAdmin =
-                    global.areaAdminPermissions()[r.area_id ?? -1];
+                    authState.areaAdminPermissions()[r.area_id ?? -1];
                   <button
                     size="s"
                     appearance="neutral"
@@ -406,7 +408,9 @@ import { IS_BROWSER } from '../../app/is-browser';
   host: { class: 'flex flex-1 flex-col min-h-0' },
 })
 export class OutdoorRouteComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
+  protected readonly outdoorData = inject(OutdoorDataService);
+  protected readonly profileData = inject(ProfileDataService);
   private readonly location = inject(Location);
   protected readonly routesService = inject(RoutesService);
   protected readonly ascentsService = inject(AscentsService);
@@ -425,7 +429,7 @@ export class OutdoorRouteComponent {
   routeSlug: InputSignal<string> = input.required<string>();
 
   protected readonly route = computed(() =>
-    this.global.routeDetailResource.value(),
+    this.outdoorData.routeDetailResource.value(),
   );
 
   protected readonly equippersResource = resource({
@@ -444,11 +448,11 @@ export class OutdoorRouteComponent {
   );
 
   protected readonly ascents = computed(
-    () => this.global.routeAscentsResource.value()?.items ?? [],
+    () => this.outdoorData.routeAscentsResource.value()?.items ?? [],
   );
 
   protected readonly totalAscents = computed(
-    () => this.global.routeAscentsResource.value()?.total ?? 0,
+    () => this.outdoorData.routeAscentsResource.value()?.total ?? 0,
   );
 
   protected readonly accumulatedAscents = signal<FeedItem[]>([]);
@@ -462,7 +466,7 @@ export class OutdoorRouteComponent {
   loadMore() {
     if (this.hasMore() && !this.isLoading()) {
       this.isLoading.set(true);
-      this.global.ascentsPage.update((p) => p + 1);
+      this.profileData.ascentsPage.update((p) => p + 1);
     }
   }
 
@@ -500,20 +504,20 @@ export class OutdoorRouteComponent {
       const cSlug = this.cragSlug();
       const rSlug = this.routeSlug();
 
-      this.global.resetDataByPage('route');
-      this.global.selectedAreaSlug.set(aSlug);
-      this.global.selectedCragSlug.set(cSlug);
-      this.global.selectedRouteSlug.set(rSlug);
+      this.outdoorData.selectedTopoId.set(null);
+      this.outdoorData.selectedAreaSlug.set(aSlug);
+      this.outdoorData.selectedCragSlug.set(cSlug);
+      this.outdoorData.selectedRouteSlug.set(rSlug);
     });
 
     effect(() => {
       if (!this.isBrowser) return;
-      const areaLoading = this.global.areasListResource.isLoading();
-      const cragLoading = this.global.cragDetailResource.isLoading();
-      const routeLoading = this.global.routeDetailResource.isLoading();
+      const areaLoading = this.outdoorData.areasListResource.isLoading();
+      const cragLoading = this.outdoorData.cragDetailResource.isLoading();
+      const routeLoading = this.outdoorData.routeDetailResource.isLoading();
       if (areaLoading || cragLoading || routeLoading) return;
-      const area = this.global.selectedArea();
-      const crag = this.global.cragDetail();
+      const area = this.outdoorData.selectedArea();
+      const crag = this.outdoorData.cragDetail();
       const route = this.route();
       if (!area || !crag || !route) {
         this.router.navigateByUrl('/page-not-found');
@@ -523,8 +527,8 @@ export class OutdoorRouteComponent {
     // Update SEO tags when route data is available
     effect(() => {
       const r = this.route();
-      const area = this.global.selectedArea();
-      const crag = this.global.selectedCrag();
+      const area = this.outdoorData.selectedArea();
+      const crag = this.outdoorData.selectedCrag();
       const aSlug = this.areaSlug();
       const cSlug = this.cragSlug();
       const rSlug = this.routeSlug();
@@ -543,17 +547,17 @@ export class OutdoorRouteComponent {
     });
 
     effect(() => {
-      const res = this.global.routeAscentsResource.value();
+      const res = this.outdoorData.routeAscentsResource.value();
       if (res) {
         const items = res.items.map((i) => ({ ...i, kind: 'ascent' as const }));
-        const page = untracked(() => this.global.ascentsPage());
+        const page = untracked(() => this.profileData.ascentsPage());
         if (page === 0) {
           this.accumulatedAscents.set(items);
         } else {
           this.accumulatedAscents.update((prev) => [...prev, ...items]);
         }
         this.isLoading.set(false);
-      } else if (this.global.routeAscentsResource.error()) {
+      } else if (this.outdoorData.routeAscentsResource.error()) {
         this.isLoading.set(false);
       }
     });

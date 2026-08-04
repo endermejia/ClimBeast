@@ -11,6 +11,7 @@ import {
 import { IS_BROWSER } from '../app/is-browser';
 
 import { LocalStorage } from './local-storage';
+import { OutdoorDataService } from './outdoor-data.service';
 import { SupabaseService } from './supabase.service';
 
 /**
@@ -22,11 +23,15 @@ export class AuthStateService {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly localStorage = inject(LocalStorage);
+  private readonly outdoorData = inject(OutdoorDataService);
 
   readonly editingModeStorageKey = 'editing_mode_v2';
 
   // ---- Profile ----
   readonly userProfile = computed(() => this.supabase.userProfile());
+  readonly userAvatar = computed(() =>
+    this.supabase.buildAvatarUrl(this.userProfile()?.avatar),
+  );
   readonly editingMode: WritableSignal<boolean> = signal(false);
 
   // ---- Roles ----
@@ -136,6 +141,16 @@ export class AuthStateService {
     const isCreator = crag.user_creator_id === userId;
     return isCreator && this.isWithinOneWeek(crag.created_at);
   };
+
+  readonly canEditArea = computed(() =>
+    this.checkAreaEditPermission(this.outdoorData.selectedArea()),
+  );
+  readonly canEditCrag = computed(() =>
+    this.checkCragEditPermission(this.outdoorData.cragDetail()),
+  );
+  readonly canEditRoute = computed(() =>
+    this.checkRouteEditPermission(this.outdoorData.routeDetail()),
+  );
 
   readonly checkRouteEditPermission = (
     route: RouteWithExtras | null | undefined,

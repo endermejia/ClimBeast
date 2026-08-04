@@ -20,7 +20,7 @@ import {
 
 import { TranslateModule } from '@ngx-translate/core';
 
-import { GlobalData } from '../../services/global-data';
+import { AuthStateService } from '../../services/auth-state.service';
 import { IndoorService } from '../../services/indoor.service';
 
 import { IndoorVoucherDto, IndoorVoucherPurchaseDto } from '../../models';
@@ -173,7 +173,7 @@ import { IndoorVoucherDto, IndoorVoucherPurchaseDto } from '../../models';
 export class IndoorVouchersComponent {
   centerId = input.required<string>();
 
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
   protected readonly indoor = inject(IndoorService);
 
   protected readonly activeVouchers = computed<IndoorVoucherPurchaseDto[]>(
@@ -196,7 +196,7 @@ export class IndoorVouchersComponent {
     { userId: string | undefined; centerId: string }
   >({
     params: () => ({
-      userId: this.global.userProfile()?.id,
+      userId: this.authState.userProfile()?.id,
       centerId: this.centerId(),
     }),
     loader: ({

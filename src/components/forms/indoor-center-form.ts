@@ -43,7 +43,8 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import { GlobalData } from '../../services/global-data';
+import { AuthStateService } from '../../services/auth-state.service';
+import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 import { IndoorService } from '../../services/indoor.service';
 import { MapService } from '../../services/map.service';
 import { SlugService } from '../../services/slug.service';
@@ -592,7 +593,8 @@ import { openImageEditor } from '../../utils/open-image-editor';
 })
 export class IndoorCenterFormComponent {
   private readonly indoor = inject(IndoorService);
-  protected readonly global = inject(GlobalData);
+  private readonly authState = inject(AuthStateService);
+  private readonly indoorCentersData = inject(IndoorCentersDataService);
   private readonly location = inject(Location);
   protected readonly supabase = inject(SupabaseService);
   private readonly slugService = inject(SlugService);
@@ -1094,8 +1096,8 @@ export class IndoorCenterFormComponent {
         if (this._dialogCtx) {
           this._dialogCtx.completeWith(true);
         } else {
-          this.global.indoorCentersResource.reload();
-          this.global.editingMode.set(false);
+          this.indoorCentersData.indoorCentersResource.reload();
+          this.authState.editingMode.set(false);
         }
       } catch (e) {
         const error = e as Error;

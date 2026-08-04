@@ -12,7 +12,7 @@ import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { GlobalData } from '../../services/global-data';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 
 import { TopoCardComponent } from '../topo/topo-card';
 import { PaywallComponent } from './paywall';
@@ -64,6 +64,6 @@ export class AreaPaywallDialogComponent {
     inject<TuiDialogContext<void, { areaId: number; price: number }>>(
       POLYMORPHEUS_CONTEXT,
     );
-  protected readonly global = inject(GlobalData);
-  protected readonly topos = computed(() => this.global.areaTopos() || []);
+  protected readonly outdoorData = inject(OutdoorDataService);
+  protected readonly topos = computed(() => this.outdoorData.areaTopos() || []);
 }

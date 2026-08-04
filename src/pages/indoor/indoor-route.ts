@@ -30,8 +30,9 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
-
-import { GlobalData } from '../../services/global-data';
+import { AuthStateService } from '../../services/auth-state.service';
+import { BreadcrumbsService } from '../../services/breadcrumbs.service';
+import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 import { IndoorService } from '../../services/indoor.service';
 import { ToastService } from '../../services/toast.service';
 
@@ -330,7 +331,9 @@ export class IndoorRouteComponent {
   routeSlug = input.required<string>();
 
   protected readonly indoor = inject(IndoorService);
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
+  protected readonly breadcrumbsService = inject(BreadcrumbsService);
+  protected readonly indoorCentersData = inject(IndoorCentersDataService);
   protected readonly ascentsService = inject(AscentsService);
   protected readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
@@ -384,7 +387,7 @@ export class IndoorRouteComponent {
     params: () => ({
       centerSlug: this.centerSlug(),
       routeSlug: this.routeSlug(),
-      reloadTick: this.global.indoorRoutesReloadTick(),
+      reloadTick: this.indoorCentersData.indoorRoutesReloadTick(),
     }),
     loader: ({ params }) =>
       this.indoor.getRouteBySlug(params.centerSlug, params.routeSlug),
@@ -397,14 +400,14 @@ export class IndoorRouteComponent {
   protected readonly ascentsResource = resource({
     params: () => ({
       id: this.route()?.id,
-      reloadTick: this.global.indoorRoutesReloadTick(),
+      reloadTick: this.indoorCentersData.indoorRoutesReloadTick(),
     }),
     loader: ({ params }) =>
       params.id ? this.indoor.getRouteAscents(params.id) : Promise.resolve([]),
   });
 
   protected readonly ownAscent = computed(() => {
-    const userId = this.global.userProfile()?.id;
+    const userId = this.authState.userProfile()?.id;
     if (!userId) return null;
     return this.ascents().find((a) => a.user_id === userId) || null;
   });
@@ -413,28 +416,28 @@ export class IndoorRouteComponent {
     const r = this.route();
     if (!r) return false;
     return r.center_id
-      ? this.global.indoorAdminPermissions()[r.center_id] || false
+      ? this.authState.indoorAdminPermissions()[r.center_id] || false
       : false;
   });
 
   constructor() {
     inject(DestroyRef).onDestroy(() => {
-      this.global.selectedIndoorCenter.set(null);
-      this.global.selectedIndoorRoute.set(null);
+      this.breadcrumbsService.selectedIndoorCenter.set(null);
+      this.breadcrumbsService.selectedIndoorRoute.set(null);
     });
 
     effect(() => {
       const r = this.route();
       if (r) {
-        this.global.selectedIndoorCenter.set({
+        this.breadcrumbsService.selectedIndoorCenter.set({
           id: r.center_id ?? '',
           name: r.center_name || '',
           slug: r.center_slug || '',
         } as IndoorCenterDto);
-        this.global.selectedIndoorRoute.set(r);
+        this.breadcrumbsService.selectedIndoorRoute.set(r);
       } else {
-        this.global.selectedIndoorCenter.set(null);
-        this.global.selectedIndoorRoute.set(null);
+        this.breadcrumbsService.selectedIndoorCenter.set(null);
+        this.breadcrumbsService.selectedIndoorRoute.set(null);
       }
     });
   }

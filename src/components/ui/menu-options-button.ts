@@ -20,8 +20,9 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
-import { GlobalData } from '../../services/global-data';
+import { AuthStateService } from '../../services/auth-state.service';
 import { SupabaseService } from '../../services/supabase.service';
+import { ThemeService } from '../../services/theme.service';
 import { ToastService } from '../../services/toast.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
 
@@ -109,7 +110,7 @@ import { Themes } from '../../models';
           <input
             tuiSwitch
             type="checkbox"
-            [ngModel]="global.editingMode()"
+            [ngModel]="authState.editingMode()"
             (ngModelChange)="toggleEditingMode($event)"
             autocomplete="off"
           />
@@ -125,7 +126,7 @@ import { Themes } from '../../models';
           </div>
           <tui-segmented
             size="s"
-            [activeItemIndex]="global.theme() === Themes.DARK ? 1 : 0"
+            [activeItemIndex]="themeService.theme() === Themes.DARK ? 1 : 0"
             (activeItemIndexChange)="toggleTheme($event === 1)"
             (mousedown)="lastEvent = $event"
           >
@@ -164,7 +165,8 @@ export class MenuOptionsButtonComponent {
 
   protected open = false;
   protected lastEvent?: MouseEvent;
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
+  protected readonly themeService = inject(ThemeService);
   protected readonly Themes = Themes;
   private readonly supabase = inject(SupabaseService);
   private readonly userProfilesService = inject(UserProfilesService);
@@ -181,12 +183,12 @@ export class MenuOptionsButtonComponent {
   }
 
   protected async toggleEditingMode(enabled: boolean): Promise<boolean> {
-    if (this.global.editingMode() === enabled) {
+    if (this.authState.editingMode() === enabled) {
       return true;
     }
 
-    if (enabled && !this.global.isAdmin()) {
-      const hasPermissions = this.global.isAreaAdmin();
+    if (enabled && !this.authState.isAdmin()) {
+      const hasPermissions = this.authState.isAreaAdmin();
       const messageKey = hasPermissions
         ? 'profile.editing.confirmationEquipper'
         : 'profile.editing.confirmationUser';
@@ -206,12 +208,12 @@ export class MenuOptionsButtonComponent {
 
       if (!confirmed) {
         // Force the switch to stay false
-        this.global.editingMode.set(false);
+        this.authState.editingMode.set(false);
         return false;
       }
     }
 
-    this.global.editingMode.set(enabled);
+    this.authState.editingMode.set(enabled);
     const result = await this.userProfilesService.updateUserProfile({
       editing_mode: enabled,
     });
@@ -223,7 +225,7 @@ export class MenuOptionsButtonComponent {
       );
       this.toast.error('profile.saveError');
       // Revert the signal if failed
-      this.global.editingMode.set(!enabled);
+      this.authState.editingMode.set(!enabled);
       return false;
     } else {
       this.toast.success('profile.updated.editing_mode');
@@ -233,7 +235,7 @@ export class MenuOptionsButtonComponent {
 
   protected toggleTheme(dark: boolean): void {
     const theme = dark ? Themes.DARK : Themes.LIGHT;
-    this.global.setTheme(theme, this.lastEvent);
+    this.themeService.setTheme(theme, this.lastEvent);
     void this.userProfilesService
       .updateUserProfile({
         theme,

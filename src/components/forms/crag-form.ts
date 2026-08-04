@@ -46,9 +46,8 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { AuthStateService } from '../../services/auth-state.service';
 import { CragsService } from '../../services/crags.service';
-
-import { GlobalData } from '../../services/global-data';
 import { MapService } from '../../services/map.service';
 
 import { SlugService } from '../../services/slug.service';
@@ -155,7 +154,7 @@ interface CragFormModel {
         <tui-error [error]="'errors.required' | translate" />
       }
 
-      @if (isEdit() || global.isAdmin()) {
+      @if (isEdit() || authState.isAdmin()) {
         <tui-textfield [tuiTextfieldCleaner]="false">
           <label tuiLabel for="crag-slug">{{ 'slug' | translate }}</label>
           <input
@@ -314,7 +313,7 @@ interface CragFormModel {
 })
 export class CragFormComponent {
   protected readonly mapService = inject(MapService);
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
   private readonly crags = inject(CragsService);
 
   private readonly supabase = inject(SupabaseService);

@@ -39,9 +39,13 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
-import { GlobalData } from '../../services/global-data';
+import { AuthStateService } from '../../services/auth-state.service';
+import { BreadcrumbsService } from '../../services/breadcrumbs.service';
+import { FilterStateService } from '../../services/filter-state.service';
+import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 
 import { IndoorService } from '../../services/indoor.service';
+import { MapDataService } from '../../services/map-data.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
@@ -106,7 +110,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     <tui-scrollbar class="flex grow">
       <section class="w-full max-w-5xl mx-auto p-4 flex flex-col min-h-full">
         @if (center(); as c) {
-          @let editingMode = global.editingMode();
+          @let editingMode = authState.editingMode();
           <div class="mb-6">
             <app-section-header [title]="c.name" [showLike]="false">
               <span
@@ -488,7 +492,11 @@ export class IndoorCenterComponent {
 
   slug = input.required<string>();
 
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
+  protected readonly breadcrumbsService = inject(BreadcrumbsService);
+  protected readonly filterState = inject(FilterStateService);
+  protected readonly mapData = inject(MapDataService);
+  protected readonly indoorCentersData = inject(IndoorCentersDataService);
   protected readonly indoor = inject(IndoorService);
   protected readonly supabase = inject(SupabaseService);
   protected readonly router = inject(Router);
@@ -545,7 +553,7 @@ export class IndoorCenterComponent {
     params: () => ({
       id: this.center()?.id,
       showLegacy: this.showLegacyRoutes(),
-      reloadTick: this.global.indoorRoutesReloadTick(),
+      reloadTick: this.indoorCentersData.indoorRoutesReloadTick(),
     }),
     loader: ({ params }) => {
       if (!params.id) return Promise.resolve([]);
@@ -573,25 +581,25 @@ export class IndoorCenterComponent {
   protected readonly centerAscentsResource = resource({
     params: () => ({
       id: this.center()?.id,
-      reloadTick: this.global.indoorRoutesReloadTick(),
+      reloadTick: this.indoorCentersData.indoorRoutesReloadTick(),
     }),
     loader: ({ params }) =>
       params.id ? this.indoor.getCenterAscents(params.id) : Promise.resolve([]),
   });
 
   protected readonly isAdmin = computed(() => {
-    return this.global.isAdmin();
+    return this.authState.isAdmin();
   });
 
   protected readonly canCreateRoute = computed(() => {
     const center = this.center();
-    return this.global.canCreateIndoorInCenter(center?.id);
+    return this.authState.canCreateIndoorInCenter(center?.id);
   });
 
   protected readonly canEdit = computed(() => {
     const center = this.center();
     if (!center) return false;
-    return !!this.global.indoorAdminPermissions()[center.id];
+    return !!this.authState.indoorAdminPermissions()[center.id];
   });
 
   protected async openEditCenter(): Promise<void> {
@@ -676,12 +684,12 @@ export class IndoorCenterComponent {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => {
-      this.global.selectedIndoorCenter.set(null);
+      this.breadcrumbsService.selectedIndoorCenter.set(null);
     });
 
     effect(() => {
       const c = this.center();
-      this.global.selectedIndoorCenter.set(c);
+      this.breadcrumbsService.selectedIndoorCenter.set(c);
     });
 
     effect(() => {
@@ -757,8 +765,8 @@ export class IndoorCenterComponent {
   protected readonly mapLocationUrl = mapLocationUrl;
 
   async viewOnMap(lat: number, lng: number): Promise<void> {
-    this.global.areaListShowIndoor.set(true);
-    this.global.mapBounds.set({
+    this.filterState.areaListShowIndoor.set(true);
+    this.mapData.mapBounds.set({
       south_west_latitude: lat - 0.005,
       south_west_longitude: lng - 0.005,
       north_east_latitude: lat + 0.005,

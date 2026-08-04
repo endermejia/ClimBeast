@@ -26,26 +26,25 @@ import { topoPathToJson } from '../models/topo.model';
 
 import { IS_BROWSER } from '../app/is-browser';
 
-import { GlobalData } from './global-data';
+import { OutdoorDataService } from './outdoor-data.service';
 import { SupabaseService } from './supabase.service';
-
 import { ToastService } from './toast.service';
 
 @Injectable({ providedIn: 'root' })
 export class ToposService {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
-  private readonly global = inject(GlobalData);
+  private readonly outdoorData = inject(OutdoorDataService);
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
 
   openTopoForm(data: {
     cragId?: number;
-    topoData?: TopoDetail;
+    outdoorData?: TopoDetail;
     initialRouteIds?: (string | number)[];
   }): void {
-    const isEdit = !!data.topoData;
+    const isEdit = !!data.outdoorData;
     void firstValueFrom(
       this.dialogs.open<string | null>(
         new PolymorpheusComponent(TopoFormComponent),
@@ -61,9 +60,9 @@ export class ToposService {
       { defaultValue: null },
     ).then((result) => {
       if (result) {
-        this.global.cragDetailResource.reload();
-        if (this.global.selectedTopoId()) {
-          this.global.topoDetailResource.reload();
+        this.outdoorData.cragDetailResource.reload();
+        if (this.outdoorData.selectedTopoId()) {
+          this.outdoorData.topoDetailResource.reload();
         }
       }
     });
@@ -83,7 +82,7 @@ export class ToposService {
       console.error('[ToposService] create error', error);
       throw error;
     }
-    this.global.cragDetailResource.reload();
+    this.outdoorData.cragDetailResource.reload();
     this.toast.success('messages.toasts.topoCreated');
     return data as TopoDto;
   }
@@ -104,8 +103,8 @@ export class ToposService {
       console.error('[ToposService] update error', error);
       throw error;
     }
-    this.global.cragDetailResource.reload();
-    this.global.topoDetailResource.reload();
+    this.outdoorData.cragDetailResource.reload();
+    this.outdoorData.topoDetailResource.reload();
     this.toast.success('messages.toasts.topoUpdated');
     return data as TopoDto;
   }
@@ -135,7 +134,7 @@ export class ToposService {
       throw error;
     }
 
-    this.global.cragDetailResource.reload();
+    this.outdoorData.cragDetailResource.reload();
     this.toast.success('messages.toasts.topoDeleted');
     return true;
   }
@@ -159,9 +158,9 @@ export class ToposService {
       throw error;
     }
 
-    this.global.topoPhotoVersion.update((v) => v + 1);
-    this.global.topoDetailResource.reload();
-    this.global.cragDetailResource.reload();
+    this.outdoorData.topoPhotoVersion.update((v) => v + 1);
+    this.outdoorData.topoDetailResource.reload();
+    this.outdoorData.cragDetailResource.reload();
   }
 
   async addRoute(payload: TopoRouteInsertDto, reload = true): Promise<void> {
@@ -175,7 +174,7 @@ export class ToposService {
       throw error;
     }
     if (reload) {
-      this.global.topoDetailResource.reload();
+      this.outdoorData.topoDetailResource.reload();
       this.toast.success('messages.toasts.routeUpdated');
     }
   }
@@ -196,7 +195,7 @@ export class ToposService {
       throw error;
     }
     if (reload) {
-      this.global.topoDetailResource.reload();
+      this.outdoorData.topoDetailResource.reload();
       this.toast.success('messages.toasts.routeUpdated');
     }
   }
@@ -218,7 +217,7 @@ export class ToposService {
       throw error;
     }
     if (reload) {
-      this.global.topoDetailResource.reload();
+      this.outdoorData.topoDetailResource.reload();
       this.toast.success('messages.toasts.routeUpdated');
     }
   }
@@ -255,9 +254,9 @@ export class ToposService {
       if (error) throw error;
 
       this.toast.success('messages.toasts.topoUpdated');
-      this.global.topoPhotoVersion.update((v) => v + 1);
-      this.global.topoDetailResource.reload();
-      this.global.cragDetailResource.reload();
+      this.outdoorData.topoPhotoVersion.update((v) => v + 1);
+      this.outdoorData.topoDetailResource.reload();
+      this.outdoorData.cragDetailResource.reload();
     } catch (e) {
       console.error('[ToposService] uploadPhoto error', e);
       throw e;
@@ -286,7 +285,7 @@ export class ToposService {
         result === true ||
         (result && typeof result === 'object' && result.saved)
       ) {
-        this.global.topoDetailResource.reload();
+        this.outdoorData.topoDetailResource.reload();
       }
 
       return result;
@@ -312,7 +311,7 @@ export class ToposService {
     }
 
     if (reload) {
-      this.global.topoDetailResource.reload();
+      this.outdoorData.topoDetailResource.reload();
     }
   }
 
@@ -340,7 +339,7 @@ export class ToposService {
     }
 
     if (reload) {
-      this.global.topoDetailResource.reload();
+      this.outdoorData.topoDetailResource.reload();
     }
   }
 }

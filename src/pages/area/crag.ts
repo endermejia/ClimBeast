@@ -33,9 +33,12 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
+import { AuthStateService } from '../../services/auth-state.service';
+import { CragRoutesDataService } from '../../services/crag-routes-data.service';
 import { CragsService } from '../../services/crags.service';
-
-import { GlobalData } from '../../services/global-data';
+import { LanguageService } from '../../services/language.service';
+import { MapDataService } from '../../services/map-data.service';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { SeoService } from '../../services/seo.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -86,7 +89,7 @@ import { IS_BROWSER } from '../../app/is-browser';
   template: `
     <tui-scrollbar class="flex grow">
       <section class="w-full max-w-5xl mx-auto p-4 flex flex-col min-h-full">
-        @let canEditAsAdmin = global.canEditAsAdmin();
+        @let canEditAsAdmin = authState.canEditAsAdmin();
         @if (cragDetail(); as c) {
           <ng-template #cragSwitcher>
             <tui-data-list>
@@ -111,8 +114,8 @@ import { IS_BROWSER } from '../../app/is-browser';
               [titleDropdown]="cragSwitcher"
               (toggleLike)="onToggleLike()"
             >
-              @let canAreaAdmin = global.areaAdminPermissions()[c.area_id];
-              @if (global.canEditCrag()) {
+              @let canAreaAdmin = authState.areaAdminPermissions()[c.area_id];
+              @if (authState.canEditCrag()) {
                 <div actionButtons class="flex gap-2">
                   <button
                     size="s"
@@ -145,7 +148,7 @@ import { IS_BROWSER } from '../../app/is-browser';
 
           <div class="flex flex-col md:flex-row md:justify-between gap-4">
             <div class="flex flex-col gap-3 grow">
-              @let lang = global.selectedLanguage();
+              @let lang = languageService.selectedLanguage();
               @let desc = lang === 'es' ? c.description_es : c.description_en;
               @let warn = lang === 'es' ? c.warning_es : c.warning_en;
 
@@ -343,7 +346,11 @@ import { IS_BROWSER } from '../../app/is-browser';
   host: { class: 'flex grow min-h-0' },
 })
 export class CragComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
+  protected readonly outdoorData = inject(OutdoorDataService);
+  protected readonly languageService = inject(LanguageService);
+  protected readonly cragRoutesData = inject(CragRoutesDataService);
+  protected readonly mapData = inject(MapDataService);
   protected readonly activeTabIndex = signal(0);
   protected readonly supabase = inject(SupabaseService);
   protected readonly router = inject(Router);
@@ -366,9 +373,9 @@ export class CragComponent {
     const c = this.cragDetail();
     if (!c) return false;
 
-    const canEditAsAdmin = this.global.canEditAsAdmin();
+    const canEditAsAdmin = this.authState.canEditAsAdmin();
     const canEditAsAllowedEquipper =
-      this.global.areaAdminPermissions()[c.area_id];
+      this.authState.areaAdminPermissions()[c.area_id];
 
     const isSecret = !c.is_public && (c.price === null || c.price === 0);
     const hasAccess =
@@ -383,9 +390,9 @@ export class CragComponent {
     );
   });
   readonly showParkingsTab = computed(() => {
-    const canEditAsAdmin = this.global.canEditAsAdmin();
+    const canEditAsAdmin = this.authState.canEditAsAdmin();
     const canEditAsAllowedEquipper =
-      this.global.areaAdminPermissions()[this.cragDetail()?.area_id ?? -1];
+      this.authState.areaAdminPermissions()[this.cragDetail()?.area_id ?? -1];
     return (
       (this.cragDetail()?.parkings?.length ?? 0) > 0 ||
       canEditAsAdmin ||
@@ -411,16 +418,16 @@ export class CragComponent {
 
   readonly loading = this.cragsService.loading;
   protected readonly sortedCrags = computed(() => {
-    const list = this.global.cragsList() || [];
+    const list = this.outdoorData.cragsList() || [];
     return [...list].sort((a, b) => a.name.localeCompare(b.name));
   });
 
   protected readonly cragDetail = computed<CragDetail | null>(() => {
-    const c = this.global.cragDetail();
+    const c = this.outdoorData.cragDetail();
     if (!c) return null;
 
     // Compute grades from routes
-    const routes = this.global.cragRoutes() ?? [];
+    const routes = this.cragRoutesData.cragRoutes() ?? [];
     const gradesVal: AmountByEveryGrade = {};
     for (const r of routes) {
       if (r.grade >= 0) {
@@ -437,7 +444,7 @@ export class CragComponent {
 
   protected readonly routesCount = computed(() => {
     const detail = this.cragDetail();
-    const routes = this.global.cragRoutes();
+    const routes = this.cragRoutesData.cragRoutes();
     return routes
       ? routes.length
       : Object.values(detail?.grades || {}).reduce(
@@ -466,18 +473,19 @@ export class CragComponent {
     effect(() => {
       const aSlug = this.areaSlug();
       const cSlug = this.cragSlug();
-      this.global.resetDataByPage('crag');
-      this.global.selectedAreaSlug.set(aSlug);
-      this.global.selectedCragSlug.set(cSlug);
+      this.outdoorData.selectedRouteSlug.set(null);
+      this.outdoorData.selectedTopoId.set(null);
+      this.outdoorData.selectedAreaSlug.set(aSlug);
+      this.outdoorData.selectedCragSlug.set(cSlug);
     });
 
     effect(() => {
       if (!this.isBrowser) return;
-      const areaLoading = this.global.areasListResource.isLoading();
-      const cragLoading = this.global.cragDetailResource.isLoading();
+      const areaLoading = this.outdoorData.areasListResource.isLoading();
+      const cragLoading = this.outdoorData.cragDetailResource.isLoading();
       if (areaLoading || cragLoading) return;
-      const area = this.global.selectedArea();
-      const crag = this.global.cragDetail();
+      const area = this.outdoorData.selectedArea();
+      const crag = this.outdoorData.cragDetail();
       if (!area || !crag) {
         this.router.navigateByUrl('/page-not-found');
       }
@@ -485,12 +493,12 @@ export class CragComponent {
 
     effect(() => {
       const crag = this.cragDetail();
-      const area = this.global.selectedArea();
+      const area = this.outdoorData.selectedArea();
       const aSlug = this.areaSlug();
       const cSlug = this.cragSlug();
       if (!crag || !area) return;
       const routesCount = this.routesCount();
-      const lang = this.global.selectedLanguage();
+      const lang = this.languageService.selectedLanguage();
       const desc = lang === 'es' ? crag.description_es : crag.description_en;
       const appDescription = this.translate.instant('seo.description');
       const description = desc
@@ -529,7 +537,7 @@ export class CragComponent {
 
     effect(() => {
       const crag = this.cragDetail();
-      const area = this.global.selectedArea();
+      const area = this.outdoorData.selectedArea();
       if (crag && area) {
         this.visitedCragsService.addVisitedCrag({
           id: crag.id,
@@ -542,7 +550,7 @@ export class CragComponent {
   }
 
   async viewOnMap(lat: number, lng: number): Promise<void> {
-    const area = this.global.selectedArea();
+    const area = this.outdoorData.selectedArea();
     let minLat = lat;
     let maxLat = lat;
     let minLng = lng;
@@ -567,7 +575,7 @@ export class CragComponent {
       }
     }
 
-    this.global.mapBounds.set({
+    this.mapData.mapBounds.set({
       south_west_latitude: minLat,
       south_west_longitude: minLng,
       north_east_latitude: maxLat,

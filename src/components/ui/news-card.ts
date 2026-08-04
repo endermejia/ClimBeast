@@ -13,7 +13,7 @@ import { TuiAppearance, TuiButton } from '@taiga-ui/core';
 import { TuiAvatar } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
 
-import { GlobalData } from '../../services/global-data';
+import { LanguageService } from '../../services/language.service';
 
 import { NewsItem } from '../../models';
 
@@ -41,7 +41,10 @@ import { NewsItem } from '../../models';
             <span class="text-xs">
               {{
                 data.date
-                  | date: 'longDate' : undefined : global.selectedLanguage()
+                  | date
+                    : 'longDate'
+                    : undefined
+                    : languageService.selectedLanguage()
               }}
             </span>
           </div>
@@ -91,7 +94,7 @@ import { NewsItem } from '../../models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NewsCardComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly languageService = inject(LanguageService);
   private readonly sanitizer = inject(DomSanitizer);
   item = input.required<NewsItem>();
 

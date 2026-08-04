@@ -40,10 +40,12 @@ import { debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs';
 
 import { AppNotificationsService } from '../../services/app-notifications.service';
 import { AreasService } from '../../services/areas.service';
+import { AuthStateService } from '../../services/auth-state.service';
 import { CartService } from '../../services/cart.service';
 import { CragsService } from '../../services/crags.service';
-import { GlobalData } from '../../services/global-data';
+import { LayoutService } from '../../services/layout.service';
 import { MessagingService } from '../../services/messaging.service';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { RoutesService } from '../../services/routes.service';
 import { ScrollService } from '../../services/scroll.service';
 import { SearchService } from '../../services/search.service';
@@ -190,7 +192,7 @@ import { TourHintComponent } from './tour-hint';
               <tui-pulse />
             }
             <tui-badged-content>
-              @if (global.unreadNotificationsCount(); as unreadNotifications) {
+              @if (notificationsService.unreadCount(); as unreadNotifications) {
                 <tui-badge-notification
                   tuiAppearance="accent"
                   size="s"
@@ -219,13 +221,13 @@ import { TourHintComponent } from './tour-hint';
           <!-- Explore -->
           <a
             #explore="routerLinkActive"
-            [routerLink]="global.isOffline() ? null : '/explore'"
+            [routerLink]="layout.isOffline() ? null : '/explore'"
             routerLinkActive
             tuiAppearance="flat-grayscale"
             [tuiSkeleton]="loading()"
             class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full relative group"
-            [class.pointer-events-none]="global.isOffline()"
-            [class.opacity-50]="global.isOffline()"
+            [class.pointer-events-none]="layout.isOffline()"
+            [class.opacity-50]="layout.isOffline()"
             [attr.aria-label]="'nav.explore' | translate"
           >
             <div
@@ -267,7 +269,7 @@ import { TourHintComponent } from './tour-hint';
             [attr.aria-label]="'messages' | translate"
           >
             <tui-badged-content>
-              @if (global.unreadMessagesCount(); as unreadMessages) {
+              @if (messagingService.unreadMessagesCount(); as unreadMessages) {
                 <tui-badge-notification
                   tuiAppearance="accent"
                   size="s"
@@ -293,17 +295,17 @@ import { TourHintComponent } from './tour-hint';
           </button>
 
           @let showConfig =
-            global.canEditAsAdmin() || global.canEditAsAreaAdmin();
+            authState.canEditAsAdmin() || authState.isAreaAdmin();
           @if (showConfig) {
             <!-- Configuration -->
             <a
               #config="routerLinkActive"
-              [routerLink]="global.canEditAsAdmin() ? '/admin' : '/my-areas'"
+              [routerLink]="authState.canEditAsAdmin() ? '/admin' : '/my-areas'"
               routerLinkActive
               tuiAppearance="flat-grayscale"
               class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full group"
               [attr.aria-label]="
-                (global.canEditAsAdmin() ? 'config' : 'nav.my-areas')
+                (authState.canEditAsAdmin() ? 'config' : 'nav.my-areas')
                   | translate
               "
             >
@@ -318,7 +320,7 @@ import { TourHintComponent } from './tour-hint';
               <span
                 class="hidden md:group-hover:block transition-opacity duration-300 whitespace-nowrap overflow-hidden"
               >
-                @if (global.canEditAsAdmin()) {
+                @if (authState.canEditAsAdmin()) {
                   {{ 'config' | translate }}
                 } @else {
                   {{ 'nav.my-areas' | translate }}
@@ -530,7 +532,7 @@ import { TourHintComponent } from './tour-hint';
           >
             <span
               tuiAvatar
-              [tuiSkeleton]="!global.userProfile()"
+              [tuiSkeleton]="!authState.userProfile()"
               [class.ring-2]="profile.isActive"
               [class.ring-offset-2]="profile.isActive"
               [style.--tw-ring-color]="
@@ -538,8 +540,11 @@ import { TourHintComponent } from './tour-hint';
               "
               size="xs"
             >
-              @if (global.userAvatar(); as avatar) {
-                <img [src]="avatar" [alt]="global.userProfile()?.name || ''" />
+              @if (authState.userAvatar(); as avatar) {
+                <img
+                  [src]="avatar"
+                  [alt]="authState.userProfile()?.name || ''"
+                />
               } @else {
                 <tui-icon
                   icon="@tui.user"
@@ -561,7 +566,7 @@ import { TourHintComponent } from './tour-hint';
 
         <!-- Desktop Bottom Options -->
         <div class="hidden md:flex flex-col gap-4 w-full shrink-0">
-          @if (global.merchandisingFeature()) {
+          @if (authState.merchandisingFeature()) {
             <!-- Shop -->
             <a
               #shop="routerLinkActive"
@@ -619,9 +624,10 @@ import { TourHintComponent } from './tour-hint';
 export class NavbarComponent {
   readonly isLoading = input<boolean>(false);
   protected readonly loading = computed(
-    () => this.isLoading() || this.global.isNavLoading(),
+    () => this.isLoading() || this.layoutService.isNavLoading(),
   );
-  protected global = inject(GlobalData);
+  protected readonly layoutService = inject(LayoutService);
+  protected readonly authState = inject(AuthStateService);
   protected readonly messagingService = inject(MessagingService);
   protected readonly cart = inject(CartService);
   protected readonly notificationsService = inject(AppNotificationsService);
@@ -643,6 +649,8 @@ export class NavbarComponent {
         return 'tour.home.description';
     }
   });
+  protected readonly layout = inject(LayoutService);
+  protected readonly outdoorData = inject(OutdoorDataService);
   private readonly searchService = inject(SearchService);
   private readonly router = inject(Router);
   private readonly scrollService = inject(ScrollService);
@@ -725,13 +733,13 @@ export class NavbarComponent {
           break;
         case 'create-crag':
           this.cragsService.openCragForm({
-            areaId: this.global.selectedArea()?.id,
+            areaId: this.outdoorData.selectedArea()?.id,
             cragData: { name: query },
           });
           break;
         case 'create-route':
           this.routesService.openRouteForm({
-            cragId: this.global.selectedCrag()?.id,
+            cragId: this.outdoorData.selectedCrag()?.id,
             routeData: { name: query },
           });
           break;
@@ -749,7 +757,7 @@ export class NavbarComponent {
         case 'import-crag': {
           const anuCrag = item.data as SearchCragItem;
           this.cragsService.openCragForm({
-            areaId: this.global.selectedArea()?.id,
+            areaId: this.outdoorData.selectedArea()?.id,
             cragData: {
               name: anuCrag.cragName,
               slug: anuCrag.cragSlug,
@@ -761,7 +769,7 @@ export class NavbarComponent {
         case 'import-route': {
           const anuRoute = item.data as SearchRouteItem;
           this.routesService.openRouteForm({
-            cragId: this.global.selectedCrag()?.id,
+            cragId: this.outdoorData.selectedCrag()?.id,
             routeData: {
               name: anuRoute.zlaggableName,
               slug: anuRoute.zlaggableSlug,

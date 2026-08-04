@@ -6,11 +6,9 @@ import { TranslateService, TranslateStore } from '@ngx-translate/core';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { IS_BROWSER } from '../app/is-browser';
-import { MockGlobalData } from '../testing/mock-global-data.service';
 import { MockSupabaseService } from '../testing/mock-supabase.service';
 import { AppNotificationsService } from './app-notifications.service';
 import { AscentsService } from './ascents.service';
-import { GlobalData } from './global-data';
 import { SupabaseService } from './supabase.service';
 import { ToastService } from './toast.service';
 
@@ -75,8 +73,6 @@ describe('AscentsService', () => {
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: IS_BROWSER, useValue: true },
         { provide: SupabaseService, useValue: mockSupabase },
-        MockGlobalData,
-        { provide: GlobalData, useExisting: MockGlobalData },
         { provide: ToastService, useValue: mockToast },
         { provide: AppNotificationsService, useValue: mockNotifications },
         { provide: 'TuiDialogService', useValue: createMockDialogs() },
@@ -146,7 +142,6 @@ describe('AscentsService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
           { provide: AppNotificationsService, useValue: mockNotifications },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
@@ -167,7 +162,6 @@ describe('AscentsService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
           { provide: AppNotificationsService, useValue: mockNotifications },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
@@ -189,7 +183,6 @@ describe('AscentsService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
           { provide: AppNotificationsService, useValue: mockNotifications },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
@@ -211,42 +204,66 @@ describe('AscentsService', () => {
   });
 
   describe('refreshResources', () => {
-    it('calls reload on global resources', () => {
-      const mockGlobal = TestBed.inject(MockGlobalData);
-      const reloadFns = {
-        userAscentsResource: vi.fn(),
-        routeAscentsResource: vi.fn(),
-        routeDetailResource: vi.fn(),
-        cragRoutesResource: vi.fn(),
-        topoDetailResource: vi.fn(),
-        userProjectsResource: vi.fn(),
-        userTotalAscentsCountResource: vi.fn(),
-      };
-      Object.assign(mockGlobal, {
-        userAscentsResource: {
-          reload: reloadFns.userAscentsResource,
-          value: () => null,
-          update: vi.fn(),
-        },
-        routeAscentsResource: {
-          reload: reloadFns.routeAscentsResource,
-          value: () => null,
-          update: vi.fn(),
-        },
-        routeDetailResource: { reload: reloadFns.routeDetailResource },
-        cragRoutesResource: { reload: reloadFns.cragRoutesResource },
-        topoDetailResource: { reload: reloadFns.topoDetailResource },
-        userProjectsResource: { reload: reloadFns.userProjectsResource },
-        userTotalAscentsCountResource: {
-          reload: reloadFns.userTotalAscentsCountResource,
-        },
-      });
+    it('calls reload on resources', () => {
+      const profileData = (
+        service as unknown as {
+          profileData: {
+            userAscentsResource: { reload: () => void };
+            userProjectsResource: { reload: () => void };
+            userTotalAscentsCountResource: { reload: () => void };
+          };
+        }
+      ).profileData;
+      const outdoorData = (
+        service as unknown as {
+          outdoorData: {
+            routeAscentsResource: { reload: () => void };
+            routeDetailResource: { reload: () => void };
+            topoDetailResource: { reload: () => void };
+          };
+        }
+      ).outdoorData;
+      const cragRoutesData = (
+        service as unknown as {
+          cragRoutesData: { cragRoutesResource: { reload: () => void } };
+        }
+      ).cragRoutesData;
+
+      const userAscentsSpy = vi.spyOn(
+        profileData.userAscentsResource,
+        'reload',
+      );
+      const routeAscentsSpy = vi.spyOn(
+        outdoorData.routeAscentsResource,
+        'reload',
+      );
+      const routeDetailSpy = vi.spyOn(
+        outdoorData.routeDetailResource,
+        'reload',
+      );
+      const cragRoutesSpy = vi.spyOn(
+        cragRoutesData.cragRoutesResource,
+        'reload',
+      );
+      const topoDetailSpy = vi.spyOn(outdoorData.topoDetailResource, 'reload');
+      const userProjectsSpy = vi.spyOn(
+        profileData.userProjectsResource,
+        'reload',
+      );
+      const userTotalAscentsCountSpy = vi.spyOn(
+        profileData.userTotalAscentsCountResource,
+        'reload',
+      );
 
       service.refreshResources();
 
-      expect(reloadFns.userAscentsResource).toHaveBeenCalled();
-      expect(reloadFns.routeAscentsResource).toHaveBeenCalled();
-      expect(reloadFns.routeDetailResource).toHaveBeenCalled();
+      expect(userAscentsSpy).toHaveBeenCalled();
+      expect(routeAscentsSpy).toHaveBeenCalled();
+      expect(routeDetailSpy).toHaveBeenCalled();
+      expect(cragRoutesSpy).toHaveBeenCalled();
+      expect(topoDetailSpy).toHaveBeenCalled();
+      expect(userProjectsSpy).toHaveBeenCalled();
+      expect(userTotalAscentsCountSpy).toHaveBeenCalled();
     });
   });
 });

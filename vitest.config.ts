@@ -1,5 +1,5 @@
-import { defineConfig } from 'vitest/config';
 import angular from '@analogjs/vite-plugin-angular';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [angular()],
@@ -24,10 +24,10 @@ export default defineConfig({
         'src/main.server.ts',
       ],
       thresholds: {
-        statements: 0,
-        branches: 0,
-        functions: 0,
-        lines: 0,
+        statements: 8,
+        branches: 5,
+        functions: 8,
+        lines: 8,
       },
     },
   },

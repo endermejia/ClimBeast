@@ -46,8 +46,10 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
-import { GlobalData } from '../../services/global-data';
+import { CragRoutesDataService } from '../../services/crag-routes-data.service';
+import { IndoorDataService } from '../../services/indoor-data.service';
 import { IndoorService } from '../../services/indoor.service';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
@@ -119,7 +121,7 @@ import { GradeComponent } from '../ui/avatar-grade';
       </tui-textfield>
 
       <!-- Visibility indicator -->
-      @let crag = global.cragDetail();
+      @let crag = outdoorDataService.cragDetail();
       @if (!isIndoor() && crag) {
         @let isSecret =
           !crag.is_public && (crag.price === null || crag.price === 0);
@@ -410,7 +412,9 @@ import { GradeComponent } from '../ui/avatar-grade';
 })
 export class TopoFormComponent {
   private readonly topos = inject(ToposService);
-  protected readonly global = inject(GlobalData);
+  protected readonly outdoorDataService = inject(OutdoorDataService);
+  protected readonly indoorDataService = inject(IndoorDataService);
+  private readonly cragRoutesData = inject(CragRoutesDataService);
   private readonly location = inject(Location);
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
@@ -567,7 +571,9 @@ export class TopoFormComponent {
       return {
         path: data.photo,
         isIndoor: this.isIndoor(),
-        version: this.isIndoor() ? 1 : this.global.topoPhotoVersion(),
+        version: this.isIndoor()
+          ? 1
+          : this.outdoorDataService.topoPhotoVersion(),
       };
     },
     loader: async ({ params }) => {
@@ -589,7 +595,7 @@ export class TopoFormComponent {
     if (this.isIndoor()) {
       return this.indoorRoutes.value() ?? [];
     }
-    return this.global.cragRoutes() ?? [];
+    return this.cragRoutesData.cragRoutes() ?? [];
   });
 
   /** Route IDs that already appear in other topos of the same crag/center */
@@ -605,7 +611,7 @@ export class TopoFormComponent {
       }
       return ids;
     }
-    const crag = this.global.cragDetail();
+    const crag = this.outdoorDataService.cragDetail();
     const currentTopoId = this.effectiveTopoData()?.id;
     if (!crag?.topos) return new Set<number>();
     const ids = new Set<string | number>();
@@ -881,7 +887,10 @@ export class TopoFormComponent {
           shade_afternoon,
           shade_change_hour,
           crag_id: crag_id!,
-          slug: (this.global.selectedCragSlug() || '') + '-' + slugify(name),
+          slug:
+            (this.outdoorDataService.selectedCragSlug() || '') +
+            '-' +
+            slugify(name),
         };
 
         try {
@@ -946,7 +955,7 @@ export class TopoFormComponent {
     await Promise.all(addUpdatePromises);
 
     // One final reload for all topo routes changes
-    this.global.topoDetailResource.reload();
+    this.outdoorDataService.topoDetailResource.reload();
   }
 
   private async handleTopoPaths(topo: TopoDto | null): Promise<void> {
@@ -1076,7 +1085,7 @@ export class TopoFormComponent {
         await this.topos.deletePhoto(data.id);
         this.isExistingPhotoDeleted.set(true);
         // Reload topo in global state to reflect photo deletion
-        this.global.topoDetailResource.reload();
+        this.outdoorDataService.topoDetailResource.reload();
       } catch (e) {
         console.error('[TopoFormComponent] Error deleting photo', e);
         handleErrorToast(e, this.toast);

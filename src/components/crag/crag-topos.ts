@@ -13,7 +13,7 @@ import { TuiAvatar } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { GlobalData } from '../../services/global-data';
+import { AuthStateService } from '../../services/auth-state.service';
 import { ToposService } from '../../services/topos.service';
 
 import { CragDetail } from '../../models';
@@ -119,15 +119,15 @@ export class CragToposComponent {
   areaSlug = input.required<string>();
   cragSlug = input.required<string>();
 
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
   protected readonly toposService = inject(ToposService);
   protected readonly router = inject(Router);
 
-  readonly canEditAsAdmin = this.global.canEditAsAdmin;
+  readonly canEditAsAdmin = this.authState.canEditAsAdmin;
   readonly canAreaAdmin = computed(() => {
     const c = this.crag();
     if (!c) return false;
-    return this.global.areaAdminPermissions()[c.area_id];
+    return this.authState.areaAdminPermissions()[c.area_id];
   });
 
   protected readonly topos = computed(() => {

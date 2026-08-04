@@ -36,8 +36,9 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
-import { GlobalData } from '../../services/global-data';
-
+import { AdminParkingsService } from '../../services/admin-parkings.service';
+import { LayoutService } from '../../services/layout.service';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { ParkingsService } from '../../services/parkings.service';
 import { ToastService } from '../../services/toast.service';
 
@@ -123,7 +124,7 @@ import { IS_BROWSER } from '../../app/is-browser';
       <tui-scrollbar class="flex grow">
         @if (filteredParkings().length > 0) {
           <table
-            [size]="global.isMobile() ? 's' : 'l'"
+            [size]="layout.isMobile() ? 's' : 'l'"
             tuiTable
             class="w-full"
             [columns]="columns()"
@@ -225,7 +226,9 @@ import { IS_BROWSER } from '../../app/is-browser';
   host: { class: 'flex grow min-h-0' },
 })
 export class AdminParkingsListComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly outdoorData = inject(OutdoorDataService);
+  protected readonly layout = inject(LayoutService);
+  protected readonly adminParkingsData = inject(AdminParkingsService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
@@ -234,14 +237,15 @@ export class AdminParkingsListComponent {
 
   protected readonly columns = computed(() => {
     const cols = ['name', 'lat', 'lng', 'size', 'actions'];
-    return this.global.isMobile()
+    return this.layout.isMobile()
       ? cols.filter((c) => c === 'name' || c === 'actions')
       : cols;
   });
 
-  protected readonly loading = this.global.adminParkingsResource.isLoading;
+  protected readonly loading =
+    this.adminParkingsData.adminParkingsResource.isLoading;
   protected readonly parkings = computed(
-    () => this.global.adminParkingsResource.value() ?? [],
+    () => this.adminParkingsData.adminParkingsResource.value() ?? [],
   );
   protected readonly searchQuery = signal('');
   protected readonly skeletons = Array(10).fill(0);
@@ -272,9 +276,11 @@ export class AdminParkingsListComponent {
   }
 
   constructor() {
-    this.global.resetDataByPage('home');
+    this.outdoorData.selectedAreaSlug.set(null);
+    this.outdoorData.selectedCragSlug.set(null);
+    this.outdoorData.selectedRouteSlug.set(null);
     if (this.isBrowser) {
-      this.global.adminParkingsResource.reload();
+      this.adminParkingsData.adminParkingsResource.reload();
     }
   }
 

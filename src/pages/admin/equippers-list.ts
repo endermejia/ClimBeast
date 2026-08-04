@@ -40,8 +40,8 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
-import { GlobalData } from '../../services/global-data';
-
+import { LayoutService } from '../../services/layout.service'; // Only for non-delegated properties
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 
@@ -130,7 +130,7 @@ import { IS_BROWSER } from '../../app/is-browser';
       <tui-scrollbar class="flex grow">
         @if (filteredEquippers().length > 0) {
           <table
-            [size]="global.isMobile() ? 's' : 'l'"
+            [size]="layout.isMobile() ? 's' : 'l'"
             tuiTable
             class="w-full"
             [columns]="columns()"
@@ -258,7 +258,8 @@ import { IS_BROWSER } from '../../app/is-browser';
   host: { class: 'flex grow min-h-0' },
 })
 export class AdminEquippersListComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly outdoorData = inject(OutdoorDataService);
+  protected readonly layout = inject(LayoutService); // Only for non-delegated properties
   protected readonly supabase = inject(SupabaseService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
@@ -301,7 +302,7 @@ export class AdminEquippersListComponent {
 
   protected readonly columns = computed(() => {
     const cols = ['name', 'user_id', 'description', 'actions'];
-    return this.global.isMobile()
+    return this.layout.isMobile()
       ? cols.filter((c) => c !== 'description' && c !== 'user_id')
       : cols;
   });
@@ -335,10 +336,12 @@ export class AdminEquippersListComponent {
   }
 
   constructor() {
+    this.outdoorData.selectedAreaSlug.set(null);
+    this.outdoorData.selectedCragSlug.set(null);
+    this.outdoorData.selectedRouteSlug.set(null);
     if (this.isBrowser) {
       void this.loadEquippers();
     }
-    this.global.resetDataByPage('home');
   }
 
   private async loadEquippers(): Promise<void> {

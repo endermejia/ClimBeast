@@ -14,8 +14,10 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
-import { GlobalData } from '../../services/global-data';
+import { AuthStateService } from '../../services/auth-state.service';
+import { MapDataService } from '../../services/map-data.service';
 
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { ParkingsService } from '../../services/parkings.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -155,7 +157,9 @@ import { EmptyStateComponent } from '../ui/empty-state';
 export class CragParkingsComponent {
   crag = input.required<CragDetail | null>();
 
-  protected readonly global = inject(GlobalData);
+  protected readonly outdoorData = inject(OutdoorDataService);
+  protected readonly authState = inject(AuthStateService);
+  protected readonly mapData = inject(MapDataService);
   protected readonly parkingsService = inject(ParkingsService);
   protected readonly supabase = inject(SupabaseService);
   protected readonly translate = inject(TranslateService);
@@ -166,11 +170,11 @@ export class CragParkingsComponent {
 
   protected readonly mapLocationUrl = mapLocationUrl;
 
-  readonly canEditAsAdmin = this.global.canEditAsAdmin;
+  readonly canEditAsAdmin = this.authState.canEditAsAdmin;
   readonly canAreaAdmin = computed(() => {
     const c = this.crag();
     if (!c) return false;
-    return this.global.areaAdminPermissions()[c.area_id];
+    return this.authState.areaAdminPermissions()[c.area_id];
   });
 
   openCreateParking(): void {
@@ -230,7 +234,7 @@ export class CragParkingsComponent {
   }
 
   async viewOnMap(lat: number, lng: number): Promise<void> {
-    const area = this.global.selectedArea();
+    const area = this.outdoorData.selectedArea();
     let minLat = lat;
     let maxLat = lat;
     let minLng = lng;
@@ -255,7 +259,7 @@ export class CragParkingsComponent {
       }
     }
 
-    this.global.mapBounds.set({
+    this.mapData.mapBounds.set({
       south_west_latitude: minLat,
       south_west_longitude: minLng,
       north_east_latitude: maxLat,

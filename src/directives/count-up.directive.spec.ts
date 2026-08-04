@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { describe, it, expect } from 'vitest';
 
+import { COMMON_TEST_PROVIDERS } from '../testing';
 import { CountUpDirective } from './count-up.directive';
 
 @Component({
@@ -18,6 +19,7 @@ describe('CountUpDirective', () => {
   it('should create directive', async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
+      providers: [...COMMON_TEST_PROVIDERS],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(TestHostComponent);
@@ -28,6 +30,7 @@ describe('CountUpDirective', () => {
   it('should have initial currentValue of 0', async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
+      providers: [...COMMON_TEST_PROVIDERS],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(TestHostComponent);
@@ -41,6 +44,7 @@ describe('CountUpDirective', () => {
   it('should accept target input', async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
+      providers: [...COMMON_TEST_PROVIDERS],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(TestHostComponent);
@@ -55,6 +59,7 @@ describe('CountUpDirective', () => {
   it('should accept duration input', async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
+      providers: [...COMMON_TEST_PROVIDERS],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(TestHostComponent);

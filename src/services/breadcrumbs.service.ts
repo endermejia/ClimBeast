@@ -7,7 +7,8 @@ import {
   IndoorRouteWithExtras,
 } from '../models';
 
-import { TopoDataService } from './topo-data.service';
+import { IndoorDataService } from './indoor-data.service';
+import { OutdoorDataService } from './outdoor-data.service';
 
 /**
  * Manages breadcrumb generation for navigation.
@@ -15,7 +16,8 @@ import { TopoDataService } from './topo-data.service';
  */
 @Injectable({ providedIn: 'root' })
 export class BreadcrumbsService {
-  private readonly topoData = inject(TopoDataService);
+  private readonly outdoorData = inject(OutdoorDataService);
+  private readonly indoorData = inject(IndoorDataService);
 
   readonly i18nTick: WritableSignal<number> = signal(0);
 
@@ -29,9 +31,9 @@ export class BreadcrumbsService {
       this.i18nTick();
       const indoorCenter = this.selectedIndoorCenter();
       const indoorRoute = this.selectedIndoorRoute();
-      const topo = this.topoData.topoDetail();
 
       if (indoorCenter) {
+        const topo = this.indoorData.topoDetail();
         const items: BreadcrumbItem[] = [
           { caption: 'indoor.title', routerLink: ['/indoor'] },
           {
@@ -63,12 +65,13 @@ export class BreadcrumbsService {
         { caption: 'areas', routerLink: ['/area'] },
       ];
 
-      const areaSlug = this.topoData.selectedAreaSlug();
+      const areaSlug = this.outdoorData.selectedAreaSlug();
       const area = areaSlug ? this.findAreaBySlug(areaSlug) : null;
-      const cragSlug = this.topoData.selectedCragSlug();
+      const cragSlug = this.outdoorData.selectedCragSlug();
       const crag = cragSlug ? this.findCragBySlug(cragSlug) : null;
-      const routeDetail = this.topoData.routeDetail();
-      const selectedRouteSlug = this.topoData.selectedRouteSlug();
+      const topo = this.outdoorData.topoDetail();
+      const routeDetail = this.outdoorData.routeDetail();
+      const selectedRouteSlug = this.outdoorData.selectedRouteSlug();
       const route = routeDetail
         ? { name: routeDetail.name, slug: routeDetail.slug }
         : selectedRouteSlug
@@ -110,17 +113,17 @@ export class BreadcrumbsService {
   private findAreaBySlug(slug: string): { name: string; slug: string } | null {
     if (!slug) return null;
 
-    const cragDetail = this.topoData.cragDetail();
+    const cragDetail = this.outdoorData.cragDetail();
     if (cragDetail?.area_slug === slug && cragDetail?.area_name) {
       return { name: cragDetail.area_name, slug: cragDetail.area_slug };
     }
 
-    const routeDetail = this.topoData.routeDetail();
+    const routeDetail = this.outdoorData.routeDetail();
     if (routeDetail?.area_slug === slug && routeDetail?.area_name) {
       return { name: routeDetail.area_name, slug: routeDetail.area_slug };
     }
 
-    const topoDetail = this.topoData.topoDetail();
+    const topoDetail = this.outdoorData.topoDetail();
     if (topoDetail?.crag?.area?.slug === slug) {
       return {
         name: topoDetail.crag.area.name,
@@ -128,7 +131,9 @@ export class BreadcrumbsService {
       };
     }
 
-    const areaFromList = this.topoData.areasList().find((a) => a.slug === slug);
+    const areaFromList = this.outdoorData
+      .areasList()
+      .find((a) => a.slug === slug);
     if (areaFromList) {
       return { name: areaFromList.name, slug: areaFromList.slug };
     }
@@ -139,22 +144,24 @@ export class BreadcrumbsService {
   private findCragBySlug(slug: string): { name: string; slug: string } | null {
     if (!slug) return null;
 
-    const cragDetail = this.topoData.cragDetail();
+    const cragDetail = this.outdoorData.cragDetail();
     if (cragDetail?.slug === slug) {
       return { name: cragDetail.name, slug: cragDetail.slug };
     }
 
-    const routeDetail = this.topoData.routeDetail();
+    const routeDetail = this.outdoorData.routeDetail();
     if (routeDetail?.crag_slug === slug && routeDetail?.crag_name) {
       return { name: routeDetail.crag_name, slug: routeDetail.crag_slug };
     }
 
-    const topoDetail = this.topoData.topoDetail();
+    const topoDetail = this.outdoorData.topoDetail();
     if (topoDetail?.crag?.slug === slug) {
       return { name: topoDetail.crag.name, slug: topoDetail.crag.slug };
     }
 
-    const cragFromList = this.topoData.cragsList().find((c) => c.slug === slug);
+    const cragFromList = this.outdoorData
+      .cragsList()
+      .find((c) => c.slug === slug);
     if (cragFromList) {
       return { name: cragFromList.name, slug: cragFromList.slug };
     }

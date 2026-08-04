@@ -44,7 +44,8 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
-import { GlobalData } from '../../services/global-data';
+import { IndoorDataService } from '../../services/indoor-data.service';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { RoutesService } from '../../services/routes.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -386,7 +387,8 @@ export class TopoRoutesTableComponent {
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
-  private readonly global = inject(GlobalData);
+  private readonly outdoorData = inject(OutdoorDataService);
+  private readonly indoorData = inject(IndoorDataService);
 
   sortedTableData = input.required<TopoRouteRow[]>();
   columns = input.required<string[]>();
@@ -540,11 +542,11 @@ export class TopoRoutesTableComponent {
                     if (undoError) {
                       handleErrorToast(undoError, this.toast);
                     } else {
-                      this.global.topoDetailResource.reload();
+                      this.indoorData.topoDetailResource.reload();
                     }
                   });
               });
-              this.global.topoDetailResource.reload();
+              this.indoorData.topoDetailResource.reload();
             }
           });
       } else {
@@ -558,7 +560,7 @@ export class TopoRoutesTableComponent {
                 number: 0,
               });
             });
-            this.global.topoDetailResource.reload();
+            this.outdoorData.topoDetailResource.reload();
           })
           .catch((err) => handleErrorToast(err, this.toast));
       }

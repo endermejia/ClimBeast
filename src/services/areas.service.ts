@@ -32,11 +32,12 @@ import { slugify } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 
+import { AuthStateService } from './auth-state.service';
 import { CacheService } from './cache.service';
 import { EightAnuService } from './eight-anu.service';
-
-import { GlobalData } from './global-data';
+import { FavoritesDataService } from './favorites-data.service';
 import { NotificationService } from './notification.service';
+import { OutdoorDataService } from './outdoor-data.service';
 import { SupabaseService } from './supabase.service';
 import { ToastService } from './toast.service';
 
@@ -44,7 +45,9 @@ import { ToastService } from './toast.service';
 export class AreasService {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
-  private readonly global = inject(GlobalData);
+  private readonly outdoorData = inject(OutdoorDataService);
+  private readonly favoritesData = inject(FavoritesDataService);
+  private readonly authState = inject(AuthStateService);
   private readonly cache = inject(CacheService);
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
@@ -81,7 +84,7 @@ export class AreasService {
       { defaultValue: null },
     ).then((result) => {
       if (result) {
-        this.global.areasListResource.reload();
+        this.outdoorData.areasListResource.reload();
         // Also reload global area detail if we are on that page?
         // Since we might navigate, we rely on router/resource reload.
         // But if we are on area list, reloads list.
@@ -92,7 +95,7 @@ export class AreasService {
           typeof result === 'string' &&
           result !== oldSlug
         ) {
-          if (this.global.selectedAreaSlug() === oldSlug) {
+          if (this.outdoorData.selectedAreaSlug() === oldSlug) {
             void this.router.navigate(['/area', result]);
           }
         }
@@ -131,7 +134,7 @@ export class AreasService {
       { defaultValue: false },
     ).then((result) => {
       if (result) {
-        this.global.areasListResource.reload();
+        this.outdoorData.areasListResource.reload();
       }
       return result;
     });
@@ -151,7 +154,7 @@ export class AreasService {
       console.error('[AreasService] create error', error);
       throw error;
     }
-    this.global.areasListResource.reload();
+    this.outdoorData.areasListResource.reload();
     this.toast.success('messages.toasts.areaCreated');
     return data as AreaDto;
   }
@@ -172,7 +175,7 @@ export class AreasService {
       console.error('[AreasService] update error', error);
       throw error;
     }
-    this.global.areasListResource.reload();
+    this.outdoorData.areasListResource.reload();
     this.toast.success('messages.toasts.areaUpdated');
     return data as AreaDto;
   }
@@ -254,7 +257,7 @@ export class AreasService {
 
       if (error) throw error;
 
-      this.global.areasListResource.reload();
+      this.outdoorData.areasListResource.reload();
       this.toast.success('messages.toasts.areasUnified');
       return true;
     } catch (e) {
@@ -279,7 +282,7 @@ export class AreasService {
       throw error;
     }
     // Update global area list
-    this.global.areasListResource.update((value) => {
+    this.outdoorData.areasListResource.update((value) => {
       if (!value) return value;
       return value.filter((item) => item.id !== id);
     });
@@ -305,7 +308,7 @@ export class AreasService {
       if (error) throw error;
       const liked = data;
       // Update global area list
-      this.global.areasListResource.update((value) => {
+      this.outdoorData.areasListResource.update((value) => {
         if (!value) return value;
         return value
           .map((item) => (item.id === areaId ? { ...item, liked } : item))
@@ -324,7 +327,7 @@ export class AreasService {
       } else {
         this.toast.success('messages.toasts.favoriteAdded');
       }
-      this.global.likedAreasResource.reload();
+      this.favoritesData.likedAreasResource.reload();
       return liked;
     } catch (e) {
       console.error('[AreasService] toggleAreaLike error', e);
@@ -595,7 +598,7 @@ export class AreasService {
   async requestAreaAdmin(areaId: number): Promise<boolean> {
     if (!this.isBrowser) return false;
     await this.supabase.whenReady();
-    const userId = this.global.userProfile()?.id;
+    const userId = this.authState.userProfile()?.id;
     if (!userId) return false;
 
     this.loading.set(true);

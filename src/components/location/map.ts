@@ -1,13 +1,13 @@
 import {
-  AfterViewInit,
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   effect,
   ElementRef,
   inject,
   input,
   InputSignal,
-  OnDestroy,
   output,
   OutputEmitterRef,
   signal,
@@ -19,9 +19,8 @@ import { TuiButton } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { GlobalData } from '../../services/global-data';
-
 import { MapBuilder, MapBuilderCallbacks } from '../../services/map-builder';
+import { MapDataService } from '../../services/map-data.service';
 
 import type {
   MapAreaItem,
@@ -96,10 +95,11 @@ import { IS_BROWSER } from '../../app/is-browser';
   },
   providers: [MapBuilder],
 })
-export class MapComponent implements AfterViewInit, OnDestroy {
+export class MapComponent {
   private readonly isBrowserToken = inject(IS_BROWSER);
   private readonly mapBuilder = inject(MapBuilder);
-  protected readonly global = inject(GlobalData);
+  private readonly destroyRef = inject(DestroyRef);
+  protected readonly mapData = inject(MapDataService);
 
   private readonly mapInitialized = signal(false);
   public mapCragItems: InputSignal<readonly MapCragItem[]> = input<
@@ -148,12 +148,12 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     onInteractionStart: () => this.interactionStart.emit(),
     onViewportChange: (v: Partial<MapBounds>) => {
       if (!this.isBrowser()) return;
-      const previousViewport = this.global.mapBounds();
+      const previousViewport = this.mapData.mapBounds();
       const viewport = {
         ...previousViewport,
         ...v,
       };
-      this.global.mapBounds.set(viewport as MapBounds);
+      this.mapData.mapBounds.set(viewport as MapBounds);
     },
   };
 
@@ -188,11 +188,21 @@ export class MapComponent implements AfterViewInit, OnDestroy {
         this.mapBuilder.setSelectionMarker(selection.lat, selection.lng);
       }
     });
-  }
 
-  ngAfterViewInit(): void {
-    this.global.mapActive.set(true);
-    this.tryInit();
+    afterNextRender(() => {
+      this.mapData.mapActive.set(true);
+      this.tryInit();
+    });
+
+    this.destroyRef.onDestroy(() => {
+      this.mapData.mapActive.set(false);
+      try {
+        this.mapBuilder.destroy();
+      } catch {
+        // ignore
+      }
+      this.mapInitialized.set(false);
+    });
   }
 
   onLocateClick(): void {
@@ -208,16 +218,6 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   onZoomOutClick(): void {
     if (!this.isBrowser()) return;
     this.mapBuilder.zoomOut();
-  }
-
-  ngOnDestroy(): void {
-    this.global.mapActive.set(false);
-    try {
-      this.mapBuilder.destroy();
-    } catch {
-      // ignore
-    }
-    this.mapInitialized.set(false);
   }
 
   private isBrowser(): boolean {

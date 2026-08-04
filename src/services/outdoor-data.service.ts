@@ -11,12 +11,10 @@ import {
 import {
   AmountByEveryGrade,
   AreaListItem,
-  ClimbingKind,
   CragDetail,
   CragListItem,
   CragListRpcRow,
   CragWithJoins,
-  RouteAscentDto,
   RouteAscentWithExtras,
   RouteWithExtras,
   TopoDetail,
@@ -26,7 +24,7 @@ import {
   VERTICAL_LIFE_GRADES,
 } from '../models';
 
-import { CACHE_KEYS } from '../constants/cache-keys';
+import { CACHE_KEYS } from '../constants';
 
 import { mapCragToDetail, mapRouteToExtras, RawRouteData } from '../utils';
 
@@ -36,7 +34,7 @@ import { CacheService } from './cache.service';
 import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
-export class TopoDataService {
+export class OutdoorDataService {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly cache = inject(CacheService);
@@ -44,8 +42,9 @@ export class TopoDataService {
   selectedAreaSlug: WritableSignal<string | null> = signal(null);
   selectedCragSlug: WritableSignal<string | null> = signal(null);
   selectedTopoId: WritableSignal<string | null> = signal(null);
-  selectedCenterSlug: WritableSignal<string | null> = signal(null);
   selectedRouteSlug: WritableSignal<string | null> = signal(null);
+
+  readonly topoPhotoVersion: WritableSignal<number> = signal(0);
 
   readonly areasListResource = resource({
     loader: async () => {
@@ -64,7 +63,7 @@ export class TopoDataService {
           }
           return ((data as AreaListItem[]) ?? []) as AreaListItem[];
         },
-        { fallbackValue: [], logTag: 'TopoDataService' },
+        { fallbackValue: [], logTag: 'OutdoorDataService' },
       );
     },
   });
@@ -73,6 +72,12 @@ export class TopoDataService {
     const val = this.areasListResource.value();
     if (val !== undefined) return val;
     return this.cache.get<AreaListItem[]>(CACHE_KEYS.areasList, []);
+  });
+
+  readonly selectedArea: Signal<AreaListItem | null> = computed(() => {
+    const slug = this.selectedAreaSlug();
+    if (!slug) return null;
+    return this.areasList().find((a) => a.slug === slug) ?? null;
   });
 
   /** List of sectors/crags for the selected area. */
@@ -107,7 +112,7 @@ export class TopoDataService {
             })) as CragListItem[]) ?? []
           );
         },
-        { fallbackValue: [], logTag: 'TopoDataService' },
+        { fallbackValue: [], logTag: 'OutdoorDataService' },
       );
     },
   });
@@ -120,60 +125,18 @@ export class TopoDataService {
     return this.cache.get<CragListItem[]>(CACHE_KEYS.cragsList(areaSlug), []);
   });
 
+  readonly selectedCrag: Signal<CragListItem | null> = computed(() => {
+    const slug = this.selectedCragSlug();
+    if (!slug) return null;
+    return this.cragsList().find((c) => c.slug === slug) ?? null;
+  });
+
   readonly areaToposResource = resource({
-    params: () => ({
-      areaSlug: this.selectedAreaSlug(),
-      centerSlug: this.selectedCenterSlug(),
-    }),
+    params: () => this.selectedAreaSlug(),
     loader: async ({
-      params,
+      params: areaSlug,
     }): Promise<(TopoListItem & { crag_slug: string })[]> => {
-      const { areaSlug, centerSlug } = params;
       if (!this.isBrowser) return [];
-
-      if (centerSlug) {
-        try {
-          await this.supabase.whenReady();
-          const { data: center } = await this.supabase.client
-            .from('indoor_centers')
-            .select('id')
-            .eq('slug', centerSlug)
-            .single();
-          if (!center) return [];
-
-          const { data, error } = await this.supabase.client
-            .from('indoor_topos')
-            .select('*, indoor_topo_routes ( route:indoor_routes ( grade ) )')
-            .eq('center_id', center.id);
-
-          if (error) throw error;
-
-          return (data || []).map((t) => {
-            const grades: Record<number, number> = {};
-            const topoRoutes = t.indoor_topo_routes || [];
-            for (const tr of topoRoutes) {
-              const grade = tr.route?.grade;
-              if (grade !== undefined && grade !== null) {
-                grades[grade] = (grades[grade] || 0) + 1;
-              }
-            }
-            return {
-              id: t.id as string | number,
-              name: t.name,
-              slug: t.id,
-              crag_slug: '',
-              photo: t.image_url,
-              grades,
-              shade_afternoon: false,
-              shade_change_hour: null,
-              shade_morning: false,
-            };
-          }) as (TopoListItem & { crag_slug: string })[];
-        } catch {
-          return [];
-        }
-      }
-
       if (!areaSlug) return [];
       const cacheKey = CACHE_KEYS.areaTopos(areaSlug);
       return this.cache.fetchOrCache(
@@ -217,7 +180,7 @@ export class TopoDataService {
             };
           });
         },
-        { fallbackValue: [], logTag: 'TopoDataService' },
+        { fallbackValue: [], logTag: 'OutdoorDataService' },
       );
     },
   });
@@ -237,21 +200,18 @@ export class TopoDataService {
     loader: async ({ params: id }): Promise<TopoDetail | null> => {
       if (!id) return null;
       if (!this.isBrowser) return null;
+      const topoId = Number(id);
+      if (isNaN(topoId)) return null; // Not an outdoor topo
+
       const cacheKey = CACHE_KEYS.topoDetail(id);
       return this.cache.fetchOrCache(
         cacheKey,
         async () => {
           await this.supabase.whenReady();
           const userId = this.supabase.authUser()?.id;
-          const isIndoor = isNaN(Number(id));
-
-          if (isIndoor) {
-            return this.fetchIndoorTopo(id, userId);
-          }
-
-          return this.fetchOutdoorTopo(Number(id), userId);
+          return this.fetchOutdoorTopo(topoId, userId);
         },
-        { fallbackValue: null, logTag: 'TopoDataService' },
+        { fallbackValue: null, logTag: 'OutdoorDataService' },
       );
     },
   });
@@ -322,7 +282,7 @@ export class TopoDataService {
 
           return mapCragToDetail(data as CragWithJoins);
         },
-        { fallbackValue: null, logTag: 'TopoDataService' },
+        { fallbackValue: null, logTag: 'OutdoorDataService' },
       );
     },
   });
@@ -389,17 +349,15 @@ export class TopoDataService {
             throw error;
           }
 
-          const r = data;
-
           return {
-            ...mapRouteToExtras(r as RawRouteData, {
+            ...mapRouteToExtras(data as RawRouteData, {
               areaIdSource: 'crag.area.id',
               includeTopos: true,
             }),
             key: `${cragId}:${routeSlug}`,
           } as RouteWithExtras & { area_id?: number; key: string };
         },
-        { fallbackValue: null, logTag: 'TopoDataService' },
+        { fallbackValue: null, logTag: 'OutdoorDataService' },
       );
     },
   });
@@ -470,122 +428,6 @@ export class TopoDataService {
       }
     },
   });
-
-  resetSelection(): void {
-    this.selectedCragSlug.set(null);
-    this.selectedRouteSlug.set(null);
-    this.selectedTopoId.set(null);
-  }
-
-  private async fetchIndoorTopo(
-    id: string,
-    userId: string | undefined,
-  ): Promise<TopoDetail> {
-    const { data: topo, error: topoErr } = await this.supabase.client
-      .from('indoor_topos')
-      .select(
-        `
-        *,
-        center: indoor_centers!inner (
-          id, name, slug
-        )
-      `,
-      )
-      .eq('id', id)
-      .single();
-    if (topoErr) throw topoErr;
-
-    const { data: trs, error: trsErr } = await this.supabase.client
-      .from('indoor_topo_routes')
-      .select(
-        `
-        *,
-        route: indoor_routes!inner (
-          id, name, slug, grade, climbing_kind, color,
-          own_ascent: indoor_ascents!left (*)
-        )
-      `,
-      )
-      .eq('topo_id', id)
-      .eq('route.own_ascent.user_id', userId ?? '')
-      .order('number', { ascending: true });
-
-    if (trsErr) throw trsErr;
-
-    const topo_routes: TopoRouteWithRoute[] = [];
-    const seenRouteIds = new Set<string>();
-
-    if (trs) {
-      for (const tr of trs) {
-        if (!seenRouteIds.has(tr.route_id)) {
-          seenRouteIds.add(tr.route_id);
-
-          const ascents = (tr.route.own_ascent ||
-            []) as unknown as RouteAscentDto[];
-          ascents.sort((a, b) => {
-            const isAttemptA = a.type === 'attempt';
-            const isAttemptB = b.type === 'attempt';
-            if (isAttemptA && !isAttemptB) return 1;
-            if (!isAttemptA && isAttemptB) return -1;
-            return (
-              new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
-            );
-          });
-          const bestAscent = ascents[0] || null;
-
-          topo_routes.push({
-            topo_id: tr.topo_id,
-            route_id: tr.route_id,
-            number: tr.number ?? 0,
-            path: tr.path as TopoPath | null,
-            route: {
-              id: tr.route.id,
-              name: tr.route.name,
-              slug: tr.route.slug,
-              grade: tr.route.grade ?? 0,
-              climbing_kind: (tr.route.climbing_kind ??
-                'sport') as ClimbingKind,
-              color: tr.route.color ?? null,
-              own_ascent: bestAscent,
-              project: false,
-            },
-          });
-        }
-      }
-    }
-
-    return {
-      id: topo.id,
-      name: topo.name,
-      photo: topo.image_url,
-      crag_id: 0,
-      created_at: '',
-      slug: '',
-      shade_afternoon: false,
-      shade_change_hour: null,
-      shade_morning: false,
-      legacy: topo.legacy,
-      center_id: topo.center_id,
-      topo_routes,
-      crag: topo.center
-        ? {
-            id: 0,
-            name: topo.center.name,
-            slug: topo.center.slug,
-            area_id: 0,
-            user_creator_id: null,
-            area: {
-              id: 0,
-              name: '',
-              slug: '',
-              is_public: true,
-              price: 0,
-              purchased: true,
-            },
-          }
-        : undefined,
-    };
-  }
 
   private async fetchOutdoorTopo(
     id: number,

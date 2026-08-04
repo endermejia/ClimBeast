@@ -16,8 +16,10 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
-
-import { GlobalData } from '../../services/global-data';
+import { AuthStateService } from '../../services/auth-state.service';
+import { CragRoutesDataService } from '../../services/crag-routes-data.service';
+import { LayoutService } from '../../services/layout.service';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { RoutesService } from '../../services/routes.service';
 import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
@@ -40,7 +42,6 @@ import { RoutesTableComponent } from './routes-table';
 
 @Component({
   selector: 'app-outdoor-routes-table',
-  standalone: true,
   imports: [
     CommonModule,
     TranslateModule,
@@ -58,7 +59,7 @@ import { RoutesTableComponent } from './routes-table';
       [showAddRouteToTopo]="showAddRouteToTopo()"
       [availableTopos]="availableTopos()"
       [ascentInfo]="ascentsService.ascentInfo()"
-      [isMobile]="global.isMobile()"
+      [isMobile]="layoutService.isMobile()"
       [expandedTemplate]="expandedTpl"
       (updateRouteHeight)="onUpdateRouteHeight($event.row, $event.height)"
       (toggleRouteOnTopo)="
@@ -92,7 +93,10 @@ import { RoutesTableComponent } from './routes-table';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OutdoorRoutesTableComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly layoutService = inject(LayoutService);
+  protected readonly authState = inject(AuthStateService);
+  protected readonly cragRoutesData = inject(CragRoutesDataService);
+  protected readonly outdoorData = inject(OutdoorDataService);
   protected readonly routesService = inject(RoutesService);
   protected readonly toposService = inject(ToposService);
   protected readonly ascentsService = inject(AscentsService);
@@ -114,15 +118,15 @@ export class OutdoorRoutesTableComponent {
   direction = input<TuiSortDirection>(TuiSortDirection.Desc);
 
   protected readonly mappedData = computed(() => {
-    const editMap = this.global.canEditCragRoutes();
-    const isAsAdmin = this.global.canEditAsAdmin();
-    const areaAdminMap = this.global.areaAdminPermissions();
+    const isAsAdmin = this.authState.canEditAsAdmin();
+    const areaAdminMap = this.authState.areaAdminPermissions();
 
     return this.data().map((r) => {
       const row = mapRouteToTableRow(r);
-      row.canEdit = !!editMap[r.id];
+      const canEdit = this.authState.checkRouteEditPermission(r);
+      row.canEdit = canEdit;
       row.canDelete = isAsAdmin || !!areaAdminMap[r.area_id || -1];
-      row.canAddTopo = !!editMap[r.id];
+      row.canAddTopo = canEdit;
       return row;
     });
   });
@@ -138,14 +142,14 @@ export class OutdoorRoutesTableComponent {
       'actions',
     ];
 
-    const canEditAny = this.data().some(
-      (r) => this.global.canEditCragRoutes()[r.id],
+    const canEditAny = this.data().some((r) =>
+      this.authState.checkRouteEditPermission(r),
     );
 
     if (
-      this.global.editingMode() &&
+      this.authState.editingMode() &&
       this.showAdminActions() &&
-      (this.global.canEditAsAdmin() || canEditAny)
+      (this.authState.canEditAsAdmin() || canEditAny)
     ) {
       cols.push('admin_actions');
     }
@@ -154,7 +158,7 @@ export class OutdoorRoutesTableComponent {
   });
 
   protected readonly availableTopos = computed(() => {
-    const crag = this.global.cragDetail();
+    const crag = this.outdoorData.cragDetail();
     if (!crag || !crag.topos) return [];
     return crag.topos.map((t) => ({ id: t.id, name: t.name }));
   });
@@ -198,8 +202,8 @@ export class OutdoorRoutesTableComponent {
           false,
         );
       }
-      await this.global.cragRoutesResource.reload();
-      await this.global.cragDetailResource.reload();
+      await this.cragRoutesData.cragRoutesResource.reload();
+      await this.outdoorData.cragDetailResource.reload();
     } catch (e: unknown) {
       console.error('[OutdoorRoutesTable] error toggling route on topo', e);
       handleErrorToast(e, this.toast);

@@ -1,13 +1,13 @@
 import { inject, Pipe, PipeTransform } from '@angular/core';
 
-import { GlobalData } from '../services/global-data';
+import { LanguageService } from '../services/language.service';
 
 @Pipe({
   name: 'ascentDate',
   standalone: true,
 })
 export class AscentDatePipe implements PipeTransform {
-  private readonly global = inject(GlobalData);
+  private readonly languageService = inject(LanguageService);
 
   transform(dateStr: string | null | undefined): string {
     if (!dateStr) return '';
@@ -20,7 +20,7 @@ export class AscentDatePipe implements PipeTransform {
     if (isNaN(date.getTime())) return dateStr;
 
     const currentYear = new Date().getFullYear();
-    const locale = this.global.selectedLanguage() || 'es';
+    const locale = this.languageService.selectedLanguage() || 'es';
 
     if (year === currentYear) {
       try {

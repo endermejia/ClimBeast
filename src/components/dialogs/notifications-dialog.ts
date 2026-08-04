@@ -25,7 +25,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { AppNotificationsService } from '../../services/app-notifications.service';
 import { AscentsService } from '../../services/ascents.service';
-import { GlobalData } from '../../services/global-data';
+import { LanguageService } from '../../services/language.service';
 import { MessagingService } from '../../services/messaging.service';
 import { SupabaseService } from '../../services/supabase.service';
 
@@ -152,7 +152,7 @@ export class NotificationsDialogComponent {
   private readonly translate = inject(TranslateService);
   protected readonly context = injectContext<TuiDialogContext<void, void>>();
   private readonly ascentsService = inject(AscentsService);
-  private readonly global = inject(GlobalData);
+  protected readonly languageService = inject(LanguageService);
   protected readonly messagingService = inject(MessagingService);
   private readonly router = inject(Router);
 
@@ -164,7 +164,7 @@ export class NotificationsDialogComponent {
   });
 
   protected readonly groupedNotifications = computed(() => {
-    this.global.i18nTick();
+    this.languageService.i18nTick();
     const notifications = this.notificationsResource.value() ?? [];
     return this.groupNotifications(notifications).map((group) => ({
       ...group,

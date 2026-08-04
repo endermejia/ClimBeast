@@ -24,34 +24,33 @@
 //   --fix    Auto-fix ordering (rewrites files)
 //   file...  Check specific files (default: all src/**/*.ts)
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
-import { resolve, relative, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
+import { resolve, relative, dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const SRC_DIR = resolve(__dirname, '../src');
+const SRC_DIR = resolve(__dirname, "../src");
 
 // ── Group classification ──────────────────────────────────────────────────────
 
 const GROUP_PATTERNS = [
-  { name: 'angular', test: (p) => p.startsWith('@angular/') },
-  { name: 'taiga', test: (p) => p.startsWith('@taiga-ui/') },
+  { name: "angular", test: (p) => p.startsWith("@angular/") },
+  { name: "taiga", test: (p) => p.startsWith("@taiga-ui/") },
   {
-    name: 'third-party',
+    name: "third-party",
     test: (p) =>
-      !p.startsWith('@angular/') &&
-      !p.startsWith('@taiga-ui/') &&
-      !p.startsWith('.') &&
-      !p.startsWith('src/'),
+      !p.startsWith("@angular/") &&
+      !p.startsWith("@taiga-ui/") &&
+      !p.startsWith(".") &&
+      !p.startsWith("src/"),
   },
-  { name: 'services', test: (p) => /(?:^|\/)services\//.test(p) },
-  { name: 'components', test: (p) => /(?:^|\/)components\//.test(p) },
-  { name: 'models', test: (p) => /(?:^|\/)models(?:\/|$)/.test(p) },
+  { name: "services", test: (p) => /(?:^|\/)services\//.test(p) },
+  { name: "components", test: (p) => /(?:^|\/)components\//.test(p) },
+  { name: "models", test: (p) => /(?:^|\/)models(?:\/|$)/.test(p) },
   {
-    name: 'pipes-utils',
-    test: (p) =>
-      /(?:^|\/)(?:pipes|utils|constants)(?:\/|$)/.test(p),
+    name: "pipes-utils",
+    test: (p) => /(?:^|\/)(?:pipes|utils|constants)(?:\/|$)/.test(p),
   },
 ];
 
@@ -61,7 +60,7 @@ function classifyImport(modulePath) {
   for (const g of GROUP_PATTERNS) {
     if (g.test(modulePath)) return g.name;
   }
-  return 'other'; // should not happen for well-structured code
+  return "other"; // should not happen for well-structured code
 }
 
 // ── Parse imports ─────────────────────────────────────────────────────────────
@@ -79,7 +78,7 @@ function parseImports(lines) {
     const trimmed = line.trim();
 
     // Detect start of import statement
-    if (!trimmed.startsWith('import ')) {
+    if (!trimmed.startsWith("import ")) {
       i++;
       continue;
     }
@@ -88,9 +87,9 @@ function parseImports(lines) {
     // Collect full import statement (may span multiple lines)
     let fullImport = trimmed;
     const startLine = i;
-    while (!fullImport.includes(';') && i < lines.length - 1) {
+    while (!fullImport.includes(";") && i < lines.length - 1) {
       i++;
-      fullImport += ' ' + lines[i].trim();
+      fullImport += " " + lines[i].trim();
     }
 
     // Extract module path
@@ -120,8 +119,8 @@ function parseImports(lines) {
 // ── Validate ──────────────────────────────────────────────────────────────────
 
 function validateFile(filePath) {
-  const content = readFileSync(filePath, 'utf-8');
-  const lines = content.split('\n');
+  const content = readFileSync(filePath, "utf-8");
+  const lines = content.split("\n");
 
   const imports = parseImports(lines);
   if (imports.length === 0) return [];
@@ -158,15 +157,15 @@ function validateFile(filePath) {
       // We need to find the actual end line of the previous import
       let prevEndLine = prevLineNum - 1; // 0-indexed
       let fullPrev = lines[prevEndLine].trim();
-      while (!fullPrev.includes(';') && prevEndLine < lines.length - 1) {
+      while (!fullPrev.includes(";") && prevEndLine < lines.length - 1) {
         prevEndLine++;
-        fullPrev += ' ' + lines[prevEndLine].trim();
+        fullPrev += " " + lines[prevEndLine].trim();
       }
 
       // Check lines between prevEndLine and curr.lineNum (0-indexed)
       let hasBlankLine = false;
       for (let j = prevEndLine + 1; j < curr.lineNum - 1; j++) {
-        if (lines[j].trim() === '') {
+        if (lines[j].trim() === "") {
           hasBlankLine = true;
           break;
         }
@@ -208,8 +207,8 @@ function validateFile(filePath) {
 // ── Auto-fix ──────────────────────────────────────────────────────────────────
 
 function fixFile(filePath) {
-  const content = readFileSync(filePath, 'utf-8');
-  const lines = content.split('\n');
+  const content = readFileSync(filePath, "utf-8");
+  const lines = content.split("\n");
 
   const imports = parseImports(lines);
   if (imports.length === 0) return false;
@@ -221,9 +220,9 @@ function fixFile(filePath) {
     let startLine = imp.lineNum - 1;
     let endLine = startLine;
     let full = lines[endLine].trim();
-    while (!full.includes(';') && endLine < lines.length - 1) {
+    while (!full.includes(";") && endLine < lines.length - 1) {
       endLine++;
-      full += ' ' + lines[endLine].trim();
+      full += " " + lines[endLine].trim();
     }
     for (let j = startLine; j <= endLine; j++) {
       importLineSet.add(j);
@@ -258,7 +257,7 @@ function fixFile(filePath) {
 
   // Global sort: collect ALL imports, sort by group then alphabetically
   const allImportsSorted = [];
-  for (const groupName of [...GROUP_ORDER, 'other']) {
+  for (const groupName of [...GROUP_ORDER, "other"]) {
     const groupImports = imports
       .filter((imp) => imp.group === groupName)
       .sort((a, b) => a.modulePath.localeCompare(b.modulePath));
@@ -292,7 +291,7 @@ function fixFile(filePath) {
         if (!imp) break;
 
         if (prevGroup !== null && imp.group !== prevGroup) {
-          sortedLines.push(''); // blank line between groups
+          sortedLines.push(""); // blank line between groups
         }
         prevGroup = imp.group;
         firstGroup = false;
@@ -300,9 +299,9 @@ function fixFile(filePath) {
         let startLine = imp.lineNum - 1;
         let endLine = startLine;
         let full = lines[startLine].trim();
-        while (!full.includes(';') && endLine < lines.length - 1) {
+        while (!full.includes(";") && endLine < lines.length - 1) {
           endLine++;
-          full += ' ' + lines[endLine].trim();
+          full += " " + lines[endLine].trim();
         }
         sortedLines.push(full);
       }
@@ -318,9 +317,9 @@ function fixFile(filePath) {
   }
 
   if (modified) {
-    const newContent = result.join('\n');
+    const newContent = result.join("\n");
     if (newContent !== content) {
-      writeFileSync(filePath, newContent, 'utf-8');
+      writeFileSync(filePath, newContent, "utf-8");
       return true;
     }
   }
@@ -335,10 +334,7 @@ function findTsFiles(dir) {
     const fullPath = join(dir, entry.name);
     if (entry.isDirectory()) {
       results.push(...findTsFiles(fullPath));
-    } else if (
-      entry.name.endsWith('.ts') &&
-      !entry.name.endsWith('.d.ts')
-    ) {
+    } else if (entry.name.endsWith(".ts") && !entry.name.endsWith(".d.ts")) {
       results.push(fullPath);
     }
   }
@@ -347,8 +343,8 @@ function findTsFiles(dir) {
 
 async function main() {
   const args = process.argv.slice(2);
-  const fixMode = args.includes('--fix');
-  const filesArg = args.filter((a) => !a.startsWith('--'));
+  const fixMode = args.includes("--fix");
+  const filesArg = args.filter((a) => !a.startsWith("--"));
 
   let files;
   if (filesArg.length > 0) {
@@ -384,7 +380,7 @@ async function main() {
     console.error(`\n${totalErrors} import ordering error(s) found.`);
     process.exit(1);
   } else {
-    console.log('All imports correctly ordered.');
+    console.log("All imports correctly ordered.");
   }
 }
 

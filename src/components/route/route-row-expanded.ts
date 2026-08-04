@@ -3,7 +3,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  inject,
   input,
   output,
   signal,
@@ -22,8 +21,6 @@ import {
 import { TuiPin } from '@taiga-ui/kit';
 
 import { TranslateModule } from '@ngx-translate/core';
-
-import { GlobalData } from '../../services/global-data';
 
 import {
   RoutesTableRow,
@@ -360,8 +357,6 @@ export class RouteRowExpandedComponent {
     routeId: number | string;
     isAttached: boolean;
   }>();
-
-  protected readonly global = inject(GlobalData);
 
   protected readonly isDropdownOpen = signal(false);
 

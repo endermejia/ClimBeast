@@ -8,9 +8,7 @@ import { TranslateService, TranslateStore } from '@ngx-translate/core';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { IS_BROWSER } from '../app/is-browser';
-import { MockGlobalData } from '../testing/mock-global-data.service';
 import { MockSupabaseService } from '../testing/mock-supabase.service';
-import { GlobalData } from './global-data';
 import { SupabaseService } from './supabase.service';
 import { ToastService } from './toast.service';
 import { ToposService } from './topos.service';
@@ -56,7 +54,6 @@ describe('ToposService', () => {
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: IS_BROWSER, useValue: true },
         { provide: SupabaseService, useValue: mockSupabase },
-        { provide: GlobalData, useClass: MockGlobalData },
         { provide: ToastService, useValue: mockToast },
         { provide: TuiDialogService, useValue: { open: vi.fn() } },
         { provide: TranslateService, useValue: MOCK_TRANSLATE },
@@ -74,7 +71,6 @@ describe('ToposService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
@@ -97,7 +93,6 @@ describe('ToposService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
@@ -118,7 +113,6 @@ describe('ToposService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
@@ -139,7 +133,6 @@ describe('ToposService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
@@ -163,7 +156,6 @@ describe('ToposService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
@@ -184,7 +176,6 @@ describe('ToposService', () => {
           { provide: PLATFORM_ID, useValue: 'server' },
           { provide: IS_BROWSER, useValue: false },
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: GlobalData, useClass: MockGlobalData },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },

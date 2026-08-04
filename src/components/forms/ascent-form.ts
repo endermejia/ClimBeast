@@ -48,7 +48,6 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
-import { GlobalData } from '../../services/global-data';
 import { IndoorService } from '../../services/indoor.service';
 import { RoutesService } from '../../services/routes.service';
 import { SupabaseService } from '../../services/supabase.service';
@@ -621,7 +620,6 @@ import { CounterComponent } from '../ui/counter';
   host: { class: 'block w-full h-full' },
 })
 export default class AscentFormComponent {
-  protected readonly global = inject(GlobalData);
   private readonly ascents = inject(AscentsService);
   private readonly supabase = inject(SupabaseService);
   private readonly routesService = inject(RoutesService);

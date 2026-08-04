@@ -19,15 +19,14 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { combineLatest, filter, map, merge, startWith } from 'rxjs';
 
-import { GlobalData } from '../services/global-data';
-
+import { CartService } from '../services/cart.service';
 import { LocalStorage } from '../services/local-storage';
 import { NotificationService } from '../services/notification.service';
 import { SeoService } from '../services/seo.service';
 import { SupabaseService } from '../services/supabase.service';
+import { ThemeService } from '../services/theme.service';
 
 import { CartOverlayComponent } from '../components/cart-overlay/cart-overlay';
-
 import { NavbarComponent } from '../components/ui/navbar';
 import { OfflineBannerComponent } from '../components/ui/offline-banner';
 
@@ -46,7 +45,7 @@ import { IS_BROWSER } from './is-browser';
     TuiRoot,
   ],
   template: `
-    <tui-root [attr.tuiTheme]="global.selectedTheme()">
+    <tui-root [attr.tuiTheme]="theme()">
       <app-offline-banner />
       <div
         class="fixed inset-0 w-full h-full overflow-hidden flex flex-col-reverse md:flex-row"
@@ -59,9 +58,9 @@ import { IS_BROWSER } from './is-browser';
         </main>
       </div>
 
-      @if (global.showCart()) {
+      @if (cartService.showCart()) {
         <app-cart-overlay
-          (closeOverlay)="global.showCart.set(false)"
+          (closeOverlay)="cartService.showCart.set(false)"
           (checkout)="onCheckout()"
         />
       }
@@ -69,12 +68,15 @@ import { IS_BROWSER } from './is-browser';
   `,
 })
 export class AppComponent implements OnDestroy {
-  protected readonly global = inject(GlobalData);
   protected readonly router = inject(Router);
+  private readonly themeService = inject(ThemeService);
+  protected readonly cartService = inject(CartService);
   private swCheckInterval: ReturnType<typeof setInterval> | null = null;
 
+  protected readonly theme = this.themeService.selectedTheme;
+
   protected onCheckout(): void {
-    this.global.showCart.set(false);
+    this.cartService.showCart.set(false);
     void this.router.navigate(['/merchandising/checkout']);
   }
   private meta = inject(Meta);
@@ -143,7 +145,7 @@ export class AppComponent implements OnDestroy {
     });
 
     effect(() => {
-      const theme = this.global.selectedTheme();
+      const theme = this.theme();
       if (this.isBrowser) {
         const color = theme === Themes.DARK ? '#0b1220' : '#ffffff';
         this.meta.updateTag({ name: 'theme-color', content: color });

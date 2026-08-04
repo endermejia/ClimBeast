@@ -11,7 +11,6 @@ import { TuiLink, TuiIcon } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { GlobalData } from '../../services/global-data';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { AmountByEveryGrade } from '../../models';
@@ -32,7 +31,6 @@ export interface IndoorCenterCardItem {
 
 @Component({
   selector: 'app-indoor-center-card',
-  standalone: true,
   imports: [
     CommonModule,
     RouterLink,
@@ -104,7 +102,6 @@ export interface IndoorCenterCardItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IndoorCenterCardComponent {
-  protected readonly global = inject(GlobalData);
   protected readonly supabase = inject(SupabaseService);
 
   item = input.required<IndoorCenterCardItem>();

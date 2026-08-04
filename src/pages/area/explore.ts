@@ -32,9 +32,13 @@ import { TuiHeader } from '@taiga-ui/layout';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AreasService } from '../../services/areas.service';
+import { AuthStateService } from '../../services/auth-state.service';
 
+import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
-import { GlobalData } from '../../services/global-data';
+import { LayoutService } from '../../services/layout.service';
+import { MapDataService } from '../../services/map-data.service';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { ParkingsService } from '../../services/parkings.service';
 import { TourService } from '../../services/tour.service';
 import { TourStep } from '../../services/tour.service';
@@ -93,7 +97,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiTitle,
     IndoorCenterCardComponent,
   ],
-  template: ` @let isMobile = global.isMobile();
+  template: ` @let isMobile = layoutService.isMobile();
     <div class="h-full w-full flex min-h-0">
       <div
         class="relative h-full grow flex flex-col min-w-0 transition-[width] duration-300"
@@ -120,7 +124,7 @@ import { IS_BROWSER } from '../../app/is-browser';
               </button>
             </tui-badged-content>
           </div>
-          @if (global.canEditAsAdmin() && !isMobile) {
+          @if (authState.canEditAsAdmin() && !isMobile) {
             <div class="z-10">
               <button
                 tuiIconButton
@@ -157,7 +161,7 @@ import { IS_BROWSER } from '../../app/is-browser';
           mapCragItems().length > 0 ||
           mapIndoorItems().length > 0;
         @let hasSelection =
-          !!global.selectedMapCragItem() || !!global.selectedMapParkingItem();
+          !!mapData.selectedMapCragItem() || !!mapData.selectedMapParkingItem();
 
         @let isExploreAreasTourStep =
           tourService.isActive() &&
@@ -178,7 +182,9 @@ import { IS_BROWSER } from '../../app/is-browser';
           [style.transform]="'translate(-50%, -' + _sheetScrollTop() + 'px)'"
         >
           <div class="flex gap-2">
-            @if (global.indoorFeature() && global.areaListShowIndoor()) {
+            @if (
+              authState.indoorFeature() && filterState.areaListShowIndoor()
+            ) {
               <button
                 tuiButton
                 size="m"
@@ -189,7 +195,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                 {{ 'indoor.button' | translate }}
               </button>
             }
-            @if (global.areaListShowOutdoor()) {
+            @if (filterState.areaListShowOutdoor()) {
               <button
                 tuiButton
                 size="m"
@@ -200,8 +206,10 @@ import { IS_BROWSER } from '../../app/is-browser';
                 [tuiDropdownManual]="isExploreAreasTourStep"
               >
                 {{
-                  (global.indoorFeature() ? 'outdoor.button' : 'viewAllAreas')
-                    | translate
+                  (authState.indoorFeature()
+                    ? 'outdoor.button'
+                    : 'viewAllAreas'
+                  ) | translate
                 }}
               </button>
             }
@@ -215,7 +223,7 @@ import { IS_BROWSER } from '../../app/is-browser';
           [style.visibility]="hasSelection ? 'visible' : 'hidden'"
         >
           <div class="flex gap-2">
-            @if (global.indoorFeature()) {
+            @if (authState.indoorFeature()) {
               <button
                 tuiButton
                 size="m"
@@ -234,7 +242,7 @@ import { IS_BROWSER } from '../../app/is-browser';
               routerLink="/area"
             >
               {{
-                (global.indoorFeature() ? 'outdoor.button' : 'viewAllAreas')
+                (authState.indoorFeature() ? 'outdoor.button' : 'viewAllAreas')
                   | translate
               }}
             </button>
@@ -248,15 +256,15 @@ import { IS_BROWSER } from '../../app/is-browser';
             class="w-full h-full"
             [mapCragItems]="mapCragItems()"
             [mapAreaItems]="
-              global.areaListShowOutdoor()
-                ? global.areasMapResource.value() || []
+              filterState.areaListShowOutdoor()
+                ? mapData.areasMapResource.value() || []
                 : []
             "
             [mapIndoorItems]="mapIndoorItems()"
-            [selectedMapCragItem]="global.selectedMapCragItem()"
+            [selectedMapCragItem]="mapData.selectedMapCragItem()"
             (selectedMapCragItemChange)="selectMapCragItem($event)"
-            [mapParkingItems]="global.parkingsMapResource.value() || []"
-            [selectedMapParkingItem]="global.selectedMapParkingItem()"
+            [mapParkingItems]="mapData.parkingsMapResource.value() || []"
+            [selectedMapParkingItem]="mapData.selectedMapParkingItem()"
             (selectedMapParkingItemChange)="selectMapParkingItem($event)"
             (mapClick)="closeAll()"
           />
@@ -265,7 +273,7 @@ import { IS_BROWSER } from '../../app/is-browser';
           <tui-loader size="xxl" class="w-full h-full flex" />
         }
 
-        @if (global.selectedMapCragItem(); as c) {
+        @if (mapData.selectedMapCragItem(); as c) {
           <!-- Selected crag information section with the same width as the bottom-sheet -->
           <div
             class="absolute w-full max-w-120 mx-auto z-50 pointer-events-none left-0 right-0 bottom-0 px-4 pb-4"
@@ -276,7 +284,7 @@ import { IS_BROWSER } from '../../app/is-browser';
               class="pointer-events-auto"
             />
           </div>
-        } @else if (global.selectedMapParkingItem(); as p) {
+        } @else if (mapData.selectedMapParkingItem(); as p) {
           <!-- Selected parking information section -->
           <div
             class="absolute w-full max-w-120 mx-auto z-50 pointer-events-none left-0 right-0 bottom-0 px-4 pb-4"
@@ -288,7 +296,7 @@ import { IS_BROWSER } from '../../app/is-browser';
               class="pointer-events-auto"
             >
               <ng-container titleActions>
-                @if (global.canEditAsAdmin()) {
+                @if (authState.canEditAsAdmin()) {
                   <button
                     size="s"
                     appearance="neutral"
@@ -333,10 +341,11 @@ import { IS_BROWSER } from '../../app/is-browser';
         @let crags = mapCragItems();
         @let areas = mapAreaItems();
         @let loading =
-          global.mapResource.isLoading() || global.areasMapResource.isLoading();
+          mapData.mapResource.isLoading() ||
+          mapData.areasMapResource.isLoading();
 
         @if (
-          !global.selectedMapCragItem() && !global.selectedMapParkingItem()
+          !mapData.selectedMapCragItem() && !mapData.selectedMapParkingItem()
         ) {
           @if (loading) {
             <div
@@ -512,7 +521,11 @@ import { IS_BROWSER } from '../../app/is-browser';
   },
 })
 export class ExploreComponent {
-  protected readonly global = inject(GlobalData);
+  protected readonly layoutService = inject(LayoutService);
+  protected readonly authState = inject(AuthStateService);
+  protected readonly mapData = inject(MapDataService);
+  protected readonly filterState = inject(FilterStateService);
+  protected readonly outdoorData = inject(OutdoorDataService);
   protected readonly router = inject(Router);
   protected readonly tourService = inject(TourService);
   protected readonly TourStep = TourStep;
@@ -533,8 +546,6 @@ export class ExploreComponent {
   protected readonly mapLocationUrl = mapLocationUrl;
 
   constructor() {
-    this.global.resetDataByPage('explore');
-
     effect(() => {
       if (!this.hasBottomSheet()) {
         this._sheetScrollTop.set(0);
@@ -553,11 +564,11 @@ export class ExploreComponent {
   private _sheetClosing = false;
 
   protected mapCragItems: Signal<MapCragItem[]> = computed(() => {
-    if (!this.global.areaListShowOutdoor()) return [];
-    const items = this.global.mapItemsOnViewport();
-    const categories = this.global.areaListCategories();
-    const [selMin, selMax] = this.global.areaListGradeRange();
-    const shade = this.global.areaListShade() || [];
+    if (!this.filterState.areaListShowOutdoor()) return [];
+    const items = this.mapData.mapItemsOnViewport();
+    const categories = this.filterState.areaListCategories();
+    const [selMin, selMax] = this.filterState.areaListGradeRange();
+    const shade = this.filterState.areaListShade() || [];
 
     const withinSelectedCategories = (c: MapCragItem): boolean => {
       // empty => all
@@ -590,11 +601,11 @@ export class ExploreComponent {
   });
 
   protected mapAreaItems: Signal<MapAreaItem[]> = computed(() => {
-    if (!this.global.areaListShowOutdoor()) return [];
-    const items = this.global.mapItemsOnViewport();
-    const categories = this.global.areaListCategories();
-    const [selMin, selMax] = this.global.areaListGradeRange();
-    const shade = this.global.areaListShade() || [];
+    if (!this.filterState.areaListShowOutdoor()) return [];
+    const items = this.mapData.mapItemsOnViewport();
+    const categories = this.filterState.areaListCategories();
+    const [selMin, selMax] = this.filterState.areaListGradeRange();
+    const shade = this.filterState.areaListShade() || [];
 
     const withinSelectedCategories = (a: MapAreaItem): boolean => {
       if (!categories.length) return true;
@@ -631,8 +642,8 @@ export class ExploreComponent {
       .sort((a, b) => (a.liked === b.liked ? 0 : a.liked ? -1 : 1));
   });
   protected mapIndoorItems: Signal<MapIndoorCenterItem[]> = computed(() => {
-    if (!this.global.areaListShowIndoor()) return [];
-    const items = this.global.mapItemsOnViewport();
+    if (!this.filterState.areaListShowIndoor()) return [];
+    const items = this.mapData.mapItemsOnViewport();
     return items.filter((item): item is MapIndoorCenterItem => {
       return (item as MapIndoorCenterItem).is_indoor === true;
     });
@@ -640,21 +651,21 @@ export class ExploreComponent {
 
   protected readonly hasBottomSheet = computed(() => {
     const loading =
-      this.global.mapResource.isLoading() ||
-      this.global.areasMapResource.isLoading();
+      this.mapData.mapResource.isLoading() ||
+      this.mapData.areasMapResource.isLoading();
     if (loading) return false;
     const cragsCount = this.mapCragItems().length;
     const areasCount = this.mapAreaItems().length;
     const indoorCount = this.mapIndoorItems().length;
     return (
       (areasCount > 0 || cragsCount > 0 || indoorCount > 0) &&
-      !this.global.selectedMapCragItem() &&
-      !this.global.selectedMapParkingItem()
+      !this.mapData.selectedMapCragItem() &&
+      !this.mapData.selectedMapParkingItem()
     );
   });
 
   protected readonly isBottomSheetExpanded: Signal<boolean> = computed(() => {
-    if (!this.global.isMobile()) return true;
+    if (!this.layoutService.isMobile()) return true;
     const clientHeight = this._sheetClientHeight();
     const scrollTop = this._sheetScrollTop();
     if (clientHeight <= 0) return false;
@@ -664,21 +675,21 @@ export class ExploreComponent {
   });
 
   protected readonly hasActiveFilters = computed(() => {
-    const [lo, hi] = this.global.areaListGradeRange();
+    const [lo, hi] = this.filterState.areaListGradeRange();
     const gradeActive = !(lo === 0 && hi === ORDERED_GRADE_VALUES.length - 1);
     return (
       gradeActive ||
-      this.global.areaListCategories().length > 0 ||
-      this.global.areaListShade().length > 0
+      this.filterState.areaListCategories().length > 0 ||
+      this.filterState.areaListShade().length > 0
     );
   });
 
   protected readonly buttonBottomOffset = computed(() => {
-    const isMobile = this.global.isMobile();
+    const isMobile = this.layoutService.isMobile();
     const hasSheet = this.hasBottomSheet();
     const hasSelection =
-      !!this.global.selectedMapCragItem() ||
-      !!this.global.selectedMapParkingItem();
+      !!this.mapData.selectedMapCragItem() ||
+      !!this.mapData.selectedMapParkingItem();
 
     if (hasSelection) {
       return 'calc(100% - 6rem)';
@@ -693,9 +704,9 @@ export class ExploreComponent {
 
   protected unifyVisibleAreas(): void {
     const visibleAreaIds = new Set(
-      this.global.areasMapResource.value()?.map((ma) => ma.id),
+      this.mapData.areasMapResource.value()?.map((ma) => ma.id),
     );
-    const visibleAreas = this.global
+    const visibleAreas = this.outdoorData
       .areasList()
       .filter((a) => visibleAreaIds.has(a.id));
     this.areasService.openUnifyAreas(visibleAreas);
@@ -735,7 +746,7 @@ export class ExploreComponent {
   }
 
   protected setBottomSheet(mode: 'open' | 'close' | 'toggle' = 'toggle'): void {
-    if (!this.global.isMobile()) {
+    if (!this.layoutService.isMobile()) {
       return;
     }
 
@@ -744,12 +755,12 @@ export class ExploreComponent {
     }
 
     const hadSelectedMapItem =
-      !!this.global.selectedMapCragItem() ||
-      !!this.global.selectedMapParkingItem();
+      !!this.mapData.selectedMapCragItem() ||
+      !!this.mapData.selectedMapParkingItem();
 
     if (hadSelectedMapItem && mode !== 'open') {
-      this.global.selectedMapCragItem.set(null);
-      this.global.selectedMapParkingItem.set(null);
+      this.mapData.selectedMapCragItem.set(null);
+      this.mapData.selectedMapParkingItem.set(null);
     }
 
     const el = this.sheetRef()?.nativeElement;
@@ -810,18 +821,18 @@ export class ExploreComponent {
 
   protected selectMapCragItem(mapCragItem: MapCragItem | null): void {
     if (!mapCragItem) return;
-    this.global.selectedMapParkingItem.set(null);
-    this.global.selectedMapCragItem.set(mapCragItem);
-    if (this.global.isMobile()) {
+    this.mapData.selectedMapParkingItem.set(null);
+    this.mapData.selectedMapCragItem.set(mapCragItem);
+    if (this.layoutService.isMobile()) {
       this.setBottomSheet('open');
     }
   }
 
   protected selectMapParkingItem(parkingItem: ParkingDto | null): void {
     if (!parkingItem) return;
-    this.global.selectedMapCragItem.set(null);
-    this.global.selectedMapParkingItem.set(parkingItem);
-    if (this.global.isMobile()) {
+    this.mapData.selectedMapCragItem.set(null);
+    this.mapData.selectedMapParkingItem.set(parkingItem);
+    if (this.layoutService.isMobile()) {
       this.setBottomSheet('open');
     }
   }
@@ -833,8 +844,8 @@ export class ExploreComponent {
   }
 
   protected closeAll(): void {
-    this.global.selectedMapCragItem.set(null);
-    this.global.selectedMapParkingItem.set(null);
+    this.mapData.selectedMapCragItem.set(null);
+    this.mapData.selectedMapParkingItem.set(null);
     this.setBottomSheet('close');
   }
 

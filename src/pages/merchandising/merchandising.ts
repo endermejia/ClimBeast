@@ -34,9 +34,8 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { startWith } from 'rxjs';
 
+import { AuthStateService } from '../../services/auth-state.service';
 import { CartService } from '../../services/cart.service';
-
-import { GlobalData } from '../../services/global-data';
 import { MerchandiseService } from '../../services/merchandise.service';
 
 import { AdminMerchandiseDialogComponent } from '../../components/dialogs/admin-merchandise-dialog';
@@ -94,7 +93,7 @@ import { IS_BROWSER } from '../../app/is-browser';
             type="button"
             appearance="floating"
             size="l"
-            (click)="global.showCart.set(true)"
+            (click)="cartService.showCart.set(true)"
             [attr.aria-label]="'merchandising.cart.title' | translate"
           >
             <tui-icon icon="@tui.shopping-bag" />
@@ -154,7 +153,7 @@ import { IS_BROWSER } from '../../app/is-browser';
             <h2 tuiTitle size="xl" class="font-black tracking-tight">
               {{ 'merchandising.items.title' | translate }}
             </h2>
-            @if (isAdmin() && global.editingMode()) {
+            @if (isAdmin() && authState.editingMode()) {
               <button
                 tuiIconButton
                 appearance="accent"
@@ -215,7 +214,7 @@ import { IS_BROWSER } from '../../app/is-browser';
               <h2 tuiTitle size="xl" class="font-black tracking-tight">
                 {{ 'merchandising.packs.title' | translate }}
               </h2>
-              @if (isAdmin() && global.editingMode()) {
+              @if (isAdmin() && authState.editingMode()) {
                 <button
                   tuiIconButton
                   appearance="accent"
@@ -290,7 +289,8 @@ import { IS_BROWSER } from '../../app/is-browser';
 })
 export class MerchandisingComponent {
   private readonly merchService = inject(MerchandiseService);
-  protected readonly global = inject(GlobalData);
+  protected readonly authState = inject(AuthStateService);
+  protected readonly cartService = inject(CartService);
   private readonly translate = inject(TranslateService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly dialogService = inject(TuiDialogService);
@@ -300,7 +300,7 @@ export class MerchandisingComponent {
     { onlyActive: boolean }
   >({
     params: () => ({
-      onlyActive: !(this.isAdmin() && this.global.editingMode()),
+      onlyActive: !(this.isAdmin() && this.authState.editingMode()),
     }),
     loader: ({ params }: { params: { onlyActive: boolean } }) =>
       this.merchService.getMerchandiseItems(params.onlyActive, true),
@@ -311,7 +311,7 @@ export class MerchandisingComponent {
     { onlyActive: boolean }
   >({
     params: () => ({
-      onlyActive: !(this.isAdmin() && this.global.editingMode()),
+      onlyActive: !(this.isAdmin() && this.authState.editingMode()),
     }),
     loader: ({ params }) => this.merchService.getAreaPacks(params.onlyActive),
   });
@@ -387,11 +387,9 @@ export class MerchandisingComponent {
     );
   });
 
-  private readonly cartService = inject(CartService);
-
   protected readonly cartItems = this.cartService.totalItems;
 
-  protected readonly isAdmin = this.global.isAdmin;
+  protected readonly isAdmin = this.authState.isAdmin;
 
   protected openItemDetail(item: MerchandiseItemDetail): void {
     this.merchService.openMerchandiseItem(item);

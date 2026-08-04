@@ -8,7 +8,6 @@ export * from './eight-anu-ascent.model';
 export * from './eight-anu-user.model';
 export * from './errors';
 export * from './grade.model';
-export * from './global-data.model';
 export * from './icon-name.model';
 export * from './map.model';
 export * from './merchandise.model';

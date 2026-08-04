@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   resource,
 } from '@angular/core';
 
@@ -17,10 +18,15 @@ import { TUI_CONFIRM, TuiBadge, type TuiConfirmData } from '@taiga-ui/kit';
 import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
+import { AuthStateService } from '../../services/auth-state.service';
+import { LayoutService } from '../../services/layout.service';
+
 import { TopoRoutesTableComponent } from '../../components/topo/topo-routes-table';
 import { TopoViewerComponent } from '../../components/topo/topo-viewer';
 import type { TopoRouteRow } from '../../components/topo/topo.types';
 import { SectionHeaderComponent } from '../../components/ui/section-header';
+
+import { TopoRouteWithRoute } from '../../models';
 
 import type { TopoDetail } from '../../models';
 
@@ -30,7 +36,6 @@ import { TopoPageBase } from './topo-page-base';
 
 @Component({
   selector: 'app-outdoor-topo',
-  standalone: true,
   imports: [
     ShadeInfoPipe,
     SectionHeaderComponent,
@@ -47,12 +52,12 @@ import { TopoPageBase } from './topo-page-base';
   template: `
     <div class="h-full w-full">
       <section class="flex flex-col w-full h-full md:p-4">
-        @let isMobile = global.isMobile();
-        @let canEditAsAdmin = global.canEditAsAdmin();
+        @let isMobile = layoutService.isMobile();
+        @let canEditAsAdmin = authState.canEditAsAdmin();
         @if (topo(); as t) {
           @let canAreaAdmin =
             t.crag
-              ? global.areaAdminPermissions()[t.crag.area_id || -1]
+              ? authState.areaAdminPermissions()[t.crag.area_id || -1]
               : false;
           <div class="px-4 pt-0 pb-1.5 md:p-0 md:mb-4 shrink-0">
             <app-section-header
@@ -136,7 +141,8 @@ import { TopoPageBase } from './topo-page-base';
 
           @let isPublic = t.crag?.area?.is_public;
           @let purchased = t.crag?.area?.purchased;
-          @let isCreator = t.crag?.user_creator_id === global.userProfile()?.id;
+          @let isCreator =
+            t.crag?.user_creator_id === authState.userProfile()?.id;
           @let hasAccess =
             isPublic ||
             purchased ||
@@ -218,6 +224,9 @@ import { TopoPageBase } from './topo-page-base';
   },
 })
 export class OutdoorTopoComponent extends TopoPageBase {
+  protected readonly authState = inject(AuthStateService);
+  protected readonly layoutService = inject(LayoutService);
+
   override isIndoor = computed(() => false);
 
   protected readonly areaId = computed(
@@ -234,16 +243,16 @@ export class OutdoorTopoComponent extends TopoPageBase {
       const isPublic = area?.is_public;
       const purchased = area?.purchased;
       const isCreator =
-        t.crag?.user_creator_id === this.global.userProfile()?.id;
-      const canEditAsAdmin = this.global.canEditAsAdmin();
+        t.crag?.user_creator_id === this.authState.userProfile()?.id;
+      const canEditAsAdmin = this.authState.canEditAsAdmin();
       const crag = this.crag();
       const canAreaAdmin = crag
-        ? this.global.areaAdminPermissions()[crag.area_id || -1]
+        ? this.authState.areaAdminPermissions()[crag.area_id || -1]
         : false;
       const hasAccess =
         isPublic || purchased || canEditAsAdmin || canAreaAdmin || isCreator;
       if (isSecret && !hasAccess) return null;
-      return { path: t.photo, version: this.global.topoPhotoVersion() };
+      return { path: t.photo, version: this.outdoorData.topoPhotoVersion() };
     },
     loader: async ({ params }) => {
       if (!params) return null;
@@ -251,15 +260,18 @@ export class OutdoorTopoComponent extends TopoPageBase {
     },
   });
 
-  protected readonly canEdit = computed(() => this.global.canEditCrag());
+  protected readonly canEdit = computed(() => this.authState.canEditCrag());
 
   protected readonly columns = computed(() => {
-    const isMobile = this.global.isMobile();
+    const isMobile = this.layoutService.isMobile();
     const base = isMobile
       ? ['index', 'grade', 'name']
       : ['index', 'grade', 'name', 'height', 'actions'];
     const crag = this.crag();
-    if (!isMobile && this.global.areaAdminPermissions()[crag?.area_id ?? -1]) {
+    if (
+      !isMobile &&
+      this.authState.areaAdminPermissions()[crag?.area_id ?? -1]
+    ) {
       base.push('admin_actions');
     }
     return base;
@@ -268,7 +280,7 @@ export class OutdoorTopoComponent extends TopoPageBase {
   protected readonly tableData = computed(() => {
     const topo = this.topo();
     if (!topo) return [];
-    return topo.topo_routes.map((tr) => {
+    return topo.topo_routes.map((tr: TopoRouteWithRoute) => {
       const r = tr.route;
       const climbed = !!r.own_ascent && r.own_ascent.type !== 'attempt';
       const project = !!r.project;
@@ -302,7 +314,7 @@ export class OutdoorTopoComponent extends TopoPageBase {
     const initialRouteIds = topo.topo_routes.map((tr) => tr.route_id);
     this.toposService.openTopoForm({
       cragId: topo.crag_id,
-      topoData: topo,
+      outdoorData: topo,
       initialRouteIds,
     });
   }
