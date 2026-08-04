@@ -4,8 +4,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import { Themes } from '../models';
 
-import { MockSupabaseService } from '../testing';
-import { SupabaseService } from './supabase.service';
+import { COMMON_TEST_PROVIDERS } from '../testing';
 import { ThemeService } from './theme.service';
 
 describe('ThemeService', () => {
@@ -13,10 +12,7 @@ describe('ThemeService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        ThemeService,
-        { provide: SupabaseService, useClass: MockSupabaseService },
-      ],
+      providers: [ThemeService, ...COMMON_TEST_PROVIDERS],
     });
     service = TestBed.inject(ThemeService);
   });

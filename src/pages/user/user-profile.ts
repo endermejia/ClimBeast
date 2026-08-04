@@ -116,18 +116,17 @@ import { IS_BROWSER } from '../../app/is-browser';
             <tui-pulse badge />
           }
 
-          @if (isOwnProfile()) {
-            <app-menu-options-button
-              appearance="action-grayscale"
-              direction="bottom"
-              size="s"
-              [iconOnly]="true"
-              nameActions
-            />
-          } @else {
-            @let blockMessages = blockState().blockMessages;
-            @let blockAscents = blockState().blockAscents;
-            <div nameActions class="inline-flex items-center">
+          <div nameActions class="inline-flex items-center">
+            @if (isOwnProfile()) {
+              <app-menu-options-button
+                appearance="action-grayscale"
+                direction="bottom"
+                size="s"
+                [iconOnly]="true"
+              />
+            } @else {
+              @let blockMessages = blockState().blockMessages;
+              @let blockAscents = blockState().blockAscents;
               <button
                 [appearance]="
                   blockMessages || blockAscents
@@ -170,8 +169,8 @@ import { IS_BROWSER } from '../../app/is-browser';
                   </button>
                 </tui-data-list>
               </ng-template>
-            </div>
-          }
+            }
+          </div>
 
           <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2" extraInfo>
             <button

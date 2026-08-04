@@ -1,5 +1,12 @@
-import { inject, Injectable, signal, WritableSignal } from '@angular/core';
-import { computed, resource } from '@angular/core';
+import {
+  computed,
+  effect,
+  inject,
+  Injectable,
+  resource,
+  signal,
+  WritableSignal,
+} from '@angular/core';
 
 import {
   AreaListItem,
@@ -32,7 +39,31 @@ export class AuthStateService {
   readonly userAvatar = computed(() =>
     this.supabase.buildAvatarUrl(this.userProfile()?.avatar),
   );
-  readonly editingMode: WritableSignal<boolean> = signal(false);
+  readonly editingMode: WritableSignal<boolean> = signal(
+    this.isBrowser
+      ? this.localStorage.getItem(this.editingModeStorageKey) === 'true'
+      : false,
+  );
+
+  // Persist editingMode to localStorage whenever it changes
+  protected readonly _persistEditingModeEffect = effect(() => {
+    this.editingMode();
+    if (this.isBrowser) {
+      this.persistEditingMode();
+    }
+  });
+
+  // Sync editingMode from userProfile when profile loads/updates
+  protected readonly _syncProfileEditingModeEffect = effect(() => {
+    const profile = this.userProfile();
+    if (
+      profile &&
+      profile.editing_mode !== null &&
+      profile.editing_mode !== undefined
+    ) {
+      this.editingMode.set(!!profile.editing_mode);
+    }
+  });
 
   // ---- Roles ----
   readonly isAdmin = computed(() => !!this.userProfile()?.is_admin);
