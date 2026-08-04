@@ -1,6 +1,5 @@
 import { LowerCasePipe, NgTemplateOutlet } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -515,7 +514,6 @@ import { IS_BROWSER } from '../../app/is-browser';
         }
       </ng-template>
     </div>`,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'flex grow min-h-0 overflow-hidden',
   },

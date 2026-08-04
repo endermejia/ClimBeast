@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -87,6 +87,7 @@ export class PaywallComponent {
   private readonly supabase = inject(SupabaseService);
   private readonly toast = inject(ToastService);
   private readonly isBrowser = inject(IS_BROWSER);
+  private readonly document = inject(DOCUMENT);
 
   async contributeNow() {
     this.loading.set(true);
@@ -102,8 +103,8 @@ export class PaywallComponent {
       );
 
       if (error) throw error;
-      if (data?.url && this.isBrowser) {
-        window.location.href = data.url;
+      if (data?.url && this.isBrowser && this.document.defaultView) {
+        this.document.defaultView.location.href = data.url;
       }
     } catch (e) {
       console.error('[PaywallComponent] Error starting checkout:', e);

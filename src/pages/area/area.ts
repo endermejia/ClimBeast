@@ -1,6 +1,5 @@
 import { LowerCasePipe } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -539,7 +538,6 @@ import { IS_BROWSER } from '../../app/is-browser';
       </section>
     </tui-scrollbar>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex grow min-h-0' },
 })
 export class AreaComponent {

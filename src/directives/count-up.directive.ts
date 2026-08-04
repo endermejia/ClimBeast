@@ -40,19 +40,28 @@ export class CountUpDirective {
     });
 
     this.destroyRef.onDestroy(() => {
-      if (this.isBrowser && this.animationFrameId) {
+      if (
+        this.isBrowser &&
+        typeof window !== 'undefined' &&
+        typeof cancelAnimationFrame !== 'undefined' &&
+        this.animationFrameId
+      ) {
         cancelAnimationFrame(this.animationFrameId);
       }
     });
   }
 
   private startAnimation(end: number, durationMS: number) {
-    if (!this.isBrowser) {
+    if (
+      !this.isBrowser ||
+      typeof window === 'undefined' ||
+      typeof requestAnimationFrame === 'undefined'
+    ) {
       this.currentValue.set(end);
       return;
     }
 
-    if (this.animationFrameId) {
+    if (this.animationFrameId && typeof cancelAnimationFrame !== 'undefined') {
       cancelAnimationFrame(this.animationFrameId);
     }
 

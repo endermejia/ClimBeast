@@ -546,6 +546,19 @@ export class RouteFormComponent {
     },
   });
 
+  protected readonly fullRouteDataResource = resource({
+    params: () => {
+      const data = this.effectiveRouteData();
+      return data?.id ? data.id : null;
+    },
+    loader: async ({ params: routeId }) => {
+      if (!routeId) return null;
+      const { data, error } = await this.routes.getById(routeId);
+      if (error || !data) return null;
+      return data;
+    },
+  });
+
   constructor() {
     // 1. If we have a target crag ID, ensure we find its area and set it
     effect(() => {
@@ -587,12 +600,19 @@ export class RouteFormComponent {
               eight_anu_route_slugs:
                 data.eight_anu_route_slugs || m.eight_anu_route_slugs || [],
             }));
-
-            if (data.id) {
-              this.fetchFullRouteData(data.id);
-            }
             this.isInitialized = true;
           }
+        });
+      }
+
+      // Sync full route data from resource
+      const fullRouteData = this.fullRouteDataResource.value();
+      if (fullRouteData) {
+        untracked(() => {
+          this.model.update((m) => ({
+            ...m,
+            eight_anu_route_slugs: fullRouteData.eight_anu_route_slugs || [],
+          }));
         });
       }
 
@@ -636,17 +656,6 @@ export class RouteFormComponent {
         }
       });
     });
-  }
-
-  private async fetchFullRouteData(id: number) {
-    const { data, error } = await this.routes.getById(id);
-    if (data && !error) {
-      this.model.update((m) => ({
-        ...m,
-        eight_anu_route_slugs: data.eight_anu_route_slugs || [],
-      }));
-      this.routeForm().reset();
-    }
   }
 
   async onSubmit(event: Event): Promise<void> {

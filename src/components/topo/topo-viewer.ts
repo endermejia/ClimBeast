@@ -90,6 +90,7 @@ interface RenderedRoute extends TopoRouteWithRoute {
             [alt]="topoName()"
             class="w-auto h-full max-w-none block object-cover"
             draggable="false"
+            loading="lazy"
             decoding="async"
             tabindex="0"
             (keydown.enter)="toggleFullscreen(!!topoImage())"
@@ -325,6 +326,8 @@ interface RenderedRoute extends TopoRouteWithRoute {
             [alt]="topoName()"
             class="w-full h-auto block max-w-none"
             draggable="false"
+            loading="lazy"
+            decoding="async"
             (load)="onImageLoad($event)"
           />
           @if (topoImage() && hasAccess()) {

@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   DestroyRef,
   ElementRef,
@@ -104,7 +103,6 @@ export type HomeFeedFilter =
 
 @Component({
   selector: 'app-home',
-  standalone: true,
   imports: [
     AscentsFeedComponent,
     CommonModule,
@@ -205,7 +203,6 @@ export type HomeFeedFilter =
       </tui-data-list>
     </ng-template>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'flex flex-1 flex-col min-h-0',
   },

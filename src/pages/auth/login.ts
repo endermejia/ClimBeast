@@ -1,7 +1,6 @@
 import { NgOptimizedImage } from '@angular/common';
 import {
   afterNextRender,
-  ChangeDetectionStrategy,
   Component,
   computed,
   inject,
@@ -316,7 +315,6 @@ import { isComplexPassword, isValidEmail } from '../../utils';
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'h-full' },
 })
 export class LoginComponent {

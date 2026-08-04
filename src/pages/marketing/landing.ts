@@ -1,5 +1,5 @@
 import { NgOptimizedImage } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiButton } from '@taiga-ui/core';
@@ -65,7 +65,6 @@ import { SeoService } from '../../services/seo.service';
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LandingComponent {
   private readonly seo = inject(SeoService);
