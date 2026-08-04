@@ -144,8 +144,9 @@ import { Themes } from '../../models';
         <!-- Logout -->
         <button
           type="button"
+          [tuiAppearance]="'secondary'"
           (click)="logout(); open = false"
-          class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-red-500/10 text-red-500 rounded-lg transition-colors text-left outline-none"
+          class="flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left outline-none cursor-pointer"
         >
           <tui-icon icon="@tui.log-out" class="opacity-70" />
           {{ 'auth.logout' | translate }}

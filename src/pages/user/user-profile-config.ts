@@ -881,7 +881,7 @@ interface Country {
               <button
                 tuiButton
                 iconStart="@tui.trash"
-                appearance="flat-destructive"
+                appearance="negative"
                 type="button"
                 size="m"
                 class="w-full justify-start group"
@@ -1001,7 +1001,7 @@ interface Country {
           </button>
           <button
             tuiButton
-            appearance="primary"
+            appearance="negative"
             [disabled]="profileForm.deleteEmail().value() !== userEmail()"
             (click)="confirmDeleteAccount(observer)"
           >

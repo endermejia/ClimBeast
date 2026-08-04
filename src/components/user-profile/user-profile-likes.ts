@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { TuiAppearance, TuiTitle } from '@taiga-ui/core';
+import { TuiAppearance, TuiIcon, TuiTitle } from '@taiga-ui/core';
 import { TuiSkeleton } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
 
@@ -35,6 +35,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
     TranslatePipe,
     TuiAppearance,
     TuiHeader,
+    TuiIcon,
     TuiSkeleton,
     TuiTitle,
   ],
@@ -42,9 +43,10 @@ import { EmptyStateComponent } from '../ui/empty-state';
     <div class="flex flex-col gap-8">
       <!-- Liked Areas -->
       <section class="grid gap-2">
-        <header tuiHeader>
-          <h3 tuiTitle>{{ 'likedAreas' | translate }}</h3>
-        </header>
+        <h3 class="font-bold text-lg flex items-center gap-2">
+          <tui-icon icon="@tui.map-pin" />
+          {{ 'likedAreas' | translate }}
+        </h3>
         <div class="grid gap-6 grid-cols-1 xl:grid-cols-2">
           @if (isLoading() && !likedAreas().length) {
             @for (_ of [1, 2, 3, 4]; track $index) {
@@ -93,9 +95,10 @@ import { EmptyStateComponent } from '../ui/empty-state';
 
       <!-- Liked Crags -->
       <section class="grid gap-2">
-        <header tuiHeader>
-          <h3 tuiTitle>{{ 'likedCrags' | translate }}</h3>
-        </header>
+        <h3 class="font-bold text-lg flex items-center gap-2">
+          <tui-icon icon="@tui.mountain" />
+          {{ 'likedCrags' | translate }}
+        </h3>
         <div class="grid gap-6 grid-cols-1 xl:grid-cols-2">
           @if (isLoading() && !likedCrags().length) {
             @for (_ of [1, 2, 3, 4]; track $index) {
@@ -151,9 +154,10 @@ import { EmptyStateComponent } from '../ui/empty-state';
 
       <!-- Liked Routes -->
       <section class="grid gap-2">
-        <header tuiHeader>
-          <h3 tuiTitle>{{ 'likedRoutes' | translate }}</h3>
-        </header>
+        <h3 class="font-bold text-lg flex items-center gap-2">
+          <tui-icon icon="@tui.route" />
+          {{ 'likedRoutes' | translate }}
+        </h3>
         <div class="min-w-0">
           @if (isLoading() && !likedRoutes().length) {
             <div class="grid gap-6 grid-cols-1 xl:grid-cols-2">
