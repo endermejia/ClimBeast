@@ -127,52 +127,50 @@ import { IS_BROWSER } from '../../app/is-browser';
           } @else {
             @let blockMessages = blockState().blockMessages;
             @let blockAscents = blockState().blockAscents;
-            <ng-container>
-              <ng-container nameActions>
-                <button
-                  [appearance]="
-                    blockMessages || blockAscents
-                      ? 'negative'
-                      : 'action-grayscale'
-                  "
-                  iconStart="@tui.ellipsis-vertical"
-                  size="s"
-                  tuiIconButton
-                  type="button"
-                  [tuiSkeleton]="loading"
-                  [tuiDropdown]="dropdownContent"
-                  [(tuiDropdownOpen)]="dropdownOpen"
-                >
-                  {{ 'options' | translate }}
-                </button>
-                <ng-template #dropdownContent>
-                  <tui-data-list>
-                    <button
-                      tuiOption
-                      [tuiAppearance]="blockMessages ? 'negative' : 'neutral'"
-                      iconStart="@tui.message-circle-off"
-                      (click)="toggleBlockMessages(); dropdownOpen.set(false)"
-                    >
-                      {{
-                        (blockMessages ? 'messagesBlocked' : 'blockMessages')
-                          | translate
-                      }}
-                    </button>
-                    <button
-                      tuiOption
-                      [tuiAppearance]="blockAscents ? 'negative' : 'neutral'"
-                      iconStart="@tui.bell-off"
-                      (click)="toggleHideAscents(); dropdownOpen.set(false)"
-                    >
-                      {{
-                        (blockAscents ? 'ascentsHidden' : 'hideAscents')
-                          | translate
-                      }}
-                    </button>
-                  </tui-data-list>
-                </ng-template>
-              </ng-container>
-            </ng-container>
+            <div nameActions class="inline-flex items-center">
+              <button
+                [appearance]="
+                  blockMessages || blockAscents
+                    ? 'negative'
+                    : 'action-grayscale'
+                "
+                iconStart="@tui.ellipsis-vertical"
+                size="s"
+                tuiIconButton
+                type="button"
+                [tuiSkeleton]="loading"
+                [tuiDropdown]="dropdownContent"
+                [(tuiDropdownOpen)]="dropdownOpen"
+              >
+                {{ 'options' | translate }}
+              </button>
+              <ng-template #dropdownContent>
+                <tui-data-list>
+                  <button
+                    tuiOption
+                    [tuiAppearance]="blockMessages ? 'negative' : 'neutral'"
+                    iconStart="@tui.message-circle-off"
+                    (click)="toggleBlockMessages(); dropdownOpen.set(false)"
+                  >
+                    {{
+                      (blockMessages ? 'messagesBlocked' : 'blockMessages')
+                        | translate
+                    }}
+                  </button>
+                  <button
+                    tuiOption
+                    [tuiAppearance]="blockAscents ? 'negative' : 'neutral'"
+                    iconStart="@tui.bell-off"
+                    (click)="toggleHideAscents(); dropdownOpen.set(false)"
+                  >
+                    {{
+                      (blockAscents ? 'ascentsHidden' : 'hideAscents')
+                        | translate
+                    }}
+                  </button>
+                </tui-data-list>
+              </ng-template>
+            </div>
           }
 
           <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2" extraInfo>
@@ -206,7 +204,7 @@ import { IS_BROWSER } from '../../app/is-browser';
             }
           </div>
 
-          <div class="flex gap-2" actions>
+          <div class="flex flex-wrap gap-2 min-w-0 max-w-full" actions>
             @if (!isOwnProfile()) {
               @let following = isFollowing();
               @let requested = isRequested();
@@ -230,7 +228,7 @@ import { IS_BROWSER } from '../../app/is-browser';
               <button
                 tuiButton
                 type="button"
-                appearance="secondary"
+                [appearance]="following || requested ? 'secondary' : 'primary'"
                 size="s"
                 [iconStart]="
                   following

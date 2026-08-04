@@ -56,20 +56,14 @@ import { AvatarUrlPipe } from '../../pipes';
       </div>
 
       <div class="min-w-0">
-        <div class="flex flex-wrap items-center gap-x-2">
-          <div class="flex items-center gap-2 min-w-0">
-            <h1
-              class="text-xl font-semibold wrap-anywhere min-w-0"
-              [tuiSkeleton]="loading() ? 'name lastName' : false"
-            >
-              {{ name() }}
-            </h1>
-            <ng-content select="[nameActions]" />
-          </div>
-
-          @if (hasActions()) {
-            <ng-content select="[actions]" />
-          }
+        <div class="flex items-center gap-2">
+          <h1
+            class="text-xl font-semibold wrap-anywhere min-w-0"
+            [tuiSkeleton]="loading() ? 'name lastName' : false"
+          >
+            {{ name() }}
+          </h1>
+          <ng-content select="[nameActions]" />
         </div>
 
         <div class="flex items-center gap-x-2 flex-wrap">
@@ -94,21 +88,29 @@ import { AvatarUrlPipe } from '../../pipes';
             </span>
           }
         </div>
+
+        <ng-content select="[extraInfo]" />
       </div>
 
       <div class="col-span-full mt-2 sm:col-[2_/_3]">
-        <span
-          class="wrap-anywhere opacity-80"
-          [tuiSkeleton]="
-            loading()
-              ? 'This text serves as the content behind the skeleton and adjusts the width.'
-              : false
-          "
-        >
-          {{ bio() }}
-        </span>
+        @if (bio() || loading()) {
+          <span
+            class="wrap-anywhere opacity-80 block mb-1"
+            [tuiSkeleton]="
+              loading()
+                ? 'This text serves as the content behind the skeleton and adjusts the width.'
+                : false
+            "
+          >
+            {{ bio() }}
+          </span>
+        }
 
-        <ng-content select="[extraInfo]" />
+        @if (hasActions()) {
+          <div class="mt-3 min-w-0 max-w-full">
+            <ng-content select="[actions]" />
+          </div>
+        }
       </div>
     </div>
   `,
