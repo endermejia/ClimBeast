@@ -25,9 +25,9 @@ import { take } from 'rxjs';
 
 import { SupabaseService } from '../../services/supabase.service';
 
-import { IS_BROWSER } from '../../app/is-browser';
-
 import { isComplexPassword, isValidEmail } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-login',

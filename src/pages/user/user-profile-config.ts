@@ -111,9 +111,9 @@ import {
   UserProfileDto,
 } from '../../models';
 
-import { IS_BROWSER } from '../../app/is-browser';
-
 import { isComplexPassword } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 interface Country {
   id: string;

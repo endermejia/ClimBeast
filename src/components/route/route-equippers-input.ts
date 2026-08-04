@@ -1,9 +1,9 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  effect,
   inject,
   input,
+  linkedSignal,
   resource,
   signal,
 } from '@angular/core';
@@ -86,7 +86,9 @@ export class RouteEquippersInputComponent {
   private readonly toast = inject(ToastService);
 
   route = input.required<RouteWithExtras>();
-  equippers = signal<readonly (EquipperDto | string)[]>([]);
+  equippers = linkedSignal<readonly (EquipperDto | string)[]>(
+    () => (this.route()?.equippers as EquipperDto[]) || [],
+  );
   searchQuery = signal('');
 
   protected readonly equipperStringify = (
@@ -115,15 +117,6 @@ export class RouteEquippersInputComponent {
       return (data as EquipperDto[]) || [];
     },
   });
-
-  constructor() {
-    effect(() => {
-      const route = this.route();
-      if (route) {
-        this.equippers.set((route.equippers as EquipperDto[]) || []);
-      }
-    });
-  }
 
   async onEquippersChange(
     newEquippers: readonly (EquipperDto | string)[],

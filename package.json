@@ -31,6 +31,9 @@
     ],
     "*.ts": [
       "node scripts/check-imports.mjs"
+    ],
+    "public/i18n/*.json": [
+      "node scripts/check-translations.mjs"
     ]
   },
   "private": true,

@@ -41,16 +41,17 @@ import {
   RouteAscentWithExtras,
 } from '../../models';
 
+import { AscentDatePipe, AvatarUrlPipe } from '../../pipes';
+import { getEmbedUrl, openPhotoViewer } from '../../utils';
+
 import { GradeComponent } from '../ui/avatar-grade';
 import { CustomCarouselComponent } from '../ui/custom-carousel';
 import { UserInfoHintComponent } from '../ui/user-info-hint';
 import { AscentCommentsComponent } from './ascent-comments';
 import { AscentLastCommentComponent } from './ascent-last-comment';
+
 import { AscentLikesComponent } from './ascent-likes';
 import { AscentTypeComponent } from './ascent-type';
-
-import { AscentDatePipe, AvatarUrlPipe } from '../../pipes';
-import { getEmbedUrl, openPhotoViewer } from '../../utils';
 
 @Component({
   selector: 'app-ascent-card',

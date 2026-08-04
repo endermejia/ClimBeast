@@ -16,10 +16,6 @@ import { AscentsService } from '../../services/ascents.service';
 import { FollowsService } from '../../services/follows.service';
 import { SupabaseService } from '../../services/supabase.service';
 
-import { AscentCardComponent } from '../ascent/ascent-card';
-import { UserProfileStatsScoreComponent } from '../user-profile/statistics/score-card';
-import { UserInfoComponent } from './user-info';
-
 import {
   RouteAscentWithExtras,
   RouteWithExtras,
@@ -32,6 +28,12 @@ import {
   getMaxGrade,
   mapAscentRouteToExtras,
 } from '../../utils';
+
+import { AscentCardComponent } from '../ascent/ascent-card';
+
+import { UserProfileStatsScoreComponent } from '../user-profile/statistics/score-card';
+
+import { UserInfoComponent } from './user-info';
 
 @Component({
   selector: 'app-user-info-hint',

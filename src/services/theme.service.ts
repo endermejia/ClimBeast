@@ -7,14 +7,15 @@ import {
   WritableSignal,
 } from '@angular/core';
 
-import { IS_BROWSER } from '../app/is-browser';
-
-import { LocalStorage } from './local-storage';
-import { SupabaseService } from './supabase.service';
-
 import { Theme, Themes } from '../models';
 
 import { triggerThemeTransition } from '../utils';
+
+import { IS_BROWSER } from '../app/is-browser';
+
+import { LocalStorage } from './local-storage';
+
+import { SupabaseService } from './supabase.service';
 
 /**
  * Manages theme state and transitions.
