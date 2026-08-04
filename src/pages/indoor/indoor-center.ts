@@ -17,13 +17,14 @@ import {
   TuiAppearance,
   TuiButton,
   TuiCarousel,
+  TuiCheckbox,
+  TuiDialogService,
+  TuiHint,
   TuiIcon,
   TuiLoader,
+  TuiNotification,
   TuiScrollbar,
   TuiTextfield,
-  TuiNotification,
-  TuiDialogService,
-  TuiCheckbox,
 } from '@taiga-ui/core';
 import {
   TuiAvatar,
@@ -62,6 +63,7 @@ import {
 } from '../../components/ui/custom-carousel';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { SectionHeaderComponent } from '../../components/ui/section-header';
+import { UserInfoHintComponent } from '../../components/ui/user-info-hint';
 
 import {
   IndoorCenterDto,
@@ -84,6 +86,11 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiAppearance,
     TuiAvatar,
     TuiButton,
+    TuiCheckbox,
+    TuiChevron,
+    TuiComboBox,
+    TuiDataListWrapper,
+    TuiHint,
     TuiIcon,
     TuiLoader,
     TuiScrollbar,
@@ -105,6 +112,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     AvatarUrlPipe,
     EmptyStateComponent,
     AscentCardComponent,
+    UserInfoHintComponent,
   ],
   template: `
     <tui-scrollbar class="flex grow">
@@ -300,6 +308,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                   >
                     <a
                       [routerLink]="['/profile', admin.user_id]"
+                      [tuiHint]="adminUserHint"
                       class="flex items-center gap-2 no-underline text-inherit cursor-pointer"
                     >
                       @if (admin.user.avatar) {
@@ -314,6 +323,13 @@ import { IS_BROWSER } from '../../app/is-browser';
                         admin.user.name
                       }}</span>
                     </a>
+                    <ng-template #adminUserHint>
+                      <app-user-info-hint
+                        [userId]="admin.user_id"
+                        [fallbackName]="admin.user.name"
+                        [fallbackAvatar]="admin.user.avatar"
+                      />
+                    </ng-template>
                     @if (isAdmin() && editingMode) {
                       <button
                         tuiIconButton

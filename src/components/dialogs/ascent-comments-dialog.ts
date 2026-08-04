@@ -19,6 +19,7 @@ import {
   TuiButton,
   TuiDialogContext,
   TuiDialogService,
+  TuiHint,
   TuiIcon,
   TuiLoader,
   TuiScrollbar,
@@ -40,6 +41,7 @@ import { AvatarUrlPipe, MentionLinkPipe } from '../../pipes';
 
 import { CommentLikesComponent } from '../social/comment-likes';
 import { EmptyStateComponent } from '../ui/empty-state';
+import { UserInfoHintComponent } from '../ui/user-info-hint';
 
 export interface AscentCommentsDialogData {
   ascentId: number;
@@ -60,22 +62,25 @@ export interface AscentCommentsDialogData {
     TranslatePipe,
     TuiAvatar,
     TuiButton,
+    TuiHint,
     TuiIcon,
     TuiLoader,
     TuiScrollbar,
+    UserInfoHintComponent,
   ],
   template: `
     <div class="flex flex-col h-[60dvh] min-h-[400px] -m-4">
       <tui-scrollbar class="grow min-h-0">
         <div class="flex flex-col gap-4 p-4">
           @for (comment of comments(); track comment.id) {
-            <div class="flex gap-3">
+            <div class="flex gap-3 items-start">
               <a
                 [routerLink]="['/profile', comment.user_id]"
                 (click)="context.completeWith()"
-                class="block hover:opacity-80 transition-opacity flex-none"
+                [tuiHint]="commentUserHint"
+                class="flex items-start gap-3 text-left no-underline text-inherit cursor-pointer group/user min-w-0"
               >
-                <span tuiAvatar size="s">
+                <span tuiAvatar size="s" class="flex-none">
                   @if (comment.user_profiles.avatar) {
                     <img
                       [src]="comment.user_profiles.avatar | avatarUrl"
@@ -85,17 +90,22 @@ export interface AscentCommentsDialogData {
                     <tui-icon icon="@tui.user" />
                   }
                 </span>
+                <span
+                  class="font-bold text-sm truncate group-hover/user:underline text-(--tui-text-primary) block pt-1"
+                >
+                  {{ comment.user_profiles.name }}
+                </span>
               </a>
+              <ng-template #commentUserHint>
+                <app-user-info-hint
+                  [userId]="comment.user_id"
+                  [fallbackName]="comment.user_profiles.name"
+                  [fallbackAvatar]="comment.user_profiles.avatar"
+                />
+              </ng-template>
               <div class="flex flex-col grow min-w-0">
-                <div class="flex justify-between items-start gap-2">
-                  <a
-                    [routerLink]="['/profile', comment.user_id]"
-                    (click)="context.completeWith()"
-                    class="font-bold text-sm truncate hover:underline text-(--tui-text-primary) cursor-pointer block min-w-0"
-                  >
-                    {{ comment.user_profiles.name }}
-                  </a>
-                  <span class="text-[10px] opacity-50 whitespace-nowrap pt-0.5">
+                <div class="flex justify-end items-start gap-2">
+                  <span class="text-[10px] opacity-50 whitespace-nowrap pt-1">
                     {{ comment.created_at | date: 'd/M/yy, HH:mm' }}
                   </span>
                 </div>

@@ -20,11 +20,12 @@ import { TuiDropdown } from '@taiga-ui/core';
 import {
   TuiAppearance,
   TuiButton,
+  TuiHint,
   TuiIcon,
+  TuiInput,
   TuiLabel,
   TuiLoader,
   TuiScrollbar,
-  TuiInput,
   TuiTextfield,
 } from '@taiga-ui/core';
 import {
@@ -65,6 +66,7 @@ import { AreaPaywallDialogComponent } from '../../components/paywall/area-paywal
 import { GradeComponent } from '../../components/ui/avatar-grade';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { SectionHeaderComponent } from '../../components/ui/section-header';
+import { UserInfoHintComponent } from '../../components/ui/user-info-hint';
 
 import {
   AreaDetail,
@@ -105,12 +107,14 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiComboBox,
     TuiDataListWrapper,
     TuiDropdown,
+    TuiHint,
     TuiIcon,
     TuiInput,
     TuiLabel,
     TuiLoader,
     TuiScrollbar,
     TuiTextfield,
+    UserInfoHintComponent,
   ],
   template: `
     <tui-scrollbar class="flex grow">
@@ -287,6 +291,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                   >
                     <a
                       [routerLink]="['/profile', admin.user_id]"
+                      [tuiHint]="adminUserHint"
                       class="flex items-center gap-2 no-underline text-inherit cursor-pointer"
                     >
                       @if (admin.user.avatar) {
@@ -301,6 +306,13 @@ import { IS_BROWSER } from '../../app/is-browser';
                         admin.user.name
                       }}</span>
                     </a>
+                    <ng-template #adminUserHint>
+                      <app-user-info-hint
+                        [userId]="admin.user_id"
+                        [fallbackName]="admin.user.name"
+                        [fallbackAvatar]="admin.user.avatar"
+                      />
+                    </ng-template>
                     @if (canEditAsAdmin) {
                       <button
                         tuiIconButton

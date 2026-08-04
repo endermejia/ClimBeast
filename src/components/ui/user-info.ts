@@ -33,8 +33,8 @@ import { AvatarUrlPipe } from '../../pipes';
         <span
           tuiAvatar
           [tuiSkeleton]="loading()"
-          size="xxl"
-          class="rounded-full! transition-transform"
+          [size]="avatarSize()"
+          class="rounded-full! overflow-hidden transition-transform"
           [class.cursor-pointer]="avatarClickable()"
           [class.hover:scale-105]="avatarClickable()"
           [class.active:scale-95]="avatarClickable()"
@@ -47,7 +47,11 @@ import { AvatarUrlPipe } from '../../pipes';
           (keydown.space)="$event.preventDefault(); avatarClick.emit()"
         >
           @if (avatar(); as photo) {
-            <img [src]="photo | avatarUrl" [alt]="name() || ''" />
+            <img
+              [src]="photo | avatarUrl"
+              [alt]="name() || ''"
+              class="w-full h-full object-cover rounded-full!"
+            />
           } @else {
             <tui-icon [icon]="defaultIcon()" />
           }
@@ -58,8 +62,18 @@ import { AvatarUrlPipe } from '../../pipes';
       <div class="min-w-0">
         <div class="flex items-center gap-2">
           <h1
-            class="text-xl font-semibold wrap-anywhere min-w-0"
+            class="font-semibold wrap-anywhere min-w-0"
+            [class.text-xl]="!compact()"
+            [class.text-base]="compact()"
+            [class.cursor-pointer]="nameClickable()"
+            [class.hover:underline]="nameClickable()"
             [tuiSkeleton]="loading() ? 'name lastName' : false"
+            [tabindex]="nameClickable() ? 0 : -1"
+            (click)="nameClickable() ? nameClick.emit() : null"
+            (keydown.enter)="nameClickable() ? nameClick.emit() : null"
+            (keydown.space)="
+              $event.preventDefault(); nameClickable() ? nameClick.emit() : null
+            "
           >
             {{ name() }}
           </h1>
@@ -119,6 +133,8 @@ import { AvatarUrlPipe } from '../../pipes';
 export class UserInfoComponent {
   hasActions = input<boolean>(false);
   loading = input<boolean>(false);
+  compact = input<boolean>(false);
+  avatarSize = input<'m' | 'l' | 'xl' | 'xxl'>('xxl');
   avatar = input<string | null | undefined>();
   name = input<string | null | undefined>();
   city = input<string | null | undefined>();
@@ -129,8 +145,10 @@ export class UserInfoComponent {
 
   defaultIcon = input<string>('@tui.user');
   avatarClickable = input<boolean>(false);
+  nameClickable = input<boolean>(false);
 
   avatarClick = output<void>();
+  nameClick = output<void>();
 
   protected readonly countriesNames = inject(TUI_COUNTRIES);
 }

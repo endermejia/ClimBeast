@@ -22,7 +22,7 @@ export class CountUpDirective {
   readonly target = input.required<number>({ alias: 'appCountUp' });
 
   // Duration in ms
-  readonly duration = input(800);
+  readonly duration = input(300);
 
   // The current value for template binding
   readonly currentValue = signal(0);
