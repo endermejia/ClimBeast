@@ -1,5 +1,6 @@
 export * from './array.utils';
 export * from './ascents.utils';
+export * from './auth.utils';
 export * from './crag-mappers';
 export * from './drawing.utils';
 export * from './feed-filters';

@@ -627,7 +627,7 @@
   "profile.avatar.upload.tooLarge": "Le fichier doit peser moins de 5 Mo.",
   "profile.bio.tooLong": "La biographie doit faire 50 caractères maximum.",
   "profile.birthDate.invalid": "Date de naissance invalide. Sélectionnez une date entre 01/01/1900 et aujourd'hui.",
-  "profile.city.tooLong": "Le nom de la ville doit faire 100 caractères maximum.",
+  "profile.city.tooLong": "La ville doit comporter 100 caractères ou moins.",
   "profile.country.invalid": "Sélectionnez un pays valide dans la liste.",
   "profile.deleteAccount.button": "Supprimer le compte",
   "profile.deleteAccount.instruction_prefix": "Saisissez votre e-mail ",

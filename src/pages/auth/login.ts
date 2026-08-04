@@ -28,6 +28,8 @@ import { SupabaseService } from '../../services/supabase.service';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
+import { isComplexPassword, isValidEmail } from '../../utils';
+
 @Component({
   selector: 'app-login',
   imports: [
@@ -345,24 +347,12 @@ export class LoginComponent {
   confirmPassword: WritableSignal<string> = signal('');
 
   // Validators
-  readonly emailValid = computed(() => /.+@.+\..+/.test(this.email().trim()));
+  readonly emailValid = computed(() => isValidEmail(this.email()));
 
-  private isComplexPassword(p: string): boolean {
-    return (
-      p.length >= 6 &&
-      /[A-Z]/.test(p) &&
-      /[a-z]/.test(p) &&
-      /[0-9]/.test(p) &&
-      /[^A-Za-z0-9]/.test(p)
-    );
-  }
-
-  readonly passwordValid = computed(() =>
-    this.isComplexPassword(this.password()),
-  );
+  readonly passwordValid = computed(() => isComplexPassword(this.password()));
 
   readonly newPasswordValid = computed(() =>
-    this.isComplexPassword(this.newPassword()),
+    isComplexPassword(this.newPassword()),
   );
 
   readonly canSignIn = computed(

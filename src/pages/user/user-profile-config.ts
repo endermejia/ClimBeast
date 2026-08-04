@@ -51,13 +51,14 @@ import {
   TuiInputDate,
   TuiInputNumber,
   TuiInputYear,
+  TuiPassword,
+  TuiPulse,
   TuiSegmented,
   TuiSelect,
   TuiShimmer,
   TuiSkeleton,
   TuiSwitch,
   TuiTextarea,
-  TuiPulse,
   type TuiConfirmData,
   TuiFlagPipe,
 } from '@taiga-ui/kit';
@@ -112,6 +113,8 @@ import {
 
 import { IS_BROWSER } from '../../app/is-browser';
 
+import { isComplexPassword } from '../../utils';
+
 interface Country {
   id: string;
   name: string;
@@ -146,6 +149,7 @@ interface Country {
     TuiInputNumber,
     TuiInputYear,
     TuiNotification,
+    TuiPassword,
     TuiPulse,
     TuiScrollbar,
     TuiSegmented,
@@ -852,6 +856,18 @@ interface Country {
             <div class="flex flex-col gap-3">
               <button
                 tuiButton
+                iconStart="@tui.lock"
+                appearance="outline"
+                type="button"
+                size="m"
+                class="w-full justify-start group"
+                (click)="openChangePasswordDialog(changePasswordDialog)"
+              >
+                {{ 'auth.setNewPassword' | translate }}
+              </button>
+
+              <button
+                tuiButton
                 iconStart="@tui.log-out"
                 appearance="secondary"
                 type="button"
@@ -878,6 +894,73 @@ interface Country {
         </div>
       </section>
     </tui-scrollbar>
+
+    <ng-template #changePasswordDialog let-observer>
+      <div class="flex flex-col gap-4">
+        <h3 tuiTitle>{{ 'auth.setNewPassword' | translate }}</h3>
+
+        <tui-textfield>
+          <label tuiLabel for="newPasswordInput">{{
+            'newPassword' | translate
+          }}</label>
+          <input
+            id="newPasswordInput"
+            tuiInput
+            type="password"
+            [ngModel]="passwordModel().newPassword"
+            (ngModelChange)="updatePasswordModel('newPassword', $event)"
+            autocomplete="new-password"
+          />
+          <tui-icon tuiPassword />
+        </tui-textfield>
+
+        <tui-textfield>
+          <label tuiLabel for="confirmPasswordInput">{{
+            'confirmPassword' | translate
+          }}</label>
+          <input
+            id="confirmPasswordInput"
+            tuiInput
+            type="password"
+            [ngModel]="passwordModel().confirmPassword"
+            (ngModelChange)="updatePasswordModel('confirmPassword', $event)"
+            autocomplete="new-password"
+          />
+          <tui-icon tuiPassword />
+        </tui-textfield>
+
+        @if (passwordError(); as errorMsg) {
+          <div tuiNotification appearance="negative">
+            {{ errorMsg }}
+          </div>
+        }
+
+        <div class="flex justify-end gap-2">
+          <button
+            tuiButton
+            appearance="secondary"
+            type="button"
+            (click)="observer.complete()"
+          >
+            {{ 'cancel' | translate }}
+          </button>
+          <button
+            tuiButton
+            appearance="primary"
+            type="button"
+            [disabled]="
+              isUpdatingPassword() ||
+              !passwordModel().newPassword ||
+              !passwordModel().confirmPassword ||
+              !!passwordError()
+            "
+            (click)="confirmChangePassword(observer)"
+          >
+            {{ 'accept' | translate }}
+          </button>
+        </div>
+      </div>
+    </ng-template>
 
     <ng-template #deleteDialog let-observer>
       <div class="flex flex-col gap-4">
@@ -1774,6 +1857,71 @@ export class UserProfileConfigComponent {
     } catch (e) {
       console.error('Error deleting account:', e);
       this.toast.error('errors.unexpected');
+    }
+  }
+
+  protected openChangePasswordDialog(
+    template: PolymorpheusContent<TuiDialogContext<void>>,
+  ): void {
+    this.passwordModel.set({ newPassword: '', confirmPassword: '' });
+    this.dialogs
+      .open(template, {
+        size: 'm',
+      })
+      .subscribe();
+  }
+
+  protected readonly passwordModel = signal({
+    newPassword: '',
+    confirmPassword: '',
+  });
+  protected isUpdatingPassword = signal(false);
+
+  protected updatePasswordModel(
+    key: 'newPassword' | 'confirmPassword',
+    value: string,
+  ): void {
+    this.passwordModel.update((m) => ({ ...m, [key]: value }));
+  }
+
+  protected readonly passwordError = computed(() => {
+    const { newPassword, confirmPassword } = this.passwordModel();
+    if (!newPassword && !confirmPassword) return null;
+    if (newPassword.length > 0 && !isComplexPassword(newPassword)) {
+      return this.translate.instant('auth.passwordRequirements', { min: 6 });
+    }
+    if (confirmPassword.length > 0 && newPassword !== confirmPassword) {
+      return this.translate.instant('errors.passwordMismatch');
+    }
+    return null;
+  });
+
+  async confirmChangePassword(observer: Observer<void>): Promise<void> {
+    const { newPassword, confirmPassword } = this.passwordModel();
+
+    if (
+      !newPassword ||
+      !isComplexPassword(newPassword) ||
+      newPassword !== confirmPassword
+    ) {
+      return;
+    }
+
+    this.isUpdatingPassword.set(true);
+    try {
+      const { error } = await this.supabase.updatePassword(newPassword);
+      if (error) {
+        console.error('Error updating password:', error);
+        this.toast.error(error.message || 'errors.unexpected');
+      } else {
+        this.toast.success('auth.passwordUpdated');
+        observer.complete();
+      }
+    } catch (e) {
+      console.error('Unexpected error updating password:', e);
+      this.toast.error('errors.unexpected');
+    } finally {
+      this.isUpdatingPassword.set(false);
     }
   }
 
