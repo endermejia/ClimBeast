@@ -19,3 +19,133 @@
 
 - SignedUrlCache usa CacheService con keys versionadas, pero no hay invalidación forzada.
 - Acción: Agregar mecanismo de invalidación cuando el archivo cambia.
+
+5. AscentsService sobredimensionado (1123 líneas)
+
+- Contiene lógica de CRUD, diálogos, notificaciones, comentarios, y estadísticas todas mezcladas.
+- Acción: Extraer AscentCrudService, AscentCommentsService, AscentStatsService.
+
+6. RoutesService sobredimensionado (908 líneas)
+
+- Mezcla apertura de diálogos CRUD con queries Supabase y lógica de cache.
+- Acción: Separar RouteCrudService (diálogos) de RouteQueryService (data fetching).
+
+7. IndoorService sobredimensionado (872 líneas)
+
+- Contiene CRUD de centers, routes, topos, vouchers, ascents, sales e inventory en un solo archivo.
+- Acción: Dividir en IndoorCenterService, IndoorRouteService, IndoorVoucherService.
+
+8. AreasService sobredimensionado (745 líneas)
+
+- Acumula CRUD de áreas, búsquedas 8a.nu, administración de accesos y unificación.
+- Acción: Extraer AreaAdminService (access management) y AreaUnifyService.
+
+9. user-profile-config.ts excesivamente grande (1939 líneas)
+
+- Componente de página con toda la lógica de perfil, preferencias, tour y 8a.nu en un solo archivo.
+- Acción: Dividir en sub-componentes: ProfileGeneralSectionComponent, ProfilePreferencesComponent, Profile8aSectionComponent, ProfileDangerZoneComponent.
+
+10. import-8a.ts excesivamente grande (1698 líneas)
+
+- Componente de importación con parsing CSV, matching de rutas, y UI de confirmación todo junto.
+- Acción: Extraer CsvParserService, RouteMatcherService, y dividir en componentes de cada paso.
+
+11. Falta de tests en servicios críticos
+
+- 46 servicios sin .spec.ts, incluyendo supabase.service.ts, outdoor-data.service.ts, indoor.service.ts, routes.service.ts, areas.service.ts, ascents.service.ts.
+- Acción: Crear tests unitarios para al menos los servicios de datos y auth (prioridad alta).
+
+12. Falta de tests en componentes principales
+
+- 105+ componentes sin .spec.ts, incluyendo navbar.ts (811 líneas), topo-viewer.ts, ascent-card.ts, todos los forms y dialogs.
+- Acción: Crear tests para componentes de alto uso: navbar, topo-viewer, ascent-card, y todos los forms.
+
+13. @defer sin @error en templates
+
+- Se usan 15 bloques @defer pero ninguno tiene @error block para manejar errores de carga lazy.
+- Acción: Agregar @error blocks con fallback UI (spinner o mensaje de error) en cada @defer.
+
+14. innerHTML sin sanitización consistente
+
+- 6 usos de innerHTML, incluyendo mention-link.pipe.ts que usa bypassSecurityTrustHtml.
+- Acción: Auditar cada uso; preferir interpolación de texto sobre innerHTML. Donde sea necesario, asegurar sanitización robusta.
+
+15. Uso excesivo de bypassSecurityTrust
+
+- 4 llamadas a bypassSecurityTrustHtml/Url/ResourceUrl en pipes y componentes.
+- Acción: Revisar cada caso; para mention-link.pipe.ts considerar una alternativa basada en componentes.
+
+16. Manifest PWA hardcodeado en español
+
+- manifest.webmanifest tiene "lang": "es" y descripción en español sin soporte multilingual.
+- Acción: Hacer que el manifest se genere dinámicamente o use las traducciones del usuario.
+
+17. Sitemap.xml estático e incompleto
+
+- Solo incluye /info y /login, falta /area (que es público y indexable según robots.txt).
+- Acción: Generar sitemap dinámicamente desde rutas, incluyendo áreas públicas.
+
+18. robots.txt bloquea /indoor pero no tiene Allow explícito para /area/
+
+- Las reglas Allow/Disallow son inconsistentes con las rutas realmente públicas.
+- Acción: Revisar robots.txt para alinearlo con las rutas que deben ser indexadas.
+
+19. Hardcoded Spanish text en landing page demo
+
+- mockCrag usa nombres españoles ("El Aéreo", "Agujas Rojas", "Vías clásicas") y el texto del demo card no se traduce.
+- Acción: Mover datos del mock a i18n keys o hacer que se adapte al idioma actual.
+
+20. Duplicación de patrón resource() + cache fallback
+
+- outdoor-data.service.ts e indoor-data.service.ts repiten el patrón: resource → cache.fetchOrCache → cache.get fallback, ~10 veces cada uno.
+- Acción: Crear un helper `cachedResource()` o `createCachedResource()` que encapsule este patrón.
+
+21. `await this.supabase.whenReady()` repetido 100+ veces
+
+- Prácticamente cada método de servicio repite esta línea antes de cada query Supabase.
+- Acción: Crear un wrapper `getClient()` que haga await internamente, o usar un proxy sobre `client`.
+
+22. CacheService usa localStorage sin TTL
+
+- Las entradas en cache no tienen expiración por defecto, solo un timestamp de escritura que nunca se consulta para expiración.
+- Acción: Agregar soporte TTL opcional en `set()` y limpiar entradas expiradas en `get()`.
+
+23. Faltan ARIA roles en componentes interactivos
+
+- Solo 13 `role=` explícitos en todo el proyecto; componentes como cards clickeables, botones de menú, y diálogos no siempre tienen roles.
+- Acción: Auditar componentes interactivos y agregar roles ARIA apropiados (button, dialog, navigation, etc.).
+
+24. Faltan aria-label en botones de icono
+
+- Varios botones de solo icono (favoritos, likes, comentarios) no tienen aria-label para lectores de pantalla.
+- Acción: Agregar `[attr.aria-label]` a todos los botones de solo icono.
+
+25. Navbar con 811 líneas y muchas dependencias
+
+- navbar.ts inyecta 11 servicios y maneja búsqueda, notificaciones, tour, carrito, y navegación.
+- Acción: Extraer SearchDropdownComponent, NotificationBadgeComponent, y TourTriggerComponent.
+
+26. topo-viewer.ts con lógica de interacción compleja (786 líneas)
+
+- Maneja zoom, pan, drag, touch events, fullscreen, y rutas SVG en un solo componente.
+- Acción: Extraer ZoomPanController (zoom/drag logic) y TopoRouteRenderer (SVG route rendering).
+
+27. chat-dialog.ts excesivamente grande (712 líneas)
+
+- Dialog de chat que probablemente mezcla UI, lógica de mensajes y conexión realtime.
+- Acción: Dividir en ChatMessageListComponent, ChatInputComponent, y ChatService dedicado.
+
+28. pyramid.ts con lógica de gráficos compleja (660 líneas)
+
+- Componente de pirámide de proyectos con rendering SVG y cálculos matemáticos.
+- Acción: Extraer PyramidCalculatorService y PyramidRendererComponent.
+
+29. Falta de preloading strategy para rutas admin
+
+- Todas las rutas admin se lazy-loadan pero no tienen preloading, causando flash al navegar.
+- Acción: Agregar preloading para rutas admin frecuentes (admin, my-areas).
+
+30. SEO service no actualiza hreflang dinámicamente
+
+- index.html tiene hreflang estáticos apuntando todos a la URL base.
+- Acción: Actualizar hreflang en SeoService.setPage() para reflejar la URL canónica por idioma.
