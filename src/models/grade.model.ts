@@ -216,7 +216,9 @@ export const ORDERED_GRADE_VALUES: readonly GradeLabel[] = Object.entries(
 export function bandForGradeLabel(
   g: GradeLabel | number | string,
 ): 0 | 1 | 2 | 3 | 4 | 5 {
-  if (!g) return 5;
+  if (!g || g === PROJECT_GRADE_LABEL || g === '?' || g === 0 || g === '0') {
+    return 5;
+  }
   const s = String(g);
   const base = parseInt(s.charAt(0), 10);
   if (!base) return 5;

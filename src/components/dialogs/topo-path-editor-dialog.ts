@@ -978,7 +978,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       map[key] = getRouteStyleProperties(
         isSelected,
         false,
-        entry._ref.route.grade.toString(),
+        entry._ref.route.grade,
         entry._ref.route.color || entry.color || entry._ref.path?.color,
       );
     }

@@ -6,19 +6,38 @@ import {
   colorForGrade,
 } from '../models';
 
-export function getRouteColor(grade: string | number): string {
-  const label = GRADE_NUMBER_TO_LABEL[grade as VERTICAL_LIFE_GRADES];
+export function getRouteColor(
+  grade: string | number | null | undefined,
+): string {
+  if (
+    grade === null ||
+    grade === undefined ||
+    grade === 0 ||
+    grade === '0' ||
+    grade === '?'
+  ) {
+    return GRADE_COLORS[5];
+  }
 
+  const label = GRADE_NUMBER_TO_LABEL[grade as VERTICAL_LIFE_GRADES] ?? grade;
   return colorForGrade(label as GradeLabel) || GRADE_COLORS[5];
 }
 
 export function getRouteStyleProperties(
   isSelected: boolean,
   isHovered: boolean,
-  grade: string | number,
+  grade: string | number | null | undefined,
   customColor?: string | null,
 ): { stroke: string; opacity: number; isDashed: boolean } {
-  const finalColor = customColor || getRouteColor(grade);
+  const isZero =
+    grade === null ||
+    grade === undefined ||
+    grade === 0 ||
+    grade === '0' ||
+    grade === '?';
+  const finalColor = isZero
+    ? GRADE_COLORS[5]
+    : customColor || getRouteColor(grade);
 
   // Opacity: Selected/Hovered = 1, Default = 0.8
   const opacity = isSelected || isHovered ? 1 : 0.8;
