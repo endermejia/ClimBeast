@@ -587,7 +587,7 @@ import { TourHintComponent } from './tour-hint';
                   </tui-badge-notification>
                 }
                 <tui-icon
-                  icon="@tui.shopping-bag"
+                  icon="@tui.store"
                   [style.color]="
                     shop.isActive
                       ? 'var(--tui-text-negative)'

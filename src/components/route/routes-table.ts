@@ -254,7 +254,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                     [routerLink]="[
                                       '/area',
                                       item.area_slug,
-                                      item.crag_slug,
+                                      item.crag_slug || 'general',
                                     ]"
                                   >
                                     {{ item.crag_name }}

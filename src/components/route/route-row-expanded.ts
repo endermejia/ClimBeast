@@ -324,7 +324,11 @@ import { RouteEquippersInputComponent } from './route-equippers-input';
             <span>/</span>
             <a
               tuiLink
-              [routerLink]="['/area', item.area_slug, item.crag_slug]"
+              [routerLink]="[
+                '/area',
+                item.area_slug,
+                item.crag_slug || 'general',
+              ]"
               (click)="$event.stopPropagation()"
             >
               {{ item.crag_name }}

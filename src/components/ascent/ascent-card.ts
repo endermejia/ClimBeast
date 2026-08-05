@@ -263,7 +263,7 @@ import { AscentTypeComponent } from './ascent-type';
                   [routerLink]="[
                     '/area',
                     ascent.route.area_slug,
-                    ascent.route.crag_slug,
+                    ascent.route.crag_slug || 'general',
                     ascent.route.slug,
                   ]"
                 >
@@ -276,7 +276,7 @@ import { AscentTypeComponent } from './ascent-type';
                     [routerLink]="[
                       '/area',
                       ascent.route.area_slug,
-                      ascent.route.crag_slug,
+                      ascent.route.crag_slug || 'general',
                     ]"
                   >
                     {{ ascent.route.crag_name }}

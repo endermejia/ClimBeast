@@ -836,10 +836,11 @@ export class Import8aComponent {
         }
 
         const locationName = getVal('location_name');
-        let sectorName = getVal('sector_name');
+        let sectorName = getVal('sector_name')?.trim();
 
-        // If sector_name is 'Unknown Sector', concatenate with location_name
-        if (sectorName === 'Unknown Sector') {
+        if (!sectorName) {
+          sectorName = 'General';
+        } else if (sectorName === 'Unknown Sector') {
           sectorName = `Unknown Sector ${locationName}`;
         }
 
@@ -1094,7 +1095,8 @@ export class Import8aComponent {
       const payload: Import8aPayload[] = ascents.map((a) => {
         const areaSlug = slugify(a.location_name);
         const area8aSlug = areaToSlug.get(a.location_name) || areaSlug;
-        const sectorSlug = slugify(a.sector_name);
+        const cleanSectorName = a.sector_name?.trim() || 'General';
+        const sectorSlug = slugify(cleanSectorName) || 'general';
         const crag8aSlug =
           sectorToCragSlug.get(`${areaSlug}|${sectorSlug}`) || sectorSlug;
 
@@ -1114,7 +1116,7 @@ export class Import8aComponent {
           area_name: a.location_name,
           area_slug: areaSlug,
           area_8a_slug: area8aSlug,
-          crag_name: a.sector_name,
+          crag_name: cleanSectorName,
           crag_slug: sectorSlug,
           crag_8a_slug: crag8aSlug,
           country_code: a.country_code,
