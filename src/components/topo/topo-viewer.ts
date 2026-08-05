@@ -214,7 +214,6 @@ interface RenderedRoute extends TopoRouteWithRoute {
                       stroke-linejoin="round"
                       stroke-linecap="round"
                       class="transition-all duration-300"
-                      [class.selected-line-glow]="isSel"
                     />
                     @if (tr.path.points[tr.path.points.length - 1]; as last) {
                       <circle
@@ -225,6 +224,8 @@ interface RenderedRoute extends TopoRouteWithRoute {
                         [style.opacity]="tr.style.opacity"
                         stroke="black"
                         [attr.stroke-width]="0.5"
+                        class="transition-all duration-300"
+                        [class.selected-circle-pulse]="isSel"
                       />
                     }
                   }

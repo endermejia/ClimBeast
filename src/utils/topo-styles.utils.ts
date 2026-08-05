@@ -35,9 +35,19 @@ export function getRouteStyleProperties(
     grade === 0 ||
     grade === '0' ||
     grade === '?';
+
+  const isValidCustomColor =
+    customColor &&
+    customColor !== 'var(--tui-background-accent-opposite)' &&
+    customColor !== '#000000' &&
+    customColor !== '#000' &&
+    customColor !== 'black';
+
   const finalColor = isZero
     ? GRADE_COLORS[5]
-    : customColor || getRouteColor(grade);
+    : isValidCustomColor
+      ? customColor
+      : getRouteColor(grade);
 
   // Opacity: Selected/Hovered = 1, Default = 0.8
   const opacity = isSelected || isHovered ? 1 : 0.8;

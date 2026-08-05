@@ -392,7 +392,6 @@ export interface TopoPathEditorConfig {
                       "
                       stroke-linejoin="round"
                       stroke-linecap="round"
-                      [class.selected-line-glow]="isSelected"
                     />
 
                     <!-- End dot -->
