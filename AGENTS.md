@@ -23,10 +23,11 @@ Within each group: alphabetically by import path.
 
 Before committing, ensure ALL of the following pass:
 
-1. `npm run format` — Prettier formatting
-2. `npm run lint` — ESLint passes
-3. `npm run check:imports` — Import ordering correct
-4. `npm test` — Tests pass
+1. `npm run build` — Compiles without errors (always run this before finishing any change)
+2. `npm run format` — Prettier formatting
+3. `npm run lint` — ESLint passes
+4. `npm run check:imports` — Import ordering correct
+5. `npm test` — Tests pass
 
 ## Component Conventions
 
