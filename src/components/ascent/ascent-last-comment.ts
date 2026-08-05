@@ -18,6 +18,8 @@ import { SupabaseService } from '../../services/supabase.service';
 
 import { AvatarUrlPipe, MentionLinkPipe } from '../../pipes';
 
+import { MentionHintDirective } from '../../directives/mention-hint.directive';
+
 import { CommentLikesComponent } from '../social/comment-likes';
 
 @Component({
@@ -27,6 +29,7 @@ import { CommentLikesComponent } from '../social/comment-likes';
     AvatarUrlPipe,
     CommentLikesComponent,
     CommonModule,
+    MentionHintDirective,
     MentionLinkPipe,
     TuiAvatar,
     TuiIcon,
@@ -54,6 +57,7 @@ import { CommentLikesComponent } from '../social/comment-likes';
             </span>
           </div>
           <p
+            appMentionHint
             class="text-xs line-clamp-2 wrap-break-word pl-1 opacity-90"
             [innerHTML]="comment.comment | mentionLink"
           ></p>

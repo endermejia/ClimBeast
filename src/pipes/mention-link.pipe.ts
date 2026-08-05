@@ -21,10 +21,11 @@ export class MentionLinkPipe implements PipeTransform {
     const linked = escaped.replace(MENTION_PATTERN, (_match, name, id) => {
       const sanitizedId = this.escapeHtml(id);
       const sanitizedName = this.escapeHtml(name);
-      return `<a class="mention-link font-bold hover:underline cursor-pointer text-(--tui-text-action)" href="/profile/${sanitizedId}" data-id="${sanitizedId}">@${sanitizedName}</a>`;
+      return `<a class="mention-link font-bold hover:underline cursor-pointer text-(--tui-text-action) select-none" oncontextmenu="event.preventDefault()" href="/profile/${sanitizedId}" data-id="${sanitizedId}" data-name="${sanitizedName}">@${sanitizedName}</a>`;
     });
 
-    const sanitized = this.sanitizer.sanitize(SecurityContext.HTML, linked);
+    const trusted = this.sanitizer.bypassSecurityTrustHtml(linked);
+    const sanitized = this.sanitizer.sanitize(SecurityContext.HTML, trusted);
     return sanitized ?? '';
   }
 

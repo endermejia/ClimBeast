@@ -309,7 +309,8 @@ import { IS_BROWSER } from '../../app/is-browser';
                     <a
                       [routerLink]="['/profile', admin.user_id]"
                       [tuiHint]="adminUserHint"
-                      class="flex items-center gap-2 no-underline text-inherit cursor-pointer"
+                      (contextmenu.zoneless)="$event.preventDefault()"
+                      class="flex items-center gap-2 no-underline text-inherit cursor-pointer select-none"
                     >
                       @if (admin.user.avatar) {
                         <span tuiAvatar size="s">

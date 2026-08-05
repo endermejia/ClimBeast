@@ -372,6 +372,37 @@ tui-textfield:has(tui-input-chip) label[tuilabel] {
   -ms-user-select: none !important;
 }
 
+/* Prevent native mobile link callout & context menu on hint links */
+a[tuiHint],
+[tuiHint],
+.mention-link {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+.mention-hint-overlay-panel {
+  z-index: 10000 !important;
+  width: 21.5rem !important;
+  max-width: calc(100vw - 2rem) !important;
+  background-color: var(
+    --tui-background-elevation-1,
+    var(--tui-background-base)
+  ) !important;
+  color: var(--tui-text-primary) !important;
+  border: 1px solid var(--tui-border-normal) !important;
+  border-radius: var(--tui-radius-l, 1.25rem) !important;
+  box-shadow: var(
+    --tui-shadow-popup,
+    0 12px 32px rgba(0, 0, 0, 0.4)
+  ) !important;
+  padding: 0.75rem !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  overflow: hidden !important;
+  pointer-events: auto !important;
+}
+
 /* Theme transition effect using View Transitions API */
 ::view-transition-old(root),
 ::view-transition-new(root) {

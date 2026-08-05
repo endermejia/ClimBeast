@@ -427,6 +427,7 @@ export class TopoFormComponent {
     {
       cragId?: number;
       topoData?: TopoDetail;
+      outdoorData?: TopoDetail;
       initialRouteIds?: (number | string)[];
       type?: 'indoor' | 'outdoor';
       centerId?: string;
@@ -441,6 +442,7 @@ export class TopoFormComponent {
           {
             cragId?: number;
             topoData?: TopoDetail;
+            outdoorData?: TopoDetail;
             initialRouteIds?: (number | string)[];
             type?: 'indoor' | 'outdoor';
             centerId?: string;
@@ -490,7 +492,7 @@ export class TopoFormComponent {
         })),
       } as unknown as TopoDetail;
     }
-    return data.topoData;
+    return data.outdoorData || data.topoData;
   });
   private readonly initialRouteIds =
     this._dialogCtx?.data?.initialRouteIds ?? [];
@@ -690,6 +692,24 @@ export class TopoFormComponent {
           name: data.name,
           photo: data.image_url || data.photo || null,
           legacy: data.legacy || false,
+        }));
+      },
+      { allowSignalWrites: true },
+    );
+
+    // Eagerly initialize metadata fields for outdoor topo editing
+    effect(
+      () => {
+        if (this.isIndoor()) return;
+        const data = this.effectiveTopoData();
+        if (!data) return;
+        this.model.update((m) => ({
+          ...m,
+          name: data.name,
+          photo: data.photo,
+          shade_morning: data.shade_morning,
+          shade_afternoon: data.shade_afternoon,
+          shade_change_hour: data.shade_change_hour,
         }));
       },
       { allowSignalWrites: true },

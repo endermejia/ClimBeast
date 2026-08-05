@@ -39,6 +39,8 @@ import { UserProfileBasicDto } from '../../models';
 
 import { AvatarUrlPipe, MentionLinkPipe } from '../../pipes';
 
+import { MentionHintDirective } from '../../directives/mention-hint.directive';
+
 import { CommentLikesComponent } from '../social/comment-likes';
 import { EmptyStateComponent } from '../ui/empty-state';
 import { UserInfoHintComponent } from '../ui/user-info-hint';
@@ -57,6 +59,7 @@ export interface AscentCommentsDialogData {
     DatePipe,
     EmptyStateComponent,
     FormsModule,
+    MentionHintDirective,
     MentionLinkPipe,
     RouterLink,
     TranslatePipe,
@@ -78,9 +81,10 @@ export interface AscentCommentsDialogData {
                 [routerLink]="['/profile', comment.user_id]"
                 (click)="context.completeWith()"
                 [tuiHint]="commentUserHint"
-                class="flex items-start gap-3 text-left no-underline text-inherit cursor-pointer group/user min-w-0"
+                (contextmenu.zoneless)="$event.preventDefault()"
+                class="flex-none no-underline text-inherit cursor-pointer select-none"
               >
-                <span tuiAvatar size="s" class="flex-none">
+                <span tuiAvatar size="s">
                   @if (comment.user_profiles.avatar) {
                     <img
                       [src]="comment.user_profiles.avatar | avatarUrl"
@@ -89,11 +93,6 @@ export interface AscentCommentsDialogData {
                   } @else {
                     <tui-icon icon="@tui.user" />
                   }
-                </span>
-                <span
-                  class="font-bold text-sm truncate group-hover/user:underline text-(--tui-text-primary) block pt-1"
-                >
-                  {{ comment.user_profiles.name }}
                 </span>
               </a>
               <ng-template #commentUserHint>
@@ -104,12 +103,24 @@ export interface AscentCommentsDialogData {
                 />
               </ng-template>
               <div class="flex flex-col grow min-w-0">
-                <div class="flex justify-end items-start gap-2">
-                  <span class="text-[10px] opacity-50 whitespace-nowrap pt-1">
+                <div class="flex justify-between items-center gap-2">
+                  <a
+                    [routerLink]="['/profile', comment.user_id]"
+                    (click)="context.completeWith()"
+                    [tuiHint]="commentUserHint"
+                    (contextmenu.zoneless)="$event.preventDefault()"
+                    class="font-bold text-sm truncate hover:underline text-(--tui-text-primary) no-underline cursor-pointer select-none"
+                  >
+                    {{ comment.user_profiles.name }}
+                  </a>
+                  <span
+                    class="text-[10px] opacity-50 whitespace-nowrap flex-none"
+                  >
                     {{ comment.created_at | date: 'd/M/yy, HH:mm' }}
                   </span>
                 </div>
                 <p
+                  appMentionHint
                   class="text-sm whitespace-pre-wrap wrap-break-word"
                   [innerHTML]="comment.comment | mentionLink"
                 ></p>

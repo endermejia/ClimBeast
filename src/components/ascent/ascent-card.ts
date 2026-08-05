@@ -100,7 +100,8 @@ import { AscentTypeComponent } from './ascent-type';
           <a
             [routerLink]="['/profile', ascent.user_id]"
             [tuiHint]="userHintTemplate"
-            class="flex items-center gap-3 no-underline text-inherit cursor-pointer group/user"
+            (contextmenu.zoneless)="$event.preventDefault()"
+            class="flex items-center gap-3 no-underline text-inherit cursor-pointer group/user select-none"
           >
             <span tuiAvatar size="s">
               @if (ascent.user?.avatar; as avatar) {
