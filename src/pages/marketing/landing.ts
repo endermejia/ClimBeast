@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 
 import { TuiButton, TuiIcon, TuiTitle } from '@taiga-ui/core';
 import { TuiAvatar, TuiBadge } from '@taiga-ui/kit';
-import { TuiCardLarge, TuiHeader } from '@taiga-ui/layout';
+import { TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -28,7 +28,6 @@ import { CragListItem, VERTICAL_LIFE_GRADES } from '../../models';
     TuiAvatar,
     TuiBadge,
     TuiButton,
-    TuiCardLarge,
     TuiHeader,
     TuiIcon,
     TuiTitle,
