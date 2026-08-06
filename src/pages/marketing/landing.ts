@@ -56,12 +56,12 @@ import { CragListItem, VERTICAL_LIFE_GRADES } from '../../models';
                 priority
               />
             </div>
-            <h1
+            <span
               tuiTitle
               class="font-extrabold! tracking-tight text-3xl sm:text-4xl"
             >
               {{ 'appName' | translate }}
-            </h1>
+            </span>
           </div>
 
           <div class="hidden sm:flex items-center gap-2">
@@ -95,11 +95,11 @@ import { CragListItem, VERTICAL_LIFE_GRADES } from '../../models';
             class="w-40 h-40 sm:w-48 sm:h-48 object-contain mx-auto"
           />
           <div class="flex flex-col items-start gap-5 text-left w-full">
-            <h2
+            <h1
               class="text-4xl sm:text-5xl lg:text-6xl font-black! text-(--tui-text-primary) leading-tight tracking-tight w-full"
             >
               {{ 'landing.heroTitle' | translate }}
-            </h2>
+            </h1>
             <p
               class="text-base sm:text-lg text-(--tui-text-secondary) leading-relaxed font-normal w-full"
             >

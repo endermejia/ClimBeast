@@ -56,8 +56,8 @@ export class SeoService {
     this.updateOgTag('og:description', description);
     this.updateOgTag('og:url', canonicalUrl);
     this.updateOgTag('og:image', imageUrl);
-    this.updateOgTag('og:image:width', '1200');
-    this.updateOgTag('og:image:height', '630');
+    this.updateOgTag('og:image:width', '3000');
+    this.updateOgTag('og:image:height', '2171');
     this.updateOgTag('og:image:alt', brandedTitle);
     this.updateOgTag('og:locale', 'es_ES');
     this.updateOgTag('og:type', type);
