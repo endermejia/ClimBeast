@@ -64,6 +64,7 @@ export class SeoService {
     this.updateOgTag('og:site_name', APP_NAME);
 
     this.setCanonical(canonicalUrl);
+    this.setHreflang(canonicalUrl);
   }
 
   /**
@@ -71,7 +72,9 @@ export class SeoService {
    * Just resets canonical to current URL.
    */
   resetToDefault(): void {
-    this.setCanonical(this.getCurrentUrl());
+    const currentUrl = this.getCurrentUrl();
+    this.setCanonical(currentUrl);
+    this.setHreflang(currentUrl);
   }
 
   private getCurrentUrl(): string {
@@ -100,5 +103,22 @@ export class SeoService {
       this.doc.head.appendChild(link);
     }
     link.setAttribute('href', url);
+  }
+
+  private setHreflang(url: string): void {
+    if (!this.doc) return;
+    const hreflangs = ['es', 'en', 'x-default'];
+    hreflangs.forEach((lang) => {
+      let link: HTMLLinkElement | null = this.doc.querySelector(
+        `link[rel="alternate"][hreflang="${lang}"]`,
+      );
+      if (!link) {
+        link = this.doc.createElement('link');
+        link.setAttribute('rel', 'alternate');
+        link.setAttribute('hreflang', lang);
+        this.doc.head.appendChild(link);
+      }
+      link.setAttribute('href', url);
+    });
   }
 }

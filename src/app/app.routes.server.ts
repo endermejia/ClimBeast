@@ -125,10 +125,6 @@ export const serverRoutes: ServerRoute[] = [
       return [];
     },
   },
-  {
-    path: 'chat/:roomId',
-    renderMode: RenderMode.Server,
-  },
   // Fallback routes
   {
     path: '',

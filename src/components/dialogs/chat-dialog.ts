@@ -534,6 +534,10 @@ export class ChatDialogComponent implements OnDestroy {
   }
 
   protected onSelectRoom(room: ChatRoomWithParticipant) {
+    if (this.selectedRoom()?.id === room.id) {
+      void this.messagingService.markAsRead(room.id);
+      return;
+    }
     this.selectedRoom.set(room);
     this.messagesOffset.set(0);
     this.accumulatedMessages.set([]);

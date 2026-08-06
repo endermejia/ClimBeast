@@ -1,14 +1,18 @@
 User-agent: *
 Allow: /
 Allow: /info
-Allow: /area
-Allow: /area/
+Allow: /login
 
-# Private / authenticated sections – no public SEO value
+# Authenticated app routes – protected by authGuard
 Disallow: /home
+Disallow: /area
+Disallow: /area/
+Disallow: /explore
+Disallow: /indoor
+Disallow: /indoor/
+Disallow: /merchandising
 Disallow: /profile
 Disallow: /profile/
-Disallow: /explore
 Disallow: /admin
 Disallow: /admin/
 Disallow: /my-areas

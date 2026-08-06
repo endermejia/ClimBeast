@@ -64,4 +64,15 @@ describe('SeoService', () => {
     const canonical = document.querySelector('link[rel="canonical"]');
     expect(canonical?.getAttribute('href')).toBe('https://example.com/page');
   });
+
+  it('should set hreflang URLs', () => {
+    service.setPage({
+      title: 'Test',
+      canonicalUrl: 'https://example.com/page',
+    });
+    const hreflangEs = document.querySelector(
+      'link[rel="alternate"][hreflang="es"]',
+    );
+    expect(hreflangEs?.getAttribute('href')).toBe('https://example.com/page');
+  });
 });
