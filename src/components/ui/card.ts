@@ -3,9 +3,11 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { TuiIcon, TuiTitle } from '@taiga-ui/core';
 import { TuiCardLarge, TuiHeader } from '@taiga-ui/layout';
 
+import { TranslatePipe } from '@ngx-translate/core';
+
 @Component({
   selector: 'app-card',
-  imports: [TuiCardLarge, TuiHeader, TuiIcon, TuiTitle],
+  imports: [TranslatePipe, TuiCardLarge, TuiHeader, TuiIcon, TuiTitle],
   template: `
     <div
       tuiCardLarge
@@ -23,6 +25,7 @@ import { TuiCardLarge, TuiHeader } from '@taiga-ui/layout';
             <tui-icon
               icon="@tui.heart"
               class="shrink-0"
+              [attr.aria-label]="'favorite' | translate"
               style="font-size: 1.5rem; color: var(--tui-background-accent-2)"
             />
           }

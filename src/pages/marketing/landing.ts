@@ -393,11 +393,12 @@ import { CragListItem, VERTICAL_LIFE_GRADES } from '../../models';
 
           <div class="flex items-center gap-6">
             <a
-              routerLink="/info"
+              routerLink="/login"
               class="hover:underline text-(--tui-text-secondary)"
             >
-              {{ 'about' | translate }}
+              {{ 'landing.exploreApp' | translate }}
             </a>
+            <span>•</span>
             <a
               routerLink="/login"
               [queryParams]="{ register: 'true' }"

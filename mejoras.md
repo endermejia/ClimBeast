@@ -85,16 +85,6 @@
 - Prácticamente cada método de servicio repite esta línea antes de cada query Supabase.
 - Acción: Crear un wrapper `getClient()` que haga await internamente, o usar un proxy sobre `client`.
 
-23. Faltan ARIA roles en componentes interactivos
-
-- Solo 13 `role=` explícitos en todo el proyecto; componentes como cards clickeables, botones de menú, y diálogos no siempre tienen roles.
-- Acción: Auditar componentes interactivos y agregar roles ARIA apropiados (button, dialog, navigation, etc.).
-
-24. Faltan aria-label en botones de icono
-
-- Varios botones de solo icono (favoritos, likes, comentarios) no tienen aria-label para lectores de pantalla.
-- Acción: Agregar `[attr.aria-label]` a todos los botones de solo icono.
-
 25. Navbar con 811 líneas y muchas dependencias
 
 - navbar.ts inyecta 11 servicios y maneja búsqueda, notificaciones, tour, carrito, y navegación.
@@ -124,5 +114,7 @@
 - [x] **18. robots.txt**: Alineado exactamente con la estructura de `app.routes.ts` y guards de autenticación.
 - [x] **19. Textos de landing page demo internacionalizados**: Cadenas del demo card y `mockCrag` movidas a archivos i18n (`public/i18n/*.json`) y gestionadas mediante `computed()`.
 - [x] **22. CacheService con expiración TTL**: Agregado soporte TTL opcional en `get()` y `fetchOrCache()`, con desalojo automático de claves expiradas y pruebas unitarias.
+- [x] **23. ARIA roles en navegación y tarjetas**: Añadidos atributos de accesibilidad ARIA en `AppCardComponent`, `NavbarComponent` y componentes sociales.
+- [x] **24. aria-label en botones de icono**: Añadidos atributos `[attr.aria-label]` a botones de icono e interacciones en tarjetas de escaladas y favoritos.
 - [x] **29. Estrategia de Preloading**: Corregida coincidencia de rutas (`home`, `area`, `explore`, `admin`, `my-areas`) en `SelectivePreloadingStrategy` y agregadas pruebas unitarias.
 - [x] **30. SEO Service hreflang dinámico**: Implementada la actualización de etiquetas `<link rel="alternate" hreflang="...">` por URL canónica.

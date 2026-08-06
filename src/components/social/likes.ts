@@ -33,6 +33,7 @@ import { TranslatePipe } from '@ngx-translate/core';
           [size]="size()"
           appearance="action-grayscale"
           class="pr-1! pl-1! h-auto!"
+          [attr.aria-label]="'likes' | translate"
           (click)="onShowLikes($event)"
         >
           {{ likesCount() }}
