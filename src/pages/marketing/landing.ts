@@ -1,5 +1,10 @@
 import { NgOptimizedImage } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiButton, TuiIcon, TuiTitle } from '@taiga-ui/core';
@@ -254,17 +259,23 @@ import { CragListItem, VERTICAL_LIFE_GRADES } from '../../models';
                   </span>
                   <div class="flex flex-col">
                     <span class="font-bold text-sm">Ana García</span>
-                    <span class="text-xs"> hace 2 horas</span>
+                    <span class="text-xs">{{
+                      'landing.demo.ascentTime' | translate
+                    }}</span>
                   </div>
                 </div>
-                <span tuiBadge appearance="neutral" size="s">Siguiendo</span>
+                <span tuiBadge appearance="neutral" size="s">{{
+                  'followingStatus' | translate
+                }}</span>
               </header>
 
               <div class="flex flex-col gap-1">
                 <div class="text-lg leading-tight">
                   <span class="font-bold">Hay bruneta</span>
                   <span class="mx-1.5 opacity-70 text-sm">&bull;</span>
-                  <span class="text-sm opacity-70">Aéreo (Agujas Rojas)</span>
+                  <span class="text-sm opacity-70"
+                    >{{ mockCrag().name }} ({{ mockCrag().area_name }})</span
+                  >
                 </div>
                 <div
                   class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"
@@ -277,7 +288,7 @@ import { CragListItem, VERTICAL_LIFE_GRADES } from '../../models';
               <p
                 class="text-sm italic border-l-2 border-(--tui-border-normal) pl-3 py-1 self-start"
               >
-                "Vía preciosa, la roca espectacular."
+                {{ 'landing.demo.ascentComment' | translate }}
               </p>
 
               <footer class="flex flex-col gap-1 mt-2">
@@ -357,44 +368,36 @@ import { CragListItem, VERTICAL_LIFE_GRADES } from '../../models';
             </div>
           </div>
           <div class="w-full lg:w-96 shrink-0 shadow-lg rounded-3xl">
-            <app-crag-card [crag]="mockCrag" />
+            <app-crag-card [crag]="mockCrag()" />
           </div>
         </section>
       </main>
 
       <!-- Footer -->
       <footer
-        class="border-t border-(--tui-border-normal) py-6 px-4 sm:px-8 bg-(--tui-background-neutral-1)"
+        class="border-t border-(--tui-border-normal) bg-(--tui-background-neutral-1) py-12 px-4 sm:px-8 mt-24"
       >
         <div
-          class="max-w-6xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-(--tui-text-tertiary)"
+          class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 text-sm opacity-70"
         >
-          <div class="flex items-center gap-2 whitespace-nowrap">
-            <div class="relative w-5 h-5">
-              <img
-                ngSrc="/logo/climbeast.svg"
-                alt="ClimBeast Logo"
-                fill
-                class="object-contain"
-              />
-            </div>
-            <span class="font-bold text-sm text-(--tui-text-primary)">{{
-              'appName' | translate
-            }}</span>
-            <span class="font-normal text-xs text-(--tui-text-secondary)"
-              >| {{ 'climbeast.subtitle' | translate }}</span
-            >
-            <span class="text-xs">© {{ currentYear }}</span>
+          <div class="flex items-center gap-3">
+            <img
+              ngSrc="/logo/climbeast.svg"
+              alt="ClimBeast"
+              width="24"
+              height="24"
+              class="w-6 h-6 object-contain"
+            />
+            <span>ClimBeast &copy; {{ currentYear }}</span>
           </div>
 
-          <div class="flex items-center gap-4 font-medium">
+          <div class="flex items-center gap-6">
             <a
-              routerLink="/login"
+              routerLink="/info"
               class="hover:underline text-(--tui-text-secondary)"
             >
-              {{ 'landing.exploreApp' | translate }}
+              {{ 'about' | translate }}
             </a>
-            <span>•</span>
             <a
               routerLink="/login"
               [queryParams]="{ register: 'true' }"
@@ -414,12 +417,13 @@ export class LandingComponent {
 
   protected readonly currentYear = new Date().getFullYear();
 
-  protected readonly mockCrag: CragListItem = {
+  protected readonly mockCrag = computed<CragListItem>(() => ({
     id: 1,
-    name: 'El Aéreo',
+    name: this.translate.instant('landing.demo.mockCragName') || 'Aéreo',
     slug: 'el-aereo',
     area_id: 1,
-    area_name: 'Agujas Rojas',
+    area_name:
+      this.translate.instant('landing.demo.mockAreaName') || 'Agujas Rojas',
     area_slug: 'agujas-rojas',
     routes_count: 12,
     topos_count: 2,
@@ -432,8 +436,19 @@ export class LandingComponent {
     sun_all_day: false,
     user_creator_id: 'mock-user-creator',
     topos: [
-      { id: 1, name: 'Vías clásicas', slug: 'clasicas' },
-      { id: 2, name: 'Placa y desplome', slug: 'placa-desplome' },
+      {
+        id: 1,
+        name:
+          this.translate.instant('landing.demo.mockTopo1') || 'Vías clásicas',
+        slug: 'clasicas',
+      },
+      {
+        id: 2,
+        name:
+          this.translate.instant('landing.demo.mockTopo2') ||
+          'Placa y desplome',
+        slug: 'placa-desplome',
+      },
     ],
     grades: {
       [VERTICAL_LIFE_GRADES.G6a]: 2,
@@ -443,7 +458,7 @@ export class LandingComponent {
       [VERTICAL_LIFE_GRADES.G7b]: 1,
       [VERTICAL_LIFE_GRADES.G7c]: 1,
     },
-  };
+  }));
 
   constructor() {
     this.seo.setPage({

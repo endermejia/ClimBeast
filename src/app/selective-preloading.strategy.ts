@@ -3,7 +3,7 @@ import { PreloadingStrategy, Route } from '@angular/router';
 
 import { Observable, of } from 'rxjs';
 
-const HIGH_DEMAND_ROUTES = ['/home', '/area'];
+const HIGH_DEMAND_ROUTES = ['home', 'area', 'explore', 'admin', 'my-areas'];
 
 @Injectable({ providedIn: 'root' })
 export class SelectivePreloadingStrategy implements PreloadingStrategy {
@@ -11,7 +11,8 @@ export class SelectivePreloadingStrategy implements PreloadingStrategy {
     const path = route.path;
     if (
       path &&
-      HIGH_DEMAND_ROUTES.some((p) => path === p || path.startsWith(p + '/'))
+      (route.data?.['preload'] === true ||
+        HIGH_DEMAND_ROUTES.some((p) => path === p || path.startsWith(p + '/')))
     ) {
       return load();
     }

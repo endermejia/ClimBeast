@@ -60,11 +60,6 @@
 - 105+ componentes sin .spec.ts, incluyendo navbar.ts (811 líneas), topo-viewer.ts, ascent-card.ts, todos los forms y dialogs.
 - Acción: Crear tests para componentes de alto uso: navbar, topo-viewer, ascent-card, y todos los forms.
 
-13. @defer sin @error en templates
-
-- Se usan 15 bloques @defer pero ninguno tiene @error block para manejar errores de carga lazy.
-- Acción: Agregar @error blocks con fallback UI (spinner o mensaje de error) en cada @defer.
-
 14. innerHTML sin sanitización consistente
 
 - 6 usos de innerHTML, incluyendo mention-link.pipe.ts que usa bypassSecurityTrustHtml.
@@ -80,21 +75,6 @@
 - manifest.webmanifest tiene "lang": "es" y descripción en español sin soporte multilingual.
 - Acción: Hacer que el manifest se genere dinámicamente o use las traducciones del usuario.
 
-17. Sitemap.xml estático e incompleto
-
-- Solo incluye /info y /login, falta /area (que es público y indexable según robots.txt).
-- Acción: Generar sitemap dinámicamente desde rutas, incluyendo áreas públicas.
-
-18. robots.txt bloquea /indoor pero no tiene Allow explícito para /area/
-
-- Las reglas Allow/Disallow son inconsistentes con las rutas realmente públicas.
-- Acción: Revisar robots.txt para alinearlo con las rutas que deben ser indexadas.
-
-19. Hardcoded Spanish text en landing page demo
-
-- mockCrag usa nombres españoles ("El Aéreo", "Agujas Rojas", "Vías clásicas") y el texto del demo card no se traduce.
-- Acción: Mover datos del mock a i18n keys o hacer que se adapte al idioma actual.
-
 20. Duplicación de patrón resource() + cache fallback
 
 - outdoor-data.service.ts e indoor-data.service.ts repiten el patrón: resource → cache.fetchOrCache → cache.get fallback, ~10 veces cada uno.
@@ -104,11 +84,6 @@
 
 - Prácticamente cada método de servicio repite esta línea antes de cada query Supabase.
 - Acción: Crear un wrapper `getClient()` que haga await internamente, o usar un proxy sobre `client`.
-
-22. CacheService usa localStorage sin TTL
-
-- Las entradas en cache no tienen expiración por defecto, solo un timestamp de escritura que nunca se consulta para expiración.
-- Acción: Agregar soporte TTL opcional en `set()` y limpiar entradas expiradas en `get()`.
 
 23. Faltan ARIA roles en componentes interactivos
 
@@ -140,12 +115,14 @@
 - Componente de pirámide de proyectos con rendering SVG y cálculos matemáticos.
 - Acción: Extraer PyramidCalculatorService y PyramidRendererComponent.
 
-29. Falta de preloading strategy para rutas admin
+---
 
-- Todas las rutas admin se lazy-loadan pero no tienen preloading, causando flash al navegar.
-- Acción: Agregar preloading para rutas admin frecuentes (admin, my-areas).
+## 🟢 Mejoras Completadas
 
-30. SEO service no actualiza hreflang dinámicamente
-
-- index.html tiene hreflang estáticos apuntando todos a la URL base.
-- Acción: Actualizar hreflang en SeoService.setPage() para reflejar la URL canónica por idioma.
+- [x] **13. @defer con @error en templates**: Agregados bloques `@error` con fallback UI traducida en bloques `@defer`.
+- [x] **17. Sitemap.xml**: Actualizado con las rutas públicas exactas (`/`, `/info`, `/login`) y enlaces `hreflang` multilingües.
+- [x] **18. robots.txt**: Alineado exactamente con la estructura de `app.routes.ts` y guards de autenticación.
+- [x] **19. Textos de landing page demo internacionalizados**: Cadenas del demo card y `mockCrag` movidas a archivos i18n (`public/i18n/*.json`) y gestionadas mediante `computed()`.
+- [x] **22. CacheService con expiración TTL**: Agregado soporte TTL opcional en `get()` y `fetchOrCache()`, con desalojo automático de claves expiradas y pruebas unitarias.
+- [x] **29. Estrategia de Preloading**: Corregida coincidencia de rutas (`home`, `area`, `explore`, `admin`, `my-areas`) en `SelectivePreloadingStrategy` y agregadas pruebas unitarias.
+- [x] **30. SEO Service hreflang dinámico**: Implementada la actualización de etiquetas `<link rel="alternate" hreflang="...">` por URL canónica.
