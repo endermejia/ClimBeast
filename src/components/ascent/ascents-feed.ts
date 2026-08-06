@@ -7,6 +7,8 @@ import {
   output,
 } from '@angular/core';
 
+import { TranslatePipe } from '@ngx-translate/core';
+
 import {
   FeedItem,
   VERTICAL_LIFE_GRADES,
@@ -37,6 +39,7 @@ export interface ProcessedFeedItem {
     CommonModule,
     InfiniteScrollTriggerComponent,
     NewsCardComponent,
+    TranslatePipe,
   ],
   template: `
     <div
@@ -101,6 +104,10 @@ export interface ProcessedFeedItem {
                 [showRoute]="showRoute()"
                 [hasPhoto]="!!ascent.photo_path"
               />
+            } @error {
+              <div class="p-4 text-center text-xs opacity-60">
+                {{ 'errors.unexpected' | translate }}
+              </div>
             }
           }
         }

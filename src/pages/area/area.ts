@@ -270,6 +270,10 @@ import { IS_BROWSER } from '../../app/is-browser';
               <div class="h-20 flex items-center justify-center">
                 <tui-loader size="s" />
               </div>
+            } @error {
+              <div class="p-4 text-center text-xs opacity-60">
+                {{ 'errors.unexpected' | translate }}
+              </div>
             }
           </div>
 

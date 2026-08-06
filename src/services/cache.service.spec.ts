@@ -74,4 +74,18 @@ describe('CacheService', () => {
     service.clear();
     expect(service.get('key1', null)).toBeNull();
   });
+
+  it('should return cached value if TTL has not expired', () => {
+    service.set('ttl-key', 'valid');
+    const result = service.get('ttl-key', 'default', 60000);
+    expect(result).toBe('valid');
+  });
+
+  it('should return default value and evict item if TTL has expired', () => {
+    mockStorage.setItem('expired-key', JSON.stringify('old'));
+    mockStorage.setItem('expired-key_ts', String(Date.now() - 100000));
+    const result = service.get('expired-key', 'default', 50000);
+    expect(result).toBe('default');
+    expect(service.get('expired-key', null)).toBeNull();
+  });
 });
