@@ -49,12 +49,17 @@ export class SeoService {
     this.updateTag('twitter:title', brandedTitle);
     this.updateTag('twitter:description', description);
     this.updateTag('twitter:image', imageUrl);
+    this.updateTag('twitter:image:alt', brandedTitle);
 
     // --- Open Graph ---
     this.updateOgTag('og:title', brandedTitle);
     this.updateOgTag('og:description', description);
     this.updateOgTag('og:url', canonicalUrl);
     this.updateOgTag('og:image', imageUrl);
+    this.updateOgTag('og:image:width', '1200');
+    this.updateOgTag('og:image:height', '630');
+    this.updateOgTag('og:image:alt', brandedTitle);
+    this.updateOgTag('og:locale', 'es_ES');
     this.updateOgTag('og:type', type);
     this.updateOgTag('og:site_name', APP_NAME);
 
