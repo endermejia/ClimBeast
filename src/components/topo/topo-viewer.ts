@@ -18,39 +18,26 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import type { TopoRouteWithRoute } from '../../models';
 
-import { GradeLabelPipe } from '../../pipes';
-
 import { IconSrcPipe } from '../../pipes';
-import {
-  ViewerZoomPanState,
-  ViewerDragState,
-  ViewerElements,
-  createViewerDragState,
-  handleViewerWheelZoom,
-  handleViewerTouchStart,
-  handleViewerTouchMove,
-  handleViewerMouseDown,
-  handleViewerMouseMove,
-  centerViewerOnPoint,
-} from '../../utils';
+
+import { ZoomPanController } from '../../utils/zoom-pan.controller';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
 import { GradeComponent } from '../ui/avatar-grade';
 
-interface RenderedRoute extends TopoRouteWithRoute {
-  style: { stroke: string; opacity: number; isDashed: boolean };
-  width: number;
-  pointsString: string;
-}
+import {
+  RenderedRoute,
+  TopoRouteRendererComponent,
+} from './topo-route-renderer';
 
 @Component({
   selector: 'app-topo-viewer',
   standalone: true,
   imports: [
     GradeComponent,
-    GradeLabelPipe,
     IconSrcPipe,
+    TopoRouteRendererComponent,
     TranslatePipe,
     TuiButton,
   ],
@@ -59,20 +46,20 @@ interface RenderedRoute extends TopoRouteWithRoute {
     <div
       class="relative w-full h-full bg-(--tui-background-neutral-1) md:rounded-xl md:border md:border-(--tui-border-normal) overflow-hidden cursor-grab active:cursor-grabbing touch-none"
       #scrollContainer
-      (wheel.zoneless)="onWheel($event)"
-      (touchstart.zoneless)="onTouchStart($event)"
-      (touchmove.zoneless)="onTouchMove($event)"
-      (touchend.zoneless)="onTouchEnd()"
-      (mousedown.zoneless)="onMouseDown($event)"
-      (mousemove.zoneless)="onMouseMove($event)"
-      (mouseup.zoneless)="onMouseUp()"
-      (mouseleave.zoneless)="onMouseUp()"
+      (wheel.zoneless)="zoomPan.onWheel($event)"
+      (touchstart.zoneless)="zoomPan.onTouchStart($event)"
+      (touchmove.zoneless)="zoomPan.onTouchMove($event)"
+      (touchend.zoneless)="zoomPan.onTouchEnd()"
+      (mousedown.zoneless)="zoomPan.onMouseDown($event)"
+      (mousemove.zoneless)="zoomPan.onMouseMove($event)"
+      (mouseup.zoneless)="zoomPan.onMouseUp()"
+      (mouseleave.zoneless)="zoomPan.onMouseUp()"
     >
       <div class="h-full w-full flex items-center justify-center min-w-full">
         <div
           #zoomContainerNormal
           class="relative h-full transition-transform duration-75 ease-out zoom-container origin-top-left"
-          [class.duration-0!]="dragState.isDragging"
+          [class.duration-0!]="zoomPan.dragState.isDragging"
           [style.transform]="
             'translate(' +
             zoomPosition().x +
@@ -96,176 +83,17 @@ interface RenderedRoute extends TopoRouteWithRoute {
             (keydown.enter)="toggleFullscreen(!!topoImage())"
             (load)="onImageLoad($event)"
           />
-          @if (topoImage() && hasAccess()) {
-            @let ratio = imageRatio();
-            @let hScale = 1000 / ratio;
-            <svg
-              class="absolute inset-0 w-full h-full pointer-events-none"
-              [attr.viewBox]="'0 0 1000 ' + hScale"
-              preserveAspectRatio="none"
-            >
-              @for (tr of renderedRoutes(); track tr.route_id) {
-                @if (tr.path && tr.path.points.length > 0) {
-                  @if (tr.path.type === 'circle') {
-                    @for (pt of tr.path.points; track $index) {
-                      <circle
-                        class="pointer-events-auto cursor-pointer"
-                        (click)="
-                          onPathClick($event, tr); $event.stopPropagation()
-                        "
-                        (mouseenter)="onHoverRoute(tr.route_id)"
-                        (mouseleave)="onUnhoverRoute()"
-                        [attr.cx]="pt.x * 1000"
-                        [attr.cy]="pt.y * hScale"
-                        [attr.r]="tr.width * 3500 + 10"
-                        fill="transparent"
-                      />
-                    }
-                  } @else {
-                    <polyline
-                      class="pointer-events-auto cursor-pointer"
-                      (click)="
-                        onPathClick($event, tr); $event.stopPropagation()
-                      "
-                      (mouseenter)="onHoverRoute(tr.route_id)"
-                      (mouseleave)="onUnhoverRoute()"
-                      [attr.points]="tr.pointsString"
-                      fill="none"
-                      stroke="transparent"
-                      [attr.stroke-width]="
-                        (selectedRouteId() === tr.route_id ? 0.06 : 0.025) *
-                        1000
-                      "
-                      stroke-linejoin="round"
-                      stroke-linecap="round"
-                    />
-                  }
-                }
-              }
-              @for (tr of renderedRoutes(); track tr.route_id) {
-                @if (tr.path && tr.path.points.length > 0) {
-                  @let circleR = tr.width * 3500;
-                  @let isSel =
-                    selectedRouteId() === tr.route_id ||
-                    hoveredRouteId() === tr.route_id;
-                  @if (tr.path.type === 'circle') {
-                    @for (pt of tr.path.points; track $index) {
-                      <circle
-                        [attr.cx]="pt.x * 1000"
-                        [attr.cy]="pt.y * hScale"
-                        [attr.r]="circleR"
-                        fill="none"
-                        stroke="white"
-                        [style.opacity]="tr.style.isDashed ? 1 : 0.7"
-                        [attr.stroke-width]="
-                          tr.width * 1000 + (tr.style.isDashed ? 2.5 : 1.5)
-                        "
-                        [attr.stroke-dasharray]="
-                          tr.style.isDashed ? '6, 6' : 'none'
-                        "
-                        stroke-linejoin="round"
-                        stroke-linecap="round"
-                        class="transition-all duration-300"
-                      />
-                      <circle
-                        [attr.cx]="pt.x * 1000"
-                        [attr.cy]="pt.y * hScale"
-                        [attr.r]="circleR"
-                        fill="rgba(0,0,0,0.05)"
-                        [attr.stroke]="tr.style.stroke"
-                        [style.color]="tr.style.stroke"
-                        [style.opacity]="tr.style.opacity"
-                        [attr.stroke-width]="tr.width * 1000"
-                        [attr.stroke-dasharray]="
-                          tr.style.isDashed ? '6, 6' : 'none'
-                        "
-                        stroke-linejoin="round"
-                        stroke-linecap="round"
-                        class="transition-all duration-300"
-                        [class.selected-circle-pulse]="isSel"
-                      />
-                    }
-                  } @else {
-                    <polyline
-                      [attr.points]="tr.pointsString"
-                      fill="none"
-                      stroke="white"
-                      [style.opacity]="tr.style.isDashed ? 1 : 0.7"
-                      [attr.stroke-width]="
-                        tr.width * 1000 + (tr.style.isDashed ? 2.5 : 1.5)
-                      "
-                      [attr.stroke-dasharray]="
-                        tr.style.isDashed ? '10, 10' : 'none'
-                      "
-                      stroke-linejoin="round"
-                      stroke-linecap="round"
-                      class="transition-all duration-300"
-                    />
-                    <polyline
-                      [attr.points]="tr.pointsString"
-                      fill="none"
-                      [attr.stroke]="tr.style.stroke"
-                      [style.color]="tr.style.stroke"
-                      [style.opacity]="tr.style.opacity"
-                      [attr.stroke-width]="tr.width * 1000"
-                      [attr.stroke-dasharray]="
-                        tr.style.isDashed ? '10, 10' : 'none'
-                      "
-                      stroke-linejoin="round"
-                      stroke-linecap="round"
-                      class="transition-all duration-300"
-                    />
-                    @if (tr.path.points[tr.path.points.length - 1]; as last) {
-                      <circle
-                        [attr.cx]="last.x * 1000"
-                        [attr.cy]="last.y * hScale"
-                        [attr.r]="tr.width * 1000"
-                        fill="white"
-                        [style.opacity]="tr.style.opacity"
-                        stroke="black"
-                        [attr.stroke-width]="0.5"
-                        class="transition-all duration-300"
-                        [class.selected-circle-pulse]="isSel"
-                      />
-                    }
-                  }
-                }
-              }
-              @for (tr of renderedRoutes(); track tr.route_id) {
-                @if (tr.path && tr.path.points.length > 0) {
-                  @if (tr.path.points[0]; as first) {
-                    <circle
-                      class="pointer-events-auto cursor-pointer"
-                      (click)="
-                        onPathClick($event, tr); $event.stopPropagation()
-                      "
-                      (mouseenter)="onHoverRoute(tr.route_id)"
-                      (mouseleave)="onUnhoverRoute()"
-                      [attr.cx]="first.x * 1000"
-                      [attr.cy]="first.y * hScale"
-                      [attr.r]="tr.width * 2000"
-                      [attr.fill]="tr.style.stroke"
-                      stroke="white"
-                      stroke-width="1"
-                    />
-                    <text
-                      class="pointer-events-none"
-                      [attr.x]="first.x * 1000"
-                      [attr.y]="first.y * hScale + tr.width * 600"
-                      text-anchor="middle"
-                      fill="white"
-                      style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                      [attr.font-size]="tr.width * 1600"
-                      font-weight="bold"
-                      font-family="sans-serif"
-                    >
-                      {{ tr.route.grade | gradeLabel }}
-                    </text>
-                  }
-                }
-              }
-            </svg>
-          }
+          <app-topo-route-renderer
+            [renderedRoutes]="renderedRoutes()"
+            [imageRatio]="imageRatio()"
+            [selectedRouteId]="selectedRouteId()"
+            [hoveredRouteId]="hoveredRouteId()"
+            [hasAccess]="hasAccess()"
+            [isGlowActive]="false"
+            (pathClick)="onPathClick($event.event, $event.route)"
+            (hoverRoute)="onHoverRoute($event)"
+            (unhoverRoute)="onUnhoverRoute()"
+          />
         </div>
       </div>
     </div>
@@ -278,14 +106,14 @@ interface RenderedRoute extends TopoRouteWithRoute {
         tabindex="0"
         (keydown.enter)="toggleFullscreen(false)"
         (click)="toggleFullscreen(false)"
-        (wheel.zoneless)="onWheel($event)"
-        (touchstart.zoneless)="onTouchStart($event)"
-        (touchmove.zoneless)="onTouchMove($event)"
-        (touchend.zoneless)="onTouchEnd()"
-        (mousedown.zoneless)="onMouseDown($event)"
-        (mousemove.zoneless)="onMouseMove($event)"
-        (mouseup.zoneless)="onMouseUp()"
-        (mouseleave.zoneless)="onMouseUp()"
+        (wheel.zoneless)="zoomPan.onWheel($event)"
+        (touchstart.zoneless)="zoomPan.onTouchStart($event)"
+        (touchmove.zoneless)="zoomPan.onTouchMove($event)"
+        (touchend.zoneless)="zoomPan.onTouchEnd()"
+        (mousedown.zoneless)="zoomPan.onMouseDown($event)"
+        (mousemove.zoneless)="zoomPan.onMouseMove($event)"
+        (mouseup.zoneless)="zoomPan.onMouseUp()"
+        (mouseleave.zoneless)="zoomPan.onMouseUp()"
         (window:keydown.arrowLeft)="selectPrevRoute()"
         (window:keydown.arrowRight)="selectNextRoute()"
         (window:keydown.escape)="toggleFullscreen(false)"
@@ -307,7 +135,7 @@ interface RenderedRoute extends TopoRouteWithRoute {
         <div
           #fullscreenZoomContainer
           class="relative transition-transform duration-75 ease-out zoom-container origin-top-left"
-          [class.duration-0!]="dragState.isDragging"
+          [class.duration-0!]="zoomPan.dragState.isDragging"
           (click)="onImageClick(); $event.stopPropagation()"
           (keydown.enter)="$event.stopPropagation()"
           tabindex="-1"
@@ -331,175 +159,17 @@ interface RenderedRoute extends TopoRouteWithRoute {
             decoding="async"
             (load)="onImageLoad($event)"
           />
-          @if (topoImage() && hasAccess()) {
-            @let ratio = imageRatio();
-            @let hScale = 1000 / ratio;
-            <svg
-              class="absolute inset-0 w-full h-full pointer-events-none"
-              [attr.viewBox]="'0 0 1000 ' + hScale"
-              preserveAspectRatio="none"
-            >
-              @for (tr of renderedRoutes(); track tr.route_id) {
-                @if (tr.path && tr.path.points.length > 0) {
-                  @if (tr.path.type === 'circle') {
-                    @for (pt of tr.path.points; track $index) {
-                      <circle
-                        class="pointer-events-auto cursor-pointer"
-                        (click)="
-                          onPathClick($event, tr); $event.stopPropagation()
-                        "
-                        (mouseenter)="onHoverRoute(tr.route_id)"
-                        (mouseleave)="onUnhoverRoute()"
-                        [attr.cx]="pt.x * 1000"
-                        [attr.cy]="pt.y * hScale"
-                        [attr.r]="tr.width * 3500 + 10"
-                        fill="transparent"
-                      />
-                    }
-                  } @else {
-                    <polyline
-                      class="pointer-events-auto cursor-pointer"
-                      (click)="
-                        onPathClick($event, tr); $event.stopPropagation()
-                      "
-                      (mouseenter)="onHoverRoute(tr.route_id)"
-                      (mouseleave)="onUnhoverRoute()"
-                      [attr.points]="tr.pointsString"
-                      fill="none"
-                      stroke="transparent"
-                      [attr.stroke-width]="
-                        (selectedRouteId() === tr.route_id ? 0.06 : 0.025) *
-                        1000
-                      "
-                      stroke-linejoin="round"
-                      stroke-linecap="round"
-                    />
-                  }
-                }
-              }
-              @for (tr of renderedRoutes(); track tr.route_id) {
-                @if (tr.path && tr.path.points.length > 0) {
-                  @let circleR = tr.width * 3500;
-                  @let isSel =
-                    selectedRouteId() === tr.route_id ||
-                    hoveredRouteId() === tr.route_id;
-                  @if (tr.path.type === 'circle') {
-                    @for (pt of tr.path.points; track $index) {
-                      <circle
-                        [attr.cx]="pt.x * 1000"
-                        [attr.cy]="pt.y * hScale"
-                        [attr.r]="circleR"
-                        fill="none"
-                        stroke="white"
-                        [style.opacity]="tr.style.isDashed ? 1 : 0.7"
-                        [attr.stroke-width]="
-                          tr.width * 1000 + (tr.style.isDashed ? 2.5 : 1.5)
-                        "
-                        [attr.stroke-dasharray]="
-                          tr.style.isDashed ? '6, 6' : 'none'
-                        "
-                        stroke-linejoin="round"
-                        stroke-linecap="round"
-                        class="transition-all duration-300"
-                      />
-                      <circle
-                        [attr.cx]="pt.x * 1000"
-                        [attr.cy]="pt.y * hScale"
-                        [attr.r]="circleR"
-                        fill="rgba(0,0,0,0.05)"
-                        [attr.stroke]="tr.style.stroke"
-                        [style.color]="tr.style.stroke"
-                        [style.opacity]="tr.style.opacity"
-                        [attr.stroke-width]="tr.width * 1000"
-                        [attr.stroke-dasharray]="
-                          tr.style.isDashed ? '6, 6' : 'none'
-                        "
-                        stroke-linejoin="round"
-                        stroke-linecap="round"
-                        class="transition-all duration-300"
-                        [class.selected-circle-pulse]="isSel"
-                      />
-                    }
-                  } @else {
-                    <polyline
-                      [attr.points]="tr.pointsString"
-                      fill="none"
-                      stroke="white"
-                      [style.opacity]="tr.style.isDashed ? 1 : 0.7"
-                      [attr.stroke-width]="
-                        tr.width * 1000 + (tr.style.isDashed ? 2.5 : 1.5)
-                      "
-                      [attr.stroke-dasharray]="
-                        tr.style.isDashed ? '10, 10' : 'none'
-                      "
-                      stroke-linejoin="round"
-                      stroke-linecap="round"
-                      class="transition-all duration-300"
-                    />
-                    <polyline
-                      [attr.points]="tr.pointsString"
-                      fill="none"
-                      [attr.stroke]="tr.style.stroke"
-                      [style.color]="tr.style.stroke"
-                      [style.opacity]="tr.style.opacity"
-                      [attr.stroke-width]="tr.width * 1000"
-                      [attr.stroke-dasharray]="
-                        tr.style.isDashed ? '10, 10' : 'none'
-                      "
-                      stroke-linejoin="round"
-                      stroke-linecap="round"
-                      class="transition-all duration-300"
-                      [class.selected-line-glow]="isSel"
-                    />
-                    @if (tr.path.points[tr.path.points.length - 1]; as last) {
-                      <circle
-                        [attr.cx]="last.x * 1000"
-                        [attr.cy]="last.y * hScale"
-                        [attr.r]="tr.width * 1000"
-                        fill="white"
-                        [style.opacity]="tr.style.opacity"
-                        stroke="black"
-                        [attr.stroke-width]="0.5"
-                      />
-                    }
-                  }
-                }
-              }
-              @for (tr of renderedRoutes(); track tr.route_id) {
-                @if (tr.path && tr.path.points.length > 0) {
-                  <g
-                    class="pointer-events-auto cursor-pointer"
-                    (click)="onPathClick($event, tr); $event.stopPropagation()"
-                    (mouseenter)="onHoverRoute(tr.route_id)"
-                    (mouseleave)="onUnhoverRoute()"
-                  >
-                    @if (tr.path.points[0]; as first) {
-                      <circle
-                        [attr.cx]="first.x * 1000"
-                        [attr.cy]="first.y * hScale"
-                        [attr.r]="tr.width * 2000"
-                        [attr.fill]="tr.style.stroke"
-                        stroke="white"
-                        stroke-width="1"
-                      />
-                      <text
-                        [attr.x]="first.x * 1000"
-                        [attr.y]="first.y * hScale + tr.width * 600"
-                        text-anchor="middle"
-                        fill="white"
-                        style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                        [attr.font-size]="tr.width * 1600"
-                        font-weight="bold"
-                        font-family="sans-serif"
-                      >
-                        {{ tr.route.grade | gradeLabel }}
-                      </text>
-                    }
-                  </g>
-                }
-              }
-            </svg>
-          }
+          <app-topo-route-renderer
+            [renderedRoutes]="renderedRoutes()"
+            [imageRatio]="imageRatio()"
+            [selectedRouteId]="selectedRouteId()"
+            [hoveredRouteId]="hoveredRouteId()"
+            [hasAccess]="hasAccess()"
+            [isGlowActive]="true"
+            (pathClick)="onPathClick($event.event, $event.route)"
+            (hoverRoute)="onHoverRoute($event)"
+            (unhoverRoute)="onUnhoverRoute()"
+          />
         </div>
 
         @if (hasAccess() && selectedRouteInfo(); as sel) {
@@ -557,25 +227,16 @@ interface RenderedRoute extends TopoRouteWithRoute {
 export class TopoViewerComponent {
   private readonly isBrowser = inject(IS_BROWSER);
 
-  topoImage = input<string | null | undefined>(null);
-  topoName = input<string>('');
-  renderedRoutes = input<RenderedRoute[]>([]);
-  hasAccess = input(false);
-  selectedRouteId = input<string | number | null>(null);
-  hoveredRouteId = input<string | number | null>(null);
+  readonly topoImage = input<string | null | undefined>(null);
+  readonly topoName = input<string>('');
+  readonly renderedRoutes = input<RenderedRoute[]>([]);
+  readonly hasAccess = input(false);
+  readonly selectedRouteId = input<string | number | null>(null);
+  readonly hoveredRouteId = input<string | number | null>(null);
 
-  selectedRouteIdChange = output<string | number | null>();
-  hoveredRouteIdChange = output<string | number | null>();
-  imageRatioChange = output<number>();
-
-  constructor() {
-    effect(() => {
-      const routeId = this.selectedRouteId();
-      if (routeId && this.imageRatio() > 0) {
-        queueMicrotask(() => this.centerOnRoute());
-      }
-    });
-  }
+  readonly selectedRouteIdChange = output<string | number | null>();
+  readonly hoveredRouteIdChange = output<string | number | null>();
+  readonly imageRatioChange = output<number>();
 
   protected readonly scrollContainer =
     viewChild<ElementRef<HTMLDivElement>>('scrollContainer');
@@ -606,18 +267,6 @@ export class TopoViewerComponent {
     computation: () => ({ x: 0, y: 0 }),
   });
 
-  private readonly viewerState: ViewerZoomPanState = {
-    zoomScale: this.zoomScale,
-    zoomPosition: this.zoomPosition,
-  };
-  protected readonly dragState: ViewerDragState = createViewerDragState();
-
-  protected readonly selectedRouteInfo = computed(() => {
-    const id = this.selectedRouteId();
-    if (!id) return null;
-    return this.renderedRoutes().find((r) => r.route_id === id) || null;
-  });
-
   protected readonly minScale = computed(() => {
     const ratio = this.imageRatio();
     const isFs = this.isFullscreen();
@@ -632,6 +281,28 @@ export class TopoViewerComponent {
     if (isFs) return Math.min(1, ratio / containerRatio);
     return Math.max(0.1, Math.min(1, containerRatio / ratio));
   });
+
+  protected readonly zoomPan = new ZoomPanController(
+    this.zoomScale,
+    this.zoomPosition,
+    () => this.getViewerElements(),
+    () => this.minScale(),
+  );
+
+  protected readonly selectedRouteInfo = computed(() => {
+    const id = this.selectedRouteId();
+    if (!id) return null;
+    return this.renderedRoutes().find((r) => r.route_id === id) || null;
+  });
+
+  constructor() {
+    effect(() => {
+      const routeId = this.selectedRouteId();
+      if (routeId && this.imageRatio() > 0) {
+        queueMicrotask(() => this.centerOnRoute());
+      }
+    });
+  }
 
   protected onHoverRoute(routeId: string | number): void {
     this.hoveredRouteIdChange.emit(routeId);
@@ -658,7 +329,7 @@ export class TopoViewerComponent {
   }
 
   protected onImageClick(): void {
-    if (this.dragState.hasMoved) return;
+    if (this.zoomPan.dragState.hasMoved) return;
     if (this.selectedRouteId()) {
       this.selectedRouteIdChange.emit(null);
     } else if (!this.isFullscreen()) {
@@ -668,63 +339,7 @@ export class TopoViewerComponent {
 
   protected toggleFullscreen(value: boolean): void {
     this.isFullscreen.set(value);
-    if (!value) this.resetZoom();
-  }
-
-  protected resetZoom(): void {
-    this.zoomScale.set(1);
-    this.zoomPosition.set({ x: 0, y: 0 });
-    this.dragState.initialTx = 0;
-    this.dragState.initialTy = 0;
-  }
-
-  protected onWheel(event: Event): void {
-    const el = this.getViewerElements();
-    if (!el) return;
-    handleViewerWheelZoom(event, this.viewerState, el, {
-      minScale: this.minScale(),
-    });
-  }
-
-  protected onTouchStart(event: Event): void {
-    const el = this.getViewerElements();
-    if (!el) return;
-    handleViewerTouchStart(event, this.viewerState, this.dragState, el);
-  }
-
-  protected onTouchMove(event: Event): void {
-    const el = this.getViewerElements();
-    if (!el) return;
-    handleViewerTouchMove(event, this.viewerState, this.dragState, el, {
-      minScale: this.minScale(),
-    });
-  }
-
-  protected onTouchEnd(): void {
-    this.dragState.isDragging = false;
-  }
-
-  protected onMouseDown(event: Event): void {
-    handleViewerMouseDown(
-      event as MouseEvent,
-      this.viewerState,
-      this.dragState,
-    );
-  }
-
-  protected onMouseMove(event: Event): void {
-    const el = this.getViewerElements();
-    if (!el) return;
-    handleViewerMouseMove(
-      event as MouseEvent,
-      this.viewerState,
-      this.dragState,
-      el,
-    );
-  }
-
-  protected onMouseUp(): void {
-    this.dragState.isDragging = false;
+    if (!value) this.zoomPan.resetZoom();
   }
 
   protected selectPrevRoute(): void {
@@ -760,14 +375,13 @@ export class TopoViewerComponent {
     const maxX = Math.max(...pts.map((p) => p.x));
     const minY = Math.min(...pts.map((p) => p.y));
     const maxY = Math.max(...pts.map((p) => p.y));
-    centerViewerOnPoint(
-      this.viewerState,
+    this.zoomPan.centerOnPoint(
       { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
       els,
     );
   }
 
-  private getViewerElements(): ViewerElements | null {
+  private getViewerElements() {
     const isFs = this.isFullscreen();
     const container = isFs
       ? this.fullscreenContainer()

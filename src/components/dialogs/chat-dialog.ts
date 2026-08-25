@@ -1,15 +1,13 @@
-import { CommonModule, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
+  OnDestroy,
   resource,
   signal,
-  Signal,
-  ElementRef,
-  effect,
-  OnDestroy,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
@@ -22,18 +20,16 @@ import {
   TuiButton,
   TuiDataList,
   TuiIcon,
+  TuiInput,
   TuiLabel,
   TuiLoader,
   TuiScrollbar,
-  TuiInput,
 } from '@taiga-ui/core';
 import {
   TuiAvatar,
   TuiBadgeNotification,
   TuiConfirmData,
-  TuiMessage,
   TUI_CONFIRM,
-  TuiTextarea,
 } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
@@ -43,10 +39,10 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 import {
   debounceTime,
   distinctUntilChanged,
-  switchMap,
-  of,
-  from,
   firstValueFrom,
+  from,
+  of,
+  switchMap,
 } from 'rxjs';
 
 import { BlockingService } from '../../services/blocking.service';
@@ -63,6 +59,10 @@ import {
 
 import { AvatarUrlPipe } from '../../pipes';
 
+import { ChatInputComponent } from '../chat/chat-input';
+
+import { ChatMessageListComponent } from '../chat/chat-message-list';
+
 import { EmptyStateComponent } from '../ui/empty-state';
 
 export interface ChatDialogData {
@@ -75,7 +75,8 @@ export interface ChatDialogData {
   standalone: true,
   imports: [
     AvatarUrlPipe,
-    CommonModule,
+    ChatInputComponent,
+    ChatMessageListComponent,
     DatePipe,
     EmptyStateComponent,
     FormsModule,
@@ -90,13 +91,11 @@ export interface ChatDialogData {
     TuiInput,
     TuiLabel,
     TuiLoader,
-    TuiMessage,
     TuiScrollbar,
-    TuiTextarea,
   ],
   template: `
     <div class="flex h-[82dvh] min-h-[600px] -m-4">
-      <!-- Sidebar: rooms list (always rendered, hidden on mobile when room selected) -->
+      <!-- Sidebar: rooms list -->
       <div
         class="flex flex-col w-80 max-md:w-full border-r border-(--tui-border-normal) min-w-0 min-h-0"
         [class.max-md:hidden]="!!selectedRoom()"
@@ -249,123 +248,30 @@ export interface ChatDialogData {
             </button>
           </div>
 
-          <!-- Messages -->
-          <tui-scrollbar
-            #scrollbar
-            class="grow min-h-0"
-            (scroll)="onScroll($event)"
-          >
-            <div class="flex flex-col gap-2 p-4">
-              @if (hasMore() && !loadingMessages()) {
-                <div class="flex justify-center">
-                  <button
-                    tuiButton
-                    appearance="flat-grayscale"
-                    size="xs"
-                    (click)="loadMoreMessages()"
-                  >
-                    {{ 'loadMore' | translate }}
-                  </button>
-                </div>
-              }
+          <!-- Messages List -->
+          <app-chat-message-list
+            #messageList
+            [messages]="messages()"
+            [hasMore]="hasMore()"
+            [loadingMessages]="loadingMessages()"
+            [accumulatedMessagesCount]="accumulatedMessages().length"
+            [authUserId]="supabase.authUserId()"
+            (loadMore)="loadMoreMessages()"
+            (listScroll)="onScroll($event)"
+          />
 
-              @if (loadingMessages() && accumulatedMessages().length === 0) {
-                <div class="py-12 flex justify-center">
-                  <tui-loader />
-                </div>
-              }
-
-              @for (msg of messages(); track msg.id) {
-                @let isMe = msg.sender_id === supabase.authUserId();
-                <div class="flex" [class.justify-end]="isMe">
-                  <div
-                    [appearance]="isMe ? 'accent' : 'secondary-grayscale'"
-                    tuiMessage
-                    class="max-w-[85%]"
-                  >
-                    <p class="whitespace-pre-wrap wrap-anywhere leading-tight">
-                      {{ msg.text }}
-                    </p>
-                    <div
-                      class="text-[10px] opacity-60 text-right mt-1 flex items-center justify-end gap-1"
-                    >
-                      {{ msg.created_at | date: 'HH:mm' }}
-                      @if (isMe) {
-                        <tui-icon
-                          [icon]="
-                            msg.read_at ? '@tui.check-check' : '@tui.check'
-                          "
-                          class="w-3! h-3!"
-                        />
-                      }
-                    </div>
-                  </div>
-                </div>
-              }
-            </div>
-          </tui-scrollbar>
-
-          <!-- Input -->
-          <div class="p-4 border-t border-(--tui-border-normal)">
-            @if (isBlockedByMe()) {
-              <div
-                class="flex flex-col items-center justify-center p-4 gap-2 opacity-70"
-              >
-                <span class="text-sm">{{
-                  'messages.userBlocked' | translate
-                }}</span>
-                <button
-                  tuiButton
-                  type="button"
-                  appearance="flat"
-                  size="s"
-                  (click)="room.participant && toggleBlock(room.participant.id)"
-                >
-                  {{ 'unblock' | translate }}
-                </button>
-              </div>
-            } @else {
-              <div class="flex items-center gap-2">
-                <tui-textfield class="w-full" [tuiTextfieldCleaner]="false">
-                  <textarea
-                    #messageTextarea
-                    tuiTextarea
-                    id="new-message"
-                    autocomplete="off"
-                    [placeholder]="
-                      isRequestPending()
-                        ? ('messages.pendingPlaceholder' | translate)
-                        : ('message' | translate)
-                    "
-                    [(ngModel)]="newMessage"
-                    (keydown.enter)="onEnter($event)"
-                    [disabled]="isRequestPending()"
-                    maxlength="250"
-                    class="resize-none overflow-hidden max-h-36 font-sans text-sm focus:outline-hidden text-inherit border-0 outline-hidden focus:ring-0 ring-0 min-h-10"
-                  ></textarea>
-                </tui-textfield>
-                <button
-                  tuiButton
-                  type="button"
-                  appearance="primary"
-                  size="s"
-                  iconStart="@tui.send"
-                  (click)="onSendMessage()"
-                  [disabled]="!newMessage().trim() || isRequestPending()"
-                  class="mt-auto mb-1"
-                >
-                  <span class="hidden md:block">
-                    {{ 'send' | translate }}
-                  </span>
-                </button>
-              </div>
-              <div class="text-right text-xs opacity-50 mt-1">
-                {{ newMessage().length }}/250
-              </div>
-            }
-          </div>
+          <!-- Input area -->
+          <app-chat-input
+            #chatInput
+            [newMessage]="newMessage()"
+            (newMessageChange)="newMessage.set($event)"
+            [isBlockedByMe]="isBlockedByMe()"
+            [isRequestPending]="isRequestPending()"
+            (sendMessage)="onSendMessage()"
+            (unblockUser)="room.participant && toggleBlock(room.participant.id)"
+          />
         } @else {
-          <!-- Empty state (desktop) / Rooms list fallback (mobile) -->
+          <!-- Empty state -->
           <div class="max-md:hidden grow flex items-center justify-center">
             <app-empty-state
               icon="@tui.message-circle"
@@ -390,17 +296,12 @@ export class ChatDialogComponent implements OnDestroy {
   protected readonly context =
     injectContext<TuiDialogContext<void, ChatDialogData>>();
 
-  private readonly scrollbar: Signal<ElementRef<HTMLElement> | undefined> =
-    viewChild('scrollbar', { read: ElementRef });
-  private readonly messageTextarea: Signal<
-    ElementRef<HTMLTextAreaElement> | undefined
-  > = viewChild('messageTextarea', { read: ElementRef });
+  protected readonly messageList = viewChild(ChatMessageListComponent);
+  protected readonly chatInput = viewChild(ChatInputComponent);
 
   private roomSubscription?: RealtimeChannel | null;
   private roomsSubscription?: RealtimeChannel | null;
-
   private scrollTimeout?: ReturnType<typeof setTimeout>;
-  private focusTimeout?: ReturnType<typeof setTimeout>;
 
   protected readonly selectedRoom = signal<ChatRoomWithParticipant | null>(
     null,
@@ -516,20 +417,15 @@ export class ChatDialogComponent implements OnDestroy {
 
   private async openChatWithRoom(roomId: string) {
     await this.roomsResource.reload();
-    // Wait for rooms to be loaded if they are not yet
     let room = this.rooms().find((r) => r.id === roomId);
 
     if (!room && this.loadingRooms()) {
-      // Small buffer to wait for reload if necessary
       await new Promise((resolve) => setTimeout(resolve, 600));
       room = this.rooms().find((r) => r.id === roomId);
     }
 
     if (room) {
       this.onSelectRoom(room);
-    } else {
-      // If we still don't have it, we try to fetch this specific room directly if service allows
-      // or at least stay in rooms view.
     }
   }
 
@@ -558,7 +454,7 @@ export class ChatDialogComponent implements OnDestroy {
       },
     );
     this.scrollToBottom();
-    this.focusTextarea();
+    this.chatInput()?.focusTextarea();
     if (room.participant) {
       this.checkBlockStatus(room.participant.id);
     }
@@ -596,9 +492,6 @@ export class ChatDialogComponent implements OnDestroy {
 
     if (!confirmed) return;
 
-    // We assume ascents are not blocked here for simplicity as we only toggle messages from chat
-    // If we wanted to persist ascent blocking state, we'd need to fetch it first or pass it around
-    // For now let's just use what getBlockState returns
     const { blockAscents } = await this.blockingService.getBlockState(userId);
 
     const success = isBlocking
@@ -627,14 +520,6 @@ export class ChatDialogComponent implements OnDestroy {
     this.searchResults.set([]);
   }
 
-  protected onEnter(event: Event) {
-    const keyboardEvent = event as KeyboardEvent;
-    if (!keyboardEvent.shiftKey) {
-      event.preventDefault();
-      void this.onSendMessage();
-    }
-  }
-
   protected async onSendMessage() {
     const room = this.selectedRoom();
     const text = this.newMessage().trim();
@@ -653,7 +538,7 @@ export class ChatDialogComponent implements OnDestroy {
     this.newMessage.set('');
     this.accumulatedMessages.update((prev) => [optimisticMsg, ...prev]);
     this.scrollToBottom();
-    this.focusTextarea();
+    this.chatInput()?.focusTextarea();
 
     try {
       const msg = await this.messagingService.sendMessage(room.id, text);
@@ -672,16 +557,6 @@ export class ChatDialogComponent implements OnDestroy {
     }
   }
 
-  private focusTextarea() {
-    if (!window.matchMedia('(pointer: fine)').matches) {
-      return;
-    }
-    clearTimeout(this.focusTimeout);
-    this.focusTimeout = setTimeout(() => {
-      this.messageTextarea()?.nativeElement.focus();
-    }, 200);
-  }
-
   protected loadMoreMessages() {
     if (!this.loadingMessages() && this.hasMore()) {
       this.messagesOffset.update((o) => o + this.limit);
@@ -698,10 +573,7 @@ export class ChatDialogComponent implements OnDestroy {
   private scrollToBottom() {
     clearTimeout(this.scrollTimeout);
     this.scrollTimeout = setTimeout(() => {
-      const el = this.scrollbar()?.nativeElement;
-      if (el) {
-        el.scrollTop = el.scrollHeight;
-      }
+      this.messageList()?.scrollToBottom();
     }, 100);
   }
 
@@ -709,7 +581,6 @@ export class ChatDialogComponent implements OnDestroy {
     this.roomSubscription?.unsubscribe();
     this.roomsSubscription?.unsubscribe();
     if (this.scrollTimeout) clearTimeout(this.scrollTimeout);
-    if (this.focusTimeout) clearTimeout(this.focusTimeout);
   }
 }
 

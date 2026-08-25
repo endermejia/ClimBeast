@@ -4,18 +4,6 @@ Actualizado: 2026-08-25
 
 ---
 
-## 🟠 Alto
-
-### 6. topo-viewer.ts con lógica compleja (786 líneas)
-
-- Zoom, pan, drag, touch events, fullscreen, y rutas SVG en un solo componente.
-- Acción: Extraer `ZoomPanController` (zoom/drag) y `TopoRouteRenderer` (SVG routes).
-
-### 7. chat-dialog.ts excesivamente grande (712 líneas)
-
-- UI, lógica de mensajes, y conexión realtime mezclados.
-- Acción: Dividir en `ChatMessageListComponent`, `ChatInputComponent`, y `ChatService` dedicado.
-
 ---
 
 ## 🟡 Medio
