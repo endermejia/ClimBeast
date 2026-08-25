@@ -22,6 +22,7 @@ import { combineLatest, filter, map, merge, startWith } from 'rxjs';
 import { CartService } from '../services/cart.service';
 import { LocalStorage } from '../services/local-storage';
 import { NotificationService } from '../services/notification.service';
+import { RealtimeService } from '../services/realtime.service';
 import { SeoService } from '../services/seo.service';
 import { SupabaseService } from '../services/supabase.service';
 import { ThemeService } from '../services/theme.service';
@@ -83,6 +84,7 @@ export class AppComponent implements OnDestroy {
   private translate = inject(TranslateService);
   private storage = inject(LocalStorage);
   private readonly notifications = inject(NotificationService);
+  protected readonly realtime = inject(RealtimeService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly doc = inject(DOCUMENT);
   private readonly seo = inject(SeoService);

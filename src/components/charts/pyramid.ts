@@ -31,6 +31,8 @@ import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
+import { firstValueFrom } from 'rxjs';
+
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
@@ -546,11 +548,11 @@ export class PyramidComponent implements AfterViewInit {
     return undefined;
   }
 
-  onSlotClick(
+  async onSlotClick(
     level: number,
     position: number,
     slot: PyramidLevel['slots'][number],
-  ): void {
+  ): Promise<void> {
     if (!slot.canModify) {
       if (slot.route) {
         this.goToRoute(slot.route);
@@ -591,8 +593,8 @@ export class PyramidComponent implements AfterViewInit {
       }
     }
 
-    this.dialogs
-      .open<RouteDto | null>(
+    const route = await firstValueFrom(
+      this.dialogs.open<RouteDto | null>(
         new PolymorpheusComponent(PyramidSlotDialogComponent),
         {
           label: this.translate.instant('pyramid.level') + ' ' + level,
@@ -610,40 +612,39 @@ export class PyramidComponent implements AfterViewInit {
           },
           size: 's',
         },
-      )
-      .subscribe(async (route) => {
-        if (route === undefined) return; // Dialog dismissed
+      ),
+      { defaultValue: undefined },
+    );
 
-        let success = false;
-        let errorMessage = '';
+    if (route === undefined) return; // Dialog dismissed
 
-        if (route === null) {
-          // Remove route
-          if (!slot.id) return;
-          const result = await this.userProfilesService.deletePyramidSlot(
-            slot.id,
-          );
-          success = result.success;
-          errorMessage = result.error || 'Error deleting slot';
-        } else {
-          // Add/Update route
-          const result = await this.userProfilesService.updatePyramidSlot({
-            user_id: this.userId(),
-            year: this.selectedYear(),
-            level,
-            position,
-            route_id: route.id,
-          });
-          success = result.success;
-          errorMessage = result.error || 'Error updating slot';
-        }
+    let success = false;
+    let errorMessage = '';
 
-        if (success) {
-          this.slotsResource.reload();
-        } else if (errorMessage) {
-          this.toast.error(errorMessage);
-        }
+    if (route === null) {
+      // Remove route
+      if (!slot.id) return;
+      const result = await this.userProfilesService.deletePyramidSlot(slot.id);
+      success = result.success;
+      errorMessage = result.error || 'Error deleting slot';
+    } else {
+      // Add/Update route
+      const result = await this.userProfilesService.updatePyramidSlot({
+        user_id: this.userId(),
+        year: this.selectedYear(),
+        level,
+        position,
+        route_id: route.id,
       });
+      success = result.success;
+      errorMessage = result.error || 'Error updating slot';
+    }
+
+    if (success) {
+      this.slotsResource.reload();
+    } else if (errorMessage) {
+      this.toast.error(errorMessage);
+    }
   }
 
   goToRoute(

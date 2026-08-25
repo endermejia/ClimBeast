@@ -38,6 +38,8 @@ import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
+import { firstValueFrom } from 'rxjs';
+
 import { MerchandiseService } from '../../services/merchandise.service';
 
 import { OrderDetailsDialogComponent } from '../../components/dialogs/order-details-dialog';
@@ -248,8 +250,8 @@ export class AdminShopOrdersComponent {
   }
 
   viewDetails(order: OrderDetail): void {
-    this.dialogs
-      .open(
+    void firstValueFrom(
+      this.dialogs.open(
         new PolymorpheusComponent(OrderDetailsDialogComponent, this.injector),
         {
           data: order,
@@ -258,8 +260,8 @@ export class AdminShopOrdersComponent {
             ` #${order.id.slice(0, 8)}`,
           size: 'm',
         },
-      )
-      .subscribe();
+      ),
+    );
   }
 }
 

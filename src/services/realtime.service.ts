@@ -29,6 +29,9 @@ export class RealtimeService {
           nSub?.unsubscribe();
           mSub?.unsubscribe();
         });
+      } else {
+        this.notificationsService.unreadCount.set(0);
+        this.messagingService.unreadMessagesCount.set(0);
       }
     });
   }

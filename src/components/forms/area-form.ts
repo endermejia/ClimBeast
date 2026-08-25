@@ -31,6 +31,8 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { firstValueFrom } from 'rxjs';
+
 import { AreasService } from '../../services/areas.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { SlugService } from '../../services/slug.service';
@@ -742,18 +744,18 @@ export class AreaFormComponent {
       if (data?.url) {
         window.location.href = data.url;
       } else if (data?.status === 'multiple_accounts' && data.accounts) {
-        this.dialogs
-          .open<string>(this.accountDialogTemplate()!, {
+        const choice = await firstValueFrom(
+          this.dialogs.open<string>(this.accountDialogTemplate()!, {
             data: data.accounts,
             size: 's',
-          })
-          .subscribe((choice) => {
-            if (choice === 'NEW') {
-              this.onConnectStripe(undefined, true);
-            } else if (choice) {
-              this.onConnectStripe(choice);
-            }
-          });
+          }),
+          { defaultValue: undefined },
+        );
+        if (choice === 'NEW') {
+          void this.onConnectStripe(undefined, true);
+        } else if (choice) {
+          void this.onConnectStripe(choice);
+        }
       }
     } finally {
       this.connecting.set(false);

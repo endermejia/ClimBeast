@@ -5,6 +5,8 @@ import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslateService } from '@ngx-translate/core';
 
+import { firstValueFrom } from 'rxjs';
+
 import { MerchandiseItemDialogComponent } from '../components/dialogs/merchandise-item-dialog';
 
 import { MerchandisePackDialogComponent } from '../components/dialogs/merchandise-pack-dialog';
@@ -488,42 +490,56 @@ export class MerchandiseService {
   }
 
   openMerchandiseItem(item: MerchandiseItemDetail): void {
-    this.dialogs
-      .open(new PolymorpheusComponent(MerchandiseItemDialogComponent), {
-        data: item,
-        label: this.translate.instant(item.name || 'merchandising.items.title'),
-        size: 'l',
-      })
-      .subscribe();
+    void firstValueFrom(
+      this.dialogs.open(
+        new PolymorpheusComponent(MerchandiseItemDialogComponent),
+        {
+          data: item,
+          label: this.translate.instant(
+            item.name || 'merchandising.items.title',
+          ),
+          size: 'l',
+        },
+      ),
+    );
   }
 
   openMerchandisePack(pack: AreaPackDetail): void {
-    this.dialogs
-      .open(new PolymorpheusComponent(MerchandisePackDialogComponent), {
-        data: pack,
-        label: pack.name,
-        size: 'l',
-      })
-      .subscribe();
+    void firstValueFrom(
+      this.dialogs.open(
+        new PolymorpheusComponent(MerchandisePackDialogComponent),
+        {
+          data: pack,
+          label: pack.name,
+          size: 'l',
+        },
+      ),
+    );
   }
 
   openOrderDetails(order: OrderDetail): void {
-    this.dialogs
-      .open(new PolymorpheusComponent(OrderDetailsDialogComponent), {
-        data: order,
-        label:
-          this.translate.instant('merchandising.order.details') +
-          ` #${order.id.slice(0, 8)}`,
-        size: 'm',
-      })
-      .subscribe();
+    void firstValueFrom(
+      this.dialogs.open(
+        new PolymorpheusComponent(OrderDetailsDialogComponent),
+        {
+          data: order,
+          label:
+            this.translate.instant('merchandising.order.details') +
+            ` #${order.id.slice(0, 8)}`,
+          size: 'm',
+        },
+      ),
+    );
   }
 
   openPurchaseHistory(): void {
-    this.dialogs
-      .open(new PolymorpheusComponent(PurchaseHistoryDialogComponent), {
-        size: 'm',
-      })
-      .subscribe();
+    void firstValueFrom(
+      this.dialogs.open(
+        new PolymorpheusComponent(PurchaseHistoryDialogComponent),
+        {
+          size: 'm',
+        },
+      ),
+    );
   }
 }

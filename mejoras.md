@@ -53,10 +53,6 @@ Actualizado: 2026-08-25
 - `manifest.webmanifest` tiene `"lang": "es"` y descripción en español sin soporte multilingual.
 - Acción: Generar manifest dinámicamente o usar traducciones del usuario.
 
-### 18. Eliminación de Subscriptions en Dialogs
-
-- Migración progresiva de llamadas a `.subscribe()` en apertura de diálogos hacia `firstValueFrom` con `async/await` o `takeUntilDestroyed()`.
-
 ---
 
 ## 🟢 Bajo

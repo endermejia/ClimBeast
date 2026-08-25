@@ -315,8 +315,8 @@ export class PurchaseHistoryDialogComponent {
   }
 
   protected viewOrderDetails(order: OrderDetail): void {
-    this.dialogService
-      .open(
+    void firstValueFrom(
+      this.dialogService.open(
         new PolymorpheusComponent(OrderDetailsDialogComponent, this.injector),
         {
           data: order,
@@ -325,8 +325,8 @@ export class PurchaseHistoryDialogComponent {
             ` #${order.id.slice(0, 8)}`,
           size: 'm',
         },
-      )
-      .subscribe();
+      ),
+    );
   }
 
   async cancelOrder(orderId: string): Promise<void> {

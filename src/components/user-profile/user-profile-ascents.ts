@@ -32,7 +32,7 @@ import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import { debounceTime, Subject } from 'rxjs';
+import { debounceTime, firstValueFrom, Subject } from 'rxjs';
 
 import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
@@ -370,16 +370,19 @@ export class UserProfileAscentsComponent {
 
   openCalendar(): void {
     const userId = this.userId();
-    this.dialogs
-      .open(new PolymorpheusComponent(AscentCalendarDialogComponent), {
-        label: this.translate.instant('ascents'),
-        size: 'm',
-        data: {
-          userId,
-          user: this.profile(),
+    void firstValueFrom(
+      this.dialogs.open(
+        new PolymorpheusComponent(AscentCalendarDialogComponent),
+        {
+          label: this.translate.instant('ascents'),
+          size: 'm',
+          data: {
+            userId,
+            user: this.profile(),
+          },
         },
-      })
-      .subscribe();
+      ),
+    );
   }
 
   protected openFilters(): void {

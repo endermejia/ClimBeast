@@ -32,7 +32,7 @@ import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import { startWith } from 'rxjs';
+import { firstValueFrom, startWith } from 'rxjs';
 
 import { AuthStateService } from '../../services/auth-state.service';
 import { CartService } from '../../services/cart.service';
@@ -399,9 +399,9 @@ export class MerchandisingComponent {
     this.merchService.openMerchandisePack(pack);
   }
 
-  protected editItem(item?: MerchandiseItemDetail): void {
-    this.dialogService
-      .open<MerchandiseItemDetail | null>(
+  protected async editItem(item?: MerchandiseItemDetail): Promise<void> {
+    const result = await firstValueFrom(
+      this.dialogService.open<MerchandiseItemDetail | null>(
         new PolymorpheusComponent(AdminMerchandiseDialogComponent),
         {
           data: item,
@@ -411,28 +411,31 @@ export class MerchandisingComponent {
           size: 'm',
           dismissible: true,
         },
-      )
-      .subscribe((result: MerchandiseItemDetail | null) => {
-        if (result) {
-          void this.itemsResource.reload();
-        }
-      });
+      ),
+      { defaultValue: null },
+    );
+    if (result) {
+      void this.itemsResource.reload();
+    }
   }
 
-  protected editPack(pack?: AreaPackDetail): void {
-    this.dialogService
-      .open<boolean>(new PolymorpheusComponent(AdminPackDialogComponent), {
-        data: pack,
-        label: this.translate.instant(
-          pack ? 'merchandising.packs.edit' : 'merchandising.packs.new',
-        ),
-        size: 'm',
-        dismissible: true,
-      })
-      .subscribe((result: boolean) => {
-        if (result) {
-          void this.packsResource.reload();
-        }
-      });
+  protected async editPack(pack?: AreaPackDetail): Promise<void> {
+    const result = await firstValueFrom(
+      this.dialogService.open<boolean>(
+        new PolymorpheusComponent(AdminPackDialogComponent),
+        {
+          data: pack,
+          label: this.translate.instant(
+            pack ? 'merchandising.packs.edit' : 'merchandising.packs.new',
+          ),
+          size: 'm',
+          dismissible: true,
+        },
+      ),
+      { defaultValue: false },
+    );
+    if (result) {
+      void this.packsResource.reload();
+    }
   }
 }

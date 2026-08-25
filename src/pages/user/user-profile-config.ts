@@ -521,18 +521,16 @@ export class UserProfileConfigComponent {
     });
   }
 
-  private openWelcomeDialog(): void {
-    this.dialogs
-      .open(new PolymorpheusComponent(FirstStepsDialogComponent), {
+  private async openWelcomeDialog(): Promise<void> {
+    await firstValueFrom(
+      this.dialogs.open(new PolymorpheusComponent(FirstStepsDialogComponent), {
         size: 'm',
         dismissible: false,
         closable: false,
-      })
-      .subscribe({
-        complete: () => {
-          void this.tourService.start();
-        },
-      });
+      }),
+      { defaultValue: undefined },
+    );
+    void this.tourService.start();
   }
 
   async loadProfile(): Promise<void> {
@@ -1065,11 +1063,11 @@ export class UserProfileConfigComponent {
 
   deleteAccount(template: PolymorpheusContent<TuiDialogContext<void>>): void {
     this.model.update((m) => ({ ...m, deleteEmail: '' }));
-    this.dialogs
-      .open(template, {
+    void firstValueFrom(
+      this.dialogs.open(template, {
         size: 'm',
-      })
-      .subscribe();
+      }),
+    );
   }
 
   protected openFollowRequestsDialog(): void {
@@ -1107,11 +1105,11 @@ export class UserProfileConfigComponent {
     template: PolymorpheusContent<TuiDialogContext<void>>,
   ): void {
     this.passwordModel.set({ newPassword: '', confirmPassword: '' });
-    this.dialogs
-      .open(template, {
+    void firstValueFrom(
+      this.dialogs.open(template, {
         size: 'm',
-      })
-      .subscribe();
+      }),
+    );
   }
 
   protected readonly passwordModel = signal({
