@@ -8,6 +8,11 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.spec.ts'],
     setupFiles: ['src/test-setup.ts'],
+    server: {
+      deps: {
+        inline: [/@taiga-ui/],
+      },
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'text-summary', 'html', 'json-summary'],

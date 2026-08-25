@@ -55,8 +55,8 @@ export class OutdoorDataService {
     isBrowser: this.isBrowser,
     cacheKey: () => CACHE_KEYS.areasList,
     fetcher: async () => {
-      await this.supabase.whenReady();
-      const { data, error } = await this.supabase.client.rpc('get_areas_list');
+      const client = await this.supabase.getClient();
+      const { data, error } = await client.rpc('get_areas_list');
       if (error) {
         throw error;
       }
@@ -86,8 +86,8 @@ export class OutdoorDataService {
     cacheKey: (areaSlug) => (areaSlug ? CACHE_KEYS.cragsList(areaSlug) : null),
     fetcher: async (areaSlug) => {
       if (!areaSlug) return [];
-      await this.supabase.whenReady();
-      const { data, error } = await this.supabase.client
+      const client = await this.supabase.getClient();
+      const { data, error } = await client
         .rpc('get_crags_list')
         .eq('area_slug', areaSlug);
 
@@ -130,8 +130,8 @@ export class OutdoorDataService {
     cacheKey: (areaSlug) => (areaSlug ? CACHE_KEYS.areaTopos(areaSlug) : null),
     fetcher: async (areaSlug) => {
       if (!areaSlug) return [];
-      await this.supabase.whenReady();
-      const { data, error } = await this.supabase.client
+      const client = await this.supabase.getClient();
+      const { data, error } = await client
         .from('topos')
         .select(
           '*, crags!inner(slug, areas!inner(slug)), topo_routes(route_id, route:routes(grade))',
@@ -217,9 +217,9 @@ export class OutdoorDataService {
       cragSlug && areaSlug ? CACHE_KEYS.cragDetail(areaSlug, cragSlug) : null,
     fetcher: async ({ cragSlug, areaSlug }) => {
       if (!cragSlug || !areaSlug) return null;
-      await this.supabase.whenReady();
+      const client = await this.supabase.getClient();
       const userId = this.supabase.authUser()?.id;
-      let query = this.supabase.client
+      let query = client
         .from('crags')
         .select(
           `
@@ -287,8 +287,8 @@ export class OutdoorDataService {
       routeSlug ? CACHE_KEYS.routeDetail(routeSlug, userId) : null,
     fetcher: async ({ cragId, routeSlug, userId }) => {
       if (!cragId || !routeSlug) return null;
-      await this.supabase.whenReady();
-      let query = this.supabase.client
+      const client = await this.supabase.getClient();
+      let query = client
         .from('routes')
         .select(
           `
@@ -352,9 +352,9 @@ export class OutdoorDataService {
       if (!routeId) return { items: [], total: 0 };
       if (!this.isBrowser) return { items: [], total: 0 };
       try {
-        await this.supabase.whenReady();
+        const client = await this.supabase.getClient();
 
-        const { data, error, count } = await this.supabase.client
+        const { data, error, count } = await client
           .from('route_ascents')
           .select('*', { count: 'exact' })
           .eq('route_id', routeId)
@@ -374,7 +374,7 @@ export class OutdoorDataService {
           (id): id is string => !!id,
         );
 
-        const { data: profiles } = await this.supabase.client
+        const { data: profiles } = await client
           .from('user_profiles')
           .select('id, name, avatar')
           .in('id', userIds);
@@ -401,7 +401,8 @@ export class OutdoorDataService {
     id: number,
     userId: string | undefined,
   ): Promise<TopoDetail> {
-    const { data, error } = await this.supabase.client
+    const client = await this.supabase.getClient();
+    const { data, error } = await client
       .from('topos')
       .select(
         `

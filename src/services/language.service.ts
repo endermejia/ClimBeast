@@ -19,7 +19,7 @@ import {
 } from '@taiga-ui/i18n';
 
 import { TranslateService } from '@ngx-translate/core';
-import { map, merge, startWith } from 'rxjs';
+import { map, merge, startWith, firstValueFrom } from 'rxjs';
 
 import { Language, Languages } from '../models';
 
@@ -82,7 +82,7 @@ export class LanguageService {
     effect(() => {
       const selectedLanguage = this.selectedLanguage();
       if (selectedLanguage) {
-        this.translate.use(selectedLanguage).subscribe();
+        void firstValueFrom(this.translate.use(selectedLanguage));
       }
     });
   }

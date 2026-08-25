@@ -77,14 +77,21 @@ export class SearchService {
     if (trimmedQuery.length < 2) return of(null);
 
     return from(
-      Promise.all([
-        this.supabase.client.rpc('search_items_fuzzy', {
-          p_query: trimmedQuery,
-        }),
-        this.eightAnu.searchUnified(trimmedQuery, ['0', '1', '3']),
-      ]),
+      this.supabase.getClient().then((client) =>
+        Promise.all([
+          client.rpc('search_items_fuzzy', {
+            p_query: trimmedQuery,
+          }),
+          this.eightAnu.searchUnified(trimmedQuery, ['0', '1', '3']),
+          client
+            .from('equippers')
+            .select('id, name, description')
+            .ilike('name', `%${trimmedQuery}%`)
+            .limit(10),
+        ]),
+      ),
     ).pipe(
-      map(([dbResponse, eightAnuItems]) => {
+      map(([dbResponse, eightAnuItems, equippersResponse]) => {
         const dbData = dbResponse.data as DbSearchResponse | null;
         const results: SearchData = {};
 
@@ -147,13 +154,26 @@ export class SearchService {
           }));
         }
 
+        // Process Equippers
+        const equippers = equippersResponse?.data || [];
+        if (equippers.length > 0) {
+          results['equippers'] = equippers.map((eq) => ({
+            title: eq.name,
+            subtitle: eq.description || undefined,
+            href: `/equipper/${eq.id}`,
+            icon: '@tui.hammer',
+            type: 'equipper',
+          }));
+        }
+
         // Areas & Crags: only show create/import when no results at all
         const hasAnyResults =
           areas.length > 0 ||
           crags.length > 0 ||
           routes.length > 0 ||
           users.length > 0 ||
-          indoors.length > 0;
+          indoors.length > 0 ||
+          equippers.length > 0;
 
         if (!hasAnyResults || areas.length === 0) {
           const anuArea = eightAnuItems?.find(

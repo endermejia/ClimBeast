@@ -1,6 +1,16 @@
-import { computed, resource, ResourceRef, Signal } from '@angular/core';
+import {
+  computed,
+  effect,
+  resource,
+  ResourceOptions,
+  ResourceRef,
+  Signal,
+} from '@angular/core';
 
 import { CacheService } from '../services/cache.service';
+import { ToastService } from '../services/toast.service';
+
+import { handleErrorToast } from './handle-error';
 
 /**
  * Polls an Angular resource until its value is not undefined (i.e., it has finished loading).
@@ -24,7 +34,50 @@ export async function waitForResource<T>(
   return undefined;
 }
 
-export interface CachedResourceConfig<P, T> {
+export interface WatchResourceErrorOptions {
+  toast?: ToastService;
+  logTag?: string;
+  onError?: (err: unknown) => void;
+}
+
+/**
+ * Automatically watches a resource's `.error()` signal and displays toast notifications + logs when a fetch fails.
+ */
+export function watchResourceError<T>(
+  res: ResourceRef<T>,
+  options?: WatchResourceErrorOptions,
+): void {
+  effect(() => {
+    const err = res.error();
+    if (err) {
+      const tag = options?.logTag || 'Resource';
+      console.error(`[${tag}] Resource loader error:`, err);
+      if (options?.toast) {
+        handleErrorToast(err, options.toast);
+      }
+      if (options?.onError) {
+        options.onError(err);
+      }
+    }
+  });
+}
+
+/**
+ * Enhanced resource creator that incorporates error watching, logging, and toast feedback.
+ */
+export function createSafeResource<T, P = unknown>(
+  options: ResourceOptions<T, P> & WatchResourceErrorOptions,
+): ResourceRef<T | undefined> {
+  const res = resource(options);
+  watchResourceError(res, {
+    toast: options.toast,
+    logTag: options.logTag,
+    onError: options.onError,
+  });
+  return res;
+}
+
+export interface CachedResourceConfig<P, T> extends WatchResourceErrorOptions {
   params?: () => P;
   isBrowser: boolean;
   cacheKey: (params: P) => string | null;
@@ -36,7 +89,7 @@ export interface CachedResourceConfig<P, T> {
 }
 
 /**
- * Creates an Angular resource combined with CacheService fallback.
+ * Creates an Angular resource combined with CacheService fallback and error handling.
  */
 export function createCachedResource<P, T>(
   config: CachedResourceConfig<P, T>,
@@ -54,12 +107,36 @@ export function createCachedResource<P, T>(
       if (!key) {
         return config.fallbackValue;
       }
-      return config.cache.fetchOrCache(key, () => config.fetcher(params), {
-        fallbackValue: config.fallbackValue,
-        logTag: config.logTag || 'CachedResource',
-        ttlMs: config.ttlMs,
-      });
+      try {
+        return await config.cache.fetchOrCache(
+          key,
+          () => config.fetcher(params),
+          {
+            fallbackValue: config.fallbackValue,
+            logTag: config.logTag || 'CachedResource',
+            ttlMs: config.ttlMs,
+          },
+        );
+      } catch (err) {
+        console.error(
+          `[${config.logTag || 'CachedResource'}] Loader error:`,
+          err,
+        );
+        if (config.toast) {
+          handleErrorToast(err, config.toast);
+        }
+        if (config.onError) {
+          config.onError(err);
+        }
+        return config.fallbackValue;
+      }
     },
+  });
+
+  watchResourceError(res, {
+    toast: config.toast,
+    logTag: config.logTag || 'CachedResource',
+    onError: config.onError,
   });
 
   const sig = computed(() => {

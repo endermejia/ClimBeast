@@ -8,6 +8,7 @@ import {
   WritableSignal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
 import {
   TuiSortDirection,
@@ -21,7 +22,9 @@ import {
   TuiButton,
   TuiDialogService,
   TuiFilterByInputPipe,
+  TuiIcon,
   TuiInput,
+  TuiLink,
   TuiScrollbar,
 } from '@taiga-ui/core';
 import {
@@ -58,6 +61,7 @@ import { IS_BROWSER } from '../../app/is-browser';
   imports: [
     EmptyStateComponent,
     FormsModule,
+    RouterLink,
     TranslatePipe,
     TuiAppearance,
     TuiAvatar,
@@ -65,13 +69,15 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiBadgedContentDirective,
     TuiBadgeNotification,
     TuiButton,
-    TuiInput,
-    TuiScrollbar,
-    TuiSkeleton,
-    TuiTable,
     TuiComboBox,
     TuiDataListWrapper,
     TuiFilterByInputPipe,
+    TuiIcon,
+    TuiInput,
+    TuiLink,
+    TuiScrollbar,
+    TuiSkeleton,
+    TuiTable,
   ],
   template: `
     <section class="flex flex-col w-full max-w-5xl mx-auto p-4">
@@ -183,17 +189,32 @@ import { IS_BROWSER } from '../../app/is-browser';
                 @for (item of list; track item.id) {
                   <tr tuiTr>
                     <td *tuiCell="'name'" tuiTd>
-                      <tui-textfield [tuiTextfieldCleaner]="false">
-                        <input
-                          tuiInput
-                          [ngModel]="item.name"
-                          [ngModelOptions]="options"
-                          (ngModelChange)="
-                            updateEquipper(item.id, { name: $event })
-                          "
-                          autocomplete="off"
-                        />
-                      </tui-textfield>
+                      <div class="flex items-center gap-2">
+                        @if (item.id) {
+                          <a
+                            tuiLink
+                            [routerLink]="['/equipper', item.id]"
+                            class="font-medium shrink-0"
+                            [title]="'view' | translate"
+                          >
+                            <tui-icon icon="@tui.external-link" size="s" />
+                          </a>
+                        }
+                        <tui-textfield
+                          class="grow"
+                          [tuiTextfieldCleaner]="false"
+                        >
+                          <input
+                            tuiInput
+                            [ngModel]="item.name"
+                            [ngModelOptions]="options"
+                            (ngModelChange)="
+                              updateEquipper(item.id, { name: $event })
+                            "
+                            autocomplete="off"
+                          />
+                        </tui-textfield>
+                      </div>
                     </td>
                     <td *tuiCell="'user_id'" tuiTd>
                       <tui-textfield

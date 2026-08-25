@@ -678,9 +678,12 @@ export function resetViewerZoomState(state: ViewerZoomPanState): void {
 export function attachWheelListener(
   areaEl: HTMLElement | undefined | null,
   handler: (e: Event) => void,
-): void {
-  if (areaEl && !('_wheelAttached' in areaEl)) {
+): () => void {
+  if (areaEl) {
     areaEl.addEventListener('wheel', handler, { passive: false });
-    (areaEl as { _wheelAttached?: boolean })._wheelAttached = true;
+    return () => {
+      areaEl.removeEventListener('wheel', handler);
+    };
   }
+  return () => undefined;
 }

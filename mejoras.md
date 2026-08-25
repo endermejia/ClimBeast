@@ -1,108 +1,123 @@
-## 🟡 Mejoras Pendientes
+# Mejoras Pendientes — Local Walls
 
-1. Separación de SupabaseService (527 líneas)
-
-- Maneja auth, storage URLs, profile, admin areas, y config todo en un solo servicio.
-- Acción: Extraer SupabaseAuthService, SupabaseStorageService, SupabaseConfigService.
-
-2. TopoDataService / OutdoorDataService (675 líneas)
-
-- Contiene múltiples resource() calls y mucha lógica de cache.
-- Acción: Dividir en AreaDataService, CragDataService, TopoDataService, RouteDataService.
-
-3. Falta de error boundaries en templates
-
-- No hay patrón consistente de fallback UI para errores en resource() loading.
-- Acción: Crear un @defer con @error block o un wrapper ErrorBoundaryComponent.
-
-4. Cache de Supabase storage URLs potencialmente stale
-
-- SignedUrlCache usa CacheService con keys versionadas, pero no hay invalidación forzada.
-- Acción: Agregar mecanismo de invalidación cuando el archivo cambia.
-
-5. AscentsService sobredimensionado (1123 líneas)
-
-- Contiene lógica de CRUD, diálogos, notificaciones, comentarios, y estadísticas todas mezcladas.
-- Acción: Extraer AscentCrudService, AscentCommentsService, AscentStatsService.
-
-6. RoutesService sobredimensionado (908 líneas)
-
-- Mezcla apertura de diálogos CRUD con queries Supabase y lógica de cache.
-- Acción: Separar RouteCrudService (diálogos) de RouteQueryService (data fetching).
-
-7. IndoorService sobredimensionado (872 líneas)
-
-- Contiene CRUD de centers, routes, topos, vouchers, ascents, sales e inventory en un solo archivo.
-- Acción: Dividir en IndoorCenterService, IndoorRouteService, IndoorVoucherService.
-
-8. AreasService sobredimensionado (745 líneas)
-
-- Acumula CRUD de áreas, búsquedas 8a.nu, administración de accesos y unificación.
-- Acción: Extraer AreaAdminService (access management) y AreaUnifyService.
-
-9. user-profile-config.ts excesivamente grande (1939 líneas)
-
-- Componente de página con toda la lógica de perfil, preferencias, tour y 8a.nu en un solo archivo.
-- Acción: Dividir en sub-componentes: ProfileGeneralSectionComponent, ProfilePreferencesComponent, Profile8aSectionComponent, ProfileDangerZoneComponent.
-
-10. import-8a.ts excesivamente grande (1698 líneas)
-
-- Componente de importación con parsing CSV, matching de rutas, y UI de confirmación todo junto.
-- Acción: Extraer CsvParserService, RouteMatcherService, y dividir en componentes de cada paso.
-
-11. Falta de tests en servicios críticos
-
-- 46 servicios sin .spec.ts, incluyendo supabase.service.ts, outdoor-data.service.ts, indoor.service.ts, routes.service.ts, areas.service.ts, ascents.service.ts.
-- Acción: Crear tests unitarios para al menos los servicios de datos y auth (prioridad alta).
-
-12. Falta de tests en componentes principales
-
-- 105+ componentes sin .spec.ts, incluyendo navbar.ts (811 líneas), topo-viewer.ts, ascent-card.ts, todos los forms y dialogs.
-- Acción: Crear tests para componentes de alto uso: navbar, topo-viewer, ascent-card, y todos los forms.
-
-16. Manifest PWA hardcodeado en español
-
-- manifest.webmanifest tiene "lang": "es" y descripción en español sin soporte multilingual.
-- Acción: Hacer que el manifest se genere dinámicamente o use las traducciones del usuario.
-
-21. `await this.supabase.whenReady()` repetido 100+ veces
-
-- Prácticamente cada método de servicio repite esta línea antes de cada query Supabase.
-- Acción: Crear un wrapper `getClient()` que haga await internamente, o usar un proxy sobre `client`.
-
-25. Navbar con 811 líneas y muchas dependencias
-
-- navbar.ts inyecta 11 servicios y maneja búsqueda, notificaciones, tour, carrito, y navegación.
-- Acción: Extraer SearchDropdownComponent, NotificationBadgeComponent, y TourTriggerComponent.
-
-26. topo-viewer.ts con lógica de interacción compleja (786 líneas)
-
-- Maneja zoom, pan, drag, touch events, fullscreen, y rutas SVG en un solo componente.
-- Acción: Extraer ZoomPanController (zoom/drag logic) y TopoRouteRenderer (SVG route rendering).
-
-27. chat-dialog.ts excesivamente grande (712 líneas)
-
-- Dialog de chat que probablemente mezcla UI, lógica de mensajes y conexión realtime.
-- Acción: Dividir en ChatMessageListComponent, ChatInputComponent, y ChatService dedicado.
-
-28. pyramid.ts con lógica de gráficos compleja (660 líneas)
-
-- Componente de pirámide de proyectos con rendering SVG y cálculos matemáticos.
-- Acción: Extraer PyramidCalculatorService y PyramidRendererComponent.
+Actualizado: 2026-08-25
 
 ---
 
-## 🟢 Mejoras Completadas
+## 🟠 Alto
 
-- [x] **13. @defer con @error en templates**: Agregados bloques `@error` con fallback UI traducida en bloques `@defer`.
-- [x] **14. Sanitización de innerHTML**: Auditados los 6 usos de `innerHTML` verificando el paso estricto por `SecurityContext.HTML` y `sanitizeHtml`.
-- [x] **15. Uso de bypassSecurityTrust**: Auditadas las llamadas a `bypassSecurityTrust*` asegurando la limpieza previa con `DomSanitizer.sanitize`.
-- [x] **17. Sitemap.xml**: Actualizado con las rutas públicas exactas (`/`, `/info`, `/login`) y enlaces `hreflang` multilingües.
-- [x] **18. robots.txt**: Alineado exactamente con la estructura de `app.routes.ts` y guards de autenticación.
-- [x] **19. Textos de landing page demo internacionalizados**: Cadenas del demo card y `mockCrag` movidas a archivos i18n (`public/i18n/*.json`) y gestionadas mediante `computed()`.
-- [x] **20. Helper createCachedResource**: Implementado helper reutilizable `createCachedResource()` en `resource-helpers.ts` unificando `resource()` y fallback de `CacheService`, aplicado extensivamente en `OutdoorDataService`, `IndoorDataService`, `FavoritesDataService` y `CragRoutesDataService` eliminando código repetitivo.
-- [x] **22. CacheService con expiración TTL**: Agregado soporte TTL opcional en `get()` y `fetchOrCache()`, con desalojo automático de claves expiradas y pruebas unitarias.
-- [x] **23. ARIA roles en navegación y tarjetas**: Añadidos atributos de accesibilidad ARIA en `AppCardComponent`, `NavbarComponent` y componentes sociales.
-- [x] **24. aria-label en botones de icono**: Añadidos atributos `[attr.aria-label]` a botones de icono e interacciones en tarjetas de escaladas y favoritos.
-- [x] **29. Estrategia de Preloading**: Corregida coincidencia de rutas (`home`, `area`, `explore`, `admin`, `my-areas`) en `SelectivePreloadingStrategy` y agregadas pruebas unitarias.
-- [x] **30. SEO Service hreflang dinámico**: Implementada la actualización de etiquetas `<link rel="alternate" hreflang="...">` por URL canónica.
+### 5. import-8a.ts excesivamente grande (1698 líneas)
+
+- Parsing CSV, matching de rutas, y UI de confirmación en un solo archivo.
+- Acción: Extraer `CsvParserService`, `RouteMatcherService`, y dividir en componentes por paso.
+
+### 6. topo-viewer.ts con lógica compleja (786 líneas)
+
+- Zoom, pan, drag, touch events, fullscreen, y rutas SVG en un solo componente.
+- Acción: Extraer `ZoomPanController` (zoom/drag) y `TopoRouteRenderer` (SVG routes).
+
+### 7. chat-dialog.ts excesivamente grande (712 líneas)
+
+- UI, lógica de mensajes, y conexión realtime mezclados.
+- Acción: Dividir en `ChatMessageListComponent`, `ChatInputComponent`, y `ChatService` dedicado.
+
+---
+
+## 🟡 Medio
+
+### 8. Separación de SupabaseService (527 líneas)
+
+- Maneja auth, storage URLs, profile, admin areas, y config en un solo servicio.
+- Acción: Extraer `SupabaseAuthService`, `SupabaseStorageService`, `SupabaseConfigService`.
+
+### 9. OutdoorDataService / TopoDataService (675 líneas)
+
+- Múltiples `resource()` calls y mucha lógica de cache.
+- Acción: Dividir en `AreaDataService`, `CragDataService`, `TopoDataService`, `RouteDataService`.
+
+### 10. AscentsService sobredimensionado (1123 líneas)
+
+- CRUD, diálogos, notificaciones, comentarios, y estadísticas mezclados.
+- Acción: Extraer `AscentCrudService`, `AscentCommentsService`, `AscentStatsService`.
+
+### 11. RoutesService sobredimensionado (908 líneas)
+
+- Mezcla apertura de diálogos CRUD con queries Supabase y lógica de cache.
+- Acción: Separar `RouteCrudService` (diálogos) de `RouteQueryService` (data fetching).
+
+### 12. IndoorService sobredimensionado (872 líneas)
+
+- CRUD de centers, routes, topos, vouchers, ascents, sales e inventory en un solo archivo.
+- Acción: Dividir en `IndoorCenterService`, `IndoorRouteService`, `IndoorVoucherService`.
+
+### 13. AreasService sobredimensionado (745 líneas)
+
+- CRUD de áreas, búsquedas 8a.nu, administración de accesos y unificación.
+- Acción: Extraer `AreaAdminService` (access management) y `AreaUnifyService`.
+
+### 14. `handleErrorToast()` solo maneja 2 códigos PostgreSQL
+
+- Solo maneja `23503` (foreign key) y `23505` (unique). Faltan `28P01`, `42501`, `42P01`, errores de red, rate limiting (429).
+- Acción: Expandir mapeo de códigos de error y agregar handling para errores de red/timeout.
+
+### 15. ESLint sin reglas estrictas TypeScript
+
+- Falta `@typescript-eslint/no-explicit-any` (35 casts `as any` en tests). Falta `prefer-signals`, `prefer-inject`, `@typescript-eslint/strict-type-checked`.
+- Acción: Agregar reglas estrictas al `eslint.config.js`.
+
+### 16. Pyramid.ts con lógica compleja (660 líneas)
+
+- Rendering SVG y cálculos matemáticos en un solo componente.
+- Acción: Extraer `PyramidCalculatorService` y `PyramidRendererComponent`.
+
+### 17. Manifest PWA hardcodeado en español
+
+- `manifest.webmanifest` tiene `"lang": "es"` y descripción en español sin soporte multilingual.
+- Acción: Generar manifest dinámicamente o usar traducciones del usuario.
+
+### 18. Eliminación de Subscriptions en Dialogs
+
+- Migración progresiva de llamadas a `.subscribe()` en apertura de diálogos hacia `firstValueFrom` con `async/await` o `takeUntilDestroyed()`.
+
+---
+
+## 🟢 Bajo
+
+### 19. Effect con dependencia circular implícita
+
+- `outdoor-route.ts:502-511`: Effect escribe a signals del servicio para triggerar resources. Crea cadena implícita difícil de debuggear.
+- Acción: Considerar pasar params directamente al resource en vez de usar signals intermedios.
+
+### 20. Hack `_v: r` en resource params
+
+- `outdoor-route.ts:435`: `_v: r` en params para forzar re-evaluación cuando el `id` no cambia. Señal de parametrizado incorrecto.
+- Acción: Revisar si el resource debería usar un signal derivado como key en vez de hackear params.
+
+### 21. Edge Functions con console.log de debug
+
+- `notify-push/index.ts` y `stripe-onboarding/index.ts` tienen `console.log` sobrantes de desarrollo.
+- Acción: Convertir a `console.info`/`console.debug`.
+
+### 22. Tests de servicios solo cubren path server-side
+
+- `crags.service.spec.ts` y similares solo testean el early-return de `IS_BROWSER=false`. La lógica real del browser no se testea.
+- Acción: Agregar tests que mockeem Supabase y testeen CRUD, error handling, y cache.
+
+### 23. Sin retry logic para API calls
+
+- El interceptor HTTP tiene timeout de 5s para APIs externas pero no reintenta. Falloff exponencial ausente.
+- Acción: Agregar retry con backoff exponencial para errores transitorios (5xx, network).
+
+---
+
+## 🔵 Mejoras de Arquitectura (Largo Plazo)
+
+### 24. Evaluar migración de toObservable+switchMap a resource()
+
+- `weather-forecast.ts:263` y `navbar.ts:692` usan `toObservable().pipe(switchMap())`. Algunos podrían simplificarse con `resource()`.
+- Acción: Revisar cada instancia; los que usan `debounceTime` quedan en RxJS, los directos migran.
+
+### 25. Establecer patrón estándar de loading/error states
+
+- Cada componente maneja loading y error de forma ad-hoc. No hay un `LoadingState` type compartido ni `@loading`/`@error` blocks estandarizados.
+- Acción: Definir `LoadingState = { loading: boolean; error: string | null; data: T | null }` y componente wrapper reutilizable.

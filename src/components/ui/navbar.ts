@@ -1,72 +1,35 @@
-import { NgOptimizedImage, NgTemplateOutlet } from '@angular/common';
+import { NgOptimizedImage } from '@angular/common';
 import {
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
   computed,
-  effect,
   inject,
   input,
-  signal,
 } from '@angular/core';
-import { toSignal, toObservable } from '@angular/core/rxjs-interop';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
-import { TuiAutoFocus } from '@taiga-ui/cdk';
-import {
-  TuiAppearance,
-  TuiDataList,
-  TuiDropdown,
-  TuiIcon,
-  TuiTextfield,
-  TuiTitle,
-} from '@taiga-ui/core';
+import { TuiAppearance, TuiDropdown, TuiIcon } from '@taiga-ui/core';
 import {
   TuiAvatar,
-  TuiBadge,
   TuiBadgedContent,
   TuiBadgeNotification,
   TuiPulse,
   TuiSkeleton,
-  TuiTab,
-  TuiTabs,
 } from '@taiga-ui/kit';
-import { TuiInputSearch, TUI_INPUT_SEARCH } from '@taiga-ui/layout';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-
-import { debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { AppNotificationsService } from '../../services/app-notifications.service';
-import { AreasService } from '../../services/areas.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { CartService } from '../../services/cart.service';
-import { CragsService } from '../../services/crags.service';
 import { LayoutService } from '../../services/layout.service';
 import { MessagingService } from '../../services/messaging.service';
-import { OutdoorDataService } from '../../services/outdoor-data.service';
-import { RoutesService } from '../../services/routes.service';
 import { ScrollService } from '../../services/scroll.service';
-import { SearchService } from '../../services/search.service';
-
-import { TourService } from '../../services/tour.service';
-import { TourStep } from '../../services/tour.service';
-
-import {
-  SearchAreaItem,
-  SearchCragItem,
-  SearchData,
-  SearchItem,
-  SearchRouteItem,
-} from '../../models';
-
-import { gradeToNumber } from '../../utils';
-
-import { GradeComponent } from './avatar-grade';
+import { TourService, TourStep } from '../../services/tour.service';
 
 import { MenuOptionsButtonComponent } from './menu-options-button';
-
+import { NotificationBadgeComponent } from './notification-badge';
+import { SearchDropdownComponent } from './search-dropdown';
 import { TourHintComponent } from './tour-hint';
 
 @Component({
@@ -74,63 +37,23 @@ import { TourHintComponent } from './tour-hint';
   host: {
     class: 'z-100 relative md:w-20 md:h-full md:flex md:items-center',
   },
-  providers: [
-    {
-      provide: TUI_INPUT_SEARCH,
-      useFactory: () => {
-        const translate = inject(TranslateService);
-        return toSignal(
-          translate.stream('searchPlaceholder').pipe(
-            map((placeholder: string) => ({
-              popular: '',
-              history: '',
-              placeholder,
-              hotkey: '',
-              all: '',
-              empty: '',
-            })),
-          ),
-          {
-            initialValue: {
-              popular: '',
-              history: '',
-              placeholder: '',
-              hotkey: '',
-              all: '',
-              empty: '',
-            },
-          },
-        );
-      },
-    },
-  ],
   imports: [
-    FormsModule,
     MenuOptionsButtonComponent,
     NgOptimizedImage,
-    NgTemplateOutlet,
-    ReactiveFormsModule,
+    NotificationBadgeComponent,
     RouterLink,
     RouterLinkActive,
+    SearchDropdownComponent,
     TourHintComponent,
     TranslatePipe,
     TuiAppearance,
-    TuiAutoFocus,
     TuiAvatar,
-    TuiBadge,
-    TuiBadgedContent,
     TuiBadgeNotification,
-    TuiDataList,
+    TuiBadgedContent,
     TuiDropdown,
     TuiIcon,
-    TuiInputSearch,
     TuiPulse,
     TuiSkeleton,
-    TuiTab,
-    TuiTabs,
-    TuiTextfield,
-    TuiTitle,
-    GradeComponent,
   ],
   styles: `
     ::ng-deep nav tui-icon svg {
@@ -191,16 +114,7 @@ import { TourHintComponent } from './tour-hint';
             ) {
               <tui-pulse />
             }
-            <tui-badged-content>
-              @if (notificationsService.unreadCount(); as unreadNotifications) {
-                <tui-badge-notification
-                  tuiAppearance="accent"
-                  size="s"
-                  tuiSlot="top"
-                >
-                  {{ unreadNotifications }}
-                </tui-badge-notification>
-              }
+            <app-notification-badge>
               <tui-icon
                 icon="@tui.home"
                 [style.color]="
@@ -209,7 +123,7 @@ import { TourHintComponent } from './tour-hint';
                     : 'var(--tui-text-primary)'
                 "
               />
-            </tui-badged-content>
+            </app-notification-badge>
 
             <span
               class="hidden md:group-hover:block transition-opacity duration-300 whitespace-nowrap overflow-hidden"
@@ -330,195 +244,7 @@ import { TourHintComponent } from './tour-hint';
           }
 
           <!-- Search -->
-          <div class="flex flex-col gap-2 overflow-hidden flex-none relative">
-            <div
-              class="absolute inset-0 pointer-events-none"
-              [tuiDropdown]="tourHint"
-              [tuiDropdownManual]="
-                tourService.isActive() && tourService.step() === TourStep.SEARCH
-              "
-              tuiDropdownDirection="bottom"
-            ></div>
-            <button
-              tuiAppearance="flat-grayscale"
-              [tuiSkeleton]="loading()"
-              class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full cursor-pointer relative group"
-              (click)="searchOpen.set(true)"
-              [attr.aria-label]="'search' | translate"
-            >
-              @if (
-                tourService.isActive() && tourService.step() === TourStep.SEARCH
-              ) {
-                <tui-pulse />
-              }
-              <tui-icon
-                icon="@tui.search"
-                [style.color]="
-                  searchOpen()
-                    ? 'var(--tui-text-negative)'
-                    : 'var(--tui-text-primary)'
-                "
-              />
-              <span
-                class="hidden md:group-hover:block transition-opacity duration-300 whitespace-nowrap overflow-hidden"
-              >
-                {{ 'search' | translate }}
-              </span>
-            </button>
-            <div class="hidden">
-              <tui-textfield>
-                <input
-                  #searchInput
-                  autocomplete="off"
-                  tuiAutoFocus
-                  [value]="searchValue()"
-                  (input)="searchValue.set(toValue($event))"
-                  [tuiInputSearch]="searchContent"
-                  [(tuiInputSearchOpen)]="searchOpen"
-                  [placeholder]="'searchPlaceholder' | translate"
-                />
-                <ng-template #searchContent>
-                  @if (results() !== null) {
-                    <div
-                      class="flex flex-col h-full bg-(--tui-background-base) rounded-xl overflow-hidden w-[calc(100vw-1rem)] md:w-auto md:min-w-200 max-h-[80vh]"
-                    >
-                      <div class="p-2">
-                        <tui-tabs [(activeItemIndex)]="activeSearchTab">
-                          @if (groupedResults().length > 1) {
-                            <button tuiTab>
-                              {{ 'all' | translate }}
-                              <span
-                                tuiBadge
-                                size="s"
-                                appearance="neutral"
-                                class="ml-2 inline-flex items-center"
-                              >
-                                {{ totalResults() }}
-                              </span>
-                            </button>
-                          }
-                          @for (group of groupedResults(); track group.key) {
-                            <button tuiTab>
-                              {{ group.key | translate }}
-                              <span
-                                tuiBadge
-                                size="s"
-                                appearance="neutral"
-                                class="ml-2 inline-flex items-center"
-                              >
-                                {{ group.items.length }}
-                              </span>
-                            </button>
-                          }
-                        </tui-tabs>
-                      </div>
-
-                      <div class="flex-1 overflow-y-auto min-h-0">
-                        <tui-data-list
-                          size="s"
-                          [emptyContent]="
-                            (results() !== null && totalResults() === 0
-                              ? 'nothingFound'
-                              : ''
-                            ) | translate
-                          "
-                        >
-                          @if (
-                            groupedResults().length > 1 &&
-                            activeSearchTab() === 0
-                          ) {
-                            <!-- "All" Tab -->
-                            @for (group of groupedResults(); track group.key) {
-                              <tui-opt-group [label]="group.key | translate">
-                                @for (
-                                  item of group.items;
-                                  track item.href + item.type + item.title
-                                ) {
-                                  <a
-                                    tuiOption
-                                    [routerLink]="item.href || null"
-                                    (click)="onResultClick(item, $event)"
-                                  >
-                                    <ng-container
-                                      [ngTemplateOutlet]="itemTemplate"
-                                      [ngTemplateOutletContext]="{
-                                        $implicit: item,
-                                      }"
-                                    ></ng-container>
-                                  </a>
-                                }
-                              </tui-opt-group>
-                            }
-                          } @else {
-                            <!-- Category specific Tab -->
-                            @let tabOffset =
-                              groupedResults().length > 1 ? 1 : 0;
-                            @let activeGroup =
-                              groupedResults()[activeSearchTab() - tabOffset];
-                            @if (activeGroup) {
-                              @for (
-                                item of activeGroup.items;
-                                track item.href + item.type + item.title
-                              ) {
-                                <a
-                                  tuiOption
-                                  [routerLink]="item.href || null"
-                                  (click)="onResultClick(item, $event)"
-                                >
-                                  <ng-container
-                                    [ngTemplateOutlet]="itemTemplate"
-                                    [ngTemplateOutletContext]="{
-                                      $implicit: item,
-                                    }"
-                                  ></ng-container>
-                                </a>
-                              }
-                            }
-                          }
-                        </tui-data-list>
-                      </div>
-                    </div>
-                  }
-
-                  <ng-template #itemTemplate let-item>
-                    <div class="flex items-center w-full gap-3">
-                      @if (item.grade !== undefined) {
-                        <app-grade
-                          [grade]="item.grade"
-                          [kind]="item.climbing_kind"
-                          class="shrink-0"
-                        />
-                      }
-                      @if (item.type === 'user' || item.type === 'indoor') {
-                        <span tuiAvatar size="xs" class="shrink-0">
-                          @if (item.icon && !item.icon.startsWith('@tui.')) {
-                            <img [src]="item.icon" [alt]="item.title" />
-                          } @else {
-                            <tui-icon
-                              [icon]="
-                                item.icon ||
-                                (item.type === 'user'
-                                  ? '@tui.user'
-                                  : '@tui.map-pin')
-                              "
-                            />
-                          }
-                        </span>
-                      } @else if (item.icon && item.grade === undefined) {
-                        <tui-icon [icon]="item.icon" class="shrink-0" />
-                      }
-                      <span tuiTitle class="min-w-0 flex-1 truncate">
-                        {{ item.title }}
-                        @if (item.subtitle) {
-                          <span tuiSubtitle>{{ item.subtitle }}</span>
-                        }
-                      </span>
-                    </div>
-                  </ng-template>
-                </ng-template>
-              </tui-textfield>
-            </div>
-          </div>
+          <app-search-dropdown [loading]="loading()" />
 
           <!-- Profile -->
           <a
@@ -650,141 +376,9 @@ export class NavbarComponent {
     }
   });
   protected readonly layout = inject(LayoutService);
-  protected readonly outdoorData = inject(OutdoorDataService);
-  private readonly searchService = inject(SearchService);
+
   private readonly router = inject(Router);
   private readonly scrollService = inject(ScrollService);
-  private readonly areasService = inject(AreasService);
-  private readonly cragsService = inject(CragsService);
-  private readonly routesService = inject(RoutesService);
-
-  protected readonly searchValue = signal('');
-  protected readonly searchOpen = signal(false);
-  protected activeSearchTab = signal(0);
-
-  constructor() {
-    const cdr = inject(ChangeDetectorRef);
-    effect(() => {
-      const step = this.tourService.step();
-      if (step === TourStep.SEARCH) {
-        // Wait a bit to let the dropdown initialize, then programmatically open and type "Millena"
-        setTimeout(() => {
-          this.searchOpen.set(true);
-          this.searchValue.set('Millena');
-          cdr.markForCheck();
-        }, 500);
-      }
-    });
-
-    effect(() => {
-      if (this.searchOpen()) {
-        this.activeSearchTab.set(0);
-      }
-    });
-
-    effect(() => {
-      if (this.groupedResults().length <= 1) {
-        this.activeSearchTab.set(0);
-      }
-    });
-  }
-
-  protected readonly results = toSignal(
-    toObservable(this.searchValue).pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      switchMap((query: string) => this.searchService.search(query)),
-    ),
-    { initialValue: null as SearchData | null },
-  );
-
-  protected toValue(event: Event): string {
-    return (event.target as HTMLInputElement)?.value ?? '';
-  }
-
-  protected readonly groupedResults = computed(() => {
-    const data = this.results();
-    if (!data) return [];
-    return Object.entries(data)
-      .filter(([, items]) => items.length > 0)
-      .map(([key, items]) => ({
-        key,
-        items: items as readonly SearchItem[],
-      }));
-  });
-
-  protected readonly totalResults = computed(() =>
-    this.groupedResults().reduce(
-      (acc, current) => acc + current.items.length,
-      0,
-    ),
-  );
-
-  protected onResultClick(item: SearchItem, event?: Event): void {
-    if (item.type?.startsWith('create-') || item.type?.startsWith('import-')) {
-      event?.preventDefault();
-      event?.stopPropagation();
-
-      const query = (this.searchValue() || '').trim();
-
-      switch (item.type) {
-        case 'create-area':
-          this.areasService.openAreaForm({ areaData: { name: query } });
-          break;
-        case 'create-crag':
-          this.cragsService.openCragForm({
-            areaId: this.outdoorData.selectedArea()?.id,
-            cragData: { name: query },
-          });
-          break;
-        case 'create-route':
-          this.routesService.openRouteForm({
-            cragId: this.outdoorData.selectedCrag()?.id,
-            routeData: { name: query },
-          });
-          break;
-        case 'import-area': {
-          const anuArea = item.data as SearchAreaItem;
-          this.areasService.openAreaForm({
-            areaData: {
-              name: anuArea.areaName,
-              slug: anuArea.areaSlug,
-              eight_anu_crag_slugs: [anuArea.areaSlug],
-            },
-          });
-          break;
-        }
-        case 'import-crag': {
-          const anuCrag = item.data as SearchCragItem;
-          this.cragsService.openCragForm({
-            areaId: this.outdoorData.selectedArea()?.id,
-            cragData: {
-              name: anuCrag.cragName,
-              slug: anuCrag.cragSlug,
-              eight_anu_sector_slugs: [anuCrag.cragSlug],
-            },
-          });
-          break;
-        }
-        case 'import-route': {
-          const anuRoute = item.data as SearchRouteItem;
-          this.routesService.openRouteForm({
-            cragId: this.outdoorData.selectedCrag()?.id,
-            routeData: {
-              name: anuRoute.zlaggableName,
-              slug: anuRoute.zlaggableSlug,
-              grade: gradeToNumber(anuRoute.difficulty),
-              eight_anu_route_slugs: [anuRoute.zlaggableSlug],
-            },
-          });
-          break;
-        }
-      }
-    }
-
-    this.searchOpen.set(false);
-    this.searchValue.set('');
-  }
 
   protected scrollToTop(event: MouseEvent): void {
     if (this.router.url === '/home') {
@@ -794,10 +388,6 @@ export class NavbarComponent {
   }
 
   protected onTourNext(): void {
-    if (this.tourService.step() === TourStep.SEARCH) {
-      this.searchOpen.set(false);
-      this.searchValue.set('');
-    }
     this.tourService.next();
   }
 

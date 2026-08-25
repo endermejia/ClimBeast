@@ -70,7 +70,7 @@ import { mapLocationUrl, remToPx } from '../../utils';
 import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
-  selector: 'app-home',
+  selector: 'app-explore',
   imports: [
     AreaCardComponent,
     CragCardComponent,

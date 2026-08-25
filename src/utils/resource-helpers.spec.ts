@@ -7,7 +7,12 @@ import { CacheService } from '../services/cache.service';
 
 import { IS_BROWSER } from '../app/is-browser';
 
-import { createCachedResource, waitForResource } from './resource-helpers';
+import {
+  createCachedResource,
+  createSafeResource,
+  waitForResource,
+  watchResourceError,
+} from './resource-helpers';
 
 describe('resource-helpers', () => {
   let cacheService: CacheService;
@@ -47,6 +52,21 @@ describe('resource-helpers', () => {
 
       // Initially or after resolution signal provides fallback or value
       expect(signal()).toBeDefined();
+    });
+  });
+
+  describe('watchResourceError & createSafeResource', () => {
+    it('creates safe resource and attaches watchResourceError without crashing', () => {
+      let errorOccurred = false;
+      TestBed.runInInjectionContext(() => {
+        const res = createSafeResource({
+          loader: async () => 'data',
+          onError: () => (errorOccurred = true),
+          logTag: 'TestTag',
+        });
+        watchResourceError(res, { logTag: 'DirectWatch' });
+      });
+      expect(errorOccurred).toBe(false);
     });
   });
 

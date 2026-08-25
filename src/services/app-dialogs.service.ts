@@ -31,12 +31,16 @@ export class AppDialogsService {
     );
   }
 
-  openNotificationsDialog(): void {
-    this.dialogs
-      .open(new PolymorpheusComponent(NotificationsDialogComponent), {
-        label: this.translate.instant('notifications'),
-        size: 'm',
-      })
-      .subscribe();
+  async openNotificationsDialog(): Promise<void> {
+    await firstValueFrom(
+      this.dialogs.open(
+        new PolymorpheusComponent(NotificationsDialogComponent),
+        {
+          label: this.translate.instant('notifications'),
+          size: 'm',
+        },
+      ),
+      { defaultValue: undefined },
+    );
   }
 }

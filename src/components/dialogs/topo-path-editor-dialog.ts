@@ -8,15 +8,16 @@ import {
 } from '@angular/cdk/drag-drop';
 import { CommonModule } from '@angular/common';
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   computed,
+  DestroyRef,
   ElementRef,
   inject,
   signal,
   viewChild,
-  AfterViewInit,
-  ChangeDetectorRef,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
@@ -1046,10 +1047,14 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     this.doAttachWheelListener();
   }
 
+  private readonly destroyRef = inject(DestroyRef);
+
   private doAttachWheelListener(): void {
-    attachWheelListener(this.editorAreaElement()?.nativeElement, (e) =>
-      this.onWheel(e),
+    const cleanup = attachWheelListener(
+      this.editorAreaElement()?.nativeElement,
+      (e) => this.onWheel(e),
     );
+    this.destroyRef.onDestroy(() => cleanup());
   }
 
   onImageLoad(): void {

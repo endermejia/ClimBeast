@@ -405,6 +405,15 @@ export class SupabaseService {
     return this._client;
   }
 
+  /**
+   * Helper that awaits client initialization (whenReady()) and returns the initialized client.
+   * Eliminates the need to repeat `await this.supabase.whenReady();` before queries.
+   */
+  async getClient(): Promise<SupabaseClient<Database>> {
+    await this.whenReady();
+    return this.client;
+  }
+
   /** Convenience: fetch and return current session (browser only); updates signal */
   async getSession(): Promise<Session | null> {
     if (!this._client) return null;

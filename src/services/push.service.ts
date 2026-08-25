@@ -1,4 +1,5 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { DestroyRef, inject, Injectable, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SwPush } from '@angular/service-worker';
 
 import { firstValueFrom } from 'rxjs';
@@ -18,6 +19,7 @@ export class PushService {
   private readonly swPush = inject(SwPush);
   private readonly supabase = inject(SupabaseService);
   private readonly isBrowser = inject(IS_BROWSER);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly isSubscribed = signal<boolean>(false);
   readonly isSupported = signal<boolean>(false);
@@ -66,14 +68,16 @@ export class PushService {
     return firstValueFrom(this.swPush.subscription);
   }
 
-  private async checkSubscription(): Promise<void> {
-    this.swPush.subscription.subscribe((subscription) => {
-      this.isSubscribed.set(!!subscription);
-      if (subscription) {
-        // Optionally sync if backend doesn't have it
-        void this.saveSubscription(subscription);
-      }
-    });
+  private checkSubscription(): void {
+    this.swPush.subscription
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((subscription) => {
+        this.isSubscribed.set(!!subscription);
+        if (subscription) {
+          // Optionally sync if backend doesn't have it
+          void this.saveSubscription(subscription);
+        }
+      });
   }
 
   async saveSubscription(subscription: PushSubscription): Promise<void> {

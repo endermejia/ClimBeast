@@ -1,4 +1,4 @@
-import { Location, NgOptimizedImage } from '@angular/common';
+import { Location } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,59 +13,30 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import {
   form,
-  required,
-  minLength,
+  max,
   maxLength,
   min,
-  max,
+  minLength,
+  required,
 } from '@angular/forms/signals';
 import { Router } from '@angular/router';
 
 import { TuiDay, TuiStringMatcher } from '@taiga-ui/cdk';
 import {
-  TuiButton,
   tuiDateFormatProvider,
+  TuiDialogService,
   TuiIcon,
-  TuiNotification,
   TuiScrollbar,
   TuiTitle,
-  TuiDropdown,
-  TuiError,
-  TuiCalendar,
-  TuiCalendarYear,
-  TuiInput,
-  TuiFilterByInputPipe,
-  TuiDialogService,
   type TuiDialogContext,
 } from '@taiga-ui/core';
-import {
-  TUI_CONFIRM,
-  TUI_COUNTRIES,
-  TuiAvatar,
-  TuiBadge,
-  TuiBadgedContentComponent,
-  TuiBadgedContentDirective,
-  TuiChevron,
-  TuiComboBox,
-  TuiDataListWrapper,
-  TuiInputDate,
-  TuiInputNumber,
-  TuiInputYear,
-  TuiPassword,
-  TuiPulse,
-  TuiSegmented,
-  TuiSelect,
-  TuiShimmer,
-  TuiSkeleton,
-  TuiSwitch,
-  TuiTextarea,
-  type TuiConfirmData,
-  TuiFlagPipe,
-} from '@taiga-ui/kit';
+import { TUI_CONFIRM, TUI_COUNTRIES, type TuiConfirmData } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
-import { injectContext } from '@taiga-ui/polymorpheus';
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import { PolymorpheusContent } from '@taiga-ui/polymorpheus';
+import {
+  injectContext,
+  PolymorpheusComponent,
+  PolymorpheusContent,
+} from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -74,31 +45,32 @@ import {
   filter,
   firstValueFrom,
   map,
+  Observer,
   of,
   Subject,
   switchMap,
   tap,
-  Observer,
 } from 'rxjs';
 
 import { AudioPreferencesService } from '../../services/audio-preferences.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { EightAnuService } from '../../services/eight-anu.service';
-
 import { FollowRequestsService } from '../../services/follow-requests.service';
 import { LanguageService } from '../../services/language.service';
 import { MerchandiseService } from '../../services/merchandise.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ThemeService } from '../../services/theme.service';
 import { ToastService } from '../../services/toast.service';
-import { TourService } from '../../services/tour.service';
-import { TourStep } from '../../services/tour.service';
+import { TourService, TourStep } from '../../services/tour.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
 
 import { FirstStepsDialogComponent } from '../../components/dialogs/first-steps-dialog';
-
 import { FollowRequestsDialogComponent } from '../../components/dialogs/follow-requests-dialog';
 import { TourHintComponent } from '../../components/ui/tour-hint';
+import { Profile8aSectionComponent } from '../../components/user-profile/profile-8a-section';
+import { ProfileDangerZoneComponent } from '../../components/user-profile/profile-danger-zone';
+import { ProfileGeneralSectionComponent } from '../../components/user-profile/profile-general-section';
+import { ProfilePreferencesComponent } from '../../components/user-profile/profile-preferences';
 
 import {
   EightAnuUser,
@@ -125,39 +97,15 @@ interface Country {
   standalone: true,
   imports: [
     FormsModule,
-    NgOptimizedImage,
+    Profile8aSectionComponent,
+    ProfileDangerZoneComponent,
+    ProfileGeneralSectionComponent,
+    ProfilePreferencesComponent,
     TourHintComponent,
     TranslatePipe,
-    TuiAvatar,
-    TuiBadge,
-    TuiBadgedContentComponent,
-    TuiBadgedContentDirective,
-    TuiButton,
-    TuiCalendar,
-    TuiCalendarYear,
-    TuiChevron,
-    TuiComboBox,
-    TuiDataListWrapper,
-    TuiDropdown,
-    TuiError,
-    TuiFilterByInputPipe,
-    TuiFlagPipe,
     TuiHeader,
     TuiIcon,
-    TuiInput,
-    TuiInputDate,
-    TuiInputNumber,
-    TuiInputYear,
-    TuiNotification,
-    TuiPassword,
-    TuiPulse,
     TuiScrollbar,
-    TuiSegmented,
-    TuiSelect,
-    TuiShimmer,
-    TuiSkeleton,
-    TuiSwitch,
-    TuiTextarea,
     TuiTitle,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -189,595 +137,54 @@ interface Country {
           </h1>
         </header>
 
-        <!-- Avatar y Nombre -->
-        <div class="flex flex-col md:flex-row items-center gap-4">
-          <div class="relative inline-block">
-            <tui-badged-content
-              [class.ring-4]="isFirstSteps()"
-              [class.ring-primary]="isFirstSteps()"
-              class="rounded-full hover:shadow-lg transition-shadow duration-300"
-            >
-              @if (
-                userEmail() && (profile()?.avatar || authState.userAvatar())
-              ) {
-                <button
-                  tuiButton
-                  appearance="action-destructive"
-                  size="s"
-                  tuiSlot="bottom"
-                  class="rounded-full!"
-                  type="button"
-                  (click)="deleteAvatar()"
-                >
-                  <tui-icon icon="@tui.trash" />
-                </button>
-              }
-              <span
-                tuiAvatar
-                (click)="!isUploadingAvatar() && uploadAvatar()"
-                (keydown.enter)="!isUploadingAvatar() && uploadAvatar()"
-                tabindex="0"
-                class="cursor-pointer rounded-full!"
-                size="xxl"
-                [tuiShimmer]="isUploadingAvatar()"
-                [tuiSkeleton]="!userEmail()"
-              >
-                @if (avatarSrc(); as avatar) {
-                  <img [src]="avatar" alt="avatar" />
-                } @else {
-                  <tui-icon icon="@tui.user" />
-                }
-              </span>
-            </tui-badged-content>
-          </div>
-          <div
-            class="w-full relative"
-            [tuiDropdown]="tourHint"
-            [tuiDropdownManual]="
-              tourService.isActive() && tourService.step() === TourStep.WELCOME
-            "
-            tuiDropdownDirection="bottom"
-          >
-            <tui-textfield
-              class="w-full"
-              [tuiTextfieldCleaner]="false"
-              [class.ring-2]="
-                tourService.isActive() &&
-                tourService.step() === TourStep.WELCOME
-              "
-              [class.ring-primary]="
-                tourService.isActive() &&
-                tourService.step() === TourStep.WELCOME
-              "
-            >
-              <label tuiLabel for="nameInput">{{
-                'userName' | translate
-              }}</label>
-              <input
-                id="nameInput"
-                tuiInput
-                type="text"
-                autocomplete="off"
-                [ngModel]="model().fullName"
-                (ngModelChange)="updateModel('fullName', $event)"
-                [invalid]="
-                  !!profile() &&
-                  profileForm.fullName().invalid() &&
-                  profileForm.fullName().touched()
-                "
-                [disabled]="profileForm.fullName().disabled()"
-                (blur)="saveName()"
-                (keydown.enter)="saveName()"
-                [tuiSkeleton]="!userEmail()"
-              />
-            </tui-textfield>
-            <tui-error [error]="fullNameError()" />
-            @if (
-              tourService.isActive() && tourService.step() === TourStep.WELCOME
-            ) {
-              <tui-pulse />
-            }
-            @if (nameEqualsEmail()) {
-              <div tuiNotification appearance="warning" class="mt-2">
-                <h3 tuiTitle>
-                  {{ 'profile.name.equalsEmail' | translate }}
-                </h3>
-              </div>
-            }
-          </div>
-        </div>
-        <!-- Email (readonly) -->
-        <div>
-          <tui-textfield class="w-full" [tuiTextfieldCleaner]="false">
-            <label tuiLabel for="emailInput">{{ 'email' | translate }}</label>
-            <input
-              tuiInput
-              type="text"
-              inputmode="email"
-              autocomplete="off"
-              [ngModel]="userEmail()"
-              disabled
-              [tuiSkeleton]="!userEmail()"
-            />
-          </tui-textfield>
-        </div>
-        <!-- Bio -->
-        <div>
-          <tui-textfield
-            class="w-full"
-            [tuiTextfieldCleaner]="false"
-            [class.ring-2]="isFirstSteps()"
-            [class.ring-primary]="isFirstSteps()"
-          >
-            <label tuiLabel for="bioInput">{{ 'bio' | translate }}</label>
-            <textarea
-              id="bioInput"
-              tuiTextarea
-              [rows]="4"
-              [ngModel]="model().bio"
-              (ngModelChange)="updateModel('bio', $event)"
-              [invalid]="
-                profileForm.bio().invalid() && profileForm.bio().touched()
-              "
-              [disabled]="profileForm.bio().disabled()"
-              (blur)="saveBio()"
-              [tuiSkeleton]="!userEmail()"
-            ></textarea>
-          </tui-textfield>
-          <tui-error [error]="bioError()" />
-        </div>
-        <!-- 8a.nu User -->
-        <!-- Temporarily hidden
-        <div class="flex items-center gap-4">
-          @if (selectedEightAnuUser.value(); as user) {
-            <div tuiAvatar size="l">
-              @if (user.avatar) {
-                <img [src]="user.avatar" alt="avatar" />
-              } @else {
-                <tui-icon icon="@tui.user" />
-              }
-            </div>
-          }
+        <!-- General Section -->
+        <app-profile-general-section
+          [model]="model()"
+          [profileForm]="profileForm"
+          [userEmail]="userEmail()"
+          [avatarSrc]="avatarSrc()"
+          [hasAvatar]="!!(profile()?.avatar || authState.userAvatar())"
+          [isUploadingAvatar]="isUploadingAvatar()"
+          [isFirstSteps]="isFirstSteps()"
+          [nameEqualsEmail]="nameEqualsEmail()"
+          [countryIds]="countryIds()"
+          [countryDictionary]="countryDictionary()"
+          [stringifyCountryId]="stringifyCountryId"
+          [matcher]="matcher"
+          [stringifySex]="stringifySex()"
+          [fullNameError]="fullNameError()"
+          [bioError]="bioError()"
+          [countryError]="countryError()"
+          [cityError]="cityError()"
+          [birthDateError]="birthDateError()"
+          [startingClimbingYearError]="startingClimbingYearError()"
+          [sizeError]="sizeError()"
+          [sexError]="sexError()"
+          (updateModel)="onChildUpdateModel($event)"
+          (saveField)="onSaveField($event)"
+          (uploadAvatar)="uploadAvatar()"
+          (deleteAvatar)="deleteAvatar()"
+        />
 
-          @let items = eightAnuResults();
-          <tui-textfield
-            class="w-full"
-            [tuiTextfieldCleaner]="true"
-            [stringify]="stringifyEightAnuUser"
-          >
-            <label tuiLabel for="eightAnuSearch">{{
-              'eightAnuUser' | translate
-            }}</label>
-            <input
-              #eightAnuInput
-              id="eightAnuSearch"
-              tuiComboBox
-              autocomplete="off"
-              [ngModel]="model().eightAnuUser"
-              (ngModelChange)="updateModel('eightAnuUser', $event)"
-              [invalid]="profileForm.eightAnuUser().invalid()"
-              [disabled]="profileForm.eightAnuUser().disabled()"
-              (change)="saveEightAnuUser(model().eightAnuUser)"
-              (input)="onEightAnuInput($event)"
-              [tuiSkeleton]="!userEmail()"
-            />
-            <tui-data-list-wrapper
-              *tuiTextfieldDropdown
-              new
-              [emptyContent]="
-                eightAnuInput.value.length < 3
-                  ? ('import8a.minChars' | translate)
-                  : ('notFound.title' | translate)
-              "
-              [itemContent]="eightAnuItem"
-              [items]="eightAnuInput.value.length < 3 ? [] : items || []"
-            />
-            <ng-template #eightAnuItem let-item>
-              <div class="flex items-center gap-2">
-                  <div tuiAvatar size="s" class="mr-2">
-                    @if (item.avatar; as avatar) {
-                      <img [src]="avatar" alt="avatar" />
-                    } @else {
-                      <tui-icon icon="@tui.user" />
-                    }
-                  </div>
-                <span>{{ item.userName }}</span>
-              </div>
-            </ng-template>
-            @if (items && eightAnuShowLoader()) {
-              <tui-loader />
-            }
-          </tui-textfield>
-        </div>
-        -->
-        <!-- Country & City -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Country -->
-          <div>
-            <tui-textfield
-              tuiChevron
-              [tuiTextfieldCleaner]="false"
-              [stringify]="stringifyCountryId"
-            >
-              <label tuiLabel for="countrySelect">{{
-                'country' | translate
-              }}</label>
-              <input
-                id="countrySelect"
-                tuiComboBox
-                autocomplete="off"
-                [ngModel]="model().country"
-                (ngModelChange)="updateModel('country', $event)"
-                [invalid]="
-                  profileForm.country().invalid() &&
-                  profileForm.country().touched()
-                "
-                [disabled]="profileForm.country().disabled()"
-                [matcher]="matcher"
-                [strict]="true"
-                (change)="saveCountry()"
-                [tuiSkeleton]="!userEmail()"
-              />
-              <tui-data-list-wrapper
-                *tuiDropdown
-                new
-                [items]="countryIds() | tuiFilterByInput"
-                [itemContent]="countryItem"
-              />
-              <ng-template #countryItem let-item>
-                <img
-                  [ngSrc]="item | tuiFlag"
-                  [alt]="countryDictionary()[item] || item"
-                  width="20"
-                  height="15"
-                  [style.margin-right.px]="8"
-                  [style.vertical-align]="'middle'"
-                />
-                {{ countryDictionary()[item] || item }}
-              </ng-template>
-            </tui-textfield>
-            <tui-error [error]="countryError()" />
-          </div>
-          <!-- City -->
-          <div>
-            <tui-textfield class="w-full" [tuiTextfieldCleaner]="false">
-              <label tuiLabel for="cityInput">{{ 'city' | translate }}</label>
-              <input
-                id="cityInput"
-                tuiInput
-                type="text"
-                autocomplete="off"
-                [ngModel]="model().city"
-                (ngModelChange)="updateModel('city', $event)"
-                [invalid]="
-                  profileForm.city().invalid() && profileForm.city().touched()
-                "
-                [disabled]="profileForm.city().disabled()"
-                (blur)="saveCity()"
-                (keydown.enter)="saveCity()"
-                [tuiSkeleton]="!userEmail()"
-              />
-            </tui-textfield>
-            <tui-error [error]="cityError()" />
-          </div>
-        </div>
-        <!-- Birth Date & Starting Climbing Year -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Birth Date -->
-          <div class="grid gap-2">
-            <span class="text-sm font-semibold opacity-70 px-1">{{
-              'birthDate' | translate
-            }}</span>
-            <tui-textfield class="w-full" [tuiTextfieldCleaner]="false">
-              <input
-                id="birthDateInput"
-                tuiInputDate
-                class="w-full"
-                [max]="today"
-                [min]="minBirthDate"
-                [ngModel]="model().birth_date"
-                (ngModelChange)="updateModel('birth_date', $event)"
-                (blur)="saveBirthDate()"
-                (keydown.enter)="saveBirthDate()"
-                [invalid]="
-                  profileForm.birth_date().invalid() &&
-                  profileForm.birth_date().touched()
-                "
-                [disabled]="profileForm.birth_date().disabled()"
-                [tuiSkeleton]="!userEmail()"
-                autocomplete="off"
-              />
-              <tui-calendar *tuiDropdown />
-            </tui-textfield>
-            <tui-error [error]="birthDateError()" />
-          </div>
-          <!-- Starting Climbing Year -->
-          <div class="grid gap-2">
-            <span class="text-sm font-semibold opacity-70 px-1">{{
-              'startingClimbingYear' | translate
-            }}</span>
-            <tui-textfield class="w-full" [tuiTextfieldCleaner]="false">
-              <input
-                id="startingClimbingYearInput"
-                tuiInputYear
-                class="w-full"
-                [min]="minYear"
-                [max]="currentYear"
-                [ngModel]="model().starting_climbing_year"
-                (ngModelChange)="updateModel('starting_climbing_year', $event)"
-                (blur)="saveStartingClimbingYear()"
-                (keydown.enter)="saveStartingClimbingYear()"
-                [invalid]="
-                  profileForm.starting_climbing_year().invalid() &&
-                  profileForm.starting_climbing_year().touched()
-                "
-                [disabled]="profileForm.starting_climbing_year().disabled()"
-                [tuiSkeleton]="!userEmail()"
-                autocomplete="off"
-              />
-              <tui-calendar-year
-                *tuiDropdown
-                [value]="model().starting_climbing_year || currentYear"
-                (yearClick)="
-                  updateModel('starting_climbing_year', $event);
-                  saveStartingClimbingYear()
-                "
-              />
-            </tui-textfield>
-            <tui-error [error]="startingClimbingYearError()" />
-          </div>
-        </div>
-        <!-- Size & Sex -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Size -->
-          <div>
-            <tui-textfield class="w-full" [tuiTextfieldCleaner]="false">
-              <label tuiLabel for="sizeInput">{{ 'size' | translate }}</label>
-              <input
-                id="sizeInput"
-                tuiInputNumber
-                [min]="0"
-                [max]="300"
-                [ngModel]="model().size"
-                (ngModelChange)="updateModel('size', $event)"
-                [invalid]="
-                  profileForm.size().invalid() && profileForm.size().touched()
-                "
-                [disabled]="profileForm.size().disabled()"
-                (blur)="saveSize()"
-                (keydown.enter)="saveSize()"
-                [tuiSkeleton]="!userEmail()"
-                autocomplete="off"
-              />
-              <span class="tui-textfield__suffix">cm</span>
-            </tui-textfield>
-            <tui-error [error]="sizeError()" />
-          </div>
-          <!-- Sex -->
-          <div>
-            <tui-textfield
-              tuiChevron
-              class="w-full"
-              [tuiTextfieldCleaner]="true"
-              [stringify]="stringifySex()"
-            >
-              <label tuiLabel for="sexSelect">{{ 'sex' | translate }}</label>
-              <input
-                id="sexSelect"
-                tuiSelect
-                [ngModel]="model().sex"
-                (ngModelChange)="updateModel('sex', $event)"
-                [invalid]="
-                  profileForm.sex().invalid() && profileForm.sex().touched()
-                "
-                [disabled]="profileForm.sex().disabled()"
-                (change)="saveSex()"
-                [tuiSkeleton]="!userEmail()"
-                autocomplete="off"
-              />
-              <tui-data-list-wrapper *tuiDropdown new [items]="sexes" />
-            </tui-textfield>
-            <tui-error [error]="sexError()" />
-          </div>
-        </div>
+        <!-- Preferences Section -->
+        <app-profile-preferences
+          [model]="model()"
+          [profileForm]="profileForm"
+          [languages]="languages()"
+          [stringifyLanguage]="stringifyLanguage()"
+          [userEmail]="userEmail()"
+          [languageError]="languageError()"
+          (updateModel)="onChildUpdateModel($event)"
+          (saveLanguage)="saveLanguage()"
+          (toggleTheme)="toggleTheme($event)"
+          (restartFirstStepsChange)="onRestartFirstStepsChange($event)"
+          (messageSoundChange)="onMessageSoundChange($event)"
+          (notificationSoundChange)="onNotificationSoundChange($event)"
+          (privateProfileChange)="onPrivateProfileChange($event)"
+          (editingModeChange)="onEditingModeChange($event)"
+        />
 
-        <br />
-
-        <!-- PREFERENCES -->
-        <div class="flex items-center justify-between gap-4">
-          <h2 class="text-lg font-bold m-0">
-            {{ 'preferences' | translate }}
-          </h2>
-        </div>
-        <!-- Language & Theme -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Left Column: Language & Theme -->
-          <div class="flex flex-col gap-6">
-            <!-- Language -->
-            <tui-textfield
-              tuiChevron
-              [tuiTextfieldCleaner]="false"
-              [stringify]="stringifyLanguage()"
-            >
-              <label tuiLabel for="languageSelect">{{
-                'language' | translate
-              }}</label>
-              <input
-                id="languageSelect"
-                tuiSelect
-                [ngModel]="model().language"
-                (ngModelChange)="
-                  updateModel('language', $event); saveLanguage()
-                "
-                [invalid]="profileForm.language().invalid()"
-                [disabled]="profileForm.language().disabled()"
-                [tuiSkeleton]="!userEmail()"
-                autocomplete="off"
-              />
-              <tui-data-list-wrapper *tuiDropdown new [items]="languages()" />
-            </tui-textfield>
-            <tui-error [error]="languageError()" />
-
-            <!-- Theme -->
-            <tui-segmented
-              size="l"
-              class="w-fit"
-              [activeItemIndex]="
-                profileForm.theme().value() === Themes.DARK ? 1 : 0
-              "
-              (activeItemIndexChange)="toggleTheme($event === 1)"
-              (mousedown)="lastEvent = $event"
-            >
-              <button title="light" type="button">
-                <tui-icon icon="@tui.sun" />
-              </button>
-              <button title="dark" type="button">
-                <tui-icon icon="@tui.moon" />
-              </button>
-            </tui-segmented>
-          </div>
-
-          <!-- Right Column: Switches -->
-          <div class="flex flex-col items-end gap-4">
-            <!-- Switches -->
-            <div class="flex items-center gap-4">
-              <label tuiLabel for="firstStepsSwitch">{{
-                'firstSteps' | translate
-              }}</label>
-              <input
-                id="firstStepsSwitch"
-                tuiSwitch
-                type="checkbox"
-                [ngModel]="model().restartFirstSteps"
-                (ngModelChange)="onRestartFirstStepsChange($event)"
-                autocomplete="off"
-              />
-            </div>
-
-            <div class="flex items-center gap-4">
-              <label tuiLabel for="msgSoundUtil">{{
-                'messageSound' | translate
-              }}</label>
-              <input
-                id="msgSoundUtil"
-                tuiSwitch
-                type="checkbox"
-                [ngModel]="model().messageSound"
-                (ngModelChange)="onMessageSoundChange($event)"
-                autocomplete="off"
-              />
-            </div>
-
-            <div class="flex items-center gap-4">
-              <label tuiLabel for="notifSoundUtil">{{
-                'notificationSound' | translate
-              }}</label>
-              <input
-                id="notifSoundUtil"
-                tuiSwitch
-                type="checkbox"
-                [ngModel]="model().notificationSound"
-                (ngModelChange)="onNotificationSoundChange($event)"
-                autocomplete="off"
-              />
-            </div>
-
-            <div class="flex items-center gap-4">
-              <label tuiLabel for="privateSwitch">{{
-                'privateProfile' | translate
-              }}</label>
-              <input
-                id="privateSwitch"
-                tuiSwitch
-                type="checkbox"
-                [ngModel]="model().isPrivate"
-                (ngModelChange)="onPrivateProfileChange($event)"
-                autocomplete="off"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Modo Edición -->
-        <div class="mt-8 pt-8 border-t border-(--tui-border-normal)">
-          <div class="flex items-center justify-between gap-4 mb-4">
-            <h2 class="text-lg font-bold m-0 flex items-center gap-2">
-              <tui-icon icon="@tui.pencil" />
-              {{ 'editingMode' | translate }}
-            </h2>
-            <input
-              id="editingSwitch"
-              tuiSwitch
-              type="checkbox"
-              [ngModel]="model().editingMode"
-              (ngModelChange)="onEditingModeChange($event)"
-              autocomplete="off"
-            />
-          </div>
-
-          <div tuiNotification appearance="info" class="mt-2">
-            <div
-              class="text-base font-bold text-(--tui-text-primary) border-b border-(--tui-border-hint) pb-2 mb-3"
-            >
-              {{ 'profile.editing.infoTitle' | translate }}
-            </div>
-            <ul class="list-none p-0 m-0 space-y-4 opacity-90">
-              <!-- Contribución -->
-              <li class="flex items-start gap-3">
-                <tui-icon
-                  icon="@tui.plus"
-                  size="s"
-                  class="mt-0.5 text-primary"
-                />
-                <span>{{ 'profile.editing.infoContribute' | translate }}</span>
-              </li>
-
-              <!-- Administrador y sus beneficios anidados -->
-              <li class="flex flex-col gap-3">
-                <div class="flex items-start gap-3">
-                  <tui-icon
-                    icon="@tui.user-plus"
-                    size="s"
-                    class="mt-0.5 text-primary"
-                  />
-                  <span>{{
-                    'profile.editing.infoRequestAdmin' | translate
-                  }}</span>
-                </div>
-
-                <!-- Sub-puntos de administrador -->
-                <ul
-                  class="list-none pl-9 m-0 space-y-2 opacity-90 text-[0.95em]"
-                >
-                  <li class="flex items-start gap-2">
-                    <tui-icon
-                      icon="@tui.image"
-                      size="xs"
-                      class="mt-1 text-primary"
-                    />
-                    <span>{{
-                      'profile.editing.infoManageTopos' | translate
-                    }}</span>
-                  </li>
-                  <li class="flex items-start gap-2">
-                    <tui-icon
-                      icon="@tui.credit-card"
-                      size="xs"
-                      class="mt-1 text-primary"
-                    />
-                    <span>{{
-                      'profile.editing.infoMonetization' | translate
-                    }}</span>
-                  </li>
-                </ul>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <br />
-
-        <!-- Account Actions -->
+        <!-- Account Actions Header -->
         <h2
           class="text-xl font-bold mt-12 mb-6 border-t border-(--tui-border-normal) pt-8"
         >
@@ -785,231 +192,39 @@ interface Country {
         </h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Tools & Management -->
-          <div
-            class="flex flex-col gap-4 p-5 rounded-2xl bg-(--tui-base-02) border border-(--tui-border-normal)"
-          >
-            <h3
-              class="text-base font-semibold flex items-center gap-2 m-0 text-(--tui-text-secondary)"
-            >
-              <tui-icon icon="@tui.settings" size="s" />
-              {{ 'toolsAndManagement' | translate }}
-            </h3>
+          <!-- Tools & Management Section -->
+          <app-profile-8a-section
+            [isPrivate]="model().isPrivate"
+            [pendingRequestsCount]="pendingRequestsCount()"
+            (openFollowRequests)="openFollowRequestsDialog()"
+            (openPurchaseHistory)="openPurchaseHistoryDialog()"
+            (openImport8a)="openImport8aDialog()"
+          />
 
-            <div class="flex flex-col gap-3">
-              @if (model().isPrivate) {
-                <button
-                  tuiButton
-                  iconStart="@tui.users"
-                  appearance="primary"
-                  type="button"
-                  size="m"
-                  class="w-full justify-start group relative"
-                  (click)="openFollowRequestsDialog()"
-                >
-                  {{ 'followRequests' | translate }}
-                  @if (pendingRequestsCount() > 0) {
-                    <span tuiBadge class="absolute -top-2 -right-2">{{
-                      pendingRequestsCount()
-                    }}</span>
-                  }
-                </button>
-              }
-
-              <button
-                tuiButton
-                iconStart="@tui.receipt"
-                appearance="outline"
-                type="button"
-                size="m"
-                class="w-full justify-start group"
-                (click)="openPurchaseHistoryDialog()"
-              >
-                {{ 'purchaseHistory.view' | translate }}
-              </button>
-
-              <button
-                tuiButton
-                iconStart="@tui.download"
-                appearance="outline"
-                type="button"
-                size="m"
-                class="w-full justify-start group"
-                (click)="openImport8aDialog()"
-              >
-                {{ 'import8a.button' | translate }}
-              </button>
-            </div>
-          </div>
-
-          <!-- Session & Security -->
-          <div
-            class="flex flex-col gap-4 p-5 rounded-2xl bg-(--tui-base-02) border border-(--tui-border-normal)"
-          >
-            <h3
-              class="text-base font-semibold flex items-center gap-2 m-0 text-(--tui-text-secondary)"
-            >
-              <tui-icon icon="@tui.shield" size="s" />
-              {{ 'securityAndSession' | translate }}
-            </h3>
-
-            <div class="flex flex-col gap-3">
-              <button
-                tuiButton
-                iconStart="@tui.lock"
-                appearance="outline"
-                type="button"
-                size="m"
-                class="w-full justify-start group"
-                (click)="openChangePasswordDialog(changePasswordDialog)"
-              >
-                {{ 'auth.setNewPassword' | translate }}
-              </button>
-
-              <button
-                tuiButton
-                iconStart="@tui.log-out"
-                appearance="secondary"
-                type="button"
-                size="m"
-                class="w-full justify-start group"
-                (click)="logout()"
-              >
-                {{ 'auth.logout' | translate }}
-              </button>
-
-              <button
-                tuiButton
-                iconStart="@tui.trash"
-                appearance="negative"
-                type="button"
-                size="m"
-                class="w-full justify-start group"
-                (click)="deleteAccount(deleteDialog)"
-              >
-                {{ 'profile.deleteAccount.button' | translate }}
-              </button>
-            </div>
-          </div>
+          <!-- Security & Session Section -->
+          <app-profile-danger-zone
+            [userEmail]="userEmail()"
+            [passwordModel]="passwordModel()"
+            [passwordError]="passwordError()"
+            [isUpdatingPassword]="isUpdatingPassword()"
+            [deleteEmail]="model().deleteEmail"
+            [deleteEmailError]="deleteEmailError()"
+            [deleteEmailInvalid]="
+              profileForm.deleteEmail().invalid() &&
+              profileForm.deleteEmail().touched()
+            "
+            (updatePasswordModel)="onChildUpdatePasswordModel($event)"
+            (updateDeleteEmail)="updateModel('deleteEmail', $event)"
+            (openChangePassword)="openChangePasswordDialog($event)"
+            (confirmChangePassword)="confirmChangePassword($event)"
+            (logout)="logout()"
+            (openDeleteAccount)="deleteAccount($event)"
+            (confirmDeleteAccount)="confirmDeleteAccount($event)"
+          />
         </div>
       </section>
     </tui-scrollbar>
 
-    <ng-template #changePasswordDialog let-observer>
-      <div class="flex flex-col gap-4">
-        <h3 tuiTitle>{{ 'auth.setNewPassword' | translate }}</h3>
-
-        <tui-textfield>
-          <label tuiLabel for="newPasswordInput">{{
-            'newPassword' | translate
-          }}</label>
-          <input
-            id="newPasswordInput"
-            tuiInput
-            type="password"
-            [ngModel]="passwordModel().newPassword"
-            (ngModelChange)="updatePasswordModel('newPassword', $event)"
-            autocomplete="new-password"
-          />
-          <tui-icon tuiPassword />
-        </tui-textfield>
-
-        <tui-textfield>
-          <label tuiLabel for="confirmPasswordInput">{{
-            'confirmPassword' | translate
-          }}</label>
-          <input
-            id="confirmPasswordInput"
-            tuiInput
-            type="password"
-            [ngModel]="passwordModel().confirmPassword"
-            (ngModelChange)="updatePasswordModel('confirmPassword', $event)"
-            autocomplete="new-password"
-          />
-          <tui-icon tuiPassword />
-        </tui-textfield>
-
-        @if (passwordError(); as errorMsg) {
-          <div tuiNotification appearance="negative">
-            {{ errorMsg }}
-          </div>
-        }
-
-        <div class="flex justify-end gap-2">
-          <button
-            tuiButton
-            appearance="secondary"
-            type="button"
-            (click)="observer.complete()"
-          >
-            {{ 'cancel' | translate }}
-          </button>
-          <button
-            tuiButton
-            appearance="primary"
-            type="button"
-            [disabled]="
-              isUpdatingPassword() ||
-              !passwordModel().newPassword ||
-              !passwordModel().confirmPassword ||
-              !!passwordError()
-            "
-            (click)="confirmChangePassword(observer)"
-          >
-            {{ 'accept' | translate }}
-          </button>
-        </div>
-      </div>
-    </ng-template>
-
-    <ng-template #deleteDialog let-observer>
-      <div class="flex flex-col gap-4">
-        <h3 tuiTitle>{{ 'profile.deleteAccount.title' | translate }}</h3>
-        <p class="text-(--tui-text-negative) font-bold">
-          {{ 'profile.deleteAccount.warning' | translate }}
-        </p>
-        <p>
-          {{ 'profile.deleteAccount.instruction_prefix' | translate }}
-          <strong>{{ userEmail() }}</strong>
-          {{ 'profile.deleteAccount.instruction_suffix' | translate }}
-        </p>
-
-        <tui-textfield>
-          <input
-            tuiInput
-            [ngModel]="model().deleteEmail"
-            (ngModelChange)="updateModel('deleteEmail', $event)"
-            [invalid]="
-              profileForm.deleteEmail().invalid() &&
-              profileForm.deleteEmail().touched()
-            "
-            [disabled]="profileForm.deleteEmail().disabled()"
-            (paste)="$event.preventDefault()"
-            autocomplete="off"
-            placeholder="email@example.com"
-          />
-        </tui-textfield>
-        <tui-error [error]="deleteEmailError()" />
-
-        <div class="flex justify-end gap-2">
-          <button
-            tuiButton
-            appearance="secondary"
-            (click)="observer.complete()"
-          >
-            {{ 'cancel' | translate }}
-          </button>
-          <button
-            tuiButton
-            appearance="negative"
-            [disabled]="profileForm.deleteEmail().value() !== userEmail()"
-            (click)="confirmDeleteAccount(observer)"
-          >
-            {{ 'profile.deleteAccount.button' | translate }}
-          </button>
-        </div>
-      </div>
-    </ng-template>
     <ng-template #tourHint>
       <app-tour-hint
         [description]="'tour.config.description' | translate"
@@ -1230,10 +445,27 @@ export class UserProfileConfigComponent {
     (this.countries() || []).forEach((c) => (dict[c.id] = c.name));
     return dict;
   });
-  stringifyCountryId = (id: string | null): string =>
-    id ? (this.countryDictionary()[id] ?? id) : '';
+  stringifyCountryId = (id: unknown): string =>
+    typeof id === 'string' ? (this.countryDictionary()[id] ?? id) : '';
   readonly matcher: TuiStringMatcher<string> = (id, search) =>
     (this.countryDictionary()[id] ?? id).toLowerCase() === search.toLowerCase();
+
+  protected onChildUpdateModel(event: { field: string; value: unknown }): void {
+    this.updateModel(
+      event.field as keyof ReturnType<typeof this.model>,
+      event.value as never,
+    );
+  }
+
+  protected onChildUpdatePasswordModel(event: {
+    field: string;
+    value: string;
+  }): void {
+    this.updatePasswordModel(
+      event.field as 'newPassword' | 'confirmPassword',
+      event.value,
+    );
+  }
 
   stringifyEightAnuUser = (user: EightAnuUser | null): string =>
     user?.userName || '';
@@ -1264,10 +496,8 @@ export class UserProfileConfigComponent {
         return;
       }
 
-      // Track the current active language (from service)
       const currentLang = this.languageService.currentLang();
 
-      // Only show the toast when it matches our target language
       if (currentLang === pending.lang) {
         untracked(() => {
           this.toast.success(pending.key);
@@ -1277,17 +507,12 @@ export class UserProfileConfigComponent {
     });
 
     effect(() => {
-      // isFirstSteps() can be true because it's calculated from the profile.
-      // We only show the welcome dialog if we haven't already and the tour isn't active.
       if (
         this.isFirstSteps() &&
         !this.hasOpenedWelcome &&
         this.tourService.step() === TourStep.OFF &&
         this.isBrowser
       ) {
-        // Double check with latest profile data or force a check if needed,
-        // but currently isFirstSteps() relies on computed signal.
-        // We set hasOpenedWelcome to true immediately to prevent double opening.
         this.hasOpenedWelcome = true;
 
         if (!this.isFirstSteps()) return;
@@ -1373,6 +598,35 @@ export class UserProfileConfigComponent {
     }
 
     await this.updateProfile({ private: isPrivate }, 'profile.updated.private');
+  }
+
+  protected onSaveField(fieldName: string): void {
+    switch (fieldName) {
+      case 'fullName':
+        void this.saveName();
+        break;
+      case 'bio':
+        void this.saveBio();
+        break;
+      case 'country':
+        void this.saveCountry();
+        break;
+      case 'city':
+        void this.saveCity();
+        break;
+      case 'birth_date':
+        void this.saveBirthDate();
+        break;
+      case 'starting_climbing_year':
+        void this.saveStartingClimbingYear();
+        break;
+      case 'size':
+        void this.saveSize();
+        break;
+      case 'sex':
+        void this.saveSex();
+        break;
+    }
   }
 
   private async saveField<K extends keyof UserProfileDto, V = unknown>(
@@ -1531,12 +785,10 @@ export class UserProfileConfigComponent {
 
     const firstError = errors[0];
 
-    // Priority 1: Explicit message from schema
     if (firstError?.message) {
       return this.translate.instant(firstError.message);
     }
 
-    // Priority 2: Extract key (kind or first non-brand key)
     const key =
       firstError?.kind ||
       (typeof firstError === 'object'
@@ -1544,7 +796,6 @@ export class UserProfileConfigComponent {
         : firstError) ||
       'error';
 
-    // Map Signal Forms error keys to our translation keys
     if (fieldName === 'fullName') {
       if (key === 'required')
         return this.translate.instant('profile.name.required');
@@ -1596,7 +847,6 @@ export class UserProfileConfigComponent {
   async uploadAvatar(): Promise<void> {
     if (!this.isBrowser) return;
 
-    // Create a file input element
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -1607,28 +857,25 @@ export class UserProfileConfigComponent {
 
       if (!file) return;
 
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         console.error('Please select an image file');
         this.toast.error('profile.avatar.upload.invalidType');
         return;
       }
 
-      // Validate file size (e.g., max 5MB)
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      const maxSize = 5 * 1024 * 1024;
       if (file.size > maxSize) {
         console.error('File size must be less than 5MB');
         this.toast.error('profile.avatar.upload.tooLarge');
         return;
       }
 
-      // Open the cropper dialog and wait for confirmation
       const result = await firstValueFrom(
         this.userProfilesService.openAvatarCropper(file, 512),
         { defaultValue: null },
       );
 
-      if (!result) return; // canceled
+      if (!result) return;
       const croppedFile = result;
       this.isUploadingAvatar.set(true);
       try {
@@ -1644,7 +891,6 @@ export class UserProfileConfigComponent {
       }
     };
 
-    // Trigger file selection
     input.click();
   }
 
@@ -1733,7 +979,6 @@ export class UserProfileConfigComponent {
   }
 
   async onEditingModeChange(enabled: boolean): Promise<void> {
-    // If enabling, we need to show the confirmation first
     if (enabled) {
       const confirmed = await this.toggleEditingMode(true);
       if (confirmed) {
@@ -1746,7 +991,6 @@ export class UserProfileConfigComponent {
         this.updateModel('editingMode', false);
       }
     } else {
-      // Disabling is always allowed without confirmation
       this.updateModel('editingMode', false);
       this.authState.editingMode.set(false);
       await this.updateProfile(
@@ -1803,7 +1047,6 @@ export class UserProfileConfigComponent {
       );
 
       if (!confirmed) {
-        // Force the switch to stay false
         this.updateModel('editingMode', false);
         this.authState.editingMode.set(false);
         return false;

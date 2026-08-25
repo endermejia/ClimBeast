@@ -146,6 +146,10 @@ export class MockSupabaseService {
   async whenReady(): Promise<void> {
     // Intentionally empty for mock
   }
+  async getClient(): Promise<typeof this.client> {
+    await this.whenReady();
+    return this.client;
+  }
   async getSession(): Promise<Session | null> {
     return this._session();
   }
