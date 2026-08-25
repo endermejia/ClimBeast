@@ -26,7 +26,12 @@ import {
 
 import { CACHE_KEYS } from '../constants';
 
-import { mapCragToDetail, mapRouteToExtras, RawRouteData } from '../utils';
+import {
+  createCachedResource,
+  mapCragToDetail,
+  mapRouteToExtras,
+  RawRouteData,
+} from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 
@@ -46,33 +51,24 @@ export class OutdoorDataService {
 
   readonly topoPhotoVersion: WritableSignal<number> = signal(0);
 
-  readonly areasListResource = resource({
-    loader: async () => {
-      if (!this.isBrowser) {
-        return [] as AreaListItem[];
+  private readonly cachedAreas = createCachedResource<void, AreaListItem[]>({
+    isBrowser: this.isBrowser,
+    cacheKey: () => CACHE_KEYS.areasList,
+    fetcher: async () => {
+      await this.supabase.whenReady();
+      const { data, error } = await this.supabase.client.rpc('get_areas_list');
+      if (error) {
+        throw error;
       }
-      const cacheKey = CACHE_KEYS.areasList;
-      return this.cache.fetchOrCache(
-        cacheKey,
-        async () => {
-          await this.supabase.whenReady();
-          const { data, error } =
-            await this.supabase.client.rpc('get_areas_list');
-          if (error) {
-            throw error;
-          }
-          return ((data as AreaListItem[]) ?? []) as AreaListItem[];
-        },
-        { fallbackValue: [], logTag: 'OutdoorDataService' },
-      );
+      return ((data as AreaListItem[]) ?? []) as AreaListItem[];
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'OutdoorDataService',
   });
 
-  readonly areasList: Signal<AreaListItem[]> = computed(() => {
-    const val = this.areasListResource.value();
-    if (val !== undefined) return val;
-    return this.cache.get<AreaListItem[]>(CACHE_KEYS.areasList, []);
-  });
+  readonly areasListResource = this.cachedAreas.resource;
+  readonly areasList: Signal<AreaListItem[]> = this.cachedAreas.signal;
 
   readonly selectedArea: Signal<AreaListItem | null> = computed(() => {
     const slug = this.selectedAreaSlug();
@@ -81,49 +77,42 @@ export class OutdoorDataService {
   });
 
   /** List of sectors/crags for the selected area. */
-  readonly cragsListResource = resource({
+  private readonly cachedCrags = createCachedResource<
+    string | null,
+    CragListItem[]
+  >({
     params: () => this.selectedAreaSlug(),
-    loader: async ({ params: areaSlug }) => {
+    isBrowser: this.isBrowser,
+    cacheKey: (areaSlug) => (areaSlug ? CACHE_KEYS.cragsList(areaSlug) : null),
+    fetcher: async (areaSlug) => {
       if (!areaSlug) return [];
-      if (!this.isBrowser) {
-        return [] as CragListItem[];
-      }
-      const cacheKey = CACHE_KEYS.cragsList(areaSlug);
-      return this.cache.fetchOrCache(
-        cacheKey,
-        async () => {
-          await this.supabase.whenReady();
-          const { data, error } = await this.supabase.client
-            .rpc('get_crags_list')
-            .eq('area_slug', areaSlug);
+      await this.supabase.whenReady();
+      const { data, error } = await this.supabase.client
+        .rpc('get_crags_list')
+        .eq('area_slug', areaSlug);
 
-          if (error) {
-            throw error;
-          }
-          return (
-            ((data as CragListRpcRow[] | null)?.map((c) => ({
-              ...c,
-              grades: c.grades as AmountByEveryGrade,
-              topos: c.topos as {
-                id: number;
-                name: string;
-                slug: string;
-              }[],
-            })) as CragListItem[]) ?? []
-          );
-        },
-        { fallbackValue: [], logTag: 'OutdoorDataService' },
+      if (error) {
+        throw error;
+      }
+      return (
+        ((data as CragListRpcRow[] | null)?.map((c) => ({
+          ...c,
+          grades: c.grades as AmountByEveryGrade,
+          topos: c.topos as {
+            id: number;
+            name: string;
+            slug: string;
+          }[],
+        })) as CragListItem[]) ?? []
       );
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'OutdoorDataService',
   });
 
-  readonly cragsList: Signal<CragListItem[]> = computed(() => {
-    const val = this.cragsListResource.value();
-    if (val !== undefined) return val;
-    const areaSlug = this.selectedAreaSlug();
-    if (!areaSlug) return [];
-    return this.cache.get<CragListItem[]>(CACHE_KEYS.cragsList(areaSlug), []);
-  });
+  readonly cragsListResource = this.cachedCrags.resource;
+  readonly cragsList: Signal<CragListItem[]> = this.cachedCrags.signal;
 
   readonly selectedCrag: Signal<CragListItem | null> = computed(() => {
     const slug = this.selectedCragSlug();
@@ -131,245 +120,224 @@ export class OutdoorDataService {
     return this.cragsList().find((c) => c.slug === slug) ?? null;
   });
 
-  readonly areaToposResource = resource({
+  /** List of topos for the selected area. */
+  private readonly cachedAreaTopos = createCachedResource<
+    string | null,
+    (TopoListItem & { crag_slug: string })[]
+  >({
     params: () => this.selectedAreaSlug(),
-    loader: async ({
-      params: areaSlug,
-    }): Promise<(TopoListItem & { crag_slug: string })[]> => {
-      if (!this.isBrowser) return [];
+    isBrowser: this.isBrowser,
+    cacheKey: (areaSlug) => (areaSlug ? CACHE_KEYS.areaTopos(areaSlug) : null),
+    fetcher: async (areaSlug) => {
       if (!areaSlug) return [];
-      const cacheKey = CACHE_KEYS.areaTopos(areaSlug);
-      return this.cache.fetchOrCache(
-        cacheKey,
-        async () => {
-          await this.supabase.whenReady();
-          const { data, error } = await this.supabase.client
-            .from('topos')
-            .select(
-              '*, crags!inner(slug, areas!inner(slug)), topo_routes(route_id, route:routes(grade))',
-            )
-            .eq('crags.areas.slug', areaSlug);
+      await this.supabase.whenReady();
+      const { data, error } = await this.supabase.client
+        .from('topos')
+        .select(
+          '*, crags!inner(slug, areas!inner(slug)), topo_routes(route_id, route:routes(grade))',
+        )
+        .eq('crags.areas.slug', areaSlug);
 
-          if (error) {
-            throw error;
+      if (error) {
+        throw error;
+      }
+
+      return (data || []).map((t) => {
+        const grades: AmountByEveryGrade = {};
+        (t.topo_routes || []).forEach((tr) => {
+          const g = tr.route?.grade;
+          if (g != null && g >= 0) {
+            grades[g as VERTICAL_LIFE_GRADES] =
+              (grades[g as VERTICAL_LIFE_GRADES] ?? 0) + 1;
           }
+        });
 
-          return (data || []).map((t) => {
-            const grades: AmountByEveryGrade = {};
-            (t.topo_routes || []).forEach((tr) => {
-              const g = tr.route?.grade;
-              if (g != null && g >= 0) {
-                grades[g as VERTICAL_LIFE_GRADES] =
-                  (grades[g as VERTICAL_LIFE_GRADES] ?? 0) + 1;
-              }
-            });
-
-            return {
-              id: t.id,
-              name: t.name,
-              slug: t.slug,
-              crag_slug: t.crags?.slug || '',
-              grades,
-              photo: t.photo,
-              shade_morning: t.shade_morning,
-              shade_afternoon: t.shade_afternoon,
-              shade_change_hour: t.shade_change_hour,
-              route_ids: (t.topo_routes || []).map(
-                (tr: { route_id: number }) => tr.route_id,
-              ),
-            };
-          });
-        },
-        { fallbackValue: [], logTag: 'OutdoorDataService' },
-      );
+        return {
+          id: t.id,
+          name: t.name,
+          slug: t.slug,
+          crag_slug: t.crags?.slug || '',
+          grades,
+          photo: t.photo,
+          shade_morning: t.shade_morning,
+          shade_afternoon: t.shade_afternoon,
+          shade_change_hour: t.shade_change_hour,
+          route_ids: (t.topo_routes || []).map(
+            (tr: { route_id: number }) => tr.route_id,
+          ),
+        };
+      });
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'OutdoorDataService',
   });
 
-  readonly areaTopos = computed(() => {
-    const val = this.areaToposResource.value();
-    if (val !== undefined)
-      return val as (TopoListItem & { crag_slug: string })[];
-    return this.cache.get<(TopoListItem & { crag_slug: string })[]>(
-      CACHE_KEYS.areaTopos(this.selectedAreaSlug() ?? ''),
-      [],
-    );
-  });
+  readonly areaToposResource = this.cachedAreaTopos.resource;
+  readonly areaTopos: Signal<(TopoListItem & { crag_slug: string })[]> =
+    this.cachedAreaTopos.signal;
 
-  readonly topoDetailResource = resource({
+  /** Topo detail for selected topo ID. */
+  private readonly cachedTopoDetail = createCachedResource<
+    string | null,
+    TopoDetail | null
+  >({
     params: () => this.selectedTopoId(),
-    loader: async ({ params: id }): Promise<TopoDetail | null> => {
+    isBrowser: this.isBrowser,
+    cacheKey: (id) =>
+      id && !isNaN(Number(id)) ? CACHE_KEYS.topoDetail(id) : null,
+    fetcher: async (id) => {
       if (!id) return null;
-      if (!this.isBrowser) return null;
       const topoId = Number(id);
-      if (isNaN(topoId)) return null; // Not an outdoor topo
+      if (isNaN(topoId)) return null;
 
-      const cacheKey = CACHE_KEYS.topoDetail(id);
-      return this.cache.fetchOrCache(
-        cacheKey,
-        async () => {
-          await this.supabase.whenReady();
-          const userId = this.supabase.authUser()?.id;
-          return this.fetchOutdoorTopo(topoId, userId);
-        },
-        { fallbackValue: null, logTag: 'OutdoorDataService' },
-      );
+      await this.supabase.whenReady();
+      const userId = this.supabase.authUser()?.id;
+      return this.fetchOutdoorTopo(topoId, userId);
     },
+    cache: this.cache,
+    fallbackValue: null,
+    logTag: 'OutdoorDataService',
   });
 
-  readonly topoDetail = computed(() => {
-    const val = this.topoDetailResource.value();
-    if (val !== undefined) return val as TopoDetail | null;
-    return this.cache.get<TopoDetail | null>(
-      CACHE_KEYS.topoDetail(this.selectedTopoId() ?? 0),
-      null,
-    );
-  });
+  readonly topoDetailResource = this.cachedTopoDetail.resource;
+  readonly topoDetail: Signal<TopoDetail | null> = this.cachedTopoDetail.signal;
 
-  readonly cragDetailResource = resource({
+  /** Crag detail for selected crag + area slug. */
+  private readonly cachedCragDetail = createCachedResource<
+    { cragSlug: string | null; areaSlug: string | null },
+    CragDetail | null
+  >({
     params: () => ({
       cragSlug: this.selectedCragSlug(),
       areaSlug: this.selectedAreaSlug(),
     }),
-    loader: async ({
-      params: { cragSlug, areaSlug },
-    }): Promise<CragDetail | null> => {
+    isBrowser: this.isBrowser,
+    cacheKey: ({ cragSlug, areaSlug }) =>
+      cragSlug && areaSlug ? CACHE_KEYS.cragDetail(areaSlug, cragSlug) : null,
+    fetcher: async ({ cragSlug, areaSlug }) => {
       if (!cragSlug || !areaSlug) return null;
-      if (!this.isBrowser) return null;
-      const cacheKey = CACHE_KEYS.cragDetail(areaSlug, cragSlug);
-      return this.cache.fetchOrCache(
-        cacheKey,
-        async () => {
-          await this.supabase.whenReady();
-          const userId = this.supabase.authUser()?.id;
-          let query = this.supabase.client
-            .from('crags')
-            .select(
-              `
-              *,
-              eight_anu_sector_slugs,
-              liked:crag_likes(id),
-              area: areas!inner (
-                id, name, slug, eight_anu_crag_slugs,
-                is_public, price, stripe_account_id,
-                purchased:area_purchases(id)
-              ),
-              crag_parkings (
-                parking: parkings (*)
-              ),
-               topos (
-                 *,
-                 topo_routes (
-                   route_id,
-                   route: routes (
-                     grade
-                   )
-                 )
+      await this.supabase.whenReady();
+      const userId = this.supabase.authUser()?.id;
+      let query = this.supabase.client
+        .from('crags')
+        .select(
+          `
+          *,
+          eight_anu_sector_slugs,
+          liked:crag_likes(id),
+          area: areas!inner (
+            id, name, slug, eight_anu_crag_slugs,
+            is_public, price, stripe_account_id,
+            purchased:area_purchases(id)
+          ),
+          crag_parkings (
+            parking: parkings (*)
+          ),
+           topos (
+             *,
+             topo_routes (
+               route_id,
+               route: routes (
+                 grade
                )
-            `,
-            )
-            .eq('slug', cragSlug)
-            .eq('area.slug', areaSlug);
+             )
+           )
+        `,
+        )
+        .eq('slug', cragSlug)
+        .eq('area.slug', areaSlug);
 
-          if (userId) {
-            query = query.eq('liked.user_id', userId);
-          }
+      if (userId) {
+        query = query.eq('liked.user_id', userId);
+      }
 
-          const { data, error } = await query.single();
+      const { data, error } = await query.single();
 
-          if (error) {
-            throw error;
-          }
+      if (error) {
+        throw error;
+      }
 
-          return mapCragToDetail(data as CragWithJoins);
-        },
-        { fallbackValue: null, logTag: 'OutdoorDataService' },
-      );
+      return mapCragToDetail(data as CragWithJoins);
     },
+    cache: this.cache,
+    fallbackValue: null,
+    logTag: 'OutdoorDataService',
   });
 
-  readonly cragDetail = computed(() => {
-    const val = this.cragDetailResource.value();
-    if (val !== undefined) return val as CragDetail | null;
-    return this.cache.get<CragDetail | null>(
-      CACHE_KEYS.cragDetail(
-        this.selectedAreaSlug() ?? '',
-        this.selectedCragSlug() ?? '',
-      ),
-      null,
-    );
-  });
+  readonly cragDetailResource = this.cachedCragDetail.resource;
+  readonly cragDetail: Signal<CragDetail | null> = this.cachedCragDetail.signal;
 
-  readonly routeDetailResource = resource({
+  /** Route detail for selected route slug. */
+  private readonly cachedRouteDetail = createCachedResource<
+    {
+      cragId: number | undefined;
+      routeSlug: string | null;
+      userId: string | null;
+    },
+    RouteWithExtras | null
+  >({
     params: () => ({
       cragId: this.cragDetail()?.id,
       routeSlug: this.selectedRouteSlug(),
       userId: this.supabase.authUserId(),
     }),
-    loader: async ({
-      params: { cragId, routeSlug, userId },
-    }): Promise<RouteWithExtras | null> => {
+    isBrowser: this.isBrowser,
+    cacheKey: ({ routeSlug, userId }) =>
+      routeSlug ? CACHE_KEYS.routeDetail(routeSlug, userId) : null,
+    fetcher: async ({ cragId, routeSlug, userId }) => {
       if (!cragId || !routeSlug) return null;
-      if (!this.isBrowser) return null;
-      const cacheKey = CACHE_KEYS.routeDetail(routeSlug, userId);
-      return this.cache.fetchOrCache(
-        cacheKey,
-        async () => {
-          await this.supabase.whenReady();
-          let query = this.supabase.client
-            .from('routes')
-            .select(
-              `
-              *,
-              liked:route_likes(id),
-              project:route_projects(id),
-              crag:crags(
-                id,
-                name,
-                slug,
-                area:areas(id, name, slug)
-              ),
-              ascents:route_ascents(rate, type),
-              own_ascent:route_ascents(*),
-              topo_routes(topo:topos(id, name, slug))
-            `,
-            )
-            .eq('crag_id', cragId)
-            .eq('slug', routeSlug);
+      await this.supabase.whenReady();
+      let query = this.supabase.client
+        .from('routes')
+        .select(
+          `
+          *,
+          liked:route_likes(id),
+          project:route_projects(id),
+          crag:crags(
+            id,
+            name,
+            slug,
+            area:areas(id, name, slug)
+          ),
+          ascents:route_ascents(rate, type),
+          own_ascent:route_ascents(*),
+          topo_routes(topo:topos(id, name, slug))
+        `,
+        )
+        .eq('crag_id', cragId)
+        .eq('slug', routeSlug);
 
-          if (userId) {
-            query = query
-              .eq('own_ascent.user_id', userId)
-              .eq('project.user_id', userId)
-              .eq('liked.user_id', userId);
-          }
+      if (userId) {
+        query = query
+          .eq('own_ascent.user_id', userId)
+          .eq('project.user_id', userId)
+          .eq('liked.user_id', userId);
+      }
 
-          const { data, error } = await query.single();
+      const { data, error } = await query.single();
 
-          if (error) {
-            throw error;
-          }
+      if (error) {
+        throw error;
+      }
 
-          return {
-            ...mapRouteToExtras(data as RawRouteData, {
-              areaIdSource: 'crag.area.id',
-              includeTopos: true,
-            }),
-            key: `${cragId}:${routeSlug}`,
-          } as RouteWithExtras & { area_id?: number; key: string };
-        },
-        { fallbackValue: null, logTag: 'OutdoorDataService' },
-      );
+      return {
+        ...mapRouteToExtras(data as RawRouteData, {
+          areaIdSource: 'crag.area.id',
+          includeTopos: true,
+        }),
+        key: `${cragId}:${routeSlug}`,
+      } as RouteWithExtras & { area_id?: number; key: string };
     },
+    cache: this.cache,
+    fallbackValue: null,
+    logTag: 'OutdoorDataService',
   });
 
-  readonly routeDetail = computed(() => {
-    const val = this.routeDetailResource.value();
-    if (val !== undefined) return val as RouteWithExtras | null;
-    return this.cache.get<RouteWithExtras | null>(
-      CACHE_KEYS.routeDetail(this.selectedRouteSlug() ?? ''),
-      null,
-    );
-  });
+  readonly routeDetailResource = this.cachedRouteDetail.resource;
+  readonly routeDetail: Signal<RouteWithExtras | null> =
+    this.cachedRouteDetail.signal;
 
   readonly routeAscentsResource = resource({
     params: () => ({

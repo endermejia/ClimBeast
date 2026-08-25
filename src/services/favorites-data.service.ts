@@ -1,14 +1,15 @@
-import { inject, Injectable, resource, computed } from '@angular/core';
+import { computed, inject, Injectable, Signal } from '@angular/core';
 
 import { AreaListItem, CragListItem, RouteWithExtras } from '../models';
 
-import { CACHE_KEYS } from '../constants/cache-keys';
+import { CACHE_KEYS } from '../constants';
+import { createCachedResource } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 
 import { CacheService } from './cache.service';
-
 import { FavoritesService } from './favorites.service';
+
 import { SupabaseService } from './supabase.service';
 
 /**
@@ -25,86 +26,69 @@ export class FavoritesDataService {
   private readonly supabase = inject(SupabaseService);
 
   // ---- Liked Areas ----
-  readonly likedAreasResource = resource({
+  private readonly cachedLikedAreas = createCachedResource<
+    string | null,
+    AreaListItem[]
+  >({
     params: () => this.supabase.authUserId(),
-    loader: async ({ params: userId }) => {
-      if (!userId || !this.isBrowser) return [];
-      const cacheKey = CACHE_KEYS.likedAreas(userId);
-      return this.cache.fetchOrCache(
-        cacheKey,
-        async () => {
-          await this.supabase.whenReady();
-          return this.favorites.getLikedAreas(userId);
-        },
-        { fallbackValue: [], logTag: 'FavoritesDataService' },
-      );
+    isBrowser: this.isBrowser,
+    cacheKey: (userId) => (userId ? CACHE_KEYS.likedAreas(userId) : null),
+    fetcher: async (userId) => {
+      if (!userId) return [];
+      await this.supabase.whenReady();
+      return this.favorites.getLikedAreas(userId);
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'FavoritesDataService',
   });
 
-  readonly likedAreas = computed(() => {
-    const val = this.likedAreasResource.value();
-    if (val !== undefined) return val;
-    const userId = this.supabase.authUserId();
-    if (!userId) return [];
-    return this.cache.get<AreaListItem[]>(CACHE_KEYS.likedAreas(userId), []);
-  });
-
+  readonly likedAreasResource = this.cachedLikedAreas.resource;
+  readonly likedAreas: Signal<AreaListItem[]> = this.cachedLikedAreas.signal;
   readonly likedAreaIds = computed(() => this.likedAreas().map((a) => a.id));
 
   // ---- Liked Crags ----
-  readonly likedCragsResource = resource({
+  private readonly cachedLikedCrags = createCachedResource<
+    string | null,
+    CragListItem[]
+  >({
     params: () => this.supabase.authUserId(),
-    loader: async ({ params: userId }) => {
-      if (!userId || !this.isBrowser) return [];
-      const cacheKey = CACHE_KEYS.likedCrags(userId);
-      return this.cache.fetchOrCache(
-        cacheKey,
-        async () => {
-          await this.supabase.whenReady();
-          return this.favorites.getLikedCrags(userId);
-        },
-        { fallbackValue: [], logTag: 'FavoritesDataService' },
-      );
+    isBrowser: this.isBrowser,
+    cacheKey: (userId) => (userId ? CACHE_KEYS.likedCrags(userId) : null),
+    fetcher: async (userId) => {
+      if (!userId) return [];
+      await this.supabase.whenReady();
+      return this.favorites.getLikedCrags(userId);
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'FavoritesDataService',
   });
 
-  readonly likedCrags = computed(() => {
-    const val = this.likedCragsResource.value();
-    if (val !== undefined) return val;
-    const userId = this.supabase.authUserId();
-    if (!userId) return [];
-    return this.cache.get<CragListItem[]>(CACHE_KEYS.likedCrags(userId), []);
-  });
-
+  readonly likedCragsResource = this.cachedLikedCrags.resource;
+  readonly likedCrags: Signal<CragListItem[]> = this.cachedLikedCrags.signal;
   readonly likedCragIds = computed(() => this.likedCrags().map((c) => c.id));
 
   // ---- Liked Routes ----
-  readonly likedRoutesResource = resource({
+  private readonly cachedLikedRoutes = createCachedResource<
+    string | null,
+    RouteWithExtras[]
+  >({
     params: () => this.supabase.authUserId(),
-    loader: async ({ params: userId }) => {
-      if (!userId || !this.isBrowser) return [];
-      const cacheKey = CACHE_KEYS.likedRoutes(userId);
-      return this.cache.fetchOrCache(
-        cacheKey,
-        async () => {
-          await this.supabase.whenReady();
-          return this.favorites.getLikedRoutes(userId);
-        },
-        { fallbackValue: [], logTag: 'FavoritesDataService' },
-      );
+    isBrowser: this.isBrowser,
+    cacheKey: (userId) => (userId ? CACHE_KEYS.likedRoutes(userId) : null),
+    fetcher: async (userId) => {
+      if (!userId) return [];
+      await this.supabase.whenReady();
+      return this.favorites.getLikedRoutes(userId);
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'FavoritesDataService',
   });
 
-  readonly likedRoutes = computed(() => {
-    const val = this.likedRoutesResource.value();
-    if (val !== undefined) return val;
-    const userId = this.supabase.authUserId();
-    if (!userId) return [];
-    return this.cache.get<RouteWithExtras[]>(
-      CACHE_KEYS.likedRoutes(userId),
-      [],
-    );
-  });
-
+  readonly likedRoutesResource = this.cachedLikedRoutes.resource;
+  readonly likedRoutes: Signal<RouteWithExtras[]> =
+    this.cachedLikedRoutes.signal;
   readonly likedRouteIds = computed(() => this.likedRoutes().map((r) => r.id));
 }

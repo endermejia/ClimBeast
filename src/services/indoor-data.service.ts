@@ -1,28 +1,30 @@
 import {
-  computed,
   inject,
   Injectable,
   resource,
   signal,
+  Signal,
   WritableSignal,
 } from '@angular/core';
 
 import {
   ClimbingKind,
   IndoorAscentDto,
+  IndoorRouteWithExtras,
   RouteAscentDto,
   TopoDetail,
   TopoListItem,
   TopoPath,
   TopoRouteWithRoute,
-  IndoorRouteWithExtras,
 } from '../models';
 
 import { CACHE_KEYS } from '../constants';
 
-import { IS_BROWSER } from '../app/is-browser';
+import { createCachedResource } from '../utils';
 
+import { IS_BROWSER } from '../app/is-browser';
 import { CacheService } from './cache.service';
+
 import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
@@ -86,34 +88,27 @@ export class IndoorDataService {
     },
   });
 
-  readonly topoDetailResource = resource({
+  private readonly cachedTopoDetail = createCachedResource<
+    string | null,
+    TopoDetail | null
+  >({
     params: () => this.selectedTopoId(),
-    loader: async ({ params: id }): Promise<TopoDetail | null> => {
-      if (!id) return null;
-      if (!this.isBrowser) return null;
-      if (!isNaN(Number(id))) return null; // Not an indoor topo
-
-      const cacheKey = CACHE_KEYS.topoDetail(id);
-      return this.cache.fetchOrCache(
-        cacheKey,
-        async () => {
-          await this.supabase.whenReady();
-          const userId = this.supabase.authUser()?.id;
-          return this.fetchIndoorTopo(id, userId);
-        },
-        { fallbackValue: null, logTag: 'IndoorDataService' },
-      );
+    isBrowser: this.isBrowser,
+    cacheKey: (id) =>
+      id && isNaN(Number(id)) ? CACHE_KEYS.topoDetail(id) : null,
+    fetcher: async (id) => {
+      if (!id || !isNaN(Number(id))) return null;
+      await this.supabase.whenReady();
+      const userId = this.supabase.authUser()?.id;
+      return this.fetchIndoorTopo(id, userId);
     },
+    cache: this.cache,
+    fallbackValue: null,
+    logTag: 'IndoorDataService',
   });
 
-  readonly topoDetail = computed(() => {
-    const val = this.topoDetailResource.value();
-    if (val !== undefined) return val as TopoDetail | null;
-    return this.cache.get<TopoDetail | null>(
-      CACHE_KEYS.topoDetail(this.selectedTopoId() ?? 0),
-      null,
-    );
-  });
+  readonly topoDetailResource = this.cachedTopoDetail.resource;
+  readonly topoDetail: Signal<TopoDetail | null> = this.cachedTopoDetail.signal;
 
   readonly indoorRouteDetailResource = resource({
     params: () => ({

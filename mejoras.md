@@ -60,25 +60,10 @@
 - 105+ componentes sin .spec.ts, incluyendo navbar.ts (811 líneas), topo-viewer.ts, ascent-card.ts, todos los forms y dialogs.
 - Acción: Crear tests para componentes de alto uso: navbar, topo-viewer, ascent-card, y todos los forms.
 
-14. innerHTML sin sanitización consistente
-
-- 6 usos de innerHTML, incluyendo mention-link.pipe.ts que usa bypassSecurityTrustHtml.
-- Acción: Auditar cada uso; preferir interpolación de texto sobre innerHTML. Donde sea necesario, asegurar sanitización robusta.
-
-15. Uso excesivo de bypassSecurityTrust
-
-- 4 llamadas a bypassSecurityTrustHtml/Url/ResourceUrl en pipes y componentes.
-- Acción: Revisar cada caso; para mention-link.pipe.ts considerar una alternativa basada en componentes.
-
 16. Manifest PWA hardcodeado en español
 
 - manifest.webmanifest tiene "lang": "es" y descripción en español sin soporte multilingual.
 - Acción: Hacer que el manifest se genere dinámicamente o use las traducciones del usuario.
-
-20. Duplicación de patrón resource() + cache fallback
-
-- outdoor-data.service.ts e indoor-data.service.ts repiten el patrón: resource → cache.fetchOrCache → cache.get fallback, ~10 veces cada uno.
-- Acción: Crear un helper `cachedResource()` o `createCachedResource()` que encapsule este patrón.
 
 21. `await this.supabase.whenReady()` repetido 100+ veces
 
@@ -110,9 +95,12 @@
 ## 🟢 Mejoras Completadas
 
 - [x] **13. @defer con @error en templates**: Agregados bloques `@error` con fallback UI traducida en bloques `@defer`.
+- [x] **14. Sanitización de innerHTML**: Auditados los 6 usos de `innerHTML` verificando el paso estricto por `SecurityContext.HTML` y `sanitizeHtml`.
+- [x] **15. Uso de bypassSecurityTrust**: Auditadas las llamadas a `bypassSecurityTrust*` asegurando la limpieza previa con `DomSanitizer.sanitize`.
 - [x] **17. Sitemap.xml**: Actualizado con las rutas públicas exactas (`/`, `/info`, `/login`) y enlaces `hreflang` multilingües.
 - [x] **18. robots.txt**: Alineado exactamente con la estructura de `app.routes.ts` y guards de autenticación.
 - [x] **19. Textos de landing page demo internacionalizados**: Cadenas del demo card y `mockCrag` movidas a archivos i18n (`public/i18n/*.json`) y gestionadas mediante `computed()`.
+- [x] **20. Helper createCachedResource**: Implementado helper reutilizable `createCachedResource()` en `resource-helpers.ts` unificando `resource()` y fallback de `CacheService`, aplicado extensivamente en `OutdoorDataService`, `IndoorDataService`, `FavoritesDataService` y `CragRoutesDataService` eliminando código repetitivo.
 - [x] **22. CacheService con expiración TTL**: Agregado soporte TTL opcional en `get()` y `fetchOrCache()`, con desalojo automático de claves expiradas y pruebas unitarias.
 - [x] **23. ARIA roles en navegación y tarjetas**: Añadidos atributos de accesibilidad ARIA en `AppCardComponent`, `NavbarComponent` y componentes sociales.
 - [x] **24. aria-label en botones de icono**: Añadidos atributos `[attr.aria-label]` a botones de icono e interacciones en tarjetas de escaladas y favoritos.
