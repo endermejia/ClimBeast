@@ -14,7 +14,13 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { TuiAutoFocus } from '@taiga-ui/cdk';
-import { TuiDataList, TuiIcon, TuiTextfield, TuiTitle } from '@taiga-ui/core';
+import {
+  TuiDataList,
+  TuiDropdown,
+  TuiIcon,
+  TuiTextfield,
+  TuiTitle,
+} from '@taiga-ui/core';
 import {
   TuiAvatar,
   TuiBadge,
@@ -47,6 +53,7 @@ import {
 import { gradeToNumber } from '../../utils';
 
 import { GradeComponent } from './avatar-grade';
+import { TourHintComponent } from './tour-hint';
 
 @Component({
   selector: 'app-search-dropdown',
@@ -56,11 +63,13 @@ import { GradeComponent } from './avatar-grade';
     NgTemplateOutlet,
     ReactiveFormsModule,
     RouterLink,
+    TourHintComponent,
     TranslatePipe,
     TuiAutoFocus,
     TuiAvatar,
     TuiBadge,
     TuiDataList,
+    TuiDropdown,
     TuiIcon,
     TuiInputSearch,
     TuiPulse,
@@ -141,7 +150,13 @@ import { GradeComponent } from './avatar-grade';
           <ng-template #searchContent>
             @if (results() !== null) {
               <div
-                class="flex flex-col h-full bg-(--tui-background-base) rounded-xl overflow-hidden w-[calc(100vw-1rem)] md:w-auto md:min-w-200 max-h-[80vh]"
+                class="flex flex-col h-full bg-(--tui-background-base) rounded-xl overflow-hidden w-[calc(100vw-1rem)] md:w-auto md:min-w-200 max-h-[80vh] relative"
+                [tuiDropdown]="tourHint"
+                [tuiDropdownManual]="
+                  tourService.isActive() &&
+                  tourService.step() === TourStep.SEARCH
+                "
+                tuiDropdownDirection="bottom"
               >
                 <div class="p-2">
                   <tui-tabs [(activeItemIndex)]="activeSearchTab">
@@ -198,7 +213,13 @@ import { GradeComponent } from './avatar-grade';
                               tuiOption
                               [routerLink]="item.href || null"
                               (click)="onResultClick(item, $event)"
+                              [class.ring-2]="isTourHighlight(item)"
+                              [class.ring-negative]="isTourHighlight(item)"
+                              class="relative"
                             >
+                              @if (isTourHighlight(item)) {
+                                <tui-pulse />
+                              }
                               <ng-container
                                 [ngTemplateOutlet]="itemTemplate"
                                 [ngTemplateOutletContext]="{
@@ -223,7 +244,13 @@ import { GradeComponent } from './avatar-grade';
                             tuiOption
                             [routerLink]="item.href || null"
                             (click)="onResultClick(item, $event)"
+                            [class.ring-2]="isTourHighlight(item)"
+                            [class.ring-negative]="isTourHighlight(item)"
+                            class="relative"
                           >
+                            @if (isTourHighlight(item)) {
+                              <tui-pulse />
+                            }
                             <ng-container
                               [ngTemplateOutlet]="itemTemplate"
                               [ngTemplateOutletContext]="{
@@ -283,6 +310,14 @@ import { GradeComponent } from './avatar-grade';
           </ng-template>
         </tui-textfield>
       </div>
+
+      <ng-template #tourHint>
+        <app-tour-hint
+          [description]="'tour.search.description' | translate"
+          (next)="tourService.next()"
+          (skip)="tourService.finish()"
+        />
+      </ng-template>
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -421,7 +456,30 @@ export class SearchDropdownComponent {
       }
     }
 
+    const isTourSearch =
+      this.tourService.isActive() &&
+      this.tourService.step() === TourStep.SEARCH;
+
     this.searchOpen.set(false);
     this.searchValue.set('');
+
+    if (isTourSearch) {
+      void this.tourService.next();
+    }
+  }
+
+  protected isTourHighlight(item: SearchItem): boolean {
+    if (
+      !this.tourService.isActive() ||
+      this.tourService.step() !== TourStep.SEARCH
+    ) {
+      return false;
+    }
+    const pathSegments = (item.href || '').split('/').filter(Boolean);
+    const isArea =
+      item.type === 'area' ||
+      (pathSegments.length === 2 && pathSegments[0] === 'area');
+    const isMillena = (item.title || '').toLowerCase().includes('millena');
+    return isArea && isMillena;
   }
 }
