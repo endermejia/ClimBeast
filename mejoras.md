@@ -8,11 +8,6 @@ Actualizado: 2026-08-25
 
 ## 🟡 Medio
 
-### 8. Separación de SupabaseService (527 líneas)
-
-- Maneja auth, storage URLs, profile, admin areas, y config en un solo servicio.
-- Acción: Extraer `SupabaseAuthService`, `SupabaseStorageService`, `SupabaseConfigService`.
-
 ### 9. OutdoorDataService / TopoDataService (675 líneas)
 
 - Múltiples `resource()` calls y mucha lógica de cache.
