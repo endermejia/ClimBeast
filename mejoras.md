@@ -6,11 +6,6 @@ Actualizado: 2026-08-25
 
 ## 🟠 Alto
 
-### 5. import-8a.ts excesivamente grande (1698 líneas)
-
-- Parsing CSV, matching de rutas, y UI de confirmación en un solo archivo.
-- Acción: Extraer `CsvParserService`, `RouteMatcherService`, y dividir en componentes por paso.
-
 ### 6. topo-viewer.ts con lógica compleja (786 líneas)
 
 - Zoom, pan, drag, touch events, fullscreen, y rutas SVG en un solo componente.
