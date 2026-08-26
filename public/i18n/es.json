@@ -290,7 +290,7 @@
   "equipperRequest.requestButton": "Solicitar ser equipador",
   "equipperRequest.requestTitle": "¿Eres este equipador?",
   "equipperRequest.success": "Solicitud enviada correctamente",
-  "equipperRequest.unclaimedInfo": "Este equipador no tiene propietario asignado.",
+  "equipperRequest.unclaimedInfo": "Equipador sin usuario registrado",
   "equippers": "Equipadores",
   "errors.database.foreign_key_violation": "No se puede eliminar porque todavía hay elementos relacionados.",
   "errors.database.noSchema": "No se encontró el esquema de datos.",
