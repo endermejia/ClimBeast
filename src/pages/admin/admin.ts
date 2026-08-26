@@ -141,6 +141,24 @@ import { IS_BROWSER } from '../../app/is-browser';
             </p>
           </div>
         </a>
+
+        <a
+          routerLink="/admin/error-logs"
+          class="flex items-center gap-4 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1)"
+        >
+          <tui-icon
+            icon="@tui.triangle-alert"
+            class="text-(--tui-text-tertiary)"
+          />
+          <div class="flex-1">
+            <span class="font-bold block">
+              {{ 'admin.errorLogs.title' | translate }}
+            </span>
+            <p class="text-sm text-(--tui-text-secondary)">
+              {{ 'admin.errorLogs.description' | translate }}
+            </p>
+          </div>
+        </a>
       </div>
     </div>
   `,

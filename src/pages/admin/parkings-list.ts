@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
 import {
   TuiSortDirection,
@@ -19,8 +20,9 @@ import { TuiDialogService } from '@taiga-ui/core';
 import {
   TuiAppearance,
   TuiButton,
-  TuiScrollbar,
+  TuiIcon,
   TuiInput,
+  TuiScrollbar,
 } from '@taiga-ui/core';
 import {
   TUI_CONFIRM,
@@ -56,6 +58,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     DecimalPipe,
     EmptyStateComponent,
     FormsModule,
+    RouterLink,
     TranslatePipe,
     TuiAppearance,
     TuiAvatar,
@@ -63,6 +66,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiBadgedContentDirective,
     TuiBadgeNotification,
     TuiButton,
+    TuiIcon,
     TuiInput,
     TuiScrollbar,
     TuiSkeleton,
@@ -71,26 +75,32 @@ import { IS_BROWSER } from '../../app/is-browser';
   template: `
     <section class="flex flex-col w-full max-w-5xl mx-auto p-4">
       <header class="mb-4 flex items-center justify-between gap-2">
-        <h1 class="text-2xl font-bold flex items-center gap-2">
-          <tui-badged-content [style.--tui-radius.%]="50">
-            @if (parkings().length; as parkingsCount) {
-              <tui-badge-notification
-                tuiAppearance="accent"
-                size="s"
-                tuiSlot="top"
-              >
-                {{ parkingsCount }}
-              </tui-badge-notification>
-            }
-            <span
-              tuiAvatar="@tui.map-pin"
-              tuiThumbnail
-              size="l"
-              class="self-center"
-              [attr.aria-label]="'parkings' | translate"
-            ></span>
-          </tui-badged-content>
-          {{ 'parkings' | translate }}
+        <h1 class="text-2xl font-bold">
+          <a
+            routerLink="/admin"
+            class="no-underline text-inherit flex items-center gap-2"
+          >
+            <tui-icon icon="@tui.arrow-left" />
+            <tui-badged-content [style.--tui-radius.%]="50">
+              @if (parkings().length; as parkingsCount) {
+                <tui-badge-notification
+                  tuiAppearance="accent"
+                  size="s"
+                  tuiSlot="top"
+                >
+                  {{ parkingsCount }}
+                </tui-badge-notification>
+              }
+              <span
+                tuiAvatar="@tui.map-pin"
+                tuiThumbnail
+                size="l"
+                class="self-center"
+                [attr.aria-label]="'parkings' | translate"
+              ></span>
+            </tui-badged-content>
+            {{ 'parkings' | translate }}
+          </a>
         </h1>
 
         <button

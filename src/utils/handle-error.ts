@@ -1,20 +1,29 @@
+import { ErrorSeverity } from '../services/error-log.service';
 import { ToastService } from '../services/toast.service';
 
 /**
- * Handles error mapping and shows a toast notification.
+ * Handles error mapping, logs silently to database via ToastService -> ErrorLogService
+ * (without printing to console), and displays a toast notification.
  * @param error The error object (usually from Supabase)
  * @param toast The ToastService instance
+ * @param severity Optional error severity ('critical' | 'error' | 'warning' | 'info')
  */
-export function handleErrorToast(error: unknown, toast: ToastService): void {
-  console.error('[handleErrorToast]', error);
+export function handleErrorToast(
+  error: unknown,
+  toast: ToastService,
+  severity: ErrorSeverity = 'error',
+): void {
+  // Log error silently to DB / ErrorLogService (no console.error output)
+  toast.logError(error, severity, 'handleErrorToast');
 
   let messageKey = 'errors.unexpected';
 
   // Specific PostgreSQL / Supabase error codes
   const code =
     typeof error === 'object' && error !== null && 'code' in error
-      ? error.code
+      ? (error as { code: unknown }).code
       : undefined;
+
   if (code === '23503') {
     messageKey = 'errors.database.foreign_key_violation';
   } else if (code === '23505') {

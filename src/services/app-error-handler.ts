@@ -7,7 +7,7 @@ export class AppErrorHandler implements ErrorHandler {
   private readonly errorLogService = inject(ErrorLogService);
 
   handleError(error: unknown): void {
-    console.error('[AppErrorHandler]', error);
-    this.errorLogService.logError(error);
+    // Log error to database via ErrorLogService without printing to console
+    this.errorLogService.logError(error, 'critical', 'AppErrorHandler');
   }
 }

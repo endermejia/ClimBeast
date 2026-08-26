@@ -108,24 +108,30 @@ interface UserWithRole {
   template: `
     <section class="flex flex-col w-full max-w-5xl mx-auto p-4">
       <header class="mb-4 flex items-center justify-between gap-2">
-        <h1 class="text-2xl font-bold flex items-center gap-2">
-          <tui-badged-content [style.--tui-radius.%]="50">
-            @if (users().length; as usersCount) {
-              <ng-container tuiSlot="top">
-                <tui-badge-notification tuiAppearance="accent" size="s">
-                  {{ usersCount }}
-                </tui-badge-notification>
-              </ng-container>
-            }
-            <span
-              tuiAvatar="@tui.users"
-              tuiThumbnail
-              size="l"
-              class="self-center"
-              [attr.aria-label]="'admin.users.title' | translate"
-            ></span>
-          </tui-badged-content>
-          {{ 'admin.users.title' | translate }}
+        <h1 class="text-2xl font-bold">
+          <a
+            routerLink="/admin"
+            class="no-underline text-inherit flex items-center gap-2"
+          >
+            <tui-icon icon="@tui.arrow-left" />
+            <tui-badged-content [style.--tui-radius.%]="50">
+              @if (users().length; as usersCount) {
+                <ng-container tuiSlot="top">
+                  <tui-badge-notification tuiAppearance="accent" size="s">
+                    {{ usersCount }}
+                  </tui-badge-notification>
+                </ng-container>
+              }
+              <span
+                tuiAvatar="@tui.users"
+                tuiThumbnail
+                size="l"
+                class="self-center"
+                [attr.aria-label]="'admin.users.title' | translate"
+              ></span>
+            </tui-badged-content>
+            {{ 'admin.users.title' | translate }}
+          </a>
         </h1>
       </header>
 

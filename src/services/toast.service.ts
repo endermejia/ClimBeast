@@ -8,6 +8,8 @@ import { TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom, type Observable, Subject, takeUntil } from 'rxjs';
 
+import { ErrorLogService, ErrorSeverity } from './error-log.service';
+
 import { LoaderDialogComponent } from '../components/dialogs/loader-dialog';
 import { UndoToastComponent } from '../components/ui/undo-toast';
 
@@ -18,6 +20,7 @@ export class ToastService {
   private readonly toast = inject(TuiToastService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
+  private readonly errorLog = inject(ErrorLogService);
 
   private async show(
     message: string,
@@ -52,6 +55,14 @@ export class ToastService {
 
   warning(message: string): void {
     this.show(message, { appearance: 'warning', data: '@tui.circle-alert' });
+  }
+
+  logError(
+    error: unknown,
+    severity: ErrorSeverity = 'error',
+    context?: string,
+  ): void {
+    this.errorLog.logError(error, severity, context);
   }
 
   showWithUndo(

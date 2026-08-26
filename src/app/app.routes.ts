@@ -219,6 +219,14 @@ export const routes: Routes = [
         (m) => m.AdminShopOrdersComponent,
       ),
   },
+  {
+    path: 'admin/error-logs',
+    canMatch: [adminGuard],
+    loadComponent: () =>
+      import('../pages/admin/error-logs').then(
+        (m) => m.AdminErrorLogsComponent,
+      ),
+  },
   // Public landing page
   {
     path: 'info',

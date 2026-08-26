@@ -18,6 +18,7 @@ import { tuiDefaultSort } from '@taiga-ui/cdk';
 import {
   TuiAppearance,
   TuiButton,
+  TuiIcon,
   TuiLink,
   TuiScrollbar,
 } from '@taiga-ui/core';
@@ -56,6 +57,7 @@ interface AreaAdminRequest {
     TuiBadgedContentComponent,
     TuiBadgeNotification,
     TuiButton,
+    TuiIcon,
     TuiLink,
     TuiScrollbar,
     TuiSkeleton,
@@ -64,26 +66,32 @@ interface AreaAdminRequest {
   template: `
     <section class="flex flex-col w-full max-w-5xl mx-auto p-4">
       <header class="mb-4 flex items-center justify-between gap-2">
-        <h1 class="text-2xl font-bold flex items-center gap-2">
-          <tui-badged-content [style.--tui-radius.%]="50">
-            @if (requests().length; as requestsCount) {
-              <tui-badge-notification
-                tuiAppearance="accent"
-                size="s"
-                tuiSlot="top"
-              >
-                {{ requestsCount }}
-              </tui-badge-notification>
-            }
-            <span
-              tuiAvatar="@tui.shield"
-              tuiThumbnail
-              size="l"
-              class="self-center"
-              [attr.aria-label]="'adminRequests.manageTitle' | translate"
-            ></span>
-          </tui-badged-content>
-          {{ 'adminRequests.manageTitle' | translate }}
+        <h1 class="text-2xl font-bold">
+          <a
+            routerLink="/admin"
+            class="no-underline text-inherit flex items-center gap-2"
+          >
+            <tui-icon icon="@tui.arrow-left" />
+            <tui-badged-content [style.--tui-radius.%]="50">
+              @if (requests().length; as requestsCount) {
+                <tui-badge-notification
+                  tuiAppearance="accent"
+                  size="s"
+                  tuiSlot="top"
+                >
+                  {{ requestsCount }}
+                </tui-badge-notification>
+              }
+              <span
+                tuiAvatar="@tui.shield"
+                tuiThumbnail
+                size="l"
+                class="self-center"
+                [attr.aria-label]="'adminRequests.manageTitle' | translate"
+              ></span>
+            </tui-badged-content>
+            {{ 'adminRequests.manageTitle' | translate }}
+          </a>
         </h1>
       </header>
 

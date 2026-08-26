@@ -12,6 +12,7 @@ import {
   resource,
   signal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import {
   TuiTable,
@@ -28,9 +29,10 @@ import {
   TuiDataList,
   TuiDialogService,
   TuiDropdown,
+  TuiIcon,
+  TuiLink,
   TuiLoader,
   TuiTitle,
-  TuiLink,
 } from '@taiga-ui/core';
 import { TuiChevron } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
@@ -55,33 +57,43 @@ import {
   selector: 'app-admin-shop-orders',
   imports: [
     CommonModule,
-    DecimalPipe,
-    UpperCasePipe,
     DatePipe,
+    DecimalPipe,
+    OrderStatusAppearancePipe,
+    OrderStatusColorPipe,
+    RouterLink,
     TranslatePipe,
-    TuiHeader,
-    TuiTitle,
     TuiButton,
-    TuiLoader,
-    TuiTable,
-    TuiTableTbody,
-    TuiTableThGroup,
-    TuiTableTh,
-    TuiTableTr,
-    TuiTableTd,
-    TuiTableHead,
-    TuiTableCell,
+    TuiChevron,
     TuiDataList,
     TuiDropdown,
-    TuiChevron,
+    TuiHeader,
+    TuiIcon,
     TuiLink,
-    OrderStatusColorPipe,
-    OrderStatusAppearancePipe,
+    TuiLoader,
+    TuiTable,
+    TuiTableCell,
+    TuiTableHead,
+    TuiTableTbody,
+    TuiTableTd,
+    TuiTableTh,
+    TuiTableThGroup,
+    TuiTableTr,
+    TuiTitle,
+    UpperCasePipe,
   ],
   template: `
     <div class="p-4 flex flex-col gap-6 max-w-6xl mx-auto w-full">
       <header tuiHeader>
-        <h1 tuiTitle>{{ 'admin.orders.title' | translate }}</h1>
+        <h1 tuiTitle>
+          <a
+            routerLink="/admin"
+            class="no-underline text-inherit flex items-center gap-2"
+          >
+            <tui-icon icon="@tui.arrow-left" />
+            {{ 'admin.orders.title' | translate }}
+          </a>
+        </h1>
       </header>
 
       <tui-loader [overlay]="true" [loading]="ordersResource.isLoading()">

@@ -82,27 +82,33 @@ import { IS_BROWSER } from '../../app/is-browser';
   template: `
     <section class="flex flex-col w-full max-w-5xl mx-auto p-4">
       <header class="mb-4 flex items-center justify-between gap-2">
-        <h1 class="text-2xl font-bold flex items-center gap-2">
-          <tui-badged-content [style.--tui-radius.%]="50">
-            @if (equippers().length; as equippersCount) {
-              <tui-badge-notification
-                tuiAppearance="accent"
-                size="s"
-                tuiSlot="top"
-              >
-                {{ equippersCount }}
-              </tui-badge-notification>
-            }
-            <span
-              tuiAvatar="@tui.hammer"
-              tuiThumbnail
-              size="l"
-              class="self-center"
-              [attr.aria-label]="'admin.equippers.title' | translate"
-            ></span>
-          </tui-badged-content>
+        <h1 class="text-2xl font-bold">
+          <a
+            routerLink="/admin"
+            class="no-underline text-inherit flex items-center gap-2"
+          >
+            <tui-icon icon="@tui.arrow-left" />
+            <tui-badged-content [style.--tui-radius.%]="50">
+              @if (equippers().length; as equippersCount) {
+                <tui-badge-notification
+                  tuiAppearance="accent"
+                  size="s"
+                  tuiSlot="top"
+                >
+                  {{ equippersCount }}
+                </tui-badge-notification>
+              }
+              <span
+                tuiAvatar="@tui.hammer"
+                tuiThumbnail
+                size="l"
+                class="self-center"
+                [attr.aria-label]="'admin.equippers.title' | translate"
+              ></span>
+            </tui-badged-content>
 
-          {{ 'admin.equippers.title' | translate }}
+            {{ 'admin.equippers.title' | translate }}
+          </a>
         </h1>
 
         <button
