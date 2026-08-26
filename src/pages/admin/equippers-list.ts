@@ -357,9 +357,7 @@ export class AdminEquippersListComponent {
   }
 
   constructor() {
-    this.outdoorData.selectedAreaSlug.set(null);
-    this.outdoorData.selectedCragSlug.set(null);
-    this.outdoorData.selectedRouteSlug.set(null);
+    this.outdoorData.clearSelection();
     if (this.isBrowser) {
       void this.loadEquippers();
     }

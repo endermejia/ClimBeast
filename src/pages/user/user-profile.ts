@@ -692,11 +692,8 @@ export class UserProfileComponent {
 
       if (profileId) {
         this.profileData.profileUserId.set(profileId);
-        this.profileData.profileUserId.set(profileId);
         this.profileData.resetPagination();
-        this.outdoorData.selectedAreaSlug.set(null);
-        this.outdoorData.selectedCragSlug.set(null);
-        this.outdoorData.selectedRouteSlug.set(null);
+        this.outdoorData.clearSelection();
         this.profileData.profileActiveTab.set(0);
       }
     });

@@ -161,22 +161,18 @@ export abstract class TopoPageBase {
     });
 
     effect(() => {
-      this.outdoorData.selectedRouteSlug.set(null);
-      const topoId = this.id();
+      const topoId = this.id() ? String(this.id()) : null;
       if (this.isIndoor()) {
         const center = this.centerSlug();
         this.indoorData.selectedCenterSlug.set(center || null);
-        this.outdoorData.selectedAreaSlug.set(null);
-        this.outdoorData.selectedCragSlug.set(null);
+        this.outdoorData.selectTopo(null, null, topoId);
       } else {
         const area = this.areaSlug();
         const crag = this.cragSlug();
         this.indoorData.selectedCenterSlug.set(null);
-        this.outdoorData.selectedAreaSlug.set(area || null);
-        this.outdoorData.selectedCragSlug.set(crag || null);
+        this.outdoorData.selectTopo(area || null, crag || null, topoId);
       }
-      this.outdoorData.selectedTopoId.set(topoId ?? null);
-      this.indoorData.selectedTopoId.set(topoId ?? null);
+      this.indoorData.selectedTopoId.set(topoId);
     });
 
     effect(() => {

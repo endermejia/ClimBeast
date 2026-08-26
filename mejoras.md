@@ -57,11 +57,6 @@ Actualizado: 2026-08-25
 
 ## 🟢 Bajo
 
-### 19. Effect con dependencia circular implícita
-
-- `outdoor-route.ts:502-511`: Effect escribe a signals del servicio para triggerar resources. Crea cadena implícita difícil de debuggear.
-- Acción: Considerar pasar params directamente al resource en vez de usar signals intermedios.
-
 ### 20. Hack `_v: r` en resource params
 
 - `outdoor-route.ts:435`: `_v: r` en params para forzar re-evaluación cuando el `id` no cambia. Señal de parametrizado incorrecto.

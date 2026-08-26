@@ -817,9 +817,7 @@ export class AreaComponent {
   constructor() {
     effect(() => {
       const slug = this.areaSlug();
-      this.outdoorData.selectedCragSlug.set(null);
-      this.outdoorData.selectedRouteSlug.set(null);
-      this.outdoorData.selectedAreaSlug.set(slug);
+      this.outdoorData.selectArea(slug);
     });
 
     effect(() => {

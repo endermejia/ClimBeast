@@ -471,10 +471,7 @@ export class CragComponent {
     effect(() => {
       const aSlug = this.areaSlug();
       const cSlug = this.cragSlug();
-      this.outdoorData.selectedRouteSlug.set(null);
-      this.outdoorData.selectedTopoId.set(null);
-      this.outdoorData.selectedAreaSlug.set(aSlug);
-      this.outdoorData.selectedCragSlug.set(cSlug);
+      this.outdoorData.selectCrag(aSlug, cSlug);
     });
 
     effect(() => {

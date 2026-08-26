@@ -49,6 +49,57 @@ export class OutdoorDataService {
   selectedTopoId: WritableSignal<string | null> = signal(null);
   selectedRouteSlug: WritableSignal<string | null> = signal(null);
 
+  clearSelection(): void {
+    if (this.selectedAreaSlug() !== null) this.selectedAreaSlug.set(null);
+    if (this.selectedCragSlug() !== null) this.selectedCragSlug.set(null);
+    if (this.selectedRouteSlug() !== null) this.selectedRouteSlug.set(null);
+    if (this.selectedTopoId() !== null) this.selectedTopoId.set(null);
+  }
+
+  selectArea(areaSlug: string | null): void {
+    if (this.selectedAreaSlug() !== areaSlug)
+      this.selectedAreaSlug.set(areaSlug);
+    if (this.selectedCragSlug() !== null) this.selectedCragSlug.set(null);
+    if (this.selectedRouteSlug() !== null) this.selectedRouteSlug.set(null);
+    if (this.selectedTopoId() !== null) this.selectedTopoId.set(null);
+  }
+
+  selectCrag(areaSlug: string | null, cragSlug: string | null): void {
+    if (this.selectedAreaSlug() !== areaSlug)
+      this.selectedAreaSlug.set(areaSlug);
+    if (this.selectedCragSlug() !== cragSlug)
+      this.selectedCragSlug.set(cragSlug);
+    if (this.selectedRouteSlug() !== null) this.selectedRouteSlug.set(null);
+    if (this.selectedTopoId() !== null) this.selectedTopoId.set(null);
+  }
+
+  selectRoute(
+    areaSlug: string | null,
+    cragSlug: string | null,
+    routeSlug: string | null,
+  ): void {
+    if (this.selectedAreaSlug() !== areaSlug)
+      this.selectedAreaSlug.set(areaSlug);
+    if (this.selectedCragSlug() !== cragSlug)
+      this.selectedCragSlug.set(cragSlug);
+    if (this.selectedRouteSlug() !== routeSlug)
+      this.selectedRouteSlug.set(routeSlug);
+    if (this.selectedTopoId() !== null) this.selectedTopoId.set(null);
+  }
+
+  selectTopo(
+    areaSlug: string | null,
+    cragSlug: string | null,
+    topoId: string | null,
+  ): void {
+    if (this.selectedAreaSlug() !== areaSlug)
+      this.selectedAreaSlug.set(areaSlug);
+    if (this.selectedCragSlug() !== cragSlug)
+      this.selectedCragSlug.set(cragSlug);
+    if (this.selectedTopoId() !== topoId) this.selectedTopoId.set(topoId);
+    if (this.selectedRouteSlug() !== null) this.selectedRouteSlug.set(null);
+  }
+
   readonly topoPhotoVersion: WritableSignal<number> = signal(0);
 
   private readonly cachedAreas = createCachedResource<void, AreaListItem[]>({

@@ -504,10 +504,7 @@ export class OutdoorRouteComponent {
       const cSlug = this.cragSlug();
       const rSlug = this.routeSlug();
 
-      this.outdoorData.selectedTopoId.set(null);
-      this.outdoorData.selectedAreaSlug.set(aSlug);
-      this.outdoorData.selectedCragSlug.set(cSlug);
-      this.outdoorData.selectedRouteSlug.set(rSlug);
+      this.outdoorData.selectRoute(aSlug, cSlug, rSlug);
     });
 
     effect(() => {
