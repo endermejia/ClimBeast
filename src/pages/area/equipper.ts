@@ -9,16 +9,24 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
-import { TuiButton, TuiIcon, TuiLink, TuiScrollbar } from '@taiga-ui/core';
+import {
+  TuiButton,
+  TuiDialogService,
+  TuiHint,
+  TuiLink,
+  TuiScrollbar,
+} from '@taiga-ui/core';
 import { TuiCountryIsoCode } from '@taiga-ui/i18n';
-import { TuiSkeleton } from '@taiga-ui/kit';
+import { TUI_CONFIRM, type TuiConfirmData, TuiSkeleton } from '@taiga-ui/kit';
 
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
 
 import { EquipperRequestsService } from '../../services/equipper-requests.service';
 import { EquipperService } from '../../services/equipper.service';
 import { LayoutService } from '../../services/layout.service';
 import { SupabaseService } from '../../services/supabase.service';
+import { ToastService } from '../../services/toast.service';
 
 import { IndoorRoutesComponent } from '../../components/indoor/indoor-routes';
 import { OutdoorRoutesTableComponent } from '../../components/route/outdoor-routes-table';
@@ -35,7 +43,7 @@ import { EquipperRequestDto } from '../../models';
     RouterLink,
     TranslatePipe,
     TuiButton,
-    TuiIcon,
+    TuiHint,
     TuiLink,
     TuiScrollbar,
     TuiSkeleton,
@@ -76,6 +84,19 @@ import { EquipperRequestDto } from '../../models';
             (nameClick)="navigateToUserProfile(equipper.user_id)"
             (avatarClick)="navigateToUserProfile(equipper.user_id)"
           >
+            @if (equipper.user_id === null) {
+              <button
+                nameActions
+                tuiIconButton
+                type="button"
+                appearance="action-grayscale"
+                size="s"
+                iconStart="@tui.circle-help"
+                [tuiHint]="'equipperRequest.unclaimedInfo' | translate"
+                [attr.aria-label]="'equipperRequest.requestButton' | translate"
+                (click.zoneless)="openRequestDialog(equipper.id, equipper.name)"
+              ></button>
+            }
             @if (equipper.user_id) {
               <div extraInfo class="mt-2">
                 <a tuiLink [routerLink]="['/profile', equipper.user_id]">
@@ -84,52 +105,6 @@ import { EquipperRequestDto } from '../../models';
               </div>
             }
           </app-user-info>
-
-          @if (equipper.user_id === null && supabase.authUserId()) {
-            <div
-              class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 my-2"
-            >
-              <div class="flex items-center gap-2 text-sm">
-                <tui-icon
-                  icon="@tui.circle-help"
-                  size="s"
-                  class="text-blue-500 shrink-0"
-                />
-                <span>
-                  {{
-                    (myRequest()
-                      ? 'equipperRequest.pending'
-                      : 'equipperRequest.unclaimedInfo'
-                    ) | translate
-                  }}
-                </span>
-              </div>
-
-              @if (myRequest()) {
-                <button
-                  tuiButton
-                  size="s"
-                  appearance="secondary"
-                  [disabled]="requesting()"
-                  (click.zoneless)="cancelRequest(equipper.id)"
-                  class="rounded-xl! shrink-0"
-                >
-                  {{ 'equipperRequest.cancel' | translate }}
-                </button>
-              } @else {
-                <button
-                  tuiButton
-                  size="s"
-                  appearance="primary"
-                  [disabled]="requesting()"
-                  (click.zoneless)="requestEquipper(equipper.id)"
-                  class="rounded-xl! shrink-0"
-                >
-                  {{ 'equipperRequest.requestButton' | translate }}
-                </button>
-              }
-            </div>
-          }
         }
 
         <!-- Equipper Routes Table -->
@@ -165,10 +140,13 @@ import { EquipperRequestDto } from '../../models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EquipperComponent {
+  private readonly dialogs = inject(TuiDialogService);
   protected readonly equipperService = inject(EquipperService);
   protected readonly equipperRequests = inject(EquipperRequestsService);
   protected readonly layoutService = inject(LayoutService);
   protected readonly supabase = inject(SupabaseService);
+  private readonly toast = inject(ToastService);
+  private readonly translate = inject(TranslateService);
   protected readonly router = inject(Router);
 
   // Route param
@@ -225,6 +203,50 @@ export class EquipperComponent {
         this.myRequest.set(null);
       }
     });
+  }
+
+  protected async openRequestDialog(
+    equipperId: number,
+    equipperName: string,
+  ): Promise<void> {
+    if (!this.supabase.authUserId()) {
+      this.toast.info('equipperRequest.loginRequired');
+      return;
+    }
+
+    const hasRequest = !!this.myRequest();
+    const confirmed = await firstValueFrom(
+      this.dialogs.open<boolean>(TUI_CONFIRM, {
+        label: this.translate.instant(
+          hasRequest
+            ? 'equipperRequest.pendingTitle'
+            : 'equipperRequest.requestTitle',
+        ),
+        size: 's',
+        data: {
+          content: this.translate.instant(
+            hasRequest
+              ? 'equipperRequest.pendingCancelConfirm'
+              : 'equipperRequest.confirmText',
+            { name: equipperName },
+          ),
+          yes: this.translate.instant(
+            hasRequest ? 'equipperRequest.cancel' : 'accept',
+          ),
+          no: this.translate.instant(hasRequest ? 'cancel' : 'cancel'),
+          appearance: hasRequest ? 'negative' : 'primary',
+        } as TuiConfirmData,
+      }),
+      { defaultValue: false },
+    );
+
+    if (!confirmed) return;
+
+    if (hasRequest) {
+      await this.cancelRequest(equipperId);
+    } else {
+      await this.requestEquipper(equipperId);
+    }
   }
 
   private async loadMyRequest(equipperId: number): Promise<void> {
