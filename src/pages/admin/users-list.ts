@@ -40,6 +40,7 @@ import {
   TuiChevron,
   TUI_CONFIRM,
   type TuiConfirmData,
+  TuiComboBox,
   TuiDataListWrapper,
   TuiInputChip,
   TuiMultiSelect,
@@ -95,6 +96,7 @@ interface UserWithRole {
     TuiButton,
     TuiCell,
     TuiChevron,
+    TuiComboBox,
     TuiDataList,
     TuiDataListWrapper,
     TuiFilterByInputPipe,
@@ -140,7 +142,7 @@ interface UserWithRole {
         </h1>
       </header>
 
-      <div class="mb-6">
+      <div class="mb-6 flex flex-col sm:flex-row gap-3">
         <tui-textfield class="grow" [tuiTextfieldCleaner]="true">
           <label tuiLabel for="user-search">{{ 'search' | translate }}</label>
           <input
@@ -151,6 +153,46 @@ interface UserWithRole {
             [ngModel]="searchQuery()"
             (ngModelChange)="searchQuery.set($event)"
             [placeholder]="'user' | translate"
+          />
+        </tui-textfield>
+        <tui-textfield
+          class="grow"
+          [tuiTextfieldCleaner]="true"
+          [stringify]="stringifyAreaFilter"
+        >
+          <label tuiLabel for="area-filter">{{ 'areas' | translate }}</label>
+          <input
+            id="area-filter"
+            tuiComboBox
+            [ngModel]="filterArea()"
+            (ngModelChange)="filterArea.set($event)"
+            autocomplete="off"
+          />
+          <tui-data-list-wrapper
+            *tuiDropdown
+            new
+            [items]="areaFilterOptions() | tuiFilterByInput"
+          />
+        </tui-textfield>
+        <tui-textfield
+          class="grow"
+          [tuiTextfieldCleaner]="true"
+          [stringify]="stringifyCenterFilter"
+        >
+          <label tuiLabel for="center-filter">{{
+            'indoor.title' | translate
+          }}</label>
+          <input
+            id="center-filter"
+            tuiComboBox
+            [ngModel]="filterCenter()"
+            (ngModelChange)="filterCenter.set($event)"
+            autocomplete="off"
+          />
+          <tui-data-list-wrapper
+            *tuiDropdown
+            new
+            [items]="centerFilterOptions() | tuiFilterByInput"
           />
         </tui-textfield>
       </div>
@@ -189,7 +231,7 @@ interface UserWithRole {
                   *tuiHead="'areas'"
                   tuiTh
                   class="areas-column min-w-[260px]"
-                  [sorter]="null"
+                  [sorter]="areasSorter"
                 >
                   {{ 'areas' | translate }}
                 </th>
@@ -197,7 +239,7 @@ interface UserWithRole {
                   *tuiHead="'centers'"
                   tuiTh
                   class="centers-column min-w-[260px]"
-                  [sorter]="null"
+                  [sorter]="centersSorter"
                 >
                   {{ 'indoor.title' | translate }}
                 </th>
@@ -432,13 +474,48 @@ export class AdminUsersListComponent {
   protected readonly columns = ['user', 'role', 'areas', 'centers'];
 
   protected readonly searchQuery = signal('');
+  protected readonly filterArea = signal<AreaListItem | null>(null);
+  protected readonly filterCenter = signal<IndoorCenterDto | null>(null);
+
+  protected readonly areaFilterOptions = computed(() => {
+    const areas = this.availableAreas();
+    const assignedIds = new Set(
+      this.users().flatMap((u) => u.assignedAreas.map((a) => a.id)),
+    );
+    return areas.filter((a) => assignedIds.has(a.id));
+  });
+
+  protected readonly centerFilterOptions = computed(() => {
+    const centers = this.availableCenters();
+    const assignedIds = new Set(
+      this.users().flatMap((u) => u.assignedCenters.map((c) => c.id)),
+    );
+    return centers.filter((c) => assignedIds.has(c.id));
+  });
+
+  protected readonly stringifyAreaFilter = (a: AreaListItem | null) =>
+    a?.name ?? '';
+  protected readonly stringifyCenterFilter = (c: IndoorCenterDto | null) =>
+    c?.name ?? '';
 
   protected readonly filteredUsers = computed(() => {
     const query = this.searchQuery();
+    const area = this.filterArea();
+    const center = this.filterCenter();
     let list = this.users();
 
     if (query) {
       list = list.filter((u) => matchesQuery(u.name, query));
+    }
+
+    if (area) {
+      list = list.filter((u) => u.assignedAreas.some((a) => a.id === area.id));
+    }
+
+    if (center) {
+      list = list.filter((u) =>
+        u.assignedCenters.some((c) => c.id === center.id),
+      );
     }
 
     return list;
@@ -485,6 +562,18 @@ export class AdminUsersListComponent {
    */
   protected readonly userSorter: TuiComparator<UserWithRole> = (a, b) =>
     tuiDefaultSort(a.name || '', b.name || '');
+
+  /**
+   * Sorter logic for Areas column: Sorts by count of assigned areas.
+   */
+  protected readonly areasSorter: TuiComparator<UserWithRole> = (a, b) =>
+    tuiDefaultSort(a.assignedAreas.length, b.assignedAreas.length);
+
+  /**
+   * Sorter logic for Centers column: Sorts by count of assigned centers.
+   */
+  protected readonly centersSorter: TuiComparator<UserWithRole> = (a, b) =>
+    tuiDefaultSort(a.assignedCenters.length, b.assignedCenters.length);
 
   protected readonly defaultSorter: TuiComparator<UserWithRole> =
     this.roleSorter;

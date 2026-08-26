@@ -33,11 +33,6 @@ Actualizado: 2026-08-25
 - CRUD de áreas, búsquedas 8a.nu, administración de accesos y unificación.
 - Acción: Extraer `AreaAdminService` (access management) y `AreaUnifyService`.
 
-### 14. `handleErrorToast()` solo maneja 2 códigos PostgreSQL
-
-- Solo maneja `23503` (foreign key) y `23505` (unique). Faltan `28P01`, `42501`, `42P01`, errores de red, rate limiting (429).
-- Acción: Expandir mapeo de códigos de error y agregar handling para errores de red/timeout.
-
 ### 15. ESLint sin reglas estrictas TypeScript
 
 - Falta `@typescript-eslint/no-explicit-any` (35 casts `as any` en tests). Falta `prefer-signals`, `prefer-inject`, `@typescript-eslint/strict-type-checked`.
