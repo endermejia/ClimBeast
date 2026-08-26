@@ -25,6 +25,7 @@ import {
   TuiTableCell,
 } from '@taiga-ui/addon-table';
 import {
+  TuiAppearance,
   TuiButton,
   TuiDataList,
   TuiDialogService,
@@ -34,7 +35,13 @@ import {
   TuiLoader,
   TuiTitle,
 } from '@taiga-ui/core';
-import { TuiChevron } from '@taiga-ui/kit';
+import {
+  TuiAvatar,
+  TuiBadgeNotification,
+  TuiBadgedContentComponent,
+  TuiBadgedContentDirective,
+  TuiChevron,
+} from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
@@ -63,6 +70,11 @@ import {
     OrderStatusColorPipe,
     RouterLink,
     TranslatePipe,
+    TuiAppearance,
+    TuiAvatar,
+    TuiBadgedContentComponent,
+    TuiBadgedContentDirective,
+    TuiBadgeNotification,
     TuiButton,
     TuiChevron,
     TuiDataList,
@@ -83,7 +95,7 @@ import {
     UpperCasePipe,
   ],
   template: `
-    <div class="p-4 flex flex-col gap-6 max-w-6xl mx-auto w-full">
+    <div class="p-4 flex flex-col gap-6 max-w-5xl mx-auto w-full">
       <header tuiHeader>
         <h1 tuiTitle>
           <a
@@ -91,6 +103,23 @@ import {
             class="no-underline text-inherit flex items-center gap-2"
           >
             <tui-icon icon="@tui.arrow-left" />
+            <tui-badged-content [style.--tui-radius.%]="50">
+              @if (ordersResource.value()?.length; as ordersCount) {
+                <ng-container tuiSlot="top">
+                  <tui-badge-notification tuiAppearance="accent" size="s">
+                    {{ ordersCount }}
+                  </tui-badge-notification>
+                </ng-container>
+              }
+              <span
+                tuiAvatar="@tui.shopping-bag"
+                tuiThumbnail
+                size="l"
+                class="self-center"
+                [attr.aria-label]="'admin.orders.title' | translate"
+              ></span>
+            </tui-badged-content>
+
             {{ 'admin.orders.title' | translate }}
           </a>
         </h1>

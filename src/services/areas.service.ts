@@ -627,20 +627,13 @@ export class AreasService {
     }
   }
 
-  async getAreaAdminRequests(): Promise<
-    {
-      id: number;
-      created_at: string;
-      area: { id: number; name: string; slug: string };
-      user: { id: string; name: string | null };
-    }[]
-  > {
+  async getAreaAdminRequests(): Promise<AreaAdminRequestWithArea[]> {
     if (!this.isBrowser) return [];
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('area_admin_requests')
       .select(
-        'id, created_at, area:areas(id, name, slug), user:user_profiles(id, name)',
+        'id, created_at, area:areas(id, name, slug), user:user_profiles(id, name, avatar)',
       )
       .order('created_at', { ascending: false });
 

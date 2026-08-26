@@ -5,31 +5,38 @@ import {
   effect,
   inject,
   input,
+  signal,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
-import { TuiScrollbar } from '@taiga-ui/core';
-
+import { TuiButton, TuiIcon, TuiLink, TuiScrollbar } from '@taiga-ui/core';
 import { TuiCountryIsoCode } from '@taiga-ui/i18n';
 import { TuiSkeleton } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { EquipperRequestsService } from '../../services/equipper-requests.service';
 import { EquipperService } from '../../services/equipper.service';
 import { LayoutService } from '../../services/layout.service';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { IndoorRoutesComponent } from '../../components/indoor/indoor-routes';
 import { OutdoorRoutesTableComponent } from '../../components/route/outdoor-routes-table';
-
 import { UserInfoComponent } from '../../components/ui/user-info';
+
+import { EquipperRequestDto } from '../../models';
 
 @Component({
   selector: 'app-equipper',
+  standalone: true,
   imports: [
-    OutdoorRoutesTableComponent,
     IndoorRoutesComponent,
+    OutdoorRoutesTableComponent,
+    RouterLink,
     TranslatePipe,
+    TuiButton,
+    TuiIcon,
+    TuiLink,
     TuiScrollbar,
     TuiSkeleton,
     UserInfoComponent,
@@ -64,7 +71,65 @@ import { UserInfoComponent } from '../../components/ui/user-info';
             [city]="equipper.user_profile?.city"
             [bio]="equipper.user_profile?.bio"
             [age]="profileAge()"
-          />
+            [nameClickable]="!!equipper.user_id"
+            [avatarClickable]="!!equipper.user_id"
+            (nameClick)="navigateToUserProfile(equipper.user_id)"
+            (avatarClick)="navigateToUserProfile(equipper.user_id)"
+          >
+            @if (equipper.user_id) {
+              <div extraInfo class="mt-2">
+                <a tuiLink [routerLink]="['/profile', equipper.user_id]">
+                  {{ 'nav.viewProfile' | translate }}
+                </a>
+              </div>
+            }
+          </app-user-info>
+
+          @if (equipper.user_id === null && supabase.authUserId()) {
+            <div
+              class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 my-2"
+            >
+              <div class="flex items-center gap-2 text-sm">
+                <tui-icon
+                  icon="@tui.circle-help"
+                  size="s"
+                  class="text-blue-500 shrink-0"
+                />
+                <span>
+                  {{
+                    (myRequest()
+                      ? 'equipperRequest.pending'
+                      : 'equipperRequest.unclaimedInfo'
+                    ) | translate
+                  }}
+                </span>
+              </div>
+
+              @if (myRequest()) {
+                <button
+                  tuiButton
+                  size="s"
+                  appearance="secondary"
+                  [disabled]="requesting()"
+                  (click.zoneless)="cancelRequest(equipper.id)"
+                  class="rounded-xl! shrink-0"
+                >
+                  {{ 'equipperRequest.cancel' | translate }}
+                </button>
+              } @else {
+                <button
+                  tuiButton
+                  size="s"
+                  appearance="primary"
+                  [disabled]="requesting()"
+                  (click.zoneless)="requestEquipper(equipper.id)"
+                  class="rounded-xl! shrink-0"
+                >
+                  {{ 'equipperRequest.requestButton' | translate }}
+                </button>
+              }
+            </div>
+          }
         }
 
         <!-- Equipper Routes Table -->
@@ -101,12 +166,16 @@ import { UserInfoComponent } from '../../components/ui/user-info';
 })
 export class EquipperComponent {
   protected readonly equipperService = inject(EquipperService);
+  protected readonly equipperRequests = inject(EquipperRequestsService);
   protected readonly layoutService = inject(LayoutService);
   protected readonly supabase = inject(SupabaseService);
   protected readonly router = inject(Router);
 
   // Route param
   id = input.required<string>();
+
+  protected readonly myRequest = signal<EquipperRequestDto | null>(null);
+  protected readonly requesting = signal(false);
 
   readonly profileCountry = computed(
     () =>
@@ -128,6 +197,12 @@ export class EquipperComponent {
     return years;
   });
 
+  protected navigateToUserProfile(userId: string | null | undefined): void {
+    if (userId) {
+      void this.router.navigate(['/profile', userId]);
+    }
+  }
+
   constructor() {
     effect(() => {
       const idStr = this.id();
@@ -141,5 +216,43 @@ export class EquipperComponent {
         this.equipperService.equipperDetailResource.isLoading(),
       );
     });
+
+    effect(() => {
+      const equipper = this.equipperService.equipperDetailResource.value();
+      if (equipper && equipper.user_id === null && this.supabase.authUserId()) {
+        void this.loadMyRequest(equipper.id);
+      } else {
+        this.myRequest.set(null);
+      }
+    });
+  }
+
+  private async loadMyRequest(equipperId: number): Promise<void> {
+    const req = await this.equipperRequests.getMyRequestForEquipper(equipperId);
+    this.myRequest.set(req);
+  }
+
+  protected async requestEquipper(equipperId: number): Promise<void> {
+    this.requesting.set(true);
+    try {
+      const ok = await this.equipperRequests.requestEquipper(equipperId);
+      if (ok) {
+        await this.loadMyRequest(equipperId);
+      }
+    } finally {
+      this.requesting.set(false);
+    }
+  }
+
+  protected async cancelRequest(equipperId: number): Promise<void> {
+    this.requesting.set(true);
+    try {
+      const ok = await this.equipperRequests.cancelRequest(equipperId);
+      if (ok) {
+        this.myRequest.set(null);
+      }
+    } finally {
+      this.requesting.set(false);
+    }
   }
 }

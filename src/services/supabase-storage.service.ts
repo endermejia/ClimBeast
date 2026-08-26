@@ -26,10 +26,20 @@ export class SupabaseStorageService {
 
   buildAvatarUrl(path?: string | null): string {
     if (!path) return '';
-    if (path.startsWith('http')) return path;
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
 
+    const cleanPath = path.replace(/^\//, '');
     const base = (this.url || ENV_SUPABASE_URL || '').replace(/\/$/, '');
-    return `${base}/storage/v1/object/public/avatar/${path}`;
+
+    if (cleanPath.startsWith('storage/v1/object/public/')) {
+      return `${base}/${cleanPath}`;
+    }
+
+    if (cleanPath.startsWith('avatar/')) {
+      return `${base}/storage/v1/object/public/${cleanPath}`;
+    }
+
+    return `${base}/storage/v1/object/public/avatar/${cleanPath}`;
   }
 
   getPublicUrl(bucket: string, path: string | null | undefined): string {

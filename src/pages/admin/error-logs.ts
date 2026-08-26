@@ -22,7 +22,11 @@ import {
 } from '@taiga-ui/core';
 import {
   TUI_CONFIRM,
+  TuiAvatar,
   TuiBadge,
+  TuiBadgeNotification,
+  TuiBadgedContentComponent,
+  TuiBadgedContentDirective,
   TuiCopy,
   type TuiConfirmData,
 } from '@taiga-ui/kit';
@@ -53,7 +57,11 @@ import { matchesQuery } from '../../utils';
     RouterLink,
     TranslatePipe,
     TuiAppearance,
+    TuiAvatar,
     TuiBadge,
+    TuiBadgedContentComponent,
+    TuiBadgedContentDirective,
+    TuiBadgeNotification,
     TuiButton,
     TuiCopy,
     TuiHeader,
@@ -77,6 +85,23 @@ import { matchesQuery } from '../../utils';
               class="no-underline text-inherit flex items-center gap-2"
             >
               <tui-icon icon="@tui.arrow-left" />
+              <tui-badged-content [style.--tui-radius.%]="50">
+                @if (totalCount(); as logsCount) {
+                  <ng-container tuiSlot="top">
+                    <tui-badge-notification tuiAppearance="accent" size="s">
+                      {{ logsCount }}
+                    </tui-badge-notification>
+                  </ng-container>
+                }
+                <span
+                  tuiAvatar="@tui.triangle-alert"
+                  tuiThumbnail
+                  size="l"
+                  class="self-center"
+                  [attr.aria-label]="'admin.errorLogs.title' | translate"
+                ></span>
+              </tui-badged-content>
+
               {{ 'admin.errorLogs.title' | translate }}
             </a>
           </h1>

@@ -184,13 +184,11 @@ import { TourHintComponent } from './tour-hint';
           >
             <tui-badged-content>
               @if (messagingService.unreadMessagesCount(); as unreadMessages) {
-                <tui-badge-notification
-                  tuiAppearance="accent"
-                  size="s"
-                  tuiSlot="top"
-                >
-                  {{ unreadMessages }}
-                </tui-badge-notification>
+                <ng-container tuiSlot="top">
+                  <tui-badge-notification tuiAppearance="accent" size="s">
+                    {{ unreadMessages }}
+                  </tui-badge-notification>
+                </ng-container>
               }
               <tui-icon
                 icon="@tui.send"
@@ -304,13 +302,11 @@ import { TourHintComponent } from './tour-hint';
             >
               <tui-badged-content>
                 @if (cart.totalItems(); as totalItems) {
-                  <tui-badge-notification
-                    tuiAppearance="accent"
-                    size="s"
-                    tuiSlot="top"
-                  >
-                    {{ totalItems }}
-                  </tui-badge-notification>
+                  <ng-container tuiSlot="top">
+                    <tui-badge-notification tuiAppearance="accent" size="s">
+                      {{ totalItems }}
+                    </tui-badge-notification>
+                  </ng-container>
                 }
                 <tui-icon
                   icon="@tui.store"

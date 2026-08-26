@@ -53,7 +53,7 @@ export interface AreaAdminRequestWithArea {
   id: number;
   created_at: string;
   area: { id: number; name: string; slug: string };
-  user: { id: string; name: string | null };
+  user: { id: string; name: string | null; avatar: string | null };
 }
 
 export interface AreaDetail extends Omit<AreaListItem, 'user_creator_id'> {

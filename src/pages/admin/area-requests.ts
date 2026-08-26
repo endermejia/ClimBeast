@@ -39,16 +39,14 @@ import { EmptyStateComponent } from '../../components/ui/empty-state';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
-interface AreaAdminRequest {
-  id: number;
-  created_at: string;
-  area: { id: number; name: string; slug: string };
-  user: { id: string; name: string | null };
-}
+import { AreaAdminRequestWithArea as AreaAdminRequest } from '../../models';
+
+import { AvatarUrlPipe } from '../../pipes';
 
 @Component({
   selector: 'app-admin-area-requests',
   imports: [
+    AvatarUrlPipe,
     EmptyStateComponent,
     RouterLink,
     TranslatePipe,
@@ -163,7 +161,16 @@ interface AreaAdminRequest {
                 @for (req of sortedList; track req.id) {
                   <tr tuiTr>
                     <td *tuiCell="'user'" tuiTd class="p-4">
-                      <div class="flex flex-col">
+                      <div class="flex items-center gap-3">
+                        <a [routerLink]="['/profile', req.user.id]">
+                          <span tuiAvatar size="s">
+                            @if (req.user.avatar; as avatar) {
+                              <img [src]="avatar | avatarUrl" alt="avatar" />
+                            } @else {
+                              <tui-icon icon="@tui.user" />
+                            }
+                          </span>
+                        </a>
                         <a
                           tuiLink
                           [routerLink]="['/profile', req.user.id]"

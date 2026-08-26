@@ -316,6 +316,7 @@ import { IS_BROWSER } from '../../app/is-browser';
           }}</label>
           <input
             id="new-equipper-name"
+            name="equipperName"
             tuiInput
             type="text"
             [ngModel]="equipperName()"

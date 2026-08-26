@@ -2,8 +2,8 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TuiTitle, TuiIcon } from '@taiga-ui/core';
-import { TuiTabs } from '@taiga-ui/kit';
+import { TuiIcon, TuiTitle } from '@taiga-ui/core';
+import { TuiAvatar, TuiTabs } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
@@ -21,13 +21,14 @@ import { SuggestedUnifiedRoutesComponent } from '../../components/admin/suggeste
     SuggestedUnifiedCragsComponent,
     SuggestedUnifiedRoutesComponent,
     TranslatePipe,
+    TuiAvatar,
     TuiHeader,
     TuiIcon,
     TuiTabs,
     TuiTitle,
   ],
   template: `
-    <div class="p-4 flex flex-col gap-4 max-w-2xl mx-auto w-full">
+    <div class="p-4 flex flex-col gap-4 max-w-5xl mx-auto w-full">
       <header tuiHeader>
         <h1 tuiTitle>
           <a
@@ -35,6 +36,13 @@ import { SuggestedUnifiedRoutesComponent } from '../../components/admin/suggeste
             class="no-underline text-inherit flex items-center gap-2"
           >
             <tui-icon icon="@tui.arrow-left" />
+            <span
+              tuiAvatar="@tui.copy"
+              tuiThumbnail
+              size="l"
+              class="self-center"
+              [attr.aria-label]="'admin.unifyTitle' | translate"
+            ></span>
             {{ 'admin.unifyTitle' | translate }}
           </a>
         </h1>

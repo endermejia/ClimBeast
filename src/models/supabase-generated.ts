@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: '13.0.5';
+    PostgrestVersion: '14.17';
   };
   auth: {
     Tables: {
@@ -1626,6 +1626,45 @@ export type Database = {
             columns: ['area_id'];
             isOneToOne: false;
             referencedRelation: 'areas';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      equipper_requests: {
+        Row: {
+          created_at: string;
+          equipper_id: number;
+          id: number;
+          status: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          equipper_id: number;
+          id?: never;
+          status?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          equipper_id?: number;
+          id?: never;
+          status?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'equipper_requests_equipper_id_fkey';
+            columns: ['equipper_id'];
+            isOneToOne: false;
+            referencedRelation: 'equippers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'equipper_requests_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'user_profiles';
             referencedColumns: ['id'];
           },
         ];
@@ -4522,6 +4561,7 @@ export type Database = {
           public: boolean | null;
           type: Database['storage']['Enums']['buckettype'];
           updated_at: string | null;
+          versioning_status: string;
         };
         Insert: {
           allowed_mime_types?: string[] | null;
@@ -4535,6 +4575,7 @@ export type Database = {
           public?: boolean | null;
           type?: Database['storage']['Enums']['buckettype'];
           updated_at?: string | null;
+          versioning_status?: string;
         };
         Update: {
           allowed_mime_types?: string[] | null;
@@ -4548,6 +4589,7 @@ export type Database = {
           public?: boolean | null;
           type?: Database['storage']['Enums']['buckettype'];
           updated_at?: string | null;
+          versioning_status?: string;
         };
         Relationships: [];
       };
@@ -4625,9 +4667,12 @@ export type Database = {
       };
       objects: {
         Row: {
+          archived_at: string | null;
           bucket_id: string | null;
           created_at: string | null;
           id: string;
+          is_delete_marker: boolean;
+          is_versioned: boolean;
           last_accessed_at: string | null;
           metadata: Json | null;
           name: string | null;
@@ -4639,9 +4684,12 @@ export type Database = {
           version: string | null;
         };
         Insert: {
+          archived_at?: string | null;
           bucket_id?: string | null;
           created_at?: string | null;
           id?: string;
+          is_delete_marker?: boolean;
+          is_versioned?: boolean;
           last_accessed_at?: string | null;
           metadata?: Json | null;
           name?: string | null;
@@ -4653,9 +4701,12 @@ export type Database = {
           version?: string | null;
         };
         Update: {
+          archived_at?: string | null;
           bucket_id?: string | null;
           created_at?: string | null;
           id?: string;
+          is_delete_marker?: boolean;
+          is_versioned?: boolean;
           last_accessed_at?: string | null;
           metadata?: Json | null;
           name?: string | null;

@@ -6,6 +6,7 @@ export * from './constants';
 export * from './crag.model';
 export * from './eight-anu-ascent.model';
 export * from './eight-anu-user.model';
+export * from './equipper-request.model';
 export * from './errors';
 export * from './grade.model';
 export * from './icon-name.model';

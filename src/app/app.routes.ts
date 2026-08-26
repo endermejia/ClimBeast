@@ -196,6 +196,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'admin/equipper-requests',
+    canMatch: [adminGuard],
+    loadComponent: () =>
+      import('../pages/admin/equipper-requests').then(
+        (m) => m.AdminEquipperRequestsComponent,
+      ),
+  },
+  {
     path: 'admin/parkings',
     canMatch: [adminGuard],
     loadComponent: () =>
