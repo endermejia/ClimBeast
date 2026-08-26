@@ -506,7 +506,7 @@ export class AdminErrorLogsComponent {
   async confirmClearLogs(): Promise<void> {
     const data: TuiConfirmData = {
       content: this.translate.instant('admin.errorLogs.confirmClearText'),
-      yes: this.translate.instant('confirm'),
+      yes: this.translate.instant('accept'),
       no: this.translate.instant('cancel'),
     };
 

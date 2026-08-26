@@ -5,6 +5,8 @@ import {
   inject,
   resource,
   signal,
+  TemplateRef,
+  ViewChild,
   WritableSignal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -20,12 +22,15 @@ import { tuiDefaultSort } from '@taiga-ui/cdk';
 import {
   TuiAppearance,
   TuiButton,
+  type TuiDialogContext,
   TuiDialogService,
   TuiFilterByInputPipe,
   TuiIcon,
   TuiInput,
+  TuiLabel,
   TuiLink,
   TuiScrollbar,
+  TuiTextfield,
 } from '@taiga-ui/core';
 import {
   TUI_CONFIRM,
@@ -58,6 +63,7 @@ import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-admin-equippers-list',
+  standalone: true,
   imports: [
     EmptyStateComponent,
     FormsModule,
@@ -74,10 +80,12 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiFilterByInputPipe,
     TuiIcon,
     TuiInput,
+    TuiLabel,
     TuiLink,
     TuiScrollbar,
     TuiSkeleton,
     TuiTable,
+    TuiTextfield,
   ],
   template: `
     <section class="flex flex-col w-full max-w-5xl mx-auto p-4">
@@ -90,13 +98,11 @@ import { IS_BROWSER } from '../../app/is-browser';
             <tui-icon icon="@tui.arrow-left" />
             <tui-badged-content [style.--tui-radius.%]="50">
               @if (equippers().length; as equippersCount) {
-                <tui-badge-notification
-                  tuiAppearance="accent"
-                  size="s"
-                  tuiSlot="top"
-                >
-                  {{ equippersCount }}
-                </tui-badge-notification>
+                <ng-container tuiSlot="top">
+                  <tui-badge-notification tuiAppearance="accent" size="s">
+                    {{ equippersCount }}
+                  </tui-badge-notification>
+                </ng-container>
               }
               <span
                 tuiAvatar="@tui.hammer"
@@ -145,7 +151,7 @@ import { IS_BROWSER } from '../../app/is-browser';
             [size]="layout.isMobile() ? 's' : 'l'"
             tuiTable
             class="w-full"
-            [columns]="columns()"
+            [columns]="columns"
             [direction]="direction()"
             [sorter]="sorter()"
             (sortChange)="onSortChange($event)"
@@ -153,17 +159,27 @@ import { IS_BROWSER } from '../../app/is-browser';
             @let list = filteredEquippers() | tuiTableSort;
             <thead tuiThead>
               <tr tuiThGroup>
-                <th *tuiHead="'name'" tuiTh [sorter]="nameSorter">
+                <th
+                  *tuiHead="'name'"
+                  tuiTh
+                  [sorter]="nameSorter"
+                  class="min-w-[200px]"
+                >
                   {{ 'name' | translate }}
                 </th>
-                <th *tuiHead="'user_id'" tuiTh [sorter]="null" class="w-64!">
+                <th
+                  *tuiHead="'user_id'"
+                  tuiTh
+                  [sorter]="null"
+                  class="min-w-[220px]"
+                >
                   {{ 'user' | translate }}
                 </th>
                 <th
                   *tuiHead="'description'"
                   tuiTh
                   [sorter]="descriptionSorter"
-                  class="w-64!"
+                  class="min-w-[220px]"
                 >
                   {{ 'description' | translate }}
                 </th>
@@ -171,7 +187,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                   *tuiHead="'actions'"
                   tuiTh
                   [sorter]="null"
-                  class="w-24! text-right"
+                  class="w-20! min-w-[80px] text-right"
                 ></th>
               </tr>
             </thead>
@@ -181,6 +197,9 @@ import { IS_BROWSER } from '../../app/is-browser';
                 @for (_item of skeletons; track $index) {
                   <tr tuiTr>
                     <td *tuiCell="'name'" tuiTd>
+                      <div [tuiSkeleton]="true" class="w-full h-10"></div>
+                    </td>
+                    <td *tuiCell="'user_id'" tuiTd>
                       <div [tuiSkeleton]="true" class="w-full h-10"></div>
                     </td>
                     <td *tuiCell="'description'" tuiTd>
@@ -280,6 +299,55 @@ import { IS_BROWSER } from '../../app/is-browser';
         }
       </tui-scrollbar>
     </section>
+
+    <!-- Modal dialog for adding a new equipper -->
+    <ng-template #addEquipperDialog let-observer>
+      <form
+        class="flex flex-col gap-4 p-4"
+        (submit.zoneless)="
+          $event.preventDefault();
+          observer.next(equipperName());
+          observer.complete()
+        "
+      >
+        <tui-textfield>
+          <label tuiLabel for="new-equipper-name">{{
+            'name' | translate
+          }}</label>
+          <input
+            id="new-equipper-name"
+            tuiInput
+            type="text"
+            [ngModel]="equipperName()"
+            (ngModelChange)="equipperName.set($event)"
+            [placeholder]="'name' | translate"
+            autocomplete="off"
+            required
+          />
+        </tui-textfield>
+
+        <div class="flex justify-end gap-2 mt-2">
+          <button
+            tuiButton
+            type="button"
+            appearance="secondary"
+            size="m"
+            (click.zoneless)="observer.complete()"
+          >
+            {{ 'cancel' | translate }}
+          </button>
+          <button
+            tuiButton
+            type="submit"
+            appearance="primary"
+            size="m"
+            [disabled]="!equipperName().trim()"
+          >
+            {{ 'create' | translate }}
+          </button>
+        </div>
+      </form>
+    </ng-template>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex grow min-h-0' },
@@ -292,6 +360,11 @@ export class AdminEquippersListComponent {
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
+
+  @ViewChild('addEquipperDialog')
+  private readonly addEquipperDialog?: TemplateRef<TuiDialogContext<string>>;
+
+  protected readonly equipperName = signal('');
 
   protected readonly options = { updateOn: 'blur' } as const;
 
@@ -327,12 +400,7 @@ export class AdminEquippersListComponent {
     return idA === idB;
   };
 
-  protected readonly columns = computed(() => {
-    const cols = ['name', 'user_id', 'description', 'actions'];
-    return this.layout.isMobile()
-      ? cols.filter((c) => c !== 'description' && c !== 'user_id')
-      : cols;
-  });
+  protected readonly columns = ['name', 'user_id', 'description', 'actions'];
 
   protected readonly loading = signal(true);
   protected readonly equippers: WritableSignal<EquipperDto[]> = signal([]);
@@ -388,10 +456,23 @@ export class AdminEquippersListComponent {
   }
 
   protected async addNewEquipper(): Promise<void> {
+    if (!this.addEquipperDialog) return;
+    this.equipperName.set('');
+
     try {
+      const name = await firstValueFrom(
+        this.dialogs.open<string>(this.addEquipperDialog, {
+          size: 's',
+          label: this.translate.instant('admin.equippers.newEquipperTitle'),
+        }),
+        { defaultValue: undefined },
+      );
+
+      if (!name || !name.trim()) return;
+
       const { data, error } = await this.supabase.client
         .from('equippers')
-        .insert({ name: '' })
+        .insert({ name: name.trim() })
         .select()
         .single();
 
@@ -409,6 +490,17 @@ export class AdminEquippersListComponent {
     patch: Partial<EquipperDto>,
   ): Promise<void> {
     const previousList = this.equippers();
+
+    if (patch.name !== undefined && !patch.name.trim()) {
+      this.toast.error(this.translate.instant('admin.equippers.nameRequired'));
+      this.equippers.set([...previousList]);
+      setTimeout(() => {
+        this.equippers.update((list) =>
+          list.map((e) => (e.id === id ? { ...e } : e)),
+        );
+      }, 0);
+      return;
+    }
 
     const normalizedPatch: Partial<EquipperDto> = { ...patch };
     if (

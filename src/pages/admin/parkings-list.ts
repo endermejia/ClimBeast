@@ -137,7 +137,7 @@ import { IS_BROWSER } from '../../app/is-browser';
             [size]="layout.isMobile() ? 's' : 'l'"
             tuiTable
             class="w-full"
-            [columns]="columns()"
+            [columns]="columns"
             [direction]="direction()"
             [sorter]="sorter()"
             (sortChange)="onSortChange($event)"
@@ -145,23 +145,43 @@ import { IS_BROWSER } from '../../app/is-browser';
             @let list = filteredParkings() | tuiTableSort;
             <thead tuiThead>
               <tr tuiThGroup>
-                <th *tuiHead="'name'" tuiTh [sorter]="nameSorter">
+                <th
+                  *tuiHead="'name'"
+                  tuiTh
+                  [sorter]="nameSorter"
+                  class="min-w-[180px]"
+                >
                   {{ 'name' | translate }}
                 </th>
-                <th *tuiHead="'lat'" tuiTh [sorter]="latSorter" class="w-24!">
+                <th
+                  *tuiHead="'lat'"
+                  tuiTh
+                  [sorter]="latSorter"
+                  class="min-w-[100px]"
+                >
                   {{ 'lat' | translate }}
                 </th>
-                <th *tuiHead="'lng'" tuiTh [sorter]="lngSorter" class="w-24!">
+                <th
+                  *tuiHead="'lng'"
+                  tuiTh
+                  [sorter]="lngSorter"
+                  class="min-w-[100px]"
+                >
                   {{ 'lng' | translate }}
                 </th>
-                <th *tuiHead="'size'" tuiTh [sorter]="sizeSorter" class="w-24!">
+                <th
+                  *tuiHead="'size'"
+                  tuiTh
+                  [sorter]="sizeSorter"
+                  class="min-w-[100px]"
+                >
                   {{ 'capacity' | translate }}
                 </th>
                 <th
                   *tuiHead="'actions'"
                   tuiTh
                   [sorter]="null"
-                  class="w-32! text-right"
+                  class="w-24! min-w-[90px] text-right"
                 ></th>
               </tr>
             </thead>
@@ -170,7 +190,7 @@ import { IS_BROWSER } from '../../app/is-browser';
               @if (loading()) {
                 @for (_item of skeletons; track $index) {
                   <tr tuiTr>
-                    @for (col of columns(); track col) {
+                    @for (col of columns; track col) {
                       <td *tuiCell="col" tuiTd>
                         <div
                           [tuiSkeleton]="true"
@@ -245,12 +265,7 @@ export class AdminParkingsListComponent {
   private readonly dialogs = inject(TuiDialogService);
   private readonly parkingsService = inject(ParkingsService);
 
-  protected readonly columns = computed(() => {
-    const cols = ['name', 'lat', 'lng', 'size', 'actions'];
-    return this.layout.isMobile()
-      ? cols.filter((c) => c === 'name' || c === 'actions')
-      : cols;
-  });
+  protected readonly columns = ['name', 'lat', 'lng', 'size', 'actions'];
 
   protected readonly loading =
     this.adminParkingsData.adminParkingsResource.isLoading;

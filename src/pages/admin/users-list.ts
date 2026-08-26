@@ -20,15 +20,17 @@ import type { TuiComparator } from '@taiga-ui/addon-table/types';
 import { tuiDefaultSort, TuiIdentityMatcher, tuiIsString } from '@taiga-ui/cdk';
 import {
   TuiAppearance,
+  TuiButton,
+  TuiCell,
   TuiDataList,
+  TuiDialogService,
+  TuiFilterByInputPipe,
   TuiIcon,
+  TuiInput,
   TuiLink,
   TuiOptGroup,
   TuiScrollbar,
   TuiTitle,
-  TuiCell,
-  TuiInput,
-  TuiFilterByInputPipe,
 } from '@taiga-ui/core';
 import {
   TuiAvatar,
@@ -36,21 +38,23 @@ import {
   TuiBadgedContentComponent,
   TuiBadgedContentDirective,
   TuiChevron,
+  TUI_CONFIRM,
+  type TuiConfirmData,
   TuiDataListWrapper,
   TuiInputChip,
   TuiMultiSelect,
-  TuiSelect,
   TuiSkeleton,
 } from '@taiga-ui/kit';
 
 import { WaIntersectionObserver } from '@ng-web-apis/intersection-observer';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
 
 import { IndoorService } from '../../services/indoor.service';
-import { LanguageService } from '../../services/language.service';
 import { LayoutService } from '../../services/layout.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { SupabaseService } from '../../services/supabase.service';
+import { ToastService } from '../../services/toast.service';
 
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 
@@ -75,6 +79,7 @@ interface UserWithRole {
 
 @Component({
   selector: 'app-users-list-admin',
+  standalone: true,
   imports: [
     AvatarUrlPipe,
     EmptyStateComponent,
@@ -87,6 +92,7 @@ interface UserWithRole {
     TuiBadgedContentComponent,
     TuiBadgedContentDirective,
     TuiBadgeNotification,
+    TuiButton,
     TuiCell,
     TuiChevron,
     TuiDataList,
@@ -99,7 +105,6 @@ interface UserWithRole {
     TuiMultiSelect,
     TuiOptGroup,
     TuiScrollbar,
-    TuiSelect,
     TuiSkeleton,
     TuiTable,
     TuiTitle,
@@ -135,7 +140,7 @@ interface UserWithRole {
         </h1>
       </header>
 
-      <div class="mb-6 flex flex-col md:flex-row gap-4">
+      <div class="mb-6">
         <tui-textfield class="grow" [tuiTextfieldCleaner]="true">
           <label tuiLabel for="user-search">{{ 'search' | translate }}</label>
           <input
@@ -147,23 +152,6 @@ interface UserWithRole {
             (ngModelChange)="searchQuery.set($event)"
             [placeholder]="'user' | translate"
           />
-        </tui-textfield>
-
-        <tui-textfield
-          tuiChevron
-          class="min-w-[200px]"
-          [tuiTextfieldCleaner]="false"
-          [stringify]="stringifyRoleFilter"
-        >
-          <label tuiLabel for="role-filter">{{ 'role' | translate }}</label>
-          <input
-            id="role-filter"
-            tuiSelect
-            [ngModel]="roleFilter()"
-            (ngModelChange)="roleFilter.set($event)"
-            autocomplete="off"
-          />
-          <tui-data-list-wrapper *tuiDropdown new [items]="roleFilterOptions" />
         </tui-textfield>
       </div>
 
@@ -184,7 +172,7 @@ interface UserWithRole {
                 <th
                   *tuiHead="'user'"
                   tuiTh
-                  class="user-column"
+                  class="user-column min-w-[240px]"
                   [sorter]="userSorter"
                 >
                   {{ 'user' | translate }}
@@ -192,7 +180,7 @@ interface UserWithRole {
                 <th
                   *tuiHead="'role'"
                   tuiTh
-                  class="role-column w-48!"
+                  class="role-column min-w-[240px]"
                   [sorter]="roleSorter"
                 >
                   {{ 'role' | translate }}
@@ -200,7 +188,7 @@ interface UserWithRole {
                 <th
                   *tuiHead="'areas'"
                   tuiTh
-                  class="areas-column w-80!"
+                  class="areas-column min-w-[260px]"
                   [sorter]="null"
                 >
                   {{ 'areas' | translate }}
@@ -208,7 +196,7 @@ interface UserWithRole {
                 <th
                   *tuiHead="'centers'"
                   tuiTh
-                  class="centers-column w-80!"
+                  class="centers-column min-w-[260px]"
                   [sorter]="null"
                 >
                   {{ 'indoor.title' | translate }}
@@ -224,13 +212,13 @@ interface UserWithRole {
                       <div class="flex items-center gap-3">
                         <div
                           [tuiSkeleton]="true"
-                          class="w-10 h-10 rounded-full"
+                          class="w-10 h-10 rounded-full shrink-0"
                         ></div>
                         <div [tuiSkeleton]="true" class="w-32 h-4"></div>
                       </div>
                     </td>
                     <td *tuiCell="'role'" tuiTd class="role-cell">
-                      <div [tuiSkeleton]="true" class="w-full h-10"></div>
+                      <div [tuiSkeleton]="true" class="w-24 h-8"></div>
                     </td>
                     <td *tuiCell="'areas'" tuiTd class="areas-column">
                       <div [tuiSkeleton]="true" class="w-full h-10"></div>
@@ -244,8 +232,11 @@ interface UserWithRole {
                 @for (user of sortedUsersList; track user.id) {
                   <tr tuiTr [class.is-current]="user.id === currentUserId()">
                     <td *tuiCell="'user'" tuiTd class="user-cell">
-                      <div class="flex items-center gap-3">
-                        <a [routerLink]="['/profile', user.id]">
+                      <div class="flex items-center gap-3 min-w-0">
+                        <a
+                          [routerLink]="['/profile', user.id]"
+                          class="shrink-0"
+                        >
                           <span tuiAvatar size="m">
                             @if (user.avatar; as avatar) {
                               <img [src]="avatar | avatarUrl" alt="avatar" />
@@ -254,16 +245,16 @@ interface UserWithRole {
                             }
                           </span>
                         </a>
-                        <div class="flex flex-col">
+                        <div class="flex items-center gap-2 min-w-0">
                           <a
                             tuiLink
                             [routerLink]="['/profile', user.id]"
-                            class="font-medium"
+                            class="font-medium truncate"
                           >
                             {{ user.name || ('anonymous' | translate) }}
                           </a>
                           @if (user.id === currentUserId()) {
-                            <span class="text-xs opacity-60">
+                            <span class="text-xs opacity-60 shrink-0">
                               ({{ 'you' | translate }})
                             </span>
                           }
@@ -271,26 +262,31 @@ interface UserWithRole {
                       </div>
                     </td>
                     <td *tuiCell="'role'" tuiTd class="role-cell">
-                      <tui-textfield
-                        tuiChevron
-                        class="role-select"
-                        [tuiTextfieldCleaner]="false"
-                        [stringify]="stringifyRole()"
+                      <button
+                        tuiButton
+                        size="s"
+                        [appearance]="user.is_admin ? 'primary' : 'flat'"
+                        [disabled]="user.id === currentUserId()"
+                        (click.zoneless)="toggleAdminStatus(user)"
+                        [title]="
+                          user.id === currentUserId()
+                            ? ('admin.users.cannotRemoveSelf' | translate)
+                            : user.is_admin
+                              ? ('admin.users.revokeAdmin' | translate)
+                              : ('admin.users.makeAdmin' | translate)
+                        "
+                        class="rounded-xl"
                       >
-                        <input
-                          tuiSelect
-                          [disabled]="user.id === currentUserId()"
-                          [ngModel]="user.is_admin"
-                          (ngModelChange)="onRoleChange($event, user)"
-                          autocomplete="off"
+                        <tui-icon
+                          [icon]="
+                            user.is_admin ? '@tui.shield' : '@tui.shield-off'
+                          "
+                          size="s"
                         />
-                        <tui-data-list-wrapper
-                          *tuiDropdown
-                          new
-                          [items]="roleOptions"
-                        />
-                      </tui-textfield>
+                        Admin
+                      </button>
                     </td>
+
                     <td *tuiCell="'areas'" tuiTd class="areas-column">
                       @if (!user.is_admin) {
                         <tui-textfield
@@ -399,32 +395,23 @@ interface UserWithRole {
       }
 
       .user-column {
-        min-width: 250px;
+        min-width: 240px;
       }
 
       .role-column {
-        min-width: 200px;
+        min-width: 240px;
       }
 
       .areas-column {
-        min-width: 300px;
+        min-width: 280px;
       }
 
       .centers-column {
-        min-width: 300px;
+        min-width: 280px;
       }
 
       .user-cell {
-        padding: 1rem 0.5rem;
-      }
-
-      .role-cell {
-        padding: 1rem 0.5rem;
-      }
-
-      .role-select {
-        width: 100%;
-        max-width: 300px;
+        padding: 0.75rem 0.5rem;
       }
     `,
   ],
@@ -435,46 +422,23 @@ export class AdminUsersListComponent {
   protected readonly layout = inject(LayoutService);
   protected readonly supabase = inject(SupabaseService);
   private readonly indoor = inject(IndoorService);
-  private readonly languageService = inject(LanguageService);
   private readonly outdoorData = inject(OutdoorDataService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly dialogs = inject(TuiDialogService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
+  private readonly toast = inject(ToastService);
 
   protected readonly columns = ['user', 'role', 'areas', 'centers'];
 
-  protected readonly roleOptions = [false, true];
-
-  protected readonly stringifyRole = computed(() => {
-    this.languageService.i18nTick();
-    return (x: unknown): string => {
-      const isAdmin = !!x;
-      const key = isAdmin ? 'options.roles.admin' : 'options.roles.climber';
-      const tr = this.translate.instant(key);
-      return tr && tr !== key ? tr : isAdmin ? 'Admin' : 'Climber';
-    };
-  });
-
-  protected readonly stringifyRoleFilter = (x: unknown): string => {
-    if (x === 'ALL') return this.translate.instant('all');
-    return this.stringifyRole()(x);
-  };
-
   protected readonly searchQuery = signal('');
-  protected readonly roleFilter = signal<boolean | 'ALL'>('ALL');
-  protected readonly roleFilterOptions = ['ALL', ...this.roleOptions];
 
   protected readonly filteredUsers = computed(() => {
     const query = this.searchQuery();
-    const role = this.roleFilter();
     let list = this.users();
 
     if (query) {
       list = list.filter((u) => matchesQuery(u.name, query));
-    }
-
-    if (role !== 'ALL') {
-      list = list.filter((u) => u.is_admin === role);
     }
 
     return list;
@@ -504,19 +468,34 @@ export class AdminUsersListComponent {
 
   protected readonly skeletons = Array(25).fill(0);
   protected readonly direction = signal<TuiSortDirection>(TuiSortDirection.Asc);
-  protected readonly sorter = signal<TuiComparator<UserWithRole>>((a, b) =>
-    tuiDefaultSort(a.name || '', b.name || ''),
-  );
 
-  protected userSorter: TuiComparator<UserWithRole> = (a, b) =>
+  /**
+   * Sorter logic for Role column: Admins appear first when ascending, non-admins first when descending.
+   * Secondary sorting is alphabetical by user name.
+   */
+  protected readonly roleSorter: TuiComparator<UserWithRole> = (a, b) => {
+    if (a.is_admin !== b.is_admin) {
+      return a.is_admin ? -1 : 1;
+    }
+    return tuiDefaultSort(a.name || '', b.name || '');
+  };
+
+  /**
+   * Sorter logic for User column: Sorts alphabetically by name.
+   */
+  protected readonly userSorter: TuiComparator<UserWithRole> = (a, b) =>
     tuiDefaultSort(a.name || '', b.name || '');
 
-  protected roleSorter: TuiComparator<UserWithRole> = (a, b) =>
-    tuiDefaultSort(String(a.is_admin), String(b.is_admin));
+  protected readonly defaultSorter: TuiComparator<UserWithRole> =
+    this.roleSorter;
+
+  protected readonly sorter = signal<TuiComparator<UserWithRole>>(
+    this.defaultSorter,
+  );
 
   protected onSortChange(sort: TuiTableSortChange<UserWithRole>): void {
     this.direction.set(sort.sortDirection);
-    this.sorter.set(sort.sortComparator || this.userSorter);
+    this.sorter.set(sort.sortComparator || this.defaultSorter);
   }
 
   constructor() {
@@ -533,7 +512,6 @@ export class AdminUsersListComponent {
 
       // 1. Load areas if not already loaded
       if (this.outdoorData.areasList().length === 0) {
-        // Wait for areas to load if needed
         while (this.outdoorData.areasListResource.isLoading()) {
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
@@ -644,32 +622,63 @@ export class AdminUsersListComponent {
     }
   }
 
-  protected async onRoleChange(
-    isAdmin: boolean,
-    user: UserWithRole,
-  ): Promise<void> {
+  protected toggleAdminStatus(user: UserWithRole): void {
+    if (user.id === this.currentUserId()) {
+      this.toast.error(this.translate.instant('admin.users.cannotRemoveSelf'));
+      return;
+    }
+
+    void firstValueFrom(
+      this.dialogs.open<boolean>(TUI_CONFIRM, {
+        label: this.translate.instant('admin.users.confirmTitle'),
+        size: 's',
+        data: {
+          content: this.translate.instant(
+            user.is_admin
+              ? 'admin.users.revokeConfirm'
+              : 'admin.users.makeConfirm',
+            { name: user.name || this.translate.instant('anonymous') },
+          ),
+          yes: this.translate.instant('accept'),
+          no: this.translate.instant('cancel'),
+          appearance: user.is_admin ? 'negative' : 'primary',
+        } as TuiConfirmData,
+      }),
+      { defaultValue: false },
+    ).then((confirmed) => {
+      if (confirmed) {
+        void this.performToggleAdminStatus(user);
+      }
+    });
+  }
+
+  private async performToggleAdminStatus(user: UserWithRole): Promise<void> {
+    const newAdminStatus = !user.is_admin;
     try {
       const { error } = await this.supabase.client
         .from('user_profiles')
-        .update({ is_admin: isAdmin })
+        .update({ is_admin: newAdminStatus })
         .eq('id', user.id);
 
       if (error) {
-        console.error('[UsersListAdmin] Error updating role:', error);
-        // Revert the change in the UI
-        await this.loadUsers();
+        console.error('[UsersListAdmin] Error updating admin status:', error);
+        this.toast.error('Error');
         return;
       }
 
       // Update local state
       const updatedUsers = this.users().map((u) =>
-        u.id === user.id ? { ...u, is_admin: isAdmin } : u,
+        u.id === user.id ? { ...u, is_admin: newAdminStatus } : u,
       );
       this.users.set(updatedUsers);
+
+      const msgKey = newAdminStatus
+        ? 'admin.users.makeAdmin'
+        : 'admin.users.revokeAdmin';
+      this.toast.success(this.translate.instant(msgKey));
     } catch (e) {
-      console.error('[UsersListAdmin] Exception updating role:', e);
-      // Revert the change in the UI
-      await this.loadUsers();
+      console.error('[UsersListAdmin] Exception updating admin status:', e);
+      this.toast.error('Error');
     }
   }
 
@@ -678,20 +687,17 @@ export class AdminUsersListComponent {
     newAreas: AreaListItem[],
   ): Promise<void> {
     try {
-      // 1. Get current mappings for this user from the local state
       const user = this.users().find((u) => u.id === userId);
       if (!user) return;
 
       const oldAreaIds = user.assignedAreas.map((a) => a.id);
       const newAreaIds = newAreas.map((a) => a.id);
 
-      // 2. Determine what to add and what to remove
       const toAdd = newAreaIds.filter((id) => !oldAreaIds.includes(id));
       const toRemove = oldAreaIds.filter((id) => !newAreaIds.includes(id));
 
       if (toAdd.length === 0 && toRemove.length === 0) return;
 
-      // 3. Update the database
       if (toAdd.length > 0) {
         const { error: addError } = await this.supabase.client
           .from('area_admins')
@@ -708,7 +714,6 @@ export class AdminUsersListComponent {
         if (removeError) throw removeError;
       }
 
-      // 4. Update the local user object (so that next change is compared correctly)
       user.assignedAreas = newAreas;
     } catch (e) {
       console.error('[UsersListAdmin] Exception updating areas:', e);

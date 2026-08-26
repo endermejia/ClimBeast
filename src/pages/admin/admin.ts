@@ -29,137 +29,255 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiTitle,
   ],
   template: `
-    <div class="p-4 flex flex-col gap-4 max-w-2xl mx-auto w-full">
+    <div class="p-4 flex flex-col gap-6 max-w-4xl mx-auto w-full">
       <header tuiHeader>
-        <h1 tuiTitle>{{ 'config' | translate }}</h1>
+        <h1 tuiTitle>{{ 'admin.title' | translate }}</h1>
       </header>
 
-      <div class="grid gap-2">
-        <a
-          routerLink="/admin/users"
-          class="flex items-center gap-4 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1)"
+      <!-- Section 1: Users & Permissions -->
+      <section class="flex flex-col gap-3">
+        <h2
+          class="text-xs font-semibold uppercase tracking-wider text-(--tui-text-tertiary) px-1"
         >
-          <tui-icon icon="@tui.users" class="text-(--tui-text-tertiary)" />
-          <div class="flex-1">
-            <div class="flex items-center justify-between">
-              <span class="font-bold">{{ 'nav.admin-users' | translate }}</span>
+          {{ 'admin.categories.usersAndPermissions' | translate }}
+        </h2>
 
-              @if (usersSampleResource.value(); as users) {
-                <tui-avatar-stack>
-                  @for (user of users; track user.id) {
-                    <span tuiAvatar size="s">
-                      @if (user.avatar_url; as url) {
-                        <img [src]="url" alt="avatar" />
-                      } @else {
-                        <tui-icon icon="@tui.user" />
-                      }
-                    </span>
-                  }
-                </tui-avatar-stack>
-              }
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <!-- Users -->
+          <a
+            routerLink="/admin/users"
+            class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
+          >
+            <div
+              class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0"
+            >
+              <tui-icon icon="@tui.users" />
             </div>
-            <p class="text-sm text-(--tui-text-secondary)">
-              {{ 'admin.users.description' | translate }}
-            </p>
-          </div>
-        </a>
 
-        <a
-          routerLink="/admin/unify"
-          class="flex items-center gap-4 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1)"
-        >
-          <tui-icon icon="@tui.copy" class="text-(--tui-text-tertiary)" />
-          <div class="flex-1">
-            <span class="font-bold block">
-              {{ 'admin.unifyTitle' | translate }}
-            </span>
-            <p class="text-sm text-(--tui-text-secondary)">
-              {{ 'admin.unifyDescription' | translate }}
-            </p>
-          </div>
-        </a>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-bold text-sm truncate">{{
+                  'nav.admin-users' | translate
+                }}</span>
 
-        <a
-          routerLink="/admin/requests"
-          class="flex items-center gap-4 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1)"
-        >
-          <tui-icon icon="@tui.shield" class="text-(--tui-text-tertiary)" />
-          <div class="flex-1">
-            <span class="font-bold block">
-              {{ 'adminRequests.manageTitle' | translate }}
-            </span>
-            <p class="text-sm text-(--tui-text-secondary)">
-              {{ 'adminRequests.manageDescription' | translate }}
-            </p>
-          </div>
-        </a>
+                @if (usersSampleResource.value(); as users) {
+                  <tui-avatar-stack class="shrink-0">
+                    @for (user of users; track user.id) {
+                      <span tuiAvatar size="s">
+                        @if (user.avatar_url; as url) {
+                          <img [src]="url" alt="avatar" />
+                        } @else {
+                          <tui-icon icon="@tui.user" />
+                        }
+                      </span>
+                    }
+                  </tui-avatar-stack>
+                }
+              </div>
+              <p
+                class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+              >
+                {{ 'admin.users.description' | translate }}
+              </p>
+            </div>
 
-        <a
-          routerLink="/admin/parkings"
-          class="flex items-center gap-4 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1)"
-        >
-          <tui-icon icon="@tui.map-pin" class="text-(--tui-text-tertiary)" />
-          <div class="flex-1">
-            <span class="font-bold block">
-              {{ 'nav.admin-parkings' | translate }}
-            </span>
-            <p class="text-sm text-(--tui-text-secondary)">
-              {{ 'admin.parkings.description' | translate }}
-            </p>
-          </div>
-        </a>
+            <tui-icon
+              icon="@tui.chevron-right"
+              class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+            />
+          </a>
 
-        <a
-          routerLink="/admin/equippers"
-          class="flex items-center gap-4 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1)"
-        >
-          <tui-icon icon="@tui.hammer" class="text-(--tui-text-tertiary)" />
-          <div class="flex-1">
-            <span class="font-bold block">
-              {{ 'nav.admin-equippers' | translate }}
-            </span>
-            <p class="text-sm text-(--tui-text-secondary)">
-              {{ 'admin.equippers.description' | translate }}
-            </p>
-          </div>
-        </a>
+          <!-- Requests -->
+          <a
+            routerLink="/admin/requests"
+            class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
+          >
+            <div
+              class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0"
+            >
+              <tui-icon icon="@tui.shield" />
+            </div>
 
-        <a
-          routerLink="/admin/orders"
-          class="flex items-center gap-4 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1)"
-        >
-          <tui-icon
-            icon="@tui.shopping-bag"
-            class="text-(--tui-text-tertiary)"
-          />
-          <div class="flex-1">
-            <span class="font-bold block">
-              {{ 'admin.orders.title' | translate }}
-            </span>
-            <p class="text-sm text-(--tui-text-secondary)">
-              {{ 'admin.orders.description' | translate }}
-            </p>
-          </div>
-        </a>
+            <div class="flex-1 min-w-0">
+              <span class="font-bold text-sm block truncate">
+                {{ 'adminRequests.manageTitle' | translate }}
+              </span>
+              <p
+                class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+              >
+                {{ 'adminRequests.manageDescription' | translate }}
+              </p>
+            </div>
 
-        <a
-          routerLink="/admin/error-logs"
-          class="flex items-center gap-4 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1)"
+            <tui-icon
+              icon="@tui.chevron-right"
+              class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+            />
+          </a>
+        </div>
+      </section>
+
+      <!-- Section 2: Content & Map -->
+      <section class="flex flex-col gap-3">
+        <h2
+          class="text-xs font-semibold uppercase tracking-wider text-(--tui-text-tertiary) px-1"
         >
-          <tui-icon
-            icon="@tui.triangle-alert"
-            class="text-(--tui-text-tertiary)"
-          />
-          <div class="flex-1">
-            <span class="font-bold block">
-              {{ 'admin.errorLogs.title' | translate }}
-            </span>
-            <p class="text-sm text-(--tui-text-secondary)">
-              {{ 'admin.errorLogs.description' | translate }}
-            </p>
-          </div>
-        </a>
-      </div>
+          {{ 'admin.categories.contentAndMap' | translate }}
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <!-- Unification -->
+          <a
+            routerLink="/admin/unify"
+            class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
+          >
+            <div
+              class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0"
+            >
+              <tui-icon icon="@tui.copy" />
+            </div>
+
+            <div class="flex-1 min-w-0">
+              <span class="font-bold text-sm block truncate">
+                {{ 'admin.unifyTitle' | translate }}
+              </span>
+              <p
+                class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+              >
+                {{ 'admin.unifyDescription' | translate }}
+              </p>
+            </div>
+
+            <tui-icon
+              icon="@tui.chevron-right"
+              class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+            />
+          </a>
+
+          <!-- Equippers -->
+          <a
+            routerLink="/admin/equippers"
+            class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
+          >
+            <div
+              class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0"
+            >
+              <tui-icon icon="@tui.hammer" />
+            </div>
+
+            <div class="flex-1 min-w-0">
+              <span class="font-bold text-sm block truncate">
+                {{ 'nav.admin-equippers' | translate }}
+              </span>
+              <p
+                class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+              >
+                {{ 'admin.equippers.description' | translate }}
+              </p>
+            </div>
+
+            <tui-icon
+              icon="@tui.chevron-right"
+              class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+            />
+          </a>
+
+          <!-- Parkings -->
+          <a
+            routerLink="/admin/parkings"
+            class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all md:col-span-2"
+          >
+            <div
+              class="w-10 h-10 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0"
+            >
+              <tui-icon icon="@tui.map-pin" />
+            </div>
+
+            <div class="flex-1 min-w-0">
+              <span class="font-bold text-sm block truncate">
+                {{ 'nav.admin-parkings' | translate }}
+              </span>
+              <p
+                class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+              >
+                {{ 'admin.parkings.description' | translate }}
+              </p>
+            </div>
+
+            <tui-icon
+              icon="@tui.chevron-right"
+              class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+            />
+          </a>
+        </div>
+      </section>
+
+      <!-- Section 3: Shop & System -->
+      <section class="flex flex-col gap-3">
+        <h2
+          class="text-xs font-semibold uppercase tracking-wider text-(--tui-text-tertiary) px-1"
+        >
+          {{ 'admin.categories.shopAndSystem' | translate }}
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <!-- Orders -->
+          <a
+            routerLink="/admin/orders"
+            class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
+          >
+            <div
+              class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0"
+            >
+              <tui-icon icon="@tui.shopping-bag" />
+            </div>
+
+            <div class="flex-1 min-w-0">
+              <span class="font-bold text-sm block truncate">
+                {{ 'admin.orders.title' | translate }}
+              </span>
+              <p
+                class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+              >
+                {{ 'admin.orders.description' | translate }}
+              </p>
+            </div>
+
+            <tui-icon
+              icon="@tui.chevron-right"
+              class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+            />
+          </a>
+
+          <!-- Error Logs -->
+          <a
+            routerLink="/admin/error-logs"
+            class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
+          >
+            <div
+              class="w-10 h-10 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0"
+            >
+              <tui-icon icon="@tui.triangle-alert" />
+            </div>
+
+            <div class="flex-1 min-w-0">
+              <span class="font-bold text-sm block truncate">
+                {{ 'admin.errorLogs.title' | translate }}
+              </span>
+              <p
+                class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+              >
+                {{ 'admin.errorLogs.description' | translate }}
+              </p>
+            </div>
+
+            <tui-icon
+              icon="@tui.chevron-right"
+              class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+            />
+          </a>
+        </div>
+      </section>
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
