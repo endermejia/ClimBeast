@@ -476,24 +476,17 @@ export class CragFormComponent {
       this.isInitialized = true;
     });
 
-    // Auto-slug generation
-    effect(async () => {
+    // Synchronous auto-slug preview update
+    effect(() => {
       if (this.isEdit()) return;
       const name = this.model().name;
-      const area = this.model().area;
       if (!name) return;
 
-      const baseSlug = slugify(name);
-      const uniqueSlug = await this.slugService.getUniqueSlug(
-        'crags',
-        baseSlug,
-        area?.slug || undefined,
-      );
-
+      const generatedSlug = slugify(name);
       untracked(() => {
         const currentSlug = this.model().slug;
-        if (currentSlug !== uniqueSlug) {
-          this.model.update((m) => ({ ...m, slug: uniqueSlug }));
+        if (currentSlug !== generatedSlug) {
+          this.model.update((m) => ({ ...m, slug: generatedSlug }));
         }
       });
     });
@@ -523,9 +516,20 @@ export class CragFormComponent {
     submit(this.cragForm, async () => {
       const value = this.model();
       const name = value.name;
+
+      let finalSlug = value.slug;
+      if (!this.isEdit() || !finalSlug) {
+        const baseSlug = slugify(name || 'sector');
+        finalSlug = await this.slugService.getUniqueSlug(
+          'crags',
+          baseSlug,
+          value.area?.slug || undefined,
+        );
+      }
+
       const base = {
         name,
-        slug: value.slug,
+        slug: finalSlug,
         latitude: value.latitude,
         longitude: value.longitude,
         approach: value.approach,

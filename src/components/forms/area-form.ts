@@ -620,22 +620,17 @@ export class AreaFormComponent {
       }
     });
 
-    // Auto-slug generation
-    effect(async () => {
+    // Synchronous auto-slug preview update
+    effect(() => {
       if (this.isEdit()) return;
       const name = this.model().name;
       if (!name) return;
 
-      const baseSlug = slugify(name);
-      const uniqueSlug = await this.slugService.getUniqueSlug(
-        'areas',
-        baseSlug,
-      );
-
+      const generatedSlug = slugify(name);
       untracked(() => {
         const currentSlug = this.model().slug;
-        if (currentSlug !== uniqueSlug) {
-          this.model.update((m) => ({ ...m, slug: uniqueSlug }));
+        if (currentSlug !== generatedSlug) {
+          this.model.update((m) => ({ ...m, slug: generatedSlug }));
         }
       });
     });
@@ -662,9 +657,16 @@ export class AreaFormComponent {
 
     submit(this.areaForm, async () => {
       const model = this.model();
+
+      let finalSlug = model.slug;
+      if (!this.isEdit() || !finalSlug) {
+        const baseSlug = slugify(model.name || 'area');
+        finalSlug = await this.slugService.getUniqueSlug('areas', baseSlug);
+      }
+
       const payload = {
         name: model.name,
-        slug: model.slug,
+        slug: finalSlug,
         is_public: model.is_public,
         price: model.is_public ? null : model.price,
         eight_anu_crag_slugs: model.eight_anu_crag_slugs,

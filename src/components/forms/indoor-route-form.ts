@@ -54,6 +54,7 @@ import {
   INDOOR_ROUTE_COLORS_LIST,
 } from '../../models';
 
+import { handleErrorToast } from '../../utils/handle-error';
 import { slugify } from '../../utils/slugify';
 
 import { IS_BROWSER } from '../../app/is-browser';
@@ -489,7 +490,7 @@ export default class IndoorRouteFormComponent {
         this.context.completeWith(true);
       } catch (e) {
         console.error('[IndoorRouteFormComponent] Error saving route:', e);
-        this.toast.error('errors.unexpected');
+        handleErrorToast(e, this.toast);
       } finally {
         this.isSaving.set(false);
       }

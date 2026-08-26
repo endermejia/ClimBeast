@@ -114,6 +114,10 @@ export class IndoorService {
   async createCenter(
     payload: Omit<IndoorCenterDto, 'id' | 'created_at'>,
   ): Promise<IndoorCenterDto | null> {
+    if (!this.isBrowser) return null;
+    await this.supabase.whenReady();
+    const userId = this.supabase.authUserId();
+
     const { data, error } = await this.supabase.client
       .from('indoor_centers')
       .insert(payload)
@@ -121,6 +125,17 @@ export class IndoorService {
       .single();
 
     if (error) throw error;
+
+    if (data && userId) {
+      try {
+        await this.supabase.client
+          .from('indoor_center_admins')
+          .insert({ center_id: data.id, user_id: userId });
+      } catch {
+        // Ignore if already admin or handled downstream
+      }
+    }
+
     return data as IndoorCenterDto;
   }
 

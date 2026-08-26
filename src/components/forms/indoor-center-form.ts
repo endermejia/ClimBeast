@@ -679,6 +679,49 @@ export class IndoorCenterFormComponent {
     'saturday',
     'sunday',
   ];
+  private buildInitialSchedule(dataSchedule?: unknown): Record<
+    string,
+    {
+      closed: boolean;
+      open: string;
+      close: string;
+      hasSplit: boolean;
+      open2: string;
+      close2: string;
+    }
+  > {
+    const schedule = scheduleFromJson(dataSchedule) || { normal: {} };
+    return this.weekDays.reduce(
+      (acc, day) => {
+        const s = schedule.normal?.[day] || {
+          closed: true,
+          open: '09:00',
+          close: '21:00',
+        };
+        acc[day] = {
+          closed: !!s.closed,
+          open: s.open || '09:00',
+          close: s.close || '21:00',
+          hasSplit: !!(s.open2 && s.close2),
+          open2: s.open2 || '16:00',
+          close2: s.close2 || '21:00',
+        };
+        return acc;
+      },
+      {} as Record<
+        string,
+        {
+          closed: boolean;
+          open: string;
+          close: string;
+          hasSplit: boolean;
+          open2: string;
+          close2: string;
+        }
+      >,
+    );
+  }
+
   protected readonly scheduleForm = signal<
     Record<
       string,
@@ -691,7 +734,7 @@ export class IndoorCenterFormComponent {
         close2: string;
       }
     >
-  >({});
+  >(this.buildInitialSchedule());
 
   protected readonly scheduleDays = computed(() => {
     const formVal = this.scheduleForm();
@@ -741,39 +784,7 @@ export class IndoorCenterFormComponent {
       }));
 
       // Initialize Schedule
-      const schedule = scheduleFromJson(data.schedule) || {
-        normal: {},
-      };
-      const defaultSchedule = this.weekDays.reduce(
-        (acc, day) => {
-          const s = schedule.normal?.[day] || {
-            closed: true,
-            open: '09:00',
-            close: '21:00',
-          };
-          acc[day] = {
-            closed: !!s.closed,
-            open: s.open || '09:00',
-            close: s.close || '21:00',
-            hasSplit: !!(s.open2 && s.close2),
-            open2: s.open2 || '16:00',
-            close2: s.close2 || '21:00',
-          };
-          return acc;
-        },
-        {} as Record<
-          string,
-          {
-            closed: boolean;
-            open: string;
-            close: string;
-            hasSplit: boolean;
-            open2: string;
-            close2: string;
-          }
-        >,
-      );
-      this.scheduleForm.set(defaultSchedule);
+      this.scheduleForm.set(this.buildInitialSchedule(data.schedule));
     });
 
     // Fetch existing vouchers on edit
@@ -801,22 +812,17 @@ export class IndoorCenterFormComponent {
       }
     });
 
-    // Auto-slug generation
-    effect(async () => {
+    // Synchronous auto-slug preview update
+    effect(() => {
       if (this.isEdit()) return;
       const name = this.model().name;
       if (!name) return;
 
-      const baseSlug = slugify(name);
-      const uniqueSlug = await this.slugService.getUniqueSlug(
-        'indoor_centers',
-        baseSlug,
-      );
-
+      const generatedSlug = slugify(name);
       untracked(() => {
         const currentSlug = this.model().slug;
-        if (currentSlug !== uniqueSlug) {
-          this.model.update((m) => ({ ...m, slug: uniqueSlug }));
+        if (currentSlug !== generatedSlug) {
+          this.model.update((m) => ({ ...m, slug: generatedSlug }));
         }
       });
     });
@@ -985,24 +991,8 @@ export class IndoorCenterFormComponent {
       this.isSaving.set(true);
       try {
         const modelVal = this.model();
-        const newPhotoUrls: string[] = [];
 
-        // 1. Save new photos if any
-        if (this.newPhotos().length > 0) {
-          this.isUploading.set(true);
-          const centerIdVal = this.editingId;
-          if (!centerIdVal)
-            throw new Error('Cannot upload photos without a center ID');
-
-          for (const item of this.newPhotos()) {
-            const path = await this.indoor.uploadAsset(centerIdVal, item.file);
-            if (path) {
-              newPhotoUrls.push(path);
-            }
-          }
-        }
-
-        // 2. Prepare Center Details and Schedule payload
+        // 1. Prepare Center Details and Schedule payload
         const normalSchedule: Record<
           string,
           {
@@ -1015,7 +1005,14 @@ export class IndoorCenterFormComponent {
         > = {};
         const sf = this.scheduleForm();
         for (const day of this.weekDays) {
-          const d = sf[day];
+          const d = sf[day] || {
+            closed: true,
+            open: '09:00',
+            close: '21:00',
+            hasSplit: false,
+            open2: '16:00',
+            close2: '21:00',
+          };
           normalSchedule[day] = {
             closed: d.closed,
             open: d.closed ? null : d.open,
@@ -1026,9 +1023,19 @@ export class IndoorCenterFormComponent {
         }
         const schedulePayload = { normal: normalSchedule };
 
+        // 2. Ensure unique slug for new center
+        let finalSlug = modelVal.slug;
+        if (!this.isEdit() || !finalSlug) {
+          const baseSlug = slugify(modelVal.name || 'centro-indoor');
+          finalSlug = await this.slugService.getUniqueSlug(
+            'indoor_centers',
+            baseSlug,
+          );
+        }
+
         const payload: Omit<IndoorCenterDto, 'id' | 'created_at'> = {
           name: modelVal.name,
-          slug: modelVal.slug,
+          slug: finalSlug,
           city: modelVal.city || null,
           description: modelVal.description || null,
           warning: modelVal.warning || null,
@@ -1037,12 +1044,12 @@ export class IndoorCenterFormComponent {
           longitude: modelVal.longitude,
           contact_info: this.effectiveCenterData()?.contact_info ?? null,
           country: this.effectiveCenterData()?.country ?? null,
-          gallery_urls: [...modelVal.gallery_urls, ...newPhotoUrls],
+          gallery_urls: modelVal.gallery_urls,
           schedule: scheduleToJson(schedulePayload as IndoorSchedule),
           location: this.effectiveCenterData()?.location ?? null,
         };
 
-        // 3. Save center and retrieve center ID
+        // 2. Save center and retrieve center ID
         let savedCenterId = this.editingId;
         if (this.isEdit()) {
           if (this.editingId == null) return;
@@ -1055,6 +1062,29 @@ export class IndoorCenterFormComponent {
 
         if (!savedCenterId) {
           throw new Error('Failed to get center ID after save');
+        }
+
+        // 3. Save new photos if any (now that we have savedCenterId)
+        if (this.newPhotos().length > 0) {
+          this.isUploading.set(true);
+          const newPhotoUrls: string[] = [];
+
+          for (const item of this.newPhotos()) {
+            const path = await this.indoor.uploadAsset(
+              savedCenterId,
+              item.file,
+            );
+            if (path) {
+              newPhotoUrls.push(path);
+            }
+          }
+
+          if (newPhotoUrls.length > 0) {
+            const updatedGallery = [...modelVal.gallery_urls, ...newPhotoUrls];
+            await this.indoor.updateCenter(savedCenterId, {
+              gallery_urls: updatedGallery,
+            });
+          }
         }
 
         // 4. Save/Sync Vouchers in database

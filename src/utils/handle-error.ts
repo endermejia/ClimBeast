@@ -6,6 +6,8 @@ import { ToastService } from '../services/toast.service';
  * @param toast The ToastService instance
  */
 export function handleErrorToast(error: unknown, toast: ToastService): void {
+  console.error('[handleErrorToast]', error);
+
   let messageKey = 'errors.unexpected';
 
   // Specific PostgreSQL / Supabase error codes
