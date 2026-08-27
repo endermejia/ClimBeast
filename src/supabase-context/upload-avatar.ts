@@ -28,6 +28,8 @@ const supabaseAdminClient = createClient(
   },
 );
 
+console.info('Upload-avatar function started');
+
 Deno.serve(async (req: Request) => {
   /**
    * CORS configuration

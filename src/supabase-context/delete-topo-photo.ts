@@ -18,7 +18,7 @@ const supabaseAdminClient = createClient(
   { auth: { persistSession: false } },
 );
 
-console.info('Delete-route-ascent-photo function started');
+console.info('Delete-topo-photo function started');
 
 Deno.serve(async (req: Request) => {
   const ALLOWED_ORIGINS = ['http://localhost:4200', 'https://climbeast.com'];
@@ -29,7 +29,7 @@ Deno.serve(async (req: Request) => {
   if (ALLOWED_ORIGINS.includes(origin)) {
     corsHeaders['Access-Control-Allow-Origin'] = origin;
     corsHeaders['Access-Control-Allow-Headers'] =
-      'authorization, x-client-info, apikey, content-type, ascent-id, ngsw-bypass';
+      'authorization, x-client-info, apikey, content-type, topo-id, ngsw-bypass';
     corsHeaders['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
   }
 
@@ -70,40 +70,80 @@ Deno.serve(async (req: Request) => {
 
     const userId = userResult.user.id;
 
-    const ascentId =
-      req.headers.get('ascent-id') || req.headers.get('Ascent-Id');
+    // ─────────────────────────────
+    // Admin check
+    // ─────────────────────────────
+    const { data: isAdmin, error: adminErr } = await supabaseAdminClient.rpc(
+      'is_user_admin',
+      {
+        p_uid: userId,
+      },
+    );
 
-    if (!ascentId) {
+    if (adminErr) {
+      console.error('[delete-topo-photo] is_user_admin error', adminErr);
       return new Response(
-        JSON.stringify({ error: 'Missing Ascent-Id header' }),
+        JSON.stringify({ error: 'Permission check failed' }),
         {
-          status: 400,
+          status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         },
       );
     }
 
+    const topoId = req.headers.get('topo-id') || req.headers.get('Topo-Id');
+
+    if (!topoId) {
+      return new Response(JSON.stringify({ error: 'Missing Topo-Id header' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // ─────────────────────────────
-    // Get ascent → user_id and photo_path check
+    // Get topo → crag_id and photo path check
     // ─────────────────────────────
-    const { data: ascent, error: ascentErr } = await supabaseAdminClient
-      .from('route_ascents')
-      .select('user_id, photo_path')
-      .eq('id', ascentId)
+    const { data: topo, error: topoErr } = await supabaseAdminClient
+      .from('topos')
+      .select('crag_id, photo')
+      .eq('id', topoId)
       .single();
 
-    if (ascentErr || !ascent) {
-      console.error('[delete-route-ascent-photo] ascent not found', ascentErr);
-      return new Response(JSON.stringify({ error: 'Ascent not found' }), {
+    if (topoErr || !topo) {
+      console.error('[delete-topo-photo] topo not found', topoErr);
+      return new Response(JSON.stringify({ error: 'Topo not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    if (ascent.user_id !== userId) {
+    // ─────────────────────────────
+    // Crag admin check (only if not admin)
+    let isCragAdmin = false;
+    if (!isAdmin) {
+      const { data, error } = await supabaseAdminClient.rpc(
+        'is_crag_equipper',
+        { p_crag_id: topo.crag_id },
+      );
+
+      if (error) {
+        console.error('[delete-topo-photo] is_crag_equipper error', error);
+        return new Response(
+          JSON.stringify({ error: 'Permission check failed' }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          },
+        );
+      }
+
+      isCragAdmin = Boolean(data);
+    }
+
+    if (!isAdmin && !isCragAdmin) {
       return new Response(
         JSON.stringify({
-          error: 'Forbidden: only the owner can delete the photo',
+          error: 'Forbidden: admin or crag admin only',
         }),
         {
           status: 403,
@@ -112,7 +152,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!ascent.photo_path) {
+    if (!topo.photo) {
       return new Response(JSON.stringify({ message: 'No photo to delete' }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -122,16 +162,13 @@ Deno.serve(async (req: Request) => {
     // ─────────────────────────────
     // Storage Deletion
     // ─────────────────────────────
-    const bucket = 'route-ascent-photos';
+    const bucket = 'topos';
     const { error: deleteError } = await supabaseAdminClient.storage
       .from(bucket)
-      .remove([ascent.photo_path]);
+      .remove([topo.photo]);
 
     if (deleteError) {
-      console.error(
-        '[delete-route-ascent-photo] Storage removal failed',
-        deleteError,
-      );
+      console.error('[delete-topo-photo] Storage removal failed', deleteError);
       return new Response(
         JSON.stringify({
           error: 'Storage removal failed',
@@ -145,15 +182,15 @@ Deno.serve(async (req: Request) => {
     }
 
     // ─────────────────────────────
-    // DB Update (Set photo_path to null)
+    // DB Update (Set photo to null)
     // ─────────────────────────────
     const { error: dbErr } = await supabaseAdminClient
-      .from('route_ascents')
-      .update({ photo_path: null })
-      .eq('id', ascentId);
+      .from('topos')
+      .update({ photo: null })
+      .eq('id', topoId);
 
     if (dbErr) {
-      console.error('[delete-route-ascent-photo] DB update failed', dbErr);
+      console.error('[delete-topo-photo] DB update failed', dbErr);
       return new Response(
         JSON.stringify({
           error: 'DB update failed',

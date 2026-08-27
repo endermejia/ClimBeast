@@ -18,6 +18,8 @@ const supabaseAdminClient = createClient(
   { auth: { persistSession: false } },
 );
 
+console.info('Delete-topo-photo function started');
+
 Deno.serve(async (req: Request) => {
   const ALLOWED_ORIGINS = ['http://localhost:4200', 'https://climbeast.com'];
 
@@ -121,7 +123,7 @@ Deno.serve(async (req: Request) => {
     if (!isAdmin) {
       const { data, error } = await supabaseAdminClient.rpc(
         'is_crag_equipper',
-        { p_crag_id: topo.crag_id },
+        { p_crag_id: topo.crag_id, p_uid: userId },
       );
 
       if (error) {

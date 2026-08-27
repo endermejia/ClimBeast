@@ -24,6 +24,8 @@ const supabaseAdminClient = createClient(
   { auth: { persistSession: false } },
 );
 
+console.info('Upload-route-ascent-photo function started');
+
 Deno.serve(async (req: Request) => {
   const ALLOWED_ORIGINS = ['http://localhost:4200', 'https://climbeast.com'];
 
@@ -210,15 +212,3 @@ Deno.serve(async (req: Request) => {
     });
   }
 });
-
-/**
- * SUPABASE CONFIGURATION STEPS:
- *
- * 1. Create a new Storage bucket named "route-ascent-photos".
- * 2. Set the bucket to "Public" (or configure RLS policies for read access).
- * 3. Add RLS policies for the "route-ascent-photos" bucket:
- *    - SELECT: Allow all (public read).
- *    - INSERT/UPDATE/DELETE: Allow users to manage their own folder (bucket.name = 'route-ascent-photos' AND (storage.foldername(name))[1] = auth.uid()::text).
- * 4. Deploy this function to Supabase:
- *    supabase functions deploy upload-route-ascent-photo
- */
