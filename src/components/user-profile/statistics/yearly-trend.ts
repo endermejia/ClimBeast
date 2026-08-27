@@ -7,7 +7,7 @@ import {
   TuiLineChart,
   TuiLineChartHint,
 } from '@taiga-ui/addon-charts';
-import { TuiIcon, TuiScrollbar } from '@taiga-ui/core';
+import { TuiScrollbar } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -25,7 +25,6 @@ import { ContextIndexPipe } from '../../../pipes';
     RouterLink,
     TranslatePipe,
     TuiAxes,
-    TuiIcon,
     TuiLineChart,
     TuiLineChartHint,
     TuiScrollbar,
@@ -34,15 +33,8 @@ import { ContextIndexPipe } from '../../../pipes';
     <div
       class="bg-(--tui-background-base) shadow-md p-6 rounded-2xl border border-(--tui-border-normal)"
     >
-      <header class="mb-4">
-        <h3 class="font-bold text-lg flex items-center gap-2">
-          <tui-icon icon="@tui.chart-line" />
-          {{ 'statistics.sportClimbingTrend' | translate }}
-        </h3>
-      </header>
-
       @if (trendData().years.length > 0) {
-        <div class="relative pt-6 pb-2">
+        <div class="relative pt-2 pb-2">
           <tui-axes
             class="chart-container"
             [axisXLabels]="trendXLabels()"

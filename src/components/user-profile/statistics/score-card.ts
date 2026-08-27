@@ -48,23 +48,25 @@ import { CountUpDirective } from '../../../directives/count-up.directive';
         </div>
 
         <!-- Key Stats Grid -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-4 gap-2 sm:gap-3">
           <div
-            class="bg-(--tui-background-base) shadow-sm p-4 rounded-xl border border-(--tui-border-normal) flex flex-col items-center justify-center gap-1"
+            class="bg-(--tui-background-base) shadow-sm p-3 sm:p-4 rounded-xl border border-(--tui-border-normal) flex flex-col items-center justify-center gap-1 min-w-0"
           >
             <div
-              class="text-3xl font-bold"
+              class="text-xl sm:text-2xl lg:text-3xl font-bold truncate"
               [appCountUp]="totalAscents()"
               #totalAscentsAnim="appCountUp"
             >
               {{ totalAscentsAnim.currentValue() | number: '1.0-0' }}
             </div>
-            <div class="text-xs uppercase opacity-70 font-semibold">
+            <div
+              class="text-[10px] sm:text-xs uppercase opacity-70 font-semibold truncate"
+            >
               {{ 'ascents' | translate }}
             </div>
           </div>
           <div
-            class="bg-(--tui-background-base) shadow-sm p-4 rounded-xl border border-(--tui-border-normal) flex flex-col items-center justify-center gap-1"
+            class="bg-(--tui-background-base) shadow-sm p-3 sm:p-4 rounded-xl border border-(--tui-border-normal) flex flex-col items-center justify-center gap-1 min-w-0"
             [tuiHint]="
               maxRedpointRoutes().length > 0 ? gradeHintTemplate : null
             "
@@ -74,15 +76,19 @@ import { CountUpDirective } from '../../../directives/count-up.directive';
               routes: maxRedpointRoutes(),
             }"
           >
-            <div class="text-3xl font-bold text-(--tui-status-negative)">
+            <div
+              class="text-xl sm:text-2xl lg:text-3xl font-bold text-(--tui-status-negative) truncate"
+            >
               {{ maxRedpoint() || '-' }}
             </div>
-            <div class="text-xs uppercase opacity-70 font-semibold">
+            <div
+              class="text-[10px] sm:text-xs uppercase opacity-70 font-semibold truncate"
+            >
               {{ 'ascentTypes.rp' | translate }}
             </div>
           </div>
           <div
-            class="bg-(--tui-background-base) shadow-sm p-4 rounded-xl border border-(--tui-border-normal) flex flex-col items-center justify-center gap-1"
+            class="bg-(--tui-background-base) shadow-sm p-3 sm:p-4 rounded-xl border border-(--tui-border-normal) flex flex-col items-center justify-center gap-1 min-w-0"
             [tuiHint]="maxOnsightRoutes().length > 0 ? gradeHintTemplate : null"
             [tuiHintContext]="{
               title: ('ascentTypes.os' | translate),
@@ -90,15 +96,19 @@ import { CountUpDirective } from '../../../directives/count-up.directive';
               routes: maxOnsightRoutes(),
             }"
           >
-            <div class="text-3xl font-bold text-(--tui-status-positive)">
+            <div
+              class="text-xl sm:text-2xl lg:text-3xl font-bold text-(--tui-status-positive) truncate"
+            >
               {{ maxOnsight() || '-' }}
             </div>
-            <div class="text-xs uppercase opacity-70 font-semibold">
+            <div
+              class="text-[10px] sm:text-xs uppercase opacity-70 font-semibold truncate"
+            >
               {{ 'ascentTypes.os' | translate }}
             </div>
           </div>
           <div
-            class="bg-(--tui-background-base) shadow-sm p-4 rounded-xl border border-(--tui-border-normal) flex flex-col items-center justify-center gap-1"
+            class="bg-(--tui-background-base) shadow-sm p-3 sm:p-4 rounded-xl border border-(--tui-border-normal) flex flex-col items-center justify-center gap-1 min-w-0"
             [tuiHint]="maxFlashRoutes().length > 0 ? gradeHintTemplate : null"
             [tuiHintContext]="{
               title: ('ascentTypes.f' | translate),
@@ -106,10 +116,14 @@ import { CountUpDirective } from '../../../directives/count-up.directive';
               routes: maxFlashRoutes(),
             }"
           >
-            <div class="text-3xl font-bold text-(--tui-status-warning)">
+            <div
+              class="text-xl sm:text-2xl lg:text-3xl font-bold text-(--tui-status-warning) truncate"
+            >
               {{ maxFlash() || '-' }}
             </div>
-            <div class="text-xs uppercase opacity-70 font-semibold">
+            <div
+              class="text-[10px] sm:text-xs uppercase opacity-70 font-semibold truncate"
+            >
               {{ 'ascentTypes.f' | translate }}
             </div>
           </div>

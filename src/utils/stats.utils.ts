@@ -220,7 +220,15 @@ export function calculateGradeDistribution(
   limit?: number,
 ): GradeDistribution {
   if (ascents.length === 0) {
-    return { rows: [], total: 0, maxCount: 0, hasMore: false };
+    return {
+      rows: [],
+      total: 0,
+      maxCount: 0,
+      hasMore: false,
+      os: 0,
+      flash: 0,
+      rp: 0,
+    };
   }
 
   const buckets = new Map<
@@ -236,6 +244,9 @@ export function calculateGradeDistribution(
   >();
 
   let totalAscents = 0;
+  let totalOs = 0;
+  let totalFlash = 0;
+  let totalRp = 0;
 
   ascents.forEach((ascent: UserAscentStatRecord) => {
     const routeScore = mapAscentToRouteScore(ascent);
@@ -260,13 +271,28 @@ export function calculateGradeDistribution(
     bucket.routes.push(routeScore);
 
     const type = (ascent.ascent_type || 'rp').toLowerCase();
-    if (type === 'os' || type === 'onsight') bucket.os++;
-    else if (type === 'f' || type === 'flash') bucket.flash++;
-    else bucket.rp++;
+    if (type === 'os' || type === 'onsight') {
+      bucket.os++;
+      totalOs++;
+    } else if (type === 'f' || type === 'flash') {
+      bucket.flash++;
+      totalFlash++;
+    } else {
+      bucket.rp++;
+      totalRp++;
+    }
   });
 
   if (buckets.size === 0) {
-    return { rows: [], total: 0, maxCount: 0, hasMore: false };
+    return {
+      rows: [],
+      total: 0,
+      maxCount: 0,
+      hasMore: false,
+      os: 0,
+      flash: 0,
+      rp: 0,
+    };
   }
 
   // Sort Descending (Highest Grade Top)
@@ -307,7 +333,15 @@ export function calculateGradeDistribution(
     };
   });
 
-  return { rows, total: totalAscents, maxCount: maxBucketCount, hasMore };
+  return {
+    rows,
+    total: totalAscents,
+    maxCount: maxBucketCount,
+    hasMore,
+    os: totalOs,
+    flash: totalFlash,
+    rp: totalRp,
+  };
 }
 
 /**

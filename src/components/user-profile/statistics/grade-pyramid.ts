@@ -1,4 +1,4 @@
-import { CommonModule, LowerCasePipe } from '@angular/common';
+import { CommonModule, LowerCasePipe, PercentPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TuiIcon, TuiHint, TuiScrollbar, TuiButton } from '@taiga-ui/core';
+import { TuiHint, TuiScrollbar, TuiButton } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -20,21 +20,89 @@ import { GradeDistribution } from '../../../models/user-stats.model';
   imports: [
     CommonModule,
     LowerCasePipe,
+    PercentPipe,
     RouterLink,
     TranslatePipe,
     TuiButton,
     TuiHint,
-    TuiIcon,
     TuiScrollbar,
   ],
   template: `
     <div
       class="bg-(--tui-background-base) shadow-md p-6 rounded-2xl border border-(--tui-border-normal)"
     >
-      <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
-        <tui-icon icon="@tui.pyramid" />
-        {{ 'statistics.gradePyramid' | translate }}
-      </h3>
+      @if (distribution(); as dist) {
+        @if (dist.total > 0) {
+          <div
+            class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-(--tui-border-normal)"
+          >
+            <div class="font-bold text-sm text-(--tui-text-primary)">
+              {{ dist.total }}
+              <span class="font-normal text-(--tui-text-secondary)">
+                {{
+                  (dist.total === 1 ? 'ascent' : 'ascents')
+                    | translate
+                    | lowercase
+                }}
+              </span>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
+              <div
+                class="flex items-center gap-1.5"
+                [class.opacity-40]="dist.rp === 0"
+              >
+                <span
+                  class="w-2.5 h-2.5 rounded-full shrink-0 bg-(--tui-status-negative)"
+                ></span>
+                <span class="font-medium text-(--tui-text-secondary)">
+                  {{ 'ascentTypes.rp' | translate }}:
+                </span>
+                <span class="font-bold text-(--tui-text-primary)">
+                  {{ dist.rp }}
+                </span>
+                <span class="text-[10px] text-(--tui-text-tertiary)">
+                  ({{ dist.rp / dist.total | percent: '1.0-0' }})
+                </span>
+              </div>
+              <div
+                class="flex items-center gap-1.5"
+                [class.opacity-40]="dist.flash === 0"
+              >
+                <span
+                  class="w-2.5 h-2.5 rounded-full shrink-0 bg-(--tui-status-warning)"
+                ></span>
+                <span class="font-medium text-(--tui-text-secondary)">
+                  {{ 'ascentTypes.f' | translate }}:
+                </span>
+                <span class="font-bold text-(--tui-text-primary)">
+                  {{ dist.flash }}
+                </span>
+                <span class="text-[10px] text-(--tui-text-tertiary)">
+                  ({{ dist.flash / dist.total | percent: '1.0-0' }})
+                </span>
+              </div>
+              <div
+                class="flex items-center gap-1.5"
+                [class.opacity-40]="dist.os === 0"
+              >
+                <span
+                  class="w-2.5 h-2.5 rounded-full shrink-0 bg-(--tui-status-positive)"
+                ></span>
+                <span class="font-medium text-(--tui-text-secondary)">
+                  {{ 'ascentTypes.os' | translate }}:
+                </span>
+                <span class="font-bold text-(--tui-text-primary)">
+                  {{ dist.os }}
+                </span>
+                <span class="text-[10px] text-(--tui-text-tertiary)">
+                  ({{ dist.os / dist.total | percent: '1.0-0' }})
+                </span>
+              </div>
+            </div>
+          </div>
+        }
+      }
 
       @if (distribution()?.total ?? 0 > 0) {
         @let dist = distribution()!;

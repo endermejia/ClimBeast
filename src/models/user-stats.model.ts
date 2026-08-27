@@ -30,6 +30,9 @@ export interface GradeDistribution {
   total: number;
   maxCount: number;
   hasMore: boolean;
+  os: number;
+  flash: number;
+  rp: number;
 }
 
 export interface AscentTypeDistribution {

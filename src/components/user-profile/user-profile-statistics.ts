@@ -9,16 +9,10 @@ import {
 } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
-import {
-  TuiDataList,
-  TuiLoader,
-  TuiIcon,
-  TuiPoint,
-  TuiInput,
-} from '@taiga-ui/core';
+import { TuiDataList, TuiLoader, TuiPoint, TuiInput } from '@taiga-ui/core';
 import { TuiDataListWrapper, TuiSelect } from '@taiga-ui/kit';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 
 import { AscentsService } from '../../services/ascents.service';
 import { LayoutService } from '../../services/layout.service';
@@ -40,7 +34,6 @@ import {
   getMaxGradeRoutes,
 } from '../../utils';
 
-import { ChartAscentsByStyleComponent } from '../charts/chart-ascents-by-style';
 import { UserProfileStatsPyramidComponent } from './statistics/grade-pyramid';
 import { UserProfileStatsScoreComponent } from './statistics/score-card';
 import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
@@ -49,13 +42,10 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
   selector: 'app-user-profile-statistics',
   standalone: true,
   imports: [
-    ChartAscentsByStyleComponent,
     FormsModule,
     ReactiveFormsModule,
-    TranslatePipe,
     TuiDataList,
     TuiDataListWrapper,
-    TuiIcon,
     TuiInput,
     TuiLoader,
     TuiSelect,
@@ -68,56 +58,58 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
     class: 'block w-full min-w-0',
   },
   template: `
-    <div class="grid gap-4 w-full">
-      <!-- Header / Filter -->
-      <div class="flex justify-between items-center flex-wrap gap-4">
-        <h2 class="text-2xl font-bold hidden sm:flex items-center gap-2">
-          <tui-icon icon="@tui.chart-bar" />
-          {{ 'statistics' | translate }}
-        </h2>
-        <tui-textfield
-          class="w-full sm:w-48"
-          [tuiTextfieldCleaner]="false"
-          [stringify]="dateValueContent"
-          tuiTextfieldSize="l"
-        >
-          <input
-            tuiSelect
-            [ngModel]="dateFilterValue()"
-            (ngModelChange)="dateFilterValue.set($event)"
-            autocomplete="off"
-          />
-          <tui-data-list *tuiDropdown>
-            <tui-data-list-wrapper new [items]="dateFilterOptions()" />
-          </tui-data-list>
-        </tui-textfield>
-      </div>
-
+    <div class="flex flex-col gap-6 w-full">
       <tui-loader [loading]="statsResource.isLoading()">
-        <!-- Mobile Score Card (Top on Mobile, Hidden on Desktop) -->
-        <app-user-profile-stats-score
-          class="block lg:hidden mb-6"
-          [totalScore]="totalScore()"
-          [topRoutes]="topRoutes()"
-          [totalAscents]="gradeDistribution().total"
-          [maxRedpoint]="maxRedpoint()"
-          [maxRedpointRoutes]="maxRedpointRoutes()"
-          [maxOnsight]="maxOnsight()"
-          [maxOnsightRoutes]="maxOnsightRoutes()"
-          [maxFlash]="maxFlash()"
-          [maxFlashRoutes]="maxFlashRoutes()"
-        />
+        <div class="flex flex-col gap-6">
+          <!-- Top Section: Pyramid (Left) + Filter & Score (Right) -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <!-- Left: Grade Pyramid (2/3 on desktop) -->
+            <div class="lg:col-span-2 order-2 lg:order-1">
+              <app-user-profile-stats-pyramid
+                [(showAllGrades)]="showAllGrades"
+                [distribution]="gradeDistribution()"
+              />
+            </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <!-- Left Column (Pyramid & Trends) - 2/3 width on Desktop, full width on Mobile -->
-          <div class="lg:col-span-2 flex flex-col gap-6">
-            <!-- Grade Pyramid -->
-            <app-user-profile-stats-pyramid
-              [(showAllGrades)]="showAllGrades"
-              [distribution]="gradeDistribution()"
-            />
+            <!-- Right: Date Filter + Score Card (1/3 on desktop) -->
+            <div class="lg:col-span-1 flex flex-col gap-4 order-1 lg:order-2">
+              <!-- Filter Selector -->
+              <div class="flex justify-end w-full">
+                <tui-textfield
+                  class="w-full"
+                  [tuiTextfieldCleaner]="false"
+                  [stringify]="dateValueContent"
+                  tuiTextfieldSize="l"
+                >
+                  <input
+                    tuiSelect
+                    [ngModel]="dateFilterValue()"
+                    (ngModelChange)="dateFilterValue.set($event)"
+                    autocomplete="off"
+                  />
+                  <tui-data-list *tuiDropdown>
+                    <tui-data-list-wrapper new [items]="dateFilterOptions()" />
+                  </tui-data-list>
+                </tui-textfield>
+              </div>
 
-            <!-- Sport Climbing Trend -->
+              <!-- Score Card & Key Stats -->
+              <app-user-profile-stats-score
+                [totalScore]="totalScore()"
+                [topRoutes]="topRoutes()"
+                [totalAscents]="gradeDistribution().total"
+                [maxRedpoint]="maxRedpoint()"
+                [maxRedpointRoutes]="maxRedpointRoutes()"
+                [maxOnsight]="maxOnsight()"
+                [maxOnsightRoutes]="maxOnsightRoutes()"
+                [maxFlash]="maxFlash()"
+                [maxFlashRoutes]="maxFlashRoutes()"
+              />
+            </div>
+          </div>
+
+          <!-- Bottom Section: Evolution / Trend (Full Width) -->
+          <div class="w-full">
             <app-user-profile-stats-trends
               [trendData]="trendData()"
               [trendDetails]="trendDetails()"
@@ -127,36 +119,6 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
               [height]="height"
             />
           </div>
-
-          <!-- Right Column (Desktop Score & Styles) - 1/3 width on Desktop, Hidden on Mobile -->
-          <div class="lg:col-span-1 hidden lg:flex flex-col gap-6">
-            <!-- Score Card & Key Stats -->
-            <app-user-profile-stats-score
-              [totalScore]="totalScore()"
-              [topRoutes]="topRoutes()"
-              [totalAscents]="gradeDistribution().total"
-              [maxRedpoint]="maxRedpoint()"
-              [maxRedpointRoutes]="maxRedpointRoutes()"
-              [maxOnsight]="maxOnsight()"
-              [maxOnsightRoutes]="maxOnsightRoutes()"
-              [maxFlash]="maxFlash()"
-              [maxFlashRoutes]="maxFlashRoutes()"
-            />
-
-            <!-- Style Distribution -->
-            <div
-              class="bg-(--tui-background-base) shadow-md p-6 rounded-2xl border border-(--tui-border-normal)"
-            >
-              <app-chart-ascents-by-style [ascents]="stats()" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Mobile Style Distribution (Bottom on Mobile, Hidden on Desktop) -->
-        <div
-          class="block lg:hidden mt-6 bg-(--tui-background-base) shadow-md p-6 rounded-2xl border border-(--tui-border-normal)"
-        >
-          <app-chart-ascents-by-style [ascents]="stats()" />
         </div>
       </tui-loader>
     </div>

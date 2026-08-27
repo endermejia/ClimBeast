@@ -8,6 +8,7 @@ import {
   getMaxGrade,
   getMaxGradeRoutes,
   calculateAscentTypeDistribution,
+  calculateGradeDistribution,
   calculatePeriodScore,
   filterAscentsByDate,
 } from './stats.utils';
@@ -199,5 +200,35 @@ describe('filterAscentsByDate', () => {
     ];
     const result = filterAscentsByDate(ascents, 'this_year');
     expect(result.length).toBe(1);
+  });
+});
+
+describe('calculateGradeDistribution', () => {
+  it('should return empty distribution for empty ascents', () => {
+    expect(calculateGradeDistribution([])).toEqual({
+      rows: [],
+      total: 0,
+      maxCount: 0,
+      hasMore: false,
+      os: 0,
+      flash: 0,
+      rp: 0,
+    });
+  });
+
+  it('should calculate grade distribution with style totals', () => {
+    const ascents = [
+      makeAscent({ route_grade: 29, ascent_type: 'rp' }),
+      makeAscent({ route_grade: 29, ascent_type: 'flash' }),
+      makeAscent({ route_grade: 28, ascent_type: 'os' }),
+    ];
+    const result = calculateGradeDistribution(ascents);
+    expect(result.total).toBe(3);
+    expect(result.rp).toBe(1);
+    expect(result.flash).toBe(1);
+    expect(result.os).toBe(1);
+    expect(result.rows.length).toBe(2);
+    expect(result.rows[0].total).toBe(2); // 8a
+    expect(result.rows[1].total).toBe(1); // 7c+
   });
 });
