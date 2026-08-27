@@ -181,9 +181,7 @@ import { IS_BROWSER } from '../../app/is-browser';
           [style.transform]="'translate(-50%, -' + _sheetScrollTop() + 'px)'"
         >
           <div class="flex gap-2">
-            @if (
-              authState.indoorFeature() && filterState.areaListShowIndoor()
-            ) {
+            @if (filterState.areaListShowIndoor()) {
               <button
                 tuiButton
                 size="m"
@@ -204,12 +202,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                 [tuiDropdown]="tourHint"
                 [tuiDropdownManual]="isExploreAreasTourStep"
               >
-                {{
-                  (authState.indoorFeature()
-                    ? 'outdoor.button'
-                    : 'viewAllAreas'
-                  ) | translate
-                }}
+                {{ 'outdoor.button' | translate }}
               </button>
             }
           </div>
@@ -222,17 +215,15 @@ import { IS_BROWSER } from '../../app/is-browser';
           [style.visibility]="hasSelection ? 'visible' : 'hidden'"
         >
           <div class="flex gap-2">
-            @if (authState.indoorFeature()) {
-              <button
-                tuiButton
-                size="m"
-                appearance="primary-grayscale"
-                iconStart="@tui.dumbbell"
-                routerLink="/indoor"
-              >
-                {{ 'indoor.button' | translate }}
-              </button>
-            }
+            <button
+              tuiButton
+              size="m"
+              appearance="primary-grayscale"
+              iconStart="@tui.dumbbell"
+              routerLink="/indoor"
+            >
+              {{ 'indoor.button' | translate }}
+            </button>
             <button
               tuiButton
               size="m"
@@ -240,10 +231,7 @@ import { IS_BROWSER } from '../../app/is-browser';
               iconStart="@tui.mountain"
               routerLink="/area"
             >
-              {{
-                (authState.indoorFeature() ? 'outdoor.button' : 'viewAllAreas')
-                  | translate
-              }}
+              {{ 'outdoor.button' | translate }}
             </button>
           </div>
         </div>

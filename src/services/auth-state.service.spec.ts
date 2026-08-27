@@ -107,12 +107,6 @@ describe('AuthStateService', () => {
     });
   });
 
-  describe('indoorFeature', () => {
-    it('mirrors isAdmin', () => {
-      expect(service.indoorFeature()).toBe(service.isAdmin());
-    });
-  });
-
   describe('hydrateEditingMode', () => {
     it('reads from localStorage and sets editing mode', () => {
       mockStorage.setItem(service.editingModeStorageKey, 'true');

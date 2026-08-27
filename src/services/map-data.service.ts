@@ -132,55 +132,52 @@ export class MapDataService {
       });
 
       let indoorItems: MapIndoorCenterItem[] = [];
-      if (this.indoorFeatureEnabled) {
-        const { data: sbIndoor, error: indoorError } =
-          await this.supabase.client
-            .from('indoor_centers')
-            .select(
-              `
+      const { data: sbIndoor, error: indoorError } = await this.supabase.client
+        .from('indoor_centers')
+        .select(
+          `
               id, name, slug, latitude, longitude, city, country, avatar_url,
               routes:indoor_routes(grade, climbing_kind, legacy),
               topos:indoor_topos(id, name)
             `,
-            )
-            .gte('latitude', bounds.south_west_latitude)
-            .lte('latitude', bounds.north_east_latitude)
-            .gte('longitude', bounds.south_west_longitude)
-            .lte('longitude', bounds.north_east_longitude);
+        )
+        .gte('latitude', bounds.south_west_latitude)
+        .lte('latitude', bounds.north_east_latitude)
+        .gte('longitude', bounds.south_west_longitude)
+        .lte('longitude', bounds.north_east_longitude);
 
-        if (!indoorError && sbIndoor) {
-          indoorItems = sbIndoor.map((c: MapIndoorCenterRaw) => {
-            const grades: Record<number, number> = {};
-            let activeRoutesCount = 0;
-            (c.routes || []).forEach((r: MapIndoorRouteRaw) => {
-              if (!r.legacy) {
-                activeRoutesCount++;
-                if (r.grade != null) {
-                  grades[r.grade] = (grades[r.grade] || 0) + 1;
-                }
+      if (!indoorError && sbIndoor) {
+        indoorItems = sbIndoor.map((c: MapIndoorCenterRaw) => {
+          const grades: Record<number, number> = {};
+          let activeRoutesCount = 0;
+          (c.routes || []).forEach((r: MapIndoorRouteRaw) => {
+            if (!r.legacy) {
+              activeRoutesCount++;
+              if (r.grade != null) {
+                grades[r.grade] = (grades[r.grade] || 0) + 1;
               }
-            });
-
-            return {
-              id: c.id,
-              name: c.name,
-              slug: c.slug,
-              latitude: Number(c.latitude) || 0,
-              longitude: Number(c.longitude) || 0,
-              city: c.city || '',
-              country: c.country || '',
-              avatar_url: c.avatar_url || '',
-              is_indoor: true,
-              grades,
-              routes_count: activeRoutesCount,
-              topos: (c.topos || []).map((t: MapIndoorTopoRaw) => ({
-                id: t.id,
-                name: t.name,
-                slug: t.id,
-              })),
-            } as MapIndoorCenterItem;
+            }
           });
-        }
+
+          return {
+            id: c.id,
+            name: c.name,
+            slug: c.slug,
+            latitude: Number(c.latitude) || 0,
+            longitude: Number(c.longitude) || 0,
+            city: c.city || '',
+            country: c.country || '',
+            avatar_url: c.avatar_url || '',
+            is_indoor: true,
+            grades,
+            routes_count: activeRoutesCount,
+            topos: (c.topos || []).map((t: MapIndoorTopoRaw) => ({
+              id: t.id,
+              name: t.name,
+              slug: t.id,
+            })),
+          } as MapIndoorCenterItem;
+        });
       }
 
       const combinedItems: MapItem[] = [...supabaseCragItems, ...indoorItems];
@@ -342,12 +339,6 @@ export class MapDataService {
       }
     },
   });
-
-  private indoorFeatureEnabled = false;
-
-  setIndoorFeature(enabled: boolean): void {
-    this.indoorFeatureEnabled = enabled;
-  }
 
   hydrateMapBounds(): void {
     try {

@@ -26,8 +26,6 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { map, merge, startWith } from 'rxjs';
 
-import { AuthStateService } from '../../services/auth-state.service';
-
 import { ORDERED_GRADE_VALUES } from '../../models';
 
 import { clamp } from '../../utils';
@@ -64,7 +62,7 @@ export interface FilterDialog {
   ],
   template: `
     <form tuiForm [formGroup]="form">
-      @if (showIndoorOutdoor && authState.indoorFeature()) {
+      @if (showIndoorOutdoor) {
         <section>
           <tui-filter
             formControlName="indoorOutdoor"
@@ -123,7 +121,7 @@ export interface FilterDialog {
         </section>
       }
 
-      @if (showIndoorAscents && authState.indoorFeature()) {
+      @if (showIndoorAscents) {
         <section class="flex flex-col gap-3">
           <label class="flex items-center gap-2">
             <input
@@ -156,7 +154,6 @@ export interface FilterDialog {
 })
 export class FilterDialogComponent {
   private readonly translate = inject(TranslateService);
-  protected readonly authState = inject(AuthStateService);
   protected readonly context =
     injectContext<TuiDialogContext<FilterDialog, FilterDialog>>();
 
@@ -402,15 +399,13 @@ export class FilterDialogComponent {
           : rawGradeRange[1],
       ],
       selectedShade,
-      indoor: this.authState.indoorFeature() ? indoor : false,
+      indoor,
       outdoor,
       showCategories: this.context.data?.showCategories,
       showShade: this.context.data?.showShade,
       showGradeRange: this.context.data?.showGradeRange,
       showIndoorOutdoor: this.context.data?.showIndoorOutdoor,
-      showIndoorAscents: this.authState.indoorFeature()
-        ? this.form.value.showIndoorAscents
-        : false,
+      showIndoorAscents: this.form.value.showIndoorAscents ?? false,
     };
     this.context.completeWith(payload);
   }
@@ -426,7 +421,7 @@ export class FilterDialogComponent {
       categories: [],
       gradeRange: [this.minIndex, ORDERED_GRADE_VALUES.length - 1],
       selectedShade: [],
-      indoor: this.authState.indoorFeature(),
+      indoor: true,
       outdoor: true,
       showCategories: this.context.data?.showCategories,
       showShade: this.context.data?.showShade,

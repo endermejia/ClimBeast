@@ -68,7 +68,6 @@ export class AuthStateService {
   // ---- Roles ----
   readonly isAdmin = computed(() => !!this.userProfile()?.is_admin);
   readonly merchandisingFeature = computed(() => this.isAdmin());
-  readonly indoorFeature = computed(() => this.isAdmin());
   readonly canEditAsAdmin = computed(
     () => this.editingMode() && this.isAdmin(),
   );
