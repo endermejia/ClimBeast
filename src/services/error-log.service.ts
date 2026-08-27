@@ -56,6 +56,16 @@ export class ErrorLogService {
     if (error instanceof Error) {
       message = error.message;
       stack = error.stack ?? null;
+      if (
+        'context' in error &&
+        error.context &&
+        typeof error.context === 'object'
+      ) {
+        const ctx = error.context as Record<string, unknown>;
+        if (typeof ctx['status'] === 'number') {
+          code = String(ctx['status']);
+        }
+      }
     } else if (error && typeof error === 'object') {
       const errorObj = error as Record<string, unknown>;
       const innerError = errorObj['error'] as
@@ -63,11 +73,17 @@ export class ErrorLogService {
       message = String(
         errorObj['message'] ||
           innerError?.['message'] ||
+          errorObj['details'] ||
+          innerError?.['details'] ||
           errorObj['messageKey'] ||
           JSON.stringify(error),
       );
       stack = errorObj['stack'] ? String(errorObj['stack']) : null;
-      code = errorObj['code'] ? String(errorObj['code']) : null;
+      code = errorObj['code']
+        ? String(errorObj['code'])
+        : errorObj['status']
+          ? String(errorObj['status'])
+          : null;
     } else if (error) {
       message = String(error);
     }
@@ -91,8 +107,7 @@ export class ErrorLogService {
     // Save to Supabase table `error_logs` silently (without console output)
     try {
       await this.supabase.whenReady();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (this.supabase.client as any).from('error_logs').insert({
+      await this.supabase.client.from('error_logs').insert({
         id: newLog.id,
         message: newLog.message,
         stack: newLog.stack,
@@ -112,8 +127,7 @@ export class ErrorLogService {
 
     try {
       await this.supabase.whenReady();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (this.supabase.client as any)
+      const { data, error } = await this.supabase.client
         .from('error_logs')
         .select('*')
         .order('created_at', { ascending: false })
@@ -125,7 +139,7 @@ export class ErrorLogService {
 
       const dbLogs = (data as AppErrorLog[]).map((log) => ({
         ...log,
-        severity: log.severity || 'error',
+        severity: (log.severity as ErrorSeverity) || 'error',
       }));
 
       const sorted = this.sortLogs(dbLogs);
@@ -164,8 +178,7 @@ export class ErrorLogService {
       }
       try {
         await this.supabase.whenReady();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (this.supabase.client as any)
+        await this.supabase.client
           .from('error_logs')
           .delete()
           .neq('id', '00000000-0000-0000-0000-000000000000');

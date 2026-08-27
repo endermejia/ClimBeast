@@ -1701,6 +1701,42 @@ export type Database = {
           },
         ];
       };
+      error_logs: {
+        Row: {
+          code: string | null;
+          context: string | null;
+          created_at: string;
+          id: string;
+          message: string;
+          severity: string;
+          stack: string | null;
+          url: string | null;
+          user_id: string | null;
+        };
+        Insert: {
+          code?: string | null;
+          context?: string | null;
+          created_at?: string;
+          id?: string;
+          message: string;
+          severity?: string;
+          stack?: string | null;
+          url?: string | null;
+          user_id?: string | null;
+        };
+        Update: {
+          code?: string | null;
+          context?: string | null;
+          created_at?: string;
+          id?: string;
+          message?: string;
+          severity?: string;
+          stack?: string | null;
+          url?: string | null;
+          user_id?: string | null;
+        };
+        Relationships: [];
+      };
       follow_requests: {
         Row: {
           created_at: string;
@@ -3760,12 +3796,16 @@ export type Database = {
           isSetofReturn: false;
         };
       };
-      is_area_equipper: { Args: { p_area_id: number }; Returns: boolean };
+      is_area_equipper:
+        | { Args: { p_area_id: number }; Returns: boolean }
+        | { Args: { p_area_id: number; p_uid: string }; Returns: boolean };
       is_chat_participant: {
         Args: { room_id_param: string };
         Returns: boolean;
       };
-      is_crag_equipper: { Args: { p_crag_id: number }; Returns: boolean };
+      is_crag_equipper:
+        | { Args: { p_crag_id: number }; Returns: boolean }
+        | { Args: { p_crag_id: number; p_uid: string }; Returns: boolean };
       is_indoor_center_admin: {
         Args: { p_center_id: string };
         Returns: boolean;

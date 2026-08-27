@@ -787,32 +787,32 @@ export class TopoFormComponent {
         const centerId = this._dialogCtx?.data?.centerId;
         if (!centerId) return;
 
-        const { name, photo, selectedRoutes, legacy } = this.model();
-        const indoorTopoData = this._dialogCtx?.data?.indoorTopoData;
-
-        let finalImageUrl = photo || '';
-        const photoFile = this.model().photoControl;
-        if (photoFile) {
-          const uploadedPath = await this.indoor.uploadAsset(
-            centerId,
-            photoFile,
-          );
-          if (uploadedPath) {
-            finalImageUrl = uploadedPath;
-          }
-        }
-
-        const payload = {
-          center_id: centerId,
-          name,
-          image_url: finalImageUrl,
-          climbing_kind: null,
-          legacy: legacy || false,
-          start_date: null,
-          end_date: null,
-        };
-
         try {
+          const { name, photo, selectedRoutes, legacy } = this.model();
+          const indoorTopoData = this._dialogCtx?.data?.indoorTopoData;
+
+          let finalImageUrl = photo || '';
+          const photoFile = this.model().photoControl;
+          if (photoFile) {
+            const uploadedPath = await this.indoor.uploadAsset(
+              centerId,
+              photoFile,
+            );
+            if (uploadedPath) {
+              finalImageUrl = uploadedPath;
+            }
+          }
+
+          const payload = {
+            center_id: centerId,
+            name,
+            image_url: finalImageUrl,
+            climbing_kind: null,
+            legacy: legacy || false,
+            start_date: null,
+            end_date: null,
+          };
+
           let topoId: string | undefined;
           if (indoorTopoData) {
             await this.indoor.updateTopo(indoorTopoData.id, payload);
