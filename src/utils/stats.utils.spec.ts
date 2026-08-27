@@ -6,6 +6,7 @@ import type { UserAscentStatRecord } from '../models/route-ascent.model';
 import {
   getScore,
   getMaxGrade,
+  getMaxGradeRoutes,
   calculateAscentTypeDistribution,
   calculatePeriodScore,
   filterAscentsByDate,
@@ -87,6 +88,44 @@ describe('getMaxGrade', () => {
     ];
     const result = getMaxGrade(ascents, ['os']);
     expect(result).toBe('8a');
+  });
+});
+
+describe('getMaxGradeRoutes', () => {
+  it('should return all routes matching max grade for matching types', () => {
+    const ascents = [
+      makeAscent({
+        id: 1,
+        route_name: 'Route 1',
+        route_grade: 29,
+        ascent_type: 'rp',
+      }),
+      makeAscent({
+        id: 2,
+        route_name: 'Route 2',
+        route_grade: 29,
+        ascent_type: 'rp',
+      }),
+      makeAscent({
+        id: 3,
+        route_name: 'Route 3',
+        route_grade: 27,
+        ascent_type: 'rp',
+      }),
+      makeAscent({
+        id: 4,
+        route_name: 'Route 4',
+        route_grade: 30,
+        ascent_type: 'os',
+      }),
+    ];
+    const result = getMaxGradeRoutes(ascents, ['rp']);
+    expect(result.length).toBe(2);
+    expect(result.map((r) => r.name)).toEqual(['Route 1', 'Route 2']);
+  });
+
+  it('should return empty array for empty ascents', () => {
+    expect(getMaxGradeRoutes([], ['rp'])).toEqual([]);
   });
 });
 

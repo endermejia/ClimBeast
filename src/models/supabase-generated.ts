@@ -1922,6 +1922,35 @@ export type Database = {
           },
         ];
       };
+      indoor_center_routesetters: {
+        Row: {
+          center_id: string | null;
+          created_at: string;
+          id: string;
+          user_id: string | null;
+        };
+        Insert: {
+          center_id?: string | null;
+          created_at?: string;
+          id?: string;
+          user_id?: string | null;
+        };
+        Update: {
+          center_id?: string | null;
+          created_at?: string;
+          id?: string;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'indoor_center_routesetters_center_id_fkey';
+            columns: ['center_id'];
+            isOneToOne: false;
+            referencedRelation: 'indoor_centers';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       indoor_centers: {
         Row: {
           avatar_url: string | null;
@@ -3738,6 +3767,10 @@ export type Database = {
       };
       is_crag_equipper: { Args: { p_crag_id: number }; Returns: boolean };
       is_indoor_center_admin: {
+        Args: { p_center_id: string };
+        Returns: boolean;
+      };
+      is_indoor_center_routesetter: {
         Args: { p_center_id: string };
         Returns: boolean;
       };

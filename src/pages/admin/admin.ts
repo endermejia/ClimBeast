@@ -432,7 +432,8 @@ export class AdminComponent {
       ] = await Promise.all([
         this.supabase.client
           .from('orders')
-          .select('*', { count: 'exact', head: true }),
+          .select('*', { count: 'exact', head: true })
+          .not('status', 'in', '("delivered","cancelled","refunded")'),
         this.supabase.client
           .from('area_admin_requests')
           .select('*', { count: 'exact', head: true }),

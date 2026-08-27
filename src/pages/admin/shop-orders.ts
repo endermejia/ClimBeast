@@ -7,6 +7,7 @@ import {
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   Injector,
   resource,
@@ -104,7 +105,7 @@ import {
           >
             <tui-icon icon="@tui.arrow-left" />
             <tui-badged-content [style.--tui-radius.%]="50">
-              @if (ordersResource.value()?.length; as ordersCount) {
+              @if (pendingOrdersCount(); as ordersCount) {
                 <ng-container tuiSlot="top">
                   <tui-badge-notification tuiAppearance="accent" size="s">
                     {{ ordersCount }}
@@ -276,6 +277,13 @@ export class AdminShopOrdersComponent {
 
   readonly ordersResource = resource({
     loader: () => this.merchService.getAllOrders(),
+  });
+
+  protected readonly pendingOrdersCount = computed(() => {
+    const orders = this.ordersResource.value() ?? [];
+    return orders.filter(
+      (o) => !['delivered', 'cancelled', 'refunded'].includes(o.status ?? ''),
+    ).length;
   });
 
   async onStatusChange(orderId: string, status: OrderStatus): Promise<void> {

@@ -46,6 +46,8 @@ export class MockSupabaseService {
   readonly adminAreas = computed(() => [] as number[]);
   readonly adminIndoorCentersResource = createMockResource<string[]>([]);
   readonly adminIndoorCenters = computed(() => [] as string[]);
+  readonly routesetterIndoorCentersResource = createMockResource<string[]>([]);
+  readonly routesetterIndoorCenters = computed(() => [] as string[]);
 
   readonly client = {
     from: (_table: string) => ({

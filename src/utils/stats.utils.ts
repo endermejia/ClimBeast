@@ -65,6 +65,50 @@ export function getMaxGrade(
 }
 
 /**
+ * Returns all ascent routes achieved at the maximum grade for a specific set of ascent types.
+ */
+export function getMaxGradeRoutes(
+  ascents: UserAscentStatRecord[],
+  types: string[],
+): RouteScore[] {
+  let maxGradeId = -1;
+
+  ascents.forEach((a) => {
+    const type = (a.ascent_type || AscentTypes.RP).toLowerCase();
+    const typeMatches = types.some(
+      (t) =>
+        type === t.toLowerCase() ||
+        (t === AscentTypes.OS && type === 'onsight') ||
+        (t === AscentTypes.F && type === 'flash'),
+    );
+
+    if (typeMatches) {
+      const gradeId = a.ascent_grade || a.route_grade;
+      if (gradeId && gradeId > maxGradeId) {
+        maxGradeId = gradeId;
+      }
+    }
+  });
+
+  if (maxGradeId === -1) return [];
+
+  return ascents
+    .filter((a) => {
+      const type = (a.ascent_type || AscentTypes.RP).toLowerCase();
+      const typeMatches = types.some(
+        (t) =>
+          type === t.toLowerCase() ||
+          (t === AscentTypes.OS && type === 'onsight') ||
+          (t === AscentTypes.F && type === 'flash'),
+      );
+      const gradeId = a.ascent_grade || a.route_grade;
+      return typeMatches && gradeId === maxGradeId;
+    })
+    .map((a) => mapAscentToRouteScore(a))
+    .filter((r): r is RouteScore => r !== null);
+}
+
+/**
  * Maps a single ascent record to a RouteScore object.
  */
 export function mapAscentToRouteScore(

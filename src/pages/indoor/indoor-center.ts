@@ -381,6 +381,98 @@ import { IS_BROWSER } from '../../app/is-browser';
             </div>
           }
 
+          <!-- Routesetters Section -->
+          @let routesettersList = centerRoutesetters();
+          @if (editingMode && isAdmin()) {
+            <div class="flex flex-col gap-3 mt-6">
+              <span
+                class="text-xs uppercase opacity-60 font-semibold tracking-wider"
+              >
+                {{ 'routesetters' | translate }}
+              </span>
+              <div class="flex flex-wrap gap-4 items-center">
+                @for (rs of routesettersList; track rs.user_id) {
+                  <div
+                    class="flex items-center gap-2 bg-(--tui-background-neutral-1) py-1 pr-3 rounded-full border border-(--tui-border-normal) group transition-all hover:bg-(--tui-background-neutral-1-hover) no-underline text-inherit"
+                    [class.pl-1]="rs.user.avatar"
+                    [class.pl-3]="!rs.user.avatar"
+                  >
+                    <a
+                      [routerLink]="['/profile', rs.user_id]"
+                      [tuiHint]="rsUserHint"
+                      (contextmenu.zoneless)="$event.preventDefault()"
+                      class="flex items-center gap-2 no-underline text-inherit cursor-pointer select-none"
+                    >
+                      @if (rs.user.avatar) {
+                        <span tuiAvatar size="s">
+                          <img
+                            [src]="rs.user.avatar | avatarUrl"
+                            [alt]="rs.user.name"
+                          />
+                        </span>
+                      }
+                      <span class="text-sm font-medium">{{
+                        rs.user.name
+                      }}</span>
+                    </a>
+                    <ng-template #rsUserHint>
+                      <app-user-info-hint
+                        [userId]="rs.user_id"
+                        [fallbackName]="rs.user.name"
+                        [fallbackAvatar]="rs.user.avatar"
+                      />
+                    </ng-template>
+                    @if (isAdmin() && editingMode) {
+                      <button
+                        tuiIconButton
+                        appearance="flat"
+                        size="xs"
+                        type="button"
+                        iconStart="@tui.x"
+                        [attr.aria-label]="'delete' | translate"
+                        class="opacity-0 group-hover:opacity-50 hover:opacity-100! transition-opacity -mr-1"
+                        (click.zoneless)="removeRoutesetter(rs.user_id || '')"
+                      ></button>
+                    }
+                  </div>
+                }
+
+                @if (isAdmin() && editingMode) {
+                  <div class="w-64">
+                    <tui-textfield
+                      appearance="floating"
+                      size="s"
+                      tuiChevron
+                      [tuiTextfieldCleaner]="true"
+                      [stringify]="stringifyUser"
+                      class="rounded-full!"
+                    >
+                      <label tuiLabel for="routesetter-search-input">{{
+                        'addUser' | translate
+                      }}</label>
+                      <input
+                        id="routesetter-search-input"
+                        tuiComboBox
+                        [placeholder]="'searchPlaceholder' | translate"
+                        (ngModelChange)="onRoutesetterSelected($event)"
+                        [ngModel]="null"
+                        (input.zoneless)="
+                          routesetterSearchQuery.set(
+                            routesetterSearchInput.value
+                          )
+                        "
+                        #routesetterSearchInput
+                      />
+                      <tui-data-list-wrapper
+                        *tuiDropdown
+                        [items]="foundRoutesetterUsers()"
+                      />
+                    </tui-textfield>
+                  </div>
+                }
+              </div>
+            </div>
+          }
           <div class="overflow-x-auto no-scrollbar">
             <tui-tabs [(activeItemIndex)]="activeTabIndex">
               <button tuiTab>{{ 'indoor.routes' | translate }}</button>
@@ -776,6 +868,129 @@ export class IndoorCenterComponent {
   protected onAdminSelected(user: UserProfileBasicDto | null): void {
     if (user) {
       this.addAdmin(user);
+    }
+  }
+
+  // ---- Routesetters ----
+  protected readonly routesetterSearchQuery = signal('');
+
+  protected readonly centerRoutesettersResource = resource({
+    params: () => this.center()?.id,
+    loader: async ({ params: centerId }) => {
+      if (!centerId) return [];
+      await this.supabase.whenReady();
+
+      const { data: mappings, error: mappingError } = await this.supabase.client
+        .from('indoor_center_routesetters')
+        .select('user_id')
+        .eq('center_id', centerId);
+
+      if (mappingError || !mappings?.length) {
+        if (mappingError) {
+          console.error(
+            '[IndoorCenterComponent] Error fetching center routesetter mappings:',
+            mappingError,
+          );
+        }
+        return [];
+      }
+
+      const userIds = mappings
+        .map((m) => m.user_id)
+        .filter((id): id is string => !!id);
+      const { data: profiles, error: profilesError } =
+        await this.supabase.client
+          .from('user_profiles')
+          .select('id, name, avatar')
+          .in('id', userIds);
+
+      if (profilesError) {
+        console.error(
+          '[IndoorCenterComponent] Error fetching routesetter profiles:',
+          profilesError,
+        );
+        return [];
+      }
+
+      return mappings.map((m) => ({
+        user_id: m.user_id,
+        user: profiles.find((p) => p.id === m.user_id) || {
+          id: m.user_id || '',
+          name: 'Unknown',
+          avatar: null,
+        },
+      }));
+    },
+  });
+
+  protected readonly centerRoutesetters = computed(
+    () => this.centerRoutesettersResource.value() ?? [],
+  );
+
+  protected readonly foundRoutesetterUsersResource = resource({
+    params: () => this.routesetterSearchQuery().trim(),
+    loader: async ({ params: query }) => {
+      if (query.length < 2) return [];
+      return await this.userProfiles.searchUsers(query);
+    },
+  });
+
+  protected readonly foundRoutesetterUsers = computed(
+    () => this.foundRoutesetterUsersResource.value() ?? [],
+  );
+
+  async addRoutesetter(user: UserProfileBasicDto): Promise<void> {
+    const centerId = this.center()?.id;
+    if (!centerId) return;
+
+    const { error } = await this.supabase.client
+      .from('indoor_center_routesetters')
+      .insert({ center_id: centerId, user_id: user.id });
+
+    if (error) {
+      if (error.code === '23505') {
+        this.toast.info('adminRequests.alreadyRequested');
+      } else {
+        console.error(
+          '[IndoorCenterComponent] Error adding routesetter:',
+          error,
+        );
+        this.toast.error('errors.unexpected');
+      }
+      return;
+    }
+
+    this.toast.success('messages.toasts.routesetterAdded');
+    this.centerRoutesettersResource.reload();
+    this.routesetterSearchQuery.set('');
+  }
+
+  async removeRoutesetter(userId: string): Promise<void> {
+    const centerId = this.center()?.id;
+    if (!centerId) return;
+
+    const { error } = await this.supabase.client
+      .from('indoor_center_routesetters')
+      .delete()
+      .eq('center_id', centerId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error(
+        '[IndoorCenterComponent] Error removing routesetter:',
+        error,
+      );
+      this.toast.error('errors.unexpected');
+      return;
+    }
+
+    this.toast.success('messages.toasts.routesetterRemoved');
+    this.centerRoutesettersResource.reload();
+  }
+
+  protected onRoutesetterSelected(user: UserProfileBasicDto | null): void {
+    if (user) {
+      this.addRoutesetter(user);
     }
   }
 

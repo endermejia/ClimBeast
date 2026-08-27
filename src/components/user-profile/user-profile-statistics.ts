@@ -27,31 +27,29 @@ import { SupabaseService } from '../../services/supabase.service';
 import { UserAscentStatRecord } from '../../models';
 import {
   GradeDistribution,
-  AscentTypeDistribution,
   TrendData,
   TrendDetail,
 } from '../../models/user-stats.model';
 
 import {
-  calculateAscentTypeDistribution,
   calculateGradeDistribution,
   calculatePeriodScore,
   calculateTrendSource,
   filterAscentsByDate,
   getMaxGrade,
+  getMaxGradeRoutes,
 } from '../../utils';
 
+import { ChartAscentsByStyleComponent } from '../charts/chart-ascents-by-style';
 import { UserProfileStatsPyramidComponent } from './statistics/grade-pyramid';
-
 import { UserProfileStatsScoreComponent } from './statistics/score-card';
-import { UserProfileStatsStylesComponent } from './statistics/style-distribution';
-
 import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
 
 @Component({
   selector: 'app-user-profile-statistics',
   standalone: true,
   imports: [
+    ChartAscentsByStyleComponent,
     FormsModule,
     ReactiveFormsModule,
     TranslatePipe,
@@ -63,7 +61,6 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
     TuiSelect,
     UserProfileStatsPyramidComponent,
     UserProfileStatsScoreComponent,
-    UserProfileStatsStylesComponent,
     UserProfileStatsTrendsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -101,10 +98,14 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
         <app-user-profile-stats-score
           class="block lg:hidden mb-6"
           [totalScore]="totalScore()"
+          [topRoutes]="topRoutes()"
           [totalAscents]="gradeDistribution().total"
           [maxRedpoint]="maxRedpoint()"
+          [maxRedpointRoutes]="maxRedpointRoutes()"
           [maxOnsight]="maxOnsight()"
+          [maxOnsightRoutes]="maxOnsightRoutes()"
           [maxFlash]="maxFlash()"
+          [maxFlashRoutes]="maxFlashRoutes()"
         />
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -132,24 +133,31 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
             <!-- Score Card & Key Stats -->
             <app-user-profile-stats-score
               [totalScore]="totalScore()"
+              [topRoutes]="topRoutes()"
               [totalAscents]="gradeDistribution().total"
               [maxRedpoint]="maxRedpoint()"
+              [maxRedpointRoutes]="maxRedpointRoutes()"
               [maxOnsight]="maxOnsight()"
+              [maxOnsightRoutes]="maxOnsightRoutes()"
               [maxFlash]="maxFlash()"
+              [maxFlashRoutes]="maxFlashRoutes()"
             />
 
             <!-- Style Distribution -->
-            <app-user-profile-stats-styles
-              [distribution]="ascentTypeDistribution()"
-            />
+            <div
+              class="bg-(--tui-background-base) shadow-md p-6 rounded-2xl border border-(--tui-border-normal)"
+            >
+              <app-chart-ascents-by-style [ascents]="stats()" />
+            </div>
           </div>
         </div>
 
         <!-- Mobile Style Distribution (Bottom on Mobile, Hidden on Desktop) -->
-        <app-user-profile-stats-styles
-          class="block lg:hidden mt-6"
-          [distribution]="ascentTypeDistribution()"
-        />
+        <div
+          class="block lg:hidden mt-6 bg-(--tui-background-base) shadow-md p-6 rounded-2xl border border-(--tui-border-normal)"
+        >
+          <app-chart-ascents-by-style [ascents]="stats()" />
+        </div>
       </tui-loader>
     </div>
   `,
@@ -227,13 +235,17 @@ export class UserProfileStatisticsComponent {
 
   // 2. Max Grades (RP, OS, Flash)
   maxRedpoint = computed(() => getMaxGrade(this.stats(), ['rp']));
-  maxOnsight = computed(() => getMaxGrade(this.stats(), ['os', 'onsight']));
-  maxFlash = computed(() => getMaxGrade(this.stats(), ['f', 'flash']));
+  maxRedpointRoutes = computed(() => getMaxGradeRoutes(this.stats(), ['rp']));
 
-  // 3. Ascent Type Distribution
-  ascentTypeDistribution = computed<AscentTypeDistribution>(() => {
-    return calculateAscentTypeDistribution(this.stats());
-  });
+  maxOnsight = computed(() => getMaxGrade(this.stats(), ['os', 'onsight']));
+  maxOnsightRoutes = computed(() =>
+    getMaxGradeRoutes(this.stats(), ['os', 'onsight']),
+  );
+
+  maxFlash = computed(() => getMaxGrade(this.stats(), ['f', 'flash']));
+  maxFlashRoutes = computed(() =>
+    getMaxGradeRoutes(this.stats(), ['f', 'flash']),
+  );
 
   constructor() {
     // Date filter is now a signal, no need for subscription

@@ -17,6 +17,12 @@ export type IndoorCenterAdminDto = TableRow<'indoor_center_admins'>;
 export type IndoorCenterAdminInsertDto = TableInsert<'indoor_center_admins'>;
 export type IndoorCenterAdminUpdateDto = TableUpdate<'indoor_center_admins'>;
 
+export type IndoorCenterRoutesetterDto = TableRow<'indoor_center_routesetters'>;
+export type IndoorCenterRoutesetterInsertDto =
+  TableInsert<'indoor_center_routesetters'>;
+export type IndoorCenterRoutesetterUpdateDto =
+  TableUpdate<'indoor_center_routesetters'>;
+
 export type IndoorRouteDto = TableRow<'indoor_routes'>;
 export type IndoorRouteInsertDto = TableInsert<'indoor_routes'>;
 export type IndoorRouteUpdateDto = TableUpdate<'indoor_routes'>;

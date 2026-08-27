@@ -79,6 +79,12 @@ export class AuthStateService {
   readonly adminIndoorCenters = computed(() =>
     this.supabase.adminIndoorCenters(),
   );
+  readonly routesetterIndoorCenters = computed(() =>
+    this.supabase.routesetterIndoorCenters(),
+  );
+  readonly isIndoorRoutesetter = computed(
+    () => this.routesetterIndoorCenters().length > 0,
+  );
 
   // ---- Pending Admin Requests ----
   readonly pendingAdminRequestsResource = resource({
@@ -137,7 +143,11 @@ export class AuthStateService {
   ): boolean => {
     if (this.isAdmin()) return true;
     if (!centerId) return false;
-    return this.adminIndoorCenters().includes(String(centerId));
+    const id = String(centerId);
+    return (
+      this.adminIndoorCenters().includes(id) ||
+      this.routesetterIndoorCenters().includes(id)
+    );
   };
 
   readonly checkAreaEditPermission = (

@@ -4,7 +4,6 @@ import {
   Component,
   computed,
   input,
-  InputSignal,
   Signal,
 } from '@angular/core';
 
@@ -12,7 +11,7 @@ import { TuiHint } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { RouteAscentWithExtras } from '../../models';
+import { RouteAscentWithExtras, UserAscentStatRecord } from '../../models';
 
 export interface StyleSegment {
   type: 'os' | 'f' | 'rp';
@@ -21,6 +20,11 @@ export interface StyleSegment {
   percentage: number;
   color: string;
 }
+
+export type AscentStyleRecord =
+  | RouteAscentWithExtras
+  | UserAscentStatRecord
+  | { type?: string | null; ascent_type?: string | null };
 
 @Component({
   selector: 'app-chart-ascents-by-style',
@@ -102,12 +106,19 @@ export interface StyleSegment {
   `,
 })
 export class ChartAscentsByStyleComponent {
-  ascents: InputSignal<RouteAscentWithExtras[]> =
-    input.required<RouteAscentWithExtras[]>();
+  ascents = input.required<readonly AscentStyleRecord[] | null | undefined>();
 
   protected readonly total: Signal<number> = computed(() => {
     const list = this.ascents() || [];
-    return list.filter((a) => a.type && a.type !== 'attempt').length;
+    return list.filter((a) => {
+      const type =
+        'type' in a && a.type
+          ? a.type
+          : 'ascent_type' in a
+            ? a.ascent_type
+            : null;
+      return type && type !== 'attempt';
+    }).length;
   });
 
   protected readonly segments: Signal<StyleSegment[]> = computed(() => {
@@ -117,9 +128,15 @@ export class ChartAscentsByStyleComponent {
     let rp = 0;
 
     for (const ascent of list) {
-      if (ascent.type === 'os') os++;
-      else if (ascent.type === 'f') f++;
-      else if (ascent.type === 'rp') rp++;
+      const type =
+        'type' in ascent && ascent.type
+          ? ascent.type
+          : 'ascent_type' in ascent
+            ? ascent.ascent_type
+            : null;
+      if (type === 'os' || type === 'onsight') os++;
+      else if (type === 'f' || type === 'flash') f++;
+      else if (type === 'rp' || type === 'redpoint') rp++;
     }
 
     const validTotal = os + f + rp;

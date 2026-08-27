@@ -138,6 +138,31 @@ export class SupabaseAuthService {
     () => this.adminIndoorCentersResource.value() ?? [],
   );
 
+  readonly routesetterIndoorCentersResource = resource({
+    params: () => ({
+      userId: this.authUserId(),
+    }),
+    loader: async ({ params: { userId } }) => {
+      if (!userId) return [];
+      const { data, error } = await this.client
+        .from('indoor_center_routesetters')
+        .select('center_id')
+        .eq('user_id', userId);
+      if (error) {
+        console.error(
+          '[SupabaseAuthService] routesetterIndoorCentersResource error',
+          error,
+        );
+        return [];
+      }
+      return data.map((d) => d.center_id).filter((id): id is string => !!id);
+    },
+  });
+
+  readonly routesetterIndoorCenters = computed(
+    () => this.routesetterIndoorCentersResource.value() ?? [],
+  );
+
   async getUserProfile(userId: string): Promise<UserProfileDto | null> {
     const { data, error } = await this.client
       .from('user_profiles')

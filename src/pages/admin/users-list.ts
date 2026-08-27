@@ -330,94 +330,90 @@ interface UserWithRole {
                     </td>
 
                     <td *tuiCell="'areas'" tuiTd class="areas-column">
-                      @if (!user.is_admin) {
-                        <tui-textfield
-                          multi
-                          tuiChevron
-                          [stringify]="stringifyArea"
-                          [disabledItemHandler]="strings"
-                          [identityMatcher]="areaIdentityMatcher"
-                          [tuiTextfieldCleaner]="false"
-                        >
-                          <input
-                            tuiInputChip
-                            id="areas-select-{{ user.id }}"
-                            [formControl]="user.areasControl"
-                            [placeholder]="'select' | translate"
-                            autocomplete="off"
-                          />
-                          <tui-input-chip *tuiItem />
-                          <tui-data-list *tuiDropdown>
-                            <tui-opt-group
-                              [label]="'areas' | translate"
-                              tuiMultiSelectGroup
-                            >
-                              @for (
-                                area of availableAreas() | tuiFilterByInput;
-                                track area.id
-                              ) {
-                                <button
-                                  type="button"
-                                  new
-                                  tuiOption
-                                  [value]="area"
-                                >
-                                  <div tuiCell size="s">
-                                    <div tuiTitle>
-                                      {{ area.name }}
-                                    </div>
+                      <tui-textfield
+                        multi
+                        tuiChevron
+                        [stringify]="stringifyArea"
+                        [disabledItemHandler]="strings"
+                        [identityMatcher]="areaIdentityMatcher"
+                        [tuiTextfieldCleaner]="false"
+                      >
+                        <input
+                          tuiInputChip
+                          id="areas-select-{{ user.id }}"
+                          [formControl]="user.areasControl"
+                          [placeholder]="'select' | translate"
+                          autocomplete="off"
+                        />
+                        <tui-input-chip *tuiItem />
+                        <tui-data-list *tuiDropdown>
+                          <tui-opt-group
+                            [label]="'areas' | translate"
+                            tuiMultiSelectGroup
+                          >
+                            @for (
+                              area of availableAreas() | tuiFilterByInput;
+                              track area.id
+                            ) {
+                              <button
+                                type="button"
+                                new
+                                tuiOption
+                                [value]="area"
+                              >
+                                <div tuiCell size="s">
+                                  <div tuiTitle>
+                                    {{ area.name }}
                                   </div>
-                                </button>
-                              }
-                            </tui-opt-group>
-                          </tui-data-list>
-                        </tui-textfield>
-                      }
+                                </div>
+                              </button>
+                            }
+                          </tui-opt-group>
+                        </tui-data-list>
+                      </tui-textfield>
                     </td>
                     <td *tuiCell="'centers'" tuiTd class="centers-column">
-                      @if (!user.is_admin) {
-                        <tui-textfield
-                          multi
-                          tuiChevron
-                          [stringify]="stringifyCenter"
-                          [disabledItemHandler]="strings"
-                          [identityMatcher]="centerIdentityMatcher"
-                          [tuiTextfieldCleaner]="false"
-                        >
-                          <input
-                            tuiInputChip
-                            id="centers-select-{{ user.id }}"
-                            [formControl]="user.centersControl"
-                            [placeholder]="'select' | translate"
-                            autocomplete="off"
-                          />
-                          <tui-input-chip *tuiItem />
-                          <tui-data-list *tuiDropdown>
-                            <tui-opt-group
-                              [label]="'indoor.title' | translate"
-                              tuiMultiSelectGroup
-                            >
-                              @for (
-                                center of availableCenters() | tuiFilterByInput;
-                                track center.id
-                              ) {
-                                <button
-                                  type="button"
-                                  new
-                                  tuiOption
-                                  [value]="center"
-                                >
-                                  <div tuiCell size="s">
-                                    <div tuiTitle>
-                                      {{ center.name }}
-                                    </div>
+                      <tui-textfield
+                        multi
+                        tuiChevron
+                        [stringify]="stringifyCenter"
+                        [disabledItemHandler]="strings"
+                        [identityMatcher]="centerIdentityMatcher"
+                        [tuiTextfieldCleaner]="false"
+                      >
+                        <input
+                          tuiInputChip
+                          id="centers-select-{{ user.id }}"
+                          [formControl]="user.centersControl"
+                          [placeholder]="'select' | translate"
+                          autocomplete="off"
+                        />
+                        <tui-input-chip *tuiItem />
+                        <tui-data-list *tuiDropdown>
+                          <tui-opt-group
+                            [label]="'indoor.title' | translate"
+                            tuiMultiSelectGroup
+                          >
+                            @for (
+                              center of availableCenters() | tuiFilterByInput;
+                              track center.id
+                            ) {
+                              <button
+                                type="button"
+                                new
+                                tuiOption
+                                [value]="center"
+                              >
+                                <div tuiCell size="s">
+                                  <div tuiTitle>
+                                    {{ center.name }}
                                   </div>
-                                </button>
-                              }
-                            </tui-opt-group>
-                          </tui-data-list>
-                        </tui-textfield>
-                      }
+                                </div>
+                              </button>
+                            }
+                          </tui-opt-group>
+                        </tui-data-list>
+                      </tui-textfield>
                     </td>
                   </tr>
                 }

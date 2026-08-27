@@ -47,6 +47,9 @@ export class SupabaseService {
   readonly adminIndoorCentersResource =
     this.authService.adminIndoorCentersResource;
   readonly adminIndoorCenters = this.authService.adminIndoorCenters;
+  readonly routesetterIndoorCentersResource =
+    this.authService.routesetterIndoorCentersResource;
+  readonly routesetterIndoorCenters = this.authService.routesetterIndoorCenters;
 
   constructor() {
     this._ready = new Promise<void>(
