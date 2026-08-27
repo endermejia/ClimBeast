@@ -550,7 +550,11 @@ import { IS_BROWSER } from '../../app/is-browser';
               }
               @case (2) {
                 @let ascents = mappedAscents();
-                @if (ascents.length > 0) {
+                @if (centerAscentsResource.isLoading()) {
+                  <div class="flex items-center justify-center p-8">
+                    <tui-loader size="m" />
+                  </div>
+                } @else {
                   <div
                     class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
                   >
@@ -560,14 +564,12 @@ import { IS_BROWSER } from '../../app/is-browser';
                         [showRoute]="true"
                         [showUser]="true"
                       />
+                    } @empty {
+                      <div class="col-span-full">
+                        <app-empty-state />
+                      </div>
                     }
                   </div>
-                } @else if (centerAscentsResource.isLoading()) {
-                  <div class="flex items-center justify-center p-8">
-                    <tui-loader size="m"></tui-loader>
-                  </div>
-                } @else {
-                  <app-empty-state />
                 }
               }
               @case (3) {

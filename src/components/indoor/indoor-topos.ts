@@ -80,21 +80,21 @@ import { EmptyStateComponent } from '../ui/empty-state';
       </div>
 
       @if (toposResource.value(); as topos) {
-        @if (topos.length > 0) {
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            @for (topo of topos; track topo.id) {
-              <app-topo-card
-                [topo]="topo"
-                [isIndoor]="true"
-                [pendingRoutes]="topo.total_routes - topo.own_ascents_count"
-                [totalRoutes]="topo.total_routes"
-                (selected)="onCardClick(topo)"
-              />
-            }
-          </div>
-        } @else {
-          <app-empty-state />
-        }
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          @for (topo of topos; track topo.id) {
+            <app-topo-card
+              [topo]="topo"
+              [isIndoor]="true"
+              [pendingRoutes]="topo.total_routes - topo.own_ascents_count"
+              [totalRoutes]="topo.total_routes"
+              (selected)="onCardClick(topo)"
+            />
+          } @empty {
+            <div class="col-span-full">
+              <app-empty-state icon="@tui.image" />
+            </div>
+          }
+        </div>
       } @else if (toposResource.isLoading()) {
         <tui-loader />
       }

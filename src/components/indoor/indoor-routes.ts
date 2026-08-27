@@ -436,7 +436,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
       } @else if (routesResource.isLoading()) {
         <tui-loader />
       } @else {
-        <app-empty-state />
+        <app-empty-state icon="@tui.list" />
       }
     </div>
   `,
