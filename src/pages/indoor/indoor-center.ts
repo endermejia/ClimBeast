@@ -42,9 +42,9 @@ import { firstValueFrom } from 'rxjs';
 
 import { AuthStateService } from '../../services/auth-state.service';
 import { BreadcrumbsService } from '../../services/breadcrumbs.service';
+import { CacheService } from '../../services/cache.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
-
 import { IndoorService } from '../../services/indoor.service';
 import { MapDataService } from '../../services/map-data.service';
 import { SupabaseService } from '../../services/supabase.service';
@@ -52,10 +52,8 @@ import { ToastService } from '../../services/toast.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
 
 import { AscentCardComponent } from '../../components/ascent/ascent-card';
-
 import { IndoorToposComponent } from '../../components/indoor/indoor-topos';
 import { IndoorVouchersComponent } from '../../components/indoor/indoor-vouchers';
-
 import { IndoorRoutesTableComponent } from '../../components/route/indoor-routes-table';
 import {
   CustomCarouselComponent,
@@ -71,6 +69,7 @@ import {
   UserProfileBasicDto,
 } from '../../models';
 
+import { CACHE_KEYS } from '../../constants';
 import { AnyToSchedulePipe, AvatarUrlPipe } from '../../pipes';
 import { handleErrorToast, mapLocationUrl } from '../../utils';
 
@@ -118,7 +117,6 @@ import { IS_BROWSER } from '../../app/is-browser';
     <tui-scrollbar class="flex grow">
       <section class="w-full max-w-5xl mx-auto p-4 flex flex-col min-h-full">
         @if (center(); as c) {
-          @let editingMode = authState.editingMode();
           <div class="mb-6">
             <app-section-header [title]="c.name" [showLike]="false">
               <span
@@ -292,7 +290,7 @@ import { IS_BROWSER } from '../../app/is-browser';
 
           <!-- Admins Section -->
           @let admins = centerAdmins();
-          @if (editingMode && isAdmin()) {
+          @if (canEdit()) {
             <div class="flex flex-col gap-3 mt-6">
               <span
                 class="text-xs uppercase opacity-60 font-semibold tracking-wider"
@@ -331,7 +329,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                         [fallbackAvatar]="admin.user.avatar"
                       />
                     </ng-template>
-                    @if (isAdmin() && editingMode) {
+                    @if (canEdit()) {
                       <button
                         tuiIconButton
                         appearance="flat"
@@ -340,13 +338,18 @@ import { IS_BROWSER } from '../../app/is-browser';
                         iconStart="@tui.x"
                         [attr.aria-label]="'delete' | translate"
                         class="opacity-0 group-hover:opacity-50 hover:opacity-100! transition-opacity -mr-1"
-                        (click.zoneless)="removeAdmin(admin.user_id || '')"
+                        (click.zoneless)="
+                          removeAdmin(
+                            admin.user_id || '',
+                            admin.user.name || ''
+                          )
+                        "
                       ></button>
                     }
                   </div>
                 }
 
-                @if (isAdmin() && editingMode) {
+                @if (canEdit()) {
                   <div class="w-64">
                     <tui-textfield
                       appearance="floating"
@@ -383,7 +386,7 @@ import { IS_BROWSER } from '../../app/is-browser';
 
           <!-- Routesetters Section -->
           @let routesettersList = centerRoutesetters();
-          @if (editingMode && isAdmin()) {
+          @if (canEdit()) {
             <div class="flex flex-col gap-3 mt-6">
               <span
                 class="text-xs uppercase opacity-60 font-semibold tracking-wider"
@@ -422,7 +425,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                         [fallbackAvatar]="rs.user.avatar"
                       />
                     </ng-template>
-                    @if (isAdmin() && editingMode) {
+                    @if (canEdit()) {
                       <button
                         tuiIconButton
                         appearance="flat"
@@ -437,7 +440,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                   </div>
                 }
 
-                @if (isAdmin() && editingMode) {
+                @if (canEdit()) {
                   <div class="w-64">
                     <tui-textfield
                       appearance="floating"
@@ -614,6 +617,7 @@ export class IndoorCenterComponent {
   private readonly translate = inject(TranslateService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly isBrowser = inject(IS_BROWSER);
+  private readonly cache = inject(CacheService);
 
   protected readonly activeTabIndex = signal(0);
   protected readonly galleryIndex = signal(0);
@@ -842,12 +846,35 @@ export class IndoorCenterComponent {
 
     this.toast.success('messages.toasts.adminAdded');
     this.centerAdminsResource.reload();
+    if (user.id === this.supabase.authUserId()) {
+      this.cache.remove(CACHE_KEYS.adminIndoorCenters(user.id));
+      this.supabase.adminIndoorCentersResource.reload();
+    }
     this.userSearchQuery.set('');
   }
 
-  async removeAdmin(userId: string): Promise<void> {
+  async removeAdmin(userId: string, userName?: string): Promise<void> {
     const centerId = this.center()?.id;
     if (!centerId) return;
+    if (!this.isBrowser) return;
+
+    const confirmed = await firstValueFrom(
+      this.dialogs.open<boolean>(TUI_CONFIRM, {
+        label: this.translate.instant('indoor.removeAdminTitle'),
+        size: 's',
+        data: {
+          content: this.translate.instant('indoor.removeAdminConfirm', {
+            name: userName || this.translate.instant('user'),
+          }),
+          yes: this.translate.instant('delete'),
+          no: this.translate.instant('cancel'),
+          appearance: 'negative',
+        } as TuiConfirmData,
+      }),
+      { defaultValue: false },
+    );
+
+    if (!confirmed) return;
 
     const { error } = await this.supabase.client
       .from('indoor_center_admins')
@@ -863,6 +890,10 @@ export class IndoorCenterComponent {
 
     this.toast.success('messages.toasts.adminRemoved');
     this.centerAdminsResource.reload();
+    if (userId === this.supabase.authUserId()) {
+      this.cache.remove(CACHE_KEYS.adminIndoorCenters(userId));
+      this.supabase.adminIndoorCentersResource.reload();
+    }
   }
 
   protected onAdminSelected(user: UserProfileBasicDto | null): void {
@@ -962,6 +993,9 @@ export class IndoorCenterComponent {
 
     this.toast.success('messages.toasts.routesetterAdded');
     this.centerRoutesettersResource.reload();
+    if (user.id === this.supabase.authUserId()) {
+      this.supabase.routesetterIndoorCentersResource.reload();
+    }
     this.routesetterSearchQuery.set('');
   }
 
@@ -986,6 +1020,9 @@ export class IndoorCenterComponent {
 
     this.toast.success('messages.toasts.routesetterRemoved');
     this.centerRoutesettersResource.reload();
+    if (userId === this.supabase.authUserId()) {
+      this.supabase.routesetterIndoorCentersResource.reload();
+    }
   }
 
   protected onRoutesetterSelected(user: UserProfileBasicDto | null): void {

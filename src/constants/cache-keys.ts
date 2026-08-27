@@ -1,6 +1,9 @@
 export const CACHE_KEYS = {
   // User
   userProfile: (userId: string) => `cached_user_profile_${userId}_v1`,
+  adminAreas: (userId: string) => `cached_admin_areas_${userId}_v1`,
+  adminIndoorCenters: (userId: string) =>
+    `cached_admin_indoor_centers_${userId}_v1`,
 
   // Likes/Favorites
   likedAreas: (userId: string) => `cached_liked_areas_${userId}_v2`,

@@ -167,7 +167,7 @@ import { matchesQuery } from '../../utils';
               </button>
             } @empty {
               <div class="col-span-full">
-                <app-empty-state icon="@tui.star" />
+                <app-empty-state icon="@tui.map" message="myAreas.empty" />
               </div>
             }
           </div>
@@ -190,11 +190,16 @@ export class MyAreasComponent {
   private readonly filterState = inject(FilterStateService);
   private readonly filtersService = inject(FiltersService);
 
-  readonly loading = computed(() => this.areasService.loading());
+  readonly loading = computed(
+    () =>
+      this.areasService.loading() ||
+      this.outdoorData.areasListResource.isLoading() ||
+      this.authState.adminAreasResource.isLoading(),
+  );
   readonly myAreaIds = this.authState.adminAreas;
   readonly areas = computed(() => {
-    const ids = this.myAreaIds();
-    return this.outdoorData.areasList().filter((a) => ids.includes(a.id));
+    const ids = new Set(this.myAreaIds().map((id) => Number(id)));
+    return this.outdoorData.areasList().filter((a) => ids.has(Number(a.id)));
   });
 
   readonly query: WritableSignal<string> = signal('');

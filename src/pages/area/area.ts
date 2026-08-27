@@ -44,12 +44,10 @@ import { firstValueFrom } from 'rxjs';
 
 import { AreasService } from '../../services/areas.service';
 import { AuthStateService } from '../../services/auth-state.service';
-
+import { CacheService } from '../../services/cache.service';
 import { CragsService } from '../../services/crags.service';
-
 import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
-
 import { MapDataService } from '../../services/map-data.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { SeoService } from '../../services/seo.service';
@@ -58,9 +56,7 @@ import { ToastService } from '../../services/toast.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
 
 import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
-
 import { CragCardComponent } from '../../components/crag/crag-card';
-
 import { AreaPaywallDialogComponent } from '../../components/paywall/area-paywall-dialog';
 import { GradeComponent } from '../../components/ui/avatar-grade';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
@@ -77,6 +73,7 @@ import {
   UserProfileBasicDto,
 } from '../../models';
 
+import { CACHE_KEYS } from '../../constants';
 import { AvatarUrlPipe, IconSrcPipe } from '../../pipes';
 import { handleErrorToast, matchesQuery } from '../../utils';
 
@@ -561,6 +558,7 @@ export class AreaComponent {
   protected readonly filtersService = inject(FiltersService);
   private readonly seo = inject(SeoService);
   protected readonly userProfiles = inject(UserProfilesService);
+  private readonly cache = inject(CacheService);
 
   areaSlug: InputSignal<string> = input.required<string>();
   readonly query: WritableSignal<string> = signal('');
@@ -785,6 +783,10 @@ export class AreaComponent {
 
     this.toast.success('messages.toasts.adminAdded');
     this.areaAdminsResource.reload();
+    if (user.id === this.supabase.authUserId()) {
+      this.cache.remove(CACHE_KEYS.adminAreas(user.id));
+      this.supabase.adminAreasResource.reload();
+    }
     this.userSearchQuery.set('');
   }
 
@@ -806,6 +808,10 @@ export class AreaComponent {
 
     this.toast.success('messages.toasts.adminRemoved');
     this.areaAdminsResource.reload();
+    if (userId === this.supabase.authUserId()) {
+      this.cache.remove(CACHE_KEYS.adminAreas(userId));
+      this.supabase.adminAreasResource.reload();
+    }
   }
 
   protected onAdminSelected(user: UserProfileBasicDto | null): void {

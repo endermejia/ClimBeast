@@ -51,6 +51,7 @@ import { WaIntersectionObserver } from '@ng-web-apis/intersection-observer';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
+import { CacheService } from '../../services/cache.service';
 import { IndoorService } from '../../services/indoor.service';
 import { LayoutService } from '../../services/layout.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
@@ -61,8 +62,8 @@ import { EmptyStateComponent } from '../../components/ui/empty-state';
 
 import { AreaListItem, IndoorCenterDto } from '../../models';
 
+import { CACHE_KEYS } from '../../constants';
 import { AvatarUrlPipe } from '../../pipes';
-
 import { matchesQuery } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
@@ -466,6 +467,7 @@ export class AdminUsersListComponent {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
+  private readonly cache = inject(CacheService);
 
   protected readonly columns = ['user', 'role', 'areas', 'centers'];
 
@@ -800,6 +802,11 @@ export class AdminUsersListComponent {
       }
 
       user.assignedAreas = newAreas;
+
+      if (userId === this.currentUserId()) {
+        this.cache.remove(CACHE_KEYS.adminAreas(userId));
+        this.supabase.adminAreasResource.reload();
+      }
     } catch (e) {
       console.error('[UsersListAdmin] Exception updating areas:', e);
     }
@@ -843,6 +850,11 @@ export class AdminUsersListComponent {
       }
 
       user.assignedCenters = newCenters;
+
+      if (userId === this.currentUserId()) {
+        this.cache.remove(CACHE_KEYS.adminIndoorCenters(userId));
+        this.supabase.adminIndoorCentersResource.reload();
+      }
     } catch (e) {
       console.error('[UsersListAdmin] Exception updating centers:', e);
     }

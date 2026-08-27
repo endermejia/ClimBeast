@@ -668,6 +668,11 @@ export class AreasService {
 
       if (deleteError) throw deleteError;
 
+      if (userId === this.supabase.authUserId()) {
+        this.cache.remove(CACHE_KEYS.adminAreas(userId));
+        this.supabase.adminAreasResource.reload();
+      }
+
       this.toast.success('adminRequests.requestApproved');
       return true;
     } catch (e) {

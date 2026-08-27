@@ -76,9 +76,12 @@ export class AuthStateService {
   readonly isIndoorAdmin = computed(() => this.adminIndoorCenters().length > 0);
 
   readonly adminAreas = computed(() => this.supabase.adminAreas());
+  readonly adminAreasResource = this.supabase.adminAreasResource;
   readonly adminIndoorCenters = computed(() =>
     this.supabase.adminIndoorCenters(),
   );
+  readonly adminIndoorCentersResource =
+    this.supabase.adminIndoorCentersResource;
   readonly routesetterIndoorCenters = computed(() =>
     this.supabase.routesetterIndoorCenters(),
   );

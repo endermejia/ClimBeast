@@ -98,52 +98,81 @@ export class SupabaseAuthService {
       userId: this.authUserId(),
     }),
     loader: async ({ params: { userId } }) => {
-      if (!userId) return [];
-      const { data, error } = await this.client
-        .from('area_admins')
-        .select('area_id')
-        .eq('user_id', userId);
-      if (error) {
-        console.error('[SupabaseAuthService] adminAreasResource error', error);
-        return [];
-      }
-      return data.map((d) => d.area_id);
+      if (!userId || !this.isBrowser) return [];
+      const cacheKey = CACHE_KEYS.adminAreas(userId);
+      return this.cache.fetchOrCache(
+        cacheKey,
+        async () => {
+          const { data, error } = await this.client
+            .from('area_admins')
+            .select('area_id')
+            .eq('user_id', userId);
+          if (error) {
+            console.error(
+              '[SupabaseAuthService] adminAreasResource error',
+              error,
+            );
+            return [];
+          }
+          return data.map((d) => d.area_id);
+        },
+        { fallbackValue: [] as number[], logTag: 'SupabaseAuthService' },
+      );
     },
   });
 
-  readonly adminAreas = computed(() => this.adminAreasResource.value() ?? []);
+  readonly adminAreas = computed(() => {
+    const val = this.adminAreasResource.value();
+    if (val !== undefined) return val;
+    const userId = this.authUserId();
+    if (!userId) return [];
+    return this.cache.get<number[]>(CACHE_KEYS.adminAreas(userId), []);
+  });
 
   readonly adminIndoorCentersResource = resource({
     params: () => ({
       userId: this.authUserId(),
     }),
     loader: async ({ params: { userId } }) => {
-      if (!userId) return [];
-      const { data, error } = await this.client
-        .from('indoor_center_admins')
-        .select('center_id')
-        .eq('user_id', userId);
-      if (error) {
-        console.error(
-          '[SupabaseAuthService] adminIndoorCentersResource error',
-          error,
-        );
-        return [];
-      }
-      return data.map((d) => d.center_id).filter((id): id is string => !!id);
+      if (!userId || !this.isBrowser) return [];
+      const cacheKey = CACHE_KEYS.adminIndoorCenters(userId);
+      return this.cache.fetchOrCache(
+        cacheKey,
+        async () => {
+          const { data, error } = await this.client
+            .from('indoor_center_admins')
+            .select('center_id')
+            .eq('user_id', userId);
+          if (error) {
+            console.error(
+              '[SupabaseAuthService] adminIndoorCentersResource error',
+              error,
+            );
+            return [];
+          }
+          return data
+            .map((d) => d.center_id)
+            .filter((id): id is string => !!id);
+        },
+        { fallbackValue: [] as string[], logTag: 'SupabaseAuthService' },
+      );
     },
   });
 
-  readonly adminIndoorCenters = computed(
-    () => this.adminIndoorCentersResource.value() ?? [],
-  );
+  readonly adminIndoorCenters = computed(() => {
+    const val = this.adminIndoorCentersResource.value();
+    if (val !== undefined) return val;
+    const userId = this.authUserId();
+    if (!userId) return [];
+    return this.cache.get<string[]>(CACHE_KEYS.adminIndoorCenters(userId), []);
+  });
 
   readonly routesetterIndoorCentersResource = resource({
     params: () => ({
       userId: this.authUserId(),
     }),
     loader: async ({ params: { userId } }) => {
-      if (!userId) return [];
+      if (!userId || !this.isBrowser) return [];
       const { data, error } = await this.client
         .from('indoor_center_routesetters')
         .select('center_id')
