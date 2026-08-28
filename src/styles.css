@@ -365,35 +365,30 @@ a[tuiHint],
   user-select: none !important;
 }
 
-/* Toast width - make toasts wider to prevent text cutoff */
+/* Toast styling - allow toasts and undo-toast to expand naturally */
 tui-notification,
+tui-toast,
+.t-wrapper,
 .t-toast,
 [tuiToast] {
-  max-width: 600px !important;
+  max-inline-size: min(calc(100vw - 2rem), 40rem) !important;
+  max-width: min(calc(100vw - 2rem), 40rem) !important;
   width: auto !important;
-  min-width: 300px !important;
+}
+
+[tuiToast] > *:not(tui-shrink-wrap) {
+  max-inline-size: none !important;
 }
 
 @media (max-width: 640px) {
   tui-notification,
+  tui-toast,
+  .t-wrapper,
   .t-toast,
   [tuiToast] {
+    max-inline-size: calc(100vw - 2rem) !important;
     max-width: calc(100vw - 2rem) !important;
-    min-width: auto !important;
-  }
-}
-
-/* Undo toast specific styling */
-app-undo-toast[tuiToast] {
-  max-width: 600px !important;
-  width: auto !important;
-  min-width: 300px !important;
-}
-
-@media (max-width: 640px) {
-  app-undo-toast[tuiToast] {
-    max-width: calc(100vw - 2rem) !important;
-    min-width: auto !important;
+    min-width: calc(100vw - 2rem) !important;
   }
 }
 
