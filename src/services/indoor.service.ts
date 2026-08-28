@@ -783,7 +783,7 @@ export class IndoorService {
     photo_path?: string | null;
     type: string;
     date: string;
-    notes?: string;
+    notes?: string | null;
   }): Promise<IndoorAscentWithExtras> {
     const { data, error } = await this.supabase.client
       .from('indoor_ascents')
@@ -815,7 +815,7 @@ export class IndoorService {
     updates: {
       type?: string;
       date?: string;
-      notes?: string;
+      notes?: string | null;
       attempts?: number | null;
       private_ascent?: boolean | null;
       rate?: number | null;

@@ -170,8 +170,10 @@ export class ProfileDataService {
       size: this.ascentsSize(),
       dateFilter: this.ascentsDateFilter(),
       query: this.ascentsQuery(),
-      grades: this.filters.areaListGradeRange(),
-      categories: this.filters.areaListCategories(),
+      grades: this.filters.profileAscentsGradeRange(),
+      categories: this.filters.profileAscentsCategories(),
+      showIndoor: this.filters.profileAscentsShowIndoor(),
+      showOutdoor: this.filters.profileAscentsShowOutdoor(),
       sort: this.ascentsSort(),
     }),
     loader: async ({ params }): Promise<PaginatedAscents> => {
@@ -183,121 +185,275 @@ export class ProfileDataService {
         query: queryText,
         grades,
         categories,
+        showIndoor,
+        showOutdoor,
         sort,
       } = params;
       if (!userId || !this.isBrowser) return { items: [], total: 0 };
+      if (!showIndoor && !showOutdoor) return { items: [], total: 0 };
       try {
         await this.supabase.whenReady();
         const from = page * size;
         const to = from + size - 1;
 
-        let query = this.supabase.client
-          .from('route_ascents')
-          .select(
-            `
-            *,
-            routes!inner (
-              id, name, slug, grade, climbing_kind,
-              crag_id, created_at, eight_anu_route_slugs, height, user_creator_id,
-              liked:route_likes(id),
-              project:route_projects(id),
-              ascents:route_ascents(rate, type),
-              crags!inner (
-                slug,
-                name,
-                area_id,
-                areas!inner (slug, name)
-              )
-            )
-          `,
-            { count: 'exact' },
-          )
-          .eq('user_id', userId);
-
-        if (queryText) {
-          query = query.ilike('routes.search_text', `%${queryText}%`);
-        }
-
-        if (dateFilter) {
-          if (dateFilter === 'last12' || dateFilter === 'last_12_months') {
-            const twelveMonthsAgo = new Date();
-            twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
-            query = query.gte('date', twelveMonthsAgo.toISOString());
-          } else if (dateFilter === 'last6' || dateFilter === 'last_6_months') {
-            const sixMonthsAgo = new Date();
-            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-            query = query.gte('date', sixMonthsAgo.toISOString());
-          } else if (dateFilter === 'this_year') {
-            const year = new Date().getFullYear();
-            query = query
-              .gte('date', `${year}-01-01`)
-              .lte('date', `${year}-12-31`);
-          } else if (dateFilter !== 'all' && dateFilter !== 'all_time') {
-            query = query
-              .gte('date', `${dateFilter}-01-01`)
-              .lte('date', `${dateFilter}-12-31`);
-          }
-        }
+        let outdoorItems: RouteAscentWithExtras[] = [];
+        let outdoorTotal = 0;
+        let indoorItems: RouteAscentWithExtras[] = [];
+        let indoorTotal = 0;
 
         const [minIdx, maxIdx] = grades;
-        if (minIdx > 0 || maxIdx < ORDERED_GRADE_VALUES.length - 1) {
-          const allowedLabels = ORDERED_GRADE_VALUES.slice(minIdx, maxIdx + 1);
-          const allowedDbGrades = allowedLabels
-            .map((label) => LABEL_TO_VERTICAL_LIFE[label])
-            .filter((g): g is number => g !== undefined);
-          if (!allowedDbGrades.includes(0)) {
-            allowedDbGrades.push(0);
+        const allowedLabels =
+          minIdx > 0 || maxIdx < ORDERED_GRADE_VALUES.length - 1
+            ? ORDERED_GRADE_VALUES.slice(minIdx, maxIdx + 1)
+            : null;
+        const allowedDbGrades = allowedLabels
+          ? allowedLabels
+              .map((label) => LABEL_TO_VERTICAL_LIFE[label])
+              .filter((g): g is number => g !== undefined)
+          : null;
+        if (allowedDbGrades && !allowedDbGrades.includes(0)) {
+          allowedDbGrades.push(0);
+        }
+
+        const idxToKind: Record<number, ClimbingKind> = {
+          0: 'sport',
+          1: 'boulder',
+          2: 'multipitch',
+        };
+        const allowedKinds =
+          categories.length > 0
+            ? categories
+                .map((i: number) => idxToKind[i])
+                .filter((k): k is ClimbingKind => !!k)
+            : null;
+
+        const fetchOutdoor = async () => {
+          let query = this.supabase.client
+            .from('route_ascents')
+            .select(
+              `
+              *,
+              routes!inner (
+                id, name, slug, grade, climbing_kind,
+                crag_id, created_at, eight_anu_route_slugs, height, user_creator_id,
+                liked:route_likes(id),
+                project:route_projects(id),
+                ascents:route_ascents(rate, type),
+                crags!inner (
+                  slug,
+                  name,
+                  area_id,
+                  areas!inner (slug, name)
+                )
+              )
+            `,
+              { count: 'exact' },
+            )
+            .eq('user_id', userId);
+
+          if (queryText) {
+            query = query.ilike('routes.search_text', `%${queryText}%`);
           }
-          query = query.in('grade', allowedDbGrades);
-        }
 
-        if (categories.length > 0) {
-          const idxToKind: Record<number, ClimbingKind> = {
-            0: 'sport',
-            1: 'boulder',
-            2: 'multipitch',
-          };
-          const allowedKinds = categories
-            .map((i: number) => idxToKind[i])
-            .filter((k): k is ClimbingKind => !!k);
-          query = query.in('routes.climbing_kind', allowedKinds);
-        }
+          if (dateFilter) {
+            if (dateFilter === 'last12' || dateFilter === 'last_12_months') {
+              const twelveMonthsAgo = new Date();
+              twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+              query = query.gte('date', twelveMonthsAgo.toISOString());
+            } else if (
+              dateFilter === 'last6' ||
+              dateFilter === 'last_6_months'
+            ) {
+              const sixMonthsAgo = new Date();
+              sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+              query = query.gte('date', sixMonthsAgo.toISOString());
+            } else if (dateFilter === 'this_year') {
+              const year = new Date().getFullYear();
+              query = query
+                .gte('date', `${year}-01-01`)
+                .lte('date', `${year}-12-31`);
+            } else if (dateFilter !== 'all' && dateFilter !== 'all_time') {
+              query = query
+                .gte('date', `${dateFilter}-01-01`)
+                .lte('date', `${dateFilter}-12-31`);
+            }
+          }
 
-        let finalQuery = query;
-        if (sort === 'grade') {
-          finalQuery = finalQuery
-            .order('grade', { ascending: false })
-            .order('date', { ascending: false })
-            .order('id', { ascending: false });
-        } else {
-          finalQuery = finalQuery
-            .order('date', { ascending: false })
-            .order('id', { ascending: false });
-        }
+          if (allowedDbGrades) {
+            query = query.in('grade', allowedDbGrades);
+          }
 
-        const { data, error, count } = await finalQuery.range(from, to);
+          if (allowedKinds && allowedKinds.length > 0) {
+            query = query.in('routes.climbing_kind', allowedKinds);
+          }
 
-        if (error) {
-          throw error;
-        }
+          let finalQuery = query;
+          if (sort === 'grade') {
+            finalQuery = finalQuery
+              .order('grade', { ascending: false })
+              .order('date', { ascending: false })
+              .order('id', { ascending: false });
+          } else {
+            finalQuery = finalQuery
+              .order('date', { ascending: false })
+              .order('id', { ascending: false });
+          }
 
-        const items = data.map((a) => {
-          const { routes: route, ...ascentRest } = a;
-          let mappedRoute: RouteWithExtras | undefined = undefined;
+          const { data, error, count } = await finalQuery.range(from, to);
+          if (error) throw error;
 
-          if (route) {
-            mappedRoute = mapAscentRouteToExtras(
-              route as Record<string, unknown>,
+          outdoorTotal = count ?? 0;
+          outdoorItems = (data || []).map((a) => {
+            const { routes: route, ...ascentRest } = a;
+            let mappedRoute: RouteWithExtras | undefined = undefined;
+            if (route) {
+              mappedRoute = mapAscentRouteToExtras(
+                route as Record<string, unknown>,
+              );
+            }
+            return {
+              ...ascentRest,
+              route: mappedRoute,
+            } as RouteAscentWithExtras;
+          });
+        };
+
+        const fetchIndoor = async () => {
+          let query = this.supabase.client
+            .from('indoor_ascents')
+            .select(
+              `
+              *,
+              route:indoor_routes!inner (
+                id, name, grade, climbing_kind, color,
+                center:indoor_centers!inner (
+                  id, name, slug
+                )
+              )
+            `,
+              { count: 'exact' },
+            )
+            .eq('user_id', userId);
+
+          if (queryText) {
+            query = query.ilike('route.name', `%${queryText}%`);
+          }
+
+          if (dateFilter) {
+            if (dateFilter === 'last12' || dateFilter === 'last_12_months') {
+              const twelveMonthsAgo = new Date();
+              twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+              query = query.gte('date', twelveMonthsAgo.toISOString());
+            } else if (
+              dateFilter === 'last6' ||
+              dateFilter === 'last_6_months'
+            ) {
+              const sixMonthsAgo = new Date();
+              sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+              query = query.gte('date', sixMonthsAgo.toISOString());
+            } else if (dateFilter === 'this_year') {
+              const year = new Date().getFullYear();
+              query = query
+                .gte('date', `${year}-01-01`)
+                .lte('date', `${year}-12-31`);
+            } else if (dateFilter !== 'all' && dateFilter !== 'all_time') {
+              query = query
+                .gte('date', `${dateFilter}-01-01`)
+                .lte('date', `${dateFilter}-12-31`);
+            }
+          }
+
+          if (allowedDbGrades) {
+            query = query.in('route.grade', allowedDbGrades);
+          }
+
+          if (allowedKinds && allowedKinds.length > 0) {
+            const indoorKinds = allowedKinds.filter(
+              (k) => k === 'sport' || k === 'boulder',
             );
+            if (indoorKinds.length > 0) {
+              query = query.in('route.climbing_kind', indoorKinds);
+            } else {
+              return;
+            }
           }
 
-          return {
-            ...ascentRest,
-            route: mappedRoute,
-          } as RouteAscentWithExtras;
-        });
+          let finalQuery = query;
+          if (sort === 'grade') {
+            finalQuery = finalQuery
+              .order('grade', { ascending: false })
+              .order('date', { ascending: false })
+              .order('id', { ascending: false });
+          } else {
+            finalQuery = finalQuery
+              .order('date', { ascending: false })
+              .order('id', { ascending: false });
+          }
 
-        return { items, total: count ?? 0 };
+          const { data, error, count } = await finalQuery.range(from, to);
+          if (error) throw error;
+
+          indoorTotal = count ?? 0;
+          indoorItems = (data || []).map((a) => {
+            const { route, ...ascentRest } = a as Record<string, unknown>;
+            const typedRoute = route as Record<string, unknown> | undefined;
+            const center = typedRoute?.['center'] as
+              Record<string, unknown> | undefined;
+            const { center: _c, ...routeFields } = typedRoute ?? {};
+            const mappedRoute: RouteWithExtras = {
+              ...routeFields,
+              id: (typedRoute?.['id'] as number) || 0,
+              name: (typedRoute?.['name'] as string) || '',
+              grade: (typedRoute?.['grade'] as number) ?? null,
+              climbing_kind:
+                (typedRoute?.['climbing_kind'] as ClimbingKind) || 'sport',
+              center_slug: center?.['slug'] as string | undefined,
+              center_name: center?.['name'] as string | undefined,
+              crag_slug: center?.['slug'] as string | undefined,
+              crag_name: center?.['name'] as string | undefined,
+              liked: false,
+              project: false,
+            } as unknown as RouteWithExtras;
+
+            return {
+              ...ascentRest,
+              comment:
+                (ascentRest['notes'] as string) ??
+                (ascentRest['comment'] as string) ??
+                '',
+              route: mappedRoute,
+            } as RouteAscentWithExtras;
+          });
+        };
+
+        const shouldFetchOutdoor = (!showIndoor && !showOutdoor) || showOutdoor;
+        const shouldFetchIndoor = (!showIndoor && !showOutdoor) || showIndoor;
+
+        const promises: Promise<void>[] = [];
+        if (shouldFetchOutdoor) promises.push(fetchOutdoor());
+        if (shouldFetchIndoor) promises.push(fetchIndoor());
+
+        await Promise.all(promises);
+
+        const allItems = [...outdoorItems, ...indoorItems];
+        if (sort === 'grade') {
+          allItems.sort((a, b) => {
+            const gradeA = a.grade ?? a.route?.grade ?? 0;
+            const gradeB = b.grade ?? b.route?.grade ?? 0;
+            if (gradeB !== gradeA) return gradeB - gradeA;
+            const dateA = a.date ? new Date(a.date).getTime() : 0;
+            const dateB = b.date ? new Date(b.date).getTime() : 0;
+            return dateB - dateA;
+          });
+        } else {
+          allItems.sort((a, b) => {
+            const dateA = a.date ? new Date(a.date).getTime() : 0;
+            const dateB = b.date ? new Date(b.date).getTime() : 0;
+            return dateB - dateA;
+          });
+        }
+
+        return { items: allItems, total: outdoorTotal + indoorTotal };
       } catch (e) {
         console.error('[ProfileDataService] userAscentsResource error', e);
         return { items: [], total: 0 };
@@ -306,20 +462,49 @@ export class ProfileDataService {
   });
 
   readonly userTotalAscentsCountResource = resource({
-    params: () => this.profileUserId(),
-    loader: async ({ params: userId }): Promise<number | undefined> => {
+    params: () => ({
+      userId: this.profileUserId(),
+      showIndoor: this.filters.profileAscentsShowIndoor(),
+      showOutdoor: this.filters.profileAscentsShowOutdoor(),
+    }),
+    loader: async ({ params }): Promise<number | undefined> => {
+      const { userId, showIndoor, showOutdoor } = params;
       if (!userId || !this.isBrowser) return undefined;
+      const shouldFetchOutdoor = (!showIndoor && !showOutdoor) || showOutdoor;
+      const shouldFetchIndoor = (!showIndoor && !showOutdoor) || showIndoor;
       try {
         await this.supabase.whenReady();
-        const { count, error } = await this.supabase.client
-          .from('route_ascents')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', userId);
+        let total = 0;
+        const promises: Promise<void>[] = [];
 
-        if (error) {
-          return undefined;
+        if (shouldFetchOutdoor) {
+          promises.push(
+            (async () => {
+              const { count, error } = await this.supabase.client
+                .from('route_ascents')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', userId);
+              if (error) throw error;
+              total += count ?? 0;
+            })(),
+          );
         }
-        return count ?? undefined;
+
+        if (shouldFetchIndoor) {
+          promises.push(
+            (async () => {
+              const { count, error } = await this.supabase.client
+                .from('indoor_ascents')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', userId);
+              if (error) throw error;
+              total += count ?? 0;
+            })(),
+          );
+        }
+
+        await Promise.all(promises);
+        return total;
       } catch (e) {
         console.error(
           '[ProfileDataService] userTotalAscentsCountResource error',

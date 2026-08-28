@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 
-import { TuiLoader, TuiPoint, TuiScrollbar } from '@taiga-ui/core';
+import { TuiPoint, TuiScrollbar } from '@taiga-ui/core';
 
 import { TranslateService } from '@ngx-translate/core';
 
@@ -16,6 +16,10 @@ import { AscentsService } from '../../services/ascents.service';
 import { LayoutService } from '../../services/layout.service';
 import { ProfileDataService } from '../../services/profile-data.service';
 import { SupabaseService } from '../../services/supabase.service';
+
+import { UserProfileStatsPyramidComponent } from './statistics/grade-pyramid';
+import { UserProfileStatsScoreComponent } from './statistics/score-card';
+import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
 
 import {
   GradeDistribution,
@@ -33,15 +37,10 @@ import {
   getMaxGradeRoutes,
 } from '../../utils';
 
-import { UserProfileStatsPyramidComponent } from './statistics/grade-pyramid';
-import { UserProfileStatsScoreComponent } from './statistics/score-card';
-import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
-
 @Component({
   selector: 'app-user-profile-statistics',
   standalone: true,
   imports: [
-    TuiLoader,
     TuiScrollbar,
     UserProfileStatsPyramidComponent,
     UserProfileStatsScoreComponent,
@@ -54,59 +53,55 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
   template: `
     <div class="flex flex-col w-full lg:h-full min-w-0 lg:min-h-0">
       <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
-        <tui-loader
-          [loading]="statsResource.isLoading()"
-          class="w-full min-w-0"
-        >
-          <div class="flex flex-col gap-6 w-full min-w-0 p-1 pr-3 sm:pr-4 pb-6">
-            <!-- Top Section: Pyramid (Left ~60%) + Score Card (Right ~40%) -->
+        <div class="flex flex-col gap-6 w-full min-w-0 p-1 pr-3 sm:pr-4 pb-6">
+          <!-- Top Section: Pyramid (Left ~60%) + Score Card (Right ~40%) -->
+          <div
+            class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch w-full min-w-0"
+          >
+            <!-- Left Column: Grade Pyramid (Stretches full height on xl+) -->
             <div
-              class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch w-full min-w-0"
+              class="order-2 xl:order-1 xl:col-span-7 min-w-0 w-full xl:h-full flex flex-col"
             >
-              <!-- Left Column: Grade Pyramid (Stretches full height on xl+) -->
-              <div
-                class="order-2 xl:order-1 xl:col-span-7 min-w-0 w-full xl:h-full flex flex-col"
-              >
-                <app-user-profile-stats-pyramid
-                  [(showAllGrades)]="showAllGrades"
-                  [distribution]="gradeDistribution()"
-                />
-              </div>
-
-              <!-- Right Column: Score Card & Key Stats -->
-              <div
-                class="order-1 xl:order-2 xl:col-span-5 flex flex-col gap-4 min-w-0 w-full"
-              >
-                <app-user-profile-stats-score
-                  [totalScore]="totalScore()"
-                  [topRoutes]="topRoutes()"
-                  [totalAscents]="gradeDistribution().total"
-                  [rpCount]="gradeDistribution().rp"
-                  [flashCount]="gradeDistribution().flash"
-                  [osCount]="gradeDistribution().os"
-                  [maxRedpoint]="maxRedpoint()"
-                  [maxRedpointRoutes]="maxRedpointRoutes()"
-                  [maxOnsight]="maxOnsight()"
-                  [maxOnsightRoutes]="maxOnsightRoutes()"
-                  [maxFlash]="maxFlash()"
-                  [maxFlashRoutes]="maxFlashRoutes()"
-                />
-              </div>
+              <app-user-profile-stats-pyramid
+                [(showAllGrades)]="showAllGrades"
+                [distribution]="gradeDistribution()"
+                [loading]="statsResource.isLoading()"
+              />
             </div>
 
-            <!-- Full Width: Evolution / Trend Chart -->
-            <div class="w-full min-w-0">
-              <app-user-profile-stats-trends
-                [trendData]="trendData()"
-                [trendDetails]="trendDetails()"
-                [trendXLabels]="trendXLabels()"
-                [trendYLabels]="trendYLabels()"
-                [width]="width"
-                [height]="height"
+            <!-- Right Column: Score Card & Key Stats -->
+            <div
+              class="order-1 xl:order-2 xl:col-span-5 flex flex-col gap-4 min-w-0 w-full"
+            >
+              <app-user-profile-stats-score
+                [totalScore]="totalScore()"
+                [topRoutes]="topRoutes()"
+                [totalAscents]="gradeDistribution().total"
+                [rpCount]="gradeDistribution().rp"
+                [flashCount]="gradeDistribution().flash"
+                [osCount]="gradeDistribution().os"
+                [maxRedpoint]="maxRedpoint()"
+                [maxRedpointRoutes]="maxRedpointRoutes()"
+                [maxOnsight]="maxOnsight()"
+                [maxOnsightRoutes]="maxOnsightRoutes()"
+                [maxFlash]="maxFlash()"
+                [maxFlashRoutes]="maxFlashRoutes()"
               />
             </div>
           </div>
-        </tui-loader>
+
+          <!-- Full Width: Evolution / Trend Chart -->
+          <div class="w-full min-w-0">
+            <app-user-profile-stats-trends
+              [trendData]="trendData()"
+              [trendDetails]="trendDetails()"
+              [trendXLabels]="trendXLabels()"
+              [trendYLabels]="trendYLabels()"
+              [width]="width"
+              [height]="height"
+            />
+          </div>
+        </div>
       </tui-scrollbar>
     </div>
   `,

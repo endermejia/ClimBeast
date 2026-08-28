@@ -98,6 +98,13 @@ describe('applyCategoryFilter', () => {
       'boulder',
     ]);
   });
+
+  it('should filter to none when categories have no matching kinds for the target context', () => {
+    applyCategoryFilter(mockQuery, [2], 'route.climbing_kind', false);
+    expect(mockQuery.in).toHaveBeenCalledWith('route.climbing_kind', [
+      '__none__',
+    ]);
+  });
 });
 
 describe('applyGradeFilter', () => {

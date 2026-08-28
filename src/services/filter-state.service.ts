@@ -1,8 +1,14 @@
-import { inject, Injectable, signal, WritableSignal } from '@angular/core';
-
-import { ORDERED_GRADE_VALUES } from '../models';
+import {
+  effect,
+  inject,
+  Injectable,
+  signal,
+  WritableSignal,
+} from '@angular/core';
 
 import { LocalStorage } from './local-storage';
+
+import { ORDERED_GRADE_VALUES } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class FilterStateService {
@@ -24,26 +30,132 @@ export class FilterStateService {
     ('shade_morning' | 'shade_afternoon' | 'shade_all_day' | 'sun_all_day')[]
   > = signal([]);
   areaListShowIndoor: WritableSignal<boolean> = signal(false);
-  areaListShowOutdoor: WritableSignal<boolean> = signal(true);
+  areaListShowOutdoor: WritableSignal<boolean> = signal(false);
 
-  // ---- Feed List Filters ----
+  // ---- Home Feed List Filters ----
   private readonly feedGradeRangeKey = 'feed_grade_range_v1';
   private readonly feedCategoriesKey = 'feed_categories_v1';
-  private readonly feedShowIndoorAscentsKey = 'feed_show_indoor_ascents_v1';
+  private readonly feedShowIndoorKey = 'feed_show_indoor_v1';
+  private readonly feedShowIndoorLegacyKey = 'feed_show_indoor_ascents_v1';
+  private readonly feedShowOutdoorKey = 'feed_show_outdoor_v1';
 
   feedGradeRange: WritableSignal<[number, number]> = signal([
     0,
     ORDERED_GRADE_VALUES.length - 1,
   ]);
   feedCategories: WritableSignal<number[]> = signal([]);
-  feedShowIndoorAscents: WritableSignal<boolean> = signal(false);
+  feedShowIndoor: WritableSignal<boolean> = signal(false);
+  feedShowOutdoor: WritableSignal<boolean> = signal(false);
+
+  // ---- User Profile Ascents (Feed) Filters ----
+  private readonly profileAscentsGradeRangeKey =
+    'profile_ascents_grade_range_v1';
+  private readonly profileAscentsCategoriesKey =
+    'profile_ascents_categories_v1';
+  private readonly profileAscentsShowIndoorKey =
+    'profile_ascents_show_indoor_v1';
+  private readonly profileAscentsShowOutdoorKey =
+    'profile_ascents_show_outdoor_v1';
+
+  profileAscentsGradeRange: WritableSignal<[number, number]> = signal([
+    0,
+    ORDERED_GRADE_VALUES.length - 1,
+  ]);
+  profileAscentsCategories: WritableSignal<number[]> = signal([]);
+  profileAscentsShowIndoor: WritableSignal<boolean> = signal(false);
+  profileAscentsShowOutdoor: WritableSignal<boolean> = signal(false);
 
   constructor() {
     this.hydrate();
+
+    // Area list persistence
+    effect(() => {
+      this.localStorage.setItem(
+        this.areaListGradeRangeKey,
+        JSON.stringify(this.areaListGradeRange()),
+      );
+    });
+    effect(() => {
+      this.localStorage.setItem(
+        this.areaListCategoriesKey,
+        JSON.stringify(this.areaListCategories()),
+      );
+    });
+    effect(() => {
+      this.localStorage.setItem(
+        this.areaListShadeKey,
+        JSON.stringify(this.areaListShade()),
+      );
+    });
+    effect(() => {
+      this.localStorage.setItem(
+        this.areaListShowIndoorKey,
+        String(this.areaListShowIndoor()),
+      );
+    });
+    effect(() => {
+      this.localStorage.setItem(
+        this.areaListShowOutdoorKey,
+        String(this.areaListShowOutdoor()),
+      );
+    });
+
+    // Home feed persistence
+    effect(() => {
+      this.localStorage.setItem(
+        this.feedGradeRangeKey,
+        JSON.stringify(this.feedGradeRange()),
+      );
+    });
+    effect(() => {
+      this.localStorage.setItem(
+        this.feedCategoriesKey,
+        JSON.stringify(this.feedCategories()),
+      );
+    });
+    effect(() => {
+      this.localStorage.setItem(
+        this.feedShowIndoorKey,
+        String(this.feedShowIndoor()),
+      );
+    });
+    effect(() => {
+      this.localStorage.setItem(
+        this.feedShowOutdoorKey,
+        String(this.feedShowOutdoor()),
+      );
+    });
+
+    // Profile ascents persistence
+    effect(() => {
+      this.localStorage.setItem(
+        this.profileAscentsGradeRangeKey,
+        JSON.stringify(this.profileAscentsGradeRange()),
+      );
+    });
+    effect(() => {
+      this.localStorage.setItem(
+        this.profileAscentsCategoriesKey,
+        JSON.stringify(this.profileAscentsCategories()),
+      );
+    });
+    effect(() => {
+      this.localStorage.setItem(
+        this.profileAscentsShowIndoorKey,
+        String(this.profileAscentsShowIndoor()),
+      );
+    });
+    effect(() => {
+      this.localStorage.setItem(
+        this.profileAscentsShowOutdoorKey,
+        String(this.profileAscentsShowOutdoor()),
+      );
+    });
   }
 
   private hydrate(): void {
     try {
+      // Area list
       const rawGradeRange = this.localStorage.getItem(
         this.areaListGradeRangeKey,
       );
@@ -80,6 +192,7 @@ export class FilterStateService {
         this.areaListShowOutdoor.set(rawShowOutdoor === 'true');
       }
 
+      // Home feed
       const rawFeedGradeRange = this.localStorage.getItem(
         this.feedGradeRangeKey,
       );
@@ -97,11 +210,48 @@ export class FilterStateService {
         this.feedCategories.set(JSON.parse(rawFeedCategories));
       }
 
-      const rawIndoor = this.localStorage.getItem(
-        this.feedShowIndoorAscentsKey,
+      const rawFeedIndoor =
+        this.localStorage.getItem(this.feedShowIndoorKey) ??
+        this.localStorage.getItem(this.feedShowIndoorLegacyKey);
+      if (rawFeedIndoor !== null) {
+        this.feedShowIndoor.set(rawFeedIndoor === 'true');
+      }
+
+      const rawFeedOutdoor = this.localStorage.getItem(this.feedShowOutdoorKey);
+      if (rawFeedOutdoor !== null) {
+        this.feedShowOutdoor.set(rawFeedOutdoor === 'true');
+      }
+
+      // Profile ascents
+      const rawProfileGradeRange = this.localStorage.getItem(
+        this.profileAscentsGradeRangeKey,
       );
-      if (rawIndoor !== null) {
-        this.feedShowIndoorAscents.set(rawIndoor === 'true');
+      if (rawProfileGradeRange) {
+        const parsed = JSON.parse(rawProfileGradeRange);
+        if (Array.isArray(parsed) && parsed.length === 2) {
+          this.profileAscentsGradeRange.set(parsed as [number, number]);
+        }
+      }
+
+      const rawProfileCategories = this.localStorage.getItem(
+        this.profileAscentsCategoriesKey,
+      );
+      if (rawProfileCategories) {
+        this.profileAscentsCategories.set(JSON.parse(rawProfileCategories));
+      }
+
+      const rawProfileIndoor = this.localStorage.getItem(
+        this.profileAscentsShowIndoorKey,
+      );
+      if (rawProfileIndoor !== null) {
+        this.profileAscentsShowIndoor.set(rawProfileIndoor === 'true');
+      }
+
+      const rawProfileOutdoor = this.localStorage.getItem(
+        this.profileAscentsShowOutdoorKey,
+      );
+      if (rawProfileOutdoor !== null) {
+        this.profileAscentsShowOutdoor.set(rawProfileOutdoor === 'true');
       }
     } catch {
       // Silent fail on hydration

@@ -13,6 +13,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   TuiButton,
   TuiDataList,
+  TuiDialogService,
   TuiInput,
   TuiLabel,
   TuiTextfield,
@@ -23,13 +24,16 @@ import {
   TuiDataListWrapper,
   TuiSelect,
 } from '@taiga-ui/kit';
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { debounceTime, Subject } from 'rxjs';
+
+import { debounceTime, firstValueFrom, Subject } from 'rxjs';
 
 import { FilterStateService } from '../../services/filter-state.service';
-import { FiltersService } from '../../services/filters.service';
 import { ProfileDataService } from '../../services/profile-data.service';
+
+import { FilterDialog, FilterDialogComponent } from '../dialogs/filter-dialog';
 
 import { ORDERED_GRADE_VALUES } from '../../models';
 
@@ -142,7 +146,7 @@ import { getAscentDateFilterOptions } from '../../utils';
 export class UserProfileFiltersComponent {
   protected readonly profileData = inject(ProfileDataService);
   protected readonly filterState = inject(FilterStateService);
-  protected readonly filtersService = inject(FiltersService);
+  private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
 
   private readonly querySubject = new Subject<string>();
@@ -163,13 +167,21 @@ export class UserProfileFiltersComponent {
     );
   });
 
-  protected readonly selectedGradeRange = this.filterState.areaListGradeRange;
-  protected readonly selectedCategories = this.filterState.areaListCategories;
+  protected readonly selectedGradeRange =
+    this.filterState.profileAscentsGradeRange;
+  protected readonly selectedCategories =
+    this.filterState.profileAscentsCategories;
+  protected readonly showIndoor = this.filterState.profileAscentsShowIndoor;
+  protected readonly showOutdoor = this.filterState.profileAscentsShowOutdoor;
 
   protected readonly hasActiveFilters = computed(() => {
     const [lo, hi] = this.selectedGradeRange();
     const gradeActive = !(lo === 0 && hi === ORDERED_GRADE_VALUES.length - 1);
-    return gradeActive || this.selectedCategories().length > 0;
+    const categoriesActive = this.selectedCategories().length > 0;
+    const indoor = this.showIndoor();
+    const outdoor = this.showOutdoor();
+    const indoorOutdoorActive = (indoor || outdoor) && !(indoor && outdoor);
+    return gradeActive || categoriesActive || indoorOutdoorActive;
   });
 
   protected readonly sortValueContent = (option: 'grade' | 'date'): string => {
@@ -204,6 +216,40 @@ export class UserProfileFiltersComponent {
   }
 
   protected openFilters(): void {
-    this.filtersService.openFilters({ showShade: false });
+    const data: FilterDialog = {
+      categories: this.filterState.profileAscentsCategories(),
+      gradeRange: this.filterState.profileAscentsGradeRange(),
+      showCategories: true,
+      showGradeRange: true,
+      showShade: false,
+      showIndoorOutdoor: true,
+      indoor: this.filterState.profileAscentsShowIndoor(),
+      outdoor: this.filterState.profileAscentsShowOutdoor(),
+    };
+
+    void firstValueFrom(
+      this.dialogs.open<FilterDialog>(
+        new PolymorpheusComponent(FilterDialogComponent),
+        {
+          label: this.translate.instant('filters'),
+          size: 'l',
+          data,
+          dismissible: false,
+        },
+      ),
+      { defaultValue: null },
+    ).then((result) => {
+      if (!result) return;
+      this.filterState.profileAscentsCategories.set(result.categories ?? []);
+      if (result.gradeRange) {
+        this.filterState.profileAscentsGradeRange.set(result.gradeRange);
+      }
+      if (result.indoor !== undefined) {
+        this.filterState.profileAscentsShowIndoor.set(result.indoor);
+      }
+      if (result.outdoor !== undefined) {
+        this.filterState.profileAscentsShowOutdoor.set(result.outdoor);
+      }
+    });
   }
 }

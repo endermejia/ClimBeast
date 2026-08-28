@@ -945,10 +945,11 @@ export default class AscentFormComponent {
       dateObj = new TuiDay(d.getFullYear(), d.getMonth(), d.getDate());
     }
 
+    const raw = data as Record<string, unknown>;
     this.model.set({
       type: (data.type ?? AscentTypes.RP) as AscentType,
       rate: data.rate ?? 0,
-      comment: data.comment ?? '',
+      comment: data.comment ?? (raw['notes'] as string) ?? '',
       attempts: data.attempts ?? null,
       private_ascent: !!data.private_ascent,
       recommended: !!data.recommended,
@@ -1091,7 +1092,7 @@ export default class AscentFormComponent {
             user_id: user_id,
             type: otherValues.type,
             date: formattedDate,
-            notes: otherValues.comment || undefined,
+            notes: otherValues.comment || null,
             attempts: otherValues.attempts || null,
             private_ascent: otherValues.private_ascent || false,
             rate: otherValues.rate === 0 ? null : otherValues.rate,
@@ -1107,7 +1108,7 @@ export default class AscentFormComponent {
             await this.indoorService.updateRouteAscent(String(ascentData.id), {
               type: payload.type,
               date: payload.date,
-              notes: payload.notes || '',
+              notes: otherValues.comment || null,
               attempts: payload.attempts,
               private_ascent: payload.private_ascent,
               rate: payload.rate,

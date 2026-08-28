@@ -310,7 +310,11 @@ export class HomeComponent {
   protected readonly hasActiveFilters = computed(() => {
     const [lo, hi] = this.filterState.feedGradeRange();
     const gradeActive = !(lo === 0 && hi === ORDERED_GRADE_VALUES.length - 1);
-    return gradeActive || this.filterState.feedCategories().length > 0;
+    const categoriesActive = this.filterState.feedCategories().length > 0;
+    const indoor = this.filterState.feedShowIndoor();
+    const outdoor = this.filterState.feedShowOutdoor();
+    const indoorOutdoorActive = (indoor || outdoor) && !(indoor && outdoor);
+    return gradeActive || categoriesActive || indoorOutdoorActive;
   });
 
   constructor() {
@@ -339,7 +343,8 @@ export class HomeComponent {
       this.favoritesData.likedAreaIds();
       this.favoritesData.likedCragIds();
       this.favoritesData.likedRouteIds();
-      this.filterState.feedShowIndoorAscents();
+      this.filterState.feedShowIndoor();
+      this.filterState.feedShowOutdoor();
 
       untracked(() => {
         this.fetchVersion.set(0);
@@ -352,9 +357,18 @@ export class HomeComponent {
     });
   }
 
+  private outdoorPage = 0;
+  private indoorPage = 0;
+  private outdoorHasMore = true;
+  private indoorHasMore = true;
+
   private resetFeed() {
     this.fetchVersion.set(this.fetchVersion() + 1);
     this.ascents.set([]);
+    this.outdoorPage = 0;
+    this.indoorPage = 0;
+    this.outdoorHasMore = true;
+    this.indoorHasMore = true;
     this.hasMore.set(true);
     this.isLoading.set(true);
     this.loadMore$.next();
@@ -363,24 +377,62 @@ export class HomeComponent {
   private async fetchNextPage() {
     const version = this.fetchVersion();
     const filter = this.feedFilter();
-    const showIndoor = this.filterState.feedShowIndoorAscents();
-    const ascentCount = this.ascents().filter(
-      (i) => i.kind === 'ascent',
-    ).length;
-    const page = Math.floor(ascentCount / 10);
+    const showIndoor = this.filterState.feedShowIndoor();
+    const showOutdoor = this.filterState.feedShowOutdoor();
+
+    const shouldFetchOutdoor = (!showIndoor && !showOutdoor) || showOutdoor;
+    const shouldFetchIndoor = (!showIndoor && !showOutdoor) || showIndoor;
+
+    const willFetchOutdoor = shouldFetchOutdoor && this.outdoorHasMore;
+    const willFetchIndoor = shouldFetchIndoor && this.indoorHasMore;
+
+    if (!willFetchOutdoor && !willFetchIndoor) {
+      this.hasMore.set(false);
+      this.isLoading.set(false);
+      return;
+    }
 
     const promises: Promise<(RouteAscentWithExtras & { kind: 'ascent' })[]>[] =
-      [this.fetchAscents(page, filter)];
-    if (showIndoor) {
-      promises.push(this.fetchIndoorAscents(page, filter));
+      [];
+    if (willFetchOutdoor) {
+      promises.push(this.fetchAscents(this.outdoorPage, filter));
+    }
+    if (willFetchIndoor) {
+      promises.push(this.fetchIndoorAscents(this.indoorPage, filter));
     }
     const results = await Promise.all(promises);
     if (this.fetchVersion() !== version) return;
 
-    const ascents = results.flat();
+    let outdoorResult: (RouteAscentWithExtras & { kind: 'ascent' })[] = [];
+    let indoorResult: (RouteAscentWithExtras & { kind: 'ascent' })[] = [];
+
+    let idx = 0;
+    if (willFetchOutdoor) {
+      outdoorResult = results[idx++] ?? [];
+      if (outdoorResult.length < 10) {
+        this.outdoorHasMore = false;
+      } else {
+        this.outdoorPage++;
+      }
+    }
+    if (willFetchIndoor) {
+      indoorResult = results[idx++] ?? [];
+      if (indoorResult.length < 10) {
+        this.indoorHasMore = false;
+      } else {
+        this.indoorPage++;
+      }
+    }
+
+    const newAscents = [...outdoorResult, ...indoorResult];
+
+    const remainingMore =
+      (shouldFetchOutdoor && this.outdoorHasMore) ||
+      (shouldFetchIndoor && this.indoorHasMore);
+    this.hasMore.set(remainingMore);
 
     this.ascents.update((current) => {
-      const merged = deduplicateFeedItems([...current, ...ascents]);
+      const merged = deduplicateFeedItems([...current, ...newAscents]);
       return merged.sort((a, b) => {
         const dateA = a.date ? new Date(a.date).getTime() : 0;
         const dateB = b.date ? new Date(b.date).getTime() : 0;
@@ -579,6 +631,15 @@ export class HomeComponent {
       likedRouteIds: this.favoritesData.likedRouteIds(),
     };
 
+    // If categories are filtered and do not include Sport (0) or Boulder (1), no indoor ascents can match
+    if (
+      filterOptions.categories.length > 0 &&
+      !filterOptions.categories.includes(0) &&
+      !filterOptions.categories.includes(1)
+    ) {
+      return [];
+    }
+
     let query = this.supabase.client.from('indoor_ascents').select(
       `
           *,
@@ -618,6 +679,8 @@ export class HomeComponent {
           const { center: _center, ...routeFields } = typedRoute ?? {};
           mappedRoute = {
             ...routeFields,
+            center_slug: center?.slug,
+            center_name: center?.name,
             crag_slug: center?.slug,
             crag_name: center?.name,
             liked: false,
@@ -626,6 +689,11 @@ export class HomeComponent {
         }
         return {
           ...ascentRest,
+          comment:
+            a.notes ??
+            ((ascentRest as Record<string, unknown>)['comment'] as
+              string | null | undefined) ??
+            null,
           kind: 'ascent' as const,
           user: user
             ? { id: user.id, name: user.name, avatar: user.avatar }
@@ -665,28 +733,24 @@ export class HomeComponent {
 
     // Check if we should proceed based on filter type
     if (filter === 'following' && filterOptions.followedIds.length === 0) {
-      this.hasMore.set(false);
       return [];
     }
     if (
       filter === 'favorite_areas' &&
       filterOptions.likedAreaIds.length === 0
     ) {
-      this.hasMore.set(false);
       return [];
     }
     if (
       filter === 'favorite_crags' &&
       filterOptions.likedCragIds.length === 0
     ) {
-      this.hasMore.set(false);
       return [];
     }
     if (
       filter === 'favorite_routes' &&
       filterOptions.likedRouteIds.length === 0
     ) {
-      this.hasMore.set(false);
       return [];
     }
 
@@ -724,12 +788,7 @@ export class HomeComponent {
       if (error) throw error;
 
       if (!ascents || ascents.length === 0) {
-        this.hasMore.set(false);
         return [];
-      }
-
-      if (ascents.length < size) {
-        this.hasMore.set(false);
       }
 
       // Fetch user profiles separately (no FK between route_ascents and user_profiles)
@@ -781,18 +840,13 @@ export class HomeComponent {
         try {
           const parsed = JSON.parse(cached);
           if (!parsed || parsed.length === 0) {
-            this.hasMore.set(false);
             return [];
-          }
-          if (parsed.length < size) {
-            this.hasMore.set(false);
           }
           return parsed;
         } catch {
           console.error('[Home] Cache parse error');
         }
       }
-      this.hasMore.set(false);
       return [];
     }
   }
@@ -827,7 +881,9 @@ export class HomeComponent {
       showCategories: true,
       showGradeRange: true,
       showShade: false,
-      showIndoorAscents: this.filterState.feedShowIndoorAscents(),
+      showIndoorOutdoor: true,
+      indoor: this.filterState.feedShowIndoor(),
+      outdoor: this.filterState.feedShowOutdoor(),
     };
 
     const result = await firstValueFrom(
@@ -848,8 +904,11 @@ export class HomeComponent {
     if (result.gradeRange) {
       this.filterState.feedGradeRange.set(result.gradeRange);
     }
-    if (result.showIndoorAscents !== undefined) {
-      this.filterState.feedShowIndoorAscents.set(result.showIndoorAscents);
+    if (result.indoor !== undefined) {
+      this.filterState.feedShowIndoor.set(result.indoor);
+    }
+    if (result.outdoor !== undefined) {
+      this.filterState.feedShowOutdoor.set(result.outdoor);
     }
   }
 

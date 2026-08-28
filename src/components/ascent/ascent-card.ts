@@ -35,16 +35,13 @@ import { AuthStateService } from '../../services/auth-state.service';
 import { FollowsService } from '../../services/follows.service';
 import { SupabaseService } from '../../services/supabase.service';
 
-import {
-  CLIMBING_ICONS,
-  ClimbingKind,
-  RouteAscentWithExtras,
-} from '../../models';
+import { ClimbingKind, RouteAscentWithExtras } from '../../models';
 
 import { AscentDatePipe, AvatarUrlPipe } from '../../pipes';
 import { getEmbedUrl, openPhotoViewer } from '../../utils';
 
 import { GradeComponent } from '../ui/avatar-grade';
+import { ClimbingKindIconComponent } from '../ui/climbing-kind-icon';
 import { CustomCarouselComponent } from '../ui/custom-carousel';
 import { UserInfoHintComponent } from '../ui/user-info-hint';
 import { AscentCommentsComponent } from './ascent-comments';
@@ -62,6 +59,7 @@ import { AscentTypeComponent } from './ascent-type';
     AscentTypeComponent,
     AscentDatePipe,
     AvatarUrlPipe,
+    ClimbingKindIconComponent,
     CommonModule,
     CustomCarouselComponent,
     FormsModule,
@@ -230,10 +228,9 @@ import { AscentTypeComponent } from './ascent-type';
           @if (ascent.route && showRoute()) {
             <div class="text-lg leading-tight wrap-break-word">
               @if (ascent.route.climbing_kind; as kind) {
-                <tui-icon
-                  [icon]="climbingIcons[kind] || '@tui.mountain'"
-                  [tuiHint]="'climbingKinds.' + kind | translate"
-                  class="align-text-bottom mr-1"
+                <app-climbing-kind-icon
+                  [kind]="kind"
+                  iconClass="align-text-bottom mr-1"
                 />
               }
               @if (isIndoor()) {
@@ -385,7 +382,6 @@ import { AscentTypeComponent } from './ascent-type';
 })
 export class AscentCardComponent {
   protected readonly authState = inject(AuthStateService);
-  protected readonly climbingIcons = CLIMBING_ICONS;
   protected readonly supabase = inject(SupabaseService);
 
   protected readonly isIndoor = computed(() => {

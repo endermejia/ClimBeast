@@ -117,13 +117,21 @@ export class UserProfileAscentsComponent {
   protected readonly userProfilesService = inject(UserProfilesService);
   private readonly isBrowser = inject(IS_BROWSER);
 
-  protected readonly selectedGradeRange = this.filterState.areaListGradeRange;
-  protected readonly selectedCategories = this.filterState.areaListCategories;
+  protected readonly selectedGradeRange =
+    this.filterState.profileAscentsGradeRange;
+  protected readonly selectedCategories =
+    this.filterState.profileAscentsCategories;
+  protected readonly showIndoor = this.filterState.profileAscentsShowIndoor;
+  protected readonly showOutdoor = this.filterState.profileAscentsShowOutdoor;
 
   protected readonly hasActiveFilters = computed(() => {
     const [lo, hi] = this.selectedGradeRange();
     const gradeActive = !(lo === 0 && hi === ORDERED_GRADE_VALUES.length - 1);
-    return gradeActive || this.selectedCategories().length > 0;
+    const categoriesActive = this.selectedCategories().length > 0;
+    const indoor = this.showIndoor();
+    const outdoor = this.showOutdoor();
+    const indoorOutdoorActive = (indoor || outdoor) && !(indoor && outdoor);
+    return gradeActive || categoriesActive || indoorOutdoorActive;
   });
 
   protected readonly accumulatedAscents = signal<FeedItem[]>([]);
@@ -176,6 +184,8 @@ export class UserProfileAscentsComponent {
       this.profileData.ascentsSort();
       this.selectedGradeRange();
       this.selectedCategories();
+      this.showIndoor();
+      this.showOutdoor();
       this.profileData.ascentsDateFilter();
 
       this.isLoading.set(true);

@@ -143,7 +143,9 @@ export function applyCategoryFilter<
   if (includeMultipitch && categories.includes(2))
     kindsArray.push(ClimbingKinds.MULTIPITCH);
 
-  if (kindsArray.length === 0) return query;
+  if (kindsArray.length === 0) {
+    return query.in(column, ['__none__']);
+  }
   return query.in(column, kindsArray);
 }
 

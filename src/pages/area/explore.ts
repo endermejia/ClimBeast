@@ -173,7 +173,7 @@ import { IS_BROWSER } from '../../app/is-browser';
           [style.transform]="'translate(-50%, -' + _sheetScrollTop() + 'px)'"
         >
           <div class="flex gap-2">
-            @if (filterState.areaListShowIndoor()) {
+            @if (shouldShowIndoor()) {
               <button
                 tuiButton
                 size="m"
@@ -184,7 +184,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                 {{ 'indoor.button' | translate }}
               </button>
             }
-            @if (filterState.areaListShowOutdoor()) {
+            @if (shouldShowOutdoor()) {
               <button
                 tuiButton
                 size="m"
@@ -207,7 +207,7 @@ import { IS_BROWSER } from '../../app/is-browser';
           [style.visibility]="hasSelection ? 'visible' : 'hidden'"
         >
           <div class="flex gap-2">
-            @if (filterState.areaListShowIndoor()) {
+            @if (shouldShowIndoor()) {
               <button
                 tuiButton
                 size="m"
@@ -218,7 +218,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                 {{ 'indoor.button' | translate }}
               </button>
             }
-            @if (filterState.areaListShowOutdoor()) {
+            @if (shouldShowOutdoor()) {
               <button
                 tuiButton
                 size="m"
@@ -545,8 +545,20 @@ export class ExploreComponent {
   protected readonly _sheetScrollTop: WritableSignal<number> = signal(0);
   private _sheetClosing = false;
 
+  protected readonly shouldShowIndoor = computed(() => {
+    const indoor = this.filterState.areaListShowIndoor();
+    const outdoor = this.filterState.areaListShowOutdoor();
+    return (!indoor && !outdoor) || indoor;
+  });
+
+  protected readonly shouldShowOutdoor = computed(() => {
+    const indoor = this.filterState.areaListShowIndoor();
+    const outdoor = this.filterState.areaListShowOutdoor();
+    return (!indoor && !outdoor) || outdoor;
+  });
+
   protected mapCragItems: Signal<MapCragItem[]> = computed(() => {
-    if (!this.filterState.areaListShowOutdoor()) return [];
+    if (!this.shouldShowOutdoor()) return [];
     const items = this.mapData.mapItemsOnViewport();
     const categories = this.filterState.areaListCategories();
     const [selMin, selMax] = this.filterState.areaListGradeRange();
@@ -583,7 +595,7 @@ export class ExploreComponent {
   });
 
   protected mapAreaItems: Signal<MapAreaItem[]> = computed(() => {
-    if (!this.filterState.areaListShowOutdoor()) return [];
+    if (!this.shouldShowOutdoor()) return [];
     const items = this.mapData.mapItemsOnViewport();
     const categories = this.filterState.areaListCategories();
     const [selMin, selMax] = this.filterState.areaListGradeRange();
@@ -624,7 +636,7 @@ export class ExploreComponent {
       .sort((a, b) => (a.liked === b.liked ? 0 : a.liked ? -1 : 1));
   });
   protected mapIndoorItems: Signal<MapIndoorCenterItem[]> = computed(() => {
-    if (!this.filterState.areaListShowIndoor()) return [];
+    if (!this.shouldShowIndoor()) return [];
     const items = this.mapData.mapItemsOnViewport();
     return items.filter((item): item is MapIndoorCenterItem => {
       return (item as MapIndoorCenterItem).is_indoor === true;

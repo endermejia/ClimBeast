@@ -8,11 +8,11 @@ import {
 import { RouterLink } from '@angular/router';
 
 import { TuiButton, TuiHint, TuiScrollbar } from '@taiga-ui/core';
+import { TuiSkeleton } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { AscentTypes } from '../../../models';
-import { GradeDistribution } from '../../../models/user-stats.model';
+import { AscentTypes, GradeDistribution } from '../../../models';
 
 @Component({
   selector: 'app-user-profile-stats-pyramid',
@@ -24,12 +24,34 @@ import { GradeDistribution } from '../../../models/user-stats.model';
     TuiButton,
     TuiHint,
     TuiScrollbar,
+    TuiSkeleton,
   ],
   template: `
     <div
       class="bg-(--tui-background-base) shadow-md p-4 sm:p-6 rounded-2xl border border-(--tui-border-normal) w-full min-w-0 xl:h-full flex flex-col justify-between"
     >
-      @if (distribution()?.total ?? 0 > 0) {
+      @if (loading()) {
+        <div class="flex flex-col gap-2 flex-1 justify-evenly">
+          @for (width of skeletonWidths; track $index) {
+            <div
+              class="grid grid-cols-[2.5rem_1fr_2.5rem] sm:grid-cols-[3rem_1fr_3rem] gap-2 sm:gap-3 items-center text-xs sm:text-sm"
+            >
+              <div class="flex justify-center">
+                <div [tuiSkeleton]="true" class="w-7 h-4 rounded"></div>
+              </div>
+              <div
+                class="h-6 flex rounded overflow-hidden relative mx-auto"
+                [style.width.%]="width"
+              >
+                <div [tuiSkeleton]="true" class="w-full h-full rounded"></div>
+              </div>
+              <div class="flex justify-center">
+                <div [tuiSkeleton]="true" class="w-5 h-4 rounded"></div>
+              </div>
+            </div>
+          }
+        </div>
+      } @else if (distribution()?.total ?? 0 > 0) {
         @let dist = distribution()!;
         <div class="flex flex-col gap-2 flex-1 justify-evenly">
           @for (row of dist.rows; track row.gradeLabel) {
@@ -231,7 +253,9 @@ import { GradeDistribution } from '../../../models/user-stats.model';
 })
 export class UserProfileStatsPyramidComponent {
   protected readonly AscentTypes = AscentTypes;
+  protected readonly skeletonWidths = [20, 35, 55, 75, 95, 80, 60, 40];
 
   distribution = input.required<GradeDistribution | null>();
   showAllGrades = model(false);
+  loading = input<boolean>(false);
 }

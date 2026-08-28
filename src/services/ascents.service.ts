@@ -226,6 +226,7 @@ export class AscentsService {
 
     return {
       ...ia,
+      comment: (ia['notes'] as string) ?? (ia['comment'] as string) ?? null,
       user: (indoorUser as UserProfileBasicDto) || undefined,
       route: mappedIndoorRoute,
     } as unknown as RouteAscentWithExtras;

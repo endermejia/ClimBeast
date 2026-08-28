@@ -50,7 +50,22 @@ describe('FilterStateService', () => {
 
   it('should have default indoor/outdoor', () => {
     expect(service.areaListShowIndoor()).toBe(false);
-    expect(service.areaListShowOutdoor()).toBe(true);
+    expect(service.areaListShowOutdoor()).toBe(false);
+  });
+
+  it('should have default feed indoor/outdoor', () => {
+    expect(service.feedShowIndoor()).toBe(false);
+    expect(service.feedShowOutdoor()).toBe(false);
+  });
+
+  it('should have default profile ascents filters', () => {
+    expect(service.profileAscentsGradeRange()).toEqual([
+      0,
+      ORDERED_GRADE_VALUES.length - 1,
+    ]);
+    expect(service.profileAscentsCategories()).toEqual([]);
+    expect(service.profileAscentsShowIndoor()).toBe(false);
+    expect(service.profileAscentsShowOutdoor()).toBe(false);
   });
 
   it('should set grade range', () => {
@@ -61,5 +76,18 @@ describe('FilterStateService', () => {
   it('should set categories', () => {
     service.areaListCategories.set([0, 1]);
     expect(service.areaListCategories()).toEqual([0, 1]);
+  });
+
+  it('should set independent indoor/outdoor filters for feed and profile', () => {
+    service.feedShowIndoor.set(false);
+    service.feedShowOutdoor.set(true);
+
+    service.profileAscentsShowIndoor.set(true);
+    service.profileAscentsShowOutdoor.set(false);
+
+    expect(service.feedShowIndoor()).toBe(false);
+    expect(service.feedShowOutdoor()).toBe(true);
+    expect(service.profileAscentsShowIndoor()).toBe(true);
+    expect(service.profileAscentsShowOutdoor()).toBe(false);
   });
 });

@@ -26,7 +26,9 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { map, merge, startWith } from 'rxjs';
 
-import { ORDERED_GRADE_VALUES } from '../../models';
+import { ClimbingKindIconComponent } from '../ui/climbing-kind-icon';
+
+import { ClimbingKind, ORDERED_GRADE_VALUES } from '../../models';
 
 import { clamp } from '../../utils';
 
@@ -50,6 +52,7 @@ export interface FilterDialog {
 @Component({
   selector: 'app-filter-dialog',
   imports: [
+    ClimbingKindIconComponent,
     FormsModule,
     ReactiveFormsModule,
     TranslatePipe,
@@ -78,7 +81,17 @@ export interface FilterDialog {
             formControlName="filters"
             size="l"
             [items]="climbingKindItems()"
+            [content]="climbingKindContent"
           />
+          <ng-template #climbingKindContent let-item>
+            <span class="inline-flex items-center gap-1.5">
+              <app-climbing-kind-icon
+                [kind]="getKindByLabel(item)"
+                [showHint]="false"
+              />
+              <span>{{ item }}</span>
+            </span>
+          </ng-template>
         </section>
       }
 
@@ -191,6 +204,14 @@ export class FilterDialogComponent {
     ];
   });
 
+  protected getKindByLabel(label: string): ClimbingKind | null {
+    const items = this.climbingKindItems();
+    if (label === items[0]) return 'sport';
+    if (label === items[1]) return 'boulder';
+    if (label === items[2]) return 'multipitch';
+    return null;
+  }
+
   // Items for shade filter (no-op for now) as a signal
   readonly shadeItems: Signal<string[]> = computed(() => {
     this._i18nTick();
@@ -288,8 +309,8 @@ export class FilterDialogComponent {
       if (d.showIndoorOutdoor) {
         const ioNow = this.indoorOutdoorItems();
         const selectedIO: string[] = [];
-        if (d.indoor !== false) selectedIO.push(ioNow[0]);
-        if (d.outdoor !== false) selectedIO.push(ioNow[1]);
+        if (d.indoor === true) selectedIO.push(ioNow[0]);
+        if (d.outdoor === true) selectedIO.push(ioNow[1]);
         this.form.patchValue({ indoorOutdoor: selectedIO });
       }
     }
@@ -411,18 +432,19 @@ export class FilterDialogComponent {
   }
 
   protected clear(): void {
-    const ioNow = this.indoorOutdoorItems();
     this.form.reset({
+      filters: [],
+      shade: [],
       gradeRange: [this.minIndex, this.maxIndex],
-      indoorOutdoor: [ioNow[0], ioNow[1]],
+      indoorOutdoor: [],
       showIndoorAscents: false,
     });
     this.context.completeWith({
       categories: [],
       gradeRange: [this.minIndex, ORDERED_GRADE_VALUES.length - 1],
       selectedShade: [],
-      indoor: true,
-      outdoor: true,
+      indoor: false,
+      outdoor: false,
       showCategories: this.context.data?.showCategories,
       showShade: this.context.data?.showShade,
       showGradeRange: this.context.data?.showGradeRange,
