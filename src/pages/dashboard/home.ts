@@ -23,7 +23,7 @@ import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { Subject, firstValueFrom } from 'rxjs';
 
 import { AppNotificationsService } from '../../services/app-notifications.service';
-
+import { AscentsService } from '../../services/ascents.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { CartService } from '../../services/cart.service';
 import { DesnivelService } from '../../services/desnivel.service';
@@ -208,6 +208,7 @@ export type HomeFeedFilter =
   },
 })
 export class HomeComponent {
+  protected readonly ascentsService = inject(AscentsService);
   protected readonly authState = inject(AuthStateService);
   protected readonly cart = inject(CartService);
   protected readonly favoritesData = inject(FavoritesDataService);
@@ -332,6 +333,42 @@ export class HomeComponent {
     this.scrollService.scrollToTop$.pipe(takeUntilDestroyed()).subscribe(() => {
       this.scrollToTop();
     });
+
+    this.ascentsService.ascentDeleted
+      .pipe(takeUntilDestroyed())
+      .subscribe((id) => {
+        this.ascents.update((items) =>
+          items.filter((item) => String(item.id) !== String(id)),
+        );
+      });
+
+    this.ascentsService.ascentUpdated
+      .pipe(takeUntilDestroyed())
+      .subscribe(async ({ id, changes }) => {
+        const updated = await this.ascentsService.getAscentById(id);
+        this.ascents.update((items) => {
+          const updatedList = items.map((item) =>
+            String(item.id) === String(id)
+              ? ({
+                  ...item,
+                  ...(updated || changes),
+                  kind: 'ascent',
+                } as FeedItem)
+              : item,
+          );
+          return updatedList.sort((a, b) => {
+            const dateA = a.date ? new Date(a.date).getTime() : 0;
+            const dateB = b.date ? new Date(b.date).getTime() : 0;
+            return dateB - dateA;
+          });
+        });
+      });
+
+    this.ascentsService.ascentCreated
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => {
+        this.resetFeed();
+      });
 
     effect(() => {
       if (!this.followsLoaded()) return;

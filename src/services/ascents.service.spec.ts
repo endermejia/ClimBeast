@@ -203,6 +203,32 @@ describe('AscentsService', () => {
     });
   });
 
+  describe('ascent lifecycle observables', () => {
+    it('emits on ascentDeleted when notifyAscentDeleted is called', () => {
+      const emitted: (number | string)[] = [];
+      service.ascentDeleted.subscribe((id) => emitted.push(id));
+      service.notifyAscentDeleted(123);
+      service.notifyAscentDeleted('indoor-456');
+      expect(emitted).toEqual([123, 'indoor-456']);
+    });
+
+    it('emits on ascentUpdated when notifyAscentUpdated is called', () => {
+      const emitted: { id: number | string; changes?: unknown }[] = [];
+      service.ascentUpdated.subscribe((data) => emitted.push(data));
+      service.notifyAscentUpdated(123, { comment: 'Nice route' } as never);
+      expect(emitted).toEqual([
+        { id: 123, changes: { comment: 'Nice route' } },
+      ]);
+    });
+
+    it('emits on ascentCreated when notifyAscentCreated is called', () => {
+      let count = 0;
+      service.ascentCreated.subscribe(() => count++);
+      service.notifyAscentCreated();
+      expect(count).toBe(1);
+    });
+  });
+
   describe('refreshResources', () => {
     it('calls reload on resources', () => {
       const profileData = (

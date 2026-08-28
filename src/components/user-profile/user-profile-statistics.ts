@@ -17,10 +17,6 @@ import { LayoutService } from '../../services/layout.service';
 import { ProfileDataService } from '../../services/profile-data.service';
 import { SupabaseService } from '../../services/supabase.service';
 
-import { UserProfileStatsPyramidComponent } from './statistics/grade-pyramid';
-import { UserProfileStatsScoreComponent } from './statistics/score-card';
-import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
-
 import {
   GradeDistribution,
   TrendData,
@@ -36,6 +32,12 @@ import {
   getMaxGrade,
   getMaxGradeRoutes,
 } from '../../utils';
+
+import { UserProfileStatsPyramidComponent } from './statistics/grade-pyramid';
+
+import { UserProfileStatsScoreComponent } from './statistics/score-card';
+
+import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
 
 @Component({
   selector: 'app-user-profile-statistics',

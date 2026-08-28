@@ -12,22 +12,23 @@ import IndoorRouteFormComponent from '../components/forms/indoor-route-form';
 import TopoFormComponent from '../components/forms/topo-form';
 
 import {
-  IndoorCenterDto,
-  IndoorVoucherDto,
-  IndoorVoucherPurchaseDto,
-  IndoorRouteDto,
-  IndoorTopoDto,
-  IndoorSaleDto,
-  IndoorInventoryDto,
-  IndoorRouteWithExtras,
+  EquipperDto,
   IndoorAscentDto,
   IndoorAscentInsertDto,
-  IndoorAscentWithExtras,
-  EquipperDto,
-  IndoorTopoQueryRow,
   IndoorAscentQueryRow,
-  IndoorTopoRouteWithRoute,
+  IndoorAscentWithExtras,
+  IndoorCenterDto,
+  IndoorInventoryDto,
+  IndoorRouteDto,
+  IndoorRouteWithExtras,
+  IndoorSaleDto,
+  IndoorTopoDto,
   IndoorTopoListItem,
+  IndoorTopoQueryRow,
+  IndoorTopoRouteWithRoute,
+  IndoorVoucherDto,
+  IndoorVoucherPurchaseDto,
+  RouteAscentWithExtras,
 } from '../models';
 
 import type { TopoPath } from '../models/topo.model';
@@ -36,6 +37,7 @@ import { handleErrorToast } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 
+import { AscentsService } from './ascents.service';
 import { AuthStateService } from './auth-state.service';
 import { IndoorCentersDataService } from './indoor-centers-data.service';
 import { IndoorDataService } from './indoor-data.service';
@@ -56,6 +58,7 @@ export class IndoorService {
   private readonly indoorCentersData = inject(IndoorCentersDataService);
   private readonly authState = inject(AuthStateService);
   private readonly indoorData = inject(IndoorDataService);
+  private readonly ascentsService = inject(AscentsService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
@@ -797,7 +800,7 @@ export class IndoorService {
     this.reloadCenterRoutes();
     this.toast.success('messages.toasts.ascentCreated');
     const row = data as IndoorAscentQueryRow;
-    return {
+    const result = {
       ...row,
       route: row.route
         ? {
@@ -808,6 +811,10 @@ export class IndoorService {
         : undefined,
       user: row.user_profile,
     } as IndoorAscentWithExtras;
+    this.ascentsService.notifyAscentCreated(
+      result as unknown as RouteAscentWithExtras,
+    );
+    return result;
   }
 
   async updateRouteAscent(
@@ -832,6 +839,10 @@ export class IndoorService {
 
     if (error) throw error;
     this.reloadCenterRoutes();
+    this.ascentsService.notifyAscentUpdated(
+      id,
+      updates as Partial<RouteAscentWithExtras>,
+    );
     this.toast.success('messages.toasts.ascentUpdated');
   }
 
@@ -867,6 +878,8 @@ export class IndoorService {
 
     if (error) throw error;
 
+    this.ascentsService.notifyAscentDeleted(ascentId);
+
     this.toast.showWithUndo('messages.toasts.ascentDeleted', () => {
       this.supabase.client
         .from('indoor_ascents')
@@ -878,6 +891,9 @@ export class IndoorService {
             this.reloadCenterRoutes();
             this.indoorData.indoorRouteDetailResource.reload();
             this.indoorData.topoDetailResource.reload();
+            this.ascentsService.notifyAscentCreated(
+              ascent as unknown as RouteAscentWithExtras,
+            );
           }
         });
     });

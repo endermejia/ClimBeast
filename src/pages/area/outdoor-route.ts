@@ -11,6 +11,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
@@ -543,6 +544,41 @@ export class OutdoorRouteComponent {
       });
     });
 
+    this.ascentsService.ascentDeleted
+      .pipe(takeUntilDestroyed())
+      .subscribe((id) => {
+        this.accumulatedAscents.update((items) =>
+          items.filter((item) => String(item.id) !== String(id)),
+        );
+        this.outdoorData.routeDetailResource.reload();
+      });
+
+    this.ascentsService.ascentUpdated
+      .pipe(takeUntilDestroyed())
+      .subscribe(async ({ id, changes }) => {
+        const updated = await this.ascentsService.getAscentById(id);
+        this.accumulatedAscents.update((items) =>
+          items.map((item) =>
+            String(item.id) === String(id)
+              ? ({
+                  ...item,
+                  ...(updated || changes),
+                  kind: 'ascent',
+                } as FeedItem)
+              : item,
+          ),
+        );
+        this.outdoorData.routeDetailResource.reload();
+      });
+
+    this.ascentsService.ascentCreated
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => {
+        this.profileData.ascentsPage.set(0);
+        this.outdoorData.routeAscentsResource.reload();
+        this.outdoorData.routeDetailResource.reload();
+      });
+
     effect(() => {
       const res = this.outdoorData.routeAscentsResource.value();
       if (res) {
@@ -551,7 +587,13 @@ export class OutdoorRouteComponent {
         if (page === 0) {
           this.accumulatedAscents.set(items);
         } else {
-          this.accumulatedAscents.update((prev) => [...prev, ...items]);
+          this.accumulatedAscents.update((prev) => {
+            const existingIds = new Set(prev.map((a) => String(a.id)));
+            const newItems = items.filter(
+              (item) => !existingIds.has(String(item.id)),
+            );
+            return [...prev, ...newItems];
+          });
         }
         this.isLoading.set(false);
       } else if (this.outdoorData.routeAscentsResource.error()) {

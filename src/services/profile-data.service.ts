@@ -190,7 +190,6 @@ export class ProfileDataService {
         sort,
       } = params;
       if (!userId || !this.isBrowser) return { items: [], total: 0 };
-      if (!showIndoor && !showOutdoor) return { items: [], total: 0 };
       try {
         await this.supabase.whenReady();
         const from = page * size;

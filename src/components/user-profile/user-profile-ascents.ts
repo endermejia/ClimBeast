@@ -9,11 +9,13 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { TuiButton, TuiScrollbar } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { AscentsService } from '../../services/ascents.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { FollowsService } from '../../services/follows.service';
 import { ProfileDataService } from '../../services/profile-data.service';
@@ -110,6 +112,7 @@ export class UserProfileAscentsComponent {
   isOwnProfile = input(false);
   profile = input<UserProfileDto | null | undefined>();
 
+  private readonly ascentsService = inject(AscentsService);
   protected readonly profileData = inject(ProfileDataService);
   protected readonly filterState = inject(FilterStateService);
   protected readonly supabase = inject(SupabaseService);
@@ -160,6 +163,36 @@ export class UserProfileAscentsComponent {
       }
     });
 
+    this.ascentsService.ascentDeleted
+      .pipe(takeUntilDestroyed())
+      .subscribe((id) => {
+        this.accumulatedAscents.update((items) =>
+          items.filter((item) => String(item.id) !== String(id)),
+        );
+      });
+
+    this.ascentsService.ascentUpdated
+      .pipe(takeUntilDestroyed())
+      .subscribe(async ({ id, changes }) => {
+        const updated = await this.ascentsService.getAscentById(id);
+        this.accumulatedAscents.update((items) => {
+          const mapped = items.map((item) =>
+            String(item.id) === String(id)
+              ? ({ ...item, ...(updated || changes) } as RouteAscentWithExtras)
+              : (item as RouteAscentWithExtras),
+          );
+          return processAscentsToFeed(mapped);
+        });
+      });
+
+    this.ascentsService.ascentCreated
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => {
+        this.profileData.ascentsPage.set(0);
+        this.profileData.userAscentsResource.reload();
+        this.profileData.userTotalAscentsCountResource.reload();
+      });
+
     effect(() => {
       const res = this.ascentsResource.value();
       if (res) {
@@ -170,7 +203,11 @@ export class UserProfileAscentsComponent {
         } else {
           this.accumulatedAscents.update((prev) => {
             const prevAscents = prev as RouteAscentWithExtras[];
-            return processAscentsToFeed([...prevAscents, ...res.items]);
+            const existingIds = new Set(prevAscents.map((a) => String(a.id)));
+            const newItems = res.items.filter(
+              (item) => !existingIds.has(String(item.id)),
+            );
+            return processAscentsToFeed([...prevAscents, ...newItems]);
           });
         }
         this.isLoading.set(false);

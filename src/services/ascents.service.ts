@@ -465,6 +465,7 @@ export class AscentsService {
 
       this.toast.success('messages.toasts.ascentUpdated');
       this.refreshResources(ascentId);
+      this.ascentUpdated$.next({ id: ascentId });
     } catch (e) {
       console.error('[AscentsService] uploadPhoto error', e);
       throw e;
@@ -491,6 +492,7 @@ export class AscentsService {
     }
 
     this.refreshResources(ascentId);
+    this.ascentUpdated$.next({ id: ascentId });
   }
 
   openAscentDialog(ascentId: number | string): Observable<void> {
@@ -554,6 +556,7 @@ export class AscentsService {
       throw error;
     }
     this.refreshResources();
+    this.ascentCreated$.next(data as RouteAscentDto);
     this.toast.success('messages.toasts.ascentCreated');
     return data as RouteAscentDto;
   }
@@ -575,6 +578,10 @@ export class AscentsService {
       throw error;
     }
     this.refreshResources(id, payload as Partial<RouteAscentWithExtras>);
+    this.ascentUpdated$.next({
+      id,
+      changes: payload as Partial<RouteAscentWithExtras>,
+    });
     this.toast.success('messages.toasts.ascentUpdated');
     return data as RouteAscentDto;
   }
@@ -613,7 +620,6 @@ export class AscentsService {
     }
 
     // Update resources by removing the ascent
-    // Update resources by removing the ascent
     const removeFn = (
       data: { items: RouteAscentWithExtras[]; total: number } | undefined,
     ) => {
@@ -639,6 +645,7 @@ export class AscentsService {
     }
 
     this.refreshResources();
+    this.ascentDeleted$.next(id);
     this.toast.success('messages.toasts.ascentDeleted');
     return true;
   }
@@ -651,12 +658,48 @@ export class AscentsService {
 
   private readonly ascentCommentsUpdate$ = new Subject<number>();
 
+  private readonly ascentDeleted$ = new Subject<number | string>();
+  private readonly ascentUpdated$ = new Subject<{
+    id: number | string;
+    changes?: Partial<RouteAscentWithExtras>;
+  }>();
+  private readonly ascentCreated$ = new Subject<
+    RouteAscentDto | RouteAscentWithExtras | void
+  >();
+
   get ascentLikesUpdate() {
     return this.ascentLikesUpdate$.asObservable();
   }
 
   get ascentCommentsUpdate() {
     return this.ascentCommentsUpdate$.asObservable();
+  }
+
+  get ascentDeleted() {
+    return this.ascentDeleted$.asObservable();
+  }
+
+  get ascentUpdated() {
+    return this.ascentUpdated$.asObservable();
+  }
+
+  get ascentCreated() {
+    return this.ascentCreated$.asObservable();
+  }
+
+  notifyAscentDeleted(id: number | string): void {
+    this.ascentDeleted$.next(id);
+  }
+
+  notifyAscentUpdated(
+    id: number | string,
+    changes?: Partial<RouteAscentWithExtras>,
+  ): void {
+    this.ascentUpdated$.next({ id, changes });
+  }
+
+  notifyAscentCreated(data?: RouteAscentDto | RouteAscentWithExtras): void {
+    this.ascentCreated$.next(data);
   }
 
   async toggleLike(ascentId: number): Promise<boolean | null> {
