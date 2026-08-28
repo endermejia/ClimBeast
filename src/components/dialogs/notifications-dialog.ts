@@ -97,7 +97,7 @@ interface GroupedNotification {
               (click)="onNotificationClick(group)"
             >
               <span tuiAvatar size="s">
-                @if (group.actors[0].avatar; as avatar) {
+                @if (group.actors[0]?.avatar; as avatar) {
                   <img [src]="avatar | avatarUrl" alt="avatar" />
                 } @else {
                   <tui-icon icon="@tui.user" />
@@ -184,21 +184,26 @@ export class NotificationsDialogComponent {
   );
 
   protected getNotificationText(group: GroupedNotification): string {
+    const uniqueActorsCount = new Set(
+      group.actors.map((a) => a.name).filter(Boolean),
+    ).size;
+    const isPlural = uniqueActorsCount > 1;
+
     switch (group.type) {
       case NotificationTypes.LIKE:
-        return group.count > 1
+        return isPlural
           ? 'notifications.likedAscentPlural'
           : 'notifications.likedAscent';
       case NotificationTypes.COMMENT:
-        return group.count > 1
+        return isPlural
           ? 'notifications.commentedAscentPlural'
           : 'notifications.commentedAscent';
       case NotificationTypes.MENTION:
-        return group.count > 1
+        return isPlural
           ? 'notifications.mentionPlural'
           : 'notifications.mention';
       case NotificationTypes.LIKED_COMMENT:
-        return group.count > 1
+        return isPlural
           ? 'notifications.likedCommentPlural'
           : 'notifications.likedComment';
       case NotificationTypes.MESSAGE:
@@ -314,8 +319,8 @@ export class NotificationsDialogComponent {
           resource_id: newest.resource_id ?? undefined,
           resource_name: newest.resource_name,
           actors: groupItems.map((n) => ({
-            name: n.actor.name,
-            avatar: n.actor.avatar,
+            name: n.actor?.name ?? '',
+            avatar: n.actor?.avatar,
           })),
           actor_id: newest.actor_id ?? '',
           created_at: newest.created_at ?? '',
@@ -331,7 +336,9 @@ export class NotificationsDialogComponent {
           type: notif.type,
           resource_id: notif.resource_id ?? undefined,
           resource_name: notif.resource_name,
-          actors: [{ name: notif.actor.name, avatar: notif.actor.avatar }],
+          actors: [
+            { name: notif.actor?.name ?? '', avatar: notif.actor?.avatar },
+          ],
           actor_id: notif.actor_id ?? '',
           created_at: notif.created_at ?? '',
           read_at: notif.read_at ?? undefined,

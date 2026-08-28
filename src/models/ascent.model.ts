@@ -1,4 +1,5 @@
-import { AscentType, ClimbingKind, RouteAscentWithExtras } from '../models';
+import { AscentType, ClimbingKind } from './app-enums.model';
+import { RouteAscentWithExtras } from './route-ascent.model';
 
 export interface AscentListItem {
   ascentId: number;

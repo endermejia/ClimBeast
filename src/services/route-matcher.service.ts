@@ -1,11 +1,15 @@
 import { inject, Injectable } from '@angular/core';
 
 import { TranslateService } from '@ngx-translate/core';
-
 import { BehaviorSubject } from 'rxjs';
+
+import { EightAnuService } from './eight-anu.service';
+import { SupabaseService } from './supabase.service';
+import { ToastService } from './toast.service';
 
 import {
   AscentType,
+  AscentTypes,
   ClimbingKind,
   ClimbingKinds,
   EightAnuAscent,
@@ -14,12 +18,6 @@ import {
 } from '../models';
 
 import { slugify } from '../utils';
-
-import { EightAnuService } from './eight-anu.service';
-
-import { SupabaseService } from './supabase.service';
-
-import { ToastService } from './toast.service';
 
 export interface Import8aPayload {
   area_name: string;
@@ -40,6 +38,7 @@ export interface Import8aPayload {
   date: string;
   style: AscentType;
   attempts: number | null;
+  tries?: number | null;
   rating: number | null;
   comment: string;
   recommended: boolean;
@@ -569,6 +568,15 @@ export class RouteMatcherService {
       const routeSlug = resolved?.slug || route_8a_slug || slugify(a.name);
       const grade = LABEL_TO_VERTICAL_LIFE[a.difficulty] ?? 0;
 
+      let attempts = a.tries ?? null;
+      if (attempts === null || attempts <= 0) {
+        if (a.type === AscentTypes.OS || a.type === AscentTypes.F) {
+          attempts = 1;
+        } else {
+          attempts = null;
+        }
+      }
+
       return {
         area_name: a.location_name,
         area_slug: areaSlug,
@@ -587,7 +595,8 @@ export class RouteMatcherService {
         climbing_kind: a.climbing_kind ?? ClimbingKinds.SPORT,
         date: a.date.split('T')[0],
         style: a.type,
-        attempts: a.tries,
+        attempts,
+        tries: attempts,
         rating: a.rating === 0 ? null : a.rating,
         comment: a.comment,
         recommended: a.recommended,

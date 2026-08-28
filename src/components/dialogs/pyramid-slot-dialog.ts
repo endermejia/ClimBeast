@@ -223,13 +223,11 @@ export class PyramidSlotDialogComponent {
     this.searchTimeout = setTimeout(async () => {
       this.loading.set(true);
       try {
-        const routes = await this.routesService.searchRoutes(query);
-        // Filter by grade if required
-        let filtered = routes;
-        if (this.data.expectedGrade) {
-          filtered = routes.filter((r) => r.grade === this.data.expectedGrade);
-        }
-        this.results.set(filtered as RouteDto[]);
+        const routes = await this.routesService.searchRoutes(
+          query,
+          this.data.expectedGrade,
+        );
+        this.results.set(routes as RouteDto[]);
       } catch (e) {
         console.error('Error searching routes:', e);
       } finally {

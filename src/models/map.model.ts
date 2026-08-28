@@ -1,4 +1,5 @@
-import { AmountByEveryGrade, ClimbingKind } from '../models';
+import { ClimbingKind } from './app-enums.model';
+import { AmountByEveryGrade } from './grade.model';
 
 export interface MapAreaItem {
   id: number;

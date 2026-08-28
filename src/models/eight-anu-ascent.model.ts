@@ -1,4 +1,5 @@
-import { AscentType, ClimbingKind, GradeLabel } from '../models';
+import { AscentType, ClimbingKind } from './app-enums.model';
+import { GradeLabel } from './grade.model';
 
 export interface EightAnuAscent {
   route_boulder: 'ROUTE' | 'BOULDER';

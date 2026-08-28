@@ -31,7 +31,7 @@ import type {
 
 import { CACHE_KEYS } from '../constants/cache-keys';
 
-import { normalizeNameStrict } from '../utils';
+import { normalizeNameStrict, slugify } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 
@@ -491,11 +491,32 @@ export class RoutesService {
     return result;
   }
 
-  async searchRoutes(query: string): Promise<Partial<RouteWithExtras>[]> {
-    if (!this.isBrowser || query.length < 2) return [];
+  async searchRoutes(
+    query: string,
+    grade?: number,
+  ): Promise<Partial<RouteWithExtras>[]> {
+    if (!this.isBrowser || query.trim().length < 2) return [];
     await this.supabase.whenReady();
 
-    const { data, error } = await this.supabase.client
+    const cleanQuery = query.trim();
+    const words = cleanQuery
+      .split(/\s+/)
+      .map((w) => slugify(w))
+      .filter(Boolean);
+
+    const slugPattern =
+      words.length > 0 ? `%${words.join('%')}%` : `%${slugify(cleanQuery)}%`;
+
+    const orConditions = [
+      `name.ilike.%${cleanQuery}%`,
+      `slug.ilike.${slugPattern}`,
+    ];
+
+    if (words.length > 1) {
+      orConditions.push(`slug.ilike.%${[...words].reverse().join('%')}%`);
+    }
+
+    let q = this.supabase.client
       .from('routes')
       .select(
         `
@@ -503,8 +524,13 @@ export class RoutesService {
         crag:crags!inner(id, name, slug, area:areas(id, name, slug))
       `,
       )
-      .ilike('name', `%${query}%`)
-      .limit(20);
+      .or(orConditions.join(','));
+
+    if (grade !== undefined && grade !== null) {
+      q = q.eq('grade', grade);
+    }
+
+    const { data, error } = await q.limit(20);
 
     if (error) {
       console.error('[RoutesService] searchRoutes error', error);

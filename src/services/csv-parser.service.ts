@@ -103,10 +103,12 @@ export class CsvParserService {
           return null;
         }
 
-        const getVal = (name: string) => {
+        const getVal = (name: string, warnIfMissing = true) => {
           const idx = headers.indexOf(name);
           if (idx === -1) {
-            console.warn(`[8a Import] Header "${name}" not found in CSV`);
+            if (warnIfMissing) {
+              console.warn(`[8a Import] Header "${name}" not found in CSV`);
+            }
             return '';
           }
           const value = cleanValues[idx];
@@ -144,7 +146,9 @@ export class CsvParserService {
           sectorName = `Unknown Sector ${locationName}`;
         }
 
-        const triesStr = getVal('tries');
+        const rawType = getVal('type');
+        const rawSubType = getVal('sub_type', false);
+        const triesStr = getVal('tries', false) || getVal('attempts', false);
 
         return {
           route_boulder: routeBoulder as 'ROUTE' | 'BOULDER',
@@ -153,9 +157,9 @@ export class CsvParserService {
           sector_name: sectorName,
           country_code: getVal('country_code'),
           date: getVal('date'),
-          type: this.mapType(getVal('type')),
+          type: this.mapType(rawType, rawSubType),
           rating: Math.max(0, Math.min(5, ratingValue)),
-          tries: triesStr ? parseInt(triesStr, 10) || null : null,
+          tries: this.parseTries(triesStr, rawType, rawSubType),
           difficulty: difficulty,
           comment: getVal('comment'),
           recommended: getVal('recommended') === '1',
@@ -168,10 +172,66 @@ export class CsvParserService {
       .filter((a): a is EightAnuAscent => !!a && !!a.name);
   }
 
-  private mapType(type: string): AscentType {
-    const t = type.toLowerCase();
-    if (t.includes('os') || t.includes('onsight')) return AscentTypes.OS;
-    if (t.includes('flash') || t === 'f') return AscentTypes.F;
+  private parseTries(
+    triesStr: string,
+    type: string,
+    subType: string,
+  ): number | null {
+    const parsed = parseInt(triesStr, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      return parsed;
+    }
+
+    const t = type.toLowerCase().trim();
+    const st = subType.toLowerCase().trim();
+
+    if (
+      t.includes('os') ||
+      t.includes('onsight') ||
+      st.includes('os') ||
+      st.includes('onsight') ||
+      t.includes('flash') ||
+      t === 'f' ||
+      st.includes('flash') ||
+      st === 'f'
+    ) {
+      return 1;
+    }
+
+    if (
+      t.includes('second') ||
+      t.includes('2nd') ||
+      st.includes('second') ||
+      st.includes('2nd')
+    ) {
+      return 2;
+    }
+
+    return null;
+  }
+
+  private mapType(type: string, subType = ''): AscentType {
+    const t = type.toLowerCase().trim();
+    const st = subType.toLowerCase().trim();
+
+    if (
+      t.includes('os') ||
+      t.includes('onsight') ||
+      st.includes('os') ||
+      st.includes('onsight')
+    ) {
+      return AscentTypes.OS;
+    }
+
+    if (
+      t.includes('flash') ||
+      t === 'f' ||
+      st.includes('flash') ||
+      st === 'f'
+    ) {
+      return AscentTypes.F;
+    }
+
     return AscentTypes.RP;
   }
 }
