@@ -10,7 +10,10 @@ import { firstValueFrom, Observable } from 'rxjs';
 
 import { Import8aComponent } from '../components/ascent/import-8a';
 
+import { AscentCalendarDialogComponent } from '../components/dialogs/ascent-calendar-dialog';
+import { FavoritesDialogComponent } from '../components/dialogs/favorites-dialog';
 import { ImageEditorDialogComponent } from '../components/dialogs/image-editor-dialog';
+import { ProjectsDialogComponent } from '../components/dialogs/projects-dialog';
 
 import {
   RouteDto,
@@ -36,6 +39,57 @@ export class UserProfilesService {
 
   openUserProfileConfigForm(): void {
     void this.router.navigate(['/profile/config']);
+  }
+
+  openProjectsDialog(userId?: string, startingYear?: number | null): void {
+    const targetUserId = userId || this.supabase.authUserId();
+    if (!targetUserId) return;
+
+    void firstValueFrom(
+      this.dialogs.open(new PolymorpheusComponent(ProjectsDialogComponent), {
+        label: this.translate.instant('projects'),
+        size: 'l',
+        data: { userId: targetUserId, startingYear },
+      }),
+      { defaultValue: undefined },
+    );
+  }
+
+  openFavoritesDialog(userId?: string): void {
+    const targetUserId = userId || this.supabase.authUserId();
+    if (!targetUserId) return;
+
+    void firstValueFrom(
+      this.dialogs.open(new PolymorpheusComponent(FavoritesDialogComponent), {
+        label: this.translate.instant('likes'),
+        size: 'l',
+        data: { userId: targetUserId },
+      }),
+      { defaultValue: undefined },
+    );
+  }
+
+  openAscentCalendarDialog(
+    userId?: string,
+    user?: UserProfileDto | UserProfileBasicDto | null,
+  ): void {
+    const targetUserId = userId || this.supabase.authUserId();
+    if (!targetUserId) return;
+
+    void firstValueFrom(
+      this.dialogs.open(
+        new PolymorpheusComponent(AscentCalendarDialogComponent),
+        {
+          label: this.translate.instant('ascentCalendar'),
+          size: 'm',
+          data: {
+            userId: targetUserId,
+            user: user || undefined,
+          },
+        },
+      ),
+      { defaultValue: undefined },
+    );
   }
 
   openImport8aDialog(): void {

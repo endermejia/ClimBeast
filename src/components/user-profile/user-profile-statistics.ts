@@ -9,33 +9,43 @@ import {
 } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
-import { TuiDataList, TuiLoader, TuiPoint, TuiInput } from '@taiga-ui/core';
+import {
+  TuiDataList,
+  TuiInput,
+  TuiLoader,
+  TuiPoint,
+  TuiScrollbar,
+} from '@taiga-ui/core';
 import { TuiDataListWrapper, TuiSelect } from '@taiga-ui/kit';
 
 import { TranslateService } from '@ngx-translate/core';
 
 import { AscentsService } from '../../services/ascents.service';
 import { LayoutService } from '../../services/layout.service';
+import { ProfileDataService } from '../../services/profile-data.service';
 import { SupabaseService } from '../../services/supabase.service';
 
-import { UserAscentStatRecord } from '../../models';
 import {
   GradeDistribution,
   TrendData,
   TrendDetail,
-} from '../../models/user-stats.model';
+  UserAscentStatRecord,
+} from '../../models';
 
 import {
   calculateGradeDistribution,
   calculatePeriodScore,
   calculateTrendSource,
   filterAscentsByDate,
+  getAscentDateFilterOptions,
   getMaxGrade,
   getMaxGradeRoutes,
 } from '../../utils';
 
 import { UserProfileStatsPyramidComponent } from './statistics/grade-pyramid';
+
 import { UserProfileStatsScoreComponent } from './statistics/score-card';
+
 import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
 
 @Component({
@@ -48,6 +58,7 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
     TuiDataListWrapper,
     TuiInput,
     TuiLoader,
+    TuiScrollbar,
     TuiSelect,
     UserProfileStatsPyramidComponent,
     UserProfileStatsScoreComponent,
@@ -55,28 +66,37 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    class: 'block w-full min-w-0',
+    class: 'block w-full min-w-0 lg:flex lg:flex-col lg:h-full lg:min-h-0',
   },
   template: `
-    <div class="flex flex-col gap-6 w-full">
-      <tui-loader [loading]="statsResource.isLoading()">
-        <div class="flex flex-col gap-6">
-          <!-- Top Section: Pyramid (Left) + Filter & Score (Right) -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            <!-- Left: Grade Pyramid (2/3 on desktop) -->
-            <div class="lg:col-span-2 order-2 lg:order-1">
-              <app-user-profile-stats-pyramid
-                [(showAllGrades)]="showAllGrades"
-                [distribution]="gradeDistribution()"
-              />
-            </div>
+    <div class="flex flex-col w-full lg:h-full min-w-0 lg:min-h-0">
+      <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
+        <tui-loader
+          [loading]="statsResource.isLoading()"
+          class="w-full min-w-0"
+        >
+          <div class="flex flex-col gap-6 w-full min-w-0 p-1 pr-3 sm:pr-4 pb-6">
+            <!-- Top Section: Pyramid (Left ~60%) + Date Filter & Score Card (Right ~40%) -->
+            <div
+              class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch w-full min-w-0"
+            >
+              <!-- Left Column: Grade Pyramid (Stretches full height on xl+) -->
+              <div
+                class="order-2 xl:order-1 xl:col-span-7 min-w-0 w-full xl:h-full flex flex-col"
+              >
+                <app-user-profile-stats-pyramid
+                  [(showAllGrades)]="showAllGrades"
+                  [distribution]="gradeDistribution()"
+                />
+              </div>
 
-            <!-- Right: Date Filter + Score Card (1/3 on desktop) -->
-            <div class="lg:col-span-1 flex flex-col gap-4 order-1 lg:order-2">
-              <!-- Filter Selector -->
-              <div class="flex justify-end w-full">
+              <!-- Right Column: Date Filter + Score Card & Key Stats -->
+              <div
+                class="order-1 xl:order-2 xl:col-span-5 flex flex-col gap-4 min-w-0 w-full"
+              >
+                <!-- Shared Date Filter Selector -->
                 <tui-textfield
-                  class="w-full"
+                  class="w-full shrink-0"
                   [tuiTextfieldCleaner]="false"
                   [stringify]="dateValueContent"
                   tuiTextfieldSize="l"
@@ -91,73 +111,71 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
                     <tui-data-list-wrapper new [items]="dateFilterOptions()" />
                   </tui-data-list>
                 </tui-textfield>
-              </div>
 
-              <!-- Score Card & Key Stats -->
-              <app-user-profile-stats-score
-                [totalScore]="totalScore()"
-                [topRoutes]="topRoutes()"
-                [totalAscents]="gradeDistribution().total"
-                [maxRedpoint]="maxRedpoint()"
-                [maxRedpointRoutes]="maxRedpointRoutes()"
-                [maxOnsight]="maxOnsight()"
-                [maxOnsightRoutes]="maxOnsightRoutes()"
-                [maxFlash]="maxFlash()"
-                [maxFlashRoutes]="maxFlashRoutes()"
+                <!-- Score Card & Key Stats -->
+                <app-user-profile-stats-score
+                  [totalScore]="totalScore()"
+                  [topRoutes]="topRoutes()"
+                  [totalAscents]="gradeDistribution().total"
+                  [maxRedpoint]="maxRedpoint()"
+                  [maxRedpointRoutes]="maxRedpointRoutes()"
+                  [maxOnsight]="maxOnsight()"
+                  [maxOnsightRoutes]="maxOnsightRoutes()"
+                  [maxFlash]="maxFlash()"
+                  [maxFlashRoutes]="maxFlashRoutes()"
+                />
+              </div>
+            </div>
+
+            <!-- Full Width: Evolution / Trend Chart -->
+            <div class="w-full min-w-0">
+              <app-user-profile-stats-trends
+                [trendData]="trendData()"
+                [trendDetails]="trendDetails()"
+                [trendXLabels]="trendXLabels()"
+                [trendYLabels]="trendYLabels()"
+                [width]="width"
+                [height]="height"
               />
             </div>
           </div>
-
-          <!-- Bottom Section: Evolution / Trend (Full Width) -->
-          <div class="w-full">
-            <app-user-profile-stats-trends
-              [trendData]="trendData()"
-              [trendDetails]="trendDetails()"
-              [trendXLabels]="trendXLabels()"
-              [trendYLabels]="trendYLabels()"
-              [width]="width"
-              [height]="height"
-            />
-          </div>
-        </div>
-      </tui-loader>
+        </tui-loader>
+      </tui-scrollbar>
     </div>
   `,
 })
 export class UserProfileStatisticsComponent {
   private readonly ascentsService = inject(AscentsService);
   private readonly translate = inject(TranslateService);
+  protected readonly profileData = inject(ProfileDataService);
   protected readonly layout = inject(LayoutService);
   protected readonly supabase = inject(SupabaseService);
 
   userId = input.required<string | undefined>();
 
-  // --- Date Filter Support ---
-  readonly dateFilterValue = signal('last_12_months');
+  // --- Shared Date Filter Support ---
+  readonly dateFilterValue = this.profileData.ascentsDateFilter;
   readonly showAllGrades = signal(false);
 
   readonly dateFilterOptions = computed(() => {
-    const currentYear = new Date().getFullYear();
-    const years = [];
-    for (let i = 0; i < 5; i++) years.push((currentYear - i).toString());
-
-    return [
-      'all_time',
-      'last_12_months',
-      'last_6_months',
-      'this_year',
-      ...years.filter((y) => y !== currentYear.toString()),
-    ];
+    return getAscentDateFilterOptions(
+      this.profileData.effectiveStartingClimbingYear(),
+    );
   });
 
   readonly dateValueContent = (option: string): string => {
-    if (option === 'all_time') return this.translate.instant('allTime');
-    if (option === 'last_12_months')
+    if (option === 'last12' || option === 'last_12_months') {
       return this.translate.instant('last12Months');
-    if (option === 'last_6_months')
+    }
+    if (option === 'last6' || option === 'last_6_months') {
       return this.translate.instant('last6Months');
-    if (option === 'this_year')
+    }
+    if (option === 'this_year') {
       return this.translate.instant('year') + ' ' + new Date().getFullYear();
+    }
+    if (option === 'all' || option === 'all_time') {
+      return this.translate.instant('allTime');
+    }
     return option;
   };
 
@@ -185,7 +203,7 @@ export class UserProfileStatisticsComponent {
     return filterAscentsByDate(all, this.dateFilterValue());
   });
 
-  // --- New Computed Signals for Dashboard ---
+  // --- Computed Signals for Dashboard ---
 
   // 1. Total Score & Top Routes for the selected period
   periodScoreData = computed(() => {
@@ -208,18 +226,6 @@ export class UserProfileStatisticsComponent {
   maxFlashRoutes = computed(() =>
     getMaxGradeRoutes(this.stats(), ['f', 'flash']),
   );
-
-  constructor() {
-    // Date filter is now a signal, no need for subscription
-  }
-
-  protected toValue(event: Event): string {
-    return (event.target as HTMLSelectElement)?.value ?? '';
-  }
-
-  protected onDateFilterChange(event: Event): void {
-    this.dateFilterValue.set(this.toValue(event));
-  }
 
   // --- Grade Distribution Logic (Pyramid) ---
   gradeDistribution = computed<GradeDistribution>(() => {
@@ -307,13 +313,13 @@ export class UserProfileStatisticsComponent {
 
     if (years.length <= maxLabels) return years;
 
-    const skip = Math.ceil(years.length / maxLabels);
+    const step = (years.length - 1) / (maxLabels - 1);
+    const indices = new Set<number>();
 
-    return years.map((year, i) => {
-      if (i === 0 || i === years.length - 1 || i % skip === 0) {
-        return year;
-      }
-      return '';
-    });
+    for (let i = 0; i < maxLabels; i++) {
+      indices.add(Math.round(i * step));
+    }
+
+    return years.map((y, index) => (indices.has(index) ? y : ''));
   });
 }

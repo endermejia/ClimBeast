@@ -31,10 +31,10 @@ import { ContextIndexPipe } from '../../../pipes';
   ],
   template: `
     <div
-      class="bg-(--tui-background-base) shadow-md p-6 rounded-2xl border border-(--tui-border-normal)"
+      class="bg-(--tui-background-base) shadow-md p-6 rounded-2xl border border-(--tui-border-normal) w-full min-w-0"
     >
       @if (trendData().years.length > 0) {
-        <div class="relative pt-2 pb-2">
+        <div class="relative pt-2 pb-2 w-full min-w-0 overflow-hidden">
           <tui-axes
             class="chart-container"
             [axisXLabels]="trendXLabels()"
@@ -117,12 +117,13 @@ import { ContextIndexPipe } from '../../../pipes';
     .chart-container {
       height: 200px;
       width: 100%;
+      max-width: 100%;
     }
     .trend-hint {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      min-width: 210px;
+      min-width: 240px;
       padding: 0.5rem 0;
     }
     .trend-hint-header {
@@ -146,26 +147,27 @@ import { ContextIndexPipe } from '../../../pipes';
     .trend-routes {
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 0.35rem;
       padding-right: 1.25rem;
     }
     .trend-route-row {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
       gap: 1rem;
+      font-size: var(--tui-typography-body-s);
     }
     .route-name {
+      font-weight: 500;
+      color: var(--tui-text-primary);
+      text-decoration: none;
+      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 120px;
-      text-decoration: none;
-      transition: opacity 0.2s;
+      max-width: 130px;
     }
     .route-name:hover {
       text-decoration: underline;
-      opacity: 0.8;
     }
     .route-name.onsight {
       color: var(--tui-status-positive);
@@ -193,6 +195,9 @@ import { ContextIndexPipe } from '../../../pipes';
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    class: 'block w-full min-w-0',
+  },
 })
 export class UserProfileStatsTrendsComponent {
   protected readonly AscentTypes = AscentTypes;

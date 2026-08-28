@@ -37,11 +37,11 @@ import { SupabaseService } from '../../services/supabase.service';
 
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 
-import { IS_BROWSER } from '../../app/is-browser';
-
 import { AreaAdminRequestWithArea as AreaAdminRequest } from '../../models';
 
 import { AvatarUrlPipe } from '../../pipes';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-admin-area-requests',

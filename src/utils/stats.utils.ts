@@ -157,21 +157,21 @@ export function calculatePeriodScore(ascents: UserAscentStatRecord[]): {
 }
 
 /**
- * Filters ascents by a date range string (e.g., 'last_12_months', 'last_6_months', 'this_year', or a four-digit year).
+ * Filters ascents by a date range string (e.g., 'last12', 'last_12_months', 'last6', 'last_6_months', 'this_year', or a four-digit year).
  */
 export function filterAscentsByDate(
   ascents: UserAscentStatRecord[],
   filter: string,
 ): UserAscentStatRecord[] {
-  if (!filter || filter === 'all_time') return ascents;
+  if (!filter || filter === 'all_time' || filter === 'all') return ascents;
 
   const now = new Date();
   let cutOff = new Date(0); // Epoch
 
-  if (filter === 'last_12_months') {
+  if (filter === 'last_12_months' || filter === 'last12') {
     cutOff = new Date();
     cutOff.setFullYear(now.getFullYear() - 1);
-  } else if (filter === 'last_6_months') {
+  } else if (filter === 'last_6_months' || filter === 'last6') {
     cutOff = new Date();
     cutOff.setMonth(now.getMonth() - 6);
   } else if (filter === 'this_year') {

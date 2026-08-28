@@ -6,7 +6,13 @@ import {
   inject,
   input,
 } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import {
+  NavigationEnd,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+} from '@angular/router';
 
 import { TuiAppearance, TuiDropdown, TuiIcon } from '@taiga-ui/core';
 import {
@@ -18,6 +24,8 @@ import {
 } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
+
+import { filter, map } from 'rxjs';
 
 import { AppNotificationsService } from '../../services/app-notifications.service';
 import { AuthStateService } from '../../services/auth-state.service';
@@ -244,14 +252,14 @@ import { TourHintComponent } from './tour-hint';
           <!-- Search -->
           <app-search-dropdown [loading]="loading()" />
 
-          <!-- Profile -->
+          <!-- Desktop Profile -->
           <a
             #profile="routerLinkActive"
             routerLink="/profile"
             routerLinkActive
             tuiAppearance="flat-grayscale"
             [tuiSkeleton]="loading()"
-            class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full lg:mt-auto group"
+            class="hidden md:flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full lg:mt-auto group"
             [attr.aria-label]="'nav.profile' | translate"
           >
             <span
@@ -286,6 +294,20 @@ import { TourHintComponent } from './tour-hint';
               {{ 'nav.profile' | translate }}
             </span>
           </a>
+
+          <!-- Mobile Profile Menu Button -->
+          <div class="md:hidden">
+            <app-menu-options-button
+              appearance="flat-grayscale"
+              [avatarMode]="true"
+              [avatarUrl]="authState.userAvatar()"
+              [userName]="authState.userProfile()?.name"
+              [isActive]="isProfileActive()"
+              [showNavigationOptions]="true"
+              [loading]="loading()"
+              direction="top"
+            />
+          </div>
         </nav>
 
         <!-- Desktop Bottom Options -->
@@ -375,6 +397,14 @@ export class NavbarComponent {
 
   private readonly router = inject(Router);
   private readonly scrollService = inject(ScrollService);
+
+  protected readonly isProfileActive = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map((e) => e.urlAfterRedirects.startsWith('/profile')),
+    ),
+    { initialValue: this.router.url.startsWith('/profile') },
+  );
 
   protected scrollToTop(event: MouseEvent): void {
     if (this.router.url === '/home') {

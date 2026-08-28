@@ -17,22 +17,20 @@ import {
   TuiAppearance,
   TuiButton,
   TuiDataList,
-  TuiDialogService,
   TuiInput,
   TuiLabel,
+  TuiScrollbar,
 } from '@taiga-ui/core';
-
 import {
   TuiBadgedContent,
   TuiBadgeNotification,
   TuiDataListWrapper,
   TuiSelect,
 } from '@taiga-ui/kit';
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import { debounceTime, firstValueFrom, Subject } from 'rxjs';
+import { debounceTime, Subject } from 'rxjs';
 
 import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
@@ -48,14 +46,11 @@ import {
   UserProfileDto,
 } from '../../models';
 
-import { getAscentDateFilterOptions, processAscentsToFeed } from '../../utils';
+import { processAscentsToFeed } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
 import { AscentsFeedComponent } from '../ascent/ascents-feed';
-
-import { AscentCalendarDialogComponent } from '../dialogs/ascent-calendar-dialog';
-
 import { EmptyStateComponent } from '../ui/empty-state';
 
 @Component({
@@ -76,6 +71,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
     TuiDataListWrapper,
     TuiInput,
     TuiLabel,
+    TuiScrollbar,
     TuiSelect,
   ],
   template: `
@@ -85,11 +81,13 @@ import { EmptyStateComponent } from '../ui/empty-state';
       query() ||
       hasActiveFilters()
     ) {
-      <div class="min-w-0">
+      <div class="flex flex-col w-full lg:h-full min-w-0 lg:min-h-0">
         @if (!profileData.userTotalAscentsCountResource.isLoading()) {
-          <div class="flex flex-wrap items-center gap-2 mb-4">
+          <div
+            class="flex flex-wrap items-center gap-2 mb-4 shrink-0 w-full min-w-0"
+          >
             <tui-textfield
-              class="grow min-w-48"
+              class="grow min-w-0 basis-44"
               [tuiTextfieldCleaner]="true"
               tuiTextfieldSize="l"
             >
@@ -106,7 +104,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
               />
             </tui-textfield>
 
-            <tui-badged-content>
+            <tui-badged-content class="shrink-0">
               @if (hasActiveFilters()) {
                 <tui-badge-notification
                   tuiAppearance="accent"
@@ -126,28 +124,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
             </tui-badged-content>
 
             <tui-textfield
-              class="flex-1 min-w-[calc(50%-0.25rem)] sm:w-48 sm:flex-none"
-              [tuiTextfieldCleaner]="false"
-              [stringify]="dateValueContent"
-              tuiTextfieldSize="l"
-            >
-              <label tuiLabel for="date-filter">
-                {{ 'filterByDate' | translate }}
-              </label>
-              <input
-                tuiSelect
-                id="date-filter"
-                [ngModel]="dateFilterValue()"
-                (ngModelChange)="dateFilterValue.set($event)"
-                autocomplete="off"
-              />
-              <tui-data-list *tuiDropdown>
-                <tui-data-list-wrapper [items]="dateFilterOptions()" />
-              </tui-data-list>
-            </tui-textfield>
-
-            <tui-textfield
-              class="flex-1 min-w-[calc(50%-0.25rem)] sm:w-48 sm:flex-none"
+              class="grow min-w-0 basis-36 sm:w-48 sm:grow-0"
               [tuiTextfieldCleaner]="false"
               [stringify]="sortValueContent"
               tuiTextfieldSize="l"
@@ -166,37 +143,29 @@ import { EmptyStateComponent } from '../ui/empty-state';
                 <tui-data-list-wrapper [items]="['grade', 'date']" />
               </tui-data-list>
             </tui-textfield>
-
-            @if (hasAscents()) {
-              <button
-                tuiButton
-                appearance="secondary"
-                iconStart="@tui.calendar"
-                class="w-full sm:w-auto sm:ml-auto"
-                (click)="openCalendar()"
-              >
-                {{ 'statistics.openCalendar' | translate }}
-              </button>
-            }
           </div>
         }
 
-        <app-ascents-feed
-          [ascents]="accumulatedAscents()"
-          [isLoading]="
-            isLoading() ||
-            ascentsResource.isLoading() ||
-            profileData.userTotalAscentsCountResource.isLoading()
-          "
-          [hasMore]="hasMore()"
-          [showUser]="false"
-          [followedIds]="followedIds()"
-          [columns]="3"
-          [groupByGrade]="sortFilter() === 'grade'"
-          (loadMore)="loadMore()"
-          (follow)="onFollow($event)"
-          (unfollow)="onUnfollow($event)"
-        />
+        <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
+          <div class="w-full min-w-0 p-1 pr-3 sm:pr-4 pb-6">
+            <app-ascents-feed
+              [ascents]="accumulatedAscents()"
+              [isLoading]="
+                isLoading() ||
+                ascentsResource.isLoading() ||
+                profileData.userTotalAscentsCountResource.isLoading()
+              "
+              [hasMore]="hasMore()"
+              [showUser]="false"
+              [followedIds]="followedIds()"
+              [columns]="1"
+              [groupByGrade]="sortFilter() === 'grade'"
+              (loadMore)="loadMore()"
+              (follow)="onFollow($event)"
+              (unfollow)="onUnfollow($event)"
+            />
+          </div>
+        </tui-scrollbar>
       </div>
     } @else if (isOwnProfile()) {
       <div class="mt-8 flex flex-col items-center gap-4">
@@ -218,7 +187,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    class: 'block w-full min-w-0',
+    class: 'block w-full min-w-0 lg:flex lg:flex-col lg:h-full lg:min-h-0',
   },
 })
 export class UserProfileAscentsComponent {
@@ -233,7 +202,6 @@ export class UserProfileAscentsComponent {
   protected readonly followsService = inject(FollowsService);
   protected readonly filtersService = inject(FiltersService);
   protected readonly userProfilesService = inject(UserProfilesService);
-  protected readonly dialogs = inject(TuiDialogService);
   private readonly isBrowser = inject(IS_BROWSER);
 
   private readonly querySubject = new Subject<string>();
@@ -241,8 +209,6 @@ export class UserProfileAscentsComponent {
     this.querySubject.pipe(debounceTime(400)),
     { initialValue: '' },
   );
-  protected readonly dateFilterValue = signal<string>('last12');
-  protected readonly dateFilter = this.dateFilterValue;
 
   protected readonly sortFilterValue = linkedSignal<'grade' | 'date'>(() =>
     this.profileData.ascentsSort(),
@@ -257,22 +223,6 @@ export class UserProfileAscentsComponent {
     const gradeActive = !(lo === 0 && hi === ORDERED_GRADE_VALUES.length - 1);
     return gradeActive || this.selectedCategories().length > 0;
   });
-
-  protected readonly dateFilterOptions = computed(() => {
-    return getAscentDateFilterOptions(
-      this.profileData.effectiveStartingClimbingYear(),
-    );
-  });
-
-  protected readonly dateValueContent = (option: string): string => {
-    if (option === 'last12') {
-      return this.translate.instant('last12Months');
-    }
-    if (option === 'all') {
-      return this.translate.instant('allTime');
-    }
-    return option;
-  };
 
   protected readonly sortValueContent = (option: 'grade' | 'date'): string => {
     return this.translate.instant(
@@ -326,16 +276,15 @@ export class UserProfileAscentsComponent {
     });
 
     effect(() => {
-      const dateFilter = this.dateFilter();
       const query = this.query();
       const sort = this.sortFilter();
       this.selectedGradeRange();
       this.selectedCategories();
+      this.profileData.ascentsDateFilter();
 
       this.isLoading.set(true);
       this.profileData.ascentsPage.set(0);
 
-      this.profileData.ascentsDateFilter.set(dateFilter!);
       this.profileData.ascentsQuery.set(query || null);
       this.profileData.ascentsSort.set(sort as 'grade' | 'date');
     });
@@ -366,23 +315,6 @@ export class UserProfileAscentsComponent {
       next.delete(userId);
       return next;
     });
-  }
-
-  openCalendar(): void {
-    const userId = this.userId();
-    void firstValueFrom(
-      this.dialogs.open(
-        new PolymorpheusComponent(AscentCalendarDialogComponent),
-        {
-          label: this.translate.instant('ascents'),
-          size: 'm',
-          data: {
-            userId,
-            user: this.profile(),
-          },
-        },
-      ),
-    );
   }
 
   protected openFilters(): void {

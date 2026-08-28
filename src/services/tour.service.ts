@@ -60,7 +60,7 @@ export class TourService {
   async next(): Promise<void> {
     if (!this.isActive()) return;
     const current = this.step();
-    if (current === TourStep.PROFILE_LIKES) {
+    if (current === TourStep.PROFILE || current === TourStep.PROFILE_LIKES) {
       await this.finish();
       return;
     }

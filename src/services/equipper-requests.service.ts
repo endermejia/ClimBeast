@@ -1,9 +1,10 @@
 import { inject, Injectable, signal } from '@angular/core';
 
-import { SupabaseService } from './supabase.service';
-import { ToastService } from './toast.service';
-
 import { EquipperRequestDto, EquipperRequestWithDetails } from '../models';
+
+import { SupabaseService } from './supabase.service';
+
+import { ToastService } from './toast.service';
 
 @Injectable({ providedIn: 'root' })
 export class EquipperRequestsService {

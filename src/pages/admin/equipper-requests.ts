@@ -29,8 +29,6 @@ import {
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
-import { IS_BROWSER } from '../../app/is-browser';
-
 import { EquipperRequestsService } from '../../services/equipper-requests.service';
 
 import { EmptyStateComponent } from '../../components/ui/empty-state';
@@ -38,6 +36,8 @@ import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { EquipperRequestWithDetails } from '../../models';
 
 import { AvatarUrlPipe } from '../../pipes';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-admin-equipper-requests',

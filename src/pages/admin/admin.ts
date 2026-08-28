@@ -19,9 +19,9 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { SupabaseService } from '../../services/supabase.service';
 
-import { IS_BROWSER } from '../../app/is-browser';
-
 import { AvatarUrlPipe } from '../../pipes';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-admin',

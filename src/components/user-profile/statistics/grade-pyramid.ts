@@ -29,12 +29,12 @@ import { GradeDistribution } from '../../../models/user-stats.model';
   ],
   template: `
     <div
-      class="bg-(--tui-background-base) shadow-md p-6 rounded-2xl border border-(--tui-border-normal)"
+      class="bg-(--tui-background-base) shadow-md p-4 sm:p-6 rounded-2xl border border-(--tui-border-normal) w-full min-w-0 xl:h-full flex flex-col justify-between"
     >
       @if (distribution(); as dist) {
         @if (dist.total > 0) {
           <div
-            class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-(--tui-border-normal)"
+            class="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-6 pb-4 border-b border-(--tui-border-normal)"
           >
             <div class="font-bold text-sm text-(--tui-text-primary)">
               {{ dist.total }}
@@ -106,10 +106,10 @@ import { GradeDistribution } from '../../../models/user-stats.model';
 
       @if (distribution()?.total ?? 0 > 0) {
         @let dist = distribution()!;
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-2 flex-1 justify-evenly">
           @for (row of dist.rows; track row.gradeLabel) {
             <div
-              class="grid grid-cols-[3rem_1fr_3rem] gap-3 items-center text-sm"
+              class="grid grid-cols-[2.5rem_1fr_2.5rem] sm:grid-cols-[3rem_1fr_3rem] gap-2 sm:gap-3 items-center text-xs sm:text-sm"
             >
               <div class="font-bold text-center text-(--tui-text-secondary)">
                 {{ row.gradeLabel }}
@@ -300,6 +300,9 @@ import { GradeDistribution } from '../../../models/user-stats.model';
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    class: 'block w-full min-w-0 xl:h-full',
+  },
 })
 export class UserProfileStatsPyramidComponent {
   protected readonly AscentTypes = AscentTypes;

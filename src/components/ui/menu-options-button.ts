@@ -5,15 +5,22 @@ import {
   input,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
-import { TuiDialogService } from '@taiga-ui/core';
-import { TuiAppearance, TuiButton, TuiDropdown, TuiIcon } from '@taiga-ui/core';
 import {
-  TUI_CONFIRM,
+  TuiAppearance,
+  TuiButton,
+  TuiDialogService,
+  TuiDropdown,
+  TuiIcon,
+} from '@taiga-ui/core';
+import {
+  TuiAvatar,
   TuiConfirmData,
   TuiSegmented,
   TuiSkeleton,
   TuiSwitch,
+  TUI_CONFIRM,
 } from '@taiga-ui/kit';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -34,6 +41,7 @@ import { Themes } from '../../models';
     FormsModule,
     TranslatePipe,
     TuiAppearance,
+    TuiAvatar,
     TuiButton,
     TuiDropdown,
     TuiIcon,
@@ -48,7 +56,40 @@ import { Themes } from '../../models';
       [(tuiDropdownOpen)]="open"
       class="block w-full"
     >
-      @if (iconOnly()) {
+      @if (avatarMode()) {
+        <button
+          type="button"
+          [tuiAppearance]="appearance()"
+          class="flex items-center p-3 rounded-xl transition-colors cursor-pointer"
+          [tuiSkeleton]="loading()"
+          (click)="open = !open"
+          [attr.aria-label]="'nav.profile' | translate"
+        >
+          <span
+            tuiAvatar
+            [tuiSkeleton]="loading()"
+            [class.ring-2]="isActive()"
+            [class.ring-offset-2]="isActive()"
+            [style.--tw-ring-color]="
+              isActive() ? 'var(--tui-text-negative)' : ''
+            "
+            size="xs"
+          >
+            @if (avatarUrl()) {
+              <img [src]="avatarUrl()" [alt]="userName() || ''" />
+            } @else {
+              <tui-icon
+                icon="@tui.user"
+                [style.color]="
+                  isActive()
+                    ? 'var(--tui-text-negative)'
+                    : 'var(--tui-text-primary)'
+                "
+              />
+            }
+          </span>
+        </button>
+      } @else if (iconOnly()) {
         <button
           [appearance]="appearance()"
           [size]="size()"
@@ -87,11 +128,55 @@ import { Themes } from '../../models';
         (keydown)="$event.stopPropagation()"
         class="flex flex-col p-1.5 bg-(--tui-background-base) rounded-xl shadow-2xl min-w-56 border border-(--tui-border-normal)"
       >
+        @if (showNavigationOptions()) {
+          <!-- Profile -->
+          <button
+            type="button"
+            (click)="navigateToProfile(); open = false"
+            class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors text-left text-inherit outline-none cursor-pointer"
+          >
+            <tui-icon icon="@tui.user" class="opacity-70" />
+            {{ 'nav.profile' | translate }}
+          </button>
+
+          <!-- Projects -->
+          <button
+            type="button"
+            (click)="openProjects(); open = false"
+            class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors text-left text-inherit outline-none cursor-pointer"
+          >
+            <tui-icon icon="@tui.target" class="opacity-70" />
+            {{ 'projects' | translate }}
+          </button>
+
+          <!-- Favorites -->
+          <button
+            type="button"
+            (click)="openFavorites(); open = false"
+            class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors text-left text-inherit outline-none cursor-pointer"
+          >
+            <tui-icon icon="@tui.heart" class="opacity-70" />
+            {{ 'likes' | translate }}
+          </button>
+
+          <!-- Ascent Logbook / Calendar -->
+          <button
+            type="button"
+            (click)="openAscentsCalendar(); open = false"
+            class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors text-left text-inherit outline-none cursor-pointer"
+          >
+            <tui-icon icon="@tui.calendar" class="opacity-70" />
+            {{ 'ascentCalendar' | translate }}
+          </button>
+
+          <div class="h-px bg-(--tui-border-normal) my-1 mx-2"></div>
+        }
+
         <!-- User Config -->
         <button
           type="button"
           (click)="openConfig(); open = false"
-          class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors text-left text-inherit outline-none"
+          class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors text-left text-inherit outline-none cursor-pointer"
         >
           <tui-icon icon="@tui.settings" class="opacity-70" />
           {{ 'config' | translate }}
@@ -160,6 +245,11 @@ export class MenuOptionsButtonComponent {
   appearance = input<string>('flat-grayscale');
   size = input<'s' | 'm' | 'l'>('m');
   iconOnly = input<boolean>(false);
+  avatarMode = input<boolean>(false);
+  avatarUrl = input<string | null | undefined>(undefined);
+  userName = input<string | null | undefined>(undefined);
+  isActive = input<boolean>(false);
+  showNavigationOptions = input<boolean>(false);
   loading = input<boolean>(false);
   direction = input<'top' | 'bottom'>('top');
   icon = input<string>('@tui.menu');
@@ -169,11 +259,28 @@ export class MenuOptionsButtonComponent {
   protected readonly authState = inject(AuthStateService);
   protected readonly themeService = inject(ThemeService);
   protected readonly Themes = Themes;
+  private readonly router = inject(Router);
   private readonly supabase = inject(SupabaseService);
   private readonly userProfilesService = inject(UserProfilesService);
   private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
   private readonly dialogs = inject(TuiDialogService);
+
+  protected navigateToProfile(): void {
+    void this.router.navigate(['/profile']);
+  }
+
+  protected openProjects(): void {
+    this.userProfilesService.openProjectsDialog();
+  }
+
+  protected openFavorites(): void {
+    this.userProfilesService.openFavoritesDialog();
+  }
+
+  protected openAscentsCalendar(): void {
+    this.userProfilesService.openAscentCalendarDialog();
+  }
 
   protected openConfig(): void {
     this.userProfilesService.openUserProfileConfigForm();

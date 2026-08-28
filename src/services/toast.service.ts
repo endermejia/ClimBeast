@@ -8,10 +8,11 @@ import { TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom, type Observable, Subject, takeUntil } from 'rxjs';
 
-import { ErrorLogService, ErrorSeverity } from './error-log.service';
-
 import { LoaderDialogComponent } from '../components/dialogs/loader-dialog';
+
 import { UndoToastComponent } from '../components/ui/undo-toast';
+
+import { ErrorLogService, ErrorSeverity } from './error-log.service';
 
 @Injectable({
   providedIn: 'root',

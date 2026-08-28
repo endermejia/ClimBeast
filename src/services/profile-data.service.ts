@@ -46,7 +46,7 @@ export class ProfileDataService {
   // ---- Pagination for Ascents Table ----
   readonly ascentsPage = signal(0);
   readonly ascentsSize = signal(10);
-  readonly ascentsDateFilter = signal<string | null>(null);
+  readonly ascentsDateFilter = signal<string>('last12');
   readonly ascentsQuery = signal<string | null>(null);
   readonly ascentsSort = signal<'date' | 'grade'>('date');
 
@@ -219,11 +219,20 @@ export class ProfileDataService {
         }
 
         if (dateFilter) {
-          if (dateFilter === 'last12') {
+          if (dateFilter === 'last12' || dateFilter === 'last_12_months') {
             const twelveMonthsAgo = new Date();
             twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
             query = query.gte('date', twelveMonthsAgo.toISOString());
-          } else if (dateFilter !== 'all') {
+          } else if (dateFilter === 'last6' || dateFilter === 'last_6_months') {
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+            query = query.gte('date', sixMonthsAgo.toISOString());
+          } else if (dateFilter === 'this_year') {
+            const year = new Date().getFullYear();
+            query = query
+              .gte('date', `${year}-01-01`)
+              .lte('date', `${year}-12-31`);
+          } else if (dateFilter !== 'all' && dateFilter !== 'all_time') {
             query = query
               .gte('date', `${dateFilter}-01-01`)
               .lte('date', `${dateFilter}-12-31`);
@@ -324,7 +333,7 @@ export class ProfileDataService {
   resetPagination(): void {
     this.ascentsPage.set(0);
     this.ascentsSize.set(10);
-    this.ascentsDateFilter.set(null);
+    this.ascentsDateFilter.set('last12');
     this.ascentsQuery.set(null);
   }
 }

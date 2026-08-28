@@ -9,25 +9,26 @@ import {
   input,
   resource,
   signal,
-  untracked,
 } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
-import { TuiDialogService } from '@taiga-ui/core';
 import {
   TuiAppearance,
   TuiButton,
   TuiDataList,
+  TuiDialogService,
   TuiDropdown,
   TuiLink,
-  TuiLoader,
   TuiScrollbar,
 } from '@taiga-ui/core';
 import { TuiCountryIsoCode } from '@taiga-ui/i18n';
-import { TUI_CONFIRM } from '@taiga-ui/kit';
-
-import { TuiConfirmData, TuiTabs, TuiPulse, TuiSkeleton } from '@taiga-ui/kit';
+import {
+  TuiConfirmData,
+  TuiPulse,
+  TuiSkeleton,
+  TUI_CONFIRM,
+} from '@taiga-ui/kit';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -35,7 +36,6 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { BlockingService } from '../../services/blocking.service';
-
 import { FollowRequestsService } from '../../services/follow-requests.service';
 import { FollowsService } from '../../services/follows.service';
 import { LayoutService } from '../../services/layout.service';
@@ -44,19 +44,15 @@ import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { ProfileDataService } from '../../services/profile-data.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
-import { TourService } from '../../services/tour.service';
-import { TourStep } from '../../services/tour.service';
+import { TourService, TourStep } from '../../services/tour.service';
+import { UserProfilesService } from '../../services/user-profiles.service';
 
 import { UserListDialogComponent } from '../../components/dialogs/user-list-dialog';
-
 import { EmptyStateComponent } from '../../components/ui/empty-state';
-
 import { MenuOptionsButtonComponent } from '../../components/ui/menu-options-button';
 import { TourHintComponent } from '../../components/ui/tour-hint';
 import { UserInfoComponent } from '../../components/ui/user-info';
 import { UserProfileAscentsComponent } from '../../components/user-profile/user-profile-ascents';
-import { UserProfileLikesComponent } from '../../components/user-profile/user-profile-likes';
-import { UserProfileProjectsComponent } from '../../components/user-profile/user-profile-projects';
 import { UserProfileStatisticsComponent } from '../../components/user-profile/user-profile-statistics';
 
 import { openPhotoViewer } from '../../utils';
@@ -79,274 +75,283 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiDataList,
     TuiDropdown,
     TuiLink,
-    TuiLoader,
     TuiPulse,
     TuiScrollbar,
-    TuiScrollbar,
     TuiSkeleton,
-
-    TuiTabs,
-    UserProfileAscentsComponent,
-    UserProfileLikesComponent,
-    UserProfileProjectsComponent,
-    UserProfileStatisticsComponent,
     UserInfoComponent,
+    UserProfileAscentsComponent,
+    UserProfileStatisticsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `
+    @media (min-width: 1024px) {
+      :host > tui-scrollbar {
+        overflow: hidden !important;
+      }
+      :host > tui-scrollbar ::ng-deep > .t-content {
+        block-size: 100% !important;
+        height: 100% !important;
+        overflow: hidden !important;
+      }
+      :host > tui-scrollbar ::ng-deep > tui-scroll-controls {
+        display: none !important;
+      }
+    }
+  `,
   template: `
-    <tui-scrollbar class="flex grow">
-      <section class="w-full max-w-7xl mx-auto p-4 grid gap-4">
-        @let loading = !profile();
-        <app-user-info
-          [loading]="loading"
-          [avatar]="profile()?.avatar"
-          [name]="profile()?.name"
-          [city]="profile()?.city"
-          [country]="profileCountry()"
-          [age]="profileAge()"
-          [startingClimbingYear]="profile()?.starting_climbing_year"
-          [bio]="profile()?.bio"
-          [avatarClickable]="true"
-          [hasActions]="!isOwnProfile()"
-          (avatarClick)="showEnlargedPhoto()"
+    <tui-scrollbar class="w-full h-full min-h-0 min-w-0">
+      <section
+        class="w-full max-w-[1600px] mx-auto p-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden pb-6 lg:pb-2"
+      >
+        <!-- Left Column: User Info + Statistics -->
+        <div
+          class="flex flex-col gap-6 w-full lg:flex-1 min-w-0 lg:h-full lg:overflow-hidden"
         >
-          @if (
-            tourService.isActive() && tourService.step() === TourStep.PROFILE
-          ) {
-            <tui-pulse badge />
-          }
-
-          <div nameActions class="inline-flex items-center">
-            @if (isOwnProfile()) {
-              <app-menu-options-button
-                appearance="action-grayscale"
-                direction="bottom"
-                size="s"
-                [iconOnly]="true"
-              />
-            } @else {
-              @let blockMessages = blockState().blockMessages;
-              @let blockAscents = blockState().blockAscents;
-              <button
-                [appearance]="
-                  blockMessages || blockAscents
-                    ? 'negative'
-                    : 'action-grayscale'
-                "
-                iconStart="@tui.ellipsis-vertical"
-                size="s"
-                tuiIconButton
-                type="button"
-                [tuiSkeleton]="loading"
-                [tuiDropdown]="dropdownContent"
-                [(tuiDropdownOpen)]="dropdownOpen"
-              >
-                {{ 'options' | translate }}
-              </button>
-              <ng-template #dropdownContent>
-                <tui-data-list>
-                  <button
-                    tuiOption
-                    [tuiAppearance]="blockMessages ? 'negative' : 'neutral'"
-                    iconStart="@tui.message-circle-off"
-                    (click)="toggleBlockMessages(); dropdownOpen.set(false)"
-                  >
-                    {{
-                      (blockMessages ? 'messagesBlocked' : 'blockMessages')
-                        | translate
-                    }}
-                  </button>
-                  <button
-                    tuiOption
-                    [tuiAppearance]="blockAscents ? 'negative' : 'neutral'"
-                    iconStart="@tui.bell-off"
-                    (click)="toggleHideAscents(); dropdownOpen.set(false)"
-                  >
-                    {{
-                      (blockAscents ? 'ascentsHidden' : 'hideAscents')
-                        | translate
-                    }}
-                  </button>
-                </tui-data-list>
-              </ng-template>
+          @let loading = !profile();
+          <app-user-info
+            [loading]="loading"
+            [avatar]="profile()?.avatar"
+            [name]="profile()?.name"
+            [city]="profile()?.city"
+            [country]="profileCountry()"
+            [age]="profileAge()"
+            [startingClimbingYear]="profile()?.starting_climbing_year"
+            [bio]="profile()?.bio"
+            [avatarClickable]="true"
+            [hasActions]="true"
+            (avatarClick)="showEnlargedPhoto()"
+            class="shrink-0"
+          >
+            @if (
+              tourService.isActive() && tourService.step() === TourStep.PROFILE
+            ) {
+              <tui-pulse badge />
             }
-          </div>
 
-          <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2" extraInfo>
-            <button
-              tuiLink
-              type="button"
-              [tuiSkeleton]="loading"
-              (click)="openFollowsDialog('followers')"
-            >
-              <strong>{{ followersCount() }}</strong>
-              {{ 'followers' | translate | lowercase }}
-            </button>
-            <button
-              tuiLink
-              type="button"
-              [tuiSkeleton]="loading"
-              (click)="openFollowsDialog('following')"
-            >
-              <strong>{{ followingCount() }}</strong>
-              {{ 'following' | translate | lowercase }}
-            </button>
-            @if (equipperResource.value(); as equipper) {
-              <a
-                tuiLink
-                [tuiSkeleton]="loading"
-                [routerLink]="['/equipper', equipper.id]"
-              >
-                <strong>{{ equipper.routesCount }}</strong>
-                {{ 'equippedRoutes' | translate | lowercase }}
-              </a>
-            }
-          </div>
-
-          <div class="flex flex-wrap gap-2 min-w-0 max-w-full" actions>
-            @if (!isOwnProfile()) {
-              @let following = isFollowing();
-              @let requested = isRequested();
-              @let hasIncomingRequest = hasIncomingFollowRequest();
-              @let isPrivate = profile()?.private;
-
-              @if (hasIncomingRequest) {
-                <button
-                  tuiButton
-                  type="button"
-                  appearance="primary"
+            <div nameActions class="inline-flex items-center">
+              @if (isOwnProfile()) {
+                <app-menu-options-button
+                  appearance="action-grayscale"
+                  direction="bottom"
                   size="s"
-                  [iconStart]="'@tui.check'"
-                  [tuiSkeleton]="loading || followLoading()"
-                  (click)="acceptFollowRequest()"
+                  [iconOnly]="true"
+                />
+              } @else {
+                @let blockMessages = blockState().blockMessages;
+                @let blockAscents = blockState().blockAscents;
+                <button
+                  [appearance]="
+                    blockMessages || blockAscents
+                      ? 'negative'
+                      : 'action-grayscale'
+                  "
+                  iconStart="@tui.ellipsis-vertical"
+                  size="s"
+                  tuiIconButton
+                  type="button"
+                  [tuiSkeleton]="loading"
+                  [tuiDropdown]="dropdownContent"
+                  [(tuiDropdownOpen)]="dropdownOpen"
                 >
-                  {{ 'allowFollow' | translate }}
+                  {{ 'options' | translate }}
                 </button>
+                <ng-template #dropdownContent>
+                  <tui-data-list>
+                    <button
+                      tuiOption
+                      [tuiAppearance]="blockMessages ? 'negative' : 'neutral'"
+                      iconStart="@tui.message-circle-off"
+                      (click)="toggleBlockMessages(); dropdownOpen.set(false)"
+                    >
+                      {{
+                        (blockMessages ? 'messagesBlocked' : 'blockMessages')
+                          | translate
+                      }}
+                    </button>
+                    <button
+                      tuiOption
+                      [tuiAppearance]="blockAscents ? 'negative' : 'neutral'"
+                      iconStart="@tui.bell-off"
+                      (click)="toggleHideAscents(); dropdownOpen.set(false)"
+                    >
+                      {{
+                        (blockAscents ? 'ascentsHidden' : 'hideAscents')
+                          | translate
+                      }}
+                    </button>
+                  </tui-data-list>
+                </ng-template>
               }
+            </div>
 
+            <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2" extraInfo>
               <button
-                tuiButton
+                tuiLink
                 type="button"
-                [appearance]="following || requested ? 'secondary' : 'primary'"
-                size="s"
-                [iconStart]="
-                  following
-                    ? '@tui.bell-filled'
-                    : requested
-                      ? '@tui.clock'
-                      : '@tui.bell'
-                "
-                [tuiSkeleton]="loading || followLoading()"
-                (click)="toggleFollow()"
+                [tuiSkeleton]="loading"
+                (click)="openFollowsDialog('followers')"
               >
-                {{
-                  (following
-                    ? 'followingStatus'
-                    : requested
-                      ? 'requestedStatus'
-                      : isPrivate
-                        ? 'requestFollow'
-                        : 'follow'
-                  ) | translate
-                }}
+                <strong>{{ followersCount() }}</strong>
+                {{ 'followers' | translate | lowercase }}
               </button>
+              <button
+                tuiLink
+                type="button"
+                [tuiSkeleton]="loading"
+                (click)="openFollowsDialog('following')"
+              >
+                <strong>{{ followingCount() }}</strong>
+                {{ 'following' | translate | lowercase }}
+              </button>
+              @if (equipperResource.value(); as equipper) {
+                <a
+                  tuiLink
+                  [tuiSkeleton]="loading"
+                  [routerLink]="['/equipper', equipper.id]"
+                >
+                  <strong>{{ equipper.routesCount }}</strong>
+                  {{ 'equippedRoutes' | translate | lowercase }}
+                </a>
+              }
+            </div>
 
-              @if (following || !isPrivate) {
+            <div class="flex flex-wrap gap-2 min-w-0 max-w-full" actions>
+              @if (hasProjects()) {
                 <button
                   tuiButton
                   type="button"
                   appearance="secondary"
                   size="s"
-                  iconStart="@tui.send"
+                  iconStart="@tui.target"
                   [tuiSkeleton]="loading"
-                  (click)="openChat()"
+                  (click)="openProjectsDialog()"
                 >
-                  {{ 'sendMessage' | translate }}
+                  {{ 'projects' | translate }}
                 </button>
               }
-            }
-          </div>
-        </app-user-info>
 
-        @if (isOwnProfile() || !profile()?.private || isFollowing()) {
-          @if (visibleTabs().length > 0) {
-            <tui-tabs
-              [activeItemIndex]="activeTab()"
-              (activeItemIndexChange)="activeTab.set($event)"
-              class="w-full"
-              [tuiDropdown]="tourHint"
-              [tuiDropdownManual]="
-                tourService.isActive() &&
-                (tourService.step() === TourStep.PROFILE ||
-                  tourService.step() === TourStep.PROFILE_PROJECTS ||
-                  tourService.step() === TourStep.PROFILE_STATISTICS ||
-                  tourService.step() === TourStep.PROFILE_LIKES)
-              "
-              tuiDropdownDirection="top"
+              @if (isOwnProfile()) {
+                <button
+                  tuiButton
+                  type="button"
+                  appearance="secondary"
+                  size="s"
+                  iconStart="@tui.heart"
+                  [tuiSkeleton]="loading"
+                  (click)="openFavoritesDialog()"
+                >
+                  {{ 'likes' | translate }}
+                </button>
+              }
+
+              @if (hasAscents()) {
+                <button
+                  tuiButton
+                  type="button"
+                  appearance="secondary"
+                  size="s"
+                  iconStart="@tui.calendar"
+                  [tuiSkeleton]="loading"
+                  (click)="openAscentCalendarDialog()"
+                >
+                  {{ 'ascentCalendar' | translate }}
+                </button>
+              }
+
+              @if (!isOwnProfile()) {
+                @let following = isFollowing();
+                @let requested = isRequested();
+                @let hasIncomingRequest = hasIncomingFollowRequest();
+                @let isPrivate = profile()?.private;
+
+                @if (hasIncomingRequest) {
+                  <button
+                    tuiButton
+                    type="button"
+                    appearance="primary"
+                    size="s"
+                    [iconStart]="'@tui.check'"
+                    [tuiSkeleton]="loading || followLoading()"
+                    (click)="acceptFollowRequest()"
+                  >
+                    {{ 'allowFollow' | translate }}
+                  </button>
+                }
+
+                <button
+                  tuiButton
+                  type="button"
+                  [appearance]="
+                    following || requested ? 'secondary' : 'primary'
+                  "
+                  size="s"
+                  [iconStart]="
+                    following
+                      ? '@tui.bell-filled'
+                      : requested
+                        ? '@tui.clock'
+                        : '@tui.bell'
+                  "
+                  [tuiSkeleton]="loading || followLoading()"
+                  (click)="toggleFollow()"
+                >
+                  {{
+                    (following
+                      ? 'followingStatus'
+                      : requested
+                        ? 'requestedStatus'
+                        : isPrivate
+                          ? 'requestFollow'
+                          : 'follow'
+                    ) | translate
+                  }}
+                </button>
+
+                @if (following || !isPrivate) {
+                  <button
+                    tuiButton
+                    type="button"
+                    appearance="secondary"
+                    size="s"
+                    iconStart="@tui.send"
+                    [tuiSkeleton]="loading"
+                    (click)="openChat()"
+                  >
+                    {{ 'sendMessage' | translate }}
+                  </button>
+                }
+              }
+            </div>
+          </app-user-info>
+
+          @if (isOwnProfile() || !profile()?.private || isFollowing()) {
+            <!-- Statistics: fills remaining height in left column on desktop -->
+            <div
+              class="w-full flex-1 min-w-0 min-h-0 flex flex-col lg:overflow-hidden"
             >
-              @for (tab of visibleTabs(); track tab) {
-                <button tuiTab class="relative">
-                  @if (tabPulseStates()[tab]) {
-                    <tui-pulse />
-                  }
-                  {{ tab | translate }}
-                </button>
-              }
-            </tui-tabs>
-
-            @switch (visibleTabs()[activeTab()]) {
-              @case ('ascents') {
-                <app-user-profile-ascents
-                  [userId]="profile()?.id || id() || ''"
-                  [isOwnProfile]="isOwnProfile()"
-                  [profile]="profile()"
-                />
-              }
-
-              @case ('projects') {
-                @defer (on viewport; hydrate on viewport) {
-                  <app-user-profile-projects
-                    [userId]="profile()?.id || id() || ''"
-                    [startingYear]="profile()?.starting_climbing_year"
-                  />
-                } @placeholder {
-                  <div class="flex items-center justify-center py-16 min-h-32">
-                    <tui-loader size="l" />
-                  </div>
-                }
-              }
-
-              @case ('statistics') {
-                @defer (on viewport; hydrate on viewport) {
-                  <app-user-profile-statistics
-                    [userId]="id() || supabase.authUserId() || ''"
-                  />
-                } @placeholder {
-                  <div class="flex items-center justify-center py-16 min-h-32">
-                    <tui-loader size="l" />
-                  </div>
-                }
-              }
-              @case ('likes') {
-                @defer (on viewport; hydrate on viewport) {
-                  <app-user-profile-likes
-                    [userId]="profile()?.id || id() || ''"
-                  />
-                } @placeholder {
-                  <div class="flex items-center justify-center py-16 min-h-32">
-                    <tui-loader size="l" />
-                  </div>
-                }
-              }
-            }
+              <app-user-profile-statistics
+                [userId]="profile()?.id || id() || supabase.authUserId() || ''"
+                class="w-full lg:flex-1 min-w-0 lg:min-h-0"
+              />
+            </div>
           } @else {
-            <div class="mt-8 flex flex-col items-center gap-3">
-              <app-empty-state icon="@tui.list" />
+            <div class="mt-8">
+              <app-empty-state icon="@tui.lock" message="privateProfile" />
             </div>
           }
-        } @else {
-          <div class="mt-8">
-            <app-empty-state icon="@tui.lock" message="privateProfile" />
+        </div>
+
+        <!-- Right Column: Ascents (Takes full height from the top in desktop) -->
+        @if (isOwnProfile() || !profile()?.private || isFollowing()) {
+          <div
+            class="w-full lg:w-[380px] xl:w-[440px] 2xl:w-[480px] shrink-0 min-w-0 lg:h-full flex flex-col lg:overflow-hidden"
+          >
+            <app-user-profile-ascents
+              [userId]="profile()?.id || id() || ''"
+              [isOwnProfile]="isOwnProfile()"
+              [profile]="profile()"
+              class="w-full lg:flex-1 min-w-0 lg:min-h-0"
+            />
           </div>
         }
       </section>
@@ -354,23 +359,14 @@ import { IS_BROWSER } from '../../app/is-browser';
 
     <ng-template #tourHint>
       <app-tour-hint
-        [description]="
-          (tourService.step() === TourStep.PROFILE
-            ? 'tour.profile.ascentsDescription'
-            : tourService.step() === TourStep.PROFILE_PROJECTS
-              ? 'tour.profile.projectsDescription'
-              : tourService.step() === TourStep.PROFILE_STATISTICS
-                ? 'tour.profile.statisticsDescription'
-                : 'tour.profile.likesDescription'
-          ) | translate
-        "
-        [isLast]="tourService.step() === TourStep.PROFILE_LIKES"
-        (next)="tourService.next()"
+        [description]="'tour.profile.ascentsDescription' | translate"
+        [isLast]="true"
+        (next)="tourService.finish()"
         (skip)="tourService.finish()"
       />
     </ng-template>
   `,
-  host: { class: 'flex grow min-h-0' },
+  host: { class: 'flex flex-col w-full h-full min-h-0' },
 })
 export class UserProfileComponent {
   protected readonly messagingService = inject(MessagingService);
@@ -381,6 +377,7 @@ export class UserProfileComponent {
   protected readonly router = inject(Router);
   protected readonly tourService = inject(TourService);
   protected readonly TourStep = TourStep;
+  protected readonly userProfilesService = inject(UserProfilesService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
   protected readonly followRequestsService = inject(FollowRequestsService);
@@ -395,7 +392,6 @@ export class UserProfileComponent {
   protected dropdownOpen = signal(false);
   protected readonly followLoading = signal(false);
 
-  protected readonly activeTab = this.profileData.profileActiveTab;
   protected readonly followedIds = signal<Set<string>>(new Set());
   protected readonly requestedIds = signal<Set<string>>(new Set());
   protected readonly incomingRequestIds = signal<Set<string>>(new Set());
@@ -555,34 +551,6 @@ export class UserProfileComponent {
     return count === undefined || count !== 0;
   });
 
-  readonly visibleTabs = computed(() => {
-    const tabs = [];
-    if (this.hasAscents()) {
-      tabs.push('ascents');
-    }
-    if (this.hasProjects()) {
-      tabs.push('projects');
-    }
-    if (this.hasAscents()) {
-      tabs.push('statistics');
-    }
-    if (this.isOwnProfile()) {
-      tabs.push('likes');
-    }
-    return tabs;
-  });
-
-  readonly tabPulseStates = computed(() => {
-    const step = this.tourService.step();
-    const isActive = this.tourService.isActive();
-    return {
-      ascents: isActive && step === TourStep.PROFILE,
-      projects: isActive && step === TourStep.PROFILE_PROJECTS,
-      statistics: isActive && step === TourStep.PROFILE_STATISTICS,
-      likes: isActive && step === TourStep.PROFILE_LIKES,
-    } as Record<string, boolean>;
-  });
-
   readonly profileAvatarSrc = computed(() =>
     this.supabase.buildAvatarUrl(this.profile()?.avatar),
   );
@@ -655,36 +623,6 @@ export class UserProfileComponent {
       this.layout.isNavLoading.set(false);
     });
 
-    // Handle tour steps and tab switches
-    effect(() => {
-      if (!this.tourService.isActive()) return;
-
-      const step = this.tourService.step();
-      const tabs = untracked(() => this.visibleTabs());
-      let targetIndex = -1;
-      if (step === TourStep.PROFILE) {
-        targetIndex = tabs.indexOf('ascents');
-      } else if (step === TourStep.PROFILE_PROJECTS) {
-        targetIndex = tabs.indexOf('projects');
-      } else if (step === TourStep.PROFILE_STATISTICS) {
-        targetIndex = tabs.indexOf('statistics');
-      } else if (step === TourStep.PROFILE_LIKES) {
-        targetIndex = tabs.indexOf('likes');
-      }
-      if (targetIndex !== -1) {
-        untracked(() => this.activeTab.set(targetIndex));
-      }
-    });
-
-    // Guard for activeTab index when visibleTabs change
-    effect(() => {
-      const tabs = this.visibleTabs();
-      const currentTab = untracked(() => this.activeTab());
-      if (currentTab >= tabs.length) {
-        untracked(() => this.activeTab.set(0));
-      }
-    });
-
     // Track viewed user id for breadcrumbs and global state
     effect(() => {
       const profileId = this.profile()?.id;
@@ -694,7 +632,6 @@ export class UserProfileComponent {
         this.profileData.profileUserId.set(profileId);
         this.profileData.resetPagination();
         this.outdoorData.clearSelection();
-        this.profileData.profileActiveTab.set(0);
       }
     });
 
@@ -714,6 +651,31 @@ export class UserProfileComponent {
           .then((ids) => this.incomingRequestIds.set(new Set(ids)));
       }
     });
+  }
+
+  protected openProjectsDialog(): void {
+    const userId =
+      this.profile()?.id || this.id() || this.supabase.authUserId();
+    const startingYear = this.profile()?.starting_climbing_year;
+    this.userProfilesService.openProjectsDialog(
+      userId || undefined,
+      startingYear,
+    );
+  }
+
+  protected openFavoritesDialog(): void {
+    const userId =
+      this.profile()?.id || this.id() || this.supabase.authUserId();
+    this.userProfilesService.openFavoritesDialog(userId || undefined);
+  }
+
+  protected openAscentCalendarDialog(): void {
+    const userId =
+      this.profile()?.id || this.id() || this.supabase.authUserId();
+    this.userProfilesService.openAscentCalendarDialog(
+      userId || undefined,
+      this.profile(),
+    );
   }
 
   protected async toggleFollow(): Promise<void> {
