@@ -6,6 +6,12 @@ import { SupabaseService } from './supabase.service';
 
 export type ErrorSeverity = 'critical' | 'error' | 'warning' | 'info';
 
+export interface AppErrorLogUser {
+  id: string;
+  name: string | null;
+  avatar: string | null;
+}
+
 export interface AppErrorLog {
   id: string;
   created_at: string;
@@ -16,6 +22,7 @@ export interface AppErrorLog {
   severity: ErrorSeverity;
   code?: string | null;
   context?: string | null;
+  user_profile?: AppErrorLogUser | null;
 }
 
 const SEVERITY_WEIGHT: Record<ErrorSeverity, number> = {
@@ -89,6 +96,7 @@ export class ErrorLogService {
     }
 
     const userId = this.supabase.authUserId();
+    const profile = this.supabase.userProfile();
     const newLog: AppErrorLog = {
       id: crypto.randomUUID(),
       created_at: new Date().toISOString(),
@@ -99,6 +107,13 @@ export class ErrorLogService {
       severity,
       code,
       context: context ?? null,
+      user_profile: profile
+        ? {
+            id: profile.id,
+            name: profile.name,
+            avatar: profile.avatar,
+          }
+        : null,
     };
 
     // Save locally first
@@ -137,9 +152,39 @@ export class ErrorLogService {
         return this.sortLogs(this.loadLocalLogs());
       }
 
+      const userIds = [
+        ...new Set(
+          data.map((l) => l.user_id).filter((id): id is string => !!id),
+        ),
+      ];
+
+      let userProfilesMap = new Map<string, AppErrorLogUser>();
+      if (userIds.length > 0) {
+        const { data: profiles } = await this.supabase.client
+          .from('user_profiles')
+          .select('id, name, avatar')
+          .in('id', userIds);
+
+        if (profiles) {
+          userProfilesMap = new Map(
+            profiles.map((p) => [
+              p.id,
+              {
+                id: p.id,
+                name: p.name,
+                avatar: p.avatar,
+              },
+            ]),
+          );
+        }
+      }
+
       const dbLogs = (data as AppErrorLog[]).map((log) => ({
         ...log,
         severity: (log.severity as ErrorSeverity) || 'error',
+        user_profile: log.user_id
+          ? (userProfilesMap.get(log.user_id) ?? null)
+          : null,
       }));
 
       const sorted = this.sortLogs(dbLogs);

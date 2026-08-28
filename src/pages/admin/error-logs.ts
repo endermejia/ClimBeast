@@ -11,12 +11,13 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { TuiTable } from '@taiga-ui/addon-table';
-import { TuiDialogService } from '@taiga-ui/core';
 import {
   TuiAppearance,
   TuiButton,
+  TuiDialogService,
   TuiIcon,
   TuiInput,
+  TuiLink,
   TuiTextfield,
   TuiTitle,
 } from '@taiga-ui/core';
@@ -45,12 +46,14 @@ import { ToastService } from '../../services/toast.service';
 
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 
+import { AvatarUrlPipe } from '../../pipes';
 import { matchesQuery } from '../../utils';
 
 @Component({
   selector: 'app-admin-error-logs',
   standalone: true,
   imports: [
+    AvatarUrlPipe,
     DatePipe,
     EmptyStateComponent,
     FormsModule,
@@ -67,6 +70,7 @@ import { matchesQuery } from '../../utils';
     TuiHeader,
     TuiIcon,
     TuiInput,
+    TuiLink,
     TuiTable,
     TuiTextfield,
     TuiTitle,
@@ -395,7 +399,35 @@ import { matchesQuery } from '../../utils';
                   </span>
                 }
                 @if (log.user_id) {
-                  <span> 👤 <strong>User:</strong> {{ log.user_id }} </span>
+                  <div class="flex items-center gap-2">
+                    <a
+                      [routerLink]="['/profile', log.user_id]"
+                      class="shrink-0 flex items-center"
+                    >
+                      <span
+                        tuiAvatar
+                        size="xs"
+                        class="rounded-full! overflow-hidden ring-1 ring-(--tui-border-normal)"
+                      >
+                        @if (log.user_profile?.avatar; as avatar) {
+                          <img
+                            [src]="avatar | avatarUrl"
+                            [alt]="log.user_profile.name || 'Avatar'"
+                            class="w-full h-full object-cover rounded-full!"
+                          />
+                        } @else {
+                          <tui-icon icon="@tui.user" />
+                        }
+                      </span>
+                    </a>
+                    <a
+                      tuiLink
+                      [routerLink]="['/profile', log.user_id]"
+                      class="font-medium truncate text-xs"
+                    >
+                      {{ log.user_profile?.name || log.user_id }}
+                    </a>
+                  </div>
                 }
               </div>
 
@@ -466,7 +498,9 @@ export class AdminErrorLogsComponent {
           matchesQuery(l.message, query) ||
           matchesQuery(l.code ?? '', query) ||
           matchesQuery(l.context ?? '', query) ||
-          matchesQuery(l.url ?? '', query),
+          matchesQuery(l.url ?? '', query) ||
+          matchesQuery(l.user_profile?.name ?? '', query) ||
+          matchesQuery(l.user_id ?? '', query),
       );
     }
 
@@ -478,13 +512,18 @@ export class AdminErrorLogsComponent {
   }
 
   formatSingleLog(log: AppErrorLog): string {
+    const userStr = log.user_id
+      ? log.user_profile?.name
+        ? `${log.user_profile.name} (${log.user_id})`
+        : log.user_id
+      : '';
     return (
       `[${log.severity.toUpperCase()}] ${log.created_at}\n` +
       `Message: ${log.message}\n` +
       (log.context ? `Context: ${log.context}\n` : '') +
       (log.code ? `Code: ${log.code}\n` : '') +
       (log.url ? `URL: ${log.url}\n` : '') +
-      (log.user_id ? `User: ${log.user_id}\n` : '') +
+      (userStr ? `User: ${userStr}\n` : '') +
       (log.stack ? `Stack:\n${log.stack}` : '')
     );
   }
