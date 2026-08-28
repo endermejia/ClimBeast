@@ -63,6 +63,21 @@ export class ErrorLogService {
     if (error instanceof Error) {
       message = error.message;
       stack = error.stack ?? null;
+
+      if (message === '[object Object]' || message === 'Error' || !message) {
+        const anyErr = error as unknown as Record<string, unknown>;
+        if (anyErr['cause'] && typeof anyErr['cause'] === 'object') {
+          const cause = anyErr['cause'] as Record<string, unknown>;
+          message = String(
+            cause['message'] ||
+              cause['details'] ||
+              cause['hint'] ||
+              JSON.stringify(cause),
+          );
+          if (cause['code']) code = String(cause['code']);
+        }
+      }
+
       if (
         'context' in error &&
         error.context &&
@@ -77,12 +92,16 @@ export class ErrorLogService {
       const errorObj = error as Record<string, unknown>;
       const innerError = errorObj['error'] as
         Record<string, unknown> | undefined;
+      const cause = errorObj['cause'] as Record<string, unknown> | undefined;
       message = String(
         errorObj['message'] ||
           innerError?.['message'] ||
+          cause?.['message'] ||
           errorObj['details'] ||
           innerError?.['details'] ||
+          cause?.['details'] ||
           errorObj['messageKey'] ||
+          errorObj['hint'] ||
           JSON.stringify(error),
       );
       stack = errorObj['stack'] ? String(errorObj['stack']) : null;
@@ -90,7 +109,9 @@ export class ErrorLogService {
         ? String(errorObj['code'])
         : errorObj['status']
           ? String(errorObj['status'])
-          : null;
+          : innerError?.['code']
+            ? String(innerError['code'])
+            : null;
     } else if (error) {
       message = String(error);
     }

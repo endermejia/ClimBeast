@@ -143,7 +143,14 @@ export function createCachedResource<P, T>(
   });
 
   const sig = computed(() => {
-    const val = res.value();
+    let val: T | undefined;
+    try {
+      if (res.hasValue()) {
+        val = res.value();
+      }
+    } catch {
+      val = undefined;
+    }
     if (val !== undefined && val !== config.fallbackValue) return val;
     const p = config.params ? config.params() : (undefined as P);
     const key = config.cacheKey(p);

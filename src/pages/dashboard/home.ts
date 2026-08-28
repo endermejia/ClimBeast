@@ -239,7 +239,14 @@ export class HomeComponent {
 
   protected readonly activeCrags = computed(() => {
     const visited = this.visitedCragsService.visitedCrags();
-    const active = this.activeCragsResource.value() ?? [];
+    let active: ActiveCrag[] = [];
+    try {
+      if (this.activeCragsResource.hasValue()) {
+        active = this.activeCragsResource.value() ?? [];
+      }
+    } catch {
+      active = [];
+    }
 
     const merged = [...visited];
     const visitedIds = new Set(visited.map((c) => c.id));

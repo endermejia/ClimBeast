@@ -39,13 +39,7 @@ import { NewsItem } from '../../models';
               Desnivel
             </span>
             <span class="text-xs">
-              {{
-                data.date
-                  | date
-                    : 'longDate'
-                    : undefined
-                    : languageService.selectedLanguage()
-              }}
+              {{ formattedDate() }}
             </span>
           </div>
         </a>
@@ -97,6 +91,28 @@ export class NewsCardComponent {
   protected readonly languageService = inject(LanguageService);
   private readonly sanitizer = inject(DomSanitizer);
   item = input.required<NewsItem>();
+
+  readonly formattedDate = computed(() => {
+    const d = this.item().date;
+    if (!d) return '';
+    const lang = this.languageService.selectedLanguage();
+    const locale = lang === 'va' ? 'ca' : lang || 'es';
+    try {
+      const date = new Date(d);
+      if (isNaN(date.getTime())) return '';
+      return new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(
+        date,
+      );
+    } catch {
+      try {
+        return new Intl.DateTimeFormat('es', { dateStyle: 'long' }).format(
+          new Date(d),
+        );
+      } catch {
+        return '';
+      }
+    }
+  });
 
   sanitizedTitle = computed(
     () =>

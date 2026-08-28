@@ -98,7 +98,14 @@ export class SupabaseAuthService {
   });
 
   readonly userProfile = computed(() => {
-    const val = this.userProfileResource.value();
+    let val: UserProfileDto | null | undefined;
+    try {
+      if (this.userProfileResource.hasValue()) {
+        val = this.userProfileResource.value();
+      }
+    } catch {
+      val = undefined;
+    }
     if (val !== undefined) return val;
     const userId = this.authUserId();
     if (!userId) return null;
@@ -136,7 +143,14 @@ export class SupabaseAuthService {
   });
 
   readonly adminAreas = computed(() => {
-    const val = this.adminAreasResource.value();
+    let val: number[] | undefined;
+    try {
+      if (this.adminAreasResource.hasValue()) {
+        val = this.adminAreasResource.value();
+      }
+    } catch {
+      val = undefined;
+    }
     if (val !== undefined) return val;
     const userId = this.authUserId();
     if (!userId) return [];
@@ -173,7 +187,14 @@ export class SupabaseAuthService {
   });
 
   readonly adminIndoorCenters = computed(() => {
-    const val = this.adminIndoorCentersResource.value();
+    let val: string[] | undefined;
+    try {
+      if (this.adminIndoorCentersResource.hasValue()) {
+        val = this.adminIndoorCentersResource.value();
+      }
+    } catch {
+      val = undefined;
+    }
     if (val !== undefined) return val;
     const userId = this.authUserId();
     if (!userId) return [];
@@ -200,9 +221,16 @@ export class SupabaseAuthService {
     },
   });
 
-  readonly routesetterIndoorCenters = computed(
-    () => this.routesetterIndoorCentersResource.value() ?? [],
-  );
+  readonly routesetterIndoorCenters = computed(() => {
+    try {
+      if (this.routesetterIndoorCentersResource.hasValue()) {
+        return this.routesetterIndoorCentersResource.value() ?? [];
+      }
+    } catch {
+      return [];
+    }
+    return [];
+  });
 
   async getUserProfile(userId: string): Promise<UserProfileDto | null> {
     const { data, error } = await this.client
