@@ -10,8 +10,11 @@ import {
 } from '../models';
 
 import { IS_BROWSER } from '../app/is-browser';
+
 import { AppDialogsService } from './app-dialogs.service';
 import { SupabaseService } from './supabase.service';
+
+import { connectRealtimeChannel } from '../utils';
 
 @Injectable({
   providedIn: 'root',
@@ -202,21 +205,20 @@ export class AppNotificationsService {
     const userId = this.supabase.authUserId();
     if (!userId) return null;
 
-    return this.supabase.client
-      .channel(`notifications-${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          callback(payload.new as NotificationInsertDto);
-        },
-      )
-      .subscribe();
+    const channel = this.supabase.client.channel(`notifications-${userId}`).on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        callback(payload.new as NotificationInsertDto);
+      },
+    );
+
+    return connectRealtimeChannel(channel);
   }
 
   openNotifications(): void {

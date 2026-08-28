@@ -5,7 +5,6 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { TuiButton, TuiDialogContext } from '@taiga-ui/core';
@@ -46,6 +45,7 @@ import { ToastService } from '../../services/toast.service';
 import { EightAnuAscent, Json } from '../../models';
 
 import { slugify } from '../../utils';
+import { reactToObservable } from '../../utils';
 
 import {
   Import8aStepConfirmComponent,
@@ -265,7 +265,7 @@ export class Import8aComponent {
   );
 
   constructor() {
-    this.loadedFiles$.pipe(takeUntilDestroyed()).subscribe();
+    reactToObservable(this.loadedFiles$, () => undefined);
   }
 
   protected onStep(step: number): void {

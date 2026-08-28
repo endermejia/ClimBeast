@@ -71,15 +71,14 @@ export class ToastService {
     undoCallback: () => void,
     autoClose = 5000,
   ): void {
-    this.toast
-      .open(new PolymorpheusComponent(UndoToastComponent), {
+    void firstValueFrom(
+      this.toast.open(new PolymorpheusComponent(UndoToastComponent), {
         appearance: 'floating',
         data: { message, undoCallback },
         autoClose,
-      })
-      .subscribe(() => {
-        // No-op - interaction handled inside component
-      });
+      }),
+      { defaultValue: undefined },
+    );
   }
 
   showLoader(message: string, progress$?: Observable<number>): Subject<void> {

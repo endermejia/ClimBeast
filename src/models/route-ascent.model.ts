@@ -42,6 +42,9 @@ export interface UserAscentStatRecord {
   area_name: string;
   area_slug: string;
   private_ascent: boolean | null;
+  climbing_kind?: string | null;
+  is_indoor?: boolean;
+  center_slug?: string | null;
 }
 
 /** Comment with likes count from Supabase query */

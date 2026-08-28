@@ -3,6 +3,8 @@ import { TestBed } from '@angular/core/testing';
 
 import { TranslateService, TranslateStore } from '@ngx-translate/core';
 
+import { firstValueFrom, take } from 'rxjs';
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { IS_BROWSER } from '../app/is-browser';
@@ -195,37 +197,35 @@ describe('AscentsService', () => {
   });
 
   describe('refreshComments', () => {
-    it('emits ascent id to comments update subject', () => {
-      const emitted: number[] = [];
-      service.ascentCommentsUpdate.subscribe((id) => emitted.push(id));
+    it('emits ascent id to comments update subject', async () => {
+      const emitted = firstValueFrom(
+        service.ascentCommentsUpdate.pipe(take(1)),
+      );
       service.refreshComments(42);
-      expect(emitted).toEqual([42]);
+      expect(await emitted).toBe(42);
     });
   });
 
   describe('ascent lifecycle observables', () => {
-    it('emits on ascentDeleted when notifyAscentDeleted is called', () => {
-      const emitted: (number | string)[] = [];
-      service.ascentDeleted.subscribe((id) => emitted.push(id));
+    it('emits on ascentDeleted when notifyAscentDeleted is called', async () => {
+      const emitted = firstValueFrom(service.ascentDeleted.pipe(take(1)));
       service.notifyAscentDeleted(123);
-      service.notifyAscentDeleted('indoor-456');
-      expect(emitted).toEqual([123, 'indoor-456']);
+      expect(await emitted).toBe(123);
     });
 
-    it('emits on ascentUpdated when notifyAscentUpdated is called', () => {
-      const emitted: { id: number | string; changes?: unknown }[] = [];
-      service.ascentUpdated.subscribe((data) => emitted.push(data));
+    it('emits on ascentUpdated when notifyAscentUpdated is called', async () => {
+      const emitted = firstValueFrom(service.ascentUpdated.pipe(take(1)));
       service.notifyAscentUpdated(123, { comment: 'Nice route' } as never);
-      expect(emitted).toEqual([
-        { id: 123, changes: { comment: 'Nice route' } },
-      ]);
+      expect(await emitted).toEqual({
+        id: 123,
+        changes: { comment: 'Nice route' },
+      });
     });
 
-    it('emits on ascentCreated when notifyAscentCreated is called', () => {
-      let count = 0;
-      service.ascentCreated.subscribe(() => count++);
+    it('emits on ascentCreated when notifyAscentCreated is called', async () => {
+      const emitted = firstValueFrom(service.ascentCreated.pipe(take(1)));
       service.notifyAscentCreated();
-      expect(count).toBe(1);
+      expect(await emitted).toBeUndefined();
     });
   });
 

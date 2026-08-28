@@ -2,14 +2,13 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   effect,
   inject,
   input,
   model,
   OnInit,
 } from '@angular/core';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
   ControlValueAccessor,
   FormControl,
@@ -23,6 +22,8 @@ import { TuiInputNumber } from '@taiga-ui/kit';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { startWith } from 'rxjs';
+
+import { reactToObservable } from '../../utils';
 
 let nextCounterId = 0;
 
@@ -104,7 +105,6 @@ let nextCounterId = 0;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CounterComponent implements ControlValueAccessor, OnInit {
-  private readonly destroyRef = inject(DestroyRef);
   public readonly ngControl = inject(NgControl, { optional: true, self: true });
 
   id = input<string>(`counter-${nextCounterId++}`);
@@ -183,12 +183,10 @@ export class CounterComponent implements ControlValueAccessor, OnInit {
   }
 
   ngOnInit(): void {
-    this.control.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((value) => {
-        this.value.set(value);
-        this.onChange(value);
-      });
+    reactToObservable(this.control.valueChanges, (value) => {
+      this.value.set(value);
+      this.onChange(value);
+    });
   }
 
   change(delta: number): void {

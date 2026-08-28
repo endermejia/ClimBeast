@@ -277,12 +277,21 @@ import { ChartAscentsByStyleComponent } from '../../charts/chart-ascents-by-styl
                 <div class="trend-route-row">
                   <a
                     class="route-name"
-                    [routerLink]="[
-                      '/area',
-                      route.areaSlug,
-                      route.cragSlug,
-                      route.routeSlug,
-                    ]"
+                    [routerLink]="
+                      route.isIndoor
+                        ? [
+                            '/indoor',
+                            route.centerSlug,
+                            'route',
+                            route.routeSlug,
+                          ]
+                        : [
+                            '/area',
+                            route.areaSlug,
+                            route.cragSlug,
+                            route.routeSlug,
+                          ]
+                    "
                     [class.onsight]="route.type === AscentTypes.OS"
                     [class.flash]="route.type === AscentTypes.F"
                     [class.redpoint]="
@@ -329,12 +338,21 @@ import { ChartAscentsByStyleComponent } from '../../charts/chart-ascents-by-styl
                 <div class="trend-route-row">
                   <a
                     class="route-name"
-                    [routerLink]="[
-                      '/area',
-                      route.areaSlug,
-                      route.cragSlug,
-                      route.routeSlug,
-                    ]"
+                    [routerLink]="
+                      route.isIndoor
+                        ? [
+                            '/indoor',
+                            route.centerSlug,
+                            'route',
+                            route.routeSlug,
+                          ]
+                        : [
+                            '/area',
+                            route.areaSlug,
+                            route.cragSlug,
+                            route.routeSlug,
+                          ]
+                    "
                     [class.onsight]="route.type === AscentTypes.OS"
                     [class.flash]="route.type === AscentTypes.F"
                     [class.redpoint]="

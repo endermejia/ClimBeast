@@ -12,7 +12,6 @@ import {
   effect,
   untracked,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 
 import { TuiDataList, TuiDialogService, TuiScrollbar } from '@taiga-ui/core';
@@ -82,6 +81,8 @@ import {
 } from '../../models/supabase-query.types';
 
 import { CACHE_KEYS } from '../../constants/cache-keys';
+
+import { reactToObservable } from '../../utils';
 
 import {
   applyCategoryFilter,
@@ -330,21 +331,19 @@ export class HomeComponent {
       }
     });
 
-    this.scrollService.scrollToTop$.pipe(takeUntilDestroyed()).subscribe(() => {
+    reactToObservable(this.scrollService.scrollToTop$, () => {
       this.scrollToTop();
     });
 
-    this.ascentsService.ascentDeleted
-      .pipe(takeUntilDestroyed())
-      .subscribe((id) => {
-        this.ascents.update((items) =>
-          items.filter((item) => String(item.id) !== String(id)),
-        );
-      });
+    reactToObservable(this.ascentsService.ascentDeleted, (id) => {
+      this.ascents.update((items) =>
+        items.filter((item) => String(item.id) !== String(id)),
+      );
+    });
 
-    this.ascentsService.ascentUpdated
-      .pipe(takeUntilDestroyed())
-      .subscribe(async ({ id, changes }) => {
+    reactToObservable(
+      this.ascentsService.ascentUpdated,
+      async ({ id, changes }) => {
         const updated = await this.ascentsService.getAscentById(id);
         this.ascents.update((items) => {
           const updatedList = items.map((item) =>
@@ -362,13 +361,12 @@ export class HomeComponent {
             return dateB - dateA;
           });
         });
-      });
+      },
+    );
 
-    this.ascentsService.ascentCreated
-      .pipe(takeUntilDestroyed())
-      .subscribe(() => {
-        this.resetFeed();
-      });
+    reactToObservable(this.ascentsService.ascentCreated, () => {
+      this.resetFeed();
+    });
 
     effect(() => {
       if (!this.followsLoaded()) return;
@@ -389,7 +387,7 @@ export class HomeComponent {
       });
     });
 
-    this.loadMore$.pipe(takeUntilDestroyed()).subscribe(() => {
+    reactToObservable(this.loadMore$, () => {
       void this.fetchNextPage();
     });
   }

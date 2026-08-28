@@ -1,13 +1,11 @@
 import { DOCUMENT } from '@angular/common';
 import {
   Component,
-  DestroyRef,
   afterNextRender,
   effect,
   inject,
   OnDestroy,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Meta } from '@angular/platform-browser';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
@@ -32,6 +30,8 @@ import { NavbarComponent } from '../components/ui/navbar';
 import { OfflineBannerComponent } from '../components/ui/offline-banner';
 
 import { Themes } from '../models';
+
+import { reactToObservable } from '../utils';
 
 import { IS_BROWSER } from './is-browser';
 
@@ -89,7 +89,6 @@ export class AppComponent implements OnDestroy {
   private readonly doc = inject(DOCUMENT);
   private readonly seo = inject(SeoService);
   private readonly swUpdate = inject(SwUpdate);
-  private readonly destroyRef = inject(DestroyRef);
 
   private readonly gdprKey = 'lw_gdpr_accepted';
 
@@ -161,16 +160,16 @@ export class AppComponent implements OnDestroy {
       });
 
       // Check for updates on navigation
-      this.router.events
-        .pipe(
+      reactToObservable(
+        this.router.events.pipe(
           filter((event) => event instanceof NavigationEnd),
-          takeUntilDestroyed(this.destroyRef),
-        )
-        .subscribe(() => {
+        ),
+        () => {
           void this.swUpdate.checkForUpdate().catch(() => {
             // Ignore errors
           });
-        });
+        },
+      );
 
       // Check for updates every hour
       const oneHour = 60 * 60 * 1000;
@@ -181,14 +180,13 @@ export class AppComponent implements OnDestroy {
       }, oneHour);
 
       // Auto-apply update and reload
-      this.swUpdate.versionUpdates
-        .pipe(
+      reactToObservable(
+        this.swUpdate.versionUpdates.pipe(
           filter(
             (evt): evt is VersionReadyEvent => evt.type === 'VERSION_READY',
           ),
-          takeUntilDestroyed(this.destroyRef),
-        )
-        .subscribe(() => {
+        ),
+        () => {
           this.storage.setItem('lw_update_applied', 'true');
           void this.swUpdate
             .activateUpdate()
@@ -198,15 +196,14 @@ export class AppComponent implements OnDestroy {
             .catch(() => {
               window.location.reload();
             });
-        });
+        },
+      );
 
       // Handle unrecoverable state (corrupted cache)
-      this.swUpdate.unrecoverable
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(() => {
-          this.storage.setItem('lw_update_applied', 'true');
-          window.location.reload();
-        });
+      reactToObservable(this.swUpdate.unrecoverable, () => {
+        this.storage.setItem('lw_update_applied', 'true');
+        window.location.reload();
+      });
     }
   }
 

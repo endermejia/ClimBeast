@@ -1,10 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  inject,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 
@@ -28,6 +23,8 @@ import { CartService } from '../../services/cart.service';
 
 import { CheckoutService } from '../../services/checkout.service';
 import { SupabaseService } from '../../services/supabase.service';
+
+import { reactToObservable } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -269,7 +266,6 @@ export class CheckoutComponent {
   private readonly supabase = inject(SupabaseService);
   private readonly router = inject(Router);
   private readonly isBrowser = inject(IS_BROWSER);
-  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly items = this.cart.items;
   protected readonly subtotal = this.cart.totalPrice;
@@ -310,10 +306,9 @@ export class CheckoutComponent {
         }
       }
 
-      const sub = this.shippingForm.valueChanges.subscribe((val) => {
+      reactToObservable(this.shippingForm.valueChanges, (val) => {
         localStorage.setItem('checkout_shipping_info', JSON.stringify(val));
       });
-      this.destroyRef.onDestroy(() => sub.unsubscribe());
     }
   }
 

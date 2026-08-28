@@ -1,5 +1,4 @@
-import { DestroyRef, inject, Injectable } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { inject, Injectable } from '@angular/core';
 
 import { TuiNotificationOptions, TuiNotificationService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
@@ -16,7 +15,6 @@ import { GdprNotificationComponent } from '../components/notifications/gdpr-noti
 export class NotificationService {
   private readonly alerts = inject(TuiNotificationService);
   private readonly translate = inject(TranslateService);
-  private readonly destroyRef = inject(DestroyRef);
   private isGdprShowing = false;
 
   private show(
@@ -73,9 +71,8 @@ export class NotificationService {
 
     this.isGdprShowing = true;
 
-    this.translate
-      .get('gdpr.title')
-      .pipe(
+    void firstValueFrom(
+      this.translate.get('gdpr.title').pipe(
         switchMap((translatedTitle) =>
           this.alerts.open(
             new PolymorpheusComponent(GdprNotificationComponent),
@@ -87,15 +84,10 @@ export class NotificationService {
             },
           ),
         ),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        complete: () => {
-          this.isGdprShowing = false;
-        },
-        error: () => {
-          this.isGdprShowing = false;
-        },
-      });
+      ),
+      { defaultValue: undefined },
+    ).finally(() => {
+      this.isGdprShowing = false;
+    });
   }
 }

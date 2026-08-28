@@ -10,7 +10,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { toObservable } from '@angular/core/rxjs-interop';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
@@ -58,6 +58,8 @@ import {
 } from '../../models';
 
 import { AvatarUrlPipe } from '../../pipes';
+
+import { reactToObservable } from '../../utils';
 
 import { ChatInputComponent } from '../chat/chat-input';
 
@@ -369,19 +371,19 @@ export class ChatDialogComponent implements OnDestroy {
       void this.openChatWithRoom(initialRoomId);
     }
 
-    toObservable(this.userSearchValue)
-      .pipe(
+    reactToObservable(
+      toObservable(this.userSearchValue).pipe(
         debounceTime(300),
         distinctUntilChanged(),
         switchMap((val: string | null) => {
           if (!val || val.length < 2) return of([]);
           return from(this.userProfilesService.searchUsers(val));
         }),
-        takeUntilDestroyed(),
-      )
-      .subscribe((users: UserProfileBasicDto[]) => {
+      ),
+      (users: UserProfileBasicDto[]) => {
         this.searchResults.set(users);
-      });
+      },
+    );
 
     effect(() => {
       const res = this.messagesResource.value();

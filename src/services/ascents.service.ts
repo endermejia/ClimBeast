@@ -236,7 +236,46 @@ export class AscentsService {
     if (!userId || !this.isBrowser) return [];
     await this.supabase.whenReady();
 
-    const { data, error } = await this.supabase.client
+    interface OutdoorQueryResult {
+      id: number;
+      date: string | null;
+      type: string | null;
+      grade: number | null;
+      attempts: number | null;
+      private_ascent: boolean | null;
+      route: {
+        grade: number;
+        climbing_kind: string | null;
+        name: string;
+        slug: string;
+        crag: {
+          name: string;
+          slug: string;
+          area: {
+            name: string;
+            slug: string;
+          } | null;
+        } | null;
+      } | null;
+    }
+
+    interface IndoorQueryResult {
+      id: string;
+      date: string;
+      type: string;
+      grade: number | null;
+      attempts: number | null;
+      private_ascent: boolean | null;
+      route: {
+        grade: number | null;
+        climbing_kind: string | null;
+        name: string;
+        slug: string;
+        center: { slug: string } | null;
+      } | null;
+    }
+
+    const outdoorQuery = this.supabase.client
       .from('route_ascents')
       .select(
         `
@@ -248,6 +287,7 @@ export class AscentsService {
         private_ascent,
         route:routes (
           grade,
+          climbing_kind,
           name,
           slug,
           crag:crags (
@@ -263,58 +303,96 @@ export class AscentsService {
       )
       .eq('user_id', userId)
       .order('date', { ascending: false })
-      .overrideTypes<QueryResult[]>();
+      .overrideTypes<OutdoorQueryResult[]>();
 
-    if (error) {
-      console.error('[AscentsService] getUserStats error', error);
-      return [];
+    const indoorQuery = this.supabase.client
+      .from('indoor_ascents')
+      .select(
+        `
+        id,
+        date,
+        type,
+        grade,
+        attempts,
+        private_ascent,
+        route:indoor_routes (
+          grade,
+          climbing_kind,
+          name,
+          slug,
+          center:indoor_centers (
+            slug
+          )
+        )
+      `,
+      )
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+      .overrideTypes<IndoorQueryResult[]>();
+
+    const [outdoorResult, indoorResult] = await Promise.all([
+      outdoorQuery,
+      indoorQuery,
+    ]);
+
+    if (outdoorResult.error) {
+      console.error(
+        '[AscentsService] getUserStats outdoor error',
+        outdoorResult.error,
+      );
+    }
+    if (indoorResult.error) {
+      console.error(
+        '[AscentsService] getUserStats indoor error',
+        indoorResult.error,
+      );
     }
 
-    interface QueryResult {
-      id: number;
-      date: string | null;
-      type: string | null;
-      grade: number | null;
-      attempts: number | null;
-      private_ascent: boolean | null;
-      route: {
-        grade: number;
-        name: string;
-        slug: string;
-        crag: {
-          name: string;
-          slug: string;
-          area: {
-            name: string;
-            slug: string;
-          } | null;
-        } | null;
-      } | null;
-    }
+    const outdoorStats = (outdoorResult.data ?? []).map((a) => {
+      const route = a.route;
+      const crag = route?.crag;
+      const area = crag?.area;
 
-    return (
-      data?.map((a) => {
-        const route = a.route;
-        const crag = route?.crag;
-        const area = crag?.area;
-
-        return {
-          id: a.id,
+      return {
+        id: Number(a.id),
+        ascent_date: a.date || '',
+        ascent_type: a.type || AscentTypes.RP,
+        ascent_grade: a.grade,
+        attempts: a.attempts,
+        private_ascent: a.private_ascent ?? false,
+        route_grade: route?.grade || 0,
+        climbing_kind: route?.climbing_kind,
+        route_name: route?.name || '',
+        route_slug: route?.slug || '',
+        crag_name: crag?.name || '',
+        crag_slug: crag?.slug || '',
+        area_name: area?.name || '',
+        area_slug: area?.slug || '',
+      } satisfies UserAscentStatRecord;
+    });
+    const indoorStats = (indoorResult.data ?? []).map(
+      (a) =>
+        ({
+          id: Number(a.id),
           ascent_date: a.date || '',
           ascent_type: a.type || AscentTypes.RP,
           ascent_grade: a.grade,
           attempts: a.attempts,
           private_ascent: a.private_ascent ?? false,
-          route_grade: route?.grade || 0,
-          route_name: route?.name || '',
-          route_slug: route?.slug || '',
-          crag_name: crag?.name || '',
-          crag_slug: crag?.slug || '',
-          area_name: area?.name || '',
-          area_slug: area?.slug || '',
-        } satisfies UserAscentStatRecord;
-      }) ?? []
+          route_grade: a.route?.grade || 0,
+          climbing_kind: a.route?.climbing_kind,
+          route_name: a.route?.name || '',
+          route_slug: a.route?.slug || '',
+          crag_name: '',
+          crag_slug: '',
+          area_name: '',
+          area_slug: '',
+          is_indoor: true,
+          center_slug: a.route?.center?.slug,
+        }) satisfies UserAscentStatRecord,
     );
+
+    return [...outdoorStats, ...indoorStats];
   }
 
   /** Lightweight: fetch only date+type for all ascents of a user, to power calendar markers. */

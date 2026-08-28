@@ -2,12 +2,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  DestroyRef,
   inject,
+  Injector,
   signal,
   WritableSignal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -64,7 +63,7 @@ import { AreaListItem, IndoorCenterDto } from '../../models';
 
 import { CACHE_KEYS } from '../../constants';
 import { AvatarUrlPipe } from '../../pipes';
-import { matchesQuery } from '../../utils';
+import { matchesQuery, reactToObservable } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -462,7 +461,7 @@ export class AdminUsersListComponent {
   protected readonly supabase = inject(SupabaseService);
   private readonly indoor = inject(IndoorService);
   private readonly outdoorData = inject(OutdoorDataService);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
   private readonly dialogs = inject(TuiDialogService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
@@ -667,11 +666,13 @@ export class AdminUsersListComponent {
           const areasControl = new FormControl(assignedAreas, {
             nonNullable: true,
           });
-          areasControl.valueChanges
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((newAreas: AreaListItem[]) => {
+          reactToObservable(
+            areasControl.valueChanges,
+            (newAreas: AreaListItem[]) => {
               void this.onAreasChange(profile.id, newAreas);
-            });
+            },
+            this.injector,
+          );
 
           const assignedCenterIds =
             centerMappingsByEquipper.get(profile.id) || [];
@@ -682,11 +683,13 @@ export class AdminUsersListComponent {
           const centersControl = new FormControl(assignedCenters, {
             nonNullable: true,
           });
-          centersControl.valueChanges
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((newCenters: IndoorCenterDto[]) => {
+          reactToObservable(
+            centersControl.valueChanges,
+            (newCenters: IndoorCenterDto[]) => {
               void this.onCentersChange(profile.id, newCenters);
-            });
+            },
+            this.injector,
+          );
 
           return {
             id: profile.id,

@@ -9,7 +9,6 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { TuiButton, TuiScrollbar } from '@taiga-ui/core';
 
@@ -29,7 +28,7 @@ import {
   UserProfileDto,
 } from '../../models';
 
-import { processAscentsToFeed } from '../../utils';
+import { processAscentsToFeed, reactToObservable } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -163,17 +162,15 @@ export class UserProfileAscentsComponent {
       }
     });
 
-    this.ascentsService.ascentDeleted
-      .pipe(takeUntilDestroyed())
-      .subscribe((id) => {
-        this.accumulatedAscents.update((items) =>
-          items.filter((item) => String(item.id) !== String(id)),
-        );
-      });
+    reactToObservable(this.ascentsService.ascentDeleted, (id) => {
+      this.accumulatedAscents.update((items) =>
+        items.filter((item) => String(item.id) !== String(id)),
+      );
+    });
 
-    this.ascentsService.ascentUpdated
-      .pipe(takeUntilDestroyed())
-      .subscribe(async ({ id, changes }) => {
+    reactToObservable(
+      this.ascentsService.ascentUpdated,
+      async ({ id, changes }) => {
         const updated = await this.ascentsService.getAscentById(id);
         this.accumulatedAscents.update((items) => {
           const mapped = items.map((item) =>
@@ -183,15 +180,14 @@ export class UserProfileAscentsComponent {
           );
           return processAscentsToFeed(mapped);
         });
-      });
+      },
+    );
 
-    this.ascentsService.ascentCreated
-      .pipe(takeUntilDestroyed())
-      .subscribe(() => {
-        this.profileData.ascentsPage.set(0);
-        this.profileData.userAscentsResource.reload();
-        this.profileData.userTotalAscentsCountResource.reload();
-      });
+    reactToObservable(this.ascentsService.ascentCreated, () => {
+      this.profileData.ascentsPage.set(0);
+      this.profileData.userAscentsResource.reload();
+      this.profileData.userTotalAscentsCountResource.reload();
+    });
 
     effect(() => {
       const res = this.ascentsResource.value();

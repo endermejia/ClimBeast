@@ -16,7 +16,7 @@ export class PushSubscriptionService {
       const profile = this.authState.userProfile();
       if (profile && this.isBrowser && this.push.isSupported()) {
         if (!this.push.isSubscribed()) {
-          void this.push.subscribe();
+          void this.push.enablePushNotifications();
         } else {
           void this.push.getCurrentSubscription().then((sub) => {
             if (sub) void this.push.saveSubscription(sub);

@@ -365,6 +365,38 @@ a[tuiHint],
   user-select: none !important;
 }
 
+/* Toast width - make toasts wider to prevent text cutoff */
+tui-notification,
+.t-toast,
+[tuiToast] {
+  max-width: 600px !important;
+  width: auto !important;
+  min-width: 300px !important;
+}
+
+@media (max-width: 640px) {
+  tui-notification,
+  .t-toast,
+  [tuiToast] {
+    max-width: calc(100vw - 2rem) !important;
+    min-width: auto !important;
+  }
+}
+
+/* Undo toast specific styling */
+app-undo-toast[tuiToast] {
+  max-width: 600px !important;
+  width: auto !important;
+  min-width: 300px !important;
+}
+
+@media (max-width: 640px) {
+  app-undo-toast[tuiToast] {
+    max-width: calc(100vw - 2rem) !important;
+    min-width: auto !important;
+  }
+}
+
 .mention-hint-overlay-panel {
   z-index: 10000 !important;
   width: 21.5rem !important;

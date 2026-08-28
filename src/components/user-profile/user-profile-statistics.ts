@@ -13,12 +13,15 @@ import { TuiPoint, TuiScrollbar } from '@taiga-ui/core';
 import { TranslateService } from '@ngx-translate/core';
 
 import { AscentsService } from '../../services/ascents.service';
+import { FilterStateService } from '../../services/filter-state.service';
 import { LayoutService } from '../../services/layout.service';
 import { ProfileDataService } from '../../services/profile-data.service';
 import { SupabaseService } from '../../services/supabase.service';
 
 import {
   GradeDistribution,
+  LABEL_TO_VERTICAL_LIFE,
+  ORDERED_GRADE_VALUES,
   TrendData,
   TrendDetail,
   UserAscentStatRecord,
@@ -110,6 +113,7 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
 })
 export class UserProfileStatisticsComponent {
   private readonly ascentsService = inject(AscentsService);
+  private readonly filterState = inject(FilterStateService);
   private readonly translate = inject(TranslateService);
   protected readonly profileData = inject(ProfileDataService);
   protected readonly layout = inject(LayoutService);
@@ -139,10 +143,78 @@ export class UserProfileStatisticsComponent {
     return data.filter((a) => a.ascent_type !== 'attempt');
   });
 
-  // Filtered Stats
+  // Filtered Stats (for pyramid, score card, etc. - respects date filter)
   stats = computed(() => {
-    const all = this.rawStats();
-    return filterAscentsByDate(all, this.dateFilterValue());
+    const dateFiltered = filterAscentsByDate(
+      this.rawStats(),
+      this.dateFilterValue(),
+    );
+    const [minGradeIndex, maxGradeIndex] =
+      this.filterState.profileAscentsGradeRange();
+    const categories = this.filterState.profileAscentsCategories();
+    const showIndoor = this.filterState.profileAscentsShowIndoor();
+    const showOutdoor = this.filterState.profileAscentsShowOutdoor();
+
+    const allowedGrades =
+      minGradeIndex === 0 && maxGradeIndex === ORDERED_GRADE_VALUES.length - 1
+        ? null
+        : new Set(
+            ORDERED_GRADE_VALUES.slice(minGradeIndex, maxGradeIndex + 1)
+              .map((grade) => LABEL_TO_VERTICAL_LIFE[grade])
+              .filter((grade): grade is number => grade !== undefined),
+          );
+    const allowedKinds = categories.length
+      ? new Set(
+          categories
+            .map((category) => ['sport', 'boulder', 'multipitch'][category])
+            .filter((kind): kind is string => kind !== undefined),
+        )
+      : null;
+
+    return dateFiltered.filter(
+      (ascent) =>
+        ((showIndoor && showOutdoor) ||
+          (!showIndoor && !showOutdoor) ||
+          (showIndoor && ascent.is_indoor) ||
+          (showOutdoor && !ascent.is_indoor)) &&
+        (!allowedGrades || allowedGrades.has(ascent.route_grade)) &&
+        (!allowedKinds || allowedKinds.has(ascent.climbing_kind ?? '')),
+    );
+  });
+
+  // Stats for trend chart (no date filter, but respects other filters)
+  statsForTrend = computed(() => {
+    const [minGradeIndex, maxGradeIndex] =
+      this.filterState.profileAscentsGradeRange();
+    const categories = this.filterState.profileAscentsCategories();
+    const showIndoor = this.filterState.profileAscentsShowIndoor();
+    const showOutdoor = this.filterState.profileAscentsShowOutdoor();
+
+    const allowedGrades =
+      minGradeIndex === 0 && maxGradeIndex === ORDERED_GRADE_VALUES.length - 1
+        ? null
+        : new Set(
+            ORDERED_GRADE_VALUES.slice(minGradeIndex, maxGradeIndex + 1)
+              .map((grade) => LABEL_TO_VERTICAL_LIFE[grade])
+              .filter((grade): grade is number => grade !== undefined),
+          );
+    const allowedKinds = categories.length
+      ? new Set(
+          categories
+            .map((category) => ['sport', 'boulder', 'multipitch'][category])
+            .filter((kind): kind is string => kind !== undefined),
+        )
+      : null;
+
+    return this.rawStats().filter(
+      (ascent) =>
+        ((showIndoor && showOutdoor) ||
+          (!showIndoor && !showOutdoor) ||
+          (showIndoor && ascent.is_indoor) ||
+          (showOutdoor && !ascent.is_indoor)) &&
+        (!allowedGrades || allowedGrades.has(ascent.route_grade)) &&
+        (!allowedKinds || allowedKinds.has(ascent.climbing_kind ?? '')),
+    );
   });
 
   // --- Computed Signals for Dashboard ---
@@ -184,7 +256,7 @@ export class UserProfileStatisticsComponent {
   // Shared source for chart data to ensure sync between line chart and tooltip details
   private readonly chartSource = computed(() => {
     return calculateTrendSource(
-      this.rawStats(),
+      this.statsForTrend(),
       this.translate.instant('today'),
     );
   });

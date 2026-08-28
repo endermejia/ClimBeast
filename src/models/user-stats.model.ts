@@ -11,6 +11,8 @@ export interface RouteScore {
   areaSlug: string;
   cragSlug: string;
   routeSlug: string;
+  isIndoor?: boolean;
+  centerSlug?: string;
 }
 
 export interface GradeDistributionRow {

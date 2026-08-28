@@ -324,7 +324,7 @@ export class ProfileDataService {
               `
               *,
               route:indoor_routes!inner (
-                id, name, grade, climbing_kind, color,
+                id, name, slug, grade, climbing_kind, color,
                 center:indoor_centers!inner (
                   id, name, slug
                 )

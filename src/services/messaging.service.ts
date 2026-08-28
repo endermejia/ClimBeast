@@ -15,6 +15,8 @@ import { IS_BROWSER } from '../app/is-browser';
 import { AppDialogsService } from './app-dialogs.service';
 import { SupabaseService } from './supabase.service';
 
+import { connectRealtimeChannel } from '../utils';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -257,28 +259,27 @@ export class MessagingService {
     callback: (message: ChatMessageDto) => void,
   ): RealtimeChannel | null {
     if (!this.isBrowser) return null;
-    return this.supabase.client
-      .channel(`room-${roomId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages',
-          filter: `room_id=eq.${roomId}`,
-        },
-        (payload) => {
-          callback(payload.new as ChatMessageDto);
-        },
-      )
-      .subscribe();
+    const channel = this.supabase.client.channel(`room-${roomId}`).on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_messages',
+        filter: `room_id=eq.${roomId}`,
+      },
+      (payload) => {
+        callback(payload.new as ChatMessageDto);
+      },
+    );
+
+    return connectRealtimeChannel(channel);
   }
 
   watchUnreadCount(
     callback: (payload: ChatMessageDto) => void,
   ): RealtimeChannel | null {
     if (!this.isBrowser) return null;
-    return this.supabase.client
+    const channel = this.supabase.client
       .channel(`unread-messages-${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
@@ -290,8 +291,9 @@ export class MessagingService {
         (payload) => {
           callback(payload.new as ChatMessageDto);
         },
-      )
-      .subscribe();
+      );
+
+    return connectRealtimeChannel(channel);
   }
 
   openChatDialog(data?: ChatDialogData): void {

@@ -3,10 +3,12 @@ import {
   afterNextRender,
   Component,
   computed,
+  effect,
   inject,
   signal,
   WritableSignal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import {
@@ -20,8 +22,6 @@ import { TuiPassword } from '@taiga-ui/kit';
 import { TuiCardLarge, TuiForm, TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
-
-import { take } from 'rxjs';
 
 import { SupabaseService } from '../../services/supabase.service';
 
@@ -363,9 +363,14 @@ export class LoginComponent {
       this.confirmPassword() === this.password(),
   );
 
+  private readonly registerQueryParam = toSignal(this.route.queryParams, {
+    initialValue: {},
+  });
+
   constructor() {
-    this.route.queryParams.pipe(take(1)).subscribe((params) => {
-      if (params['register'] === 'true') {
+    effect(() => {
+      const params = this.registerQueryParam();
+      if (params && 'register' in params && params['register'] === 'true') {
         this.isRegister.set(true);
       }
     });

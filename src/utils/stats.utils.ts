@@ -131,6 +131,8 @@ export function mapAscentToRouteScore(
     areaSlug: a.area_slug || '',
     cragSlug: a.crag_slug || '',
     routeSlug: a.route_slug || '',
+    isIndoor: a.is_indoor,
+    centerSlug: a.center_slug || '',
   };
 }
 

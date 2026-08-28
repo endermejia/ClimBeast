@@ -1,5 +1,4 @@
-import { DestroyRef, inject, Injectable, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { inject, Injectable, signal } from '@angular/core';
 import { SwPush } from '@angular/service-worker';
 
 import { firstValueFrom } from 'rxjs';
@@ -10,6 +9,8 @@ import { IS_BROWSER } from '../app/is-browser';
 
 import { ENV_VAPID_PUBLIC_KEY } from '../environments/environment';
 
+import { reactToObservable } from '../utils';
+
 import { SupabaseService } from './supabase.service';
 
 @Injectable({
@@ -19,7 +20,6 @@ export class PushService {
   private readonly swPush = inject(SwPush);
   private readonly supabase = inject(SupabaseService);
   private readonly isBrowser = inject(IS_BROWSER);
-  private readonly destroyRef = inject(DestroyRef);
 
   readonly isSubscribed = signal<boolean>(false);
   readonly isSupported = signal<boolean>(false);
@@ -31,7 +31,7 @@ export class PushService {
     }
   }
 
-  async subscribe(): Promise<void> {
+  async enablePushNotifications(): Promise<void> {
     if (!this.swPush.isEnabled) {
       console.warn('[PushService] Notifications are not enabled or supported');
       return;
@@ -45,7 +45,7 @@ export class PushService {
       await this.saveSubscription(subscription);
       this.isSubscribed.set(true);
     } catch (err: unknown) {
-      console.error('[PushService] Could not subscribe to notifications', err);
+      console.error('[PushService] Could not enable notifications', err);
       throw err;
     }
   }
@@ -69,15 +69,13 @@ export class PushService {
   }
 
   private checkSubscription(): void {
-    this.swPush.subscription
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((subscription) => {
-        this.isSubscribed.set(!!subscription);
-        if (subscription) {
-          // Optionally sync if backend doesn't have it
-          void this.saveSubscription(subscription);
-        }
-      });
+    reactToObservable(this.swPush.subscription, (subscription) => {
+      this.isSubscribed.set(!!subscription);
+      if (subscription) {
+        // Optionally sync if backend doesn't have it
+        void this.saveSubscription(subscription);
+      }
+    });
   }
 
   async saveSubscription(subscription: PushSubscription): Promise<void> {

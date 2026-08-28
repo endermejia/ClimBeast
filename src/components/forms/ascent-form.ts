@@ -64,6 +64,8 @@ import {
   GRADE_NUMBER_TO_LABEL,
 } from '../../models';
 
+import { AscentDatePipe } from '../../pipes';
+
 import { handleErrorToast } from '../../utils';
 import { openImageEditor } from '../../utils/open-image-editor';
 
@@ -627,6 +629,7 @@ export default class AscentFormComponent {
   private readonly translate = inject(TranslateService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly indoorService = inject(IndoorService);
+  private readonly ascentDatePipe = new AscentDatePipe();
 
   private readonly _dialogCtx: TuiDialogContext<
     boolean,
@@ -1271,6 +1274,9 @@ export default class AscentFormComponent {
     const data = this.effectiveAscentData();
     if (!data) return;
 
+    // Format date for display using pipe
+    const formattedDate = this.ascentDatePipe.transform(data.date);
+
     const confirmed = await firstValueFrom(
       this.dialogs.open<boolean>(TUI_CONFIRM, {
         label: this.translate.instant('ascent.deleteTitle'),
@@ -1278,7 +1284,7 @@ export default class AscentFormComponent {
         data: {
           content: this.translate.instant('ascent.deleteConfirm', {
             routeName: this.routeName(),
-            date: data.date,
+            date: formattedDate,
           }),
           yes: this.translate.instant('delete'),
           no: this.translate.instant('cancel'),

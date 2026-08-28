@@ -6,7 +6,6 @@ import {
   input,
   resource,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { TuiIcon } from '@taiga-ui/core';
 import { TuiAvatar } from '@taiga-ui/kit';
@@ -19,6 +18,8 @@ import { SupabaseService } from '../../services/supabase.service';
 import { AvatarUrlPipe, MentionLinkPipe } from '../../pipes';
 
 import { MentionHintDirective } from '../../directives/mention-hint.directive';
+
+import { reactToObservable } from '../../utils';
 
 import { CommentLikesComponent } from '../social/comment-likes';
 
@@ -87,13 +88,11 @@ export class AscentLastCommentComponent {
   });
 
   constructor() {
-    this.ascentsService.ascentCommentsUpdate
-      .pipe(takeUntilDestroyed())
-      .subscribe((id: number) => {
-        if (id === this.ascentId()) {
-          this.lastCommentResource.reload();
-        }
-      });
+    reactToObservable(this.ascentsService.ascentCommentsUpdate, (id) => {
+      if (id === this.ascentId()) {
+        this.lastCommentResource.reload();
+      }
+    });
   }
 
   protected showComments(event: Event): void {

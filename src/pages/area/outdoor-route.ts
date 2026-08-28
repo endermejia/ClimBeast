@@ -11,7 +11,6 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
@@ -64,7 +63,7 @@ import {
   PROJECT_GRADE_LABEL,
 } from '../../models';
 
-import { handleErrorToast } from '../../utils';
+import { handleErrorToast, reactToObservable } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -544,18 +543,16 @@ export class OutdoorRouteComponent {
       });
     });
 
-    this.ascentsService.ascentDeleted
-      .pipe(takeUntilDestroyed())
-      .subscribe((id) => {
-        this.accumulatedAscents.update((items) =>
-          items.filter((item) => String(item.id) !== String(id)),
-        );
-        this.outdoorData.routeDetailResource.reload();
-      });
+    reactToObservable(this.ascentsService.ascentDeleted, (id) => {
+      this.accumulatedAscents.update((items) =>
+        items.filter((item) => String(item.id) !== String(id)),
+      );
+      this.outdoorData.routeDetailResource.reload();
+    });
 
-    this.ascentsService.ascentUpdated
-      .pipe(takeUntilDestroyed())
-      .subscribe(async ({ id, changes }) => {
+    reactToObservable(
+      this.ascentsService.ascentUpdated,
+      async ({ id, changes }) => {
         const updated = await this.ascentsService.getAscentById(id);
         this.accumulatedAscents.update((items) =>
           items.map((item) =>
@@ -569,15 +566,14 @@ export class OutdoorRouteComponent {
           ),
         );
         this.outdoorData.routeDetailResource.reload();
-      });
+      },
+    );
 
-    this.ascentsService.ascentCreated
-      .pipe(takeUntilDestroyed())
-      .subscribe(() => {
-        this.profileData.ascentsPage.set(0);
-        this.outdoorData.routeAscentsResource.reload();
-        this.outdoorData.routeDetailResource.reload();
-      });
+    reactToObservable(this.ascentsService.ascentCreated, () => {
+      this.profileData.ascentsPage.set(0);
+      this.outdoorData.routeAscentsResource.reload();
+      this.outdoorData.routeDetailResource.reload();
+    });
 
     effect(() => {
       const res = this.outdoorData.routeAscentsResource.value();

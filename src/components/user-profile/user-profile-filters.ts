@@ -60,44 +60,25 @@ import { getAscentDateFilterOptions } from '../../utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-2 mb-4 shrink-0 w-full min-w-0 px-1 pt-1">
-      <!-- Primary Date Filter (Top) -->
-      <tui-textfield
-        class="w-full font-bold"
-        [tuiTextfieldCleaner]="false"
-        [stringify]="dateValueContent"
-        tuiTextfieldSize="l"
-      >
-        <input
-          tuiSelect
-          id="date-filter"
-          class="font-bold!"
-          [ngModel]="dateFilterValue()"
-          (ngModelChange)="dateFilterValue.set($event)"
-          autocomplete="off"
-        />
-        <tui-data-list *tuiDropdown>
-          <tui-data-list-wrapper new [items]="dateFilterOptions()" />
-        </tui-data-list>
-      </tui-textfield>
-
-      <!-- Search Query + Modal Filters Button + Sort By -->
-      <div class="flex flex-wrap items-center gap-2 w-full min-w-0">
+      <!-- Primary Date Filter + Modal Filters Button -->
+      <div class="flex items-center gap-2 w-full min-w-0">
         <tui-textfield
-          class="grow min-w-0 basis-44"
-          [tuiTextfieldCleaner]="true"
+          class="grow min-w-0 font-bold"
+          [tuiTextfieldCleaner]="false"
+          [stringify]="dateValueContent"
           tuiTextfieldSize="l"
         >
-          <label tuiLabel for="route-search">{{
-            'searchPlaceholder' | translate
-          }}</label>
           <input
-            tuiInput
-            #routeSearch
-            id="route-search"
+            tuiSelect
+            id="date-filter"
+            class="font-bold!"
+            [ngModel]="dateFilterValue()"
+            (ngModelChange)="dateFilterValue.set($event)"
             autocomplete="off"
-            [value]="query()"
-            (input.zoneless)="onQuery(routeSearch.value)"
           />
+          <tui-data-list *tuiDropdown>
+            <tui-data-list-wrapper new [items]="dateFilterOptions()" />
+          </tui-data-list>
         </tui-textfield>
 
         <tui-badged-content class="shrink-0">
@@ -118,6 +99,27 @@ import { getAscentDateFilterOptions } from '../../utils';
             (click.zoneless)="openFilters()"
           ></button>
         </tui-badged-content>
+      </div>
+
+      <!-- Search Query + Sort By -->
+      <div class="flex flex-wrap items-center gap-2 w-full min-w-0">
+        <tui-textfield
+          class="grow min-w-0 basis-44"
+          [tuiTextfieldCleaner]="true"
+          tuiTextfieldSize="l"
+        >
+          <label tuiLabel for="route-search">{{
+            'searchPlaceholder' | translate
+          }}</label>
+          <input
+            tuiInput
+            #routeSearch
+            id="route-search"
+            autocomplete="off"
+            [value]="query()"
+            (input.zoneless)="onQuery(routeSearch.value)"
+          />
+        </tui-textfield>
 
         <tui-textfield
           class="grow min-w-0 basis-32 sm:basis-36"

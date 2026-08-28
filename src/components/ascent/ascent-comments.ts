@@ -6,7 +6,6 @@ import {
   input,
   resource,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { TuiButton, TuiIcon } from '@taiga-ui/core';
 
@@ -15,6 +14,8 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
+
+import { reactToObservable } from '../../utils';
 
 @Component({
   selector: 'app-ascent-comments',
@@ -69,13 +70,11 @@ export class AscentCommentsComponent {
   });
 
   constructor() {
-    this.ascentsService.ascentCommentsUpdate
-      .pipe(takeUntilDestroyed())
-      .subscribe((id) => {
-        if (id === this.ascentId()) {
-          this.commentsCountResource.reload();
-        }
-      });
+    reactToObservable(this.ascentsService.ascentCommentsUpdate, (id) => {
+      if (id === this.ascentId()) {
+        this.commentsCountResource.reload();
+      }
+    });
   }
 
   protected showComments(event: Event): void {
