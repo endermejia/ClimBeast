@@ -7,16 +7,8 @@ import {
   resource,
   signal,
 } from '@angular/core';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
-import {
-  TuiDataList,
-  TuiInput,
-  TuiLoader,
-  TuiPoint,
-  TuiScrollbar,
-} from '@taiga-ui/core';
-import { TuiDataListWrapper, TuiSelect } from '@taiga-ui/kit';
+import { TuiLoader, TuiPoint, TuiScrollbar } from '@taiga-ui/core';
 
 import { TranslateService } from '@ngx-translate/core';
 
@@ -37,29 +29,20 @@ import {
   calculatePeriodScore,
   calculateTrendSource,
   filterAscentsByDate,
-  getAscentDateFilterOptions,
   getMaxGrade,
   getMaxGradeRoutes,
 } from '../../utils';
 
 import { UserProfileStatsPyramidComponent } from './statistics/grade-pyramid';
-
 import { UserProfileStatsScoreComponent } from './statistics/score-card';
-
 import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
 
 @Component({
   selector: 'app-user-profile-statistics',
   standalone: true,
   imports: [
-    FormsModule,
-    ReactiveFormsModule,
-    TuiDataList,
-    TuiDataListWrapper,
-    TuiInput,
     TuiLoader,
     TuiScrollbar,
-    TuiSelect,
     UserProfileStatsPyramidComponent,
     UserProfileStatsScoreComponent,
     UserProfileStatsTrendsComponent,
@@ -76,7 +59,7 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
           class="w-full min-w-0"
         >
           <div class="flex flex-col gap-6 w-full min-w-0 p-1 pr-3 sm:pr-4 pb-6">
-            <!-- Top Section: Pyramid (Left ~60%) + Date Filter & Score Card (Right ~40%) -->
+            <!-- Top Section: Pyramid (Left ~60%) + Score Card (Right ~40%) -->
             <div
               class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch w-full min-w-0"
             >
@@ -90,33 +73,17 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
                 />
               </div>
 
-              <!-- Right Column: Date Filter + Score Card & Key Stats -->
+              <!-- Right Column: Score Card & Key Stats -->
               <div
                 class="order-1 xl:order-2 xl:col-span-5 flex flex-col gap-4 min-w-0 w-full"
               >
-                <!-- Shared Date Filter Selector -->
-                <tui-textfield
-                  class="w-full shrink-0"
-                  [tuiTextfieldCleaner]="false"
-                  [stringify]="dateValueContent"
-                  tuiTextfieldSize="l"
-                >
-                  <input
-                    tuiSelect
-                    [ngModel]="dateFilterValue()"
-                    (ngModelChange)="dateFilterValue.set($event)"
-                    autocomplete="off"
-                  />
-                  <tui-data-list *tuiDropdown>
-                    <tui-data-list-wrapper new [items]="dateFilterOptions()" />
-                  </tui-data-list>
-                </tui-textfield>
-
-                <!-- Score Card & Key Stats -->
                 <app-user-profile-stats-score
                   [totalScore]="totalScore()"
                   [topRoutes]="topRoutes()"
                   [totalAscents]="gradeDistribution().total"
+                  [rpCount]="gradeDistribution().rp"
+                  [flashCount]="gradeDistribution().flash"
+                  [osCount]="gradeDistribution().os"
                   [maxRedpoint]="maxRedpoint()"
                   [maxRedpointRoutes]="maxRedpointRoutes()"
                   [maxOnsight]="maxOnsight()"
@@ -156,28 +123,6 @@ export class UserProfileStatisticsComponent {
   // --- Shared Date Filter Support ---
   readonly dateFilterValue = this.profileData.ascentsDateFilter;
   readonly showAllGrades = signal(false);
-
-  readonly dateFilterOptions = computed(() => {
-    return getAscentDateFilterOptions(
-      this.profileData.effectiveStartingClimbingYear(),
-    );
-  });
-
-  readonly dateValueContent = (option: string): string => {
-    if (option === 'last12' || option === 'last_12_months') {
-      return this.translate.instant('last12Months');
-    }
-    if (option === 'last6' || option === 'last_6_months') {
-      return this.translate.instant('last6Months');
-    }
-    if (option === 'this_year') {
-      return this.translate.instant('year') + ' ' + new Date().getFullYear();
-    }
-    if (option === 'all' || option === 'all_time') {
-      return this.translate.instant('allTime');
-    }
-    return option;
-  };
 
   // --- Data Loading ---
   statsResource = resource({

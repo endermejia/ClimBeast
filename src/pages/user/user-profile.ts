@@ -344,7 +344,7 @@ import { IS_BROWSER } from '../../app/is-browser';
         <!-- Right Column: Ascents (Takes full height from the top in desktop) -->
         @if (isOwnProfile() || !profile()?.private || isFollowing()) {
           <div
-            class="w-full lg:w-[380px] xl:w-[440px] 2xl:w-[480px] shrink-0 min-w-0 lg:h-full flex flex-col lg:overflow-hidden"
+            class="w-full lg:w-[420px] xl:w-[460px] 2xl:w-[500px] shrink-0 min-w-0 lg:h-full flex flex-col lg:overflow-hidden"
           >
             <app-user-profile-ascents
               [userId]="profile()?.id || id() || ''"

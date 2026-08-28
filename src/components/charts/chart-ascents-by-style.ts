@@ -1,25 +1,17 @@
-import { LowerCasePipe, PercentPipe } from '@angular/common';
+import { CommonModule, LowerCasePipe, PercentPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   input,
-  Signal,
 } from '@angular/core';
 
 import { TuiHint } from '@taiga-ui/core';
+import { TuiProgress } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { RouteAscentWithExtras, UserAscentStatRecord } from '../../models';
-
-export interface StyleSegment {
-  type: 'os' | 'f' | 'rp';
-  labelKey: string;
-  count: number;
-  percentage: number;
-  color: string;
-}
 
 export type AscentStyleRecord =
   | RouteAscentWithExtras
@@ -28,101 +20,190 @@ export type AscentStyleRecord =
 
 @Component({
   selector: 'app-chart-ascents-by-style',
-  imports: [LowerCasePipe, PercentPipe, TranslatePipe, TuiHint],
+  standalone: true,
+  imports: [
+    CommonModule,
+    LowerCasePipe,
+    PercentPipe,
+    TranslatePipe,
+    TuiHint,
+    TuiProgress,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
+  host: { class: 'block w-full min-w-0' },
   template: `
-    <div class="w-full max-w-sm mx-auto text-sm font-sans select-none">
-      @if (total() > 0) {
-        <div class="flex flex-col gap-2">
-          <!-- Title / Header -->
-          <div
-            class="flex justify-between items-center text-xs font-semibold uppercase tracking-wider text-(--tui-text-tertiary) px-1"
-          >
-            <span>{{ 'statistics.styleDistribution' | translate }}</span>
-            <span class="font-normal text-(--tui-text-secondary)">
-              {{ total() }}
-              {{
-                (total() === 1 ? 'ascent' : 'ascents') | translate | lowercase
-              }}
-            </span>
-          </div>
+    @if (effectiveTotal() > 0) {
+      <div
+        class="w-full max-w-sm mx-auto select-none flex flex-col gap-2 min-w-0"
+      >
+        <!-- Stacked Taiga UI Progress Bar with interactive hover zones -->
+        <div class="relative w-full overflow-hidden rounded-full">
+          <label tuiProgressLabel class="w-full block">
+            <progress
+              [max]="effectiveTotal()"
+              size="s"
+              tuiProgressBar
+              [style.color]="'var(--tui-status-positive)'"
+              [value]="effectiveTotal()"
+            ></progress>
+            <progress
+              [max]="effectiveTotal()"
+              size="s"
+              tuiProgressBar
+              [style.color]="'var(--tui-status-warning)'"
+              [value]="effectiveRp() + effectiveFlash()"
+            ></progress>
+            <progress
+              [max]="effectiveTotal()"
+              size="s"
+              tuiProgressBar
+              [style.color]="'var(--tui-status-negative)'"
+              [value]="effectiveRp()"
+            ></progress>
+          </label>
 
-          <!-- Single Stacked Bar -->
-          <div
-            class="h-3.5 sm:h-4 w-full rounded-full overflow-hidden bg-(--tui-background-neutral-1) flex p-0.5 gap-0.5 border border-(--tui-border-normal)"
-          >
-            @for (seg of segments(); track seg.type) {
-              @if (seg.percentage > 0) {
-                <div
-                  class="h-full rounded-xs transition-all duration-500 ease-out cursor-pointer hover:brightness-110"
-                  [style.width.%]="seg.percentage"
-                  [style.background]="seg.color"
-                  [tuiHint]="
-                    (seg.labelKey | translate) +
-                    ': ' +
-                    seg.count +
-                    ' (' +
-                    (seg.percentage / 100 | percent: '1.0-1') +
-                    ')'
-                  "
-                ></div>
-              }
-            }
-          </div>
-
-          <!-- Legend Pills Below Bar -->
-          <div
-            class="flex items-center justify-between gap-1 text-xs pt-1 px-0.5"
-          >
-            @for (seg of segments(); track seg.type) {
+          <!-- Hover Overlay across bar segments -->
+          <div class="absolute inset-0 flex">
+            @if (effectiveRp() > 0) {
               <div
-                class="flex items-center gap-1 min-w-0"
-                [class.opacity-40]="seg.count === 0"
-              >
-                <span
-                  class="w-2.5 h-2.5 rounded-full shrink-0"
-                  [style.background]="seg.color"
-                ></span>
-                <span
-                  class="truncate font-medium text-(--tui-text-secondary) text-[11px] sm:text-xs"
-                >
-                  {{ seg.labelKey | translate }}
-                </span>
-                <span
-                  class="font-bold text-(--tui-text-primary) text-[11px] sm:text-xs"
-                >
-                  {{ seg.count }}
-                </span>
-                <span class="text-[10px] text-(--tui-text-tertiary)">
-                  ({{ seg.percentage / 100 | percent: '1.0-0' }})
-                </span>
-              </div>
+                class="h-full cursor-pointer transition-opacity hover:opacity-80"
+                [style.width.%]="(effectiveRp() / effectiveTotal()) * 100"
+                [tuiHint]="
+                  ('ascentTypes.rp' | translate) +
+                  ': ' +
+                  effectiveRp() +
+                  ' ' +
+                  ((effectiveRp() === 1 ? 'ascent' : 'ascents')
+                    | translate
+                    | lowercase) +
+                  ' (' +
+                  (effectiveRp() / effectiveTotal() | percent: '1.0-0') +
+                  ')'
+                "
+              ></div>
+            }
+            @if (effectiveFlash() > 0) {
+              <div
+                class="h-full cursor-pointer transition-opacity hover:opacity-80"
+                [style.width.%]="(effectiveFlash() / effectiveTotal()) * 100"
+                [tuiHint]="
+                  ('ascentTypes.f' | translate) +
+                  ': ' +
+                  effectiveFlash() +
+                  ' ' +
+                  ((effectiveFlash() === 1 ? 'ascent' : 'ascents')
+                    | translate
+                    | lowercase) +
+                  ' (' +
+                  (effectiveFlash() / effectiveTotal() | percent: '1.0-0') +
+                  ')'
+                "
+              ></div>
+            }
+            @if (effectiveOs() > 0) {
+              <div
+                class="h-full cursor-pointer transition-opacity hover:opacity-80"
+                [style.width.%]="(effectiveOs() / effectiveTotal()) * 100"
+                [tuiHint]="
+                  ('ascentTypes.os' | translate) +
+                  ': ' +
+                  effectiveOs() +
+                  ' ' +
+                  ((effectiveOs() === 1 ? 'ascent' : 'ascents')
+                    | translate
+                    | lowercase) +
+                  ' (' +
+                  (effectiveOs() / effectiveTotal() | percent: '1.0-0') +
+                  ')'
+                "
+              ></div>
             }
           </div>
         </div>
-      }
-    </div>
+
+        <!-- Clean Legend: Colored dots + percentages (no label text, hover shows detail) -->
+        <div class="flex items-center justify-between text-xs px-1">
+          <!-- Redpoint -->
+          <div
+            class="flex items-center gap-1.5 cursor-pointer transition-opacity hover:opacity-80"
+            [class.opacity-40]="effectiveRp() === 0"
+            [tuiHint]="
+              ('ascentTypes.rp' | translate) +
+              ': ' +
+              effectiveRp() +
+              ' ' +
+              ((effectiveRp() === 1 ? 'ascent' : 'ascents')
+                | translate
+                | lowercase)
+            "
+          >
+            <span
+              class="w-2 h-2 rounded-full shrink-0 bg-(--tui-status-negative)"
+            ></span>
+            <span class="font-bold text-(--tui-text-primary)">
+              {{ effectiveRp() / effectiveTotal() | percent: '1.0-0' }}
+            </span>
+          </div>
+
+          <!-- Flash -->
+          <div
+            class="flex items-center gap-1.5 cursor-pointer transition-opacity hover:opacity-80"
+            [class.opacity-40]="effectiveFlash() === 0"
+            [tuiHint]="
+              ('ascentTypes.f' | translate) +
+              ': ' +
+              effectiveFlash() +
+              ' ' +
+              ((effectiveFlash() === 1 ? 'ascent' : 'ascents')
+                | translate
+                | lowercase)
+            "
+          >
+            <span
+              class="w-2 h-2 rounded-full shrink-0 bg-(--tui-status-warning)"
+            ></span>
+            <span class="font-bold text-(--tui-text-primary)">
+              {{ effectiveFlash() / effectiveTotal() | percent: '1.0-0' }}
+            </span>
+          </div>
+
+          <!-- Onsight -->
+          <div
+            class="flex items-center gap-1.5 cursor-pointer transition-opacity hover:opacity-80"
+            [class.opacity-40]="effectiveOs() === 0"
+            [tuiHint]="
+              ('ascentTypes.os' | translate) +
+              ': ' +
+              effectiveOs() +
+              ' ' +
+              ((effectiveOs() === 1 ? 'ascent' : 'ascents')
+                | translate
+                | lowercase)
+            "
+          >
+            <span
+              class="w-2 h-2 rounded-full shrink-0 bg-(--tui-status-positive)"
+            ></span>
+            <span class="font-bold text-(--tui-text-primary)">
+              {{ effectiveOs() / effectiveTotal() | percent: '1.0-0' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    }
   `,
 })
 export class ChartAscentsByStyleComponent {
-  ascents = input.required<readonly AscentStyleRecord[] | null | undefined>();
+  ascents = input<readonly AscentStyleRecord[] | null | undefined>();
+  total = input<number>();
+  rpCount = input<number>();
+  flashCount = input<number>();
+  osCount = input<number>();
 
-  protected readonly total: Signal<number> = computed(() => {
-    const list = this.ascents() || [];
-    return list.filter((a) => {
-      const type =
-        'type' in a && a.type
-          ? a.type
-          : 'ascent_type' in a
-            ? a.ascent_type
-            : null;
-      return type && type !== 'attempt';
-    }).length;
-  });
+  protected readonly parsedFromAscents = computed(() => {
+    const list = this.ascents();
+    if (!list) return null;
 
-  protected readonly segments: Signal<StyleSegment[]> = computed(() => {
-    const list = this.ascents() || [];
     let os = 0;
     let f = 0;
     let rp = 0;
@@ -139,30 +220,33 @@ export class ChartAscentsByStyleComponent {
       else if (type === 'rp' || type === 'redpoint') rp++;
     }
 
-    const validTotal = os + f + rp;
+    return { total: os + f + rp, os, f, rp };
+  });
 
-    return [
-      {
-        type: 'os',
-        labelKey: 'ascentTypes.os',
-        count: os,
-        percentage: validTotal > 0 ? (os / validTotal) * 100 : 0,
-        color: 'var(--tui-status-positive)',
-      },
-      {
-        type: 'f',
-        labelKey: 'ascentTypes.f',
-        count: f,
-        percentage: validTotal > 0 ? (f / validTotal) * 100 : 0,
-        color: 'var(--tui-status-warning)',
-      },
-      {
-        type: 'rp',
-        labelKey: 'ascentTypes.rp',
-        count: rp,
-        percentage: validTotal > 0 ? (rp / validTotal) * 100 : 0,
-        color: 'var(--tui-status-negative)',
-      },
-    ];
+  protected readonly effectiveTotal = computed(() => {
+    const parsed = this.parsedFromAscents();
+    if (parsed) return parsed.total;
+    return (
+      this.total() ??
+      this.effectiveRp() + this.effectiveFlash() + this.effectiveOs()
+    );
+  });
+
+  protected readonly effectiveRp = computed(() => {
+    const parsed = this.parsedFromAscents();
+    if (parsed) return parsed.rp;
+    return this.rpCount() ?? 0;
+  });
+
+  protected readonly effectiveFlash = computed(() => {
+    const parsed = this.parsedFromAscents();
+    if (parsed) return parsed.f;
+    return this.flashCount() ?? 0;
+  });
+
+  protected readonly effectiveOs = computed(() => {
+    const parsed = this.parsedFromAscents();
+    if (parsed) return parsed.os;
+    return this.osCount() ?? 0;
   });
 }

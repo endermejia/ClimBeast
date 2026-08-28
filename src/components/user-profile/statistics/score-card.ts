@@ -10,10 +10,13 @@ import { AscentTypes, RouteScore } from '../../../models';
 
 import { CountUpDirective } from '../../../directives/count-up.directive';
 
+import { ChartAscentsByStyleComponent } from '../../charts/chart-ascents-by-style';
+
 @Component({
   selector: 'app-user-profile-stats-score',
   standalone: true,
   imports: [
+    ChartAscentsByStyleComponent,
     CommonModule,
     CountUpDirective,
     DecimalPipe,
@@ -24,7 +27,7 @@ import { CountUpDirective } from '../../../directives/count-up.directive';
   ],
   template: `
     @if (!compact()) {
-      <div class="flex flex-col gap-4 sm:gap-6 min-w-0 w-full">
+      <div class="flex flex-col gap-3 sm:gap-4 min-w-0 w-full">
         <!-- Score Card -->
         <div
           class="bg-(--tui-background-base) shadow-md rounded-2xl p-4 sm:p-5 text-center border border-(--tui-border-normal) min-w-0 w-full overflow-hidden"
@@ -47,10 +50,26 @@ import { CountUpDirective } from '../../../directives/count-up.directive';
           </div>
         </div>
 
+        <!-- Proportional Style Distribution Bar -->
+        @if (totalAscents() > 0) {
+          <div
+            class="bg-(--tui-background-base) shadow-sm p-3 rounded-xl border border-(--tui-border-normal) min-w-0 w-full"
+          >
+            <app-chart-ascents-by-style
+              [total]="totalAscents()"
+              [rpCount]="rpCount()"
+              [flashCount]="flashCount()"
+              [osCount]="osCount()"
+              class="w-full"
+            />
+          </div>
+        }
+
         <!-- Key Stats Grid -->
         <div
           class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-2 gap-2 sm:gap-3 min-w-0 w-full"
         >
+          <!-- Total Ascents -->
           <div
             class="bg-(--tui-background-base) shadow-sm p-2.5 sm:p-3 rounded-xl border border-(--tui-border-normal) flex flex-col items-center justify-center gap-1 min-w-0 overflow-hidden"
           >
@@ -67,6 +86,8 @@ import { CountUpDirective } from '../../../directives/count-up.directive';
               {{ 'ascents' | translate }}
             </div>
           </div>
+
+          <!-- Max Redpoint -->
           <div
             class="bg-(--tui-background-base) shadow-sm p-2.5 sm:p-3 rounded-xl border border-(--tui-border-normal) flex flex-col items-center justify-center gap-1 min-w-0 overflow-hidden"
             [tuiHint]="
@@ -89,26 +110,8 @@ import { CountUpDirective } from '../../../directives/count-up.directive';
               {{ 'ascentTypes.rp' | translate }}
             </div>
           </div>
-          <div
-            class="bg-(--tui-background-base) shadow-sm p-2.5 sm:p-3 rounded-xl border border-(--tui-border-normal) flex flex-col items-center justify-center gap-1 min-w-0 overflow-hidden"
-            [tuiHint]="maxOnsightRoutes().length > 0 ? gradeHintTemplate : null"
-            [tuiHintContext]="{
-              title: ('ascentTypes.os' | translate),
-              grade: maxOnsight(),
-              routes: maxOnsightRoutes(),
-            }"
-          >
-            <div
-              class="text-base sm:text-lg lg:text-xl font-bold text-(--tui-status-positive) truncate max-w-full text-center"
-            >
-              {{ maxOnsight() || '-' }}
-            </div>
-            <div
-              class="text-[10px] sm:text-xs uppercase opacity-70 font-semibold truncate max-w-full text-center"
-            >
-              {{ 'ascentTypes.os' | translate }}
-            </div>
-          </div>
+
+          <!-- Max Flash -->
           <div
             class="bg-(--tui-background-base) shadow-sm p-2.5 sm:p-3 rounded-xl border border-(--tui-border-normal) flex flex-col items-center justify-center gap-1 min-w-0 overflow-hidden"
             [tuiHint]="maxFlashRoutes().length > 0 ? gradeHintTemplate : null"
@@ -127,6 +130,28 @@ import { CountUpDirective } from '../../../directives/count-up.directive';
               class="text-[10px] sm:text-xs uppercase opacity-70 font-semibold truncate max-w-full text-center"
             >
               {{ 'ascentTypes.f' | translate }}
+            </div>
+          </div>
+
+          <!-- Max Onsight -->
+          <div
+            class="bg-(--tui-background-base) shadow-sm p-2.5 sm:p-3 rounded-xl border border-(--tui-border-normal) flex flex-col items-center justify-center gap-1 min-w-0 overflow-hidden"
+            [tuiHint]="maxOnsightRoutes().length > 0 ? gradeHintTemplate : null"
+            [tuiHintContext]="{
+              title: ('ascentTypes.os' | translate),
+              grade: maxOnsight(),
+              routes: maxOnsightRoutes(),
+            }"
+          >
+            <div
+              class="text-base sm:text-lg lg:text-xl font-bold text-(--tui-status-positive) truncate max-w-full text-center"
+            >
+              {{ maxOnsight() || '-' }}
+            </div>
+            <div
+              class="text-[10px] sm:text-xs uppercase opacity-70 font-semibold truncate max-w-full text-center"
+            >
+              {{ 'ascentTypes.os' | translate }}
             </div>
           </div>
         </div>
@@ -191,26 +216,6 @@ import { CountUpDirective } from '../../../directives/count-up.directive';
           </div>
           <div
             class="bg-(--tui-background-neutral-1) p-2 rounded-xl flex flex-col items-center justify-center min-w-0"
-            [tuiHint]="maxOnsightRoutes().length > 0 ? gradeHintTemplate : null"
-            [tuiHintContext]="{
-              title: ('ascentTypes.os' | translate),
-              grade: maxOnsight(),
-              routes: maxOnsightRoutes(),
-            }"
-          >
-            <span
-              class="text-sm font-bold text-(--tui-status-positive) truncate w-full"
-            >
-              {{ maxOnsight() || '-' }}
-            </span>
-            <span
-              class="text-[10px] uppercase opacity-70 font-semibold truncate w-full"
-            >
-              {{ 'ascentTypes.os' | translate }}
-            </span>
-          </div>
-          <div
-            class="bg-(--tui-background-neutral-1) p-2 rounded-xl flex flex-col items-center justify-center min-w-0"
             [tuiHint]="maxFlashRoutes().length > 0 ? gradeHintTemplate : null"
             [tuiHintContext]="{
               title: ('ascentTypes.f' | translate),
@@ -227,6 +232,26 @@ import { CountUpDirective } from '../../../directives/count-up.directive';
               class="text-[10px] uppercase opacity-70 font-semibold truncate w-full"
             >
               {{ 'ascentTypes.f' | translate }}
+            </span>
+          </div>
+          <div
+            class="bg-(--tui-background-neutral-1) p-2 rounded-xl flex flex-col items-center justify-center min-w-0"
+            [tuiHint]="maxOnsightRoutes().length > 0 ? gradeHintTemplate : null"
+            [tuiHintContext]="{
+              title: ('ascentTypes.os' | translate),
+              grade: maxOnsight(),
+              routes: maxOnsightRoutes(),
+            }"
+          >
+            <span
+              class="text-sm font-bold text-(--tui-status-positive) truncate w-full"
+            >
+              {{ maxOnsight() || '-' }}
+            </span>
+            <span
+              class="text-[10px] uppercase opacity-70 font-semibold truncate w-full"
+            >
+              {{ 'ascentTypes.os' | translate }}
             </span>
           </div>
         </div>
@@ -418,6 +443,9 @@ export class UserProfileStatsScoreComponent {
   totalScore = input.required<number>();
   topRoutes = input<RouteScore[]>([]);
   totalAscents = input.required<number>();
+  rpCount = input<number>(0);
+  flashCount = input<number>(0);
+  osCount = input<number>(0);
   maxRedpoint = input.required<string | null>();
   maxRedpointRoutes = input<RouteScore[]>([]);
   maxOnsight = input.required<string | null>();
