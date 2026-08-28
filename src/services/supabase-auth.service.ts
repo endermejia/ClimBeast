@@ -40,9 +40,23 @@ export class SupabaseAuthService {
 
   /** Function getter to access client dynamically from caller */
   private clientGetter: (() => SupabaseClient<Database>) | null = null;
+  private whenReadyGetter: (() => Promise<void>) | null = null;
 
-  setClientGetter(getter: () => SupabaseClient<Database>): void {
+  setClientGetter(
+    getter: () => SupabaseClient<Database>,
+    whenReady?: () => Promise<void>,
+  ): void {
     this.clientGetter = getter;
+    if (whenReady) {
+      this.whenReadyGetter = whenReady;
+    }
+  }
+
+  async getClient(): Promise<SupabaseClient<Database>> {
+    if (this.whenReadyGetter) {
+      await this.whenReadyGetter();
+    }
+    return this.client;
   }
 
   private get client(): SupabaseClient<Database> {
@@ -60,7 +74,8 @@ export class SupabaseAuthService {
       return this.cache.fetchOrCache(
         cacheKey,
         async () => {
-          const { data, error } = await this.client
+          const client = await this.getClient();
+          const { data, error } = await client
             .from('user_profiles')
             .select('*')
             .eq('id', userId)
@@ -103,7 +118,8 @@ export class SupabaseAuthService {
       return this.cache.fetchOrCache(
         cacheKey,
         async () => {
-          const { data, error } = await this.client
+          const client = await this.getClient();
+          const { data, error } = await client
             .from('area_admins')
             .select('area_id')
             .eq('user_id', userId);
@@ -139,7 +155,8 @@ export class SupabaseAuthService {
       return this.cache.fetchOrCache(
         cacheKey,
         async () => {
-          const { data, error } = await this.client
+          const client = await this.getClient();
+          const { data, error } = await client
             .from('indoor_center_admins')
             .select('center_id')
             .eq('user_id', userId);
@@ -173,7 +190,8 @@ export class SupabaseAuthService {
     }),
     loader: async ({ params: { userId } }) => {
       if (!userId || !this.isBrowser) return [];
-      const { data, error } = await this.client
+      const client = await this.getClient();
+      const { data, error } = await client
         .from('indoor_center_routesetters')
         .select('center_id')
         .eq('user_id', userId);

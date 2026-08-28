@@ -217,7 +217,11 @@ export class AreaListComponent {
   protected readonly TourStep = TourStep;
   private readonly filterState = inject(FilterStateService);
 
-  readonly loading = computed(() => this.areasService.loading());
+  readonly loading = computed(
+    () =>
+      this.areasService.loading() ||
+      this.outdoorData.areasListResource.isLoading(),
+  );
   readonly areas = computed(() => this.outdoorData.areasList());
 
   readonly query: WritableSignal<string> = signal('');
