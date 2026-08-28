@@ -220,7 +220,8 @@ export class AreaListComponent {
   readonly loading = computed(
     () =>
       this.areasService.loading() ||
-      this.outdoorData.areasListResource.isLoading(),
+      this.outdoorData.areasListResource.isLoading() ||
+      this.outdoorData.areasListResource.value() === undefined,
   );
   readonly areas = computed(() => this.outdoorData.areasList());
 

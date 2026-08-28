@@ -102,9 +102,14 @@ export class OutdoorDataService {
 
   readonly topoPhotoVersion: WritableSignal<number> = signal(0);
 
-  private readonly cachedAreas = createCachedResource<void, AreaListItem[]>({
+  private readonly cachedAreas = createCachedResource<
+    string | null,
+    AreaListItem[]
+  >({
+    params: () => this.supabase.authUserId(),
     isBrowser: this.isBrowser,
-    cacheKey: () => CACHE_KEYS.areasList,
+    cacheKey: (userId) =>
+      userId ? `${CACHE_KEYS.areasList}_${userId}` : CACHE_KEYS.areasList,
     fetcher: async () => {
       const client = await this.supabase.getClient();
       const { data, error } = await client.rpc('get_areas_list');

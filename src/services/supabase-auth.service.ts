@@ -109,10 +109,8 @@ export class SupabaseAuthService {
   });
 
   readonly adminAreasResource = resource({
-    params: () => ({
-      userId: this.authUserId(),
-    }),
-    loader: async ({ params: { userId } }) => {
+    params: () => this.authUserId(),
+    loader: async ({ params: userId }) => {
       if (!userId || !this.isBrowser) return [];
       const cacheKey = CACHE_KEYS.adminAreas(userId);
       return this.cache.fetchOrCache(
@@ -146,10 +144,8 @@ export class SupabaseAuthService {
   });
 
   readonly adminIndoorCentersResource = resource({
-    params: () => ({
-      userId: this.authUserId(),
-    }),
-    loader: async ({ params: { userId } }) => {
+    params: () => this.authUserId(),
+    loader: async ({ params: userId }) => {
       if (!userId || !this.isBrowser) return [];
       const cacheKey = CACHE_KEYS.adminIndoorCenters(userId);
       return this.cache.fetchOrCache(
@@ -185,10 +181,8 @@ export class SupabaseAuthService {
   });
 
   readonly routesetterIndoorCentersResource = resource({
-    params: () => ({
-      userId: this.authUserId(),
-    }),
-    loader: async ({ params: { userId } }) => {
+    params: () => this.authUserId(),
+    loader: async ({ params: userId }) => {
       if (!userId || !this.isBrowser) return [];
       const client = await this.getClient();
       const { data, error } = await client

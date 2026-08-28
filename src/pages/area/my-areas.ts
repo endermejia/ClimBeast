@@ -194,10 +194,18 @@ export class MyAreasComponent {
     () =>
       this.areasService.loading() ||
       this.outdoorData.areasListResource.isLoading() ||
-      this.authState.adminAreasResource.isLoading(),
+      this.outdoorData.areasListResource.value() === undefined ||
+      this.authState.userProfileResource.isLoading() ||
+      this.authState.userProfileResource.value() === undefined ||
+      (!this.authState.isAdmin() &&
+        (this.authState.adminAreasResource.isLoading() ||
+          this.authState.adminAreasResource.value() === undefined)),
   );
   readonly myAreaIds = this.authState.adminAreas;
   readonly areas = computed(() => {
+    if (this.authState.isAdmin()) {
+      return this.outdoorData.areasList();
+    }
     const ids = new Set(this.myAreaIds().map((id) => Number(id)));
     return this.outdoorData.areasList().filter((a) => ids.has(Number(a.id)));
   });

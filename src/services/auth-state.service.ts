@@ -36,6 +36,7 @@ export class AuthStateService {
 
   // ---- Profile ----
   readonly userProfile = computed(() => this.supabase.userProfile());
+  readonly userProfileResource = this.supabase.userProfileResource;
   readonly userAvatar = computed(() =>
     this.supabase.buildAvatarUrl(this.userProfile()?.avatar),
   );

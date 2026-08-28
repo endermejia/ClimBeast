@@ -124,13 +124,17 @@ export class SupabaseService {
           this._readyResolve = null;
         }
       });
-      void this._client.auth.getSession().then(({ data }) => {
+      try {
+        const { data } = await this._client.auth.getSession();
+        this.authService._session.set(data?.session ?? null);
+      } catch (err) {
+        console.warn('[SupabaseService] getSession error:', err);
+      } finally {
         if (this._readyResolve) {
-          this.authService._session.set(data?.session ?? null);
           this._readyResolve();
           this._readyResolve = null;
         }
-      });
+      }
     } catch (e) {
       console.error('[SupabaseService] Failed to initialize client', e);
       this._readyResolve?.();

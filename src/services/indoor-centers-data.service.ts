@@ -26,8 +26,12 @@ export class IndoorCentersDataService {
   readonly indoorRoutesReloadTick = signal(0);
 
   readonly indoorCentersResource = resource({
-    loader: async () => {
-      if (!this.isBrowser) {
+    params: () => ({
+      isBrowser: this.isBrowser,
+      reloadTick: this.indoorRoutesReloadTick(),
+    }),
+    loader: async ({ params: { isBrowser } }) => {
+      if (!isBrowser) {
         return [] as MapIndoorCenterItem[];
       }
       try {

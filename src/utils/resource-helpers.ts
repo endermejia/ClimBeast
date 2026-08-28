@@ -98,19 +98,22 @@ export function createCachedResource<P, T>(
   signal: Signal<T>;
 } {
   const res = resource({
-    params: config.params,
-    loader: async ({ params }) => {
-      if (!config.isBrowser) {
+    params: () => ({
+      param: config.params ? config.params() : (undefined as P),
+      isBrowser: config.isBrowser,
+    }),
+    loader: async ({ params: { param, isBrowser } }) => {
+      if (!isBrowser) {
         return config.fallbackValue;
       }
-      const key = config.cacheKey(params);
+      const key = config.cacheKey(param);
       if (!key) {
         return config.fallbackValue;
       }
       try {
         return await config.cache.fetchOrCache(
           key,
-          () => config.fetcher(params),
+          () => config.fetcher(param),
           {
             fallbackValue: config.fallbackValue,
             logTag: config.logTag || 'CachedResource',
@@ -141,11 +144,17 @@ export function createCachedResource<P, T>(
 
   const sig = computed(() => {
     const val = res.value();
-    if (val !== undefined) return val;
+    if (val !== undefined && val !== config.fallbackValue) return val;
     const p = config.params ? config.params() : (undefined as P);
     const key = config.cacheKey(p);
-    if (!key) return config.fallbackValue;
-    return config.cache.get<T>(key, config.fallbackValue, config.ttlMs);
+    if (!key) return val !== undefined ? val : config.fallbackValue;
+    const cached = config.cache.get<T | undefined>(
+      key,
+      undefined,
+      config.ttlMs,
+    );
+    if (cached !== undefined) return cached;
+    return val !== undefined ? val : config.fallbackValue;
   });
 
   return { resource: res, signal: sig };

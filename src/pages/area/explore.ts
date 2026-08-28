@@ -155,10 +155,6 @@ import { IS_BROWSER } from '../../app/is-browser';
           </div>
         }
 
-        @let hasMapResults =
-          mapAreaItems().length > 0 ||
-          mapCragItems().length > 0 ||
-          mapIndoorItems().length > 0;
         @let hasSelection =
           !!mapData.selectedMapCragItem() || !!mapData.selectedMapParkingItem();
 
@@ -170,13 +166,9 @@ import { IS_BROWSER } from '../../app/is-browser';
         <div
           class="absolute left-1/2 z-60 sm:z-100 pointer-events-auto transition-opacity duration-300 ease-in-out"
           [style.bottom]="buttonBottomOffset()"
-          [style.opacity]="
-            (hasMapResults && !hasSelection) || isExploreAreasTourStep ? 1 : 0
-          "
+          [style.opacity]="!hasSelection || isExploreAreasTourStep ? 1 : 0"
           [style.visibility]="
-            (hasMapResults && !hasSelection) || isExploreAreasTourStep
-              ? 'visible'
-              : 'hidden'
+            !hasSelection || isExploreAreasTourStep ? 'visible' : 'hidden'
           "
           [style.transform]="'translate(-50%, -' + _sheetScrollTop() + 'px)'"
         >
@@ -215,24 +207,28 @@ import { IS_BROWSER } from '../../app/is-browser';
           [style.visibility]="hasSelection ? 'visible' : 'hidden'"
         >
           <div class="flex gap-2">
-            <button
-              tuiButton
-              size="m"
-              appearance="primary-grayscale"
-              iconStart="@tui.dumbbell"
-              routerLink="/indoor"
-            >
-              {{ 'indoor.button' | translate }}
-            </button>
-            <button
-              tuiButton
-              size="m"
-              appearance="primary-grayscale"
-              iconStart="@tui.mountain"
-              routerLink="/area"
-            >
-              {{ 'outdoor.button' | translate }}
-            </button>
+            @if (filterState.areaListShowIndoor()) {
+              <button
+                tuiButton
+                size="m"
+                appearance="primary-grayscale"
+                iconStart="@tui.dumbbell"
+                routerLink="/indoor"
+              >
+                {{ 'indoor.button' | translate }}
+              </button>
+            }
+            @if (filterState.areaListShowOutdoor()) {
+              <button
+                tuiButton
+                size="m"
+                appearance="primary-grayscale"
+                iconStart="@tui.mountain"
+                routerLink="/area"
+              >
+                {{ 'outdoor.button' | translate }}
+              </button>
+            }
           </div>
         </div>
 
