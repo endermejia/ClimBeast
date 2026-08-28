@@ -203,7 +203,7 @@ import { AscentTypeComponent } from './ascent-type';
         }
       </header>
 
-      @if (mediaItems(); as items) {
+      @if (showPhoto() && mediaItems(); as items) {
         @if (items.length > 0) {
           <div
             class="relative -mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full bg-(--tui-background-neutral-1) overflow-hidden sm:rounded-2xl"
@@ -411,6 +411,7 @@ export class AscentCardComponent {
   data = input.required<RouteAscentWithExtras>();
   showUser = input(true);
   showRoute = input(true);
+  showPhoto = input(true);
   isFollowed = input(false);
   priority = input(false);
   highlightOwn = input(false);
@@ -423,7 +424,7 @@ export class AscentCardComponent {
   protected index = signal(0);
 
   protected readonly ascentPhotoResource = resource({
-    params: () => this.data().photo_path,
+    params: () => (this.showPhoto() ? this.data().photo_path : null),
     loader: async ({ params: path }) => {
       if (!path) return null;
       await this.supabase.whenReady();

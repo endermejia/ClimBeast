@@ -30,15 +30,15 @@ import {
 } from '../../utils';
 
 import { AscentCardComponent } from '../ascent/ascent-card';
-
+import { AscentCardSkeletonComponent } from '../ascent/ascent-card-skeleton';
 import { UserProfileStatsScoreComponent } from '../user-profile/statistics/score-card';
-
 import { UserInfoComponent } from './user-info';
 
 @Component({
   selector: 'app-user-info-hint',
   standalone: true,
   imports: [
+    AscentCardSkeletonComponent,
     CommonModule,
     TranslatePipe,
     UserInfoComponent,
@@ -99,12 +99,23 @@ import { UserInfoComponent } from './user-info';
       />
 
       <!-- User Latest Ascent -->
-      @if (latestAscentResource.value(); as ascent) {
+      @if (latestAscentResource.isLoading()) {
         <div class="mt-3 border-t border-(--tui-border-normal) pt-2">
           <span class="text-xs font-semibold opacity-70 block mb-1">
             {{ 'ascent.latestAscent' | translate }}
           </span>
-          <app-ascent-card [data]="ascent" [showUser]="false" />
+          <app-ascent-card-skeleton [showUser]="false" [hasPhoto]="false" />
+        </div>
+      } @else if (latestAscentResource.value(); as ascent) {
+        <div class="mt-3 border-t border-(--tui-border-normal) pt-2">
+          <span class="text-xs font-semibold opacity-70 block mb-1">
+            {{ 'ascent.latestAscent' | translate }}
+          </span>
+          <app-ascent-card
+            [data]="ascent"
+            [showUser]="false"
+            [showPhoto]="false"
+          />
         </div>
       }
     </div>
