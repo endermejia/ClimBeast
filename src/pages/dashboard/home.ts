@@ -63,7 +63,13 @@ import {
 } from '../../components/dialogs/filter-dialog';
 
 import {
+  ActiveCrag,
+  AscentWithRouteJoin,
   FeedItem,
+  HomeFeedFilter,
+  HomeFeedFilters,
+  IndoorAscentRaw,
+  IndoorAscentWithRouteJoin,
   NewsItem,
   ORDERED_GRADE_VALUES,
   RouteAscentFeedItem,
@@ -72,18 +78,8 @@ import {
   UserProfileBasicDto,
 } from '../../models';
 
-import { IndoorAscentRaw } from '../../models/indoor.model';
-
-import {
-  ActiveCrag,
-  AscentWithRouteJoin,
-  IndoorAscentWithRouteJoin,
-} from '../../models/supabase-query.types';
-
-import { CACHE_KEYS } from '../../constants/cache-keys';
-
+import { CACHE_KEYS } from '../../constants';
 import { reactToObservable } from '../../utils';
-
 import {
   applyCategoryFilter,
   applyGradeFilter,
@@ -93,14 +89,6 @@ import {
 } from '../../utils/feed-filters';
 
 import { IS_BROWSER } from '../../app/is-browser';
-
-export type HomeFeedFilter =
-  | 'following'
-  | 'all'
-  | 'news'
-  | 'favorite_areas'
-  | 'favorite_crags'
-  | 'favorite_routes';
 
 @Component({
   selector: 'app-home',
@@ -146,7 +134,7 @@ export type HomeFeedFilter =
             />
 
             <!-- Crags Row (when not in news mode) -->
-            @if (feedFilter() !== 'news') {
+            @if (feedFilter() !== HomeFeedFilters.NEWS) {
               <app-home-crags-row
                 [followsLoaded]="followsLoaded()"
                 [isLoading]="activeCragsResource.isLoading()"
@@ -157,7 +145,7 @@ export type HomeFeedFilter =
 
           <!-- Main Content (Feed or News) -->
           <main class="flex flex-col gap-4 min-w-0 mt-4">
-            @if (feedFilter() === 'news') {
+            @if (feedFilter() === HomeFeedFilters.NEWS) {
               <app-home-news-grid
                 [newsLoading]="newsLoading()"
                 [newsItems]="newsItems()"
@@ -183,7 +171,7 @@ export type HomeFeedFilter =
       </tui-scrollbar>
 
       <!-- Right Sidebar (News) - Completely OUTSIDE the main scrollbar -->
-      @if (feedFilter() !== 'news') {
+      @if (feedFilter() !== HomeFeedFilters.NEWS) {
         <app-home-news-sidebar
           [newsLoading]="newsLoading()"
           [newsItems]="newsItems()"
@@ -209,6 +197,7 @@ export type HomeFeedFilter =
   },
 })
 export class HomeComponent {
+  protected readonly HomeFeedFilters = HomeFeedFilters;
   protected readonly ascentsService = inject(AscentsService);
   protected readonly authState = inject(AuthStateService);
   protected readonly cart = inject(CartService);
@@ -263,14 +252,15 @@ export class HomeComponent {
   });
 
   protected readonly feedFilter = signal<HomeFeedFilter>(
-    (this.storage.getItem(this.STORAGE_KEY) as HomeFeedFilter) || 'following',
+    (this.storage.getItem(this.STORAGE_KEY) as HomeFeedFilter) ||
+      HomeFeedFilters.FOLLOWING,
   );
 
   protected readonly saveFilterEffect = effect(() => {
     const currentFilter = this.feedFilter();
     const options = this.filterOptions();
     if (!options.includes(currentFilter)) {
-      this.feedFilter.set('following');
+      this.feedFilter.set(HomeFeedFilters.FOLLOWING);
     } else {
       this.storage.setItem(this.STORAGE_KEY, currentFilter);
     }
@@ -278,28 +268,28 @@ export class HomeComponent {
   protected dropdownOpen = signal(false);
 
   protected readonly filterLabels: Record<HomeFeedFilter, string> = {
-    following: 'following',
-    all: 'all',
-    news: 'news',
-    favorite_areas: 'likedAreas',
-    favorite_crags: 'likedCrags',
-    favorite_routes: 'likedRoutes',
+    [HomeFeedFilters.FOLLOWING]: 'following',
+    [HomeFeedFilters.ALL]: 'all',
+    [HomeFeedFilters.NEWS]: 'news',
+    [HomeFeedFilters.FAVORITE_AREAS]: 'likedAreas',
+    [HomeFeedFilters.FAVORITE_CRAGS]: 'likedCrags',
+    [HomeFeedFilters.FAVORITE_ROUTES]: 'likedRoutes',
   };
 
   protected readonly filterOptions = computed(() => {
-    const options: (keyof typeof this.filterLabels)[] = [
-      'following',
-      'all',
-      'news',
+    const options: HomeFeedFilter[] = [
+      HomeFeedFilters.FOLLOWING,
+      HomeFeedFilters.ALL,
+      HomeFeedFilters.NEWS,
     ];
     if (this.favoritesData.likedAreaIds().length > 0) {
-      options.push('favorite_areas');
+      options.push(HomeFeedFilters.FAVORITE_AREAS);
     }
     if (this.favoritesData.likedCragIds().length > 0) {
-      options.push('favorite_crags');
+      options.push(HomeFeedFilters.FAVORITE_CRAGS);
     }
     if (this.favoritesData.likedRouteIds().length > 0) {
-      options.push('favorite_routes');
+      options.push(HomeFeedFilters.FAVORITE_ROUTES);
     }
     return options;
   });
@@ -372,14 +362,19 @@ export class HomeComponent {
       if (!this.followsLoaded()) return;
 
       // Track filter dependencies
-      this.feedFilter();
+      const filter = this.feedFilter();
       this.filterState.feedCategories();
       this.filterState.feedGradeRange();
-      this.favoritesData.likedAreaIds();
-      this.favoritesData.likedCragIds();
-      this.favoritesData.likedRouteIds();
       this.filterState.feedShowIndoor();
       this.filterState.feedShowOutdoor();
+
+      if (filter === HomeFeedFilters.FAVORITE_AREAS) {
+        this.favoritesData.likedAreaIds();
+      } else if (filter === HomeFeedFilters.FAVORITE_CRAGS) {
+        this.favoritesData.likedCragIds();
+      } else if (filter === HomeFeedFilters.FAVORITE_ROUTES) {
+        this.favoritesData.likedRouteIds();
+      }
 
       untracked(() => {
         this.fetchVersion.set(0);
@@ -488,7 +483,7 @@ export class HomeComponent {
       this.followedIds.set(new Set(ids));
       this.storage.setItem(cacheKey, JSON.stringify(ids));
       if (ids.length === 0) {
-        this.feedFilter.set('all');
+        this.feedFilter.set(HomeFeedFilters.ALL);
       }
     } catch (error: unknown) {
       console.error('Error loading followed ids:', error);
@@ -499,10 +494,10 @@ export class HomeComponent {
           const ids = JSON.parse(cached) as string[];
           this.followedIds.set(new Set(ids));
         } else {
-          this.feedFilter.set('all');
+          this.feedFilter.set(HomeFeedFilters.ALL);
         }
       } catch {
-        this.feedFilter.set('all');
+        this.feedFilter.set(HomeFeedFilters.ALL);
       }
     } finally {
       this.followsLoaded.set(true);
@@ -569,6 +564,7 @@ export class HomeComponent {
   }
 
   // Desnivel News (completely independent lifecycle & skeleton)
+  private newsPage = 1;
   protected readonly newsItems = signal<NewsItem[]>([]);
   protected readonly newsLoading = signal(true);
   protected readonly newsLoadingMore = signal(false);
@@ -587,8 +583,10 @@ export class HomeComponent {
       return;
     }
     this.newsLoading.set(true);
+    this.newsPage = 1;
+    this.newsHasMore.set(true);
     try {
-      const posts = await this.desnivelService.getLatestPosts(12);
+      const posts = await this.desnivelService.getLatestPosts(12, 1);
       this.newsItems.set(posts);
       if (posts.length < 12) {
         this.newsHasMore.set(false);
@@ -596,6 +594,7 @@ export class HomeComponent {
     } catch (e: unknown) {
       console.warn('[Home] loadNews error', e);
       this.newsItems.set([]);
+      this.newsHasMore.set(false);
     } finally {
       this.newsLoading.set(false);
     }
@@ -605,29 +604,30 @@ export class HomeComponent {
     if (this.newsLoadingMore() || !this.newsHasMore() || !this.isBrowser)
       return;
     this.newsLoadingMore.set(true);
+    const nextPage = this.newsPage + 1;
     try {
-      const lastItem = this.newsItems().slice(-1)[0];
-      const beforeDate = lastItem?.date
-        ? new Date(lastItem.date).toISOString()
-        : undefined;
-      const newPosts = await this.desnivelService.getLatestPosts(
-        12,
-        beforeDate,
-      );
+      const newPosts = await this.desnivelService.getLatestPosts(12, nextPage);
       if (newPosts.length === 0) {
         this.newsHasMore.set(false);
       } else {
+        this.newsPage = nextPage;
         if (newPosts.length < 12) {
           this.newsHasMore.set(false);
         }
+        let addedCount = 0;
         this.newsItems.update((current) => {
           const seen = new Set(current.map((n) => n.id));
           const filtered = newPosts.filter((n) => !seen.has(n.id));
+          addedCount = filtered.length;
           return [...current, ...filtered];
         });
+        if (addedCount === 0) {
+          this.newsHasMore.set(false);
+        }
       }
     } catch (e: unknown) {
       console.warn('[Home] loadMoreNews error', e);
+      this.newsHasMore.set(false);
     } finally {
       this.newsLoadingMore.set(false);
     }
@@ -648,9 +648,9 @@ export class HomeComponent {
 
     // Indoor queries don't support favorite_areas/favorite_crags/favorite_routes
     if (
-      filter === 'favorite_crags' ||
-      filter === 'favorite_routes' ||
-      filter === 'favorite_areas'
+      filter === HomeFeedFilters.FAVORITE_CRAGS ||
+      filter === HomeFeedFilters.FAVORITE_ROUTES ||
+      filter === HomeFeedFilters.FAVORITE_AREAS
     ) {
       return [];
     }
@@ -767,23 +767,26 @@ export class HomeComponent {
     };
 
     // Check if we should proceed based on filter type
-    if (filter === 'following' && filterOptions.followedIds.length === 0) {
+    if (
+      filter === HomeFeedFilters.FOLLOWING &&
+      filterOptions.followedIds.length === 0
+    ) {
       return [];
     }
     if (
-      filter === 'favorite_areas' &&
+      filter === HomeFeedFilters.FAVORITE_AREAS &&
       filterOptions.likedAreaIds.length === 0
     ) {
       return [];
     }
     if (
-      filter === 'favorite_crags' &&
+      filter === HomeFeedFilters.FAVORITE_CRAGS &&
       filterOptions.likedCragIds.length === 0
     ) {
       return [];
     }
     if (
-      filter === 'favorite_routes' &&
+      filter === HomeFeedFilters.FAVORITE_ROUTES &&
       filterOptions.likedRouteIds.length === 0
     ) {
       return [];

@@ -6,7 +6,6 @@ import {
   inject,
   input,
   model,
-  OnInit,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
@@ -104,7 +103,7 @@ let nextCounterId = 0;
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CounterComponent implements ControlValueAccessor, OnInit {
+export class CounterComponent implements ControlValueAccessor {
   public readonly ngControl = inject(NgControl, { optional: true, self: true });
 
   id = input<string>(`counter-${nextCounterId++}`);
@@ -140,6 +139,11 @@ export class CounterComponent implements ControlValueAccessor, OnInit {
     if (this.ngControl) {
       this.ngControl.valueAccessor = this;
     }
+
+    reactToObservable(this.control.valueChanges, (value) => {
+      this.value.set(value);
+      this.onChange(value);
+    });
 
     effect(() => {
       // Sync errors when status changes
@@ -180,13 +184,6 @@ export class CounterComponent implements ControlValueAccessor, OnInit {
 
   hasError(error: string): boolean {
     return !!this.ngControl?.control?.hasError(error);
-  }
-
-  ngOnInit(): void {
-    reactToObservable(this.control.valueChanges, (value) => {
-      this.value.set(value);
-      this.onChange(value);
-    });
   }
 
   change(delta: number): void {

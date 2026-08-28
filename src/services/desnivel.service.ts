@@ -19,14 +19,15 @@ interface WpPost {
 export class DesnivelService {
   private readonly baseUrl = 'https://www.desnivel.com/wp-json/wp/v2/posts';
 
-  async getLatestPosts(limit: number, before?: string): Promise<NewsItem[]> {
-    let url = `${this.baseUrl}?categories=4&per_page=${limit}&_embed`;
-    if (before) {
-      url += `&before=${before}`;
-    }
+  async getLatestPosts(limit: number, page = 1): Promise<NewsItem[]> {
+    const url = `${this.baseUrl}?categories=4&per_page=${limit}&page=${page}&_embed`;
     try {
       const response = await fetch(url);
       if (!response.ok) {
+        if (response.status === 400 || response.status === 404) {
+          // Beyond last page in WP REST API
+          return [];
+        }
         console.error('Failed to fetch Desnivel posts', response.statusText);
         return [];
       }

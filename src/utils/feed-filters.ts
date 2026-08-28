@@ -1,6 +1,8 @@
 import {
   ClimbingKind,
   ClimbingKinds,
+  HomeFeedFilter,
+  HomeFeedFilters,
   LABEL_TO_VERTICAL_LIFE,
   ORDERED_GRADE_VALUES,
 } from '../models';
@@ -10,7 +12,7 @@ import {
  */
 export interface FeedFilterOptions {
   /** Current feed filter (following, all, favorite_areas, etc.) */
-  filter: string;
+  filter: HomeFeedFilter | string;
   /** Current user ID */
   userId: string;
   /** Categories selected (0 = sport, 1 = boulder, 2 = multipitch) */
@@ -43,23 +45,35 @@ export interface FeedFilterResult<T> {
  * Returns early return value if the query should be skipped.
  */
 export function shouldProceedWithFilter<T>(
-  filter: string,
+  filter: HomeFeedFilter | string,
   options: FeedFilterOptions,
   emptyReturnValue: T,
 ): FeedFilterResult<T> {
-  if (filter === 'following' && options.followedIds.length === 0) {
+  if (
+    filter === HomeFeedFilters.FOLLOWING &&
+    options.followedIds.length === 0
+  ) {
     return { shouldProceed: false, earlyReturn: emptyReturnValue };
   }
 
-  if (filter === 'favorite_areas' && options.likedAreaIds.length === 0) {
+  if (
+    filter === HomeFeedFilters.FAVORITE_AREAS &&
+    options.likedAreaIds.length === 0
+  ) {
     return { shouldProceed: false, earlyReturn: emptyReturnValue };
   }
 
-  if (filter === 'favorite_crags' && options.likedCragIds.length === 0) {
+  if (
+    filter === HomeFeedFilters.FAVORITE_CRAGS &&
+    options.likedCragIds.length === 0
+  ) {
     return { shouldProceed: false, earlyReturn: emptyReturnValue };
   }
 
-  if (filter === 'favorite_routes' && options.likedRouteIds.length === 0) {
+  if (
+    filter === HomeFeedFilters.FAVORITE_ROUTES &&
+    options.likedRouteIds.length === 0
+  ) {
     return { shouldProceed: false, earlyReturn: emptyReturnValue };
   }
 
@@ -79,22 +93,22 @@ export function applyUserFilter<
   let q = query;
 
   // Exclude own ascents unless viewing 'all'
-  if (options.filter !== 'all') {
+  if (options.filter !== HomeFeedFilters.ALL) {
     q = q.neq(userFilterColumn, options.userId);
   }
 
   // Apply specific filter
   switch (options.filter) {
-    case 'following':
+    case HomeFeedFilters.FOLLOWING:
       q = q.in(userFilterColumn, options.followedIds);
       break;
-    case 'favorite_areas':
+    case HomeFeedFilters.FAVORITE_AREAS:
       q = q.in('route.crag.area_id', options.likedAreaIds);
       break;
-    case 'favorite_crags':
+    case HomeFeedFilters.FAVORITE_CRAGS:
       q = q.in('route.crag_id', options.likedCragIds);
       break;
-    case 'favorite_routes':
+    case HomeFeedFilters.FAVORITE_ROUTES:
       q = q.in('route_id', options.likedRouteIds);
       break;
   }
@@ -113,11 +127,11 @@ export function applyIndoorUserFilter<
 >(query: T, options: FeedFilterOptions, userFilterColumn = 'user_id'): T {
   let q = query;
 
-  if (options.filter !== 'all') {
+  if (options.filter !== HomeFeedFilters.ALL) {
     q = q.neq(userFilterColumn, options.userId);
   }
 
-  if (options.filter === 'following') {
+  if (options.filter === HomeFeedFilters.FOLLOWING) {
     q = q.in(userFilterColumn, options.followedIds);
   }
 

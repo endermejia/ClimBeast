@@ -49,3 +49,15 @@ export const Sexes = {
   FEMALE: 'female',
   OTHER: 'other',
 } as const;
+
+export const HomeFeedFilters = {
+  FOLLOWING: 'following',
+  ALL: 'all',
+  NEWS: 'news',
+  FAVORITE_AREAS: 'favorite_areas',
+  FAVORITE_CRAGS: 'favorite_crags',
+  FAVORITE_ROUTES: 'favorite_routes',
+} as const;
+
+export type HomeFeedFilter =
+  (typeof HomeFeedFilters)[keyof typeof HomeFeedFilters];

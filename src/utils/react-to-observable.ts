@@ -1,24 +1,14 @@
-import { effect, inject, Injector } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { DestroyRef, inject, Injector } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { map, type Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
 
-/** Bridges an Observable event stream into Angular's signal-based reactive graph. */
+/** Bridges an Observable event stream into Angular's lifecycle-managed subscription. */
 export function reactToObservable<T>(
   source: Observable<T>,
   callback: (value: T) => void,
-  injector = inject(Injector),
+  injector?: Injector,
 ): void {
-  const event = toSignal(source.pipe(map((value) => ({ value }))), {
-    initialValue: null,
-    injector,
-  });
-
-  effect(
-    () => {
-      const emission = event();
-      if (emission) callback(emission.value);
-    },
-    { injector },
-  );
+  const destroyRef = injector ? injector.get(DestroyRef) : inject(DestroyRef);
+  source.pipe(takeUntilDestroyed(destroyRef)).subscribe(callback);
 }

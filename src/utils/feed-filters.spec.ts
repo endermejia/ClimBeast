@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ORDERED_GRADE_VALUES } from '../models';
+import { HomeFeedFilters, ORDERED_GRADE_VALUES } from '../models';
 
 import {
   shouldProceedWithFilter,
@@ -9,7 +9,7 @@ import {
 } from './feed-filters';
 
 const mockFilterOptions = {
-  filter: 'all',
+  filter: HomeFeedFilters.ALL,
   userId: 'user-1',
   categories: [],
   gradeRange: [0, ORDERED_GRADE_VALUES.length - 1] as [number, number],
@@ -21,38 +21,62 @@ const mockFilterOptions = {
 
 describe('shouldProceedWithFilter', () => {
   it('should proceed for all filter', () => {
-    const result = shouldProceedWithFilter('all', mockFilterOptions, []);
+    const result = shouldProceedWithFilter(
+      HomeFeedFilters.ALL,
+      mockFilterOptions,
+      [],
+    );
     expect(result.shouldProceed).toBe(true);
   });
 
   it('should not proceed for following with no followed ids', () => {
     const options = { ...mockFilterOptions, followedIds: [] };
-    const result = shouldProceedWithFilter('following', options, []);
+    const result = shouldProceedWithFilter(
+      HomeFeedFilters.FOLLOWING,
+      options,
+      [],
+    );
     expect(result.shouldProceed).toBe(false);
     expect(result.earlyReturn).toEqual([]);
   });
 
   it('should proceed for following with followed ids', () => {
-    const result = shouldProceedWithFilter('following', mockFilterOptions, []);
+    const result = shouldProceedWithFilter(
+      HomeFeedFilters.FOLLOWING,
+      mockFilterOptions,
+      [],
+    );
     expect(result.shouldProceed).toBe(true);
   });
 
   it('should not proceed for favorite_areas with no liked areas', () => {
     const options = { ...mockFilterOptions, likedAreaIds: [] };
-    const result = shouldProceedWithFilter('favorite_areas', options, null);
+    const result = shouldProceedWithFilter(
+      HomeFeedFilters.FAVORITE_AREAS,
+      options,
+      null,
+    );
     expect(result.shouldProceed).toBe(false);
     expect(result.earlyReturn).toBeNull();
   });
 
   it('should not proceed for favorite_crags with no liked crags', () => {
     const options = { ...mockFilterOptions, likedCragIds: [] };
-    const result = shouldProceedWithFilter('favorite_crags', options, []);
+    const result = shouldProceedWithFilter(
+      HomeFeedFilters.FAVORITE_CRAGS,
+      options,
+      [],
+    );
     expect(result.shouldProceed).toBe(false);
   });
 
   it('should not proceed for favorite_routes with no liked routes', () => {
     const options = { ...mockFilterOptions, likedRouteIds: [] };
-    const result = shouldProceedWithFilter('favorite_routes', options, []);
+    const result = shouldProceedWithFilter(
+      HomeFeedFilters.FAVORITE_ROUTES,
+      options,
+      [],
+    );
     expect(result.shouldProceed).toBe(false);
   });
 });
