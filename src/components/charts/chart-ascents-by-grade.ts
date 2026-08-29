@@ -39,7 +39,7 @@ export interface GradeAscentRow {
     <div class="w-full max-w-sm mx-auto text-sm font-sans select-none">
       <!-- Table Header -->
       <div
-        class="grid grid-cols-[2.75rem_1fr_1fr_1fr_1.1fr] sm:grid-cols-[3.25rem_1fr_1fr_1fr_1.1fr] gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-(--tui-text-tertiary) text-center items-center"
+        class="grid grid-cols-[2.25rem_repeat(4,1fr)] sm:grid-cols-[3rem_repeat(4,1fr)] gap-0.5 sm:gap-2 px-1.5 sm:px-3 py-1.5 text-[9px] min-[380px]:text-[10px] sm:text-xs font-semibold uppercase tracking-normal sm:tracking-wider text-(--tui-text-tertiary) text-center items-center"
       >
         <div class="text-left"></div>
         <div class="truncate px-0.5" [title]="'ascent.soft' | translate">
@@ -64,56 +64,62 @@ export interface GradeAscentRow {
         @if (tuiSkeleton()) {
           @for (i of [1, 2, 3]; track i) {
             <div
-              class="grid grid-cols-[2.75rem_1fr_1fr_1fr_1.1fr] sm:grid-cols-[3.25rem_1fr_1fr_1fr_1.1fr] gap-1 sm:gap-2 px-2 sm:px-3 py-2 items-center animate-pulse"
+              class="grid grid-cols-[2.25rem_repeat(4,1fr)] sm:grid-cols-[3rem_repeat(4,1fr)] gap-0.5 sm:gap-2 px-1.5 sm:px-3 py-2 items-center animate-pulse"
             >
               <div
-                class="h-4 bg-(--tui-background-neutral-1) rounded w-8"
+                class="h-4 bg-(--tui-background-neutral-1) rounded w-7 sm:w-8"
               ></div>
               <div
-                class="h-4 bg-(--tui-background-neutral-1) rounded w-6 mx-auto"
+                class="h-4 bg-(--tui-background-neutral-1) rounded w-5 sm:w-6 mx-auto"
               ></div>
               <div
-                class="h-4 bg-(--tui-background-neutral-1) rounded w-6 mx-auto"
+                class="h-4 bg-(--tui-background-neutral-1) rounded w-5 sm:w-6 mx-auto"
               ></div>
               <div
-                class="h-4 bg-(--tui-background-neutral-1) rounded w-6 mx-auto"
+                class="h-4 bg-(--tui-background-neutral-1) rounded w-5 sm:w-6 mx-auto"
               ></div>
               <div
-                class="h-4 bg-(--tui-background-neutral-1) rounded w-6 ms-auto"
+                class="h-4 bg-(--tui-background-neutral-1) rounded w-5 sm:w-6 ms-auto"
               ></div>
             </div>
           }
         } @else {
           @for (row of rows(); track row.grade) {
             <div
-              class="grid grid-cols-[2.75rem_1fr_1fr_1fr_1.1fr] sm:grid-cols-[3.25rem_1fr_1fr_1fr_1.1fr] gap-1 sm:gap-2 px-2 sm:px-3 py-2 items-center rounded-xl transition-all duration-200"
+              class="grid grid-cols-[2.25rem_repeat(4,1fr)] sm:grid-cols-[3rem_repeat(4,1fr)] gap-0.5 sm:gap-2 px-1.5 sm:px-3 py-2 items-center rounded-xl transition-all duration-200"
               [tuiAppearance]="row.isHighest ? 'neutral' : 'none'"
             >
               <!-- Grade -->
               <div
-                class="text-left font-bold text-base text-(--tui-text-primary)"
+                class="text-left font-bold text-sm sm:text-base text-(--tui-text-primary)"
               >
                 {{ row.grade }}
               </div>
 
               <!-- Soft -->
-              <div class="text-center font-medium text-(--tui-text-secondary)">
+              <div
+                class="text-center font-medium text-sm sm:text-base text-(--tui-text-secondary)"
+              >
                 {{ row.soft }}
               </div>
 
               <!-- Neutral -->
-              <div class="text-center font-medium text-(--tui-text-secondary)">
+              <div
+                class="text-center font-medium text-sm sm:text-base text-(--tui-text-secondary)"
+              >
                 {{ row.neutral }}
               </div>
 
               <!-- Hard -->
-              <div class="text-center font-medium text-(--tui-text-secondary)">
+              <div
+                class="text-center font-medium text-sm sm:text-base text-(--tui-text-secondary)"
+              >
                 {{ row.hard }}
               </div>
 
               <!-- Total -->
               <div
-                class="text-right font-bold text-base text-(--tui-text-primary)"
+                class="text-right font-bold text-sm sm:text-base text-(--tui-text-primary)"
               >
                 {{ row.total }}
               </div>
