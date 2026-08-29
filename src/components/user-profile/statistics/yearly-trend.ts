@@ -31,14 +31,14 @@ import { ContextIndexPipe } from '../../../pipes';
   ],
   template: `
     <div
-      class="bg-(--tui-background-base) shadow-md p-6 rounded-2xl border border-(--tui-border-normal) w-full min-w-0"
+      class="bg-(--tui-background-base) shadow-md p-4 sm:p-6 rounded-2xl border border-(--tui-border-normal) w-full min-w-0 overflow-hidden"
     >
       @if (trendData().years.length > 0) {
         <div class="relative pt-2 pb-2 w-full min-w-0 overflow-hidden">
           <tui-axes
             class="chart-container"
             [axisXLabels]="trendXLabels()"
-            [axisYLabels]="trendYLabels()"
+            [axisYLabels]="[]"
             [verticalLines]="trendXLabels().length + 1"
             [horizontalLines]="6"
             [tuiLineChartHint]="trendHintContent"
@@ -214,7 +214,6 @@ export class UserProfileStatsTrendsComponent {
   trendData = input.required<TrendData>();
   trendDetails = input.required<TrendDetail[]>();
   trendXLabels = input.required<string[]>();
-  trendYLabels = input.required<string[]>();
   width = input.required<number>();
   height = input.required<number>();
 }

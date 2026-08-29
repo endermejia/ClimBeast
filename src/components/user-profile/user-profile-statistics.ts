@@ -101,7 +101,6 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
               [trendData]="trendData()"
               [trendDetails]="trendDetails()"
               [trendXLabels]="trendXLabels()"
-              [trendYLabels]="trendYLabels()"
               [width]="width"
               [height]="height"
             />
@@ -301,21 +300,6 @@ export class UserProfileStatisticsComponent {
       totalScore: d.score,
       topRoutes: d.topRoutes,
     }));
-  });
-
-  trendYLabels = computed(() => {
-    const data = this.trendData();
-    if (data.years.length === 0) return [];
-
-    const { minY, maxY } = data;
-    const labels: string[] = [];
-    const count = 5;
-    const step = (maxY - minY) / (count - 1 || 1);
-
-    for (let i = 0; i < count; i++) {
-      labels.push(Math.round(minY + i * step).toString());
-    }
-    return labels;
   });
 
   trendXLabels = computed(() => {
