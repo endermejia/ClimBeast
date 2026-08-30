@@ -19,7 +19,7 @@ import { TuiRating, TuiSkeleton } from '@taiga-ui/kit';
   template: `
     <div
       tuiAppearance="flat-grayscale"
-      class="flex flex-col gap-1 p-4 sm:rounded-3xl rounded-none relative -mx-4 sm:mx-0 w-(calc(100%+2rem)) sm:w-full text-left"
+      class="flex flex-col gap-1 p-4 rounded-2xl sm:rounded-3xl relative w-full text-left"
     >
       <header
         class="flex flex-wrap justify-between items-center gap-x-2 gap-y-0 min-h-10"

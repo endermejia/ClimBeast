@@ -88,7 +88,7 @@ import { AscentTypeComponent } from './ascent-type';
             ? 'positive'
             : 'flat-grayscale'
       "
-      class="flex flex-col gap-1 p-4 sm:rounded-3xl rounded-none relative no-underline text-inherit hover:no-underline -mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full text-left"
+      class="flex flex-col gap-1 p-4 rounded-2xl sm:rounded-3xl relative no-underline text-inherit hover:no-underline w-full text-left"
     >
       <header
         tuiHeader
@@ -204,7 +204,7 @@ import { AscentTypeComponent } from './ascent-type';
       @if (showPhoto() && mediaItems(); as items) {
         @if (items.length > 0) {
           <div
-            class="relative -mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full bg-(--tui-background-neutral-1) overflow-hidden sm:rounded-2xl"
+            class="relative w-full bg-(--tui-background-neutral-1) overflow-hidden rounded-2xl"
           >
             <app-custom-carousel
               [items]="items"
@@ -217,7 +217,7 @@ import { AscentTypeComponent } from './ascent-type';
           </div>
         } @else if (ascentPhotoResource.isLoading()) {
           <div
-            class="aspect-4/3 bg-(--tui-background-neutral-1) -mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full rounded-none sm:rounded-2xl"
+            class="aspect-4/3 bg-(--tui-background-neutral-1) w-full rounded-2xl"
             tuiSkeleton
           ></div>
         }
