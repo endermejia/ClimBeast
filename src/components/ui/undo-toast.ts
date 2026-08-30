@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import { TuiPortalContext } from '@taiga-ui/cdk';
-import { TuiButton } from '@taiga-ui/core';
+import { TuiButton, TuiButtonX } from '@taiga-ui/core';
 import { TuiToast, TuiToastOptions } from '@taiga-ui/kit';
 import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 
@@ -15,14 +15,28 @@ export interface UndoToastData {
 @Component({
   standalone: true,
   selector: 'app-undo-toast',
-  imports: [TranslatePipe, TuiButton, TuiToast],
+  imports: [TranslatePipe, TuiButton, TuiButtonX, TuiToast],
   template: `
-    <div tuiToast iconStart="@tui.info">
-      <span class="truncate">{{
+    <div
+      tuiToast
+      iconStart="@tui.info"
+      tuiShrinkWrap="min(calc(100vw - 4rem), 38rem)"
+    >
+      <span class="flex-1 min-w-0 text-left">{{
         context.data?.message || '' | translate
       }}</span>
-      <button tuiButton size="s" type="button" (click)="onUndo()">
+      <button
+        tuiButton
+        appearance="accent"
+        size="s"
+        type="button"
+        class="shrink-0"
+        (click)="onUndo()"
+      >
         {{ 'undo' | translate }}
+      </button>
+      <button tuiButtonX type="button" class="shrink-0" (click)="onClose()">
+        Close
       </button>
     </div>
   `,
@@ -37,5 +51,9 @@ export class UndoToastComponent {
   onUndo(): void {
     this.context.data?.undoCallback();
     this.context.completeWith(true);
+  }
+
+  onClose(): void {
+    this.context.$implicit.complete();
   }
 }

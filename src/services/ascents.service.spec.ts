@@ -292,4 +292,107 @@ describe('AscentsService', () => {
       expect(userTotalAscentsCountSpy).toHaveBeenCalled();
     });
   });
+
+  describe('delete', () => {
+    it('returns false on server platform', async () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          AscentsService,
+          { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
+          { provide: SupabaseService, useValue: mockSupabase },
+          { provide: ToastService, useValue: mockToast },
+          { provide: AppNotificationsService, useValue: mockNotifications },
+          { provide: TranslateService, useValue: MOCK_TRANSLATE },
+          { provide: TranslateStore, useValue: {} },
+        ],
+      });
+      const serverService = TestBed.inject(AscentsService);
+      expect(await serverService.delete(1)).toBe(false);
+    });
+
+    it('returns false if ascent is not found', async () => {
+      vi.spyOn(mockSupabase.client, 'from').mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+      } as never);
+
+      const result = await service.delete(999);
+      expect(result).toBe(false);
+      expect(mockToast.showWithUndo).not.toHaveBeenCalled();
+    });
+
+    it('deletes ascent and shows undo toast', async () => {
+      const mockAscent = {
+        id: 1,
+        route_id: 10,
+        user_id: 'user-1',
+        date: '2026-01-01',
+        type: 'rp',
+      };
+      vi.spyOn(mockSupabase.client, 'from').mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi
+              .fn()
+              .mockResolvedValue({ data: mockAscent, error: null }),
+          }),
+        }),
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
+        insert: vi.fn().mockReturnValue(Promise.resolve({ error: null })),
+      } as never);
+
+      const result = await service.delete(1);
+      expect(result).toBe(true);
+      expect(mockToast.showWithUndo).toHaveBeenCalledWith(
+        'messages.toasts.ascentDeleted',
+        expect.any(Function),
+      );
+    });
+
+    it('restores ascent on undo', async () => {
+      const mockAscent = {
+        id: 1,
+        route_id: 10,
+        user_id: 'user-1',
+        date: '2026-01-01',
+        type: 'rp',
+      };
+      const insertMock = vi
+        .fn()
+        .mockReturnValue(Promise.resolve({ error: null }));
+      vi.spyOn(mockSupabase.client, 'from').mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi
+              .fn()
+              .mockResolvedValue({ data: mockAscent, error: null }),
+          }),
+        }),
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
+        insert: insertMock,
+      } as never);
+
+      let undoCallback: (() => void) | undefined;
+      mockToast.showWithUndo.mockImplementation(
+        (_msg: string, cb: () => void) => {
+          undoCallback = cb;
+        },
+      );
+
+      await service.delete(1);
+      expect(undoCallback).toBeDefined();
+
+      undoCallback!();
+      expect(insertMock).toHaveBeenCalledWith(mockAscent);
+    });
+  });
 });

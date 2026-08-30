@@ -33,7 +33,11 @@ import {
   RouteAscentCommentWithExtras,
 } from '../models';
 
-import { extractMentionIds, getPaginatedProfilesFromJunction } from '../utils';
+import {
+  extractMentionIds,
+  getPaginatedProfilesFromJunction,
+  handleErrorToast,
+} from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 
@@ -668,24 +672,17 @@ export class AscentsService {
     if (!this.isBrowser) return false;
     await this.supabase.whenReady();
 
-    // 1. Delete photo from storage via Edge Function if exists
-    // We do this BEFORE deleting the record so the function can verify ownership
-    const { data: ascent } = await this.supabase.client
+    const { data: ascent, error: fetchError } = await this.supabase.client
       .from('route_ascents')
-      .select('photo_path')
+      .select('*')
       .eq('id', id)
       .maybeSingle();
 
-    try {
-      if (ascent?.photo_path) {
-        await this.deletePhoto(id);
-      }
-    } catch (e) {
-      console.warn(
-        '[AscentsService] Could not delete photo during ascent deletion',
-        e,
-      );
+    if (fetchError) {
+      console.error('[AscentsService] fetch error before delete', fetchError);
+      throw fetchError;
     }
+    if (!ascent) return false;
 
     const { error } = await this.supabase.client
       .from('route_ascents')
@@ -724,7 +721,23 @@ export class AscentsService {
 
     this.refreshResources();
     this.ascentDeleted$.next(id);
-    this.toast.success('messages.toasts.ascentDeleted');
+
+    this.toast.showWithUndo('messages.toasts.ascentDeleted', () => {
+      this.supabase.client
+        .from('route_ascents')
+        .insert(ascent as RouteAscentInsertDto)
+        .then(({ error: undoError }) => {
+          if (undoError) {
+            handleErrorToast(undoError, this.toast);
+          } else {
+            this.refreshResources();
+            this.profileData.userAscentsResource.reload();
+            this.outdoorData.routeAscentsResource.reload();
+            this.ascentCreated$.next(ascent as unknown as RouteAscentDto);
+          }
+        });
+    });
+
     return true;
   }
 

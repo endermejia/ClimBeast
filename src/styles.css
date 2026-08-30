@@ -365,35 +365,76 @@ a[tuiHint],
   user-select: none !important;
 }
 
-/* Toast width - make toasts wider to prevent text cutoff */
+/* Toast styling - allow toasts and undo-toast to expand naturally */
 tui-notification,
+tui-toast,
 .t-toast,
-[tuiToast] {
-  max-width: 600px !important;
+[tuiToast],
+app-undo-toast {
+  max-inline-size: min(calc(100vw - 2rem), 40rem) !important;
+  max-width: min(calc(100vw - 2rem), 40rem) !important;
   width: auto !important;
-  min-width: 300px !important;
+}
+
+app-undo-toast {
+  display: block;
+  width: 100%;
+}
+
+[tuiToast] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0.75rem !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+
+[tuiToast]::before {
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+}
+
+[tuiToast] > *:not(tui-shrink-wrap) {
+  max-inline-size: none !important;
+}
+
+[tuiToast] > tui-shrink-wrap,
+[tuiToast] > span:not([tuiButton]):not([tuiButtonX]) {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  text-align: start !important;
+  max-inline-size: none !important;
+}
+
+[tuiToast] > [tuiButton],
+[tuiToast] > button[tuiButton] {
+  flex-shrink: 0 !important;
+  margin-inline-start: auto !important;
+  margin-left: auto !important;
+}
+
+[tuiToast] > [tuiButtonX],
+[tuiToast] > button[tuiButtonX],
+[tuiToast] > [tuiIconButton] {
+  flex-shrink: 0 !important;
+}
+
+[tuiToast] > tui-shrink-wrap + [tuiButtonX],
+[tuiToast] > tui-shrink-wrap + button[tuiButtonX] {
+  margin-inline-start: auto !important;
+  margin-left: auto !important;
 }
 
 @media (max-width: 640px) {
   tui-notification,
+  tui-toast,
   .t-toast,
-  [tuiToast] {
+  [tuiToast],
+  app-undo-toast {
+    max-inline-size: calc(100vw - 2rem) !important;
     max-width: calc(100vw - 2rem) !important;
-    min-width: auto !important;
-  }
-}
-
-/* Undo toast specific styling */
-app-undo-toast[tuiToast] {
-  max-width: 600px !important;
-  width: auto !important;
-  min-width: 300px !important;
-}
-
-@media (max-width: 640px) {
-  app-undo-toast[tuiToast] {
-    max-width: calc(100vw - 2rem) !important;
-    min-width: auto !important;
+    min-width: calc(100vw - 2rem) !important;
   }
 }
 
