@@ -34,7 +34,7 @@ import { ContextIndexPipe } from '../../../pipes';
       class="bg-(--tui-background-base) shadow-md p-4 sm:p-6 rounded-2xl border border-(--tui-border-normal) w-full min-w-0"
     >
       @if (trendData().years.length > 0) {
-        <div class="relative pt-2 pb-2 w-full min-w-0 overflow-hidden">
+        <div class="relative pt-2 pb-2 w-full min-w-0">
           <tui-axes
             class="chart-container"
             [axisXLabels]="trendXLabels()"
