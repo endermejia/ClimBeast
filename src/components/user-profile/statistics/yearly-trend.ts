@@ -31,7 +31,7 @@ import { ContextIndexPipe } from '../../../pipes';
   ],
   template: `
     <div
-      class="bg-(--tui-background-base) shadow-md p-4 sm:p-6 rounded-2xl border border-(--tui-border-normal) w-full min-w-0 overflow-hidden"
+      class="bg-(--tui-background-base) shadow-md p-4 sm:p-6 rounded-2xl border border-(--tui-border-normal) w-full min-w-0"
     >
       @if (trendData().years.length > 0) {
         <div class="relative pt-2 pb-2 w-full min-w-0 overflow-hidden">
