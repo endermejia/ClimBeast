@@ -73,9 +73,9 @@ export class ToastService {
   ): void {
     void firstValueFrom(
       this.toast.open(new PolymorpheusComponent(UndoToastComponent), {
+        appearance: 'floating',
         data: { message, undoCallback },
         autoClose,
-        closable: false,
       }),
       { defaultValue: undefined },
     );
