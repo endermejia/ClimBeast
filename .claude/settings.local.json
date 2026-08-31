@@ -28,7 +28,8 @@
       "Bash(npx prettier:*)",
       "Bash(npx tsc:*)",
       "Bash(node_modules/.bin/tsc --noEmit)",
-      "Bash(ls -la /d/git/local-walls/*.json)"
+      "Bash(ls -la /d/git/local-walls/*.json)",
+      "mcp__webstorm__get_file_problems"
     ]
   }
 }

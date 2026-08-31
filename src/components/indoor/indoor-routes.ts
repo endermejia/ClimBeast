@@ -478,7 +478,10 @@ export class IndoorRoutesComponent {
   });
 
   protected readonly canCreate = computed(() => {
-    return this.authState.canCreateIndoorInCenter(this.centerId());
+    const id = this.centerId();
+    // Without a center (e.g. the equipper page passes only customRoutes) there
+    // is nothing to create a route in, so the button would be a no-op.
+    return id ? this.authState.canCreateIndoorInCenter(id) : false;
   });
 
   protected readonly canEdit = computed(() => {
