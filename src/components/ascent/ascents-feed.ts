@@ -51,6 +51,8 @@ export interface ProcessedFeedItem {
       @for (processed of processedItems(); track processed.trackKey) {
         @if (processed.showRowBreak) {
           <div
+            class="hidden"
+            [class.md:block]="columns() >= 2"
             [class.md:col-span-2]="columns() >= 2"
             [class.lg:col-span-3]="columns() >= 3"
           ></div>
