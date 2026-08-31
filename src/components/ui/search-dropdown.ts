@@ -18,6 +18,7 @@ import {
   TuiDataList,
   TuiDropdown,
   TuiIcon,
+  TuiScrollbar,
   TuiTextfield,
   TuiTitle,
 } from '@taiga-ui/core';
@@ -73,6 +74,7 @@ import { TourHintComponent } from './tour-hint';
     TuiIcon,
     TuiInputSearch,
     TuiPulse,
+    TuiScrollbar,
     TuiSkeleton,
     TuiTab,
     TuiTabs,
@@ -189,7 +191,7 @@ import { TourHintComponent } from './tour-hint';
                   </tui-tabs>
                 </div>
 
-                <div class="flex-1 overflow-y-auto min-h-0">
+                <tui-scrollbar class="flex-1 min-h-0">
                   <tui-data-list
                     size="s"
                     [emptyContent]="
@@ -262,7 +264,7 @@ import { TourHintComponent } from './tour-hint';
                       }
                     }
                   </tui-data-list>
-                </div>
+                </tui-scrollbar>
               </div>
             }
 
