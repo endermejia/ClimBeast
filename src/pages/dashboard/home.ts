@@ -310,7 +310,12 @@ export class HomeComponent {
   });
 
   constructor() {
-    this.loadFollowedIds();
+    effect(() => {
+      this.followsService.followChange();
+      if (this.isBrowser) {
+        void this.loadFollowedIds();
+      }
+    });
     void this.loadNews();
     inject(DestroyRef).onDestroy(() => this.loadMore$.complete());
 

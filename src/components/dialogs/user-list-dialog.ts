@@ -261,7 +261,12 @@ export class UserListDialogComponent {
   });
 
   constructor() {
-    this.loadFollowedIds();
+    effect(() => {
+      this.followsService.followChange();
+      if (this.isBrowser) {
+        void this.loadFollowedIds();
+      }
+    });
 
     // Reset users when query changes
     effect(() => {

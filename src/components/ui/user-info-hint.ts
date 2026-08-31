@@ -159,18 +159,24 @@ export class UserInfoHintComponent {
 
   // --- Followers/Following ---
   protected readonly followersCountResource = resource({
-    params: () => this.userId(),
-    loader: async ({ params: userId }) => {
-      if (!userId) return 0;
-      return await this.followsService.getFollowersCount(userId);
+    params: () => ({
+      userId: this.userId(),
+      change: this.followsService.followChange(),
+    }),
+    loader: async ({ params }) => {
+      if (!params.userId) return 0;
+      return await this.followsService.getFollowersCount(params.userId);
     },
   });
 
   protected readonly followingCountResource = resource({
-    params: () => this.userId(),
-    loader: async ({ params: userId }) => {
-      if (!userId) return 0;
-      return await this.followsService.getFollowingCount(userId);
+    params: () => ({
+      userId: this.userId(),
+      change: this.followsService.followChange(),
+    }),
+    loader: async ({ params }) => {
+      if (!params.userId) return 0;
+      return await this.followsService.getFollowingCount(params.userId);
     },
   });
 

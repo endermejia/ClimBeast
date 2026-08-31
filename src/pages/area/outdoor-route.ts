@@ -493,11 +493,14 @@ export class OutdoorRouteComponent {
   );
 
   constructor() {
-    if (this.isBrowser) {
-      void this.followsService
-        .getFollowedIds()
-        .then((ids) => this.followedIds.set(new Set(ids)));
-    }
+    effect(() => {
+      this.followsService.followChange();
+      if (this.isBrowser) {
+        void this.followsService
+          .getFollowedIds()
+          .then((ids) => this.followedIds.set(new Set(ids)));
+      }
+    });
 
     effect(() => {
       const aSlug = this.areaSlug();
