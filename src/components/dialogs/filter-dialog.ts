@@ -28,7 +28,11 @@ import { map, merge, startWith } from 'rxjs';
 
 import { ClimbingKindIconComponent } from '../ui/climbing-kind-icon';
 
-import { ClimbingKind, ORDERED_GRADE_VALUES } from '../../models';
+import {
+  ClimbingKind,
+  ClimbingKinds,
+  ORDERED_GRADE_VALUES,
+} from '../../models';
 
 import { clamp } from '../../utils';
 
@@ -206,9 +210,9 @@ export class FilterDialogComponent {
 
   protected getKindByLabel(label: string): ClimbingKind | null {
     const items = this.climbingKindItems();
-    if (label === items[0]) return 'sport';
-    if (label === items[1]) return 'boulder';
-    if (label === items[2]) return 'multipitch';
+    if (label === items[0]) return ClimbingKinds.SPORT;
+    if (label === items[1]) return ClimbingKinds.BOULDER;
+    if (label === items[2]) return ClimbingKinds.MULTIPITCH;
     return null;
   }
 

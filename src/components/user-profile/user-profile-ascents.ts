@@ -63,7 +63,7 @@ import { UserProfileFiltersComponent } from './user-profile-filters';
         }
 
         <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
-          <div class="w-full min-w-0 p-1 pr-3 sm:pr-4 pb-6">
+          <div class="w-full min-w-0 px-4 sm:px-0 pb-6">
             <app-ascents-feed
               [ascents]="accumulatedAscents()"
               [isLoading]="

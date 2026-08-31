@@ -19,6 +19,8 @@ import { ProfileDataService } from '../../services/profile-data.service';
 import { SupabaseService } from '../../services/supabase.service';
 
 import {
+  ClimbingKind,
+  ClimbingKinds,
   GradeDistribution,
   LABEL_TO_VERTICAL_LIFE,
   ORDERED_GRADE_VALUES,
@@ -165,8 +167,15 @@ export class UserProfileStatisticsComponent {
     const allowedKinds = categories.length
       ? new Set(
           categories
-            .map((category) => ['sport', 'boulder', 'multipitch'][category])
-            .filter((kind): kind is string => kind !== undefined),
+            .map(
+              (category) =>
+                [
+                  ClimbingKinds.SPORT,
+                  ClimbingKinds.BOULDER,
+                  ClimbingKinds.MULTIPITCH,
+                ][category] as ClimbingKind | undefined,
+            )
+            .filter((kind): kind is ClimbingKind => kind !== undefined),
         )
       : null;
 
@@ -177,7 +186,9 @@ export class UserProfileStatisticsComponent {
           (showIndoor && ascent.is_indoor) ||
           (showOutdoor && !ascent.is_indoor)) &&
         (!allowedGrades || allowedGrades.has(ascent.route_grade)) &&
-        (!allowedKinds || allowedKinds.has(ascent.climbing_kind ?? '')),
+        (!allowedKinds ||
+          (ascent.climbing_kind != null &&
+            allowedKinds.has(ascent.climbing_kind as ClimbingKind))),
     );
   });
 
@@ -200,8 +211,15 @@ export class UserProfileStatisticsComponent {
     const allowedKinds = categories.length
       ? new Set(
           categories
-            .map((category) => ['sport', 'boulder', 'multipitch'][category])
-            .filter((kind): kind is string => kind !== undefined),
+            .map(
+              (category) =>
+                [
+                  ClimbingKinds.SPORT,
+                  ClimbingKinds.BOULDER,
+                  ClimbingKinds.MULTIPITCH,
+                ][category] as ClimbingKind | undefined,
+            )
+            .filter((kind): kind is ClimbingKind => kind !== undefined),
         )
       : null;
 
@@ -212,7 +230,9 @@ export class UserProfileStatisticsComponent {
           (showIndoor && ascent.is_indoor) ||
           (showOutdoor && !ascent.is_indoor)) &&
         (!allowedGrades || allowedGrades.has(ascent.route_grade)) &&
-        (!allowedKinds || allowedKinds.has(ascent.climbing_kind ?? '')),
+        (!allowedKinds ||
+          (ascent.climbing_kind != null &&
+            allowedKinds.has(ascent.climbing_kind as ClimbingKind))),
     );
   });
 

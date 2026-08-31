@@ -10,6 +10,7 @@ import {
 import {
   AscentType,
   ClimbingKind,
+  ClimbingKinds,
   CragDto,
   PaginatedAscents,
   RouteAscentDto,
@@ -215,9 +216,9 @@ export class ProfileDataService {
         }
 
         const idxToKind: Record<number, ClimbingKind> = {
-          0: 'sport',
-          1: 'boulder',
-          2: 'multipitch',
+          0: ClimbingKinds.SPORT,
+          1: ClimbingKinds.BOULDER,
+          2: ClimbingKinds.MULTIPITCH,
         };
         const allowedKinds =
           categories.length > 0
@@ -226,7 +227,64 @@ export class ProfileDataService {
                 .filter((k): k is ClimbingKind => !!k)
             : null;
 
+        const applyDateFilter = <
+          T extends {
+            gte: (col: string, val: string) => T;
+            lte: (col: string, val: string) => T;
+          },
+        >(
+          query: T,
+          dateFilter: string,
+        ) => {
+          if (dateFilter === 'last12' || dateFilter === 'last_12_months') {
+            const twelveMonthsAgo = new Date();
+            twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+            return query.gte('date', twelveMonthsAgo.toISOString());
+          } else if (dateFilter === 'last6' || dateFilter === 'last_6_months') {
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+            return query.gte('date', sixMonthsAgo.toISOString());
+          } else if (dateFilter === 'this_year') {
+            const year = new Date().getFullYear();
+            return query
+              .gte('date', `${year}-01-01`)
+              .lte('date', `${year}-12-31`);
+          } else if (dateFilter !== 'all' && dateFilter !== 'all_time') {
+            return query
+              .gte('date', `${dateFilter}-01-01`)
+              .lte('date', `${dateFilter}-12-31`);
+          }
+          return query;
+        };
+
         const fetchOutdoor = async () => {
+          let countQuery = this.supabase.client
+            .from('route_ascents')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId);
+          if (queryText) {
+            countQuery = countQuery.ilike(
+              'routes.search_text',
+              `%${queryText}%`,
+            );
+          }
+          if (dateFilter) {
+            countQuery = applyDateFilter(countQuery, dateFilter);
+          }
+          if (allowedDbGrades) {
+            countQuery = countQuery.in('grade', allowedDbGrades);
+          }
+          if (allowedKinds && allowedKinds.length > 0) {
+            countQuery = countQuery.in('routes.climbing_kind', allowedKinds);
+          }
+          const { count: outdoorCount, error: countError } = await countQuery;
+          if (countError) throw countError;
+          if (from >= (outdoorCount ?? 0)) {
+            outdoorTotal = outdoorCount ?? 0;
+            outdoorItems = [];
+            return;
+          }
+
           let query = this.supabase.client
             .from('route_ascents')
             .select(
@@ -255,27 +313,7 @@ export class ProfileDataService {
           }
 
           if (dateFilter) {
-            if (dateFilter === 'last12' || dateFilter === 'last_12_months') {
-              const twelveMonthsAgo = new Date();
-              twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
-              query = query.gte('date', twelveMonthsAgo.toISOString());
-            } else if (
-              dateFilter === 'last6' ||
-              dateFilter === 'last_6_months'
-            ) {
-              const sixMonthsAgo = new Date();
-              sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-              query = query.gte('date', sixMonthsAgo.toISOString());
-            } else if (dateFilter === 'this_year') {
-              const year = new Date().getFullYear();
-              query = query
-                .gte('date', `${year}-01-01`)
-                .lte('date', `${year}-12-31`);
-            } else if (dateFilter !== 'all' && dateFilter !== 'all_time') {
-              query = query
-                .gte('date', `${dateFilter}-01-01`)
-                .lte('date', `${dateFilter}-12-31`);
-            }
+            query = applyDateFilter(query, dateFilter);
           }
 
           if (allowedDbGrades) {
@@ -318,6 +356,43 @@ export class ProfileDataService {
         };
 
         const fetchIndoor = async () => {
+          const indoorKinds =
+            allowedKinds && allowedKinds.length > 0
+              ? allowedKinds.filter(
+                  (k) =>
+                    k === ClimbingKinds.SPORT || k === ClimbingKinds.BOULDER,
+                )
+              : null;
+          if (allowedKinds && allowedKinds.length > 0 && !indoorKinds) {
+            indoorTotal = 0;
+            indoorItems = [];
+            return;
+          }
+
+          let countQuery = this.supabase.client
+            .from('indoor_ascents')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId);
+          if (queryText) {
+            countQuery = countQuery.ilike('route.name', `%${queryText}%`);
+          }
+          if (dateFilter) {
+            countQuery = applyDateFilter(countQuery, dateFilter);
+          }
+          if (allowedDbGrades) {
+            countQuery = countQuery.in('route.grade', allowedDbGrades);
+          }
+          if (indoorKinds && indoorKinds.length > 0) {
+            countQuery = countQuery.in('route.climbing_kind', indoorKinds);
+          }
+          const { count: indoorCount, error: countError } = await countQuery;
+          if (countError) throw countError;
+          if (from >= (indoorCount ?? 0)) {
+            indoorTotal = indoorCount ?? 0;
+            indoorItems = [];
+            return;
+          }
+
           let query = this.supabase.client
             .from('indoor_ascents')
             .select(
@@ -339,42 +414,15 @@ export class ProfileDataService {
           }
 
           if (dateFilter) {
-            if (dateFilter === 'last12' || dateFilter === 'last_12_months') {
-              const twelveMonthsAgo = new Date();
-              twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
-              query = query.gte('date', twelveMonthsAgo.toISOString());
-            } else if (
-              dateFilter === 'last6' ||
-              dateFilter === 'last_6_months'
-            ) {
-              const sixMonthsAgo = new Date();
-              sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-              query = query.gte('date', sixMonthsAgo.toISOString());
-            } else if (dateFilter === 'this_year') {
-              const year = new Date().getFullYear();
-              query = query
-                .gte('date', `${year}-01-01`)
-                .lte('date', `${year}-12-31`);
-            } else if (dateFilter !== 'all' && dateFilter !== 'all_time') {
-              query = query
-                .gte('date', `${dateFilter}-01-01`)
-                .lte('date', `${dateFilter}-12-31`);
-            }
+            query = applyDateFilter(query, dateFilter);
           }
 
           if (allowedDbGrades) {
             query = query.in('route.grade', allowedDbGrades);
           }
 
-          if (allowedKinds && allowedKinds.length > 0) {
-            const indoorKinds = allowedKinds.filter(
-              (k) => k === 'sport' || k === 'boulder',
-            );
-            if (indoorKinds.length > 0) {
-              query = query.in('route.climbing_kind', indoorKinds);
-            } else {
-              return;
-            }
+          if (indoorKinds && indoorKinds.length > 0) {
+            query = query.in('route.climbing_kind', indoorKinds);
           }
 
           let finalQuery = query;
@@ -405,7 +453,8 @@ export class ProfileDataService {
               name: (typedRoute?.['name'] as string) || '',
               grade: (typedRoute?.['grade'] as number) ?? null,
               climbing_kind:
-                (typedRoute?.['climbing_kind'] as ClimbingKind) || 'sport',
+                (typedRoute?.['climbing_kind'] as ClimbingKind) ||
+                ClimbingKinds.SPORT,
               center_slug: center?.['slug'] as string | undefined,
               center_name: center?.['name'] as string | undefined,
               crag_slug: center?.['slug'] as string | undefined,

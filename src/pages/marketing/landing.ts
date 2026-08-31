@@ -19,7 +19,11 @@ import { AscentTypeComponent } from '../../components/ascent/ascent-type';
 import { CragCardComponent } from '../../components/crag/crag-card';
 import { GradeComponent } from '../../components/ui/avatar-grade';
 
-import { CragListItem, VERTICAL_LIFE_GRADES } from '../../models';
+import {
+  ClimbingKinds,
+  CragListItem,
+  VERTICAL_LIFE_GRADES,
+} from '../../models';
 
 @Component({
   selector: 'app-landing',
@@ -430,7 +434,7 @@ export class LandingComponent {
     topos_count: 2,
     liked: true,
     created_at: '2026-01-01T00:00:00Z',
-    climbing_kind: ['sport'],
+    climbing_kind: [ClimbingKinds.SPORT],
     shade_morning: false,
     shade_afternoon: false,
     shade_all_day: false,

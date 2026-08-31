@@ -12,6 +12,7 @@ import {
   IndoorAscentDto,
   IndoorRouteWithExtras,
   RouteAscentDto,
+  ClimbingKinds,
   TopoDetail,
   TopoListItem,
   TopoPath,
@@ -241,7 +242,7 @@ export class IndoorDataService {
               slug: tr.route.slug,
               grade: tr.route.grade ?? 0,
               climbing_kind: (tr.route.climbing_kind ??
-                'sport') as ClimbingKind,
+                ClimbingKinds.SPORT) as ClimbingKind,
               color: tr.route.color ?? null,
               own_ascent: bestAscent,
               project: false,

@@ -59,7 +59,9 @@ import { getAscentDateFilterOptions } from '../../utils';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-col gap-2 mb-4 shrink-0 w-full min-w-0 px-1 pt-1">
+    <div
+      class="flex flex-col gap-2 mb-4 shrink-0 w-full min-w-0 px-4 lg:px-0 pt-1"
+    >
       <!-- Primary Date Filter + Modal Filters Button -->
       <div class="flex items-center gap-2 w-full min-w-0">
         <tui-textfield

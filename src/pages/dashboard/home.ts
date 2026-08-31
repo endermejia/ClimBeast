@@ -675,6 +675,25 @@ export class HomeComponent {
       return [];
     }
 
+    let countQuery = this.supabase.client
+      .from('indoor_ascents')
+      .select('*', { count: 'exact', head: true });
+    countQuery = applyIndoorUserFilter(countQuery, filterOptions);
+    countQuery = applyCategoryFilter(
+      countQuery,
+      filterOptions.categories,
+      'route.climbing_kind',
+      false,
+    );
+    countQuery = applyGradeFilter(
+      countQuery,
+      filterOptions.gradeRange,
+      'route.grade',
+    );
+    const { count, error: countError } = await countQuery;
+    if (countError) throw countError;
+    if (fromIdx >= (count ?? 0)) return [];
+
     let query = this.supabase.client.from('indoor_ascents').select(
       `
           *,
@@ -791,6 +810,25 @@ export class HomeComponent {
     ) {
       return [];
     }
+
+    let countQuery = this.supabase.client
+      .from('route_ascents')
+      .select('*', { count: 'exact', head: true });
+    countQuery = applyUserFilter(countQuery, filterOptions);
+    countQuery = applyCategoryFilter(
+      countQuery,
+      filterOptions.categories,
+      'route.climbing_kind',
+      true,
+    );
+    countQuery = applyGradeFilter(
+      countQuery,
+      filterOptions.gradeRange,
+      'grade',
+    );
+    const { count, error: countError } = await countQuery;
+    if (countError) throw countError;
+    if (fromIdx >= (count ?? 0)) return [];
 
     let query = this.supabase.client.from('route_ascents').select(
       `

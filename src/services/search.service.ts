@@ -13,6 +13,7 @@ import {
   SearchCragItem,
   SearchRouteItem,
   ClimbingKind,
+  ClimbingKinds,
 } from '../models';
 
 import { gradeToNumber } from '../utils';
@@ -249,7 +250,9 @@ export class SearchService {
                     data: anuRoute,
                     grade: gradeToNumber(anuRoute.difficulty),
                     climbing_kind:
-                      anuRoute.category === 0 ? 'sport' : 'boulder',
+                      anuRoute.category === 0
+                        ? ClimbingKinds.SPORT
+                        : ClimbingKinds.BOULDER,
                   } as SearchItem,
                 ]
               : []),

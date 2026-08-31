@@ -57,6 +57,7 @@ import {
   AscentDialogData,
   AscentType,
   AscentTypes,
+  ClimbingKinds,
   RouteAscentDto,
   RouteAscentInsertDto,
   RouteAscentWithExtras,
@@ -658,7 +659,7 @@ export default class AscentFormComponent {
   readonly isBoulder = computed(() => {
     const data = this.effectiveAscentData();
     const kind = this.dialogClimbingKind || data?.route?.climbing_kind;
-    return kind === 'boulder';
+    return kind === ClimbingKinds.BOULDER;
   });
 
   private readonly effectiveAscentData = computed(

@@ -347,7 +347,7 @@ export default class IndoorRouteFormComponent {
     equippers: (EquipperDto | string)[];
   }>({
     name: '',
-    climbing_kind: 'sport',
+    climbing_kind: ClimbingKinds.SPORT,
     grade: 6,
     color: '#EF4444',
     topo: null,
@@ -417,7 +417,8 @@ export default class IndoorRouteFormComponent {
     if (data) {
       this.model.set({
         name: data.name,
-        climbing_kind: (data.climbing_kind as ClimbingKind) || 'sport',
+        climbing_kind:
+          (data.climbing_kind as ClimbingKind) || ClimbingKinds.SPORT,
         grade: data.grade || 6,
         color: data.color || '',
         topo: null, // will be matched below once resource loads
