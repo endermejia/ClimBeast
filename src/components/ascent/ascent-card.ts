@@ -43,10 +43,10 @@ import { getEmbedUrl, openPhotoViewer } from '../../utils';
 import { GradeComponent } from '../ui/avatar-grade';
 import { ClimbingKindIconComponent } from '../ui/climbing-kind-icon';
 import { CustomCarouselComponent } from '../ui/custom-carousel';
+import { RouteInfoHintComponent } from '../ui/route-info-hint';
 import { UserInfoHintComponent } from '../ui/user-info-hint';
 import { AscentCommentsComponent } from './ascent-comments';
 import { AscentLastCommentComponent } from './ascent-last-comment';
-
 import { AscentLikesComponent } from './ascent-likes';
 import { AscentTypeComponent } from './ascent-type';
 
@@ -65,6 +65,7 @@ import { AscentTypeComponent } from './ascent-type';
     FormsModule,
     GradeComponent,
     ReactiveFormsModule,
+    RouteInfoHintComponent,
     RouterLink,
     TranslatePipe,
     TuiAppearance,
@@ -242,6 +243,8 @@ import { AscentTypeComponent } from './ascent-type';
                     'route',
                     ascent.route.slug,
                   ]"
+                  [tuiHint]="routeHintTemplate"
+                  (contextmenu.zoneless)="$event.preventDefault()"
                 >
                   {{ ascent.route.name }}
                 </a>
@@ -263,6 +266,8 @@ import { AscentTypeComponent } from './ascent-type';
                     ascent.route.crag_slug || 'general',
                     ascent.route.slug,
                   ]"
+                  [tuiHint]="routeHintTemplate"
+                  (contextmenu.zoneless)="$event.preventDefault()"
                 >
                   {{ ascent.route.name }}
                 </a>
@@ -286,6 +291,13 @@ import { AscentTypeComponent } from './ascent-type';
                   </a>
                 </span>
               }
+              <ng-template #routeHintTemplate>
+                <app-route-info-hint
+                  [routeId]="ascent.route_id || ascent.route.id"
+                  [isIndoor]="isIndoor()"
+                  [grade]="ascent.route.grade"
+                />
+              </ng-template>
             </div>
           }
           <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
