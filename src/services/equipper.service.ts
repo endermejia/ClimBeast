@@ -5,7 +5,9 @@ import {
   AscentType,
   CragDto,
   EquipperDto,
+  IndoorRouteDto,
   IndoorRouteWithExtras,
+  IndoorTopoDto,
   RouteAscentDto,
   RouteDto,
   RouteWithExtras,
@@ -136,7 +138,9 @@ export class EquipperService {
                 name,
                 slug
               ),
-              equippers:indoor_route_equippers(equipper:equippers(*))
+              equippers:indoor_route_equippers(equipper:equippers(*)),
+              ascents:indoor_ascents(id, type, user_id, rate),
+              topo_routes:indoor_topo_routes(topo:indoor_topos(id, name, legacy))
             )
           `,
           )
@@ -144,22 +148,62 @@ export class EquipperService {
 
         if (error) throw error;
 
+        const userId = this.supabase.authUserId();
+
         return (data || [])
           .map((d) => {
             const r = d.route as
-              | (Record<string, unknown> & {
-                  equippers?: { equipper: EquipperDto }[];
-                  center?: { name: string; slug: string };
+              | (IndoorRouteDto & {
+                  equippers?: { equipper: EquipperDto | null }[];
+                  center?: { name: string; slug: string } | null;
+                  ascents?: {
+                    id: string;
+                    type: AscentType | null;
+                    user_id: string;
+                    rate: number | null;
+                  }[];
+                  topo_routes?: {
+                    topo: Pick<IndoorTopoDto, 'id' | 'name' | 'legacy'> | null;
+                  }[];
                 })
               | null;
             if (!r) return null;
+
+            const ascents = r.ascents || [];
+            const ratedAscents = ascents.filter(
+              (ascent) => ascent.rate !== null && ascent.rate > 0,
+            );
+            const totalRating = ratedAscents.reduce(
+              (sum, ascent) => sum + (ascent.rate || 0),
+              0,
+            );
+            const rating =
+              ratedAscents.length > 0 ? totalRating / ratedAscents.length : 0;
+
+            const ownAscent = userId
+              ? (ascents.find((a) => a.user_id === userId) ?? null)
+              : null;
+
             return {
               ...r,
               center_name: r.center?.name || '',
               center_slug: r.center?.slug || '',
               equippers: (r.equippers || [])
                 .map((e) => e.equipper)
-                .filter(Boolean),
+                .filter((e): e is EquipperDto => e !== null),
+              topos: (r.topo_routes || [])
+                .map((tr) => tr.topo)
+                .filter(
+                  (
+                    topo,
+                  ): topo is Pick<IndoorTopoDto, 'id' | 'name' | 'legacy'> =>
+                    topo !== null,
+                ),
+              own_ascent: ownAscent
+                ? { id: String(ownAscent.id), type: ownAscent.type }
+                : null,
+              ascent_count: ascents.length,
+              rating: rating || null,
             } as IndoorRouteWithExtras;
           })
           .filter((r): r is IndoorRouteWithExtras => r !== null);

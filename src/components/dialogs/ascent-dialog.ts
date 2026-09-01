@@ -1,7 +1,7 @@
-import { Component, computed, inject, resource } from '@angular/core';
+import { Component, computed, effect, inject, resource } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 
-import { TuiDialogContext } from '@taiga-ui/core';
-import { TuiScrollbar } from '@taiga-ui/core';
+import { TuiDialogContext, TuiScrollbar } from '@taiga-ui/core';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { AscentsService } from '../../services/ascents.service';
@@ -47,6 +47,10 @@ export class AscentDialogComponent {
     injectContext<TuiDialogContext<void, AscentDialogData>>();
 
   private readonly ascentId = this.context.data?.ascentId ?? 0;
+  private readonly deletedAscentId = toSignal(
+    this.ascentsService.ascentDeleted,
+  );
+  private readonly updatedAscent = toSignal(this.ascentsService.ascentUpdated);
 
   protected readonly ascentResource = resource({
     params: () => {
@@ -61,4 +65,23 @@ export class AscentDialogComponent {
 
   protected readonly ascent = computed(() => this.ascentResource.value());
   protected readonly loading = computed(() => this.ascentResource.isLoading());
+
+  constructor() {
+    effect(() => {
+      const deletedId = this.deletedAscentId();
+      if (
+        deletedId !== undefined &&
+        String(deletedId) === String(this.ascentId)
+      ) {
+        this.context.completeWith();
+      }
+    });
+
+    effect(() => {
+      const updated = this.updatedAscent();
+      if (updated && String(updated.id) === String(this.ascentId)) {
+        this.ascentResource.reload();
+      }
+    });
+  }
 }

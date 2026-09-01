@@ -123,7 +123,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
             }}</span>
           </label>
 
-          @if (totalRoutes() > 0) {
+          @if (showStats() && totalRoutes() > 0) {
             <div
               class="flex items-center gap-2 text-xs font-semibold opacity-70"
             >
@@ -446,6 +446,7 @@ export class IndoorRoutesComponent {
   centerId = input<string | undefined>(undefined);
   centerSlug = input<string | undefined>(undefined);
   customRoutes = input<IndoorRouteWithExtras[] | null>(null);
+  showStats = input<boolean>(true);
 
   protected readonly indoor = inject(IndoorService);
   protected readonly layoutService = inject(LayoutService);
@@ -569,9 +570,10 @@ export class IndoorRoutesComponent {
   }
 
   async editRoute(route: IndoorRouteWithExtras | RouteItem): Promise<void> {
-    const id = this.centerId();
-    if (!id) return;
     const r = route as IndoorRouteWithExtras;
+    const id =
+      this.centerId() || (r.center_id ? String(r.center_id) : undefined);
+    if (!id) return;
     const success = await this.indoor.openIndoorRouteForm(id, r);
     if (success) {
       this.routesResource.reload();

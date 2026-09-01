@@ -10,6 +10,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { CacheService } from '../services/cache.service';
 import { CragRoutesDataService } from '../services/crag-routes-data.service';
+import { EquipperService } from '../services/equipper.service';
 import { FavoritesDataService } from '../services/favorites-data.service';
 import { OutdoorDataService } from '../services/outdoor-data.service';
 import { ProfileDataService } from '../services/profile-data.service';
@@ -57,6 +58,7 @@ export class RoutesService {
   private readonly favoritesData = inject(FavoritesDataService);
   private readonly profileData = inject(ProfileDataService);
   private readonly cragRoutesData = inject(CragRoutesDataService);
+  private readonly equipperService = inject(EquipperService);
   private readonly cache = inject(CacheService);
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
@@ -97,6 +99,7 @@ export class RoutesService {
       if (result) {
         this.cragRoutesData.cragRoutesResource.reload();
         this.outdoorData.routeDetailResource.reload();
+        this.equipperService.equipperRoutesResource.reload();
 
         if (
           isEdit &&
@@ -133,6 +136,7 @@ export class RoutesService {
     ).then((result) => {
       if (result) {
         this.cragRoutesData.cragRoutesResource.reload();
+        this.equipperService.equipperRoutesResource.reload();
       }
       return result;
     });
@@ -720,6 +724,7 @@ export class RoutesService {
     // Refresh routes list for the current crag and current route
     this.cragRoutesData.cragRoutesResource.reload();
     this.outdoorData.routeDetailResource.reload();
+    this.equipperService.equipperRoutesResource.reload();
     this.toast.success('messages.toasts.routeCreated');
     return data as RouteDto;
   }
@@ -744,6 +749,7 @@ export class RoutesService {
     this.cragRoutesData.cragRoutesResource.reload();
     this.outdoorData.routeDetailResource.reload();
     this.outdoorData.topoDetailResource.reload();
+    this.equipperService.equipperRoutesResource.reload();
     this.syncResources(id, payload);
     if (!silent) this.toast.success('messages.toasts.routeUpdated');
     return data as RouteDto;
@@ -775,6 +781,8 @@ export class RoutesService {
     }
     this.cragRoutesData.cragRoutesResource.reload();
     this.outdoorData.routeDetailResource.reload();
+    this.outdoorData.topoDetailResource.reload();
+    this.equipperService.equipperRoutesResource.reload();
     this.toast.success('messages.toasts.routeDeleted');
     return true;
   }
@@ -885,7 +893,10 @@ export class RoutesService {
     // 1. Update cragRoutesResource
     this.cragRoutesData.cragRoutesResource.update(updateFn);
 
-    // 2. Update userProjectsResource
+    // 2. Update equipperRoutesResource
+    this.equipperService.equipperRoutesResource.update(updateFn);
+
+    // 3. Update userProjectsResource
     if (changes.project !== undefined) {
       const isProject = changes.project;
       this.profileData.userProjectsResource.update((current) => {
@@ -913,12 +924,12 @@ export class RoutesService {
       this.profileData.userProjectsResource.update(updateFn);
     }
 
-    // 3. Update routeDetailResource
+    // 4. Update routeDetailResource
     this.outdoorData.routeDetailResource.update((r) =>
       r?.id === routeId ? { ...r, ...changes } : r,
     );
 
-    // 4. Update topoDetailResource
+    // 5. Update topoDetailResource
     this.outdoorData.topoDetailResource.update((current) => {
       if (!current) return current;
       return {

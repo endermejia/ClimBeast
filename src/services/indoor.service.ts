@@ -39,6 +39,7 @@ import { IS_BROWSER } from '../app/is-browser';
 
 import { AscentsService } from './ascents.service';
 import { AuthStateService } from './auth-state.service';
+import { EquipperService } from './equipper.service';
 import { IndoorCentersDataService } from './indoor-centers-data.service';
 import { IndoorDataService } from './indoor-data.service';
 import { SupabaseService } from './supabase.service';
@@ -59,6 +60,7 @@ export class IndoorService {
   private readonly authState = inject(AuthStateService);
   private readonly indoorData = inject(IndoorDataService);
   private readonly ascentsService = inject(AscentsService);
+  private readonly equipperService = inject(EquipperService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
@@ -401,6 +403,7 @@ export class IndoorService {
       .single();
 
     if (error) throw error;
+    this.equipperService.equipperIndoorRoutesResource.reload();
     return data as IndoorRouteDto;
   }
 
@@ -414,6 +417,7 @@ export class IndoorService {
       .eq('id', id);
 
     if (error) throw error;
+    this.equipperService.equipperIndoorRoutesResource.reload();
     return true;
   }
 
@@ -424,6 +428,7 @@ export class IndoorService {
       .eq('id', id);
 
     if (error) throw error;
+    this.equipperService.equipperIndoorRoutesResource.reload();
     this.toast.success('messages.toasts.routeDeleted');
     return true;
   }
@@ -798,6 +803,7 @@ export class IndoorService {
 
     if (error) throw error;
     this.reloadCenterRoutes();
+    this.equipperService.equipperIndoorRoutesResource.reload();
     this.toast.success('messages.toasts.ascentCreated');
     const row = data as IndoorAscentQueryRow;
     const result = {
@@ -839,6 +845,7 @@ export class IndoorService {
 
     if (error) throw error;
     this.reloadCenterRoutes();
+    this.equipperService.equipperIndoorRoutesResource.reload();
     this.ascentsService.notifyAscentUpdated(
       id,
       updates as Partial<RouteAscentWithExtras>,
@@ -878,6 +885,9 @@ export class IndoorService {
 
     if (error) throw error;
 
+    this.reloadCenterRoutes();
+    this.equipperService.equipperIndoorRoutesResource.reload();
+    this.ascentsService.refreshResources();
     this.ascentsService.notifyAscentDeleted(ascentId);
 
     this.toast.showWithUndo('messages.toasts.ascentDeleted', () => {
@@ -891,13 +901,13 @@ export class IndoorService {
             this.reloadCenterRoutes();
             this.indoorData.indoorRouteDetailResource.reload();
             this.indoorData.topoDetailResource.reload();
+            this.equipperService.equipperIndoorRoutesResource.reload();
+            this.ascentsService.refreshResources();
             this.ascentsService.notifyAscentCreated(
               ascent as unknown as RouteAscentWithExtras,
             );
           }
         });
     });
-
-    this.reloadCenterRoutes();
   }
 }

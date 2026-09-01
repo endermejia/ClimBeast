@@ -116,7 +116,6 @@ import { EquipperRequestDto } from '../../models';
           </h2>
           <app-outdoor-routes-table
             [data]="equipperService.equipperRoutesResource.value() || []"
-            [showAdminActions]="false"
           />
         </section>
 
@@ -130,7 +129,10 @@ import { EquipperRequestDto } from '../../models';
                 indoorRoutes.length
               }})
             </h2>
-            <app-indoor-routes [customRoutes]="indoorRoutes" />
+            <app-indoor-routes
+              [customRoutes]="indoorRoutes"
+              [showStats]="false"
+            />
           </section>
         }
       </section>

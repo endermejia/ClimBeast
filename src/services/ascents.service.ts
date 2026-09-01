@@ -43,6 +43,7 @@ import { IS_BROWSER } from '../app/is-browser';
 
 import { AppNotificationsService } from './app-notifications.service';
 import { CragRoutesDataService } from './crag-routes-data.service';
+import { EquipperService } from './equipper.service';
 import { OutdoorDataService } from './outdoor-data.service';
 import { ProfileDataService } from './profile-data.service';
 import { SupabaseService } from './supabase.service';
@@ -55,6 +56,7 @@ export class AscentsService {
   private readonly profileData = inject(ProfileDataService);
   private readonly outdoorData = inject(OutdoorDataService);
   private readonly cragRoutesData = inject(CragRoutesDataService);
+  private readonly equipperService = inject(EquipperService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
@@ -1254,5 +1256,7 @@ export class AscentsService {
     this.outdoorData.topoDetailResource.reload();
     this.profileData.userProjectsResource.reload();
     this.profileData.userTotalAscentsCountResource.reload();
+    this.equipperService.equipperRoutesResource.reload();
+    this.equipperService.equipperIndoorRoutesResource.reload();
   }
 }

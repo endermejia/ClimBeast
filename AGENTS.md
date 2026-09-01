@@ -29,10 +29,10 @@ Before committing, ensure ALL of the following pass:
 4. `npm test` — Tests pass
 5. `npm run format` — Prettier formatting
 
-## Component Conventions
+## Component & Reactivity Conventions
 
 - Selector prefix: `app-` (kebab-case)
 - Standalone components
 - OnPush change detection
-- Signals for state (`signal()`, `computed()`, `resource()`)
+- **No `subscribe()` in the app** — code must be reactive. Use Angular signals (`signal()`, `computed()`, `resource()`), `toSignal()`, `effect()`, async pipes, or `firstValueFrom()` for single promise conversions. Never use manual `.subscribe()` subscriptions.
 - `inject()` for dependency injection

@@ -32,6 +32,7 @@ This writes to `src/models/supabase-generated.ts`. Never hand-edit that file. Us
 ## Key Conventions
 
 - **No `any`** — use proper interfaces, DTOs, or `unknown` with type guards.
+- **No `subscribe()` in the app** — code must be reactive. Use Angular signals (`signal()`, `computed()`, `resource()`), `toSignal()`, `effect()`, async pipes, or `firstValueFrom()` for single promise conversions. Never use manual `.subscribe()` subscriptions.
 - **Zoneless change detection** — do NOT call functions/methods in Angular templates (`@if (fn())`, `{{ fn() }}`). Use `computed()` signals or pure pipes instead. This is a hard performance rule.
 - **Component style** — OnPush change detection, inline styles, no tests by default (schematic config in `angular.json`). Component prefix: `app` (kebab-case elements, camelCase attributes).
 - **Supabase RLS** — all new tables must have RLS enabled. Policy naming: `auth_can_read`, `own_can_insert`, `own_can_delete`, `admin_can_modify`, etc. Restrict to `authenticated` role when possible.
