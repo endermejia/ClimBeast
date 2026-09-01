@@ -45,12 +45,14 @@ export interface FilterDialog {
   )[];
   indoor?: boolean;
   outdoor?: boolean;
+  toposOnly?: boolean;
   // Optional flags to control visibility from the caller
   showCategories?: boolean;
   showShade?: boolean;
   showGradeRange?: boolean;
   showIndoorOutdoor?: boolean;
   showIndoorAscents?: boolean;
+  showToposOnly?: boolean;
 }
 
 @Component({
@@ -96,12 +98,6 @@ export interface FilterDialog {
               <span>{{ item }}</span>
             </span>
           </ng-template>
-        </section>
-      }
-
-      @if (showShade) {
-        <section class="tui-space_top-3">
-          <tui-filter formControlName="shade" size="l" [items]="shadeItems()" />
         </section>
       }
 
@@ -151,6 +147,21 @@ export interface FilterDialog {
         </section>
       }
 
+      @if (showToposOnly) {
+        <section class="flex flex-col gap-3">
+          <label class="flex items-center gap-2">
+            <input tuiCheckbox type="checkbox" formControlName="toposOnly" />
+            <span>{{ 'filters.toposOnly' | translate }}</span>
+          </label>
+        </section>
+      }
+
+      @if (showShade) {
+        <section class="tui-space_top-3">
+          <tui-filter formControlName="shade" size="l" [items]="shadeItems()" />
+        </section>
+      }
+
       <footer class="flex flex-wrap gap-2 justify-end items-center">
         <button
           appearance="secondary"
@@ -195,6 +206,10 @@ export class FilterDialogComponent {
 
   protected get showIndoorAscents(): boolean {
     return this.context.data?.showIndoorAscents ?? false;
+  }
+
+  protected get showToposOnly(): boolean {
+    return this.context.data?.showToposOnly ?? false;
   }
 
   // Items for TuiFilter (types) as signals
@@ -244,6 +259,7 @@ export class FilterDialogComponent {
       nonNullable: true,
     }),
     showIndoorAscents: new FormControl<boolean>(false, { nonNullable: true }),
+    toposOnly: new FormControl<boolean>(false, { nonNullable: true }),
   });
 
   // Bounds for indices
@@ -300,7 +316,10 @@ export class FilterDialogComponent {
         const selectedLabels = d.selectedShade
           .map((k) => shadeNow[indexByKey[k] ?? -1])
           .filter(Boolean);
-        this.form.patchValue({ shade: selectedLabels });
+        this.form.patchValue({
+          shade: selectedLabels,
+          toposOnly: selectedLabels.length > 0 || (d.toposOnly ?? false),
+        });
       }
       if (Array.isArray(d.gradeRange) && d.gradeRange.length === 2) {
         const sanitized = this.sanitizeRange(d.gradeRange as [number, number]);
@@ -308,6 +327,12 @@ export class FilterDialogComponent {
       }
       if (d.showIndoorAscents !== undefined) {
         this.form.patchValue({ showIndoorAscents: d.showIndoorAscents });
+      }
+      if (
+        d.toposOnly !== undefined &&
+        (!d.selectedShade || !d.selectedShade.length)
+      ) {
+        this.form.patchValue({ toposOnly: d.toposOnly });
       }
 
       if (d.showIndoorOutdoor) {
@@ -318,6 +343,31 @@ export class FilterDialogComponent {
         this.form.patchValue({ indoorOutdoor: selectedIO });
       }
     }
+
+    // Auto-enable toposOnly when any shade is selected
+    const shadeChanges = toSignal(this.form.controls.shade.valueChanges, {
+      initialValue: this.form.controls.shade.value,
+    });
+    const toposOnlyChanges = toSignal(
+      this.form.controls.toposOnly.valueChanges,
+      {
+        initialValue: this.form.controls.toposOnly.value,
+      },
+    );
+
+    effect(() => {
+      const shade = shadeChanges();
+      if (shade && shade.length > 0 && !this.form.controls.toposOnly.value) {
+        this.form.controls.toposOnly.setValue(true);
+      }
+    });
+
+    effect(() => {
+      const topos = toposOnlyChanges();
+      if (!topos && (this.form.controls.shade.value?.length ?? 0) > 0) {
+        this.form.controls.shade.setValue([]);
+      }
+    });
 
     // React to i18n changes
     effect(() => {
@@ -426,11 +476,14 @@ export class FilterDialogComponent {
       selectedShade,
       indoor,
       outdoor,
+      toposOnly:
+        (this.form.value.toposOnly ?? false) || selectedShade.length > 0,
       showCategories: this.context.data?.showCategories,
       showShade: this.context.data?.showShade,
       showGradeRange: this.context.data?.showGradeRange,
       showIndoorOutdoor: this.context.data?.showIndoorOutdoor,
       showIndoorAscents: this.form.value.showIndoorAscents ?? false,
+      showToposOnly: this.context.data?.showToposOnly,
     };
     this.context.completeWith(payload);
   }
@@ -442,6 +495,7 @@ export class FilterDialogComponent {
       gradeRange: [this.minIndex, this.maxIndex],
       indoorOutdoor: [],
       showIndoorAscents: false,
+      toposOnly: false,
     });
     this.context.completeWith({
       categories: [],
@@ -449,11 +503,13 @@ export class FilterDialogComponent {
       selectedShade: [],
       indoor: false,
       outdoor: false,
+      toposOnly: false,
       showCategories: this.context.data?.showCategories,
       showShade: this.context.data?.showShade,
       showGradeRange: this.context.data?.showGradeRange,
       showIndoorOutdoor: this.context.data?.showIndoorOutdoor,
       showIndoorAscents: false,
+      showToposOnly: this.context.data?.showToposOnly,
     });
   }
 }

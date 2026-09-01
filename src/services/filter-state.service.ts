@@ -20,6 +20,7 @@ export class FilterStateService {
   private readonly areaListShadeKey = 'area_list_shade_v1';
   private readonly areaListShowIndoorKey = 'area_list_show_indoor_v1';
   private readonly areaListShowOutdoorKey = 'area_list_show_outdoor_v1';
+  private readonly areaListToposOnlyKey = 'area_list_topos_only_v1';
 
   areaListGradeRange: WritableSignal<[number, number]> = signal([
     0,
@@ -31,6 +32,7 @@ export class FilterStateService {
   > = signal([]);
   areaListShowIndoor: WritableSignal<boolean> = signal(false);
   areaListShowOutdoor: WritableSignal<boolean> = signal(false);
+  areaListToposOnly: WritableSignal<boolean> = signal(false);
 
   // ---- Home Feed List Filters ----
   private readonly feedGradeRangeKey = 'feed_grade_range_v1';
@@ -97,6 +99,12 @@ export class FilterStateService {
       this.localStorage.setItem(
         this.areaListShowOutdoorKey,
         String(this.areaListShowOutdoor()),
+      );
+    });
+    effect(() => {
+      this.localStorage.setItem(
+        this.areaListToposOnlyKey,
+        String(this.areaListToposOnly()),
       );
     });
 
@@ -190,6 +198,11 @@ export class FilterStateService {
       );
       if (rawShowOutdoor !== null) {
         this.areaListShowOutdoor.set(rawShowOutdoor === 'true');
+      }
+
+      const rawToposOnly = this.localStorage.getItem(this.areaListToposOnlyKey);
+      if (rawToposOnly !== null) {
+        this.areaListToposOnly.set(rawToposOnly === 'true');
       }
 
       // Home feed

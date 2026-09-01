@@ -320,6 +320,7 @@
   "filters.shade.changeAt": "cambia a las",
   "filters.shade.morning": "Sombra mañana",
   "filters.shade.noShade": "Sol siempre",
+  "filters.toposOnly": "Solo con croquis",
   "filters.types.boulder": "Boulder",
   "filters.types.multipitch": "Multipitch",
   "filters.types.sport": "Deportiva",

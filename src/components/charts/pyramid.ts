@@ -99,12 +99,7 @@ export interface PyramidLevel {
   template: `
     <div class="flex flex-col gap-6">
       <!-- Header with Year Selector -->
-      <div class="flex items-center justify-between gap-4 flex-wrap">
-        <h2 class="text-xl font-bold flex items-center gap-2">
-          <tui-icon icon="@tui.pyramid" />
-          {{ 'pyramid.title' | translate }}
-        </h2>
-
+      <div class="flex items-center justify-end gap-4 flex-wrap">
         <div class="flex items-center gap-2">
           <tui-textfield
             class="w-32"

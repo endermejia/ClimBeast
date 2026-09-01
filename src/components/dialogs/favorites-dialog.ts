@@ -14,8 +14,10 @@ export interface FavoritesDialogData {
   standalone: true,
   imports: [TuiScrollbar, UserProfileLikesComponent],
   template: `
-    <tui-scrollbar class="max-h-[80dvh] -m-4 p-4">
-      <app-user-profile-likes [userId]="context.data.userId" />
+    <tui-scrollbar class="w-full h-[80dvh] min-h-[400px] max-h-[850px]">
+      <div class="w-full min-w-0 pr-2">
+        <app-user-profile-likes [userId]="context.data.userId" />
+      </div>
     </tui-scrollbar>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

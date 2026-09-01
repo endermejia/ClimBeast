@@ -484,3 +484,13 @@ app-undo-toast {
     clip-path: circle(150% at var(--x) var(--y));
   }
 }
+
+/* Projects dialog - expanded width on desktop */
+@media (min-width: 1024px) {
+  tui-dialog:has(app-projects-dialog) {
+    inline-size: min(1400px, calc(100vw - 4rem)) !important;
+    max-inline-size: min(1400px, calc(100vw - 4rem)) !important;
+    width: min(1400px, calc(100vw - 4rem)) !important;
+    max-width: min(1400px, calc(100vw - 4rem)) !important;
+  }
+}

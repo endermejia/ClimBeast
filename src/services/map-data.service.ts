@@ -296,12 +296,14 @@ export class MapDataService {
         return (data || []).map((a) => {
           const grades: AmountByEveryGrade = {};
           let cragsCount = 0;
+          let toposCount = 0;
           const climbingKinds = new Set<string>();
           let shadeMorning = false;
           let shadeAfternoon = false;
 
           (a.crags || []).forEach((c) => {
             cragsCount++;
+            toposCount += (c.topos || []).length;
             (c.routes || []).forEach((r) => {
               const g = r.grade as VERTICAL_LIFE_GRADES;
               grades[g] = (grades[g] || 0) + 1;
@@ -326,6 +328,7 @@ export class MapDataService {
             liked: isLiked,
             grades,
             crags_count: cragsCount,
+            topos_count: toposCount,
             climbing_kind: Array.from(climbingKinds),
             shade_morning: shadeMorning,
             shade_afternoon: shadeAfternoon,

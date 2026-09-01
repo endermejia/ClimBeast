@@ -30,6 +30,7 @@ export class FiltersService {
       showCategories?: boolean;
       showGradeRange?: boolean;
       showIndoorOutdoor?: boolean;
+      showToposOnly?: boolean;
     } = {},
   ): void {
     const data: FilterDialog = {
@@ -38,10 +39,12 @@ export class FiltersService {
       selectedShade: this.filterState.areaListShade(),
       indoor: this.filterState.areaListShowIndoor(),
       outdoor: this.filterState.areaListShowOutdoor(),
+      toposOnly: this.filterState.areaListToposOnly(),
       showCategories: options.showCategories ?? true,
       showShade: options.showShade ?? true,
       showGradeRange: options.showGradeRange ?? true,
       showIndoorOutdoor: options.showIndoorOutdoor ?? false,
+      showToposOnly: options.showToposOnly ?? false,
     };
 
     void firstValueFrom(
@@ -76,6 +79,9 @@ export class FiltersService {
       }
       if (result.outdoor !== undefined) {
         this.filterState.areaListShowOutdoor.set(result.outdoor);
+      }
+      if (result.toposOnly !== undefined) {
+        this.filterState.areaListToposOnly.set(result.toposOnly);
       }
     });
   }

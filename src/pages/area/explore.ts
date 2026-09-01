@@ -238,11 +238,7 @@ import { IS_BROWSER } from '../../app/is-browser';
           <app-map
             class="w-full h-full"
             [mapCragItems]="mapCragItems()"
-            [mapAreaItems]="
-              filterState.areaListShowOutdoor()
-                ? mapData.areasMapResource.value() || []
-                : []
-            "
+            [mapAreaItems]="shouldShowOutdoor() ? mapAreaItems() : []"
             [mapIndoorItems]="mapIndoorItems()"
             [selectedMapCragItem]="mapData.selectedMapCragItem()"
             (selectedMapCragItemChange)="selectMapCragItem($event)"
@@ -563,6 +559,7 @@ export class ExploreComponent {
     const categories = this.filterState.areaListCategories();
     const [selMin, selMax] = this.filterState.areaListGradeRange();
     const shade = this.filterState.areaListShade() || [];
+    const toposOnly = this.filterState.areaListToposOnly();
 
     const withinSelectedCategories = (c: MapCragItem): boolean => {
       // empty => all
@@ -578,6 +575,11 @@ export class ExploreComponent {
       return matchesShadeFilter(c, shade);
     };
 
+    const matchesTopos = (c: MapCragItem): boolean => {
+      if (!toposOnly) return true;
+      return (c.topos_count ?? c.topos?.length ?? 0) > 0;
+    };
+
     return items
       .filter((item): item is MapCragItem => {
         const isCrag =
@@ -588,7 +590,8 @@ export class ExploreComponent {
         return (
           withinSelectedCategories(c) &&
           overlapsSelectedGrades(c) &&
-          matchesShade(c)
+          matchesShade(c) &&
+          matchesTopos(c)
         );
       })
       .sort((a, b) => (a.liked === b.liked ? 0 : a.liked ? -1 : 1));
@@ -600,6 +603,7 @@ export class ExploreComponent {
     const categories = this.filterState.areaListCategories();
     const [selMin, selMax] = this.filterState.areaListGradeRange();
     const shade = this.filterState.areaListShade() || [];
+    const toposOnly = this.filterState.areaListToposOnly();
 
     const withinSelectedCategories = (a: MapAreaItem): boolean => {
       if (!categories.length) return true;
@@ -622,6 +626,11 @@ export class ExploreComponent {
       return matchesShadeFilter(a, shade);
     };
 
+    const matchesTopos = (a: MapAreaItem): boolean => {
+      if (!toposOnly) return true;
+      return (a.topos_count ?? 0) > 0;
+    };
+
     return items
       .filter((item): item is MapAreaItem => {
         const isArea = (item as MapAreaItem).area_type === 0;
@@ -630,7 +639,8 @@ export class ExploreComponent {
         return (
           withinSelectedCategories(a) &&
           overlapsSelectedGrades(a) &&
-          matchesShade(a)
+          matchesShade(a) &&
+          matchesTopos(a)
         );
       })
       .sort((a, b) => (a.liked === b.liked ? 0 : a.liked ? -1 : 1));
@@ -638,8 +648,14 @@ export class ExploreComponent {
   protected mapIndoorItems: Signal<MapIndoorCenterItem[]> = computed(() => {
     if (!this.shouldShowIndoor()) return [];
     const items = this.mapData.mapItemsOnViewport();
+    const toposOnly = this.filterState.areaListToposOnly();
     return items.filter((item): item is MapIndoorCenterItem => {
-      return (item as MapIndoorCenterItem).is_indoor === true;
+      const indoor = item as MapIndoorCenterItem;
+      if (indoor.is_indoor !== true) return false;
+      if (toposOnly) {
+        return (indoor.topos?.length ?? 0) > 0;
+      }
+      return true;
     });
   });
 
@@ -674,7 +690,8 @@ export class ExploreComponent {
     return (
       gradeActive ||
       this.filterState.areaListCategories().length > 0 ||
-      this.filterState.areaListShade().length > 0
+      this.filterState.areaListShade().length > 0 ||
+      this.filterState.areaListToposOnly()
     );
   });
 
@@ -850,7 +867,10 @@ export class ExploreComponent {
   }
 
   protected openFilters(): void {
-    this.filtersService.openFilters({ showIndoorOutdoor: true });
+    this.filtersService.openFilters({
+      showIndoorOutdoor: true,
+      showToposOnly: true,
+    });
     this.closeAll();
   }
 }

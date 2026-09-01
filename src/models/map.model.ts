@@ -12,6 +12,7 @@ export interface MapAreaItem {
   liked?: boolean;
   grades?: AmountByEveryGrade;
   crags_count?: number;
+  topos_count?: number;
   climbing_kind?: ClimbingKind[];
   shade_morning?: boolean;
   shade_afternoon?: boolean;

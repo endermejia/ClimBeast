@@ -221,7 +221,8 @@ export class MyAreasComponent {
     return (
       gradeActive ||
       this.selectedCategories().length > 0 ||
-      this.selectedShade().length > 0
+      this.selectedShade().length > 0 ||
+      this.filterState.areaListToposOnly()
     );
   });
   readonly filtered = computed(() => {
@@ -271,9 +272,18 @@ export class MyAreasComponent {
         }
       });
     };
+    const toposOnly = this.filterState.areaListToposOnly();
+    const toposMatches = (a: (typeof list)[number]) => {
+      if (!toposOnly) return true;
+      return (a.topos_count || 0) > 0;
+    };
     return list.filter(
       (a) =>
-        textMatches(a) && gradeMatches(a) && kindMatches(a) && shadeMatches(a),
+        textMatches(a) &&
+        gradeMatches(a) &&
+        kindMatches(a) &&
+        shadeMatches(a) &&
+        toposMatches(a),
     );
   });
 
@@ -282,7 +292,7 @@ export class MyAreasComponent {
   }
 
   openFilters(): void {
-    this.filtersService.openFilters();
+    this.filtersService.openFilters({ showToposOnly: true });
   }
 }
 

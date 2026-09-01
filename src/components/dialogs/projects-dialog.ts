@@ -14,8 +14,23 @@ export interface ProjectsDialogData {
   selector: 'app-projects-dialog',
   standalone: true,
   imports: [TuiScrollbar, UserProfileProjectsComponent],
+  styles: `
+    @media (min-width: 1024px) {
+      :host > tui-scrollbar {
+        overflow: hidden !important;
+      }
+      :host > tui-scrollbar ::ng-deep > .t-content {
+        block-size: 100% !important;
+        height: 100% !important;
+        overflow: hidden !important;
+      }
+      :host > tui-scrollbar ::ng-deep > tui-scroll-controls {
+        display: none !important;
+      }
+    }
+  `,
   template: `
-    <tui-scrollbar class="max-h-[80dvh] -m-4 p-4">
+    <tui-scrollbar class="w-full h-[80dvh] min-h-[500px] max-h-[850px]">
       <app-user-profile-projects
         [userId]="context.data.userId"
         [startingYear]="context.data.startingYear"
