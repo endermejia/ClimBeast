@@ -40,18 +40,28 @@ import { firstValueFrom } from 'rxjs';
 import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
 
+import { GradeComponent } from '../ui/avatar-grade';
+
 import {
+  TopoPoint,
   TopoRouteWithRoute,
   TopoPath,
   TopoPathEditorResult,
 } from '../../models';
 
-import { TopoHasPathPipe } from '../../pipes';
+import {
+  TopoHasPathPipe,
+  TopoIsTraversePipe,
+  TopoPointStateBadgePipe,
+  TopoPointStateColorPipe,
+  TopoPointStateLabelPipe,
+} from '../../pipes';
 
 import {
   addPointToPath,
   attachWheelListener,
   constrainTranslation,
+  cyclePointState,
   getPointsString as getPointsStringUtil,
   getRouteStrokeWidth,
   getRouteStyleProperties,
@@ -62,8 +72,6 @@ import {
   startDragPointMouse,
   startDragPointTouch,
 } from '../../utils';
-
-import { GradeComponent } from '../ui/avatar-grade';
 
 export interface TopoPathEditorConfig {
   imageUrl: string;
@@ -87,6 +95,10 @@ export interface TopoPathEditorConfig {
     CdkDragPlaceholder,
     CdkDropList,
     TopoHasPathPipe,
+    TopoIsTraversePipe,
+    TopoPointStateBadgePipe,
+    TopoPointStateColorPipe,
+    TopoPointStateLabelPipe,
     TranslateModule,
     TuiButton,
     TuiIcon,
@@ -111,6 +123,7 @@ export interface TopoPathEditorConfig {
               >
                 @for (tr of topoRoutes; track $index; let idx = $index) {
                   @let hasPath = tr.route_id | topoHasPath: pathsMap;
+                  @let isTraverse = tr.route_id | topoIsTraverse: pathsMap;
                   <div
                     cdkDrag
                     class="route-item"
@@ -131,6 +144,17 @@ export interface TopoPathEditorConfig {
                     <div class="route-num">{{ idx + 1 }}</div>
                     <div class="route-info">
                       <div class="route-name">{{ tr.route.name }}</div>
+                      @if (hasPath && isTraverse) {
+                        <span
+                          class="text-[10px] text-(--tui-text-tertiary) flex items-center gap-0.5"
+                        >
+                          <tui-icon
+                            icon="@tui.arrow-right-left"
+                            class="text-[10px] scale-75"
+                          />
+                          {{ 'topos.editor.traverse' | translate }}
+                        </span>
+                      }
                     </div>
                     <app-grade
                       [grade]="tr.route.grade"
@@ -199,7 +223,7 @@ export interface TopoPathEditorConfig {
                 />
               </div>
 
-              <!-- Path Type Selector -->
+              <!-- Path Type Selector & Traverse Toggle -->
               @if (selectedRoute()) {
                 <div class="path-type-control">
                   <div class="control-header">
@@ -240,6 +264,52 @@ export interface TopoPathEditorConfig {
                         'topos.editor.pathTypeCircle' | translate
                       }}</span>
                     </button>
+                  </div>
+
+                  <!-- Traverse toggle -->
+                  <button
+                    tuiButton
+                    type="button"
+                    size="s"
+                    [appearance]="
+                      selectedRouteIsTraverse() ? 'primary' : 'secondary'
+                    "
+                    class="w-full rounded-xl! mt-2"
+                    (click)="toggleSelectedRouteTraverse()"
+                  >
+                    <tui-icon icon="@tui.arrow-right-left" class="mr-1" />
+                    <span>{{ 'topos.editor.traverse' | translate }}</span>
+                  </button>
+
+                  <!-- Point states help & legend -->
+                  <div
+                    class="mt-3 pt-3 border-t border-(--tui-border-normal) text-xs flex flex-col gap-1.5 opacity-80"
+                  >
+                    <span
+                      class="font-medium text-[11px] text-(--tui-text-tertiary)"
+                    >
+                      {{ 'topos.editor.cyclePointState' | translate }}
+                    </span>
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-1">
+                        <span
+                          class="w-2.5 h-2.5 rounded-full bg-[#22C55E] inline-block"
+                        ></span>
+                        <span>S: {{ 'topos.legend.start' | translate }}</span>
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <span
+                          class="w-2.5 h-2.5 rounded-full bg-[#EF4444] inline-block"
+                        ></span>
+                        <span>T: {{ 'topos.legend.top' | translate }}</span>
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <span
+                          class="w-2.5 h-2.5 rounded-full bg-[#3B82F6] inline-block"
+                        ></span>
+                        <span>M: {{ 'topos.legend.match' | translate }}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               }
@@ -303,7 +373,11 @@ export interface TopoPathEditorConfig {
                   @if (pathData.type === 'circle') {
                     @let strokeW = routeStrokeWidthMap()[routeId] * width();
                     @let circleR = strokeW * 3.5;
+                    @let isTraverse = pathData.isTraverse;
                     @for (pt of pathData.points; track $index) {
+                      @let ptColor =
+                        pt.state | topoPointStateColor: style.stroke;
+                      @let badge = pt.state | topoPointStateBadge;
                       <!-- Hit area circle -->
                       <circle
                         [attr.cx]="pt.x * width()"
@@ -345,8 +419,63 @@ export interface TopoPathEditorConfig {
                         "
                         [class.selected-circle-pulse]="isSelected"
                       />
+                      @if (!isSelected) {
+                        @if (isTraverse) {
+                          <text
+                            [attr.x]="pt.x * width()"
+                            [attr.y]="pt.y * height() + circleR * 0.35"
+                            text-anchor="middle"
+                            fill="white"
+                            font-weight="bold"
+                            [attr.font-size]="circleR * 0.85"
+                            style="pointer-events: none; user-select: none; text-shadow: 0 0 3px rgba(0,0,0,0.9)"
+                          >
+                            {{ $index + 1 }}
+                          </text>
+                        }
+                        @if (badge) {
+                          @let label = pt.state | topoPointStateLabel;
+                          @let pillW =
+                            strokeW *
+                            (pt.state === 'match'
+                              ? 3.8
+                              : pt.state === 'start'
+                                ? 3.6
+                                : 2.8);
+                          @let pillH = strokeW * 1.4;
+                          @let pillY = pt.y * height() - circleR - pillH * 0.45;
+                          <g
+                            class="pointer-events-none"
+                            style="user-select: none"
+                          >
+                            <rect
+                              [attr.x]="pt.x * width() - pillW / 2"
+                              [attr.y]="pillY - pillH / 2"
+                              [attr.width]="pillW"
+                              [attr.height]="pillH"
+                              [attr.rx]="pillH / 2"
+                              [attr.fill]="ptColor"
+                              stroke="white"
+                              stroke-width="0.75"
+                            />
+                            <text
+                              [attr.x]="pt.x * width()"
+                              [attr.y]="pillY + pillH * 0.32"
+                              text-anchor="middle"
+                              fill="white"
+                              font-weight="bold"
+                              [attr.font-size]="strokeW * 0.95"
+                              font-family="sans-serif"
+                              style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
+                            >
+                              {{ label }}
+                            </text>
+                          </g>
+                        }
+                      }
                     }
                   } @else {
+                    @let isTraverse = pathData.isTraverse;
                     <!-- Hit area -->
                     <polyline
                       [attr.points]="pointsStringMap()[routeId]"
@@ -395,17 +524,69 @@ export interface TopoPathEditorConfig {
                       stroke-linecap="round"
                     />
 
+                    @if (!isSelected && isTraverse) {
+                      @for (pt of pathData.points; track $index) {
+                        @let ptColor =
+                          pt.state | topoPointStateColor: style.stroke;
+                        @let badge = pt.state | topoPointStateBadge;
+                        @let ptR =
+                          routeStrokeWidthMap()[routeId] * width() * 1.8;
+                        <circle
+                          [attr.cx]="pt.x * width()"
+                          [attr.cy]="pt.y * height()"
+                          [attr.r]="ptR"
+                          [attr.fill]="ptColor"
+                          stroke="white"
+                          stroke-width="1"
+                        />
+                        <text
+                          [attr.x]="pt.x * width()"
+                          [attr.y]="pt.y * height() + ptR * 0.35"
+                          text-anchor="middle"
+                          fill="white"
+                          font-weight="bold"
+                          [attr.font-size]="ptR * 0.85"
+                          style="pointer-events: none; user-select: none; text-shadow: 0 0 3px rgba(0,0,0,0.9)"
+                        >
+                          {{ $index + 1 }}{{ badge ? '·' + badge : '' }}
+                        </text>
+                      }
+                    }
+
                     <!-- End dot -->
                     @if (pathData.points[pathData.points.length - 1]; as last) {
+                      @let isTop = last.state === 'top';
                       <circle
                         [attr.cx]="last.x * width()"
                         [attr.cy]="last.y * height()"
-                        [attr.r]="routeStrokeWidthMap()[routeId] * width()"
-                        fill="white"
+                        [attr.r]="
+                          routeStrokeWidthMap()[routeId] *
+                          width() *
+                          (isTop ? 1.6 : 1)
+                        "
+                        [attr.fill]="isTop ? '#EF4444' : 'white'"
                         [style.opacity]="style.opacity"
-                        stroke="black"
-                        stroke-width="0.5"
+                        [attr.stroke]="isTop ? 'white' : 'black'"
+                        [attr.stroke-width]="isTop ? 1 : 0.5"
                       />
+                      @if (isTop && !isSelected) {
+                        <text
+                          [attr.x]="last.x * width()"
+                          [attr.y]="
+                            last.y * height() +
+                            routeStrokeWidthMap()[routeId] * width() * 0.55
+                          "
+                          text-anchor="middle"
+                          fill="white"
+                          font-weight="bold"
+                          [attr.font-size]="
+                            routeStrokeWidthMap()[routeId] * width() * 1.4
+                          "
+                          style="pointer-events: none; user-select: none; text-shadow: 0 0 2px rgba(0,0,0,0.9)"
+                        >
+                          T
+                        </text>
+                      }
                     }
                   }
                 </g>
@@ -413,13 +594,17 @@ export interface TopoPathEditorConfig {
                 <!-- Control points (selected only) -->
                 @if (isSelected) {
                   @for (pt of pathData.points; track $index) {
+                    @let strokeW = routeStrokeWidthMap()[routeId];
+                    @let ptColor = pt.state | topoPointStateColor: style.stroke;
+                    @let badge = pt.state | topoPointStateBadge;
+                    @let isTraverse = pathData.isTraverse;
                     <g
                       class="control-point"
                       (mousedown)="startDragging($event, routeId, $index)"
                       (touchstart)="startDraggingTouch($event, routeId, $index)"
                       (contextmenu)="removePoint($event, routeId, $index)"
+                      (dblclick)="cyclePointState($event, routeId, $index)"
                     >
-                      @let strokeW = routeStrokeWidthMap()[routeId];
                       <circle
                         [attr.cx]="pt.x * width()"
                         [attr.cy]="pt.y * height()"
@@ -429,9 +614,67 @@ export interface TopoPathEditorConfig {
                       <circle
                         [attr.cx]="pt.x * width()"
                         [attr.cy]="pt.y * height()"
-                        [attr.r]="strokeW * width() * 0.8"
+                        [attr.r]="strokeW * width() * 0.9"
                         [attr.fill]="style.stroke"
+                        stroke="white"
+                        stroke-width="1"
                       />
+                      @if (isTraverse) {
+                        <text
+                          [attr.x]="pt.x * width()"
+                          [attr.y]="pt.y * height() + strokeW * width() * 0.35"
+                          text-anchor="middle"
+                          fill="white"
+                          font-weight="bold"
+                          [attr.font-size]="strokeW * width() * 0.9"
+                          style="pointer-events: none; user-select: none; text-shadow: 0 0 2px rgba(0,0,0,0.9)"
+                        >
+                          {{ $index + 1 }}
+                        </text>
+                      }
+                      @if (badge) {
+                        @let label = pt.state | topoPointStateLabel;
+                        @let pillW =
+                          strokeW *
+                          width() *
+                          (pt.state === 'match'
+                            ? 3.8
+                            : pt.state === 'start'
+                              ? 3.6
+                              : 2.8);
+                        @let pillH = strokeW * width() * 1.4;
+                        @let pillY =
+                          pt.y * height() -
+                          strokeW * width() * 1.5 -
+                          pillH * 0.45;
+                        <g
+                          class="pointer-events-none"
+                          style="user-select: none"
+                        >
+                          <rect
+                            [attr.x]="pt.x * width() - pillW / 2"
+                            [attr.y]="pillY - pillH / 2"
+                            [attr.width]="pillW"
+                            [attr.height]="pillH"
+                            [attr.rx]="pillH / 2"
+                            [attr.fill]="ptColor"
+                            stroke="white"
+                            stroke-width="0.75"
+                          />
+                          <text
+                            [attr.x]="pt.x * width()"
+                            [attr.y]="pillY + pillH * 0.32"
+                            text-anchor="middle"
+                            fill="white"
+                            font-weight="bold"
+                            [attr.font-size]="strokeW * width() * 0.95"
+                            font-family="sans-serif"
+                            style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
+                          >
+                            {{ label }}
+                          </text>
+                        </g>
+                      }
                     </g>
                   }
                 }
@@ -920,10 +1163,11 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   pathsMap = new Map<
     string | number,
     {
-      points: { x: number; y: number }[];
+      points: TopoPoint[];
       color?: string;
       width?: number;
       type?: 'line' | 'circle';
+      isTraverse?: boolean;
       _ref: TopoRouteWithRoute;
     }
   >();
@@ -938,6 +1182,14 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     return (path?.type as 'line' | 'circle') || 'line';
   });
 
+  protected readonly selectedRouteIsTraverse = computed<boolean>(() => {
+    this.pathsVersion();
+    const selected = this.selectedRoute();
+    if (!selected) return false;
+    const path = this.pathsMap.get(selected.route_id);
+    return path?.isTraverse || false;
+  });
+
   protected setSelectedRoutePathType(type: 'line' | 'circle'): void {
     const selected = this.selectedRoute();
     if (!selected) return;
@@ -948,6 +1200,24 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       this.pathsMap.set(selected.route_id, {
         points: [],
         type,
+        _ref: selected,
+      });
+    }
+    this.pathsVersion.update((v) => v + 1);
+    this.cdr.markForCheck();
+  }
+
+  protected toggleSelectedRouteTraverse(): void {
+    const selected = this.selectedRoute();
+    if (!selected) return;
+    const current = this.pathsMap.get(selected.route_id);
+    if (current) {
+      current.isTraverse = !current.isTraverse;
+    } else {
+      this.pathsMap.set(selected.route_id, {
+        points: [],
+        type: 'circle',
+        isTraverse: true,
         _ref: selected,
       });
     }
@@ -1032,6 +1302,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
           color: tr.path.color,
           width: tr.path.width,
           type: tr.path.type || 'line',
+          isTraverse: tr.path.isTraverse || false,
           _ref: tr,
         });
       }
@@ -1254,6 +1525,25 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     );
   }
 
+  private lastTapTime = 0;
+  private lastTapIndex = -1;
+  private lastTapRouteId: string | number | null = null;
+
+  cyclePointState(event: Event, routeId: string | number, index: number): void {
+    event.stopPropagation();
+    event.preventDefault();
+    const parsedRouteId = isNaN(Number(routeId)) ? routeId : Number(routeId);
+    const pathData = this.pathsMap.get(parsedRouteId);
+    if (!pathData || !pathData.points[index]) return;
+
+    pathData.points[index].state = cyclePointState(
+      pathData.points[index].state,
+    );
+    this.pathsMap.set(parsedRouteId, { ...pathData });
+    this.pathsVersion.update((v) => v + 1);
+    this.cdr.markForCheck();
+  }
+
   private addPoint(event: MouseEvent): void {
     const route = this.selectedRoute();
     if (!route) return;
@@ -1303,6 +1593,22 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     index: number,
   ): void {
     const parsedRouteId = isNaN(Number(routeId)) ? routeId : Number(routeId);
+    const now = Date.now();
+    if (
+      this.lastTapRouteId === parsedRouteId &&
+      this.lastTapIndex === index &&
+      now - this.lastTapTime < 350
+    ) {
+      this.cyclePointState(event, parsedRouteId, index);
+      this.lastTapTime = 0;
+      this.lastTapIndex = -1;
+      this.lastTapRouteId = null;
+      return;
+    }
+    this.lastTapTime = now;
+    this.lastTapIndex = index;
+    this.lastTapRouteId = parsedRouteId;
+
     this.draggingPoint = { routeId: parsedRouteId, index };
 
     startDragPointTouch(
@@ -1395,6 +1701,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
             color: path.color,
             width: this.lineWidth(),
             type: path.type || 'line',
+            isTraverse: path.isTraverse || false,
           } as TopoPath,
         }),
       );

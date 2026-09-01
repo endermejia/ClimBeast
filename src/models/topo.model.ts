@@ -20,11 +20,20 @@ export interface RouteWithOwnData extends RouteDto {
   project?: boolean;
 }
 
+export type PointState = 'neutral' | 'start' | 'top' | 'match';
+
+export interface TopoPoint {
+  x: number;
+  y: number;
+  state?: PointState;
+}
+
 export interface TopoPath {
-  points: { x: number; y: number }[];
+  points: TopoPoint[];
   color?: string;
   width?: number;
   type?: 'line' | 'circle';
+  isTraverse?: boolean;
   [key: string]: unknown;
 }
 

@@ -3,8 +3,68 @@ import {
   VERTICAL_LIFE_GRADES,
   GRADE_NUMBER_TO_LABEL,
   GradeLabel,
+  PointState,
   colorForGrade,
 } from '../models';
+
+export const POINT_STATE_COLORS: Record<
+  Exclude<PointState, 'neutral'>,
+  string
+> = {
+  start: '#22C55E',
+  top: '#EF4444',
+  match: '#3B82F6',
+};
+
+export function getPointStateColor(
+  state?: PointState,
+  defaultColor = '#FFFFFF',
+): string {
+  if (!state || state === 'neutral') {
+    return defaultColor;
+  }
+  return POINT_STATE_COLORS[state] ?? defaultColor;
+}
+
+export function getPointStateBadge(state?: PointState): string {
+  switch (state) {
+    case 'start':
+      return 'S';
+    case 'top':
+      return 'T';
+    case 'match':
+      return 'M';
+    default:
+      return '';
+  }
+}
+
+export function getPointStateLabel(state?: PointState): string {
+  switch (state) {
+    case 'start':
+      return 'START';
+    case 'top':
+      return 'TOP';
+    case 'match':
+      return 'MATCH';
+    default:
+      return '';
+  }
+}
+
+export function cyclePointState(currentState?: PointState): PointState {
+  switch (currentState) {
+    case 'start':
+      return 'top';
+    case 'top':
+      return 'match';
+    case 'match':
+      return 'neutral';
+    case 'neutral':
+    default:
+      return 'start';
+  }
+}
 
 export function getRouteColor(
   grade: string | number | null | undefined,

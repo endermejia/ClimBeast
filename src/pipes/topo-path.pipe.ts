@@ -1,6 +1,13 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
-import { hasPath as hasPathUtil } from '../utils/topo-styles.utils';
+import { PointState, TopoPoint } from '../models';
+
+import {
+  getPointStateBadge as getPointStateBadgeUtil,
+  getPointStateColor as getPointStateColorUtil,
+  getPointStateLabel as getPointStateLabelUtil,
+  hasPath as hasPathUtil,
+} from '../utils';
 
 export interface Point {
   x: number;
@@ -35,8 +42,61 @@ export class TopoPathPointsPipe implements PipeTransform {
 export class TopoHasPathPipe implements PipeTransform {
   transform(
     routeId: string | number,
-    pathsMap: Map<string | number, { points: { x: number; y: number }[] }>,
+    pathsMap: Map<
+      string | number,
+      { points: TopoPoint[] | { x: number; y: number }[] }
+    >,
   ): boolean {
     return hasPathUtil(routeId, pathsMap);
+  }
+}
+
+@Pipe({
+  name: 'topoPointStateColor',
+  standalone: true,
+  pure: true,
+})
+export class TopoPointStateColorPipe implements PipeTransform {
+  transform(state: PointState | undefined, defaultColor?: string): string {
+    return getPointStateColorUtil(state, defaultColor);
+  }
+}
+
+@Pipe({
+  name: 'topoPointStateBadge',
+  standalone: true,
+  pure: true,
+})
+export class TopoPointStateBadgePipe implements PipeTransform {
+  transform(state: PointState | undefined): string {
+    return getPointStateBadgeUtil(state);
+  }
+}
+
+@Pipe({
+  name: 'topoPointStateLabel',
+  standalone: true,
+  pure: true,
+})
+export class TopoPointStateLabelPipe implements PipeTransform {
+  transform(state: PointState | undefined): string {
+    return getPointStateLabelUtil(state);
+  }
+}
+
+@Pipe({
+  name: 'topoIsTraverse',
+  standalone: true,
+  pure: true,
+})
+export class TopoIsTraversePipe implements PipeTransform {
+  transform(
+    routeId: string | number,
+    pathsMap: Map<
+      string | number,
+      { isTraverse?: boolean; [key: string]: unknown }
+    >,
+  ): boolean {
+    return !!pathsMap.get(routeId)?.isTraverse;
   }
 }

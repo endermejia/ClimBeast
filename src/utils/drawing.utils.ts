@@ -1,6 +1,9 @@
+import { PointState } from '../models';
+
 export interface NormalizedPoint {
   x: number;
   y: number;
+  state?: PointState;
 }
 
 export function getNormalizedPosition(
@@ -150,6 +153,7 @@ export function addPointToPath(
   const coords: NormalizedPoint = {
     x: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)),
     y: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)),
+    state: 'neutral',
   };
 
   const current = pathsMap.get(routeId) || { points: [], ...defaults };

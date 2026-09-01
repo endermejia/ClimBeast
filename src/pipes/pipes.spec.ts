@@ -17,7 +17,13 @@ import { SanitizeHtmlPipe } from './sanitize-html.pipe';
 import { ShadeInfoPipe } from './shade-info.pipe';
 import { TableSorterPipe } from './table-sorter.pipe';
 import { TopoImagePipe } from './topo-image.pipe';
-import { TopoHasPathPipe } from './topo-path.pipe';
+import {
+  TopoHasPathPipe,
+  TopoIsTraversePipe,
+  TopoPointStateBadgePipe,
+  TopoPointStateColorPipe,
+  TopoPointStateLabelPipe,
+} from './topo-path.pipe';
 
 describe('ShadeInfoPipe', () => {
   const pipe = new ShadeInfoPipe();
@@ -98,6 +104,66 @@ describe('TopoHasPathPipe', () => {
   it('returns false when route not in map', () => {
     const map = new Map<number, { points: { x: number; y: number }[] }>();
     expect(pipe.transform(1, map)).toBe(false);
+  });
+});
+
+describe('TopoPointStateColorPipe', () => {
+  const pipe = new TopoPointStateColorPipe();
+
+  it('returns default color for undefined or neutral', () => {
+    expect(pipe.transform(undefined, '#fff')).toBe('#fff');
+    expect(pipe.transform('neutral', '#123456')).toBe('#123456');
+  });
+
+  it('returns state color for start, top, match', () => {
+    expect(pipe.transform('start')).toBe('#22C55E');
+    expect(pipe.transform('top')).toBe('#EF4444');
+    expect(pipe.transform('match')).toBe('#3B82F6');
+  });
+});
+
+describe('TopoPointStateBadgePipe', () => {
+  const pipe = new TopoPointStateBadgePipe();
+
+  it('returns badge letter for start, top, match', () => {
+    expect(pipe.transform('start')).toBe('S');
+    expect(pipe.transform('top')).toBe('T');
+    expect(pipe.transform('match')).toBe('M');
+  });
+
+  it('returns empty string for neutral or undefined', () => {
+    expect(pipe.transform('neutral')).toBe('');
+    expect(pipe.transform(undefined)).toBe('');
+  });
+});
+
+describe('TopoPointStateLabelPipe', () => {
+  const pipe = new TopoPointStateLabelPipe();
+
+  it('returns label for start, top, match', () => {
+    expect(pipe.transform('start')).toBe('START');
+    expect(pipe.transform('top')).toBe('TOP');
+    expect(pipe.transform('match')).toBe('MATCH');
+  });
+
+  it('returns empty string for neutral or undefined', () => {
+    expect(pipe.transform('neutral')).toBe('');
+    expect(pipe.transform(undefined)).toBe('');
+  });
+});
+
+describe('TopoIsTraversePipe', () => {
+  const pipe = new TopoIsTraversePipe();
+
+  it('returns true when route path has isTraverse: true', () => {
+    const map = new Map([[1, { isTraverse: true }]]);
+    expect(pipe.transform(1, map)).toBe(true);
+  });
+
+  it('returns false when isTraverse is false or path missing', () => {
+    const map = new Map([[1, { isTraverse: false }]]);
+    expect(pipe.transform(1, map)).toBe(false);
+    expect(pipe.transform(2, map)).toBe(false);
   });
 });
 
