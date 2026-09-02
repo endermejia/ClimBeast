@@ -163,11 +163,8 @@ import { EmptyStateComponent } from '../ui/empty-state';
 
     @if (query().length >= 2 && routesList.length === 0) {
       @if (isSearchingAnu) {
-        <div class="flex flex-col items-center justify-center p-8 gap-4">
+        <div class="flex items-center justify-center p-8">
           <tui-loader size="m" />
-          <span class="text-sm opacity-60">
-            {{ 'loading' | translate }} 8a.nu...
-          </span>
         </div>
       } @else {
         @if (anuResults.length > 0) {

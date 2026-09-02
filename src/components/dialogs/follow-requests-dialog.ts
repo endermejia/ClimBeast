@@ -101,17 +101,14 @@ import { EmptyStateComponent } from '../ui/empty-state';
           }
 
           @if (loading()) {
-            <div class="p-8 flex justify-center items-center gap-3">
+            <div class="py-12 flex justify-center">
               <tui-loader />
-              <span class="text-sm opacity-50">{{
-                'loading' | translate
-              }}</span>
             </div>
           }
 
           @if (hasMore() && !loading()) {
-            <div class="p-4 flex justify-center text-sm opacity-50">
-              {{ 'loading' | translate }}
+            <div class="py-4 flex justify-center">
+              <tui-loader size="s" />
             </div>
           }
         </div>

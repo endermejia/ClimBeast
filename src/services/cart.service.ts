@@ -172,6 +172,8 @@ export class CartService {
   }
 
   async refreshStock(): Promise<void> {
+    if (!this.isBrowser) return;
+    await this.supabase.whenReady();
     const currentItems = this._items();
     const merchItems = currentItems.filter((i) => i.type === 'merchandise');
     if (merchItems.length === 0) return;
@@ -240,6 +242,8 @@ export class CartService {
   }
 
   private async syncWithSupabase(): Promise<void> {
+    if (!this.isBrowser) return;
+    await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('cart_items')
       .select('*');
@@ -392,6 +396,8 @@ export class CartService {
     selectedSize?: string,
     selectedColor?: string,
   ): Promise<void> {
+    if (!this.isBrowser) return;
+    await this.supabase.whenReady();
     const userId = this.supabase.authUserId();
     if (!userId) return;
 
@@ -434,6 +440,8 @@ export class CartService {
     selectedSize?: string,
     selectedColor?: string,
   ): Promise<void> {
+    if (!this.isBrowser) return;
+    await this.supabase.whenReady();
     const userId = this.supabase.authUserId();
     if (!userId) return;
 
@@ -461,6 +469,8 @@ export class CartService {
   }
 
   private async clearSupabase(): Promise<void> {
+    if (!this.isBrowser) return;
+    await this.supabase.whenReady();
     const userId = this.supabase.authUserId();
     if (!userId) return;
 

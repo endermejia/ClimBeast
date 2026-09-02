@@ -18,6 +18,7 @@ import {
   TuiIcon,
   TuiInput,
   TuiLink,
+  TuiLoader,
   TuiScrollbar,
   TuiTextfield,
   TuiTitle,
@@ -72,6 +73,7 @@ import { matchesQuery } from '../../utils';
     TuiIcon,
     TuiInput,
     TuiLink,
+    TuiLoader,
     TuiScrollbar,
     TuiTable,
     TuiTextfield,
@@ -323,8 +325,8 @@ import { matchesQuery } from '../../utils';
 
         <!-- Logs List -->
         @if (errorResource.isLoading()) {
-          <div class="p-8 text-center text-(--tui-text-secondary)">
-            {{ 'loading' | translate }}...
+          <div class="m-auto py-12 flex justify-center">
+            <tui-loader size="xxl" />
           </div>
         } @else if (!filteredLogs().length) {
           <app-empty-state
