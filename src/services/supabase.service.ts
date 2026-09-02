@@ -88,7 +88,22 @@ export class SupabaseService {
             const controller = new AbortController();
             const isOffline =
               typeof navigator !== 'undefined' && !navigator.onLine;
-            const timeoutMs = isOffline ? 3000 : 8000;
+            const urlStr = reqUrl.toString();
+            const isStorageOrUpload =
+              urlStr.includes('/storage/v1') ||
+              urlStr.includes('/functions/v1') ||
+              options?.body instanceof Blob ||
+              options?.body instanceof FormData ||
+              options?.body instanceof ArrayBuffer ||
+              options?.body instanceof Uint8Array;
+
+            // Give uploads up to 2 minutes, standard queries 15 seconds, offline 3 seconds
+            const timeoutMs = isOffline
+              ? 3000
+              : isStorageOrUpload
+                ? 120000
+                : 15000;
+
             const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
             if (options?.signal) {
               options.signal.addEventListener('abort', () =>

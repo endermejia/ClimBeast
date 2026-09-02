@@ -760,12 +760,12 @@
     "with_check_expression": null
   },
   {
-    "policy_name": "Center admins can manage indoor route equippers",
+    "policy_name": "Center admins and routesetters can manage indoor route equippers",
     "schema_name": "public",
     "table_name": "indoor_route_equippers",
     "for_command": "*",
-    "using_expression": "(EXISTS ( SELECT 1\n   FROM indoor_routes r\n  WHERE ((r.id = indoor_route_equippers.route_id) AND (is_indoor_center_admin(r.center_id) OR (EXISTS ( SELECT 1\n           FROM user_profiles\n          WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true))))))))",
-    "with_check_expression": null
+    "using_expression": "(EXISTS ( SELECT 1\n   FROM indoor_routes r\n  WHERE ((r.id = indoor_route_equippers.route_id) AND (is_indoor_center_admin(r.center_id) OR is_indoor_center_routesetter(r.center_id) OR (EXISTS ( SELECT 1\n           FROM user_profiles\n          WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true))))))))",
+    "with_check_expression": "(EXISTS ( SELECT 1\n   FROM indoor_routes r\n  WHERE ((r.id = indoor_route_equippers.route_id) AND (is_indoor_center_admin(r.center_id) OR is_indoor_center_routesetter(r.center_id) OR (EXISTS ( SELECT 1\n           FROM user_profiles\n          WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true))))))))"
   },
   {
     "policy_name": "Routes are editable by center admins or routesetters",

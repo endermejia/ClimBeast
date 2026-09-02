@@ -358,7 +358,14 @@ export interface TopoPathEditorConfig {
                 @let routeId = entry[0];
                 @let pathData = entry[1];
                 @let isSelected = selectedRoute()?.route_id == routeId;
-                @let style = routeStyleMap()[routeId];
+                @let style =
+                  routeStyleMap()[routeId] || {
+                    stroke: '#22c55e',
+                    opacity: 0.8,
+                    isDashed: true,
+                  };
+                @let strokeWidthFactor =
+                  routeStrokeWidthMap()[routeId] ?? lineWidth() / 1000;
                 <g
                   class="path-group"
                   (click)="
@@ -371,7 +378,7 @@ export interface TopoPathEditorConfig {
                   "
                 >
                   @if (pathData.type === 'circle') {
-                    @let strokeW = routeStrokeWidthMap()[routeId] * width();
+                    @let strokeW = strokeWidthFactor * width();
                     @let circleR = strokeW * 3.5;
                     @let isTraverse = pathData.isTraverse;
                     @for (pt of pathData.points; track $index) {
@@ -481,9 +488,7 @@ export interface TopoPathEditorConfig {
                       [attr.points]="pointsStringMap()[routeId]"
                       fill="none"
                       stroke="transparent"
-                      [attr.stroke-width]="
-                        routeStrokeWidthMap()[routeId] * width() * 5
-                      "
+                      [attr.stroke-width]="strokeWidthFactor * width() * 5"
                       stroke-linejoin="round"
                       stroke-linecap="round"
                     />
@@ -494,7 +499,7 @@ export interface TopoPathEditorConfig {
                       stroke="white"
                       [style.opacity]="style.isDashed ? 1 : 0.7"
                       [attr.stroke-width]="
-                        routeStrokeWidthMap()[routeId] * width() +
+                        strokeWidthFactor * width() +
                         (style.isDashed ? 2.5 : 1.5)
                       "
                       [attr.stroke-dasharray]="
@@ -512,9 +517,7 @@ export interface TopoPathEditorConfig {
                       [attr.stroke]="style.stroke"
                       [style.color]="style.stroke"
                       [style.opacity]="style.opacity"
-                      [attr.stroke-width]="
-                        routeStrokeWidthMap()[routeId] * width()
-                      "
+                      [attr.stroke-width]="strokeWidthFactor * width()"
                       [attr.stroke-dasharray]="
                         style.isDashed
                           ? width() * 0.01 + ' ' + width() * 0.01
@@ -529,8 +532,7 @@ export interface TopoPathEditorConfig {
                         @let ptColor =
                           pt.state | topoPointStateColor: style.stroke;
                         @let badge = pt.state | topoPointStateBadge;
-                        @let ptR =
-                          routeStrokeWidthMap()[routeId] * width() * 1.8;
+                        @let ptR = strokeWidthFactor * width() * 1.8;
                         <circle
                           [attr.cx]="pt.x * width()"
                           [attr.cy]="pt.y * height()"
@@ -560,9 +562,7 @@ export interface TopoPathEditorConfig {
                         [attr.cx]="last.x * width()"
                         [attr.cy]="last.y * height()"
                         [attr.r]="
-                          routeStrokeWidthMap()[routeId] *
-                          width() *
-                          (isTop ? 1.6 : 1)
+                          strokeWidthFactor * width() * (isTop ? 1.6 : 1)
                         "
                         [attr.fill]="isTop ? '#EF4444' : 'white'"
                         [style.opacity]="style.opacity"
@@ -574,14 +574,12 @@ export interface TopoPathEditorConfig {
                           [attr.x]="last.x * width()"
                           [attr.y]="
                             last.y * height() +
-                            routeStrokeWidthMap()[routeId] * width() * 0.55
+                            strokeWidthFactor * width() * 0.55
                           "
                           text-anchor="middle"
                           fill="white"
                           font-weight="bold"
-                          [attr.font-size]="
-                            routeStrokeWidthMap()[routeId] * width() * 1.4
-                          "
+                          [attr.font-size]="strokeWidthFactor * width() * 1.4"
                           style="pointer-events: none; user-select: none; text-shadow: 0 0 2px rgba(0,0,0,0.9)"
                         >
                           T
@@ -594,7 +592,7 @@ export interface TopoPathEditorConfig {
                 <!-- Control points (selected only) -->
                 @if (isSelected) {
                   @for (pt of pathData.points; track $index) {
-                    @let strokeW = routeStrokeWidthMap()[routeId];
+                    @let strokeW = strokeWidthFactor;
                     @let ptColor = pt.state | topoPointStateColor: style.stroke;
                     @let badge = pt.state | topoPointStateBadge;
                     @let isTraverse = pathData.isTraverse;
@@ -1230,26 +1228,31 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   viewBox = computed(() => `0 0 ${this.width()} ${this.height()}`);
 
   protected readonly routeStrokeWidthMap = computed(() => {
+    this.pathsVersion();
     const selected = this.selectedRoute();
     const lw = this.lineWidth();
-    const map: Record<string, number> = {};
+    const map: Record<string, number | undefined> = {};
     for (const [key] of this.pathsMap) {
       const isSelected = String(selected?.route_id) === String(key);
-      map[key] = getRouteStrokeWidth(isSelected, false, lw, 'editor');
+      map[String(key)] = getRouteStrokeWidth(isSelected, false, lw, 'editor');
     }
     return map;
   });
 
   protected readonly routeStyleMap = computed(() => {
+    this.pathsVersion();
     const selected = this.selectedRoute();
-    const map: Record<string, ReturnType<typeof getRouteStyleProperties>> = {};
+    const map: Record<
+      string,
+      ReturnType<typeof getRouteStyleProperties> | undefined
+    > = {};
     for (const [key, entry] of this.pathsMap) {
       const isSelected = String(selected?.route_id) === String(key);
-      map[key] = getRouteStyleProperties(
+      map[String(key)] = getRouteStyleProperties(
         isSelected,
         false,
-        entry._ref.route.grade,
-        entry._ref.route.color || entry.color || entry._ref.path?.color,
+        entry._ref?.route?.grade,
+        entry._ref?.route?.color || entry.color || entry._ref?.path?.color,
       );
     }
     return map;
