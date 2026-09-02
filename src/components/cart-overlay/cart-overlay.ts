@@ -178,6 +178,30 @@ import type { CartProduct } from '../../models';
                           {{ item.selectedColor }}
                         </span>
                       }
+                      @if (
+                        item.type === 'merchandise' &&
+                        item.maxStock !== undefined &&
+                        item.maxStock <= 0
+                      ) {
+                        <span
+                          class="text-[9px] font-black bg-(--tui-status-negative-background) text-(--tui-status-negative) px-2 py-0.5 rounded-full uppercase tracking-tighter"
+                        >
+                          {{ 'merchandising.cart.outOfStock' | translate }}
+                        </span>
+                      } @else if (
+                        item.type === 'merchandise' &&
+                        item.maxStock !== undefined &&
+                        item.quantity > item.maxStock
+                      ) {
+                        <span
+                          class="text-[9px] font-black bg-(--tui-status-warning-background) text-(--tui-status-warning) px-2 py-0.5 rounded-full uppercase tracking-tighter"
+                        >
+                          {{
+                            'merchandising.cart.insufficientStock' | translate
+                          }}
+                          (max: {{ item.maxStock }})
+                        </span>
+                      }
                     </div>
                     <div class="flex justify-between items-center mt-auto pt-4">
                       <div class="flex items-center gap-1">
@@ -252,7 +276,23 @@ import type { CartProduct } from '../../models';
                 totalPrice() | currency: 'EUR'
               }}</span>
             </div>
-            <button tuiButton class="w-full" size="l" (click)="checkout.emit()">
+            @if (hasOutOfStockItems()) {
+              <div
+                class="p-3 rounded-2xl bg-(--tui-status-negative-background) text-(--tui-status-negative) text-xs font-bold flex items-center gap-2"
+              >
+                <tui-icon icon="@tui.alert-triangle" class="shrink-0" />
+                <span>{{
+                  'merchandising.cart.outOfStockNotice' | translate
+                }}</span>
+              </div>
+            }
+            <button
+              tuiButton
+              class="w-full"
+              size="l"
+              [disabled]="hasOutOfStockItems()"
+              (click)="checkout.emit()"
+            >
               {{ 'merchandising.cart.checkout' | translate }}
             </button>
           }
@@ -287,6 +327,7 @@ export class CartOverlayComponent {
   protected readonly items = this.cartService.items;
   protected readonly totalItems = this.cartService.totalItems;
   protected readonly totalPrice = this.cartService.totalPrice;
+  protected readonly hasOutOfStockItems = this.cartService.hasOutOfStockItems;
   protected readonly openingProductId = signal<string | null>(null);
 
   async openProduct(item: CartProduct): Promise<void> {

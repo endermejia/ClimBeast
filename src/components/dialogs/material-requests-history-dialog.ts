@@ -174,19 +174,6 @@ export interface MaterialRequestsHistoryDialogData {
           }
         </div>
       </tui-scrollbar>
-
-      <!-- Close button -->
-      <div class="flex justify-end pt-2 border-t">
-        <button
-          tuiButton
-          appearance="secondary"
-          size="m"
-          type="button"
-          (click)="context.completeWith()"
-        >
-          {{ 'close' | translate }}
-        </button>
-      </div>
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

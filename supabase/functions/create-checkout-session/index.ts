@@ -75,10 +75,54 @@ serve(async (req: Request) => {
       if (item.type === 'merchandise') {
         const { data } = await supabaseAdmin
           .from('merchandise_items')
-          .select('name, price, image_urls')
+          .select('name, price, image_urls, active')
           .eq('id', item.id)
           .single();
         if (!data) throw new Error(`Merchandise item not found: ${item.id}`);
+        if (data.active === false) {
+          throw new Error(`El producto "${data.name}" ya no está disponible.`);
+        }
+
+        const requestedQty = item.quantity || 1;
+
+        if (item.selectedSize) {
+          const { data: stockData } = await supabaseAdmin
+            .from('merchandise_stock')
+            .select('stock')
+            .eq('item_id', item.id)
+            .eq('size', item.selectedSize)
+            .maybeSingle();
+
+          const availableStock = stockData?.stock ?? 0;
+          if (availableStock < requestedQty) {
+            if (availableStock <= 0) {
+              throw new Error(
+                `El producto "${data.name}" (Talla: ${item.selectedSize}) está agotado.`,
+              );
+            } else {
+              throw new Error(
+                `Solo quedan ${availableStock} unidades de "${data.name}" (Talla: ${item.selectedSize}).`,
+              );
+            }
+          }
+        } else {
+          const { data: stockRecords } = await supabaseAdmin
+            .from('merchandise_stock')
+            .select('stock')
+            .eq('item_id', item.id);
+
+          if (stockRecords && stockRecords.length > 0) {
+            const totalStock = stockRecords.reduce(
+              (acc, s) => acc + (s.stock || 0),
+              0,
+            );
+            if (totalStock < requestedQty) {
+              throw new Error(
+                `No hay suficiente stock disponible para "${data.name}".`,
+              );
+            }
+          }
+        }
 
         const urls = data.image_urls as string[] | null;
         enrichedItems.push({

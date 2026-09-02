@@ -24,6 +24,24 @@ export class CartService {
     this._items().reduce((acc, item) => acc + item.price * item.quantity, 0),
   );
 
+  readonly hasOutOfStockItems = computed(() =>
+    this._items().some(
+      (item) =>
+        item.type === 'merchandise' &&
+        item.maxStock !== undefined &&
+        (item.maxStock <= 0 || item.quantity > item.maxStock),
+    ),
+  );
+
+  readonly outOfStockItems = computed(() =>
+    this._items().filter(
+      (item) =>
+        item.type === 'merchandise' &&
+        item.maxStock !== undefined &&
+        (item.maxStock <= 0 || item.quantity > item.maxStock),
+    ),
+  );
+
   private readonly CART_STORAGE_KEY = 'climbeast_cart';
   private _syncedUserId: string | null = null;
 
@@ -42,6 +60,13 @@ export class CartService {
       }
     });
 
+    // Refresh stock when cart overlay is opened
+    effect(() => {
+      if (this.showCart() && this.isBrowser) {
+        void this.refreshStock();
+      }
+    });
+
     // Sync with Supabase only once per unique user session (not on every auth event)
     effect(() => {
       const userId = this.supabase.authUserId();
@@ -56,6 +81,9 @@ export class CartService {
   }
 
   addItem(product: Omit<CartProduct, 'quantity'>): void {
+    if (product.maxStock !== undefined && product.maxStock <= 0) {
+      return;
+    }
     const current = this._items();
     const existing = current.find((i) => this.itemsMatch(i, product));
 
@@ -143,11 +171,68 @@ export class CartService {
     }
   }
 
+  async refreshStock(): Promise<void> {
+    const currentItems = this._items();
+    const merchItems = currentItems.filter((i) => i.type === 'merchandise');
+    if (merchItems.length === 0) return;
+
+    const merchandiseIds = [...new Set(merchItems.map((i) => i.id))];
+    const { data, error } = await this.supabase.client
+      .from('merchandise_items')
+      .select(
+        'id, name, price, image_urls, active, stock:merchandise_stock(size, stock)',
+      )
+      .in('id', merchandiseIds);
+
+    if (error || !data) return;
+
+    const merchandiseMap = new Map(
+      (
+        data as {
+          id: string;
+          name: string;
+          price: number;
+          image_urls: string[] | null;
+          active: boolean | null;
+          stock: { size: string; stock: number }[] | null;
+        }[]
+      ).map((m) => [m.id, m]),
+    );
+
+    this._items.update((items) =>
+      items.map((i) => {
+        if (i.type !== 'merchandise') return i;
+        const item = merchandiseMap.get(i.id);
+        if (!item || item.active === false) {
+          return { ...i, maxStock: 0 };
+        }
+        let maxStock: number | undefined = undefined;
+        const stockList = item.stock;
+        if (stockList && stockList.length > 0) {
+          if (i.selectedSize) {
+            const entry = stockList.find((s) => s.size === i.selectedSize);
+            maxStock = entry ? (entry.stock ?? 0) : 0;
+          } else {
+            maxStock = stockList.reduce((acc, s) => acc + (s.stock || 0), 0);
+          }
+        }
+        return {
+          ...i,
+          name: item.name ?? i.name,
+          price: item.price ?? i.price,
+          image_urls: item.image_urls ?? i.image_urls,
+          maxStock,
+        };
+      }),
+    );
+  }
+
   private loadCart(): void {
     const saved = localStorage.getItem(this.CART_STORAGE_KEY);
     if (saved) {
       try {
         this._items.set(JSON.parse(saved));
+        void this.refreshStock();
       } catch (e) {
         console.error('Error loading cart from localStorage', e);
       }
@@ -188,7 +273,9 @@ export class CartService {
         merchandiseIds.length > 0
           ? this.supabase.client
               .from('merchandise_items')
-              .select('id, name, price, image_urls')
+              .select(
+                'id, name, price, image_urls, active, stock:merchandise_stock(size, stock)',
+              )
               .in('id', merchandiseIds)
           : Promise.resolve({
               data: [] as {
@@ -196,6 +283,8 @@ export class CartService {
                 name: string;
                 price: number;
                 image_urls: string[] | null;
+                active: boolean | null;
+                stock: { size: string; stock: number }[] | null;
               }[],
             }),
         areaIds.length > 0
@@ -208,7 +297,16 @@ export class CartService {
 
       // Create lookup maps
       const merchandiseMap = new Map(
-        (merchandiseRes.data || []).map((m) => [m.id, m]),
+        (
+          (merchandiseRes.data || []) as {
+            id: string;
+            name: string;
+            price: number;
+            image_urls: string[] | null;
+            active: boolean | null;
+            stock: { size: string; stock: number }[] | null;
+          }[]
+        ).map((m) => [m.id, m]),
       );
       const areasMap = new Map((areasRes.data || []).map((a) => [a.id, a]));
 
@@ -218,6 +316,25 @@ export class CartService {
         if (row.item_type === 'merchandise') {
           const item = merchandiseMap.get(row.item_id);
           if (item) {
+            let maxStock: number | undefined = undefined;
+            if (item.active === false) {
+              maxStock = 0;
+            } else {
+              const stockList = item.stock;
+              if (stockList && stockList.length > 0) {
+                if (row.selected_size) {
+                  const entry = stockList.find(
+                    (s) => s.size === row.selected_size,
+                  );
+                  maxStock = entry ? (entry.stock ?? 0) : 0;
+                } else {
+                  maxStock = stockList.reduce(
+                    (acc, s) => acc + (s.stock || 0),
+                    0,
+                  );
+                }
+              }
+            }
             itemDetail = {
               id: item.id,
               name: item.name,
@@ -227,6 +344,7 @@ export class CartService {
               quantity: row.quantity ?? 1,
               selectedSize: row.selected_size ?? undefined,
               selectedColor: row.selected_color ?? undefined,
+              maxStock,
             };
           }
         } else if (row.item_type === 'area') {

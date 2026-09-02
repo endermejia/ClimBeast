@@ -177,12 +177,20 @@ import { IS_BROWSER } from '../../app/is-browser';
                 </div>
               }
 
+              @if (hasOutOfStockItems()) {
+                <div tuiNotification appearance="negative" class="mt-4">
+                  {{ 'merchandising.checkout.outOfStockError' | translate }}
+                </div>
+              }
+
               <button
                 tuiButton
                 type="submit"
                 class="w-full mt-6"
                 size="l"
-                [disabled]="shippingForm.invalid || loading()"
+                [disabled]="
+                  shippingForm.invalid || loading() || hasOutOfStockItems()
+                "
               >
                 {{ 'merchandising.checkout.goToPayment' | translate }}
               </button>
@@ -206,9 +214,35 @@ import { IS_BROWSER } from '../../app/is-browser';
                         class="w-6 h-6 flex items-center justify-center bg-(--tui-background-neutral-2) rounded text-[10px] font-bold"
                         >{{ item.quantity }}x</span
                       >
-                      <span class="truncate text-(--tui-text-secondary)">{{
-                        item.name
-                      }}</span>
+                      <div class="flex flex-col min-w-0">
+                        <span class="truncate text-(--tui-text-secondary)">{{
+                          item.name
+                        }}</span>
+                        @if (
+                          item.type === 'merchandise' &&
+                          item.maxStock !== undefined &&
+                          item.maxStock <= 0
+                        ) {
+                          <span
+                            class="text-[9px] font-bold text-(--tui-status-negative)"
+                          >
+                            {{ 'merchandising.cart.outOfStock' | translate }}
+                          </span>
+                        } @else if (
+                          item.type === 'merchandise' &&
+                          item.maxStock !== undefined &&
+                          item.quantity > item.maxStock
+                        ) {
+                          <span
+                            class="text-[9px] font-bold text-(--tui-status-warning)"
+                          >
+                            {{
+                              'merchandising.cart.insufficientStock' | translate
+                            }}
+                            (max: {{ item.maxStock }})
+                          </span>
+                        }
+                      </div>
                     </div>
                     <span class="font-medium whitespace-nowrap">{{
                       item.price * item.quantity | currency: 'EUR'
@@ -272,6 +306,7 @@ export class CheckoutComponent {
   protected readonly total = this.cart.totalPrice;
   protected readonly loading = this.checkoutService.loading;
   protected readonly error = this.checkoutService.error;
+  protected readonly hasOutOfStockItems = this.cart.hasOutOfStockItems;
 
   protected readonly countries = ['España'];
 
@@ -290,6 +325,8 @@ export class CheckoutComponent {
 
   constructor() {
     if (this.isBrowser) {
+      void this.cart.refreshStock();
+
       const savedInfo = localStorage.getItem('checkout_shipping_info');
       if (savedInfo) {
         try {

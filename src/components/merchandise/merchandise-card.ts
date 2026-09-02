@@ -37,7 +37,7 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
   template: `
     <button
       tuiCardLarge
-      appearance="floating"
+      appearance="flat"
       class="w-full h-full flex flex-col gap-4 text-start rounded-[2.5rem]! p-4! overflow-hidden focus:outline-none focus-visible:ring-4 focus-visible:ring-accent group relative border border-(--tui-border-normal)"
       type="button"
       [attr.aria-label]="item().name"

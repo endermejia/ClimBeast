@@ -30,6 +30,15 @@ export class CheckoutService {
     }
 
     try {
+      await this.cart.refreshStock();
+      if (this.cart.hasOutOfStockItems()) {
+        this.error.set(
+          'Hay artículos en tu carrito sin stock suficiente. Por favor, revisa tu pedido.',
+        );
+        this.loading.set(false);
+        return;
+      }
+
       // Invoke 'create-checkout-session' Edge Function
       const { data, error } = await this.supabase.client.functions.invoke(
         'create-checkout-session',
@@ -55,7 +64,33 @@ export class CheckoutService {
         },
       );
 
-      if (error) throw error;
+      if (error) {
+        if (
+          typeof error === 'object' &&
+          error !== null &&
+          'context' in error &&
+          typeof (error as { context?: { json?: () => Promise<unknown> } })
+            .context?.json === 'function'
+        ) {
+          try {
+            const body = (await (
+              error as { context: { json: () => Promise<unknown> } }
+            ).context.json()) as { error?: string } | null;
+            if (body?.error) {
+              throw new Error(body.error);
+            }
+          } catch (jsonErr: unknown) {
+            if (
+              jsonErr instanceof Error &&
+              jsonErr.message &&
+              jsonErr.message !== error.message
+            ) {
+              throw jsonErr;
+            }
+          }
+        }
+        throw error;
+      }
 
       if (data?.url) {
         // Redirect to Stripe Checkout

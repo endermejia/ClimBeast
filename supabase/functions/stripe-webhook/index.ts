@@ -164,6 +164,32 @@ serve(async (req) => {
           .insert(orderItems);
 
         if (itemsError) throw itemsError;
+
+        // Decrement stock for merchandise items
+        for (const item of orderItems) {
+          if (item.item_type === 'merchandise' && item.item_id) {
+            const qty = item.quantity || 1;
+            if (item.selected_size) {
+              const { data: stockRow } = await supabaseAdmin
+                .from('merchandise_stock')
+                .select('id, stock')
+                .eq('item_id', item.item_id)
+                .eq('size', item.selected_size)
+                .maybeSingle();
+
+              if (stockRow) {
+                const updatedStock = Math.max(0, (stockRow.stock || 0) - qty);
+                await supabaseAdmin
+                  .from('merchandise_stock')
+                  .update({
+                    stock: updatedStock,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', stockRow.id);
+              }
+            }
+          }
+        }
       }
     }
 

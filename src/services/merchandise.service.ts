@@ -90,13 +90,31 @@ export class MerchandiseService {
     this.loading.set(true);
 
     try {
+      const { stock, ...merchData } = item;
       const { data, error } = await this.supabase.client
         .from('merchandise_items')
-        .upsert(item as MerchandiseItem)
+        .upsert(merchData as MerchandiseItem)
         .select()
         .single();
 
       if (error) throw error;
+
+      if (stock && Array.isArray(stock) && data?.id) {
+        for (const s of stock) {
+          if (s.size) {
+            await this.supabase.client.from('merchandise_stock').upsert(
+              {
+                item_id: data.id,
+                size: s.size,
+                stock: s.stock ?? 0,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: 'item_id, size' },
+            );
+          }
+        }
+      }
+
       return data as MerchandiseItem;
     } catch (e) {
       console.error('[MerchandiseService] upsertMerchandiseItem error', e);
