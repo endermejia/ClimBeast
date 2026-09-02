@@ -37,7 +37,6 @@ import {
   TuiTitle,
 } from '@taiga-ui/core';
 import {
-  TuiAvatar,
   TuiBadgeNotification,
   TuiBadgedContentComponent,
   TuiBadgedContentDirective,
@@ -72,7 +71,6 @@ import {
     RouterLink,
     TranslatePipe,
     TuiAppearance,
-    TuiAvatar,
     TuiBadgedContentComponent,
     TuiBadgedContentDirective,
     TuiBadgeNotification,
@@ -112,13 +110,11 @@ import {
                   </tui-badge-notification>
                 </ng-container>
               }
-              <span
-                tuiAvatar="@tui.shopping-bag"
-                tuiThumbnail
-                size="l"
-                class="self-center"
-                [attr.aria-label]="'admin.orders.title' | translate"
-              ></span>
+              <div
+                class="w-11 h-11 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0"
+              >
+                <tui-icon icon="@tui.shopping-bag" />
+              </div>
             </tui-badged-content>
 
             {{ 'admin.orders.title' | translate }}

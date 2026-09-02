@@ -57,17 +57,7 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
       <div class="flex flex-col gap-8">
         <!-- Selection Section -->
         <div class="flex flex-col gap-6">
-          <div class="flex flex-col gap-1.5">
-            <div class="flex justify-between items-baseline">
-              <h2 class="text-3xl font-black tracking-tight">
-                {{ item.name }}
-              </h2>
-              <div
-                class="text-2xl font-black text-(--tui-text-accent) tabular-nums"
-              >
-                {{ item.price | number: '1.2-2' }}€
-              </div>
-            </div>
+          <div class="flex items-center justify-between gap-4">
             @if (item.category) {
               <span
                 class="text-xs font-bold uppercase tracking-[0.2em] text-(--tui-text-tertiary)"
@@ -78,6 +68,11 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
                 }}
               </span>
             }
+            <div
+              class="text-2xl font-black text-(--tui-text-accent) tabular-nums ml-auto"
+            >
+              {{ item.price | number: '1.2-2' }}€
+            </div>
           </div>
 
           @if (item.description) {

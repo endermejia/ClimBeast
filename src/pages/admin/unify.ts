@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiIcon, TuiTitle } from '@taiga-ui/core';
-import { TuiAvatar, TuiTabs } from '@taiga-ui/kit';
+import { TuiTabs } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
@@ -21,7 +21,6 @@ import { SuggestedUnifiedRoutesComponent } from '../../components/admin/suggeste
     SuggestedUnifiedCragsComponent,
     SuggestedUnifiedRoutesComponent,
     TranslatePipe,
-    TuiAvatar,
     TuiHeader,
     TuiIcon,
     TuiTabs,
@@ -36,13 +35,11 @@ import { SuggestedUnifiedRoutesComponent } from '../../components/admin/suggeste
             class="no-underline text-inherit flex items-center gap-2"
           >
             <tui-icon icon="@tui.arrow-left" />
-            <span
-              tuiAvatar="@tui.copy"
-              tuiThumbnail
-              size="l"
-              class="self-center"
-              [attr.aria-label]="'admin.unifyTitle' | translate"
-            ></span>
+            <div
+              class="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0"
+            >
+              <tui-icon icon="@tui.copy" />
+            </div>
             {{ 'admin.unifyTitle' | translate }}
           </a>
         </h1>

@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
 import {
   TuiAppearance,
@@ -16,27 +17,35 @@ import {
   TuiLabel,
   TuiTextfield,
 } from '@taiga-ui/core';
-import { TuiBadge, TuiSkeleton } from '@taiga-ui/kit';
+import { TuiAvatar, TuiBadge, TuiSkeleton } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AreaMaterialRequestsService } from '../../services/area-material-requests.service';
+
+import { EmptyStateComponent } from '../../components/ui/empty-state';
 
 import type {
   AreaMaterialRequestWithDetails,
   MaterialRequestStatus,
 } from '../../models';
 
+import { AvatarUrlPipe } from '../../pipes';
+
 @Component({
   selector: 'app-admin-material-requests',
   standalone: true,
   imports: [
+    AvatarUrlPipe,
     CommonModule,
     DatePipe,
     DecimalPipe,
+    EmptyStateComponent,
     FormsModule,
+    RouterLink,
     TranslatePipe,
     TuiAppearance,
+    TuiAvatar,
     TuiBadge,
     TuiButton,
     TuiIcon,
@@ -50,21 +59,20 @@ import type {
     >
       <!-- Header -->
       <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <div
-            class="w-12 h-12 rounded-2xl bg-(--tui-background-accent-1) text-(--tui-background-base) flex items-center justify-center shrink-0 shadow-lg"
+        <h1 class="text-2xl sm:text-3xl font-black tracking-tight m-0">
+          <a
+            routerLink="/admin"
+            class="no-underline text-inherit flex items-center gap-2"
           >
-            <tui-icon icon="@tui.package" class="w-6 h-6" />
-          </div>
-          <div>
-            <h1 class="text-2xl sm:text-3xl font-black tracking-tight m-0">
-              {{ 'admin.materialRequests.title' | translate }}
-            </h1>
-            <p class="text-xs sm:text-sm text-(--tui-text-secondary) m-0">
-              {{ 'admin.materialRequests.subtitle' | translate }}
-            </p>
-          </div>
-        </div>
+            <tui-icon icon="@tui.arrow-left" />
+            <div
+              class="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0"
+            >
+              <tui-icon icon="@tui.package" />
+            </div>
+            {{ 'admin.materialRequests.title' | translate }}
+          </a>
+        </h1>
       </div>
 
       <!-- Filter chips -->
@@ -209,18 +217,13 @@ import type {
                   </span>
 
                   <div class="flex items-center gap-2">
-                    @if (req.user.avatar) {
-                      <img
-                        [src]="req.user.avatar"
-                        [alt]="req.user.name || 'User'"
-                        class="w-6 h-6 rounded-full object-cover"
-                      />
-                    } @else {
-                      <tui-icon
-                        icon="@tui.user"
-                        class="w-5 h-5 text-(--tui-text-secondary)"
-                      />
-                    }
+                    <span tuiAvatar size="s">
+                      @if (req.user.avatar; as avatar) {
+                        <img [src]="avatar | avatarUrl" alt="avatar" />
+                      } @else {
+                        <tui-icon icon="@tui.user" />
+                      }
+                    </span>
                     <span class="font-bold">{{
                       req.user.name || ('anonymous' | translate)
                     }}</span>
@@ -306,9 +309,10 @@ import type {
               </div>
             </div>
           } @empty {
-            <div class="py-16 text-center text-sm text-(--tui-text-secondary)">
-              {{ 'admin.materialRequests.empty' | translate }}
-            </div>
+            <app-empty-state
+              icon="@tui.package-open"
+              message="admin.materialRequests.empty"
+            />
           }
         }
       </div>

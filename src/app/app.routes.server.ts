@@ -85,6 +85,10 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Prerender,
   },
   {
+    path: 'admin/equipper-requests',
+    renderMode: RenderMode.Prerender,
+  },
+  {
     path: 'admin/parkings',
     renderMode: RenderMode.Prerender,
   },
@@ -94,6 +98,18 @@ export const serverRoutes: ServerRoute[] = [
   },
   {
     path: 'admin/orders',
+    renderMode: RenderMode.Prerender,
+  },
+  {
+    path: 'admin/material-catalog',
+    renderMode: RenderMode.Prerender,
+  },
+  {
+    path: 'admin/material-requests',
+    renderMode: RenderMode.Prerender,
+  },
+  {
+    path: 'admin/error-logs',
     renderMode: RenderMode.Prerender,
   },
   // INDOOR

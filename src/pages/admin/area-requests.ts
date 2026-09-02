@@ -80,13 +80,11 @@ import { IS_BROWSER } from '../../app/is-browser';
                   {{ requestsCount }}
                 </tui-badge-notification>
               }
-              <span
-                tuiAvatar="@tui.shield"
-                tuiThumbnail
-                size="l"
-                class="self-center"
-                [attr.aria-label]="'adminRequests.manageTitle' | translate"
-              ></span>
+              <div
+                class="w-11 h-11 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0"
+              >
+                <tui-icon icon="@tui.shield" />
+              </div>
             </tui-badged-content>
             {{ 'adminRequests.manageTitle' | translate }}
           </a>

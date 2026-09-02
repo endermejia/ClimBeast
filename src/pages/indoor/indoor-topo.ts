@@ -180,8 +180,8 @@ export class IndoorTopoComponent extends TopoPageBase {
   });
 
   protected readonly canEdit = computed(() => {
-    const centerId = this.topo()?.center_id ?? '';
-    return !!this.authState.indoorAdminPermissions()[centerId];
+    const centerId = this.topo()?.center_id;
+    return this.authState.canEditIndoorInCenter(centerId);
   });
 
   protected readonly columns = computed(() => {
@@ -189,9 +189,7 @@ export class IndoorTopoComponent extends TopoPageBase {
     const base = isMobile
       ? ['index', 'grade', 'name']
       : ['index', 'grade', 'name', 'actions'];
-    const t = this.topo();
-    const centerId = t?.center_id ?? '';
-    if (!isMobile && this.authState.indoorAdminPermissions()[centerId]) {
+    if (!isMobile && this.canEdit()) {
       base.push('admin_actions');
     }
     return base;

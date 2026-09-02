@@ -301,4 +301,38 @@ describe('AuthStateService', () => {
       expect(service.checkRouteEditPermission(null)).toBe(false);
     });
   });
+
+  describe('canEditIndoorInCenter', () => {
+    it('returns false when centerId is null or empty', () => {
+      expect(service.canEditIndoorInCenter(null)).toBe(false);
+      expect(service.canEditIndoorInCenter('')).toBe(false);
+    });
+
+    it('returns true when user is routesetter of the center', () => {
+      mockSupabase.setRoutesetterIndoorCenters(['center-123']);
+      expect(service.canEditIndoorInCenter('center-123')).toBe(true);
+      expect(service.canEditIndoorInCenter('center-456')).toBe(false);
+    });
+
+    it('returns true when user is center admin in editing mode', () => {
+      service.editingMode.set(true);
+      mockSupabase.setAdminIndoorCenters(['center-123']);
+      expect(service.canEditIndoorInCenter('center-123')).toBe(true);
+    });
+
+    it('returns false when user is center admin but editing mode is off', () => {
+      service.editingMode.set(false);
+      mockSupabase.setAdminIndoorCenters(['center-123']);
+      expect(service.canEditIndoorInCenter('center-123')).toBe(false);
+    });
+
+    it('returns true when user is global admin in editing mode', () => {
+      service.editingMode.set(true);
+      mockSupabase.setUserProfile({
+        id: 'u1',
+        is_admin: true,
+      } as never);
+      expect(service.canEditIndoorInCenter('any-center')).toBe(true);
+    });
+  });
 });

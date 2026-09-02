@@ -1,5 +1,17 @@
 import { inject, Injectable, signal } from '@angular/core';
 
+import { TuiDialogService } from '@taiga-ui/core';
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
+
+import { TranslateService } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
+
+import { MaterialCatalogItemDialogComponent } from '../components/dialogs/material-catalog-item-dialog';
+import {
+  MaterialCatalogFormComponent,
+  MaterialCatalogFormData,
+} from '../components/forms/material-catalog-form';
+
 import {
   MaterialCatalogItem,
   MaterialCatalogItemInsert,
@@ -8,18 +20,25 @@ import {
 
 import { handleErrorToast } from '../utils';
 
+import { IS_BROWSER } from '../app/is-browser';
+
 import { SupabaseService } from './supabase.service';
+
 import { ToastService } from './toast.service';
 
 @Injectable({ providedIn: 'root' })
 export class MaterialCatalogService {
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly toast = inject(ToastService);
+  private readonly dialogs = inject(TuiDialogService);
+  private readonly translate = inject(TranslateService);
 
   readonly loading = signal(false);
   readonly catalog = signal<MaterialCatalogItem[]>([]);
 
   async loadCatalog(includeInactive = false): Promise<MaterialCatalogItem[]> {
+    if (!this.isBrowser) return [];
     this.loading.set(true);
     await this.supabase.whenReady();
     try {
@@ -33,14 +52,16 @@ export class MaterialCatalogService {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error('[MaterialCatalogService] loadCatalog error:', error);
+        return [];
+      }
 
       const items = (data as MaterialCatalogItem[]) ?? [];
       this.catalog.set(items);
       return items;
     } catch (e) {
       console.error('[MaterialCatalogService] loadCatalog error:', e);
-      handleErrorToast(e, this.toast);
       return [];
     } finally {
       this.loading.set(false);
@@ -48,6 +69,7 @@ export class MaterialCatalogService {
   }
 
   async getById(id: number): Promise<MaterialCatalogItem | null> {
+    if (!this.isBrowser) return null;
     await this.supabase.whenReady();
     try {
       const { data, error } = await this.supabase.client
@@ -64,6 +86,44 @@ export class MaterialCatalogService {
     }
   }
 
+  openMaterialItem(item: MaterialCatalogItem): void {
+    void firstValueFrom(
+      this.dialogs.open(
+        new PolymorpheusComponent(MaterialCatalogItemDialogComponent),
+        {
+          data: item,
+          label:
+            item.name || this.translate.instant('admin.materialCatalog.title'),
+          size: 'm',
+        },
+      ),
+      { defaultValue: undefined },
+    );
+  }
+
+  async openMaterialCatalogItemForm(
+    itemData?: MaterialCatalogItem,
+  ): Promise<boolean> {
+    const isEdit = !!itemData?.id;
+    const result = await firstValueFrom(
+      this.dialogs.open<boolean>(
+        new PolymorpheusComponent(MaterialCatalogFormComponent),
+        {
+          label: this.translate.instant(
+            isEdit
+              ? 'admin.materialCatalog.editItem'
+              : 'admin.materialCatalog.newItem',
+          ),
+          size: 'm',
+          data: { itemData } as MaterialCatalogFormData,
+          dismissible: false,
+        },
+      ),
+      { defaultValue: false },
+    );
+    return !!result;
+  }
+
   async createMaterialItem(
     item: MaterialCatalogItemInsert,
   ): Promise<MaterialCatalogItem | null> {
@@ -77,7 +137,7 @@ export class MaterialCatalogService {
         .single();
 
       if (error) throw error;
-      this.toast.success('materialCatalog.createdSuccess');
+      this.toast.success('admin.materialCatalog.createdSuccess');
       await this.loadCatalog(true);
       return data as MaterialCatalogItem;
     } catch (e) {
@@ -102,7 +162,7 @@ export class MaterialCatalogService {
         .eq('id', id);
 
       if (error) throw error;
-      this.toast.success('materialCatalog.updatedSuccess');
+      this.toast.success('admin.materialCatalog.updatedSuccess');
       await this.loadCatalog(true);
       return true;
     } catch (e) {
@@ -118,6 +178,31 @@ export class MaterialCatalogService {
     return this.updateMaterialItem(id, { active });
   }
 
+  async uploadMaterialImage(file: File): Promise<string | null> {
+    if (!this.isBrowser) return null;
+    await this.supabase.whenReady();
+
+    const sanitizedName = (file.name || 'image.webp')
+      .replace(/[^a-zA-Z0-9._-]/g, '_')
+      .toLowerCase();
+    const fileName = `${Date.now()}_${sanitizedName}`;
+    const filePath = `materials/${fileName}`;
+
+    const { data, error } = await this.supabase.client.storage
+      .from('merchandise')
+      .upload(filePath, file);
+
+    if (error) {
+      console.error(
+        '[MaterialCatalogService] uploadMaterialImage error:',
+        error,
+      );
+      return null;
+    }
+
+    return this.supabase.getPublicUrl('merchandise', data.path);
+  }
+
   async deleteMaterialItem(id: number): Promise<boolean> {
     this.loading.set(true);
     await this.supabase.whenReady();
@@ -128,7 +213,7 @@ export class MaterialCatalogService {
         .eq('id', id);
 
       if (error) throw error;
-      this.toast.success('materialCatalog.deletedSuccess');
+      this.toast.success('admin.materialCatalog.deletedSuccess');
       await this.loadCatalog(true);
       return true;
     } catch (e) {

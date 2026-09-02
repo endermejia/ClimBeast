@@ -14,11 +14,11 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { Router, RouterLink } from '@angular/router';
 
-import { TuiDialogService } from '@taiga-ui/core';
-import { TuiDropdown } from '@taiga-ui/core';
 import {
   TuiAppearance,
   TuiButton,
+  TuiDialogService,
+  TuiDropdown,
   TuiHint,
   TuiIcon,
   TuiInput,
@@ -32,8 +32,8 @@ import {
   TuiAvatar,
   TuiBadgedContent,
   TuiBadgeNotification,
-  TuiComboBox,
   TuiChevron,
+  TuiComboBox,
   type TuiConfirmData,
   TuiDataListWrapper,
 } from '@taiga-ui/kit';
@@ -267,15 +267,15 @@ import { IS_BROWSER } from '../../app/is-browser';
                 {{ 'errors.unexpected' | translate }}
               </div>
             }
-
-            <!-- Area Revenue Pot & Community Equipment Panel -->
-            <app-area-revenue-panel
-              [areaId]="area.id"
-              [areaName]="area.name"
-              [isPaywalled]="!isPublic()"
-              class="mt-6 mb-8 block"
-            />
           </div>
+
+          <!-- Area Revenue Pot & Community Equipment Panel -->
+          <app-area-revenue-panel
+            [areaId]="area.id"
+            [areaName]="area.name"
+            [isPaywalled]="!isPublic()"
+            class="mt-6 mb-8 block"
+          />
 
           @let admins = areaAdmins();
           @if (admins.length > 0 || canEditAsAdmin) {

@@ -34,7 +34,6 @@ import {
 } from '@taiga-ui/core';
 import {
   TUI_CONFIRM,
-  TuiAvatar,
   TuiBadgeNotification,
   TuiBadgedContentComponent,
   TuiBadgedContentDirective,
@@ -70,7 +69,6 @@ import { IS_BROWSER } from '../../app/is-browser';
     RouterLink,
     TranslatePipe,
     TuiAppearance,
-    TuiAvatar,
     TuiBadgedContentComponent,
     TuiBadgedContentDirective,
     TuiBadgeNotification,
@@ -104,13 +102,11 @@ import { IS_BROWSER } from '../../app/is-browser';
                   </tui-badge-notification>
                 </ng-container>
               }
-              <span
-                tuiAvatar="@tui.hammer"
-                tuiThumbnail
-                size="l"
-                class="self-center"
-                [attr.aria-label]="'admin.equippers.title' | translate"
-              ></span>
+              <div
+                class="w-11 h-11 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0"
+              >
+                <tui-icon icon="@tui.hammer" />
+              </div>
             </tui-badged-content>
 
             {{ 'admin.equippers.title' | translate }}

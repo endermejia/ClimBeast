@@ -27,6 +27,8 @@ import type {
   MaterialRequestStatus,
 } from '../../models';
 
+import { EmptyStateComponent } from '../ui/empty-state';
+
 export interface MaterialRequestsHistoryDialogData {
   areaId: number;
   areaName: string;
@@ -39,6 +41,7 @@ export interface MaterialRequestsHistoryDialogData {
     CommonModule,
     DatePipe,
     DecimalPipe,
+    EmptyStateComponent,
     TranslatePipe,
     TuiAppearance,
     TuiBadge,
@@ -48,28 +51,13 @@ export interface MaterialRequestsHistoryDialogData {
     TuiSkeleton,
   ],
   template: `
-    <div class="flex flex-col gap-6 p-1 max-h-[80vh]">
-      <!-- Header -->
-      <div class="flex items-center justify-between gap-4 border-b pb-4">
-        <div class="flex items-center gap-3">
-          <div
-            class="w-12 h-12 rounded-2xl bg-(--tui-background-accent-1) text-(--tui-background-base) flex items-center justify-center shrink-0 shadow-lg shadow-(--tui-background-accent-1)/20"
-          >
-            <tui-icon icon="@tui.history" class="w-6 h-6" />
-          </div>
-          <div class="flex flex-col">
-            <h3 class="text-xl font-black tracking-tight m-0">
-              {{ 'materialRequests.historyTitle' | translate }}
-            </h3>
-            <p class="text-xs text-(--tui-text-secondary) m-0">
-              {{ context.data.areaName }}
-            </p>
-          </div>
-        </div>
+    <div class="flex flex-col gap-4 p-1 max-h-[80vh]">
+      <div class="text-xs font-semibold text-(--tui-text-secondary) -mt-2">
+        {{ context.data.areaName }}
       </div>
 
       <!-- Requests list -->
-      <tui-scrollbar class="max-h-[60vh] pr-2">
+      <tui-scrollbar class="max-h-[65vh] pr-2">
         <div class="flex flex-col gap-4">
           @if (requestsResource.isLoading()) {
             @for (_ of [1, 2, 3]; track $index) {
@@ -178,11 +166,10 @@ export interface MaterialRequestsHistoryDialogData {
                 </div>
               </div>
             } @empty {
-              <div
-                class="py-12 text-center text-xs text-(--tui-text-secondary)"
-              >
-                {{ 'materialRequests.noRequestsFound' | translate }}
-              </div>
+              <app-empty-state
+                icon="@tui.package-open"
+                message="materialRequests.noRequestsFound"
+              />
             }
           }
         </div>

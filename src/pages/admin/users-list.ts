@@ -129,13 +129,11 @@ interface UserWithRole {
                   </tui-badge-notification>
                 </ng-container>
               }
-              <span
-                tuiAvatar="@tui.users"
-                tuiThumbnail
-                size="l"
-                class="self-center"
-                [attr.aria-label]="'admin.users.title' | translate"
-              ></span>
+              <div
+                class="w-11 h-11 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0"
+              >
+                <tui-icon icon="@tui.users" />
+              </div>
             </tui-badged-content>
             {{ 'admin.users.title' | translate }}
           </a>

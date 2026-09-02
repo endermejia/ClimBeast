@@ -26,7 +26,6 @@ import {
 } from '@taiga-ui/core';
 import {
   TUI_CONFIRM,
-  TuiAvatar,
   TuiBadgeNotification,
   TuiBadgedContentComponent,
   TuiBadgedContentDirective,
@@ -61,7 +60,6 @@ import { IS_BROWSER } from '../../app/is-browser';
     RouterLink,
     TranslatePipe,
     TuiAppearance,
-    TuiAvatar,
     TuiBadgedContentComponent,
     TuiBadgedContentDirective,
     TuiBadgeNotification,
@@ -91,13 +89,11 @@ import { IS_BROWSER } from '../../app/is-browser';
                   {{ parkingsCount }}
                 </tui-badge-notification>
               }
-              <span
-                tuiAvatar="@tui.map-pin"
-                tuiThumbnail
-                size="l"
-                class="self-center"
-                [attr.aria-label]="'parkings' | translate"
-              ></span>
+              <div
+                class="w-11 h-11 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0"
+              >
+                <tui-icon icon="@tui.map-pin" />
+              </div>
             </tui-badged-content>
             {{ 'parkings' | translate }}
           </a>

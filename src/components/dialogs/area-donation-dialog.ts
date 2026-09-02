@@ -16,7 +16,7 @@ import {
   TuiLabel,
   TuiTextfield,
 } from '@taiga-ui/core';
-import { TuiInputNumber, TuiSwitch } from '@taiga-ui/kit';
+import { TuiSwitch, TuiTextarea } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
@@ -39,9 +39,9 @@ export interface AreaDonationDialogData {
     TuiAppearance,
     TuiButton,
     TuiIcon,
-    TuiInputNumber,
     TuiLabel,
     TuiSwitch,
+    TuiTextarea,
     TuiTextfield,
   ],
   template: `
@@ -94,20 +94,14 @@ export interface AreaDonationDialogData {
             <button
               type="button"
               class="py-3 px-2 rounded-2xl font-black text-base border-2 transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5"
-              [class.border-(--tui-border-focus)]="
-                selectedAmount() === preset && !isCustom()
-              "
+              [class.border-(--tui-border-focus)]="selectedAmount() === preset"
               [class.bg-(--tui-background-accent-1)]="
-                selectedAmount() === preset && !isCustom()
+                selectedAmount() === preset
               "
-              [class.text-(--tui-background-base)]="
-                selectedAmount() === preset && !isCustom()
-              "
-              [class.border-(--tui-border-normal)]="
-                selectedAmount() !== preset || isCustom()
-              "
+              [class.text-(--tui-background-base)]="selectedAmount() === preset"
+              [class.border-(--tui-border-normal)]="selectedAmount() !== preset"
               [class.bg-(--tui-background-neutral-1)]="
-                selectedAmount() !== preset || isCustom()
+                selectedAmount() !== preset
               "
               (click)="selectPreset(preset)"
             >
@@ -115,41 +109,25 @@ export interface AreaDonationDialogData {
             </button>
           }
         </div>
-
-        <!-- Custom amount input -->
-        <div class="mt-2">
-          <tui-textfield>
-            <label tuiLabel for="donation-custom-amount-input">{{
-              'donations.customAmount' | translate
-            }}</label>
-            <input
-              id="donation-custom-amount-input"
-              tuiInputNumber
-              [min]="2"
-              [max]="1000"
-              [step]="1"
-              [ngModel]="customAmount()"
-              (ngModelChange)="onCustomAmountChange($event)"
-              postfix="€"
-            />
-          </tui-textfield>
-        </div>
       </div>
 
       <!-- Donor Message -->
       <div class="flex flex-col gap-2">
-        <tui-textfield>
+        <tui-textfield
+          [tuiTextfieldCleaner]="false"
+          class="max-w-full overflow-hidden"
+        >
           <label tuiLabel for="donation-donor-message-input">{{
             'donations.messageOptional' | translate
           }}</label>
-          <input
+          <textarea
             id="donation-donor-message-input"
-            tuiTextfield
-            type="text"
+            tuiTextarea
             maxlength="200"
             [(ngModel)]="donorMessage"
             [placeholder]="'donations.messagePlaceholder' | translate"
-          />
+            class="h-20"
+          ></textarea>
         </tui-textfield>
       </div>
 
@@ -202,30 +180,15 @@ export class AreaDonationDialogComponent {
     injectContext<TuiDialogContext<void, AreaDonationDialogData>>();
   protected readonly donationsService = inject(AreaDonationsService);
 
-  readonly presets = [5, 10, 20, 50];
-  selectedAmount = signal<number>(10);
-  customAmount = signal<number | null>(null);
-  isCustom = signal<boolean>(false);
+  readonly presets = [2, 5, 10, 20];
+  selectedAmount = signal<number>(5);
   isAnonymous = signal<boolean>(false);
   donorMessage = signal<string>('');
 
-  readonly effectiveAmount = computed(() => {
-    if (this.isCustom()) {
-      return this.customAmount() || 0;
-    }
-    return this.selectedAmount();
-  });
+  readonly effectiveAmount = computed(() => this.selectedAmount());
 
   selectPreset(amount: number): void {
-    this.isCustom.set(false);
     this.selectedAmount.set(amount);
-  }
-
-  onCustomAmountChange(val: number | null): void {
-    this.customAmount.set(val);
-    if (val !== null && val > 0) {
-      this.isCustom.set(true);
-    }
   }
 
   async submitDonation(): Promise<void> {

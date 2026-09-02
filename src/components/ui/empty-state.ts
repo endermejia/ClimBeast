@@ -9,10 +9,12 @@ import { TranslatePipe } from '@ngx-translate/core';
   imports: [TranslatePipe, TuiIcon],
   template: `
     <div
-      class="flex flex-col items-center justify-center gap-4 opacity-50 py-10"
+      class="flex flex-col items-center justify-center gap-4 opacity-50 py-10 text-center"
     >
       <tui-icon [icon]="icon()" class="text-6xl" />
-      <p class="text-xl font-medium">{{ message() | translate }}</p>
+      <p class="text-xl font-medium text-center m-0">
+        {{ message() | translate }}
+      </p>
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

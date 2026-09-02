@@ -100,13 +100,11 @@ import { matchesQuery } from '../../utils';
                       </tui-badge-notification>
                     </ng-container>
                   }
-                  <span
-                    tuiAvatar="@tui.triangle-alert"
-                    tuiThumbnail
-                    size="l"
-                    class="self-center"
-                    [attr.aria-label]="'admin.errorLogs.title' | translate"
-                  ></span>
+                  <div
+                    class="w-11 h-11 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0"
+                  >
+                    <tui-icon icon="@tui.triangle-alert" />
+                  </div>
                 </tui-badged-content>
 
                 {{ 'admin.errorLogs.title' | translate }}

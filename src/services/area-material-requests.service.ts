@@ -142,8 +142,8 @@ export class AreaMaterialRequestsService {
         .select(
           `
           *,
-          user:user_profiles!area_material_requests_user_id_fkey(id, full_name, avatar_url),
-          reviewer:user_profiles!area_material_requests_reviewed_by_fkey(id, full_name),
+          user:user_profiles!area_material_requests_user_id_fkey(id, name, avatar),
+          reviewer:user_profiles!area_material_requests_reviewed_by_fkey(id, name),
           items:area_material_request_items(
             id,
             request_id,
@@ -183,8 +183,8 @@ export class AreaMaterialRequestsService {
           `
           *,
           area:areas!area_material_requests_area_id_fkey(id, name, slug),
-          user:user_profiles!area_material_requests_user_id_fkey(id, full_name, avatar_url),
-          reviewer:user_profiles!area_material_requests_reviewed_by_fkey(id, full_name),
+          user:user_profiles!area_material_requests_user_id_fkey(id, name, avatar),
+          reviewer:user_profiles!area_material_requests_reviewed_by_fkey(id, name),
           items:area_material_request_items(
             id,
             request_id,
@@ -291,11 +291,11 @@ export class AreaMaterialRequestsService {
         : undefined,
       user: {
         id: r.user?.id || r.user_id,
-        name: r.user?.full_name || null,
-        avatar: r.user?.avatar_url || null,
+        name: r.user?.name || null,
+        avatar: r.user?.avatar || null,
       },
       reviewer: r.reviewer
-        ? { id: r.reviewer.id, name: r.reviewer.full_name || null }
+        ? { id: r.reviewer.id, name: r.reviewer.name || null }
         : null,
       items: (r.items ?? []).map((i) => ({
         id: i.id,
@@ -335,10 +335,10 @@ interface RawRequestRow {
   area?: { id: number; name: string; slug: string } | null;
   user?: {
     id: string;
-    full_name?: string | null;
-    avatar_url?: string | null;
+    name?: string | null;
+    avatar?: string | null;
   } | null;
-  reviewer?: { id: string; full_name?: string | null } | null;
+  reviewer?: { id: string; name?: string | null } | null;
   items?: {
     id: number;
     request_id: number;

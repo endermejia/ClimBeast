@@ -29,8 +29,6 @@ import { CartOverlayComponent } from '../components/cart-overlay/cart-overlay';
 import { NavbarComponent } from '../components/ui/navbar';
 import { OfflineBannerComponent } from '../components/ui/offline-banner';
 
-import { Themes } from '../models';
-
 import { reactToObservable } from '../utils';
 
 import { IS_BROWSER } from './is-browser';
@@ -75,6 +73,7 @@ export class AppComponent implements OnDestroy {
   private swCheckInterval: ReturnType<typeof setInterval> | null = null;
 
   protected readonly theme = this.themeService.selectedTheme;
+  protected readonly isDark = this.themeService.isDark;
 
   protected onCheckout(): void {
     this.cartService.showCart.set(false);
@@ -146,9 +145,9 @@ export class AppComponent implements OnDestroy {
     });
 
     effect(() => {
-      const theme = this.theme();
+      const dark = this.isDark();
       if (this.isBrowser) {
-        const color = theme === Themes.DARK ? '#0b1220' : '#ffffff';
+        const color = dark ? '#0b1220' : '#ffffff';
         this.meta.updateTag({ name: 'theme-color', content: color });
       }
     });

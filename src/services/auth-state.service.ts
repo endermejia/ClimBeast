@@ -153,6 +153,17 @@ export class AuthStateService {
     );
   };
 
+  readonly canEditIndoorInCenter = (
+    centerId: string | number | null | undefined,
+  ): boolean => {
+    if (!centerId) return false;
+    const id = String(centerId);
+    return (
+      !!this.indoorAdminPermissions()[id] ||
+      this.routesetterIndoorCenters().includes(id)
+    );
+  };
+
   readonly checkAreaEditPermission = (
     area:
       | AreaListItem

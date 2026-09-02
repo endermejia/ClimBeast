@@ -42,12 +42,31 @@ export class MockSupabaseService {
     null,
   );
   readonly userProfile = computed(() => this._userProfile());
+  private readonly _adminAreas = signal<number[]>([]);
   readonly adminAreasResource = createMockResource<number[]>([]);
-  readonly adminAreas = computed(() => [] as number[]);
+  readonly adminAreas = computed(() => this._adminAreas());
+
+  private readonly _adminIndoorCenters = signal<string[]>([]);
   readonly adminIndoorCentersResource = createMockResource<string[]>([]);
-  readonly adminIndoorCenters = computed(() => [] as string[]);
+  readonly adminIndoorCenters = computed(() => this._adminIndoorCenters());
+
+  private readonly _routesetterIndoorCenters = signal<string[]>([]);
   readonly routesetterIndoorCentersResource = createMockResource<string[]>([]);
-  readonly routesetterIndoorCenters = computed(() => [] as string[]);
+  readonly routesetterIndoorCenters = computed(() =>
+    this._routesetterIndoorCenters(),
+  );
+
+  setAdminAreas(areas: number[]): void {
+    this._adminAreas.set(areas);
+  }
+
+  setAdminIndoorCenters(centers: string[]): void {
+    this._adminIndoorCenters.set(centers);
+  }
+
+  setRoutesetterIndoorCenters(centers: string[]): void {
+    this._routesetterIndoorCenters.set(centers);
+  }
 
   readonly client = {
     from: (_table: string) => ({

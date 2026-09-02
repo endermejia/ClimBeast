@@ -312,6 +312,7 @@ export class MerchandiseService {
           size: 'l',
         },
       ),
+      { defaultValue: undefined },
     );
   }
 
@@ -327,6 +328,7 @@ export class MerchandiseService {
           size: 'm',
         },
       ),
+      { defaultValue: undefined },
     );
   }
 
@@ -338,6 +340,7 @@ export class MerchandiseService {
           size: 'm',
         },
       ),
+      { defaultValue: undefined },
     );
   }
 }

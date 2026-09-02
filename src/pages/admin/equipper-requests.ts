@@ -77,13 +77,11 @@ import { IS_BROWSER } from '../../app/is-browser';
                   </tui-badge-notification>
                 </ng-container>
               }
-              <span
-                tuiAvatar="@tui.user-check"
-                tuiThumbnail
-                size="l"
-                class="self-center"
-                [attr.aria-label]="'adminEquipperRequests.title' | translate"
-              ></span>
+              <div
+                class="w-11 h-11 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0"
+              >
+                <tui-icon icon="@tui.user-check" />
+              </div>
             </tui-badged-content>
 
             {{ 'adminEquipperRequests.title' | translate }}
