@@ -64,7 +64,6 @@ export function mapCragToDetail(rawData: CragWithJoins): CragDetail {
     purchased: (rawData.area?.purchased?.length ?? 0) > 0,
     price: rawData.area?.price ?? 0,
     is_public: rawData.area?.is_public ?? true,
-    stripe_account_id: rawData.area?.stripe_account_id ?? null,
     parkings,
     topos,
     eight_anu_crag_slugs: rawData.area?.eight_anu_crag_slugs,

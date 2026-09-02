@@ -60,28 +60,18 @@ export class CartService {
     const existing = current.find((i) => this.itemsMatch(i, product));
 
     if (existing) {
-      if (product.type === 'area_pack') {
-        // Toggle behavior for packs: if already in cart, remove it
-        this.removeItem(
-          product.id,
-          product.type,
-          product.selectedSize,
-          product.selectedColor,
-        );
-      } else {
-        // Check stock limit before increasing quantity
-        const maxStock = existing.maxStock ?? product.maxStock;
-        if (maxStock !== undefined && existing.quantity >= maxStock) {
-          return;
-        }
-        this.updateQuantity(
-          product.id,
-          product.type,
-          existing.quantity + 1,
-          product.selectedSize,
-          product.selectedColor,
-        );
+      // Check stock limit before increasing quantity
+      const maxStock = existing.maxStock ?? product.maxStock;
+      if (maxStock !== undefined && existing.quantity >= maxStock) {
+        return;
       }
+      this.updateQuantity(
+        product.id,
+        product.type,
+        existing.quantity + 1,
+        product.selectedSize,
+        product.selectedColor,
+      );
     } else {
       // New item: add to local state and persist to DB
       this._items.set([...current, { ...product, quantity: 1 }]);
@@ -185,13 +175,6 @@ export class CartService {
             .map((row) => row.item_id),
         ),
       ];
-      const areaPackIds = [
-        ...new Set(
-          data
-            .filter((row) => row.item_type === 'area_pack')
-            .map((row) => row.item_id),
-        ),
-      ];
       const areaIds = [
         ...new Set(
           data
@@ -201,25 +184,12 @@ export class CartService {
       ];
 
       // Batch fetch details
-      const [merchandiseRes, areaPacksRes, areasRes] = await Promise.all([
+      const [merchandiseRes, areasRes] = await Promise.all([
         merchandiseIds.length > 0
           ? this.supabase.client
               .from('merchandise_items')
               .select('id, name, price, image_urls')
               .in('id', merchandiseIds)
-          : Promise.resolve({
-              data: [] as {
-                id: string;
-                name: string;
-                price: number;
-                image_urls: string[] | null;
-              }[],
-            }),
-        areaPackIds.length > 0
-          ? this.supabase.client
-              .from('area_packs')
-              .select('id, name, price, image_urls')
-              .in('id', areaPackIds)
           : Promise.resolve({
               data: [] as {
                 id: string;
@@ -240,9 +210,6 @@ export class CartService {
       const merchandiseMap = new Map(
         (merchandiseRes.data || []).map((m) => [m.id, m]),
       );
-      const areaPacksMap = new Map(
-        (areaPacksRes.data || []).map((p) => [p.id, p]),
-      );
       const areasMap = new Map((areasRes.data || []).map((a) => [a.id, a]));
 
       // Fetch details for each item type to reconstruct full CartProduct
@@ -260,18 +227,6 @@ export class CartService {
               quantity: row.quantity ?? 1,
               selectedSize: row.selected_size ?? undefined,
               selectedColor: row.selected_color ?? undefined,
-            };
-          }
-        } else if (row.item_type === 'area_pack') {
-          const pack = areaPacksMap.get(row.item_id);
-          if (pack) {
-            itemDetail = {
-              id: pack.id,
-              name: pack.name,
-              price: pack.price,
-              image_urls: pack.image_urls,
-              type: 'area_pack',
-              quantity: row.quantity ?? 1,
             };
           }
         } else if (row.item_type === 'area') {

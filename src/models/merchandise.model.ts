@@ -2,24 +2,8 @@ import type { Database } from './supabase-generated';
 
 export type MerchandiseItem =
   Database['public']['Tables']['merchandise_items']['Row'];
-export type AreaPack = Database['public']['Tables']['area_packs']['Row'];
-export type AreaPackItem =
-  Database['public']['Tables']['area_pack_items']['Row'];
 export type MerchandisePurchase =
   Database['public']['Tables']['merchandise_purchases']['Row'];
-export type AreaPackPurchase =
-  Database['public']['Tables']['area_pack_purchases']['Row'];
-
-export interface AreaPackDetail extends AreaPack {
-  items: {
-    area_id: number;
-    area: {
-      id: number;
-      name: string;
-      slug: string;
-    };
-  }[];
-}
 
 export type Order = Database['public']['Tables']['orders']['Row'];
 export type OrderItem = Database['public']['Tables']['order_items']['Row'];
@@ -31,7 +15,7 @@ export interface OrderDetail extends Order {
     product_name?: string;
     product_image?: string | null;
     product_slug?: string | null;
-    product_data?: MerchandiseItemDetail | AreaPackDetail;
+    product_data?: MerchandiseItemDetail;
   })[];
 }
 
@@ -42,7 +26,7 @@ export interface CartProduct {
   name: string;
   price: number;
   image_urls: string[] | null;
-  type: 'merchandise' | 'area_pack' | 'area';
+  type: 'merchandise' | 'area';
   quantity: number;
   numericId?: number; // Used for areas (int)
   selectedSize?: string;
@@ -61,15 +45,5 @@ export interface MerchandiseItemDetail extends MerchandiseItem {
 export type MerchandiseItemWithStockRow =
   | (Database['public']['Tables']['merchandise_items']['Row'] & {
       stock: MerchandiseStock[];
-    })
-  | null;
-
-/** Supabase query result for area packs with items join */
-export type AreaPackWithItemsRow =
-  | (Database['public']['Tables']['area_packs']['Row'] & {
-      items: {
-        area_id: number;
-        area: { id: number; name: string; slug: string };
-      }[];
     })
   | null;

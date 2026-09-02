@@ -40,8 +40,6 @@ import { firstValueFrom } from 'rxjs';
 import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
 
-import { GradeComponent } from '../ui/avatar-grade';
-
 import {
   TopoPoint,
   TopoRouteWithRoute,
@@ -72,6 +70,8 @@ import {
   startDragPointMouse,
   startDragPointTouch,
 } from '../../utils';
+
+import { GradeComponent } from '../ui/avatar-grade';
 
 export interface TopoPathEditorConfig {
   imageUrl: string;

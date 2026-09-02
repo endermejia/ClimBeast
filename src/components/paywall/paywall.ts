@@ -7,10 +7,11 @@ import {
   signal,
 } from '@angular/core';
 
-import { TuiButton, TuiLoader } from '@taiga-ui/core';
+import { TuiButton, TuiIcon, TuiLoader } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { AreaDonationsService } from '../../services/area-donations.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 
@@ -20,7 +21,8 @@ import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-paywall',
-  imports: [CommonModule, TranslatePipe, TuiButton, TuiLoader],
+  standalone: true,
+  imports: [CommonModule, TranslatePipe, TuiButton, TuiIcon, TuiLoader],
   template: `
     <div
       class="relative overflow-hidden flex flex-col items-center justify-center p-6 sm:p-10 rounded-4xl border border-(--tui-border-normal) text-center gap-6 shadow-xl bg-(--tui-background-elevated)"
@@ -35,7 +37,7 @@ import { IS_BROWSER } from '../../app/is-browser';
 
       @if (!hideTitle()) {
         <h2
-          class="relative text-2xl sm:text-3xl font-black tracking-tight text-balance"
+          class="relative text-2xl sm:text-3xl font-black tracking-tight text-balance m-0"
         >
           {{ 'payments.buyAreaTopos' | translate }}
         </h2>
@@ -48,27 +50,38 @@ import { IS_BROWSER } from '../../app/is-browser';
           {{ price() | number: '1.2-2' }}€
         </div>
         <p
-          class="text-xs sm:text-sm font-medium opacity-60 uppercase tracking-widest"
+          class="text-xs sm:text-sm font-medium opacity-60 uppercase tracking-widest m-0"
         >
           {{ 'payments.price' | translate }}
         </p>
       </div>
 
-      <div class="relative w-full max-w-xs space-y-4">
+      <div class="relative w-full max-w-xs flex flex-col gap-3">
         <tui-loader [loading]="loading()" [overlay]="true">
           <button
             tuiButton
             appearance="primary"
             size="l"
             class="w-full rounded-2xl! shadow-lg shadow-black/5 hover:scale-[1.02] transition-transform"
-            (click.zoneless)="contributeNow()"
+            (click)="contributeNow()"
             [iconStart]="'@tui.hand-heart'"
           >
             {{ 'payments.buy' | translate }}
           </button>
         </tui-loader>
 
-        <p class="text-[10px] sm:text-xs leading-relaxed opacity-50 px-4">
+        <button
+          tuiButton
+          appearance="secondary"
+          size="m"
+          class="w-full rounded-2xl!"
+          (click)="openDonationDialog()"
+        >
+          <tui-icon icon="@tui.heart" class="w-4 h-4" />
+          <span>{{ 'donations.onlyDonate' | translate }}</span>
+        </button>
+
+        <p class="text-[10px] sm:text-xs leading-relaxed opacity-50 px-4 m-0">
           {{ 'payments.paywall.footer' | translate }}
         </p>
       </div>
@@ -79,26 +92,32 @@ import { IS_BROWSER } from '../../app/is-browser';
 export class PaywallComponent {
   areaId = input.required<number>();
   price = input.required<number>();
+  areaName = input<string>('');
   toposCount = input<number>(0);
   hideTitle = input(false);
 
   loading = signal(false);
 
   private readonly supabase = inject(SupabaseService);
+  private readonly donationsService = inject(AreaDonationsService);
   private readonly toast = inject(ToastService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly document = inject(DOCUMENT);
 
-  async contributeNow() {
+  async contributeNow(): Promise<void> {
     this.loading.set(true);
     try {
       const { data, error } = await this.supabase.client.functions.invoke(
-        'stripe-checkout',
+        'create-checkout-session',
         {
           headers: {
             'ngsw-bypass': 'true',
           },
-          body: { area_id: this.areaId() },
+          body: {
+            items: [{ type: 'area', id: this.areaId() }],
+            success_url: `${window.location.origin}/area/redirect?area_id=${this.areaId()}`,
+            cancel_url: window.location.href,
+          },
         },
       );
 
@@ -112,5 +131,9 @@ export class PaywallComponent {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  openDonationDialog(): void {
+    this.donationsService.openDonationDialog(this.areaId(), this.areaName());
   }
 }

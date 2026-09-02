@@ -34,7 +34,6 @@ export interface CragDetail extends CragListItem, AdditionalCragData {
   eight_anu_sector_slugs?: string[] | null;
   is_public: boolean;
   price: number;
-  stripe_account_id: string | null;
   purchased: boolean;
 }
 

@@ -17,9 +17,9 @@ import {
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { DropdownButtonComponent } from '../ui/dropdown-button';
-
 import { HomeFeedFilter } from '../../models';
+
+import { DropdownButtonComponent } from '../ui/dropdown-button';
 
 @Component({
   selector: 'app-home-filter-bar',

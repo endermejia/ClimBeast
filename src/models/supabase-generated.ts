@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: '14.17';
+    PostgrestVersion: '14.5';
   };
   auth: {
     Tables: {
@@ -1185,6 +1185,60 @@ export type Database = {
           },
         ];
       };
+      area_donations: {
+        Row: {
+          anonymous: boolean;
+          area_id: number;
+          created_at: string;
+          donor_message: string | null;
+          gross_amount: number;
+          id: number;
+          net_amount: number;
+          stripe_fee: number;
+          stripe_session_id: string;
+          user_id: string | null;
+        };
+        Insert: {
+          anonymous?: boolean;
+          area_id: number;
+          created_at?: string;
+          donor_message?: string | null;
+          gross_amount: number;
+          id?: never;
+          net_amount: number;
+          stripe_fee?: number;
+          stripe_session_id: string;
+          user_id?: string | null;
+        };
+        Update: {
+          anonymous?: boolean;
+          area_id?: number;
+          created_at?: string;
+          donor_message?: string | null;
+          gross_amount?: number;
+          id?: never;
+          net_amount?: number;
+          stripe_fee?: number;
+          stripe_session_id?: string;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'area_donations_area_id_fkey';
+            columns: ['area_id'];
+            isOneToOne: false;
+            referencedRelation: 'areas';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'area_donations_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'user_profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       area_likes: {
         Row: {
           area_id: number;
@@ -1214,107 +1268,121 @@ export type Database = {
           },
         ];
       };
-      area_pack_items: {
+      area_material_request_items: {
         Row: {
-          area_id: number;
-          pack_id: string;
+          created_at: string;
+          id: number;
+          material_id: number;
+          quantity: number;
+          request_id: number;
+          unit_price: number;
         };
         Insert: {
-          area_id: number;
-          pack_id: string;
+          created_at?: string;
+          id?: never;
+          material_id: number;
+          quantity: number;
+          request_id: number;
+          unit_price: number;
         };
         Update: {
-          area_id?: number;
-          pack_id?: string;
+          created_at?: string;
+          id?: never;
+          material_id?: number;
+          quantity?: number;
+          request_id?: number;
+          unit_price?: number;
         };
         Relationships: [
           {
-            foreignKeyName: 'area_pack_items_area_id_fkey';
+            foreignKeyName: 'area_material_request_items_material_id_fkey';
+            columns: ['material_id'];
+            isOneToOne: false;
+            referencedRelation: 'material_catalog';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'area_material_request_items_request_id_fkey';
+            columns: ['request_id'];
+            isOneToOne: false;
+            referencedRelation: 'area_material_requests';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      area_material_requests: {
+        Row: {
+          area_id: number;
+          created_at: string;
+          id: number;
+          notes: string | null;
+          rejection_reason: string | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          status: Database['public']['Enums']['material_request_status'];
+          total_amount: number;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          area_id: number;
+          created_at?: string;
+          id?: never;
+          notes?: string | null;
+          rejection_reason?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          status?: Database['public']['Enums']['material_request_status'];
+          total_amount: number;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          area_id?: number;
+          created_at?: string;
+          id?: never;
+          notes?: string | null;
+          rejection_reason?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          status?: Database['public']['Enums']['material_request_status'];
+          total_amount?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'area_material_requests_area_id_fkey';
             columns: ['area_id'];
             isOneToOne: false;
             referencedRelation: 'areas';
             referencedColumns: ['id'];
           },
           {
-            foreignKeyName: 'area_pack_items_pack_id_fkey';
-            columns: ['pack_id'];
+            foreignKeyName: 'area_material_requests_reviewed_by_fkey';
+            columns: ['reviewed_by'];
             isOneToOne: false;
-            referencedRelation: 'area_packs';
+            referencedRelation: 'user_profiles';
             referencedColumns: ['id'];
           },
-        ];
-      };
-      area_pack_purchases: {
-        Row: {
-          amount: number;
-          created_at: string | null;
-          id: string;
-          pack_id: string | null;
-          stripe_session_id: string | null;
-          user_id: string | null;
-        };
-        Insert: {
-          amount: number;
-          created_at?: string | null;
-          id?: string;
-          pack_id?: string | null;
-          stripe_session_id?: string | null;
-          user_id?: string | null;
-        };
-        Update: {
-          amount?: number;
-          created_at?: string | null;
-          id?: string;
-          pack_id?: string | null;
-          stripe_session_id?: string | null;
-          user_id?: string | null;
-        };
-        Relationships: [
           {
-            foreignKeyName: 'area_pack_purchases_pack_id_fkey';
-            columns: ['pack_id'];
+            foreignKeyName: 'area_material_requests_user_id_fkey';
+            columns: ['user_id'];
             isOneToOne: false;
-            referencedRelation: 'area_packs';
+            referencedRelation: 'user_profiles';
             referencedColumns: ['id'];
           },
         ];
-      };
-      area_packs: {
-        Row: {
-          active: boolean | null;
-          created_at: string | null;
-          description: string | null;
-          id: string;
-          image_urls: string[] | null;
-          name: string;
-          price: number;
-        };
-        Insert: {
-          active?: boolean | null;
-          created_at?: string | null;
-          description?: string | null;
-          id?: string;
-          image_urls?: string[] | null;
-          name: string;
-          price?: number;
-        };
-        Update: {
-          active?: boolean | null;
-          created_at?: string | null;
-          description?: string | null;
-          id?: string;
-          image_urls?: string[] | null;
-          name?: string;
-          price?: number;
-        };
-        Relationships: [];
       };
       area_purchases: {
         Row: {
           amount: number;
           area_id: number;
           created_at: string | null;
+          gross_amount: number;
           id: string;
+          net_amount: number;
+          stripe_fee: number;
           stripe_session_id: string;
           user_id: string;
         };
@@ -1322,7 +1390,10 @@ export type Database = {
           amount: number;
           area_id: number;
           created_at?: string | null;
+          gross_amount?: number;
           id?: string;
+          net_amount?: number;
+          stripe_fee?: number;
           stripe_session_id: string;
           user_id: string;
         };
@@ -1330,7 +1401,10 @@ export type Database = {
           amount?: number;
           area_id?: number;
           created_at?: string | null;
+          gross_amount?: number;
           id?: string;
+          net_amount?: number;
+          stripe_fee?: number;
           stripe_session_id?: string;
           user_id?: string;
         };
@@ -1353,7 +1427,6 @@ export type Database = {
           name: string;
           price: number | null;
           slug: string;
-          stripe_account_id: string | null;
           user_creator_id: string | null;
         };
         Insert: {
@@ -1364,7 +1437,6 @@ export type Database = {
           name: string;
           price?: number | null;
           slug: string;
-          stripe_account_id?: string | null;
           user_creator_id?: string | null;
         };
         Update: {
@@ -1375,7 +1447,6 @@ export type Database = {
           name?: string;
           price?: number | null;
           slug?: string;
-          stripe_account_id?: string | null;
           user_creator_id?: string | null;
         };
         Relationships: [];
@@ -2435,6 +2506,42 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
+      };
+      material_catalog: {
+        Row: {
+          active: boolean;
+          created_at: string;
+          description: string | null;
+          id: number;
+          image_url: string | null;
+          name: string;
+          price: number;
+          unit: string;
+          updated_at: string;
+        };
+        Insert: {
+          active?: boolean;
+          created_at?: string;
+          description?: string | null;
+          id?: never;
+          image_url?: string | null;
+          name: string;
+          price: number;
+          unit?: string;
+          updated_at?: string;
+        };
+        Update: {
+          active?: boolean;
+          created_at?: string;
+          description?: string | null;
+          id?: never;
+          image_url?: string | null;
+          name?: string;
+          price?: number;
+          unit?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       merchandise_items: {
         Row: {
@@ -3576,6 +3683,10 @@ export type Database = {
             };
             Returns: string;
           };
+      create_area_material_request: {
+        Args: { p_area_id: number; p_items: Json; p_notes?: string };
+        Returns: number;
+      };
       create_chat_room: { Args: { other_user_id: string }; Returns: string };
       disablelongtransactions: { Args: never; Returns: string };
       dropgeometrycolumn:
@@ -3711,6 +3822,8 @@ export type Database = {
         Returns: boolean;
       };
       geomfromewkt: { Args: { '': string }; Returns: unknown };
+      get_area_balance: { Args: { p_area_id: number }; Returns: Json };
+      get_area_public_timeline: { Args: { p_area_id: number }; Returns: Json };
       get_areas_list: {
         Args: never;
         Returns: {
@@ -4545,6 +4658,8 @@ export type Database = {
       ascent_type: 'os' | 'rp' | 'f' | 'attempt';
       climbing_kind: 'sport' | 'boulder' | 'trad' | 'multipitch' | 'mixed';
       language: 'es' | 'en' | 'va' | 'de' | 'eu' | 'fr' | 'it';
+      material_request_status:
+        'pending' | 'approved' | 'rejected' | 'disposed' | 'cancelled';
       sex: 'male' | 'female' | 'other';
       theme: 'dark' | 'light';
     };
@@ -5226,6 +5341,13 @@ export const Constants = {
       ascent_type: ['os', 'rp', 'f', 'attempt'],
       climbing_kind: ['sport', 'boulder', 'trad', 'multipitch', 'mixed'],
       language: ['es', 'en', 'va', 'de', 'eu', 'fr', 'it'],
+      material_request_status: [
+        'pending',
+        'approved',
+        'rejected',
+        'disposed',
+        'cancelled',
+      ],
       sex: ['male', 'female', 'other'],
       theme: ['dark', 'light'],
     },

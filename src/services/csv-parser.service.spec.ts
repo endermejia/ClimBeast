@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { CsvParserService } from './csv-parser.service';
-
 import { AscentTypes, ClimbingKinds } from '../models';
+
+import { CsvParserService } from './csv-parser.service';
 
 describe('CsvParserService', () => {
   const service = new CsvParserService();

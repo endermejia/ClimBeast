@@ -5,11 +5,11 @@ import { firstValueFrom } from 'rxjs';
 
 import { Json } from '../models/supabase-generated';
 
+import { reactToObservable } from '../utils';
+
 import { IS_BROWSER } from '../app/is-browser';
 
 import { ENV_VAPID_PUBLIC_KEY } from '../environments/environment';
-
-import { reactToObservable } from '../utils';
 
 import { SupabaseService } from './supabase.service';
 

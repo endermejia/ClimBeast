@@ -230,14 +230,10 @@ export class PurchaseHistoryDialogComponent {
       if (!userId) return [];
 
       // Fetch all types of purchases in parallel
-      const [areaPurchases, packPurchases, orders] = await Promise.all([
+      const [areaPurchases, orders] = await Promise.all([
         this.supabase.client
           .from('area_purchases')
           .select('id, amount, created_at, area:areas (name, slug)')
-          .eq('user_id', userId),
-        this.supabase.client
-          .from('area_pack_purchases')
-          .select('id, amount, created_at, pack:area_packs (name)')
           .eq('user_id', userId),
         this.merchService.getUserOrders(),
       ]);
@@ -260,26 +256,6 @@ export class PurchaseHistoryDialogComponent {
               name: p.area?.name || 'Unknown Area',
               type: 'area' as const,
               slug: p.area?.slug,
-            }),
-          ),
-        );
-      }
-
-      // Process Pack Purchases
-      if (packPurchases.data) {
-        records.push(
-          ...packPurchases.data.map(
-            (p: {
-              id: string;
-              amount: number;
-              created_at: string | null;
-              pack: { name: string } | null;
-            }) => ({
-              id: p.id,
-              amount: p.amount,
-              created_at: p.created_at || '',
-              name: p.pack?.name || 'Unknown Pack',
-              type: 'pack' as const,
             }),
           ),
         );

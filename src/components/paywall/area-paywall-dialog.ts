@@ -34,6 +34,7 @@ import { PaywallComponent } from './paywall';
         <app-paywall
           [areaId]="context.data.areaId"
           [price]="context.data.price"
+          [areaName]="context.data.areaName || ''"
           [toposCount]="topos().length"
           [hideTitle]="true"
         />
@@ -61,9 +62,12 @@ import { PaywallComponent } from './paywall';
 })
 export class AreaPaywallDialogComponent {
   protected readonly context =
-    inject<TuiDialogContext<void, { areaId: number; price: number }>>(
-      POLYMORPHEUS_CONTEXT,
-    );
+    inject<
+      TuiDialogContext<
+        void,
+        { areaId: number; price: number; areaName?: string }
+      >
+    >(POLYMORPHEUS_CONTEXT);
   protected readonly outdoorData = inject(OutdoorDataService);
   protected readonly topos = computed(() => this.outdoorData.areaTopos() || []);
 }

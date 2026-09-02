@@ -60,7 +60,6 @@ export interface AreaDetail extends Omit<AreaListItem, 'user_creator_id'> {
   topos_count: number;
   is_public: boolean;
   price: number;
-  stripe_account_id: string | null;
   purchased?: boolean;
   user_creator_id: string | null;
   eight_anu_crag_slugs: string[] | null;
@@ -71,4 +70,73 @@ export interface AreaDetail extends Omit<AreaListItem, 'user_creator_id'> {
 /** Row returned by getById query (with purchased join) */
 export interface AreaWithPurchase extends AreaDto {
   purchased: { id: string }[] | boolean;
+}
+
+// Material Catalog
+export type MaterialCatalogItem = TableRow<'material_catalog'>;
+export type MaterialCatalogItemInsert = TableInsert<'material_catalog'>;
+export type MaterialCatalogItemUpdate = TableUpdate<'material_catalog'>;
+
+// Material Requests
+export type MaterialRequestStatus =
+  'pending' | 'approved' | 'rejected' | 'disposed' | 'cancelled';
+
+export type AreaMaterialRequest = TableRow<'area_material_requests'>;
+export type AreaMaterialRequestItem = TableRow<'area_material_request_items'>;
+
+export interface AreaMaterialRequestItemWithCatalog extends AreaMaterialRequestItem {
+  material: MaterialCatalogItem;
+}
+
+export interface AreaMaterialRequestWithDetails extends AreaMaterialRequest {
+  items: AreaMaterialRequestItemWithCatalog[];
+  user: { id: string; name: string | null; avatar: string | null };
+  area?: { id: number; name: string; slug: string };
+  reviewer?: { id: string; name: string | null } | null;
+}
+
+// Area Donations
+export type AreaDonation = TableRow<'area_donations'>;
+
+// Area Revenue / Balance Summary
+export interface AreaBalanceSummary {
+  totalPurchasesNet: number;
+  totalDonationsNet: number;
+  totalWithdrawn: number;
+  totalReserved: number;
+  availableBalance: number;
+}
+
+// Area Public Timeline
+export interface AreaPublicDonation {
+  id: number;
+  amount: number;
+  anonymous: boolean;
+  userName: string;
+  userAvatar: string | null;
+  message: string | null;
+  createdAt: string;
+}
+
+export interface AreaPublicWithdrawalItem {
+  materialName: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  imageUrl: string | null;
+}
+
+export interface AreaPublicWithdrawal {
+  id: number;
+  totalAmount: number;
+  status: MaterialRequestStatus;
+  createdAt: string;
+  reviewedAt: string | null;
+  items: AreaPublicWithdrawalItem[];
+}
+
+export interface AreaPublicTimeline {
+  summary: AreaBalanceSummary;
+  donations: AreaPublicDonation[];
+  withdrawals: AreaPublicWithdrawal[];
 }

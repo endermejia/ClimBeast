@@ -4,20 +4,15 @@ import { TuiDialogService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslateService } from '@ngx-translate/core';
-
 import { firstValueFrom } from 'rxjs';
 
 import { MerchandiseItemDialogComponent } from '../components/dialogs/merchandise-item-dialog';
-
-import { MerchandisePackDialogComponent } from '../components/dialogs/merchandise-pack-dialog';
 
 import { OrderDetailsDialogComponent } from '../components/dialogs/order-details-dialog';
 import { PurchaseHistoryDialogComponent } from '../components/dialogs/purchase-history-dialog';
 
 import type {
   MerchandiseItem,
-  AreaPackDetail,
-  AreaPack,
   MerchandiseItemDetail,
   MerchandiseItemWithStockRow,
   OrderDetail,
@@ -71,37 +66,6 @@ export class MerchandiseService {
     ) as unknown as MerchandiseItemDetail[];
   }
 
-  async getAreaPacks(onlyActive = true): Promise<AreaPackDetail[]> {
-    if (!this.isBrowser) return [];
-    await this.supabase.whenReady();
-
-    let query = this.supabase.client
-      .from('area_packs')
-      .select(
-        `
-        *,
-        items:area_pack_items(
-          area_id,
-          area:areas(id, name, slug)
-        )
-      `,
-      )
-      .order('created_at', { ascending: false });
-
-    if (onlyActive) {
-      query = query.eq('active', true);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('[MerchandiseService] getAreaPacks error', error);
-      return [];
-    }
-
-    return (data || []) as AreaPackDetail[];
-  }
-
   async getMerchandiseItemById(
     id: string,
   ): Promise<MerchandiseItemDetail | null> {
@@ -118,20 +82,6 @@ export class MerchandiseService {
     return data as MerchandiseItemDetail;
   }
 
-  async getAreaPackById(id: string): Promise<AreaPackDetail | null> {
-    if (!this.isBrowser) return null;
-    await this.supabase.whenReady();
-
-    const { data, error } = await this.supabase.client
-      .from('area_packs')
-      .select(`*, items:area_pack_items(area_id, area:areas(id, name, slug))`)
-      .eq('id', id)
-      .single();
-
-    if (error) return null;
-    return data as AreaPackDetail;
-  }
-
   async upsertMerchandiseItem(
     item: Partial<MerchandiseItemDetail>,
   ): Promise<MerchandiseItem | null> {
@@ -140,33 +90,14 @@ export class MerchandiseService {
     this.loading.set(true);
 
     try {
-      const itemToSave = { ...item };
-      const stockToSave = itemToSave.stock;
-      delete itemToSave.stock;
-
       const { data, error } = await this.supabase.client
         .from('merchandise_items')
-        .upsert(itemToSave as MerchandiseItem)
+        .upsert(item as MerchandiseItem)
         .select()
         .single();
 
       if (error) throw error;
-
-      // Handle stock upsert if provided
-      if (stockToSave && data) {
-        for (const s of stockToSave) {
-          await this.supabase.client.from('merchandise_stock').upsert(
-            {
-              item_id: data.id,
-              size: s.size,
-              stock: s.stock,
-            },
-            { onConflict: 'item_id,size' },
-          );
-        }
-      }
-
-      return data;
+      return data as MerchandiseItem;
     } catch (e) {
       console.error('[MerchandiseService] upsertMerchandiseItem error', e);
       return null;
@@ -175,35 +106,46 @@ export class MerchandiseService {
     }
   }
 
-  async updateItemStock(
-    itemId: string,
-    size: string,
-    stock: number,
-  ): Promise<boolean> {
+  async deleteMerchandiseItem(id: string): Promise<boolean> {
     if (!this.isBrowser) return false;
     await this.supabase.whenReady();
+    this.loading.set(true);
 
-    const { error } = await this.supabase.client
-      .from('merchandise_stock')
-      .upsert({ item_id: itemId, size, stock }, { onConflict: 'item_id,size' });
+    try {
+      const { error } = await this.supabase.client
+        .from('merchandise_items')
+        .delete()
+        .eq('id', id);
 
-    return !error;
+      if (error) throw error;
+      return true;
+    } catch (e) {
+      console.error('[MerchandiseService] deleteMerchandiseItem error', e);
+      return false;
+    } finally {
+      this.loading.set(false);
+    }
   }
 
-  async getUserOrders(): Promise<OrderDetail[]> {
+  async getUserOrders(userId?: string): Promise<OrderDetail[]> {
     if (!this.isBrowser) return [];
     await this.supabase.whenReady();
+
+    const uid = userId || this.supabase.authUserId();
+    if (!uid) return [];
 
     const { data, error } = await this.supabase.client
       .from('orders')
       .select('*, items:order_items(*)')
+      .eq('user_id', uid)
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('[MerchandiseService] getUserOrders error', error);
       return [];
     }
-    return this.enrichOrdersWithNames(data || []);
+
+    return this.enrichOrdersWithProductData((data as OrderDetail[]) || []);
   }
 
   async getAllOrders(): Promise<OrderDetail[]> {
@@ -220,28 +162,19 @@ export class MerchandiseService {
       return [];
     }
 
-    return this.enrichOrdersWithNames(data || []);
+    return this.enrichOrdersWithProductData((data as OrderDetail[]) || []);
   }
 
-  private async enrichOrdersWithNames(
+  private async enrichOrdersWithProductData(
     orders: OrderDetail[],
   ): Promise<OrderDetail[]> {
-    if (orders.length === 0) return [];
+    if (!orders || orders.length === 0) return [];
 
-    // Collect IDs to resolve names
     const merchIds = [
       ...new Set(
         orders
           .flatMap((o) => o.items ?? [])
           .filter((i: OrderItem) => i.item_type === 'merchandise' && i.item_id)
-          .map((i: OrderItem) => i.item_id as string),
-      ),
-    ];
-    const packIds = [
-      ...new Set(
-        orders
-          .flatMap((o) => o.items ?? [])
-          .filter((i: OrderItem) => i.item_type === 'area_pack' && i.item_id)
           .map((i: OrderItem) => i.item_id as string),
       ),
     ];
@@ -260,7 +193,7 @@ export class MerchandiseService {
         name: string;
         image?: string | null;
         slug?: string | null;
-        data?: MerchandiseItemDetail | AreaPackDetail;
+        data?: MerchandiseItemDetail;
       }
     >();
 
@@ -271,11 +204,6 @@ export class MerchandiseService {
           .from('merchandise_items')
           .select('*')
           .in('id', merchIds),
-      );
-    }
-    if (packIds.length > 0) {
-      queries.push(
-        this.supabase.client.from('area_packs').select('*').in('id', packIds),
       );
     }
     if (areaIds.length > 0) {
@@ -298,12 +226,11 @@ export class MerchandiseService {
             slug?: string | null;
           };
           const image = row.image_urls?.[0];
-          const slug = row.slug;
           infoMap.set(row.id, {
             name: row.name,
             image,
-            slug,
-            data: item as MerchandiseItemDetail | AreaPackDetail,
+            slug: row.slug,
+            data: row as MerchandiseItemDetail,
           });
         }
       }
@@ -311,14 +238,15 @@ export class MerchandiseService {
 
     return orders.map((order) => ({
       ...order,
-      items: (order.items ?? []).map((item: OrderItem) => {
-        const info =
-          infoMap.get(item.item_id!) ?? infoMap.get(item.item_numeric_id!);
+      items: (order.items || []).map((item) => {
+        const idKey =
+          item.item_type === 'area' ? item.item_numeric_id : item.item_id;
+        const info = idKey ? infoMap.get(idKey) : undefined;
         return {
           ...item,
-          product_name: info?.name,
-          product_image: info?.image,
-          product_slug: info?.slug,
+          product_name: info?.name || 'Producto',
+          product_image: info?.image || null,
+          product_slug: info?.slug || null,
           product_data: info?.data,
         };
       }),
@@ -331,143 +259,26 @@ export class MerchandiseService {
   ): Promise<boolean> {
     if (!this.isBrowser) return false;
     await this.supabase.whenReady();
-
-    try {
-      // 1. Get current order to check previous status and get items
-      const { data: order, error: fetchError } = await this.supabase.client
-        .from('orders')
-        .select('*, items:order_items(*)')
-        .eq('id', orderId)
-        .single();
-
-      if (fetchError || !order)
-        throw fetchError || new Error('Order not found');
-
-      const previousStatus = order.status;
-
-      // 2. Update the status
-      const { error: updateError } = await this.supabase.client
-        .from('orders')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', orderId);
-
-      if (updateError) throw updateError;
-
-      // 3. Handle stock management
-      // - If transitioning TO 'cancelled' from a state that had already decremented stock
-      if (
-        status === 'cancelled' &&
-        previousStatus !== 'cancelled' &&
-        previousStatus !== 'pending'
-      ) {
-        await this.adjustStockForOrder(order.items, 'increment');
-      }
-      // - If transitioning FROM 'pending' to something else (except cancelled)
-      // Assuming stock was NOT decremented on 'pending' to avoid locking it for unpaid orders
-      else if (
-        previousStatus === 'pending' &&
-        status !== 'pending' &&
-        status !== 'cancelled'
-      ) {
-        await this.adjustStockForOrder(order.items, 'decrement');
-      }
-      // - If transitioning FROM 'cancelled' to an active state
-      else if (
-        previousStatus === 'cancelled' &&
-        status !== 'pending' &&
-        status !== 'cancelled'
-      ) {
-        await this.adjustStockForOrder(order.items, 'decrement');
-      }
-
-      return true;
-    } catch (error) {
-      console.error('[MerchandiseService] updateOrderStatus error', error);
-      return false;
-    }
-  }
-
-  private async adjustStockForOrder(
-    items: OrderItem[],
-    action: 'increment' | 'decrement',
-  ): Promise<void> {
-    for (const item of items) {
-      if (!item.item_id || !item.selected_size || !item.quantity) continue;
-
-      // Get current stock
-      const { data: stockData } = await this.supabase.client
-        .from('merchandise_stock')
-        .select('stock')
-        .eq('item_id', item.item_id)
-        .eq('size', item.selected_size)
-        .single();
-
-      if (stockData) {
-        const newStock =
-          action === 'increment'
-            ? stockData.stock + item.quantity
-            : Math.max(0, stockData.stock - item.quantity);
-
-        await this.supabase.client
-          .from('merchandise_stock')
-          .update({ stock: newStock })
-          .eq('item_id', item.item_id)
-          .eq('size', item.selected_size);
-      }
-    }
-  }
-
-  async cancelOrder(orderId: string): Promise<boolean> {
-    // User logic: only if status != 'enviado'
-    return this.updateOrderStatus(orderId, 'cancelled');
-  }
-
-  async upsertAreaPack(pack: Partial<AreaPackDetail>): Promise<boolean> {
-    if (!this.isBrowser) return false;
-    await this.supabase.whenReady();
     this.loading.set(true);
 
     try {
-      // 1. Upsert the pack itself
-      const packToSave = { ...pack };
-      delete (packToSave as Partial<AreaPackDetail>).items; // Don't save joints here
+      const { error } = await this.supabase.client
+        .from('orders')
+        .update({ status })
+        .eq('id', orderId);
 
-      const { data: savedPack, error: packError } = await this.supabase.client
-        .from('area_packs')
-        .upsert(packToSave as AreaPack)
-        .select()
-        .single();
-
-      if (packError) throw packError;
-
-      // 2. If it has items, sync area_pack_items
-      if (pack.items) {
-        // Delete existing items for this pack
-        await this.supabase.client
-          .from('area_pack_items')
-          .delete()
-          .eq('pack_id', savedPack.id);
-
-        // Insert new ones
-        const joints = pack.items.map((i) => ({
-          pack_id: savedPack.id,
-          area_id: i.area_id,
-        }));
-
-        const { error: jointsError } = await this.supabase.client
-          .from('area_pack_items')
-          .insert(joints);
-
-        if (jointsError) throw jointsError;
-      }
-
+      if (error) throw error;
       return true;
     } catch (e) {
-      console.error('[MerchandiseService] upsertAreaPack error', e);
+      console.error('[MerchandiseService] updateOrderStatus error', e);
       return false;
     } finally {
       this.loading.set(false);
     }
+  }
+
+  async cancelOrder(orderId: string): Promise<boolean> {
+    return this.updateOrderStatus(orderId, 'cancelled');
   }
 
   async uploadShopImage(file: File): Promise<string | null> {
@@ -478,7 +289,7 @@ export class MerchandiseService {
     const filePath = `shop/${fileName}`;
 
     const { data, error } = await this.supabase.client.storage
-      .from('merchandise') // Assumption: bucket name is 'merchandise'
+      .from('merchandise')
       .upload(filePath, file);
 
     if (error) {
@@ -498,19 +309,6 @@ export class MerchandiseService {
           label: this.translate.instant(
             item.name || 'merchandising.items.title',
           ),
-          size: 'l',
-        },
-      ),
-    );
-  }
-
-  openMerchandisePack(pack: AreaPackDetail): void {
-    void firstValueFrom(
-      this.dialogs.open(
-        new PolymorpheusComponent(MerchandisePackDialogComponent),
-        {
-          data: pack,
-          label: pack.name,
           size: 'l',
         },
       ),

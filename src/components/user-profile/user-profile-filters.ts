@@ -33,11 +33,11 @@ import { debounceTime, firstValueFrom, Subject } from 'rxjs';
 import { FilterStateService } from '../../services/filter-state.service';
 import { ProfileDataService } from '../../services/profile-data.service';
 
-import { FilterDialog, FilterDialogComponent } from '../dialogs/filter-dialog';
-
 import { ORDERED_GRADE_VALUES } from '../../models';
 
 import { getAscentDateFilterOptions } from '../../utils';
+
+import { FilterDialog, FilterDialogComponent } from '../dialogs/filter-dialog';
 
 @Component({
   selector: 'app-user-profile-filters',

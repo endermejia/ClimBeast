@@ -55,6 +55,7 @@ import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
 
+import { AreaRevenuePanelComponent } from '../../components/area/area-revenue-panel';
 import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
 import { CragCardComponent } from '../../components/crag/crag-card';
 import { AreaPaywallDialogComponent } from '../../components/paywall/area-paywall-dialog';
@@ -82,6 +83,7 @@ import { IS_BROWSER } from '../../app/is-browser';
 @Component({
   selector: 'app-area',
   imports: [
+    AreaRevenuePanelComponent,
     AvatarUrlPipe,
     ChartRoutesByGradeComponent,
     CragCardComponent,
@@ -242,13 +244,6 @@ import { IS_BROWSER } from '../../app/is-browser';
                       >
                         {{ 'payments.getTopos' | translate }}
                       </button>
-                      <a
-                        routerLink="/merchandising"
-                        fragment="packs"
-                        class="text-[10px] opacity-60 hover:opacity-100 hover:text-indigo-400 text-center no-underline transition-all font-bold uppercase tracking-wider"
-                      >
-                        {{ 'merchandising.packs.subtitle' | translate }}
-                      </a>
                     </div>
                   } @else {
                     <div
@@ -272,6 +267,14 @@ import { IS_BROWSER } from '../../app/is-browser';
                 {{ 'errors.unexpected' | translate }}
               </div>
             }
+
+            <!-- Area Revenue Pot & Community Equipment Panel -->
+            <app-area-revenue-panel
+              [areaId]="area.id"
+              [areaName]="area.name"
+              [isPaywalled]="!isPublic()"
+              class="mt-6 mb-8 block"
+            />
           </div>
 
           @let admins = areaAdmins();
@@ -1036,6 +1039,7 @@ export class AreaComponent {
         data: {
           areaId: area.id,
           price: area.price,
+          areaName: area.name,
         },
       }),
     );

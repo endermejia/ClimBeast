@@ -11,11 +11,12 @@ import {
   UserProfileBasicDto,
 } from '../models';
 
+import { connectRealtimeChannel } from '../utils';
+
 import { IS_BROWSER } from '../app/is-browser';
 import { AppDialogsService } from './app-dialogs.service';
-import { SupabaseService } from './supabase.service';
 
-import { connectRealtimeChannel } from '../utils';
+import { SupabaseService } from './supabase.service';
 
 @Injectable({
   providedIn: 'root',

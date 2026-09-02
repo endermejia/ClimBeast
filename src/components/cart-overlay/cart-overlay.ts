@@ -181,58 +181,50 @@ import type { CartProduct } from '../../models';
                     </div>
                     <div class="flex justify-between items-center mt-auto pt-4">
                       <div class="flex items-center gap-1">
-                        @if (item.type !== 'area_pack') {
-                          <button
-                            tuiIconButton
-                            type="button"
-                            appearance="secondary"
-                            size="xs"
-                            [disabled]="item.quantity <= 1"
-                            (click)="
-                              updateQuantity(
-                                item.id,
-                                item.type,
-                                item.quantity - 1,
-                                item.selectedSize,
-                                item.selectedColor
-                              )
-                            "
-                          >
-                            <tui-icon icon="@tui.minus" />
-                            <span class="tui-sr-only">Decrease</span>
-                          </button>
-                          <span class="w-8 text-center font-bold text-sm">{{
-                            item.quantity
-                          }}</span>
-                          <button
-                            tuiIconButton
-                            type="button"
-                            appearance="secondary"
-                            size="xs"
-                            [disabled]="
-                              item.maxStock !== undefined &&
-                              item.quantity >= item.maxStock
-                            "
-                            (click)="
-                              updateQuantity(
-                                item.id,
-                                item.type,
-                                item.quantity + 1,
-                                item.selectedSize,
-                                item.selectedColor
-                              )
-                            "
-                          >
-                            <tui-icon icon="@tui.plus" />
-                            <span class="tui-sr-only">Increase</span>
-                          </button>
-                        } @else {
-                          <span
-                            class="px-3 py-1 text-xs font-bold text-(--tui-text-tertiary)"
-                          >
-                            {{ item.quantity }}x
-                          </span>
-                        }
+                        <button
+                          tuiIconButton
+                          type="button"
+                          appearance="secondary"
+                          size="xs"
+                          [disabled]="item.quantity <= 1"
+                          (click)="
+                            updateQuantity(
+                              item.id,
+                              item.type,
+                              item.quantity - 1,
+                              item.selectedSize,
+                              item.selectedColor
+                            )
+                          "
+                        >
+                          <tui-icon icon="@tui.minus" class="w-3.5 h-3.5" />
+                        </button>
+                        <span
+                          class="w-8 text-center text-xs font-black tabular-nums"
+                        >
+                          {{ item.quantity }}
+                        </span>
+                        <button
+                          tuiIconButton
+                          type="button"
+                          appearance="secondary"
+                          size="xs"
+                          [disabled]="
+                            item.maxStock !== undefined &&
+                            item.quantity >= item.maxStock
+                          "
+                          (click)="
+                            updateQuantity(
+                              item.id,
+                              item.type,
+                              item.quantity + 1,
+                              item.selectedSize,
+                              item.selectedColor
+                            )
+                          "
+                        >
+                          <tui-icon icon="@tui.plus" class="w-3.5 h-3.5" />
+                        </button>
                       </div>
                       <span
                         class="font-black text-(--tui-text-primary) tabular-nums text-sm"
@@ -305,11 +297,6 @@ export class CartOverlayComponent {
         const product = await this.merchService.getMerchandiseItemById(item.id);
         if (product) {
           this.merchService.openMerchandiseItem(product);
-        }
-      } else if (item.type === 'area_pack') {
-        const pack = await this.merchService.getAreaPackById(item.id);
-        if (pack) {
-          this.merchService.openMerchandisePack(pack);
         }
       }
     } finally {

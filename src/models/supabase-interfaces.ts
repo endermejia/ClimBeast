@@ -36,5 +36,26 @@ export type RouteAscentInsertDto = TableInsert<'route_ascents'>;
 export type RouteAscentUpdateDto = TableUpdate<'route_ascents'>;
 export type RouteAscentCommentInsertDto = TableInsert<'route_ascent_comments'>;
 
+export type MaterialCatalogDto = TableRow<'material_catalog'>;
+export type MaterialCatalogInsertDto = TableInsert<'material_catalog'>;
+export type MaterialCatalogUpdateDto = TableUpdate<'material_catalog'>;
+
+export type AreaMaterialRequestDto = TableRow<'area_material_requests'>;
+export type AreaMaterialRequestInsertDto =
+  TableInsert<'area_material_requests'>;
+export type AreaMaterialRequestUpdateDto =
+  TableUpdate<'area_material_requests'>;
+
+export type AreaMaterialRequestItemDto =
+  TableRow<'area_material_request_items'>;
+export type AreaMaterialRequestItemInsertDto =
+  TableInsert<'area_material_request_items'>;
+export type AreaMaterialRequestItemUpdateDto =
+  TableUpdate<'area_material_request_items'>;
+
+export type AreaDonationDto = TableRow<'area_donations'>;
+export type AreaDonationInsertDto = TableInsert<'area_donations'>;
+export type AreaDonationUpdateDto = TableUpdate<'area_donations'>;
+
 // --- Database Utilities ---
 export { Json };

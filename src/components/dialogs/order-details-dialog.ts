@@ -11,11 +11,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { MerchandiseService } from '../../services/merchandise.service';
 
-import {
-  AreaPackDetail,
-  MerchandiseItemDetail,
-  OrderDetail,
-} from '../../models/merchandise.model';
+import { MerchandiseItemDetail, OrderDetail } from '../../models';
 
 @Component({
   selector: 'app-order-details-dialog',
@@ -109,9 +105,7 @@ import {
                       [icon]="
                         item.item_type === 'area'
                           ? '@tui.map'
-                          : item.item_type === 'area_pack'
-                            ? '@tui.package'
-                            : '@tui.shopping-bag'
+                          : '@tui.shopping-bag'
                       "
                       class="w-6 h-6 opacity-40"
                     />
@@ -200,12 +194,6 @@ export class OrderDetailsDialogComponent {
     if (item.item_type === 'merchandise' && item.product_data) {
       this.merchandiseService.openMerchandiseItem(
         item.product_data as MerchandiseItemDetail,
-      );
-    }
-
-    if (item.item_type === 'area_pack' && item.product_data) {
-      this.merchandiseService.openMerchandisePack(
-        item.product_data as AreaPackDetail,
       );
     }
   }

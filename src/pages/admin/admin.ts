@@ -357,6 +357,80 @@ import { IS_BROWSER } from '../../app/is-browser';
               />
             </a>
 
+            <!-- Material Requests -->
+            <a
+              routerLink="/admin/material-requests"
+              class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
+            >
+              <tui-badged-content [style.--tui-radius.%]="50" class="shrink-0">
+                @if (countsResource.value()?.materialRequests; as count) {
+                  <ng-container tuiSlot="top">
+                    <tui-badge-notification tuiAppearance="accent" size="s">
+                      {{ count }}
+                    </tui-badge-notification>
+                  </ng-container>
+                }
+                <div
+                  class="w-11 h-11 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center"
+                >
+                  <tui-icon icon="@tui.package" />
+                </div>
+              </tui-badged-content>
+
+              <div class="flex-1 min-w-0">
+                <span class="font-bold text-sm block truncate">
+                  {{ 'admin.materialRequests.title' | translate }}
+                </span>
+                <p
+                  class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+                >
+                  {{ 'admin.materialRequests.description' | translate }}
+                </p>
+              </div>
+
+              <tui-icon
+                icon="@tui.chevron-right"
+                class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+              />
+            </a>
+
+            <!-- Material Catalog -->
+            <a
+              routerLink="/admin/material-catalog"
+              class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
+            >
+              <tui-badged-content [style.--tui-radius.%]="50" class="shrink-0">
+                @if (countsResource.value()?.materialCatalog; as count) {
+                  <ng-container tuiSlot="top">
+                    <tui-badge-notification tuiAppearance="accent" size="s">
+                      {{ count }}
+                    </tui-badge-notification>
+                  </ng-container>
+                }
+                <div
+                  class="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center"
+                >
+                  <tui-icon icon="@tui.hammer" />
+                </div>
+              </tui-badged-content>
+
+              <div class="flex-1 min-w-0">
+                <span class="font-bold text-sm block truncate">
+                  {{ 'admin.materialCatalog.title' | translate }}
+                </span>
+                <p
+                  class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+                >
+                  {{ 'admin.materialCatalog.description' | translate }}
+                </p>
+              </div>
+
+              <tui-icon
+                icon="@tui.chevron-right"
+                class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+              />
+            </a>
+
             <!-- Error Logs -->
             <a
               routerLink="/admin/error-logs"
@@ -429,6 +503,8 @@ export class AdminComponent {
         ordersRes,
         areaReqsRes,
         equipperReqsRes,
+        materialReqsRes,
+        materialCatalogRes,
         errorLogsRes,
         parkingsRes,
         equippersRes,
@@ -445,6 +521,14 @@ export class AdminComponent {
           .from('equipper_requests')
           .select('*', { count: 'exact', head: true })
           .eq('status', 'pending'),
+        this.supabase.client
+          .from('area_material_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending'),
+        this.supabase.client
+          .from('material_catalog')
+          .select('*', { count: 'exact', head: true })
+          .eq('active', true),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (this.supabase.client as any)
           .from('error_logs')
@@ -464,6 +548,8 @@ export class AdminComponent {
         orders: ordersRes.count ?? 0,
         areaRequests: areaReqsRes.count ?? 0,
         equipperRequests: equipperReqsRes.count ?? 0,
+        materialRequests: materialReqsRes.count ?? 0,
+        materialCatalog: materialCatalogRes.count ?? 0,
         errorLogs: errorLogsRes.count ?? 0,
         parkings: parkingsRes.count ?? 0,
         equippers: equippersRes.count ?? 0,

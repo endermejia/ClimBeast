@@ -30,17 +30,12 @@ export class AreaRedirectComponent {
     const cragId = this.route.snapshot.queryParams['crag_id'];
     const areaId = this.route.snapshot.queryParams['area_id'];
     const cancel = this.route.snapshot.queryParams['cancel'];
+    const donation = this.route.snapshot.queryParams['donation'];
 
-    const onboardingSuccess =
-      this.route.snapshot.queryParams['onboarding_success'];
-    const onboardingRefresh =
-      this.route.snapshot.queryParams['onboarding_refresh'];
-
-    if (onboardingSuccess || onboardingRefresh) {
-      if (onboardingSuccess) {
-        this.toast.success('profile.saveSuccess');
-      }
-      if (areaId) {
+    if (cancel) {
+      if (cragId) {
+        void this.redirectToCrag(cragId);
+      } else if (areaId) {
         void this.redirectToArea(areaId);
       } else {
         void this.router.navigate(['/home']);
@@ -48,11 +43,10 @@ export class AreaRedirectComponent {
       return;
     }
 
-    if (cancel) {
-      if (cragId) {
-        void this.redirectToCrag(cragId);
-      } else if (areaId) {
-        void this.redirectToArea(areaId);
+    if (donation) {
+      if (areaId) {
+        this.toast.success('donations.thankYou');
+        void this.redirectToArea(areaId, false);
       } else {
         void this.router.navigate(['/home']);
       }

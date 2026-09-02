@@ -17,9 +17,9 @@ import { SupabaseService } from '../../services/supabase.service';
 
 import { AvatarUrlPipe, MentionLinkPipe } from '../../pipes';
 
-import { MentionHintDirective } from '../../directives/mention-hint.directive';
-
 import { reactToObservable } from '../../utils';
+
+import { MentionHintDirective } from '../../directives/mention-hint.directive';
 
 import { CommentLikesComponent } from '../social/comment-likes';
 

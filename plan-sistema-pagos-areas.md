@@ -1,108 +1,166 @@
-# Plan: Nuevo Sistema de Pagos de Areas
+# Plan Arquitectónico: Sistema de Pagos de Áreas, Donaciones y Catálogo de Material
 
-## Contexto y problema
-
-El sistema actual usa **Stripe Connect** para enviar el dinero de las compras de topos directamente a la cuenta del admin del area. Esto crea un problema: si un area tiene varios admins, uno puede retirar los fondos unilateralmente y generar disputas.
-
-**Nuevo modelo:** El dinero se queda en la cuenta principal de la plataforma. Los admins del area pueden solicitar **material de equipamiento** (parabolts, chapas, etc.) por el valor acumulado, sujeto a aprobacion de un admin global. Tambien se permiten **donaciones** directas a areas.
+**Proyecto:** ClimBeast (Angular 22 Zoneless + Supabase + Stripe)  
+**Versión del Plan:** 2.0 (Refinado con arquitectura integral, deducción de comisiones Stripe y eliminación de Area Packs)
 
 ---
 
-## Cambios en el modelo de negocio
+## 1. Resumen Ejecutivo y Modelo de Negocio
 
-| Concepto           | Antes                              | Ahora                                                      |
-| ------------------ | ---------------------------------- | ---------------------------------------------------------- |
-| Pago de topos      | Stripe Connect → cuenta del admin  | Stripe → cuenta principal de la plataforma                 |
-| Retirada de fondos | Admin retira a su cuenta Stripe    | Admin solicita material, admin global aprueba              |
-| Donaciones         | No existen                         | Usuarios donan a areas, dinero va a cuenta principal       |
-| Revenue por area   | No visible                         | Publico: total acumulado, transacciones, material extraido |
-| Material           | No existia                         | Catalogo configurable con precios e imagenes               |
-| Cuentas Connect    | Obligatorias para areas con precio | Eliminadas completamente                                   |
+El modelo anterior dependía de **Stripe Connect Custom/Express** por área, lo que generaba problemas de gobernanza con múltiples administradores y bloqueaba la monetización si el equipador no completaba el onboarding bancario.
+
+### Nuevo Modelo Unificado:
+
+1. **Cuenta Centralizada:** Todos los cobros (compras de topos, donaciones y merchandising) se procesan directamente en la cuenta Stripe principal de la plataforma.
+2. **Bote Transparente del Área (Net Revenue):**
+   - Cada compra de acceso a un área y cada donación incrementa el bote del área.
+   - **Deducción de comisiones de Stripe:** Se descuenta la comisión exacta de Stripe (`stripe_fee`) calculada en el webhook mediante `balance_transaction`, garantizando que solo el importe neto (`net_amount`) se compute en el balance para evitar balances negativos en la plataforma.
+3. **Extracción en Material de Equipamiento:** Los administradores del área no retiran dinero en efectivo; en su lugar, canjean el balance disponible por material de equipamiento (parabolts, chapas, químicos, reuniones, etc.) del catálogo oficial de la plataforma, previa aprobación de un administrador global.
+4. **Transparencia Comunitaria:** Panel público en la ficha del área que muestra métricas acumuladas y un historial de donaciones y material extraído (anonimizando compradores de topos por privacidad).
+5. **Eliminación Total de `area_packs`:** Se elimina por completo el concepto de packs de áreas en base de datos, servicios, carrito y vistas, simplificando el catálogo a **Merchandising físico** y **Áreas individuales digitales**.
 
 ---
 
-## Fase 1 — Base de datos
+## 2. Matriz de Cambios de Dominio
 
-### 1.1 Eliminar `stripe_account_id` de `areas`
+| Dominio                    | Antes                                                         | Ahora (v2.0)                                                        |
+| :------------------------- | :------------------------------------------------------------ | :------------------------------------------------------------------ |
+| **Cuenta Stripe**          | Cuentas Connect por área (`stripe_account_id`)                | Cuenta principal de la plataforma                                   |
+| **Comisiones Stripe**      | Absorción no calculada                                        | Deducción exacta (`gross - stripe_fee = net`) por transacción       |
+| **Compra de Topos**        | Flujo Connect directo vía `stripe-checkout`                   | 1-Click Checkout directo vía `create-checkout-session`              |
+| **Donaciones**             | No existían                                                   | Donaciones 1-Click con opción anónima vía `create-checkout-session` |
+| **Packs de Zonas**         | Tablas `area_packs`, `area_pack_items`, `area_pack_purchases` | **Eliminados por completo** del sistema                             |
+| **Carrito Tienda**         | Mezcla de Merchandising + Packs + Áreas                       | Exclusivo para Merchandising físico con envío                       |
+| **Retirada de Fondos**     | Transferencias Stripe automáticas/manuales                    | Solicitudes de material físico aprobadas por Admin Global           |
+| **Catálogo Material**      | No existía                                                    | Catálogo configurable (precios, stock/unidad, imágenes)             |
+| **Concurrencia / Balance** | Cálculo en frontend                                           | Validación atómica y bloqueo de saldo en PostgreSQL RPC             |
 
-```sql
--- Eliminar columna
-ALTER TABLE areas DROP COLUMN stripe_account_id;
-```
+---
 
-**Archivos afectados:**
+## 3. Fase 1 — Base de Datos y Supabase (SQL & RLS)
 
-- `src/models/supabase-generated.ts` — regenerar
-- `src/models/area.model.ts` — eliminar campo de interfaces
-- `src/models/crag.model.ts` — eliminar campo de interfaces
-- `src/utils/crag-mappers.ts` — eliminar mapeo
-- `src/services/areas.service.ts` — eliminar `connectStripe()` y referencias
-- `src/services/outdoor-data.service.ts` — eliminar select
-- `src/components/forms/area-form.ts` — eliminar toda la seccion de Connect
-- `src/components/paywall/paywall.ts` — sin cambios (no usaba stripe_account_id directamente)
-
-**Edge Functions a eliminar:**
-
-- `supabase/functions/stripe-onboarding/` — completa
-- `supabase/functions/stripe-checkout/` — completa
-
-**Edge Function a modificar:**
-
-- `supabase/functions/stripe-webhook/index.ts` — eliminar el Case 2 (legacy area purchase via metadata area_id), mantener solo el Case 1 (shop orders)
-
-### 1.2 Tabla `material_catalog`
+### 3.1 Migración DDL y Limpieza
 
 ```sql
-CREATE TABLE material_catalog (
-  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY
-, name        TEXT NOT NULL
-, description TEXT
-, price       NUMERIC(10,2) NOT NULL
-, image_url   TEXT
-, unit        TEXT NOT NULL DEFAULT 'ud'   -- ud, m, kg, pack...
-, active      BOOLEAN NOT NULL DEFAULT true
-, created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-, updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+-- 1. Eliminar soporte legado de Stripe Connect en 'areas'
+ALTER TABLE areas DROP COLUMN IF EXISTS stripe_account_id;
+
+-- 2. Eliminar sistema de Area Packs
+DROP TABLE IF EXISTS area_pack_purchases CASCADE;
+DROP TABLE IF EXISTS area_pack_items CASCADE;
+DROP TABLE IF EXISTS area_packs CASCADE;
+
+-- 3. Refactorizar 'area_purchases' para registrar importes brutos, comisiones y netos
+ALTER TABLE area_purchases
+  ADD COLUMN IF NOT EXISTS gross_amount NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  ADD COLUMN IF NOT EXISTS stripe_fee   NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  ADD COLUMN IF NOT EXISTS net_amount   NUMERIC(10,2) NOT NULL DEFAULT 0.00;
+
+-- Migrar registros históricos
+UPDATE area_purchases
+SET gross_amount = amount,
+    stripe_fee = 0.00,
+    net_amount = amount
+WHERE gross_amount = 0.00 AND amount > 0;
+
+-- 4. Crear tabla de Donaciones a Áreas
+CREATE TABLE area_donations (
+  id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  area_id           BIGINT NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+  user_id           UUID REFERENCES user_profiles(id) ON DELETE SET NULL,
+  gross_amount      NUMERIC(10,2) NOT NULL CHECK (gross_amount > 0),
+  stripe_fee        NUMERIC(10,2) NOT NULL DEFAULT 0.00 CHECK (stripe_fee >= 0),
+  net_amount        NUMERIC(10,2) NOT NULL CHECK (net_amount > 0),
+  anonymous         BOOLEAN NOT NULL DEFAULT false,
+  donor_message     TEXT,
+  stripe_session_id TEXT UNIQUE NOT NULL,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-ALTER TABLE material_catalog ENABLE ROW LEVEL POLICY;
+-- 5. Crear Catálogo de Material Oficial
+CREATE TABLE material_catalog (
+  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name        TEXT NOT NULL,
+  description TEXT,
+  price       NUMERIC(10,2) NOT NULL CHECK (price >= 0),
+  image_url   TEXT,
+  unit        TEXT NOT NULL DEFAULT 'ud', -- 'ud', 'pack', 'm', 'caja'
+  active      BOOLEAN NOT NULL DEFAULT true,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
--- Lectura publica (cualquier usuario autenticado puede ver)
-CREATE POLICY select_material ON material_catalog
+-- 6. Crear Solicitudes de Material de Áreas
+CREATE TYPE material_request_status AS ENUM ('pending', 'approved', 'rejected', 'disposed', 'cancelled');
+
+CREATE TABLE area_material_requests (
+  id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  area_id          BIGINT NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+  user_id          UUID NOT NULL REFERENCES user_profiles(id),
+  status           material_request_status NOT NULL DEFAULT 'pending',
+  total_amount     NUMERIC(10,2) NOT NULL CHECK (total_amount > 0),
+  notes            TEXT,
+  rejection_reason TEXT,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  reviewed_by      UUID REFERENCES user_profiles(id),
+  reviewed_at      TIMESTAMPTZ
+);
+
+-- 7. Crear Ítems de Solicitudes de Material
+CREATE TABLE area_material_request_items (
+  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  request_id  BIGINT NOT NULL REFERENCES area_material_requests(id) ON DELETE CASCADE,
+  material_id BIGINT NOT NULL REFERENCES material_catalog(id),
+  quantity    INTEGER NOT NULL CHECK (quantity > 0),
+  unit_price  NUMERIC(10,2) NOT NULL CHECK (unit_price >= 0),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+### 3.2 Políticas de Seguridad (RLS)
+
+Siguiendo el estándar del proyecto (`is_user_admin(auth.uid())` y tabla `area_admins`):
+
+```sql
+-- RLS: material_catalog
+ALTER TABLE material_catalog ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "users_read_active_material" ON material_catalog
+  FOR SELECT TO authenticated
+  USING (active = true OR is_user_admin(auth.uid()));
+
+CREATE POLICY "admin_manage_material" ON material_catalog
+  FOR ALL TO authenticated
+  USING (is_user_admin(auth.uid()))
+  WITH CHECK (is_user_admin(auth.uid()));
+
+-- RLS: area_donations
+ALTER TABLE area_donations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "public_read_donations" ON area_donations
   FOR SELECT TO authenticated
   USING (true);
 
--- Solo admins globales pueden CRUD
-CREATE POLICY admin_manage_material ON material_catalog
-  FOR ALL TO authenticated
+CREATE POLICY "service_role_insert_donations" ON area_donations
+  FOR INSERT TO authenticated
+  WITH CHECK (is_user_admin(auth.uid()) OR auth.uid() = user_id OR user_id IS NULL);
+
+-- RLS: area_material_requests
+ALTER TABLE area_material_requests ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "view_material_requests" ON area_material_requests
+  FOR SELECT TO authenticated
   USING (
+    is_user_admin(auth.uid()) OR
     EXISTS (
-      SELECT 1 FROM user_roles
-      WHERE user_id = auth.uid() AND role = 'admin'
+      SELECT 1 FROM area_admins
+      WHERE area_admins.area_id = area_material_requests.area_id
+        AND area_admins.user_id = auth.uid()
     )
   );
-```
 
-### 1.3 Tabla `area_material_requests`
-
-```sql
-CREATE TABLE area_material_requests (
-  id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY
-, area_id         BIGINT NOT NULL REFERENCES areas(id)
-, user_id         UUID NOT NULL REFERENCES user_profiles(id)
-, status          TEXT NOT NULL DEFAULT 'pending'  -- pending, approved, rejected, disposed
-, total_amount    NUMERIC(10,2) NOT NULL
-, notes           TEXT
-, created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-, updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-, reviewed_by     UUID REFERENCES user_profiles(id)
-, reviewed_at     TIMESTAMPTZ
-);
-
-ALTER TABLE area_material_requests ENABLE ROW LEVEL POLICY;
-
--- Admins del area pueden INSERT y SELECT sus propias solicitudes
-CREATE POLICY area_admin_insert_request ON area_material_requests
+CREATE POLICY "area_admin_insert_material_requests" ON area_material_requests
   FOR INSERT TO authenticated
   WITH CHECK (
     EXISTS (
@@ -112,640 +170,474 @@ CREATE POLICY area_admin_insert_request ON area_material_requests
     )
   );
 
-CREATE POLICY area_admin_select_requests ON area_material_requests
-  FOR SELECT TO authenticated
-  USING (
-    -- Admins del area ven sus solicitudes
-    EXISTS (
-      SELECT 1 FROM area_admins
-      WHERE area_admins.area_id = area_material_requests.area_id
-        AND area_admins.user_id = auth.uid()
-    )
-    OR
-    -- Admins globales ven todas
-    EXISTS (
-      SELECT 1 FROM user_roles
-      WHERE user_id = auth.uid() AND role = 'admin'
-    )
-  );
-
--- Admins globales pueden UPDATE (aprobar/rechazar)
-CREATE POLICY admin_review_request ON area_material_requests
+CREATE POLICY "admin_update_material_requests" ON area_material_requests
   FOR UPDATE TO authenticated
   USING (
-    EXISTS (
-      SELECT 1 FROM user_roles
-      WHERE user_id = auth.uid() AND role = 'admin'
+    is_user_admin(auth.uid()) OR
+    (
+      -- Area admin solo puede cancelar si está pendiente
+      status = 'pending' AND
+      EXISTS (
+        SELECT 1 FROM area_admins
+        WHERE area_admins.area_id = area_material_requests.area_id
+          AND area_admins.user_id = auth.uid()
+      )
     )
   );
-```
 
-### 1.4 Tabla `area_material_request_items`
+-- RLS: area_material_request_items
+ALTER TABLE area_material_request_items ENABLE ROW LEVEL SECURITY;
 
-```sql
-CREATE TABLE area_material_request_items (
-  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY
-, request_id  BIGINT NOT NULL REFERENCES area_material_requests(id) ON DELETE CASCADE
-, material_id BIGINT NOT NULL REFERENCES material_catalog(id)
-, quantity    INTEGER NOT NULL CHECK (quantity > 0)
-, unit_price  NUMERIC(10,2) NOT NULL
-, created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-ALTER TABLE area_material_request_items ENABLE ROW LEVEL POLICY
-
--- Hereda permisos del request padre (mismo patron)
-CREATE POLICY area_admin_manage_items ON area_material_request_items
-  FOR ALL TO authenticated
+CREATE POLICY "view_request_items" ON area_material_request_items
+  FOR SELECT TO authenticated
   USING (
     EXISTS (
       SELECT 1 FROM area_material_requests amr
       WHERE amr.id = area_material_request_items.request_id
         AND (
+          is_user_admin(auth.uid()) OR
           EXISTS (
             SELECT 1 FROM area_admins
             WHERE area_admins.area_id = amr.area_id
               AND area_admins.user_id = auth.uid()
-          )
-          OR
-          EXISTS (
-            SELECT 1 FROM user_roles
-            WHERE user_id = auth.uid() AND role = 'admin'
           )
         )
     )
   );
 ```
 
-### 1.5 Tabla `area_donations`
+### 3.3 Funciones SQL / RPC Atómicas (Gobernanza y Concurrencia)
 
 ```sql
-CREATE TABLE area_donations (
-  id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY
-, area_id             BIGINT NOT NULL REFERENCES areas(id)
-, user_id             UUID REFERENCES user_profiles(id)  -- nullable para donaciones anonimas
-, amount              NUMERIC(10,2) NOT NULL CHECK (amount > 0)
-, anonymous           BOOLEAN NOT NULL DEFAULT false
-, stripe_session_id   TEXT
-, created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+-- 1. Calcular balance actual de un área
+CREATE OR REPLACE FUNCTION get_area_balance(p_area_id BIGINT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_purchases_net NUMERIC(10,2) := 0;
+  v_donations_net NUMERIC(10,2) := 0;
+  v_withdrawn     NUMERIC(10,2) := 0;
+  v_reserved      NUMERIC(10,2) := 0;
+  v_available     NUMERIC(10,2) := 0;
+BEGIN
+  -- Total compras (neto)
+  SELECT COALESCE(SUM(net_amount), 0) INTO v_purchases_net
+  FROM area_purchases WHERE area_id = p_area_id;
 
-ALTER TABLE area_donations ENABLE ROW LEVEL POLICY;
+  -- Total donaciones (neto)
+  SELECT COALESCE(SUM(net_amount), 0) INTO v_donations_net
+  FROM area_donations WHERE area_id = p_area_id;
 
--- Lectura publica (para mostrar en dashboard de area)
-CREATE POLICY select_donations ON area_donations
-  FOR SELECT TO authenticated
-  USING (true);
+  -- Total retirado consolidado (approved o disposed)
+  SELECT COALESCE(SUM(total_amount), 0) INTO v_withdrawn
+  FROM area_material_requests
+  WHERE area_id = p_area_id AND status IN ('approved', 'disposed');
 
--- Cualquier usuario autenticado puede INSERT su propia donacion
-CREATE POLICY insert_own_donation ON area_donations
-  FOR INSERT TO authenticated
-  WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+  -- Total reservado en solicitudes pendientes
+  SELECT COALESCE(SUM(total_amount), 0) INTO v_reserved
+  FROM area_material_requests
+  WHERE area_id = p_area_id AND status = 'pending';
+
+  v_available := (v_purchases_net + v_donations_net) - (v_withdrawn + v_reserved);
+
+  RETURN jsonb_build_object(
+    'totalPurchasesNet', v_purchases_net,
+    'totalDonationsNet', v_donations_net,
+    'totalWithdrawn',    v_withdrawn,
+    'totalReserved',     v_reserved,
+    'availableBalance',  GREATEST(v_available, 0.00)
+  );
+END;
+$$;
+
+-- 2. Crear solicitud de material atómica con validación de saldo y rol
+CREATE OR REPLACE FUNCTION create_area_material_request(
+  p_area_id BIGINT,
+  p_items   JSONB, -- Array de [{ material_id, quantity }]
+  p_notes   TEXT DEFAULT NULL
+)
+RETURNS BIGINT
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_user_id       UUID := auth.uid();
+  v_is_area_admin BOOLEAN;
+  v_balance       JSONB;
+  v_available     NUMERIC(10,2);
+  v_total_calc    NUMERIC(10,2) := 0;
+  v_req_id        BIGINT;
+  v_item          RECORD;
+  v_mat_price     NUMERIC(10,2);
+  v_mat_active    BOOLEAN;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+
+  -- Validar permisos de administrador de área o admin global
+  SELECT EXISTS (
+    SELECT 1 FROM area_admins WHERE area_id = p_area_id AND user_id = v_user_id
+  ) OR is_user_admin(v_user_id) INTO v_is_area_admin;
+
+  IF NOT v_is_area_admin THEN
+    RAISE EXCEPTION 'User is not an admin of this area';
+  END IF;
+
+  -- Obtener balance disponible actual
+  v_balance := get_area_balance(p_area_id);
+  v_available := (v_balance->>'availableBalance')::NUMERIC;
+
+  -- Crear la solicitud inicial
+  INSERT INTO area_material_requests (area_id, user_id, status, total_amount, notes)
+  VALUES (p_area_id, v_user_id, 'pending', 0, p_notes)
+  RETURNING id INTO v_req_id;
+
+  -- Iterar ítems, validar catálogo e insertar
+  FOR v_item IN SELECT * FROM jsonb_to_recordset(p_items) AS x(material_id BIGINT, quantity INT)
+  LOOP
+    SELECT price, active INTO v_mat_price, v_mat_active
+    FROM material_catalog WHERE id = v_item.material_id;
+
+    IF v_mat_price IS NULL OR NOT v_mat_active THEN
+      RAISE EXCEPTION 'Invalid or inactive material item: %', v_item.material_id;
+    END IF;
+
+    IF v_item.quantity <= 0 THEN
+      RAISE EXCEPTION 'Quantity must be positive';
+    END IF;
+
+    INSERT INTO area_material_request_items (request_id, material_id, quantity, unit_price)
+    VALUES (v_req_id, v_item.material_id, v_item.quantity, v_mat_price);
+
+    v_total_calc := v_total_calc + (v_mat_price * v_item.quantity);
+  END LOOP;
+
+  IF v_total_calc > v_available THEN
+    RAISE EXCEPTION 'Request total (%) exceeds available balance (%)', v_total_calc, v_available;
+  END IF;
+
+  UPDATE area_material_requests
+  SET total_amount = v_total_calc
+  WHERE id = v_req_id;
+
+  RETURN v_req_id;
+END;
+$$;
+
+-- 3. Timeline público de transparencia para el área (sin exponer datos privados de compradores)
+CREATE OR REPLACE FUNCTION get_area_public_timeline(p_area_id BIGINT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_result JSONB;
+BEGIN
+  SELECT jsonb_build_object(
+    'summary', get_area_balance(p_area_id),
+    'donations', (
+      SELECT COALESCE(jsonb_agg(
+        jsonb_build_object(
+          'id', d.id,
+          'amount', d.net_amount,
+          'anonymous', d.anonymous,
+          'userName', CASE WHEN d.anonymous THEN 'Anónimo' ELSE p.full_name END,
+          'userAvatar', CASE WHEN d.anonymous THEN NULL ELSE p.avatar_url END,
+          'message', d.donor_message,
+          'createdAt', d.created_at
+        ) ORDER BY d.created_at DESC
+      ), '[]'::jsonb)
+      FROM area_donations d
+      LEFT JOIN user_profiles p ON p.id = d.user_id
+      WHERE d.area_id = p_area_id
+    ),
+    'withdrawals', (
+      SELECT COALESCE(jsonb_agg(
+        jsonb_build_object(
+          'id', r.id,
+          'totalAmount', r.total_amount,
+          'status', r.status,
+          'createdAt', r.created_at,
+          'reviewedAt', r.reviewed_at,
+          'items', (
+            SELECT jsonb_agg(
+              jsonb_build_object(
+                'materialName', m.name,
+                'quantity', ri.quantity,
+                'unit', m.unit,
+                'unitPrice', ri.unit_price,
+                'imageUrl', m.image_url
+              )
+            )
+            FROM area_material_request_items ri
+            JOIN material_catalog m ON m.id = ri.material_id
+            WHERE ri.request_id = r.id
+          )
+        ) ORDER BY r.created_at DESC
+      ), '[]'::jsonb)
+      FROM area_material_requests r
+      WHERE r.area_id = p_area_id AND r.status IN ('approved', 'disposed')
+    )
+  ) INTO v_result;
+
+  RETURN v_result;
+END;
+$$;
 ```
 
-### 1.6 Regenerar tipos
+---
+
+## 4. Fase 2 — Edge Functions de Stripe
+
+### 4.1 Unificación de `create-checkout-session`
+
+Modificar `supabase/functions/create-checkout-session/index.ts`:
+
+1. **Eliminar soporte para `area_pack`**.
+2. **Soportar compras 1-Click de Área:**
+   - Ítem `{ type: 'area', id: areaId }`.
+   - Consulta el precio de la tabla `areas`.
+   - Genera `line_items` y `metadata: { item_type: 'area', area_id: areaId, user_id: user.id }`.
+3. **Soportar Donaciones 1-Click:**
+   - Ítem `{ type: 'area_donation', areaId, amount, anonymous, message }`.
+   - Valida `amount >= 1.00`.
+   - Genera `line_items` y `metadata: { item_type: 'area_donation', area_id: areaId, user_id: user.id, anonymous: anonymous ? 'true' : 'false', message: message || '' }`.
+4. **Hacer `shipping_info` opcional:** Requerido únicamente cuando existen ítems de tipo `merchandise` físico en la solicitud.
+5. **Configurar URLs de retorno claras:**
+   - Éxito área: `/area/{slug}?purchase=success`
+   - Éxito donación: `/area/{slug}?donation=success`
+   - Éxito tienda: `/order-success?session_id={CHECKOUT_SESSION_ID}`
+
+### 4.2 Actualización de `stripe-webhook`
+
+Modificar `supabase/functions/stripe-webhook/index.ts`:
+
+1. **Eliminar Case 2** (legacy Connect transfers).
+2. **Cálculo exacto de comisiones Stripe:**
+   ```typescript
+   // Obtener desglose exacto de comisiones
+   let stripeFee = 0;
+   let netAmount = (session.amount_total || 0) / 100;
+
+   if (session.payment_intent) {
+     const pi = await stripe.paymentIntents.retrieve(session.payment_intent as string, {
+       expand: ["latest_charge.balance_transaction"],
+     });
+     const charge = pi.latest_charge as Stripe.Charge;
+     const bt = charge?.balance_transaction as Stripe.BalanceTransaction;
+     if (bt && typeof bt.fee === "number") {
+       stripeFee = bt.fee / 100;
+       netAmount = (bt.net || session.amount_total! - bt.fee) / 100;
+     }
+   }
+   ```
+3. **Registro de Donaciones (`area_donations`):**
+   - Si `session.metadata?.item_type === 'area_donation'`:
+     - Inserta en `area_donations` (`area_id`, `user_id`, `gross_amount`, `stripe_fee`, `net_amount`, `anonymous`, `donor_message`, `stripe_session_id`).
+4. **Registro de Compra de Área (`area_purchases`):**
+   - Si `session.metadata?.item_type === 'area'` o viene en `orderItems`:
+     - Inserta en `area_purchases` (`area_id`, `user_id`, `gross_amount`, `stripe_fee`, `net_amount`, `stripe_session_id`).
+5. **Registro de Pedido de Merchandising (`orders` / `order_items`):**
+   - Solo se inserta si la sesión contiene productos físicos.
+
+### 4.3 Eliminación de Edge Functions Obsoletas
+
+- Eliminar completamente la carpeta `supabase/functions/stripe-onboarding/`
+- Eliminar completamente la carpeta `supabase/functions/stripe-checkout/`
+
+---
+
+## 5. Fase 3 — Modelos y Tipos TypeScript
+
+### 5.1 Actualizar `src/models/area.model.ts`
+
+- Eliminar `stripe_account_id` de `AreaDTO`, `CragDTO`, etc.
+- Agregar interfaces:
+  - `MaterialCatalogItem`
+  - `MaterialRequestStatus = 'pending' | 'approved' | 'rejected' | 'disposed' | 'cancelled'`
+  - `AreaMaterialRequest`
+  - `AreaMaterialRequestItem`
+  - `AreaMaterialRequestWithDetails`
+  - `AreaDonation`
+  - `AreaBalanceSummary`
+  - `AreaPublicTimeline`
+
+### 5.2 Limpieza de `src/models/merchandise.model.ts`
+
+- Eliminar `AreaPack`, `AreaPackItem`, `AreaPackPurchase`.
+- Eliminar `'area_pack'` del tipo de unión de productos.
+
+---
+
+## 6. Fase 4 — Servicios de Negocio (Angular 22 Reactivo)
+
+### 6.1 `MaterialCatalogService` (`src/services/material-catalog.service.ts`)
+
+- `readonly catalogResource = resource(...)` para lectura reactiva.
+- Métodos CRUD para administradores globales:
+  - `createMaterialItem(item)`
+  - `updateMaterialItem(id, patch)`
+  - `toggleActive(id, active)`
+  - `deleteMaterialItem(id)`
+
+### 6.2 `AreaRevenueService` (`src/services/area-revenue.service.ts`)
+
+- `getAreaBalance(areaId: number): Promise<AreaBalanceSummary>` (vía RPC).
+- `getAreaPublicTimeline(areaId: number): Promise<AreaPublicTimeline>` (vía RPC).
+- Historial administrativo para administradores del área.
+
+### 6.3 `AreaMaterialRequestsService` (`src/services/area-material-requests.service.ts`)
+
+- `readonly pendingRequestsCount = signal(0)` (para badge en panel de admin global).
+- `createRequest(areaId, items, notes)` -> invoca RPC `create_area_material_request`.
+- `cancelRequest(requestId)` -> admin del área cancela solicitud en estado pendiente.
+- `approveRequest(requestId)` -> admin global aprueba.
+- `rejectRequest(requestId, reason)` -> admin global rechaza con motivo.
+- `markDisposed(requestId)` -> admin global marca como material entregado/enviado.
+- `getRequestsByArea(areaId)`
+- `getAllPendingRequests()`
+
+### 6.4 `AreaDonationsService` (`src/services/area-donations.service.ts`)
+
+- `donateToArea(areaId, amount, anonymous, message)`:
+  - Invoca `create-checkout-session` con `{ items: [{ type: 'area_donation', ... }] }`.
+  - Redirige al checkout de Stripe.
+
+### 6.5 Refactorización de Servicios Existentes
+
+- **`AreasService` (`src/services/areas.service.ts`):**
+  - Eliminar método `connectStripe()`.
+  - Eliminar referencias a `stripe_account_id`.
+- **`CartService` (`src/services/cart.service.ts`):**
+  - Eliminar todo manejo de `area_pack`.
+  - El carrito queda exclusivo para `merchandise`.
+- **`MerchandiseService` (`src/services/merchandise.service.ts`):**
+  - Eliminar consultas y mutaciones de `area_packs` y `area_pack_items`.
+
+---
+
+## 7. Fase 5 — Componentes de Usuario y UI (Taiga UI 5 + Tailwind 4)
+
+### 7.1 Paywall (`src/components/paywall/paywall.ts`)
+
+- Actualizar `contributeNow()`: ya no invoca la función eliminada `stripe-checkout`, sino `create-checkout-session` con `{ items: [{ type: 'area', id: areaId() }] }`.
+- Añadir botón secundario con diseño accesible: "Donar al equipamiento del área".
+
+### 7.2 Diálogo de Donación (`src/components/dialogs/area-donation-dialog.ts`)
+
+- Diálogo interactivo con Taiga UI (`TuiDialogService`).
+- Selector de importe predefinido (5€, 10€, 20€, 50€) + input personalizado.
+- Checkbox "Donación anónima".
+- Campo opcional "Mensaje para los equipadores".
+- Indicador de comisión estimada transparente ("El 100% del importe neto irá al bote del área").
+
+### 7.3 Panel de Transparencia y Bote (`src/components/area/area-revenue-panel.ts`)
+
+- Componente `OnPush` para la página del área (`src/pages/area/area.ts`):
+  - **Métricas:** Bote disponible, Total aportado por la comunidad, Material instalado.
+  - **Timeline:** Tarjetas con donaciones recientes y material entregado/solicitado.
+  - **Acciones:**
+    - Botón "Donar" (para cualquier escalador).
+    - Botón "Solicitar material" (visible únicamente para equipadores / `area_admins` si hay saldo disponible).
+    - Botón "Ver mis solicitudes" (para equipadores).
+
+### 7.4 Diálogo de Solicitud de Material (`src/components/dialogs/material-request-dialog.ts`)
+
+- Selector de ítems del catálogo activo (`material_catalog`).
+- Controles de cantidad con cálculo de subtotal en tiempo real.
+- Barra de progreso que indica el porcentaje de saldo disponible consumido.
+- Validación reactiva: deshabilita el envío si `total > availableBalance`.
+
+### 7.5 Administración Global: Catálogo y Solicitudes
+
+1. **`/admin/material-catalog` (`src/pages/admin/material-catalog.ts`):**
+   - Tabla administrativa para gestionar precios, fotos y unidades del material oficial.
+2. **`/admin/material-requests` (`src/pages/admin/material-requests.ts`):**
+   - Lista de solicitudes pendientes de todas las escuelas de escalada.
+   - Acciones: Aprobar, Rechazar (con modal para motivo), Marcar como entregado.
+3. **`AdminComponent` (`src/pages/admin/admin.ts`):**
+   - Enlaces en el menú lateral con badge reactivo para solicitudes pendientes.
+
+### 7.6 Limpieza de Formularios
+
+- **`AreaFormComponent` (`src/components/forms/area-form.ts`):**
+  - Eliminar por completo el botón de "Conectar con Stripe", modal de cuentas Connect y mapeos de `stripe_account_id`.
+  - Mantener campos de configuración de precio de topos.
+- **`AreaRedirectComponent` (`src/pages/area/area-redirect.ts`):**
+  - Eliminar handlers de retorno de Stripe Connect onboarding.
+
+---
+
+## 8. Fase 6 — Depuración Integral de Código Muerto
+
+### 8.1 Archivos a Eliminar Físicamente
+
+1. `supabase/functions/stripe-onboarding/` (directorio completo)
+2. `supabase/functions/stripe-checkout/` (directorio completo)
+3. `src/supabase-context/stripe-onboarding.ts`
+4. `src/supabase-context/stripe-checkout.ts`
+5. `src/components/dialogs/merchandise-pack-dialog.ts` (si era exclusivo de area packs)
+
+### 8.2 Archivos a Modificar / Limpiar
+
+1. `src/components/forms/area-form.ts`
+2. `src/components/paywall/paywall.ts`
+3. `src/components/cart-overlay/cart-overlay.ts` (eliminar branches de `area_pack`)
+4. `src/components/dialogs/order-details-dialog.ts` (eliminar branches de `area_pack`)
+5. `src/components/dialogs/purchase-history-dialog.ts` (eliminar consulta de `area_pack_purchases`)
+6. `src/pages/merchandising/merchandising.ts` (eliminar filtro y pestaña de packs)
+7. `src/services/cart.service.ts`
+8. `src/services/merchandise.service.ts`
+9. `src/services/areas.service.ts`
+10. `src/services/outdoor-data.service.ts`
+11. `src/utils/crag-mappers.ts`
+12. `src/models/area.model.ts`
+13. `src/models/crag.model.ts`
+14. `src/models/merchandise.model.ts`
+15. `src/app/app.routes.ts`
+
+---
+
+## 9. Fase 7 — Internacionalización (i18n)
+
+Sincronizar claves en todos los ficheros (`es.json`, `en.json`, `de.json`, `fr.json`, `it.json`, `eu.json`, `va.json`):
+
+- `areaRevenue.*`: Métricas, Bote disponible, Donaciones, Material instalado.
+- `materialCatalog.*`: CRUD de material, unidades, precio, stock.
+- `materialRequest.*`: Formulario de solicitud, validaciones de saldo, confirmaciones.
+- `materialRequests.*`: Estados (`pending`, `approved`, `rejected`, `disposed`, `cancelled`), acciones de aprobación y entrega.
+- `donations.*`: Flujo de donación, anónimo, mensajes.
+
+---
+
+## 10. Plan de Verificación y Calidad
+
+### 10.1 Verificaciones Automatizadas
 
 ```bash
-npx supabase gen types typescript --local > src/models/supabase-generated.ts
+bun run build           # Compilación estricta SSR y prerender
+bun run lint            # ESLint (sin advertencias ni 'any')
+bun run check:imports   # Orden de imports estricto según AGENTS.md
+bun run check:i18n      # Paridad de traducciones
+bun run test            # Suite de pruebas unitarias Vitest
+bun run format          # Formateo Prettier
 ```
 
----
-
-## Fase 2 — Modelos TypeScript
-
-### 2.1 Nuevos tipos en `src/models/area.model.ts`
-
-```typescript
-// Material catalog
-export interface MaterialCatalogItem {
-  id: number;
-  name: string;
-  description: string | null;
-  price: number;
-  image_url: string | null;
-  unit: string;
-  active: boolean;
-  created_at: string;
-}
-
-// Withdrawal request
-export type MaterialRequestStatus = "pending" | "approved" | "rejected" | "disposed";
-
-export interface AreaMaterialRequest {
-  id: number;
-  area_id: number;
-  user_id: string;
-  status: MaterialRequestStatus;
-  total_amount: number;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-  reviewed_by: string | null;
-  reviewed_at: string | null;
-}
-
-export interface AreaMaterialRequestItem {
-  id: number;
-  request_id: number;
-  material_id: number;
-  quantity: number;
-  unit_price: number;
-}
-
-export interface AreaMaterialRequestWithDetails extends AreaMaterialRequest {
-  items: (AreaMaterialRequestItem & { material: MaterialCatalogItem })[];
-  user: { id: string; name: string | null; avatar: string | null };
-  reviewer: { id: string; name: string | null } | null;
-}
-
-// Donation
-export interface AreaDonation {
-  id: number;
-  area_id: number;
-  user_id: string | null;
-  amount: number;
-  anonymous: boolean;
-  stripe_session_id: string | null;
-  created_at: string;
-}
-
-// Revenue summary (computed, not a table)
-export interface AreaRevenue {
-  totalPurchases: number; // SUM de area_purchases.amount
-  totalDonations: number; // SUM de area_donations.amount
-  totalWithdrawn: number; // SUM de area_material_requests.total_amount WHERE status IN ('approved','disposed')
-  availableBalance: number; // totalPurchases + totalDonations - totalWithdrawn
-}
-```
-
----
-
-## Fase 3 — Services
-
-### 3.1 `src/services/material-catalog.service.ts` (nuevo)
-
-```typescript
-@Injectable({ providedIn: "root" })
-export class MaterialCatalogService {
-  // CRUD para admins globales
-  getAll(): Promise<MaterialCatalogItem[]>;
-  getById(id: number): Promise<MaterialCatalogItem | null>;
-  create(item): Promise<boolean>;
-  update(id, patch): Promise<boolean>;
-  delete(id): Promise<boolean>;
-}
-```
-
-### 3.2 `src/services/area-revenue.service.ts` (nuevo)
-
-```typescript
-@Injectable({ providedIn: "root" })
-export class AreaRevenueService {
-  // Calcular revenue de un area
-  getAreaRevenue(areaId: number): Promise<AreaRevenue>;
-
-  // Historial de transacciones (compras de acceso)
-  getAreaPurchases(areaId: number): Promise<AreaPurchaseTransaction[]>;
-
-  // Historial de donaciones
-  getAreaDonations(areaId: number): Promise<AreaDonationTransaction[]>;
-
-  // Historial de extracciones de material
-  getAreaWithdrawals(areaId: number): Promise<AreaMaterialRequestWithDetails[]>;
-}
-```
-
-### 3.3 `src/services/area-material-requests.service.ts` (nuevo)
-
-Siguiendo el patron de `follow-requests.service.ts`:
-
-```typescript
-@Injectable({ providedIn: 'root' })
-export class AreaMaterialRequestsService {
-  readonly requestsChange = signal(0);
-
-  // Admin del area: crear solicitud
-  async createRequest(areaId, items, notes): Promise<boolean>
-    -- 1. Verificar que el usuario es admin del area
-    -- 2. Calcular total_amount
-    -- 3. Verificar que total_amount <= availableBalance del area
-    -- 4. INSERT INTO area_material_requests
-    -- 5. INSERT INTO area_material_request_items (cada item)
-    -- 6. Notificar a admins globales
-
-  // Admin del area: cancelar solicitud (solo si pending)
-  async cancelRequest(requestId): Promise<boolean>
-
-  // Admin global: aprobar solicitud
-  async approveRequest(requestId): Promise<boolean>
-    -- UPDATE status = 'approved', reviewed_by, reviewed_at
-    -- Notificar al admin del area
-
-  // Admin global: rechazar solicitud
-  async rejectRequest(requestId): Promise<boolean>
-    -- UPDATE status = 'rejected', reviewed_by, reviewed_at
-    -- Notificar al admin del area
-
-  // Admin global: marcar como disposed (material entregado)
-  async markDisposed(requestId): Promise<boolean>
-    -- UPDATE status = 'disposed'
-    -- Notificar al admin del area
-
-  // Consultar solicitudes de un area
-  async getRequestsByArea(areaId): Promise<AreaMaterialRequestWithDetails[]>
-
-  // Consultar todas las solicitudes pendientes (admin global)
-  async getAllPendingRequests(): Promise<AreaMaterialRequestWithDetails[]>
-}
-```
-
-### 3.4 `src/services/area-donations.service.ts` (nuevo)
-
-```typescript
-@Injectable({ providedIn: 'root' })
-export class AreaDonationsService {
-  // Crear donacion (redirige a Stripe Checkout)
-  async createDonation(areaId, amount, anonymous): Promise<string | null>
-    -- Invocar Edge Function 'stripe-donation'
-    -- Retornar URL de Checkout
-
-  // Obtener donaciones de un area
-  async getAreaDonations(areaId): Promise<AreaDonation[]>
-}
-```
-
-### 3.5 Modificar `src/services/areas.service.ts`
-
-Cambios:
-
-- Eliminar `connectStripe()` completo
-- Eliminar referencia a `stripe_account_id` en `getById()`, `update()`, `create()`
-- Mantener `area_purchases` join (sigue siendo necesario para control de acceso)
-
-### 3.6 Eliminar `src/components/forms/area-form.ts` seccion Connect
-
-Cambios:
-
-- Eliminar toda la seccion de Stripe Connect (boton connect, dialog de cuentas multiples, re-connect)
-- Mantener la seccion de precio y visibilidad (paywalled mode sigue existiendo)
-- Eliminar `stripe_account_id` del model y del payload de submit
-
----
-
-## Fase 4 — Edge Functions
-
-### 4.1 Eliminar
-
-- `supabase/functions/stripe-onboarding/` — completa
-- `supabase/functions/stripe-checkout/` — completa
-
-### 4.2 Crear `supabase/functions/stripe-donation/index.ts`
-
-```typescript
-// Crea una sesion de Stripe Checkout para donar a un area
-// Accepts: { area_id, amount, anonymous }
-// Mode: payment, price_data con monto personalizado
-// Success URL: /area/redirect?donation=true&area_id={area_id}
-// Metadata: { area_id, user_id, donation: 'true' }
-// NO usa Connect (dinero va a cuenta principal)
-```
-
-### 4.3 Modificar `supabase/functions/stripe-webhook/index.ts`
-
-Cambios:
-
-- Eliminar Case 2 (legacy area purchase via metadata area_id)
-- En Case 1: para items de tipo `area`, registrar la compra en `area_purchases` (igual que ahora)
-- Agregar handling para donaciones: si metadata tiene `donation: 'true'`, INSERT en `area_donations`
-- Eliminar toda referencia a `stripe_account_id` o Connect transfers
-
----
-
-## Fase 5 — UI Components
-
-### 5.1 Paywall — agregar boton donar
-
-**Archivo:** `src/components/paywall/paywall.ts` (modificar)
-
-Agregar un boton "Donar" debajo del boton de compra:
-
-- Abre un dialog con input de monto (min 1, max 100, step 1)
-- Checkbox "Donacion anonima"
-- Confirma → redirige a Stripe Checkout via `stripe-donation`
-
-### 5.2 Dashboard de revenue por area
-
-**Archivo:** `src/components/area/area-revenue-panel.ts` (nuevo)
-
-Panel publico que se muestra en la pagina del area con:
-
-- Total recaudado (compras de acceso)
-- Total donado
-- Total extraido en material
-- Balance disponible
-- Boton "Donar"
-- Lista de transacciones (compras + donaciones + extracciones)
-  - Compras: fecha, usuario (anonimo si aplica), monto
-  - Donaciones: fecha, usuario (anonimo si aplica), monto
-  - Extracciones: fecha, admin, material extraido, monto
-
-### 5.3 Catalogo de material (admin)
-
-**Archivo:** `src/pages/admin/material-catalog.ts` (nuevo)
-
-CRUD de material para admins globales:
-
-- Tabla con imagen, nombre, descripcion, precio, unidad, activo
-- Boton agregar material → dialog con formulario
-- Editar / eliminar
-- Toggle activo/inactivo
-
-### 5.4 Solicitudes de material (admin del area)
-
-**Archivo:** `src/components/dialogs/material-request-dialog.ts` (nuevo)
-
-Dialog para que admin del area solicite material:
-
-- Lista del catalogo de material disponible (solo activos)
-- Cada item: imagen, nombre, precio/unidad, input de cantidad, subtotal
-- Total de la solicitud
-- Nota/justificacion (opcional)
-- Boton "Enviar solicitud"
-- Validacion: total <= balance disponible del area
-
-### 5.5 Historial de solicitudes (admin del area + admin global)
-
-**Archivo:** `src/components/dialogs/material-requests-history-dialog.ts` (nuevo)
-
-- Lista de solicitudes del area con estado, fecha, total, items
-- Filtro por estado
-- Admin global: botones aprobar/rechazar/marcar disposed en solicitudes pendientes
-- Admin del area: boton cancelar en solicitudes pendientes
-
-### 5.6 Pagina admin: solicitudes pendientes
-
-**Archivo:** `src/pages/admin/material-requests.ts` (nuevo)
-
-Pagina `/admin/material-requests`:
-
-- Tabla de todas las solicitudes pendientes de todas las areas
-- Columnas: area, admin solicitante, fecha, total, acciones (aprobar/rechazar)
-- Badge de contador en el panel admin
-- Patron identico a `area-requests.ts`
-
-### 5.7 Modificar `src/pages/admin/admin.ts`
-
-- Agregar link a `/admin/material-requests` con badge de contador
-- Agregar link a `/admin/material-catalog`
-
-### 5.8 Modificar `src/pages/area/area.ts` o `crag.ts`
-
-- Mostrar panel de revenue si el area tiene precio (paywalled)
-- Boton de donar
-
----
-
-## Fase 6 — Eliminar codigo muerto
-
-### 6.1 Archivos a eliminar completamente
-
-| Archivo                                         | Razon                      |
-| ----------------------------------------------- | -------------------------- |
-| `supabase/functions/stripe-onboarding/index.ts` | Stripe Connect eliminado   |
-| `supabase/functions/stripe-checkout/index.ts`   | Checkout directo eliminado |
-
-### 6.2 Codigo a eliminar de archivos existentes
-
-| Archivo                                | Que eliminar                                            |
-| -------------------------------------- | ------------------------------------------------------- |
-| `src/services/areas.service.ts`        | `connectStripe()` (lineas 711-744)                      |
-| `src/components/forms/area-form.ts`    | Seccion Connect (boton, dialog, modelo, submit payload) |
-| `src/pages/area/area-redirect.ts`      | Case de onboarding success/refresh (lineas 33-48)       |
-| `src/models/area.model.ts`             | `stripe_account_id` de interfaces                       |
-| `src/models/crag.model.ts`             | `stripe_account_id` de interfaces                       |
-| `src/utils/crag-mappers.ts`            | Mapeo de `stripe_account_id`                            |
-| `src/services/outdoor-data.service.ts` | Select de `stripe_account_id`                           |
-
----
-
-## Fase 7 — Traducciones
-
-### `public/i18n/es.json`
-
-```json
-{
-  "areaRevenue": {
-    "title": "Ingresos del area",
-    "totalPurchases": "Compras de acceso",
-    "totalDonations": "Donaciones",
-    "totalWithdrawn": "Material extraido",
-    "availableBalance": "Balance disponible",
-    "donate": "Donar",
-    "donateTitle": "Donar a esta area",
-    "donateAmount": "Cantidad (EUR)",
-    "donateAnonymous": "Donacion anonima",
-    "donateConfirm": "Confirmar donacion",
-    "transactions": "Transacciones",
-    "purchases": "Compras",
-    "donations": "Donaciones",
-    "withdrawals": "Extracciones de material"
-  },
-  "materialCatalog": {
-    "title": "Catalogo de material",
-    "add": "Agregar material",
-    "edit": "Editar material",
-    "name": "Nombre",
-    "description": "Descripcion",
-    "price": "Precio por unidad",
-    "unit": "Unidad",
-    "image": "Imagen",
-    "active": "Activo",
-    "empty": "No hay material en el catalogo"
-  },
-  "materialRequest": {
-    "title": "Solicitar material",
-    "selectItems": "Selecciona el material",
-    "quantity": "Cantidad",
-    "subtotal": "Subtotal",
-    "total": "Total de la solicitud",
-    "notes": "Nota (opcional)",
-    "availableBalance": "Balance disponible",
-    "exceedsBalance": "Excede el balance disponible",
-    "submit": "Enviar solicitud",
-    "success": "Solicitud enviada",
-    "cancel": "Cancelar solicitud",
-    "cancelled": "Solicitud cancelada"
-  },
-  "materialRequests": {
-    "title": "Solicitudes de material",
-    "pending": "Pendiente",
-    "approved": "Aprobada",
-    "rejected": "Rechazada",
-    "disposed": "Entregada",
-    "approve": "Aprobar",
-    "reject": "Rechazar",
-    "markDisposed": "Marcar entregada",
-    "empty": "No hay solicitudes pendientes",
-    "by": "Solicitada por",
-    "date": "Fecha",
-    "material": "Material"
-  }
-}
-```
-
-### `public/i18n/en.json`
-
-```json
-{
-  "areaRevenue": {
-    "title": "Area revenue",
-    "totalPurchases": "Access purchases",
-    "totalDonations": "Donations",
-    "totalWithdrawn": "Material withdrawn",
-    "availableBalance": "Available balance",
-    "donate": "Donate",
-    "donateTitle": "Donate to this area",
-    "donateAmount": "Amount (EUR)",
-    "donateAnonymous": "Anonymous donation",
-    "donateConfirm": "Confirm donation",
-    "transactions": "Transactions",
-    "purchases": "Purchases",
-    "donations": "Donations",
-    "withdrawals": "Material withdrawals"
-  },
-  "materialCatalog": {
-    "title": "Material catalog",
-    "add": "Add material",
-    "edit": "Edit material",
-    "name": "Name",
-    "description": "Description",
-    "price": "Price per unit",
-    "unit": "Unit",
-    "image": "Image",
-    "active": "Active",
-    "empty": "No material in catalog"
-  },
-  "materialRequest": {
-    "title": "Request material",
-    "selectItems": "Select material",
-    "quantity": "Quantity",
-    "subtotal": "Subtotal",
-    "total": "Request total",
-    "notes": "Note (optional)",
-    "availableBalance": "Available balance",
-    "exceedsBalance": "Exceeds available balance",
-    "submit": "Submit request",
-    "success": "Request submitted",
-    "cancel": "Cancel request",
-    "cancelled": "Request cancelled"
-  },
-  "materialRequests": {
-    "title": "Material requests",
-    "pending": "Pending",
-    "approved": "Approved",
-    "rejected": "Rejected",
-    "disposed": "Delivered",
-    "approve": "Approve",
-    "reject": "Reject",
-    "markDisposed": "Mark delivered",
-    "empty": "No pending requests",
-    "by": "Requested by",
-    "date": "Date",
-    "material": "Material"
-  }
-}
-```
-
----
-
-## Fase 8 — Verificacion
-
-### Checks obligatorios
-
-```bash
-npm run build
-npm run lint
-npm run check:imports
-npm run format
-npm test
-```
-
-### Verificacion manual
-
-**Flujo de compra de topo (sin Connect):**
-
-1. Admin pone area con precio 5EUR (paywalled)
-2. Usuario compra → redirige a Stripe → paga → webhook crea `area_purchases`
-3. Dinero queda en cuenta principal de la plataforma
-4. Usuario ve topos del area
-
-**Flujo de donacion:**
-
-1. Usuario en pagina del area clica "Donar"
-2. Dialog: ingresa 10EUR, marca anonimo
-3. Redirige a Stripe Checkout → paga → webhook crea `area_donations`
-4. Vuelve al area, ve donacion en historial (sin nombre si es anonima)
-
-**Flujo de solicitud de material:**
-
-1. Admin del area ve balance: "Recaudado: 500EUR | Disponible: 500EUR"
-2. Clica "Solicitar material"
-3. Selecciona 50 parabolts Fixe a 5EUR = 250EUR
-4. Envia solicitud → estado: pending
-5. Admin global ve solicitud en `/admin/material-requests`
-6. Aprueba → estado: approved, notificacion al admin del area
-7. Admin global marca como disposed → estado: disposed
-8. Balance del area: "Recaudado: 500EUR | Extraido: 250EUR | Disponible: 250EUR"
-
-**Eliminacion de Connect:**
-
-1. No hay boton de "Conectar con Stripe" en el formulario de area
-2. No existen las paginas/funciones de onboarding
-3. `stripe_account_id` no existe en la tabla `areas`
-
----
-
-## Archivos resumen
-
-### Eliminar
-
-| Archivo                                                       | Fase |
-| ------------------------------------------------------------- | ---- |
-| `supabase/functions/stripe-onboarding/` (directorio completo) | 4.1  |
-| `supabase/functions/stripe-checkout/` (directorio completo)   | 4.1  |
-
-### Crear
-
-| Archivo                                                                         | Fase |
-| ------------------------------------------------------------------------------- | ---- |
-| `supabase/migrations/YYYYMMDDHHMMSS_remove_stripe_connect_and_add_material.sql` | 1    |
-| `supabase/functions/stripe-donation/index.ts`                                   | 4.2  |
-| `src/services/material-catalog.service.ts`                                      | 3.1  |
-| `src/services/area-revenue.service.ts`                                          | 3.2  |
-| `src/services/area-material-requests.service.ts`                                | 3.3  |
-| `src/services/area-donations.service.ts`                                        | 3.4  |
-| `src/components/area/area-revenue-panel.ts`                                     | 5.2  |
-| `src/pages/admin/material-catalog.ts`                                           | 5.3  |
-| `src/components/dialogs/material-request-dialog.ts`                             | 5.4  |
-| `src/components/dialogs/material-requests-history-dialog.ts`                    | 5.5  |
-| `src/pages/admin/material-requests.ts`                                          | 5.6  |
-
-### Modificar
-
-| Archivo                                      | Fase                |
-| -------------------------------------------- | ------------------- |
-| `src/models/supabase-generated.ts`           | 1.6 (regenerar)     |
-| `src/models/area.model.ts`                   | 2.1                 |
-| `src/models/crag.model.ts`                   | 6.2                 |
-| `src/utils/crag-mappers.ts`                  | 6.2                 |
-| `src/services/areas.service.ts`              | 3.5                 |
-| `src/services/outdoor-data.service.ts`       | 6.2                 |
-| `src/components/forms/area-form.ts`          | 3.6                 |
-| `src/components/paywall/paywall.ts`          | 5.1                 |
-| `src/pages/area/area-redirect.ts`            | 6.2                 |
-| `src/pages/area/area.ts`                     | 5.8                 |
-| `src/pages/admin/admin.ts`                   | 5.7                 |
-| `src/app/app.routes.ts`                      | 5.7 (agregar rutas) |
-| `supabase/functions/stripe-webhook/index.ts` | 4.3                 |
-| `public/i18n/es.json`                        | 7                   |
-| `public/i18n/en.json`                        | 7                   |
+### 10.2 Pruebas de Flujos E2E / Manuales
+
+1. **Flujo de Compra de Área 1-Click:**
+   - Un usuario no propietario accede a un área de pago -> Pulsa "Comprar croquis" en Paywall -> Redirección directa a Stripe Checkout -> Pago completado -> Webhook procesa comisiones Stripe y añade `gross`, `fee`, `net` a `area_purchases` -> Usuario redirigido con acceso inmediato a los topos.
+2. **Flujo de Donación:**
+   - Usuario pulsa "Donar" en el panel del área -> Selecciona 15€ y marca donación anónima -> Pago Stripe -> Webhook registra `area_donations` con `anonymous: true` -> El panel público actualiza el balance neto sin exponer el nombre del donante.
+3. **Flujo de Solicitud de Material:**
+   - Admin de área entra al panel con 200€ disponibles -> Selecciona 30 parabolts (150€) -> Envío de solicitud -> PostgreSQL RPC valida atómicamente el saldo y descuenta 150€ de `availableBalance` (estado `pending`).
+   - Admin global accede a `/admin/material-requests` -> Aprueba la solicitud -> Estado pasa a `approved`.
+   - Admin global entrega el material y marca `disposed`.
+4. **Flujo de Rechazo / Cancelación:**
+   - Si una solicitud de 100€ se rechaza o cancela, el RPC libera inmediatamente los 100€ reservados volviendo a incrementar el saldo disponible.
+5. **Verificación de Eliminación de Connect y Packs:**
+   - Comprobar que en el formulario de edición de área no existe ninguna referencia a Stripe Connect.
+   - Comprobar que en la tienda de merchandising no hay rastro de packs de áreas.

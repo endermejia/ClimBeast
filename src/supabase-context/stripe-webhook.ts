@@ -34,29 +34,100 @@ serve(async (req) => {
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
+      const userId = session.metadata?.user_id || session.client_reference_id;
 
-      // Case 1: Shop Order (contains shipping_name in metadata)
-      if (session.metadata?.shipping_name) {
-        const userId = session.metadata.user_id;
+      // Extract exact fee and net amount from Stripe Balance Transaction
+      const totalGross = session.amount_total ? session.amount_total / 100 : 0;
+      let stripeFee = 0;
+      let netAmount = totalGross;
 
-        // Fetch line items to reconstruct order_items
+      if (session.payment_intent) {
+        try {
+          const pi = await stripe.paymentIntents.retrieve(
+            session.payment_intent as string,
+            { expand: ['latest_charge.balance_transaction'] },
+          );
+          const charge = pi.latest_charge as Stripe.Charge;
+          const bt = charge?.balance_transaction as Stripe.BalanceTransaction;
+          if (bt && typeof bt.fee === 'number') {
+            stripeFee = bt.fee / 100;
+            netAmount = (bt.net || session.amount_total! - bt.fee) / 100;
+          }
+        } catch (feeError) {
+          console.warn('Could not retrieve balance_transaction fee:', feeError);
+        }
+      }
+
+      // Case 1: Area Donation
+      if (
+        session.metadata?.single_item_type === 'area_donation' ||
+        session.metadata?.anonymous !== undefined
+      ) {
+        const areaId = parseInt(session.metadata?.area_id || '0', 10);
+        const isAnonymous = session.metadata?.anonymous === 'true';
+        const message = session.metadata?.donor_message || null;
+
+        if (areaId > 0) {
+          const { error: donationError } = await supabaseAdmin
+            .from('area_donations')
+            .insert({
+              area_id: areaId,
+              user_id: isAnonymous ? null : userId,
+              gross_amount: totalGross,
+              stripe_fee: stripeFee,
+              net_amount: netAmount,
+              anonymous: isAnonymous,
+              donor_message: message,
+              stripe_session_id: session.id,
+            });
+
+          if (donationError) {
+            console.error('Error inserting donation:', donationError);
+            throw donationError;
+          }
+        }
+      }
+      // Case 2: Direct Single Area Purchase
+      else if (
+        session.metadata?.single_item_type === 'area' ||
+        (session.metadata?.area_id && !session.metadata?.shipping_name)
+      ) {
+        const areaId = parseInt(session.metadata.area_id, 10);
+        if (areaId > 0 && userId) {
+          const { error: purchaseError } = await supabaseAdmin
+            .from('area_purchases')
+            .insert({
+              user_id: userId,
+              area_id: areaId,
+              amount: totalGross, // legacy field
+              gross_amount: totalGross,
+              stripe_fee: stripeFee,
+              net_amount: netAmount,
+              stripe_session_id: session.id,
+            });
+
+          if (purchaseError) {
+            console.error('Error inserting area purchase:', purchaseError);
+            throw purchaseError;
+          }
+        }
+      }
+      // Case 3: Shop Orders (Physical Merchandise)
+      else if (session.metadata?.shipping_name) {
         const lineItems = await stripe.checkout.sessions.listLineItems(
           session.id,
-          {
-            expand: ['data.price.product'],
-          },
+          { expand: ['data.price.product'] },
         );
 
-        // Create the order
         const { data: order, error: orderError } = await supabaseAdmin
           .from('orders')
           .insert({
             user_id: userId,
             status: 'paid',
-            total_amount: session.amount_total ? session.amount_total / 100 : 0,
+            total_amount: totalGross,
             currency: session.currency || 'eur',
             shipping_name: session.metadata.shipping_name,
-            shipping_phone: session.metadata.shipping_phone,
+            shipping_phone: session.metadata.shipping_phone || '',
             shipping_address: session.metadata.shipping_address,
             shipping_city: session.metadata.shipping_city,
             shipping_zip: session.metadata.shipping_zip,
@@ -68,17 +139,15 @@ serve(async (req) => {
 
         if (orderError) throw orderError;
 
-        // Create order items
         const orderItems = lineItems.data.map((item) => {
           const product = item.price?.product as Stripe.Product;
           const metadata = product.metadata;
 
           return {
             order_id: order.id,
-            item_type: metadata.item_type,
-            item_id: metadata.item_type === 'area' ? null : metadata.item_id,
-            item_numeric_id:
-              metadata.item_type === 'area' ? parseInt(metadata.item_id) : null,
+            item_type: metadata.item_type || 'merchandise',
+            item_id: metadata.item_id,
+            item_numeric_id: null,
             quantity: item.quantity || 1,
             unit_price: metadata.unit_price
               ? parseFloat(metadata.unit_price)
@@ -95,32 +164,6 @@ serve(async (req) => {
           .insert(orderItems);
 
         if (itemsError) throw itemsError;
-
-        // Register area purchases if needed
-        for (const item of orderItems) {
-          if (item.item_type === 'area' || item.item_type === 'area_pack') {
-            await supabaseAdmin.from('area_purchases').insert({
-              user_id: userId,
-              area_id:
-                item.item_type === 'area' ? item.item_numeric_id : item.item_id,
-              amount: item.unit_price * item.quantity,
-              stripe_session_id: session.id,
-            });
-          }
-        }
-      }
-      // Case 2: Legacy Single Area Purchase (Old Checkout)
-      else if (session.metadata?.area_id && session.metadata?.user_id) {
-        const area_id = session.metadata.area_id;
-        const user_id = session.metadata.user_id;
-        const amount = session.amount_total ? session.amount_total / 100 : 0;
-
-        await supabaseAdmin.from('area_purchases').insert({
-          user_id: user_id,
-          area_id: parseInt(area_id),
-          amount: amount,
-          stripe_session_id: session.id,
-        });
       }
     }
 

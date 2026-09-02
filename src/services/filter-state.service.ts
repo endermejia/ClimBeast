@@ -6,9 +6,9 @@ import {
   WritableSignal,
 } from '@angular/core';
 
-import { LocalStorage } from './local-storage';
-
 import { ORDERED_GRADE_VALUES } from '../models';
+
+import { LocalStorage } from './local-storage';
 
 @Injectable({ providedIn: 'root' })
 export class FilterStateService {

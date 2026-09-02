@@ -228,6 +228,22 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'admin/material-catalog',
+    canMatch: [adminGuard],
+    loadComponent: () =>
+      import('../pages/admin/material-catalog').then(
+        (m) => m.AdminMaterialCatalogComponent,
+      ),
+  },
+  {
+    path: 'admin/material-requests',
+    canMatch: [adminGuard],
+    loadComponent: () =>
+      import('../pages/admin/material-requests').then(
+        (m) => m.AdminMaterialRequestsComponent,
+      ),
+  },
+  {
     path: 'admin/error-logs',
     canMatch: [adminGuard],
     loadComponent: () =>

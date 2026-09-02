@@ -284,7 +284,7 @@ export class OutdoorDataService {
           liked:crag_likes(id),
           area: areas!inner (
             id, name, slug, eight_anu_crag_slugs,
-            is_public, price, stripe_account_id,
+            is_public, price,
             purchased:area_purchases(id)
           ),
           crag_parkings (

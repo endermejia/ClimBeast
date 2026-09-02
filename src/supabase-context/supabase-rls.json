@@ -88,73 +88,41 @@
     "with_check_expression": null
   },
   {
-    "policy_name": "admin_can_delete",
+    "policy_name": "users_view_material_catalog",
     "schema_name": "public",
-    "table_name": "area_pack_items",
-    "for_command": "d",
-    "using_expression": "is_user_admin(auth.uid())",
-    "with_check_expression": null
-  },
-  {
-    "policy_name": "admin_can_insert",
-    "schema_name": "public",
-    "table_name": "area_pack_items",
-    "for_command": "a",
-    "using_expression": null,
-    "with_check_expression": "is_user_admin(auth.uid())"
-  },
-  {
-    "policy_name": "admin_can_update",
-    "schema_name": "public",
-    "table_name": "area_pack_items",
-    "for_command": "w",
-    "using_expression": "is_user_admin(auth.uid())",
-    "with_check_expression": "is_user_admin(auth.uid())"
-  },
-  {
-    "policy_name": "users_view_area_pack_items",
-    "schema_name": "public",
-    "table_name": "area_pack_items",
+    "table_name": "material_catalog",
     "for_command": "r",
     "using_expression": "true",
     "with_check_expression": null
   },
   {
-    "policy_name": "users_view_own_area_pack_purchases",
+    "policy_name": "admin_can_manage_material_catalog",
     "schema_name": "public",
-    "table_name": "area_pack_purchases",
+    "table_name": "material_catalog",
+    "for_command": "*",
+    "using_expression": "is_user_admin(auth.uid())",
+    "with_check_expression": "is_user_admin(auth.uid())"
+  },
+  {
+    "policy_name": "users_view_own_area_donations",
+    "schema_name": "public",
+    "table_name": "area_donations",
     "for_command": "r",
-    "using_expression": "(auth.uid() = user_id)",
+    "using_expression": "((auth.uid() = user_id) OR is_user_admin(auth.uid()) OR (is_anonymous = false))",
     "with_check_expression": null
   },
   {
-    "policy_name": "admin_can_delete",
+    "policy_name": "users_view_area_material_requests",
     "schema_name": "public",
-    "table_name": "area_packs",
-    "for_command": "d",
-    "using_expression": "is_user_admin(auth.uid())",
+    "table_name": "area_material_requests",
+    "for_command": "r",
+    "using_expression": "(is_user_admin(auth.uid()) OR (auth.uid() = user_id) OR (EXISTS ( SELECT 1 FROM area_admins WHERE area_admins.area_id = area_material_requests.area_id AND area_admins.user_id = auth.uid())))",
     "with_check_expression": null
   },
   {
-    "policy_name": "admin_can_insert",
+    "policy_name": "users_view_area_material_request_items",
     "schema_name": "public",
-    "table_name": "area_packs",
-    "for_command": "a",
-    "using_expression": null,
-    "with_check_expression": "is_user_admin(auth.uid())"
-  },
-  {
-    "policy_name": "admin_can_update",
-    "schema_name": "public",
-    "table_name": "area_packs",
-    "for_command": "w",
-    "using_expression": "is_user_admin(auth.uid())",
-    "with_check_expression": "is_user_admin(auth.uid())"
-  },
-  {
-    "policy_name": "users_view_area_packs",
-    "schema_name": "public",
-    "table_name": "area_packs",
+    "table_name": "area_material_request_items",
     "for_command": "r",
     "using_expression": "true",
     "with_check_expression": null

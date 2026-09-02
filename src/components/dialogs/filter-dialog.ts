@@ -26,8 +26,6 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { map, merge, startWith } from 'rxjs';
 
-import { ClimbingKindIconComponent } from '../ui/climbing-kind-icon';
-
 import {
   ClimbingKind,
   ClimbingKinds,
@@ -35,6 +33,8 @@ import {
 } from '../../models';
 
 import { clamp } from '../../utils';
+
+import { ClimbingKindIconComponent } from '../ui/climbing-kind-icon';
 
 export interface FilterDialog {
   categories: number[]; // 0=Sport, 1=Boulder, 2=Multipitch
