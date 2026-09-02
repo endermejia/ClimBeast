@@ -348,6 +348,7 @@ import { TourHintComponent } from './tour-hint';
           }
           <app-menu-options-button
             appearance="flat-grayscale"
+            [showNavigationOptions]="true"
             [loading]="loading()"
             direction="top"
           />

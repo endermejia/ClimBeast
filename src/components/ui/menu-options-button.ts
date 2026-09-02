@@ -1,8 +1,13 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
+  DestroyRef,
+  ElementRef,
+  HostListener,
   inject,
   input,
+  signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -53,16 +58,22 @@ import { Themes } from '../../models';
     <div
       [tuiDropdown]="optionsDropdown"
       [tuiDropdownDirection]="direction()"
-      [(tuiDropdownOpen)]="open"
+      [tuiDropdownManual]="open()"
       class="block w-full"
     >
       @if (avatarMode()) {
         <button
           type="button"
           [tuiAppearance]="appearance()"
-          class="flex items-center p-3 rounded-xl transition-colors cursor-pointer"
+          class="flex items-center p-3 rounded-xl transition-colors cursor-pointer select-none touch-manipulation"
           [tuiSkeleton]="loading()"
-          (click)="open = !open"
+          (pointerdown)="onPointerDown($event)"
+          (pointermove)="onPointerMove($event)"
+          (pointerup)="onPointerUp()"
+          (pointercancel)="onPointerCancel()"
+          (pointerleave)="onPointerCancel()"
+          (contextmenu)="onContextMenu($event)"
+          (click)="onButtonClick($event)"
           [attr.aria-label]="'nav.profile' | translate"
         >
           <span
@@ -98,7 +109,7 @@ import { Themes } from '../../models';
           [tuiSkeleton]="loading()"
           type="button"
           class="transition-colors"
-          (click)="open = !open"
+          (click)="open.set(!open())"
         >
           <span class="tui-sr-only">{{ 'more' | translate }}</span>
         </button>
@@ -108,7 +119,7 @@ import { Themes } from '../../models';
           [tuiAppearance]="appearance()"
           class="flex items-center gap-4 transition-colors p-3 rounded-xl w-full cursor-pointer no-underline text-inherit"
           [tuiSkeleton]="loading()"
-          (click)="open = !open"
+          (click)="open.set(!open())"
         >
           <tui-icon [icon]="icon()" />
           <span
@@ -129,20 +140,22 @@ import { Themes } from '../../models';
         class="flex flex-col p-1.5 bg-(--tui-background-base) rounded-xl shadow-2xl min-w-56 border border-(--tui-border-normal)"
       >
         @if (showNavigationOptions()) {
-          <!-- Profile -->
-          <button
-            type="button"
-            (click)="navigateToProfile(); open = false"
-            class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors text-left text-inherit outline-none cursor-pointer"
-          >
-            <tui-icon icon="@tui.user" class="opacity-70" />
-            {{ 'nav.profile' | translate }}
-          </button>
+          @if (avatarMode() || showProfile()) {
+            <!-- Profile -->
+            <button
+              type="button"
+              (click)="navigateToProfile(); open.set(false)"
+              class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors text-left text-inherit outline-none cursor-pointer"
+            >
+              <tui-icon icon="@tui.user" class="opacity-70" />
+              {{ 'nav.profile' | translate }}
+            </button>
+          }
 
           <!-- Projects -->
           <button
             type="button"
-            (click)="openProjects(); open = false"
+            (click)="openProjects(); open.set(false)"
             class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors text-left text-inherit outline-none cursor-pointer"
           >
             <tui-icon icon="@tui.target" class="opacity-70" />
@@ -152,7 +165,7 @@ import { Themes } from '../../models';
           <!-- Favorites -->
           <button
             type="button"
-            (click)="openFavorites(); open = false"
+            (click)="openFavorites(); open.set(false)"
             class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors text-left text-inherit outline-none cursor-pointer"
           >
             <tui-icon icon="@tui.heart" class="opacity-70" />
@@ -162,7 +175,7 @@ import { Themes } from '../../models';
           <!-- Ascent Logbook / Calendar -->
           <button
             type="button"
-            (click)="openAscentsCalendar(); open = false"
+            (click)="openAscentsCalendar(); open.set(false)"
             class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors text-left text-inherit outline-none cursor-pointer"
           >
             <tui-icon icon="@tui.calendar" class="opacity-70" />
@@ -175,7 +188,7 @@ import { Themes } from '../../models';
         <!-- User Config -->
         <button
           type="button"
-          (click)="openConfig(); open = false"
+          (click)="openConfig(); open.set(false)"
           class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors text-left text-inherit outline-none cursor-pointer"
         >
           <tui-icon icon="@tui.settings" class="opacity-70" />
@@ -230,7 +243,7 @@ import { Themes } from '../../models';
         <button
           type="button"
           [tuiAppearance]="'secondary'"
-          (click)="logout(); open = false"
+          (click)="logout(); open.set(false)"
           class="flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left outline-none cursor-pointer"
         >
           <tui-icon icon="@tui.log-out" class="opacity-70" />
@@ -250,11 +263,17 @@ export class MenuOptionsButtonComponent {
   userName = input<string | null | undefined>(undefined);
   isActive = input<boolean>(false);
   showNavigationOptions = input<boolean>(false);
+  showProfile = input<boolean>(false);
+  holdToOpen = input<boolean | undefined>(undefined);
   loading = input<boolean>(false);
   direction = input<'top' | 'bottom'>('top');
   icon = input<string>('@tui.menu');
 
-  protected open = false;
+  protected readonly shouldHoldToOpen = computed(
+    () => this.holdToOpen() ?? this.avatarMode(),
+  );
+
+  protected open = signal(false);
   protected lastEvent?: MouseEvent;
   protected readonly authState = inject(AuthStateService);
   protected readonly themeService = inject(ThemeService);
@@ -265,6 +284,107 @@ export class MenuOptionsButtonComponent {
   private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
   private readonly dialogs = inject(TuiDialogService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly elementRef = inject(ElementRef);
+
+  private holdTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private isHeld = false;
+  private startX = 0;
+  private startY = 0;
+  private readonly HOLD_DURATION_MS = 400;
+  private readonly MOVE_THRESHOLD_PX = 10;
+
+  constructor() {
+    this.destroyRef.onDestroy(() => this.clearHoldTimer());
+  }
+
+  protected onPointerDown(event: PointerEvent): void {
+    if (!this.shouldHoldToOpen()) return;
+    if (event.button !== 0) return;
+
+    this.isHeld = false;
+    this.startX = event.clientX;
+    this.startY = event.clientY;
+
+    this.clearHoldTimer();
+    this.holdTimeoutId = setTimeout(() => {
+      this.isHeld = true;
+      this.open.set(true);
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try {
+          navigator.vibrate(40);
+        } catch {
+          // Ignore vibration error
+        }
+      }
+    }, this.HOLD_DURATION_MS);
+  }
+
+  protected onPointerMove(event: PointerEvent): void {
+    if (!this.shouldHoldToOpen() || !this.holdTimeoutId) return;
+
+    const deltaX = Math.abs(event.clientX - this.startX);
+    const deltaY = Math.abs(event.clientY - this.startY);
+
+    if (deltaX > this.MOVE_THRESHOLD_PX || deltaY > this.MOVE_THRESHOLD_PX) {
+      this.clearHoldTimer();
+    }
+  }
+
+  protected onPointerUp(): void {
+    if (!this.shouldHoldToOpen()) return;
+    this.clearHoldTimer();
+  }
+
+  protected onPointerCancel(): void {
+    this.clearHoldTimer();
+  }
+
+  protected onContextMenu(event: MouseEvent): void {
+    if (this.shouldHoldToOpen()) {
+      event.preventDefault();
+      this.open.set(true);
+    }
+  }
+
+  protected onButtonClick(event: MouseEvent): void {
+    if (this.shouldHoldToOpen()) {
+      if (this.isHeld) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.isHeld = false;
+        return;
+      }
+      this.open.set(false);
+      this.navigateToProfile();
+    } else {
+      this.open.set(!this.open());
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  protected onDocumentClick(event: MouseEvent): void {
+    if (!this.open()) return;
+    const target = event.target as HTMLElement | null;
+    const hostEl = this.elementRef.nativeElement as HTMLElement;
+    if (hostEl && !hostEl.contains(target)) {
+      this.open.set(false);
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  protected onEscape(): void {
+    if (this.open()) {
+      this.open.set(false);
+    }
+  }
+
+  private clearHoldTimer(): void {
+    if (this.holdTimeoutId) {
+      clearTimeout(this.holdTimeoutId);
+      this.holdTimeoutId = null;
+    }
+  }
 
   protected navigateToProfile(): void {
     void this.router.navigate(['/profile']);

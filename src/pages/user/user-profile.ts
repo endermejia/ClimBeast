@@ -244,20 +244,6 @@ import { IS_BROWSER } from '../../app/is-browser';
                 </button>
               }
 
-              @if (hasAscents()) {
-                <button
-                  tuiButton
-                  type="button"
-                  appearance="secondary"
-                  size="s"
-                  iconStart="@tui.calendar"
-                  [tuiSkeleton]="loading"
-                  (click)="openAscentCalendarDialog()"
-                >
-                  {{ 'ascentCalendar' | translate }}
-                </button>
-              }
-
               @if (!isOwnProfile()) {
                 @let following = isFollowing();
                 @let requested = isRequested();
@@ -320,6 +306,20 @@ import { IS_BROWSER } from '../../app/is-browser';
                     {{ 'sendMessage' | translate }}
                   </button>
                 }
+              }
+
+              @if (hasAscents()) {
+                <button
+                  tuiButton
+                  type="button"
+                  appearance="secondary"
+                  size="s"
+                  iconStart="@tui.calendar"
+                  [tuiSkeleton]="loading"
+                  (click)="openAscentCalendarDialog()"
+                >
+                  {{ 'ascentCalendar' | translate }}
+                </button>
               }
             </div>
           </app-user-info>
