@@ -9,9 +9,7 @@ import {
   InputSignal,
   Signal,
   signal,
-  TemplateRef,
   untracked,
-  viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { form, FormField, required, submit } from '@angular/forms/signals';
@@ -20,18 +18,14 @@ import { type TuiDialogContext } from '@taiga-ui/core';
 import {
   TuiButton,
   TuiError,
-  TuiLabel,
   TuiIcon,
-  TuiLoader,
-  TuiDialogService,
   TuiInput,
+  TuiLabel,
 } from '@taiga-ui/core';
 import { TuiInputChip, TuiInputNumber } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
-
-import { firstValueFrom } from 'rxjs';
 
 import { AreasService } from '../../services/areas.service';
 import { AuthStateService } from '../../services/auth-state.service';
@@ -64,7 +58,6 @@ interface MinimalArea {
     TuiInputChip,
     TuiInputNumber,
     TuiLabel,
-    TuiLoader,
   ],
   styles: `
     .visibility-card {
@@ -311,123 +304,20 @@ interface MinimalArea {
 
           <!-- Paywalled settings -->
           @if (visibilityMode() === 'paywalled') {
-            <div
-              class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 items-start"
-            >
-              <!-- Left: price + stripe -->
-              <div class="flex flex-col gap-4 lg:gap-6">
-                <app-counter
-                  label="payments.price"
-                  suffix="€"
-                  [step]="0.5"
-                  [min]="2"
-                  [max]="20"
-                  [ngModel]="model().price || 2"
-                  (ngModelChange)="onPriceChange($event)"
-                  name="price"
-                />
-                <p class="text-xs opacity-60 mt-1">
-                  {{ 'payments.priceHelp' | translate }}
-                </p>
-
-                <div class="flex flex-col gap-3">
-                  <span
-                    class="text-xs font-semibold opacity-60 uppercase tracking-wider"
-                    >{{ 'payments.stripeAccountId' | translate }}</span
-                  >
-
-                  <div class="flex flex-col gap-4">
-                    @if (model().stripe_account_id) {
-                      <div
-                        class="flex items-center gap-3 p-4 bg-(--tui-background-positive-neutral) border border-(--tui-border-normal) rounded-2xl"
-                      >
-                        <tui-icon
-                          icon="@tui.check-circle"
-                          class="text-(--tui-status-positive) shrink-0"
-                        />
-                        <div class="flex flex-col gap-1 overflow-hidden">
-                          <span class="text-sm font-bold leading-none">{{
-                            'payments.stripeConnected' | translate
-                          }}</span>
-                          <span class="text-xs opacity-60 truncate font-mono">{{
-                            model().stripe_account_id
-                          }}</span>
-                        </div>
-                      </div>
-                    }
-
-                    <tui-loader [loading]="connecting()" [overlay]="true">
-                      <button
-                        tuiButton
-                        type="button"
-                        appearance="secondary"
-                        size="m"
-                        class="w-full text-xs lg:text-sm"
-                        (click.zoneless)="onConnectStripe()"
-                        [iconStart]="
-                          model().stripe_account_id
-                            ? '@tui.refresh-ccw'
-                            : '@tui.external-link'
-                        "
-                      >
-                        {{
-                          (model().stripe_account_id
-                            ? 'payments.reconnectStripe'
-                            : 'payments.connectWithStripe'
-                          ) | translate
-                        }}
-                      </button>
-                    </tui-loader>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Right: tutorial -->
-              <div class="flex flex-col h-full">
-                <div
-                  class="bg-(--tui-background-neutral-1) p-4 lg:p-6 rounded-2xl border border-(--tui-border-normal) flex flex-col gap-4"
-                >
-                  <h4
-                    class="font-bold flex items-center gap-2 text-(--tui-text-accent)"
-                  >
-                    <tui-icon icon="@tui.info" />
-                    {{ 'payments.tutorial.title' | translate }}
-                  </h4>
-                  <ul class="space-y-4">
-                    <li class="flex gap-4 text-xs lg:text-sm">
-                      <span
-                        class="w-6 h-6 shrink-0 bg-(--tui-background-accent-1) text-(--tui-background-base) rounded-full flex items-center justify-center font-bold text-xs"
-                        >1</span
-                      >
-                      <p>{{ 'payments.tutorial.step1' | translate }}</p>
-                    </li>
-                    <li class="flex gap-4 text-xs lg:text-sm">
-                      <span
-                        class="w-6 h-6 shrink-0 bg-(--tui-background-accent-1) text-(--tui-background-base) rounded-full flex items-center justify-center font-bold text-xs"
-                        >2</span
-                      >
-                      <p>{{ 'payments.tutorial.step2' | translate }}</p>
-                    </li>
-                    <li class="flex gap-4 text-xs lg:text-sm">
-                      <span
-                        class="w-6 h-6 shrink-0 bg-(--tui-background-accent-1) text-(--tui-background-base) rounded-full flex items-center justify-center font-bold text-xs"
-                        >3</span
-                      >
-                      <p>{{ 'payments.tutorial.step3' | translate }}</p>
-                    </li>
-                    <li class="flex gap-4 text-xs lg:text-sm">
-                      <span
-                        class="w-6 h-6 shrink-0 bg-(--tui-background-accent-1) text-(--tui-background-base) rounded-full flex items-center justify-center font-bold text-xs"
-                        >4</span
-                      >
-                      <p>{{ 'payments.tutorial.step4' | translate }}</p>
-                    </li>
-                  </ul>
-                  <p class="text-xs opacity-60 italic mt-2 py-3 border-t">
-                    {{ 'payments.tutorial.footer' | translate }}
-                  </p>
-                </div>
-              </div>
+            <div class="flex flex-col gap-4 max-w-md">
+              <app-counter
+                label="payments.price"
+                suffix="€"
+                [step]="0.5"
+                [min]="2"
+                [max]="20"
+                [ngModel]="model().price || 2"
+                (ngModelChange)="onPriceChange($event)"
+                name="price"
+              />
+              <p class="text-xs opacity-60 mt-1">
+                {{ 'payments.priceHelp' | translate }}
+              </p>
             </div>
           }
         </div>
@@ -455,52 +345,6 @@ interface MinimalArea {
         </button>
       </div>
     </form>
-
-    <ng-template #accountDialog let-observer let-accounts="data">
-      <div class="flex flex-col gap-6">
-        <div class="flex flex-col gap-2">
-          <h2 class="text-xl font-bold">
-            {{ 'payments.selectAccountTitle' | translate }}
-          </h2>
-          <p class="opacity-60 text-sm">
-            {{ 'payments.selectAccountDescription' | translate }}
-          </p>
-        </div>
-
-        <div class="flex flex-col gap-2">
-          @for (acc of accounts; track acc.stripe_account_id) {
-            <button
-              tuiButton
-              appearance="secondary"
-              class="w-full text-start"
-              (click)="
-                observer.next(acc.stripe_account_id); observer.complete()
-              "
-            >
-              {{ 'payments.reuseAccount' | translate: { name: acc.name } }}
-            </button>
-          }
-          <div class="border-t my-2"></div>
-          <button
-            tuiButton
-            appearance="primary"
-            class="w-full"
-            (click)="observer.next('NEW'); observer.complete()"
-          >
-            {{ 'payments.createNewAccount' | translate }}
-          </button>
-        </div>
-
-        <button
-          tuiButton
-          appearance="flat"
-          (click)="observer.complete()"
-          class="w-full"
-        >
-          {{ 'cancel' | translate }}
-        </button>
-      </div>
-    </ng-template>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
@@ -511,9 +355,6 @@ export class AreaFormComponent {
   private readonly location = inject(Location);
   private readonly slugService = inject(SlugService);
   private readonly toast = inject(ToastService);
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly accountDialogTemplate =
-    viewChild<TemplateRef<unknown>>('accountDialog');
 
   private readonly _dialogCtx: TuiDialogContext<
     string | boolean | null,
@@ -560,14 +401,12 @@ export class AreaFormComponent {
     eight_anu_crag_slugs: string[];
     is_public: boolean;
     price: number | null;
-    stripe_account_id: string | null;
   }>({
     name: '',
     slug: '',
     eight_anu_crag_slugs: [],
     is_public: true,
     price: 0,
-    stripe_account_id: null,
   });
 
   readonly isSecretArea = computed(() => {
@@ -597,8 +436,6 @@ export class AreaFormComponent {
 
   // Internal id used for updates when editing
   private editingId: number | null = null;
-
-  connecting = signal(false);
 
   constructor() {
     // When editing, prefill the form with provided data
@@ -644,7 +481,6 @@ export class AreaFormComponent {
         eight_anu_crag_slugs: data.eight_anu_crag_slugs || [],
         is_public: data.is_public ?? true,
         price: data.price ?? 0,
-        stripe_account_id: data.stripe_account_id ?? null,
       }));
       this.areaForm().reset();
     }
@@ -670,7 +506,6 @@ export class AreaFormComponent {
         is_public: model.is_public,
         price: model.is_public ? null : model.price,
         eight_anu_crag_slugs: model.eight_anu_crag_slugs,
-        stripe_account_id: model.stripe_account_id,
       };
 
       try {
@@ -722,45 +557,5 @@ export class AreaFormComponent {
 
   onPriceChange(value: number | null): void {
     this.model.update((m) => ({ ...m, price: value }));
-  }
-
-  onStripeAccountChange(value: string | null): void {
-    this.model.update((m) => ({ ...m, stripe_account_id: value }));
-  }
-
-  async onConnectStripe(
-    stripeAccountId?: string,
-    forceNew?: boolean,
-  ): Promise<void> {
-    const areaId = this.editingId;
-    if (!areaId) return;
-
-    this.connecting.set(true);
-    try {
-      const data = await this.areas.connectStripe(
-        areaId,
-        stripeAccountId,
-        forceNew,
-      );
-
-      if (data?.url) {
-        window.location.href = data.url;
-      } else if (data?.status === 'multiple_accounts' && data.accounts) {
-        const choice = await firstValueFrom(
-          this.dialogs.open<string>(this.accountDialogTemplate()!, {
-            data: data.accounts,
-            size: 's',
-          }),
-          { defaultValue: undefined },
-        );
-        if (choice === 'NEW') {
-          void this.onConnectStripe(undefined, true);
-        } else if (choice) {
-          void this.onConnectStripe(choice);
-        }
-      }
-    } finally {
-      this.connecting.set(false);
-    }
   }
 }
