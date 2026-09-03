@@ -14,6 +14,7 @@ export const POINT_STATE_COLORS: Record<
   start: '#22C55E',
   top: '#EF4444',
   match: '#3B82F6',
+  foot: '#EAB308',
 };
 
 export function getPointStateColor(
@@ -34,6 +35,8 @@ export function getPointStateBadge(state?: PointState): string {
       return 'T';
     case 'match':
       return 'M';
+    case 'foot':
+      return 'F';
     default:
       return '';
   }
@@ -47,6 +50,8 @@ export function getPointStateLabel(state?: PointState): string {
       return 'TOP';
     case 'match':
       return 'MATCH';
+    case 'foot':
+      return 'FOOT';
     default:
       return '';
   }
@@ -59,6 +64,8 @@ export function cyclePointState(currentState?: PointState): PointState {
     case 'top':
       return 'match';
     case 'match':
+      return 'foot';
+    case 'foot':
       return 'neutral';
     case 'neutral':
     default:

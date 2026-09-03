@@ -115,20 +115,22 @@ describe('TopoPointStateColorPipe', () => {
     expect(pipe.transform('neutral', '#123456')).toBe('#123456');
   });
 
-  it('returns state color for start, top, match', () => {
+  it('returns state color for start, top, match, foot', () => {
     expect(pipe.transform('start')).toBe('#22C55E');
     expect(pipe.transform('top')).toBe('#EF4444');
     expect(pipe.transform('match')).toBe('#3B82F6');
+    expect(pipe.transform('foot')).toBe('#EAB308');
   });
 });
 
 describe('TopoPointStateBadgePipe', () => {
   const pipe = new TopoPointStateBadgePipe();
 
-  it('returns badge letter for start, top, match', () => {
+  it('returns badge letter for start, top, match, foot', () => {
     expect(pipe.transform('start')).toBe('S');
     expect(pipe.transform('top')).toBe('T');
     expect(pipe.transform('match')).toBe('M');
+    expect(pipe.transform('foot')).toBe('F');
   });
 
   it('returns empty string for neutral or undefined', () => {
@@ -140,10 +142,11 @@ describe('TopoPointStateBadgePipe', () => {
 describe('TopoPointStateLabelPipe', () => {
   const pipe = new TopoPointStateLabelPipe();
 
-  it('returns label for start, top, match', () => {
+  it('returns label for start, top, match, foot', () => {
     expect(pipe.transform('start')).toBe('START');
     expect(pipe.transform('top')).toBe('TOP');
     expect(pipe.transform('match')).toBe('MATCH');
+    expect(pipe.transform('foot')).toBe('FOOT');
   });
 
   it('returns empty string for neutral or undefined', () => {

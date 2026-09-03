@@ -20,7 +20,7 @@ export interface RouteWithOwnData extends RouteDto {
   project?: boolean;
 }
 
-export type PointState = 'neutral' | 'start' | 'top' | 'match';
+export type PointState = 'neutral' | 'start' | 'top' | 'match' | 'foot';
 
 export interface TopoPoint {
   x: number;

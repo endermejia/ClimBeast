@@ -16,18 +16,20 @@ describe('topo-styles.utils', () => {
       expect(getPointStateColor('neutral', '#123')).toBe('#123');
     });
 
-    it('returns specific colors for start, top, match', () => {
+    it('returns specific colors for start, top, match, foot', () => {
       expect(getPointStateColor('start')).toBe('#22C55E');
       expect(getPointStateColor('top')).toBe('#EF4444');
       expect(getPointStateColor('match')).toBe('#3B82F6');
+      expect(getPointStateColor('foot')).toBe('#EAB308');
     });
   });
 
   describe('getPointStateBadge', () => {
-    it('returns S, T, M for corresponding states', () => {
+    it('returns S, T, M, F for corresponding states', () => {
       expect(getPointStateBadge('start')).toBe('S');
       expect(getPointStateBadge('top')).toBe('T');
       expect(getPointStateBadge('match')).toBe('M');
+      expect(getPointStateBadge('foot')).toBe('F');
     });
 
     it('returns empty string for neutral or undefined', () => {
@@ -37,10 +39,11 @@ describe('topo-styles.utils', () => {
   });
 
   describe('getPointStateLabel', () => {
-    it('returns START, TOP, MATCH for corresponding states', () => {
+    it('returns START, TOP, MATCH, FOOT for corresponding states', () => {
       expect(getPointStateLabel('start')).toBe('START');
       expect(getPointStateLabel('top')).toBe('TOP');
       expect(getPointStateLabel('match')).toBe('MATCH');
+      expect(getPointStateLabel('foot')).toBe('FOOT');
     });
 
     it('returns empty string for neutral or undefined', () => {
@@ -50,12 +53,13 @@ describe('topo-styles.utils', () => {
   });
 
   describe('cyclePointState', () => {
-    it('cycles from neutral/undefined -> start -> top -> match -> neutral', () => {
+    it('cycles from neutral/undefined -> start -> top -> match -> foot -> neutral', () => {
       expect(cyclePointState(undefined)).toBe('start');
       expect(cyclePointState('neutral')).toBe('start');
       expect(cyclePointState('start')).toBe('top');
       expect(cyclePointState('top')).toBe('match');
-      expect(cyclePointState('match')).toBe('neutral');
+      expect(cyclePointState('match')).toBe('foot');
+      expect(cyclePointState('foot')).toBe('neutral');
     });
   });
 

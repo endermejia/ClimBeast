@@ -309,6 +309,12 @@ export interface TopoPathEditorConfig {
                         ></span>
                         <span>M: {{ 'topos.legend.match' | translate }}</span>
                       </div>
+                      <div class="flex items-center gap-1">
+                        <span
+                          class="w-2.5 h-2.5 rounded-full bg-[#EAB308] inline-block"
+                        ></span>
+                        <span>F: {{ 'topos.legend.foot' | translate }}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -448,7 +454,9 @@ export interface TopoPathEditorConfig {
                               ? 3.8
                               : pt.state === 'start'
                                 ? 3.6
-                                : 2.8);
+                                : pt.state === 'foot'
+                                  ? 3.4
+                                  : 2.8);
                           @let pillH = strokeW * 1.4;
                           @let pillY = pt.y * height() - circleR - pillH * 0.45;
                           <g
@@ -639,7 +647,9 @@ export interface TopoPathEditorConfig {
                             ? 3.8
                             : pt.state === 'start'
                               ? 3.6
-                              : 2.8);
+                              : pt.state === 'foot'
+                                ? 3.4
+                                : 2.8);
                         @let pillH = strokeW * width() * 1.4;
                         @let pillY =
                           pt.y * height() -
