@@ -41,10 +41,10 @@ import { TopoPageBase } from '../area/topo-page-base';
   ],
   template: `
     <div class="h-full w-full">
-      <section class="flex flex-col w-full h-full p-4">
+      <section class="flex flex-col w-full h-full md:p-4">
         @let isMobile = layoutService.isMobile();
         @if (topo(); as t) {
-          <div class="mb-6">
+          <div class="px-4 pt-4 pb-1.5 md:p-0 md:mb-4 shrink-0">
             <app-section-header
               [title]="t.name"
               [showLike]="false"
