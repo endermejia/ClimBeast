@@ -160,6 +160,8 @@ export class MapComponent {
   private readonly containerRef: Signal<ElementRef<HTMLElement> | undefined> =
     viewChild('container', { read: ElementRef });
 
+  private isDestroyed = false;
+
   constructor() {
     effect(() => {
       const crags = this.mapCragItems();
@@ -169,7 +171,7 @@ export class MapComponent {
       const selectedParking = this.selectedMapParkingItem();
       const indoorItems = this.mapIndoorItems();
 
-      if (this.mapInitialized()) {
+      if (this.mapInitialized() && !this.isDestroyed) {
         void this.mapBuilder.updateData(
           crags,
           selectedCrag,
@@ -184,17 +186,19 @@ export class MapComponent {
 
     effect(() => {
       const selection = this.selection();
-      if (this.mapInitialized() && selection) {
+      if (this.mapInitialized() && !this.isDestroyed && selection) {
         this.mapBuilder.setSelectionMarker(selection.lat, selection.lng);
       }
     });
 
     afterNextRender(() => {
+      if (this.isDestroyed) return;
       this.mapData.mapActive.set(true);
       this.tryInit();
     });
 
     this.destroyRef.onDestroy(() => {
+      this.isDestroyed = true;
       this.mapData.mapActive.set(false);
       if (this.initRafId !== null && typeof window !== 'undefined') {
         window.cancelAnimationFrame(this.initRafId);
@@ -232,28 +236,36 @@ export class MapComponent {
 
   private tryInit(): void {
     const el = this.containerRef()?.nativeElement;
-    if (!el || this.mapInitialized() || !this.isBrowser()) return;
+    if (!el || this.mapInitialized() || !this.isBrowser() || this.isDestroyed)
+      return;
     this.initRafId = window.requestAnimationFrame(() => {
       this.initRafId = null;
+      if (this.isDestroyed) return;
       void this.initMap();
     });
   }
 
   private async initMap(): Promise<void> {
-    if (this.mapInitialized() || !this.isBrowser()) return;
+    if (this.mapInitialized() || !this.isBrowser() || this.isDestroyed) return;
     const el = this.containerRef()?.nativeElement;
     if (!el) return;
-    await this.mapBuilder.init(
-      el,
-      this.options(),
-      this.mapCragItems(),
-      this.selectedMapCragItem(),
-      this.mapParkingItems(),
-      this.selectedMapParkingItem(),
-      this.mapAreaItems(),
-      this.mapIndoorItems(),
-      this.callbacks,
-    );
-    this.mapInitialized.set(true);
+    try {
+      await this.mapBuilder.init(
+        el,
+        this.options(),
+        this.mapCragItems(),
+        this.selectedMapCragItem(),
+        this.mapParkingItems(),
+        this.selectedMapParkingItem(),
+        this.mapAreaItems(),
+        this.mapIndoorItems(),
+        this.callbacks,
+      );
+      if (!this.isDestroyed) {
+        this.mapInitialized.set(true);
+      }
+    } catch (e) {
+      console.warn('[MapComponent] Failed to initialize map', e);
+    }
   }
 }

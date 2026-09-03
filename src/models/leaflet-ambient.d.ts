@@ -70,7 +70,12 @@ declare module 'leaflet' {
       options?: { animate?: boolean },
     ): this;
     latLngToContainerPoint(latlng: LatLng): Point;
-    invalidateSize(): this;
+    invalidateSize(
+      options?:
+        | boolean
+        | { animate?: boolean; pan?: boolean; debounceMoveend?: boolean },
+    ): this;
+    stop?(): this;
     remove(): this;
     removeLayer(layer: Layer): this;
   }

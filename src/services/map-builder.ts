@@ -58,6 +58,7 @@ export class MapBuilder {
   private readonly localStorage = inject(LocalStorage);
   private map: Map | null = null;
   private initialized = false;
+  private currentSession = 0;
   private L: LeafletNamespace | null = null;
   private rafId1: number | null = null;
   private rafId2: number | null = null;
@@ -98,17 +99,26 @@ export class MapBuilder {
     cb: MapBuilderCallbacks,
   ): Promise<void> {
     if (this.initialized || !this.isBrowser()) return;
+    const session = ++this.currentSession;
     const [{ default: L }] = await Promise.all([import('leaflet')]);
+    if (this.currentSession !== session || !el) return;
     this.L = L;
 
-    this.map = new L.Map(el, {
-      center: options.center ?? [39.5, -0.5],
-      zoom: options.zoom ?? 6,
-      worldCopyJump: true,
-      zoomControl: false,
-      maxZoom: options.maxZoom ?? 22,
-      minZoom: options.minZoom ?? 4,
-    });
+    try {
+      this.map = new L.Map(el, {
+        center: options.center ?? [39.5, -0.5],
+        zoom: options.zoom ?? 6,
+        worldCopyJump: true,
+        zoomControl: false,
+        maxZoom: options.maxZoom ?? 22,
+        minZoom: options.minZoom ?? 4,
+      });
+    } catch (e) {
+      console.warn('[MapBuilder] Failed to create L.Map', e);
+      return;
+    }
+
+    if (this.currentSession !== session || !this.map) return;
 
     new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: options.maxZoom ?? 22,
@@ -195,6 +205,8 @@ export class MapBuilder {
       viewportRestored = true;
     }
 
+    if (this.currentSession !== session || !this.map) return;
+
     await this.rebuildMarkers(
       mapCragItems,
       selectedMapCragItem,
@@ -204,6 +216,8 @@ export class MapBuilder {
       mapIndoorItems,
       cb,
     );
+    if (this.currentSession !== session || !this.map) return;
+
     // Disable cluster spawn animation after the first render to avoid flicker on pans
     this.animateClustersOnNextBuild = false;
 
@@ -215,21 +229,19 @@ export class MapBuilder {
     })();
 
     // Only attempt geolocation when no viewport was restored
-    if (!viewportRestored) {
+    if (!viewportRestored && this.map) {
       try {
         const hasCachedUserLocation =
           !!this.localStorage.getItem('lw_user_location');
 
-        if (hasCachedUserLocation) {
+        if (hasCachedUserLocation || isMobileClient) {
           await this.goToCurrentLocation();
-        } else if (isMobileClient) {
-          await this.goToCurrentLocation();
-        } else if (mapCragItems && mapCragItems.length) {
+        } else if (mapCragItems && mapCragItems.length && this.map && this.L) {
           // Fallback: fit bounds to show all crags
           const latLngs: [number, number][] = mapCragItems.map(
             (mapItem: MapCragItem) => [mapItem.latitude, mapItem.longitude],
           );
-          const bounds = new L.LatLngBounds(latLngs);
+          const bounds = new this.L.LatLngBounds(latLngs);
           this.map.fitBounds(bounds, {
             padding: [24, 24],
             maxZoom: Math.min(9, options.maxZoom ?? 22),
@@ -237,11 +249,11 @@ export class MapBuilder {
         }
       } catch {
         // Fallback to showing all crags if geolocation fails
-        if (mapCragItems && mapCragItems.length) {
+        if (mapCragItems && mapCragItems.length && this.map && this.L) {
           const latLngs: [number, number][] = mapCragItems.map(
             (mapItem: MapCragItem) => [mapItem.latitude, mapItem.longitude],
           );
-          const bounds = new L.LatLngBounds(latLngs);
+          const bounds = new this.L.LatLngBounds(latLngs);
           this.map.fitBounds(bounds, {
             padding: [24, 24],
             maxZoom: Math.min(9, options.maxZoom ?? 22),
@@ -249,6 +261,8 @@ export class MapBuilder {
         }
       }
     }
+
+    if (this.currentSession !== session || !this.map) return;
 
     this.map.on('click', (e: LeafletEvent) => {
       const latlng = e.latlng;
@@ -261,7 +275,7 @@ export class MapBuilder {
     this.map.on('zoomstart', collapseOnInteraction);
 
     const emitViewport = () => {
-      if (!this.map) return;
+      if (!this.map || this.currentSession !== session) return;
       const b = this.map.getBounds();
       const sw = b.getSouthWest();
       const ne = b.getNorthEast();
@@ -276,6 +290,7 @@ export class MapBuilder {
     };
 
     this.map.on('moveend', async () => {
+      if (this.currentSession !== session || !this.map) return;
       this.animateClustersOnNextBuild = false;
       await this.rebuildMarkers(
         this.mapCragItems,
@@ -289,6 +304,7 @@ export class MapBuilder {
       emitViewport();
     });
     this.map.on('zoomend', async () => {
+      if (this.currentSession !== session || !this.map) return;
       this.animateClustersOnNextBuild = false;
       await this.rebuildMarkers(
         this.mapCragItems,
@@ -307,12 +323,30 @@ export class MapBuilder {
     if (typeof window !== 'undefined') {
       this.rafId1 = window.requestAnimationFrame(() => {
         this.rafId1 = null;
-        if (!this.map) return;
-        this.map.invalidateSize?.();
+        if (!this.map || this.currentSession !== session || !this.initialized)
+          return;
+        const mapPane = (this.map as unknown as { _mapPane?: HTMLElement })
+          ?._mapPane;
+        if (mapPane) {
+          try {
+            this.map.invalidateSize?.({ pan: false });
+          } catch {
+            // ignore if map container/pane is detached
+          }
+        }
         this.rafId2 = window.requestAnimationFrame(() => {
           this.rafId2 = null;
-          if (!this.map) return;
-          this.map.invalidateSize?.();
+          if (!this.map || this.currentSession !== session || !this.initialized)
+            return;
+          const mapPane2 = (this.map as unknown as { _mapPane?: HTMLElement })
+            ?._mapPane;
+          if (mapPane2) {
+            try {
+              this.map.invalidateSize?.({ pan: false });
+            } catch {
+              // ignore if map container/pane is detached
+            }
+          }
           emitViewport();
         });
       });
@@ -331,7 +365,8 @@ export class MapBuilder {
     mapIndoorItems: readonly MapIndoorCenterItem[],
     cb: MapBuilderCallbacks,
   ): Promise<void> {
-    if (!this.map) return;
+    if (!this.map || !this.initialized) return;
+    const session = this.currentSession;
     this.mapCragItems = mapCragItems;
     this.mapIndoorItems = mapIndoorItems;
 
@@ -344,12 +379,14 @@ export class MapBuilder {
       mapIndoorItems,
       cb,
     );
+    if (this.currentSession !== session || !this.map) return;
   }
 
   /**
    * Cleans up and removes the map instance and all associated markers and layers.
    */
   destroy(): void {
+    this.currentSession++;
     if (typeof window !== 'undefined') {
       if (this.rafId1 !== null) {
         window.cancelAnimationFrame(this.rafId1);
@@ -362,7 +399,25 @@ export class MapBuilder {
     }
     try {
       this.cleanMarkers();
-      this.map?.remove?.();
+      if (this.map) {
+        const mapAny = this.map as unknown as {
+          _resizeRequest?: number | null;
+          _panAnim?: { stop?: () => void };
+        };
+        if (mapAny._resizeRequest && typeof window !== 'undefined') {
+          window.cancelAnimationFrame(mapAny._resizeRequest);
+          mapAny._resizeRequest = null;
+        }
+        if (mapAny._panAnim?.stop) {
+          try {
+            mapAny._panAnim.stop();
+          } catch {
+            // ignore
+          }
+        }
+        this.map.stop?.();
+        this.map.remove?.();
+      }
     } catch {
       // ignore
     }
@@ -376,14 +431,40 @@ export class MapBuilder {
     if (!map || !this.L) return;
 
     this.markers.forEach((marker) => {
-      map.removeLayer(marker);
+      try {
+        map.removeLayer(marker);
+      } catch {
+        // ignore
+      }
     });
     this.markers = [];
 
     this.parkingMarkers.forEach((marker) => {
-      map.removeLayer(marker);
+      try {
+        map.removeLayer(marker);
+      } catch {
+        // ignore
+      }
     });
     this.parkingMarkers = [];
+
+    if (this.userMarker) {
+      try {
+        map.removeLayer(this.userMarker);
+      } catch {
+        // ignore
+      }
+      this.userMarker = null;
+    }
+
+    if (this.selectionMarker) {
+      try {
+        map.removeLayer(this.selectionMarker);
+      } catch {
+        // ignore
+      }
+      this.selectionMarker = null;
+    }
   }
 
   private shouldCluster(): boolean {
@@ -844,6 +925,7 @@ export class MapBuilder {
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
       return;
     }
+    const session = this.currentSession;
     const L = this.L;
 
     const position = await new Promise<GeolocationPosition | null>(
@@ -860,7 +942,8 @@ export class MapBuilder {
       },
     );
 
-    if (!position) return;
+    if (!position || this.currentSession !== session || !this.map || !this.L)
+      return;
     const { latitude, longitude } = position.coords;
     const latLng: [number, number] = [latitude, longitude];
 
@@ -875,17 +958,25 @@ export class MapBuilder {
     });
 
     if (this.userMarker) {
-      this.map.removeLayer(this.userMarker);
+      try {
+        this.map.removeLayer(this.userMarker);
+      } catch {
+        // ignore
+      }
       this.userMarker = null;
     }
 
-    this.userMarker = new L.Marker(latLng, {
-      icon,
-      zIndexOffset: 1000,
-    }).addTo(this.map);
+    try {
+      this.userMarker = new L.Marker(latLng, {
+        icon,
+        zIndexOffset: 1000,
+      }).addTo(this.map);
 
-    const nextZoom = Math.max(12, this.map.getZoom());
-    this.map.setView(latLng, nextZoom, { animate: true });
+      const nextZoom = Math.max(12, this.map.getZoom());
+      this.map.setView(latLng, nextZoom, { animate: true });
+    } catch {
+      // ignore
+    }
   }
 
   private selectionMarker: Marker | null = null;
@@ -894,7 +985,12 @@ export class MapBuilder {
     const L = this.L;
 
     if (this.selectionMarker) {
-      this.map.removeLayer(this.selectionMarker);
+      try {
+        this.map.removeLayer(this.selectionMarker);
+      } catch {
+        // ignore
+      }
+      this.selectionMarker = null;
     }
 
     const icon = new L.DivIcon({
@@ -910,10 +1006,14 @@ export class MapBuilder {
       iconAnchor: [0, 0],
     });
 
-    this.selectionMarker = new L.Marker([lat, lng], {
-      icon,
-      zIndexOffset: 2000,
-    }).addTo(this.map);
+    try {
+      this.selectionMarker = new L.Marker([lat, lng], {
+        icon,
+        zIndexOffset: 2000,
+      }).addTo(this.map);
+    } catch {
+      // ignore
+    }
   }
 
   /**
