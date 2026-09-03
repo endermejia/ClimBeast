@@ -37,6 +37,7 @@
   "admin.errorLogs.sortSeverity": "Per gravità",
   "admin.errorLogs.title": "Errori di Sistema",
   "admin.errorLogs.viewStack": "Visualizza traccia dello stack",
+  "admin.manageMyAreas": "Gestisci le mie falesie",
   "admin.materialCatalog.active": "Available",
   "admin.materialCatalog.activeHelp": "Il materiale sarà visibile per gli equipieri",
   "admin.materialCatalog.activeLabel": "Active and available to request",

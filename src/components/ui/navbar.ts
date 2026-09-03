@@ -16,7 +16,6 @@ import {
 
 import { TuiAppearance, TuiDropdown, TuiIcon } from '@taiga-ui/core';
 import {
-  TuiAvatar,
   TuiBadgedContent,
   TuiBadgeNotification,
   TuiPulse,
@@ -55,7 +54,6 @@ import { TourHintComponent } from './tour-hint';
     TourHintComponent,
     TranslatePipe,
     TuiAppearance,
-    TuiAvatar,
     TuiBadgeNotification,
     TuiBadgedContent,
     TuiDropdown,
@@ -214,25 +212,24 @@ import { TourHintComponent } from './tour-hint';
             </span>
           </button>
 
-          @let showConfig =
-            authState.canEditAsAdmin() || authState.isAreaAdmin();
-          @if (showConfig) {
-            <!-- Configuration -->
+          @let showAdmin = authState.isAdmin() || authState.isAreaAdmin();
+          @if (showAdmin) {
+            <!-- Administration / Manage My Areas -->
             <a
-              #config="routerLinkActive"
-              [routerLink]="authState.canEditAsAdmin() ? '/admin' : '/my-areas'"
+              #adminNav="routerLinkActive"
+              [routerLink]="authState.isAdmin() ? '/admin' : '/my-areas'"
               routerLinkActive
               tuiAppearance="flat-grayscale"
-              class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full group"
+              class="hidden md:flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full group"
               [attr.aria-label]="
-                (authState.canEditAsAdmin() ? 'config' : 'nav.my-areas')
+                (authState.isAdmin() ? 'admin.title' : 'admin.manageMyAreas')
                   | translate
               "
             >
               <tui-icon
-                icon="@tui.cog"
+                [icon]="authState.isAdmin() ? '@tui.shield' : '@tui.map'"
                 [style.color]="
-                  config.isActive
+                  adminNav.isActive
                     ? 'var(--tui-text-negative)'
                     : 'var(--tui-text-primary)'
                 "
@@ -240,10 +237,10 @@ import { TourHintComponent } from './tour-hint';
               <span
                 class="hidden md:group-hover:block transition-opacity duration-300 whitespace-nowrap overflow-hidden"
               >
-                @if (authState.canEditAsAdmin()) {
-                  {{ 'config' | translate }}
+                @if (authState.isAdmin()) {
+                  {{ 'admin.title' | translate }}
                 } @else {
-                  {{ 'nav.my-areas' | translate }}
+                  {{ 'admin.manageMyAreas' | translate }}
                 }
               </span>
             </a>
@@ -252,62 +249,19 @@ import { TourHintComponent } from './tour-hint';
           <!-- Search -->
           <app-search-dropdown [loading]="loading()" />
 
-          <!-- Desktop Profile -->
-          <a
-            #profile="routerLinkActive"
-            routerLink="/profile"
-            routerLinkActive
-            tuiAppearance="flat-grayscale"
-            [tuiSkeleton]="loading()"
-            class="hidden md:flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full lg:mt-auto group"
-            [attr.aria-label]="'nav.profile' | translate"
-          >
-            <span
-              tuiAvatar
-              [tuiSkeleton]="!authState.userProfile()"
-              [class.ring-2]="profile.isActive"
-              [class.ring-offset-2]="profile.isActive"
-              [style.--tw-ring-color]="
-                profile.isActive ? 'var(--tui-text-negative)' : ''
-              "
-              size="xs"
-            >
-              @if (authState.userAvatar(); as avatar) {
-                <img
-                  [src]="avatar"
-                  [alt]="authState.userProfile()?.name || ''"
-                />
-              } @else {
-                <tui-icon
-                  icon="@tui.user"
-                  [style.color]="
-                    profile.isActive
-                      ? 'var(--tui-text-negative)'
-                      : 'var(--tui-text-primary)'
-                  "
-                />
-              }
-            </span>
-            <span
-              class="hidden md:group-hover:block transition-opacity duration-300 whitespace-nowrap overflow-hidden"
-            >
-              {{ 'nav.profile' | translate }}
-            </span>
-          </a>
-
-          <!-- Mobile Profile Menu Button -->
-          <div class="md:hidden">
-            <app-menu-options-button
-              appearance="flat-grayscale"
-              [avatarMode]="true"
-              [avatarUrl]="authState.userAvatar()"
-              [userName]="authState.userProfile()?.name"
-              [isActive]="isProfileActive()"
-              [showNavigationOptions]="true"
-              [loading]="loading()"
-              direction="top"
-            />
-          </div>
+          <!-- Profile Menu Button -->
+          <app-menu-options-button
+            appearance="flat-grayscale"
+            [avatarMode]="true"
+            [avatarUrl]="authState.userAvatar()"
+            [userName]="authState.userProfile()?.name"
+            [isActive]="isProfileActive()"
+            [label]="'nav.profile' | translate"
+            [showNavigationOptions]="true"
+            [loading]="loading()"
+            direction="top"
+            class="lg:mt-auto"
+          />
         </nav>
 
         <!-- Desktop Bottom Options -->

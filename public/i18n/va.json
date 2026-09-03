@@ -37,6 +37,7 @@
   "admin.errorLogs.sortSeverity": "Per Gravetat",
   "admin.errorLogs.title": "Errors del Sistema",
   "admin.errorLogs.viewStack": "Veure traça d'error (Stack trace)",
+  "admin.manageMyAreas": "Administrar les meues àrees",
   "admin.materialCatalog.active": "Available",
   "admin.materialCatalog.activeHelp": "El material serà visible per als equipiers",
   "admin.materialCatalog.activeLabel": "Active and available to request",

@@ -37,6 +37,7 @@
   "admin.errorLogs.sortSeverity": "Par gravité",
   "admin.errorLogs.title": "Erreurs système",
   "admin.errorLogs.viewStack": "Voir la pile d'exécution (Stack trace)",
+  "admin.manageMyAreas": "Gérer mes sites",
   "admin.materialCatalog.active": "Available",
   "admin.materialCatalog.activeHelp": "Le matériel sera visible pour les équipiers",
   "admin.materialCatalog.activeLabel": "Active and available to request",

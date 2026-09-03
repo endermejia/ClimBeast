@@ -37,6 +37,7 @@
   "admin.errorLogs.sortSeverity": "Por Gravedad",
   "admin.errorLogs.title": "Errores del Sistema",
   "admin.errorLogs.viewStack": "Ver traza de error (Stack trace)",
+  "admin.manageMyAreas": "Administrar mis áreas",
   "admin.materialCatalog.active": "Disponible para equipadores",
   "admin.materialCatalog.activeHelp": "El material aparecerá visible para los equipadores",
   "admin.materialCatalog.activeLabel": "Activo y disponible para solicitar",

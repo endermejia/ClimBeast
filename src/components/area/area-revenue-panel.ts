@@ -16,14 +16,13 @@ import { TuiCard, TuiHeader } from '@taiga-ui/layout';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AreaDonationsService } from '../../services/area-donations.service';
-
 import { AreaMaterialRequestsService } from '../../services/area-material-requests.service';
 import { AreaRevenueService } from '../../services/area-revenue.service';
 import { AuthStateService } from '../../services/auth-state.service';
 
-import type { AreaBalanceSummary, AreaPublicTimeline } from '../../models';
-
 import { EmptyStateComponent } from '../ui/empty-state';
+
+import type { AreaBalanceSummary, AreaPublicTimeline } from '../../models';
 
 @Component({
   selector: 'app-area-revenue-panel',

@@ -37,6 +37,7 @@
   "admin.errorLogs.sortSeverity": "Nach Schweregrad",
   "admin.errorLogs.title": "Systemfehler",
   "admin.errorLogs.viewStack": "Stacktrace anzeigen",
+  "admin.manageMyAreas": "Meine Gebiete verwalten",
   "admin.materialCatalog.active": "Available",
   "admin.materialCatalog.activeHelp": "Das Material wird für Ausrüster sichtbar sein",
   "admin.materialCatalog.activeLabel": "Active and available to request",
