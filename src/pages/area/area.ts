@@ -37,11 +37,11 @@ import {
   type TuiConfirmData,
   TuiDataListWrapper,
 } from '@taiga-ui/kit';
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
+import { AreaDonationsService } from '../../services/area-donations.service';
 import { AreasService } from '../../services/areas.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { CacheService } from '../../services/cache.service';
@@ -58,7 +58,6 @@ import { UserProfilesService } from '../../services/user-profiles.service';
 import { AreaRevenuePanelComponent } from '../../components/area/area-revenue-panel';
 import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
 import { CragCardComponent } from '../../components/crag/crag-card';
-import { AreaPaywallDialogComponent } from '../../components/paywall/area-paywall-dialog';
 import { GradeComponent } from '../../components/ui/avatar-grade';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { SectionHeaderComponent } from '../../components/ui/section-header';
@@ -274,6 +273,9 @@ import { IS_BROWSER } from '../../app/is-browser';
             [areaId]="area.id"
             [areaName]="area.name"
             [isPaywalled]="!isPublic()"
+            [areaPrice]="areaDetail()?.price || 0"
+            [isPurchased]="!!areaDetail()?.purchased"
+            [toposCount]="area.topos_count || 0"
             class="mt-6 mb-8 block"
           />
 
@@ -555,6 +557,7 @@ export class AreaComponent {
   protected readonly isBrowser = inject(IS_BROWSER);
   protected readonly areas = inject(AreasService);
   protected readonly cragsService = inject(CragsService);
+  private readonly donationsService = inject(AreaDonationsService);
   protected readonly supabase = inject(SupabaseService);
   protected readonly dialogs = inject(TuiDialogService);
   protected readonly translate = inject(TranslateService);
@@ -1030,19 +1033,12 @@ export class AreaComponent {
     const area = this.areaDetail();
     if (!area) return;
 
-    void firstValueFrom(
-      this.dialogs.open(new PolymorpheusComponent(AreaPaywallDialogComponent), {
-        label: this.translate.instant('payments.buyCount', {
-          count: this.areaToposCount(),
-        }),
-        size: 'l',
-        data: {
-          areaId: area.id,
-          price: area.price,
-          areaName: area.name,
-        },
-      }),
-      { defaultValue: undefined },
-    );
+    this.donationsService.openDonationDialog(area.id, area.name, {
+      areaPrice: area.price,
+      isPurchased: !!area.purchased,
+      toposCount: this.areaToposCount(),
+      topos: this.outdoorData.areaTopos(),
+      initialAmount: area.price,
+    });
   }
 }

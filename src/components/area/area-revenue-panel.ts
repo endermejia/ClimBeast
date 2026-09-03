@@ -181,46 +181,11 @@ import { EmptyStateComponent } from '../ui/empty-state';
             </button>
           </div>
 
-          <!-- Columna derecha: 3 tarjetas métricas apiladas -->
+          <!-- Columna derecha: tarjetas métricas apiladas -->
           <div
             class="md:col-span-5 lg:col-span-4 flex flex-col justify-between gap-2.5 sm:gap-3"
           >
-            <!-- 1. Ventas de croquis -->
-            <div
-              class="flex items-center gap-3 p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 flex-1 cursor-pointer transition-all hover:brightness-95 dark:hover:brightness-110 active:scale-[0.99]"
-              (click)="collapsed.set(false)"
-              (keydown.enter)="collapsed.set(false)"
-              tabindex="0"
-              role="button"
-            >
-              <div
-                class="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-sky-500/20 text-sky-600 dark:text-sky-400 shrink-0"
-              >
-                <tui-icon icon="@tui.map" />
-              </div>
-              <div class="flex flex-col min-w-0">
-                <span
-                  class="text-[11px] sm:text-xs font-medium text-(--tui-text-secondary) truncate"
-                >
-                  {{ 'areaRevenue.topoPurchases' | translate }}
-                </span>
-                @if (balanceResource.isLoading()) {
-                  <span
-                    [tuiSkeleton]="true"
-                    class="w-16 h-5 rounded mt-0.5"
-                  ></span>
-                } @else {
-                  <span
-                    class="text-sm sm:text-base font-bold text-sky-700 dark:text-sky-300 tabular-nums"
-                  >
-                    +{{ balance()?.totalPurchasesNet || 0 | number: '1.2-2' }}
-                    €
-                  </span>
-                }
-              </div>
-            </div>
-
-            <!-- 2. Donaciones directas -->
+            <!-- 1. Total recaudado -->
             <div
               class="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex-1 cursor-pointer transition-all hover:brightness-95 dark:hover:brightness-110 active:scale-[0.99]"
               (click)="collapsed.set(false)"
@@ -237,7 +202,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                 <span
                   class="text-[11px] sm:text-xs font-medium text-(--tui-text-secondary) truncate"
                 >
-                  {{ 'areaRevenue.directDonations' | translate }}
+                  {{ 'areaRevenue.totalRaised' | translate }}
                 </span>
                 @if (balanceResource.isLoading()) {
                   <span
@@ -248,8 +213,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                   <span
                     class="text-sm sm:text-base font-bold text-emerald-700 dark:text-emerald-300 tabular-nums"
                   >
-                    +{{ balance()?.totalDonationsNet || 0 | number: '1.2-2' }}
-                    €
+                    +{{ totalRaised() | number: '1.2-2' }} €
                   </span>
                 }
               </div>
@@ -375,8 +339,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                       </span>
                     </div>
                     <span appearance="positive" size="s" tuiBadge>
-                      +{{ balance()?.totalDonationsNet || 0 | number: '1.2-2' }}
-                      €
+                      +{{ totalRaised() | number: '1.2-2' }} €
                     </span>
                   </div>
 
@@ -535,6 +498,9 @@ export class AreaRevenuePanelComponent {
   readonly areaId = input.required<number>();
   readonly areaName = input<string>('');
   readonly isPaywalled = input<boolean>(false);
+  readonly areaPrice = input<number>(0);
+  readonly isPurchased = input<boolean>(false);
+  readonly toposCount = input<number>(0);
 
   readonly collapsed = signal<boolean>(true);
 
@@ -575,6 +541,11 @@ export class AreaRevenuePanelComponent {
   });
 
   readonly balance = computed(() => this.balanceResource.value());
+  readonly totalRaised = computed(
+    () =>
+      (this.balance()?.totalPurchasesNet || 0) +
+      (this.balance()?.totalDonationsNet || 0),
+  );
   readonly timeline = computed(() => this.timelineResource.value());
 
   readonly donationsList = computed(() => this.timeline()?.donations ?? []);
@@ -599,7 +570,12 @@ export class AreaRevenuePanelComponent {
   });
 
   openDonationDialog(): void {
-    this.donationsService.openDonationDialog(this.areaId(), this.areaName());
+    this.donationsService.openDonationDialog(this.areaId(), this.areaName(), {
+      areaPrice: this.areaPrice(),
+      isPurchased: this.isPurchased(),
+      isPaywalled: this.isPaywalled(),
+      toposCount: this.toposCount(),
+    });
   }
 
   async openMaterialRequestDialog(): Promise<void> {

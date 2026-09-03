@@ -76,14 +76,22 @@ export class AreaDonationsService {
     }
   }
 
-  openDonationDialog(areaId: number, areaName?: string): void {
+  openDonationDialog(
+    areaId: number,
+    areaName?: string,
+    options?: Partial<AreaDonationDialogData>,
+  ): void {
     void firstValueFrom(
       this.dialogs.open(
         new PolymorpheusComponent(AreaDonationDialogComponent),
         {
-          data: { areaId, areaName } as AreaDonationDialogData,
+          data: {
+            areaId,
+            areaName,
+            ...options,
+          } as AreaDonationDialogData,
           label: this.translate.instant('donations.dialogTitle'),
-          size: 'm',
+          size: 'l',
         },
       ),
     );

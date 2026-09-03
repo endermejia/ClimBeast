@@ -1,31 +1,24 @@
-import { CommonModule, DOCUMENT } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   inject,
   input,
-  signal,
 } from '@angular/core';
 
-import { TuiButton, TuiIcon, TuiLoader } from '@taiga-ui/core';
+import { TuiButton, TuiIcon } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AreaDonationsService } from '../../services/area-donations.service';
-import { SupabaseService } from '../../services/supabase.service';
-import { ToastService } from '../../services/toast.service';
-
-import { handleErrorToast } from '../../utils';
-
-import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-paywall',
   standalone: true,
-  imports: [CommonModule, TranslatePipe, TuiButton, TuiIcon, TuiLoader],
+  imports: [DecimalPipe, TranslatePipe, TuiButton, TuiIcon],
   template: `
     <div
-      class="relative overflow-hidden flex flex-col items-center justify-center p-6 sm:p-10 rounded-4xl border border-(--tui-border-normal) text-center gap-6 shadow-xl bg-(--tui-background-elevated)"
+      class="relative overflow-hidden flex flex-col items-center justify-center p-5 sm:p-8 md:p-10 rounded-3xl sm:rounded-4xl border border-(--tui-border-normal) text-center gap-6 shadow-xl bg-(--tui-background-elevated)"
     >
       <!-- Fondo decorativo sutil -->
       <div
@@ -56,29 +49,18 @@ import { IS_BROWSER } from '../../app/is-browser';
         </p>
       </div>
 
-      <div class="relative w-full max-w-xs flex flex-col gap-3">
-        <tui-loader [loading]="loading()" [overlay]="true">
-          <button
-            tuiButton
-            appearance="primary"
-            size="l"
-            class="w-full rounded-2xl! shadow-lg shadow-black/5 hover:scale-[1.02] transition-transform"
-            (click)="contributeNow()"
-            [iconStart]="'@tui.hand-heart'"
-          >
-            {{ 'payments.buy' | translate }}
-          </button>
-        </tui-loader>
-
+      <div class="relative w-full max-w-sm sm:max-w-md flex flex-col gap-3">
         <button
           tuiButton
-          appearance="secondary"
-          size="m"
-          class="w-full rounded-2xl!"
+          appearance="primary"
+          type="button"
+          class="w-full rounded-2xl! shadow-lg shadow-black/5 hover:scale-[1.02] transition-transform font-bold !whitespace-normal !h-auto min-h-12 py-3 px-4 text-xs sm:text-sm md:text-base text-center leading-snug flex items-center justify-center gap-2 cursor-pointer"
           (click)="openDonationDialog()"
         >
-          <tui-icon icon="@tui.heart" class="w-4 h-4" />
-          <span>{{ 'donations.onlyDonate' | translate }}</span>
+          <tui-icon icon="@tui.hand-heart" class="w-5 h-5 shrink-0" />
+          <span class="whitespace-normal leading-snug">
+            {{ 'payments.paywall.contributeAndUnlock' | translate }}
+          </span>
         </button>
 
         <p class="text-[10px] sm:text-xs leading-relaxed opacity-50 px-4 m-0">
@@ -96,44 +78,14 @@ export class PaywallComponent {
   toposCount = input<number>(0);
   hideTitle = input(false);
 
-  loading = signal(false);
-
-  private readonly supabase = inject(SupabaseService);
   private readonly donationsService = inject(AreaDonationsService);
-  private readonly toast = inject(ToastService);
-  private readonly isBrowser = inject(IS_BROWSER);
-  private readonly document = inject(DOCUMENT);
-
-  async contributeNow(): Promise<void> {
-    this.loading.set(true);
-    try {
-      const { data, error } = await this.supabase.client.functions.invoke(
-        'create-checkout-session',
-        {
-          headers: {
-            'ngsw-bypass': 'true',
-          },
-          body: {
-            items: [{ type: 'area', id: this.areaId() }],
-            success_url: `${window.location.origin}/area/redirect?area_id=${this.areaId()}`,
-            cancel_url: window.location.href,
-          },
-        },
-      );
-
-      if (error) throw error;
-      if (data?.url && this.isBrowser && this.document.defaultView) {
-        this.document.defaultView.location.href = data.url;
-      }
-    } catch (e) {
-      console.error('[PaywallComponent] Error starting checkout:', e);
-      handleErrorToast(e, this.toast);
-    } finally {
-      this.loading.set(false);
-    }
-  }
 
   openDonationDialog(): void {
-    this.donationsService.openDonationDialog(this.areaId(), this.areaName());
+    this.donationsService.openDonationDialog(this.areaId(), this.areaName(), {
+      areaPrice: this.price(),
+      isPurchased: false,
+      toposCount: this.toposCount(),
+      initialAmount: this.price(),
+    });
   }
 }

@@ -85,6 +85,54 @@ serve(async (req) => {
             console.error('Error inserting donation:', donationError);
             throw donationError;
           }
+
+          // If the user is authenticated, check if donation amount qualifies to unlock topos
+          if (userId) {
+            try {
+              const { data: areaData } = await supabaseAdmin
+                .from('areas')
+                .select('price')
+                .eq('id', areaId)
+                .single();
+
+              const areaPrice = Number(areaData?.price || 0);
+              if (areaPrice > 0 && totalGross >= areaPrice) {
+                // Check if user already has an access record for this area
+                const { data: existingPurchase } = await supabaseAdmin
+                  .from('area_purchases')
+                  .select('id')
+                  .eq('area_id', areaId)
+                  .eq('user_id', userId)
+                  .maybeSingle();
+
+                if (!existingPurchase) {
+                  const { error: purchaseError } = await supabaseAdmin
+                    .from('area_purchases')
+                    .insert({
+                      user_id: userId,
+                      area_id: areaId,
+                      amount: 0,
+                      gross_amount: 0,
+                      stripe_fee: 0,
+                      net_amount: 0,
+                      stripe_session_id: session.id,
+                    });
+
+                  if (purchaseError) {
+                    console.error(
+                      'Error granting area access on donation:',
+                      purchaseError,
+                    );
+                  }
+                }
+              }
+            } catch (unlockErr) {
+              console.error(
+                'Error verifying topos unlock on donation:',
+                unlockErr,
+              );
+            }
+          }
         }
       }
       // Case 2: Direct Single Area Purchase
