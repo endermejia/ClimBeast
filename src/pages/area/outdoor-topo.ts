@@ -51,7 +51,7 @@ import { TopoPageBase } from './topo-page-base';
   ],
   template: `
     <div class="h-full w-full">
-      <section class="flex flex-col w-full h-full md:p-4">
+      <section class="flex flex-col w-full h-full p-4">
         @let isMobile = layoutService.isMobile();
         @let canEditAsAdmin = authState.canEditAsAdmin();
         @if (topo(); as t) {
@@ -59,7 +59,7 @@ import { TopoPageBase } from './topo-page-base';
             t.crag
               ? authState.areaAdminPermissions()[t.crag.area_id || -1]
               : false;
-          <div class="px-4 pt-0 pb-1.5 md:p-0 md:mb-4 shrink-0">
+          <div class="mb-6">
             <app-section-header
               [title]="t.name"
               [showLike]="false"
