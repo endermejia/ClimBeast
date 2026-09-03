@@ -455,7 +455,7 @@
   "import": "Importieren",
   "import8a.button": "Von 8a.nu importieren",
   "import8a.confirmSubtitle": "Wir haben {{count}} Begehungen im CSV gefunden. Nur diejenigen, die mit Routen in unserer Datenbank übereinstimmen, werden importiert.",
-  "import8a.csvInstructions": "Gehen Sie zu Ihrem Profil auf <strong><a href=\"https://www.8a.nu\" target=\"_blank\">8a.nu</a></strong>, klicken Sie auf <strong>Profil bearbeiten</strong> und laden Sie die <strong>CSV</strong>-Datei mit Ihren Begehungen herunter.",
+  "import8a.csvInstructions": "Gehen Sie zum Bereich <strong>Info</strong> Ihres Profils auf <strong><a href=\"https://www.8a.nu\" target=\"_blank\" class=\"underline\">8a.nu</a></strong>, klicken Sie auf <strong>Profil bearbeiten</strong> und laden Sie die <strong>CSV</strong>-Datei mit Ihren Begehungen herunter.",
   "import8a.errors.emptyCSV": "Die hochgeladene CSV-Datei ist leer oder enthält keine gültigen Begehungen",
   "import8a.errors.fetchAscents": "Fehler beim Abrufen der Begehungen von 8a.nu",
   "import8a.errors.import": "Fehler beim Importieren der Begehungen",

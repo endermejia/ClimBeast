@@ -37,6 +37,7 @@ import { SanitizeHtmlPipe } from '../../pipes';
     <div class="grid gap-4">
       <div tuiNotification appearance="info" class="mt-4">
         <div
+          class="[&_a]:underline"
           [innerHTML]="'import8a.csvInstructions' | translate | sanitizeHtml"
         ></div>
       </div>

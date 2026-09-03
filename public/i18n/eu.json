@@ -455,7 +455,7 @@
   "import": "Inportatu",
   "import8a.button": "Inportatu 8a.nu-tik",
   "import8a.confirmSubtitle": "CSV artxiboan {{count}} igoera aurkitu ditugu. Gure datu-baseko bideekin bat datozenak bakarrik inportatuko dira.",
-  "import8a.csvInstructions": "Joan zure profilera <strong><a href=\"https://www.8a.nu\" target=\"_blank\">8a.nu</a></strong> helbidean, egin klik <strong>Editatu profila</strong>-n eta deskargatu zure igoerak dituen <strong>CSV</strong> fitxategia.",
+  "import8a.csvInstructions": "Joan zure profileko <strong>Info</strong> atalera <strong><a href=\"https://www.8a.nu\" target=\"_blank\" class=\"underline\">8a.nu</a></strong> helbidean, egin klik <strong>Editatu profila</strong>-n eta deskargatu zure igoerak dituen <strong>CSV</strong> fitxategia.",
   "import8a.errors.emptyCSV": "Kargatutako CSV fitxategia hutsik dago edo ez du igoera baliozkorik",
   "import8a.errors.fetchAscents": "Errorea 8a.nu-ko igoerak lortzean",
   "import8a.errors.import": "Errorea igoerak inportatzean",

@@ -455,7 +455,7 @@
   "import": "Import",
   "import8a.button": "Import from 8a.nu",
   "import8a.confirmSubtitle": "We have found {{count}} ascents in the CSV. Only those that match routes in our database will be imported.",
-  "import8a.csvInstructions": "Go to your profile at <a href=\"https://www.8a.nu\" target=\"_blank\">8a.nu</a>, click on <strong>Edit profile</strong> and download the <strong>CSV</strong> file with your ascents.",
+  "import8a.csvInstructions": "Go to the <strong>Info</strong> section of your profile at <strong><a href=\"https://www.8a.nu\" target=\"_blank\" class=\"underline\">8a.nu</a></strong>, click on <strong>Edit profile</strong> and download the <strong>CSV</strong> file with your ascents.",
   "import8a.errors.emptyCSV": "The uploaded CSV file is empty or contains no valid ascents",
   "import8a.errors.fetchAscents": "Error fetching 8a.nu ascents",
   "import8a.errors.import": "Error importing ascents",
