@@ -14,48 +14,44 @@ import { form, FormField, required, submit } from '@angular/forms/signals';
 import { TuiIdentityMatcher } from '@taiga-ui/cdk';
 import {
   type TuiDialogContext,
-  TuiDataList,
-  TuiFilterByInputPipe,
-} from '@taiga-ui/core';
-import {
   TuiButton,
-  TuiLabel,
-  TuiInput,
-  TuiError,
-  TuiDropdown,
   TuiCheckbox,
+  TuiDataList,
+  TuiDropdown,
+  TuiError,
+  TuiFilterByInputPipe,
+  TuiInput,
+  TuiLabel,
 } from '@taiga-ui/core';
 import {
   TuiChevron,
-  TuiSelect,
   TuiDataListWrapper,
   TuiHideSelectedPipe,
   TuiInputChip,
   TuiPin,
+  TuiSelect,
 } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { IndoorService } from '../../services/indoor.service';
-
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 
 import {
-  IndoorRouteDto,
-  IndoorTopoDto,
-  GRADE_NUMBER_TO_LABEL,
-  VERTICAL_LIFE_GRADES,
-  EquipperDto,
   ClimbingKind,
   ClimbingKinds,
+  EquipperDto,
+  GRADE_NUMBER_TO_LABEL,
   INDOOR_ROUTE_COLORS,
   INDOOR_ROUTE_COLORS_LIST,
+  IndoorRouteDto,
+  IndoorTopoDto,
+  VERTICAL_LIFE_GRADES,
 } from '../../models';
 
-import { handleErrorToast } from '../../utils/handle-error';
-import { slugify } from '../../utils/slugify';
+import { handleErrorToast, matchesQuery, slugify } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -194,22 +190,22 @@ export interface IndoorRouteFormData {
       </tui-textfield>
 
       @if (topos().length > 0) {
-        <tui-textfield tuiChevron [tuiTextfieldCleaner]="true">
+        <tui-textfield
+          tuiChevron
+          [tuiTextfieldCleaner]="true"
+          [stringify]="stringifyTopo"
+          [identityMatcher]="topoIdentityMatcher"
+        >
           <label tuiLabel for="topo">{{ 'topo' | translate }}</label>
-          <select
+          <input
             tuiSelect
             id="topo"
             [ngModel]="model().topo"
             (ngModelChange)="updateModel('topo', $event)"
             name="topo"
-          >
-            <option [ngValue]="null">--</option>
-            @for (topo of topos(); track topo.id) {
-              <option [ngValue]="topo">
-                {{ topo.name }}
-              </option>
-            }
-          </select>
+            autocomplete="off"
+          />
+          <tui-data-list-wrapper *tuiDropdown new [items]="topos()" />
         </tui-textfield>
       }
 
@@ -224,30 +220,25 @@ export interface IndoorRouteFormData {
           {{ 'equippers' | translate }}
         </label>
         <input
-          #chipInput
           tuiInputChip
           id="equippers"
           [ngModel]="model().equippers"
           (ngModelChange)="onEquippersChange($event)"
           name="equippers"
-          (input)="searchQuery.set(chipInput.value)"
+          [placeholder]="'select' | translate"
+          autocomplete="off"
         />
         <tui-input-chip *tuiItem />
         <tui-data-list *tuiDropdown>
-          @let items = allEquippers.value() || [];
-          @if (searchQuery().length > 2) {
-            @for (
-              item of items | tuiHideSelected | tuiFilterByInput;
-              track item.name
-            ) {
-              <button tuiOption [value]="item">
-                {{ item.name }}
-              </button>
-            }
-          } @else {
-            <div class="p-2 text-sm opacity-60 text-center">
-              {{ 'search' | translate }}
-            </div>
+          @for (
+            item of allEquippers.value() || []
+              | tuiHideSelected
+              | tuiFilterByInput: equipperFilter;
+            track item.id
+          ) {
+            <button tuiOption [value]="item">
+              {{ item.name }}
+            </button>
           }
         </tui-data-list>
       </tui-textfield>
@@ -318,12 +309,23 @@ export default class IndoorRouteFormComponent {
 
   protected readonly routeColorsList = INDOOR_ROUTE_COLORS_LIST;
 
-  protected readonly stringifyTopo = (t: IndoorTopoDto) => t.name;
+  protected readonly stringifyTopo = (
+    t: IndoorTopoDto | null | undefined,
+  ): string => t?.name || '';
+
+  protected readonly topoIdentityMatcher: TuiIdentityMatcher<
+    IndoorTopoDto | null | undefined
+  > = (a, b) => {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    return a.id === b.id;
+  };
 
   protected readonly topos = computed(() => this.toposResource.value() || []);
 
   protected readonly toposResource = resource({
-    params: () => this.context.data.centerId,
+    params: () =>
+      this.context.data.centerId || this.context.data.routeData?.center_id,
     loader: async ({ params: id }) => {
       if (!id) return [];
       try {
@@ -334,8 +336,6 @@ export default class IndoorRouteFormComponent {
       }
     },
   });
-
-  protected readonly searchQuery = signal('');
 
   protected readonly model = signal<{
     name: string;
@@ -389,18 +389,24 @@ export default class IndoorRouteFormComponent {
     return a.id === b.id;
   };
 
-  protected readonly allEquippers = resource<EquipperDto[], { query: string }>({
-    params: () => ({ query: this.searchQuery() }),
-    loader: async ({ params: { query } }) => {
-      if (!query || query.length <= 2 || !this.isBrowser) return [];
+  protected readonly equipperFilter = (
+    items: readonly EquipperDto[],
+    search: string,
+    stringify?: (item: EquipperDto) => string,
+  ): readonly EquipperDto[] =>
+    items.filter((item) =>
+      matchesQuery(stringify ? stringify(item) : item.name, search),
+    );
+
+  protected readonly allEquippers = resource<EquipperDto[], undefined>({
+    loader: async () => {
+      if (!this.isBrowser) return [];
       try {
         await this.supabase.whenReady();
         const { data, error } = await this.supabase.client
           .from('equippers')
           .select('*')
-          .ilike('name', `%${query}%`)
-          .order('name')
-          .limit(20);
+          .order('name');
         if (error) throw error;
         return (data as EquipperDto[]) || [];
       } catch (e: unknown) {

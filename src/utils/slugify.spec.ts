@@ -78,4 +78,13 @@ describe('matchesQuery', () => {
   it('should match empty query', () => {
     expect(matchesQuery('anything', '')).toBe(true);
   });
+
+  it('should ignore accents and casing (e.g. Raúl matches raul and RAUL)', () => {
+    expect(matchesQuery('Raúl Rodríguez', 'raul')).toBe(true);
+    expect(matchesQuery('Raúl Rodríguez', 'RAUL')).toBe(true);
+    expect(matchesQuery('Raúl Rodríguez', 'rodriguez')).toBe(true);
+    expect(matchesQuery('Raúl Rodríguez', 'RODRÍGUEZ')).toBe(true);
+    expect(matchesQuery('Raúl Rodríguez', 'raul rod')).toBe(true);
+    expect(matchesQuery('Raúl Rodríguez', 'juan')).toBe(false);
+  });
 });
