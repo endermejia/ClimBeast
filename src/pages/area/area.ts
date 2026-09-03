@@ -1042,6 +1042,7 @@ export class AreaComponent {
           areaName: area.name,
         },
       }),
+      { defaultValue: undefined },
     );
   }
 }

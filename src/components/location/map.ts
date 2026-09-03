@@ -196,6 +196,10 @@ export class MapComponent {
 
     this.destroyRef.onDestroy(() => {
       this.mapData.mapActive.set(false);
+      if (this.initRafId !== null && typeof window !== 'undefined') {
+        window.cancelAnimationFrame(this.initRafId);
+        this.initRafId = null;
+      }
       try {
         this.mapBuilder.destroy();
       } catch {
@@ -224,10 +228,15 @@ export class MapComponent {
     return this.isBrowserToken && typeof window !== 'undefined';
   }
 
+  private initRafId: number | null = null;
+
   private tryInit(): void {
     const el = this.containerRef()?.nativeElement;
     if (!el || this.mapInitialized() || !this.isBrowser()) return;
-    window.requestAnimationFrame(() => void this.initMap());
+    this.initRafId = window.requestAnimationFrame(() => {
+      this.initRafId = null;
+      void this.initMap();
+    });
   }
 
   private async initMap(): Promise<void> {

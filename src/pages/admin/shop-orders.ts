@@ -306,6 +306,7 @@ export class AdminShopOrdersComponent {
           size: 'm',
         },
       ),
+      { defaultValue: undefined },
     );
   }
 }

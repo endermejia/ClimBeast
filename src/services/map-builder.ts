@@ -56,9 +56,11 @@ export class MapBuilder {
   private readonly isBrowserEnv = inject(IS_BROWSER);
   private readonly mapData = inject(MapDataService);
   private readonly localStorage = inject(LocalStorage);
-  private map!: Map;
+  private map: Map | null = null;
   private initialized = false;
   private L: LeafletNamespace | null = null;
+  private rafId1: number | null = null;
+  private rafId2: number | null = null;
   private mapCragItems: readonly MapCragItem[] = [];
   private mapIndoorItems: readonly MapIndoorCenterItem[] = [];
   private markers: Marker[] = [];
@@ -303,10 +305,14 @@ export class MapBuilder {
     this.initialized = true;
 
     if (typeof window !== 'undefined') {
-      window.requestAnimationFrame(() => {
-        this.map?.invalidateSize?.();
-        window.requestAnimationFrame(() => {
-          this.map?.invalidateSize?.();
+      this.rafId1 = window.requestAnimationFrame(() => {
+        this.rafId1 = null;
+        if (!this.map) return;
+        this.map.invalidateSize?.();
+        this.rafId2 = window.requestAnimationFrame(() => {
+          this.rafId2 = null;
+          if (!this.map) return;
+          this.map.invalidateSize?.();
           emitViewport();
         });
       });
@@ -344,26 +350,38 @@ export class MapBuilder {
    * Cleans up and removes the map instance and all associated markers and layers.
    */
   destroy(): void {
+    if (typeof window !== 'undefined') {
+      if (this.rafId1 !== null) {
+        window.cancelAnimationFrame(this.rafId1);
+        this.rafId1 = null;
+      }
+      if (this.rafId2 !== null) {
+        window.cancelAnimationFrame(this.rafId2);
+        this.rafId2 = null;
+      }
+    }
     try {
       this.cleanMarkers();
       this.map?.remove?.();
     } catch {
       // ignore
     }
+    this.map = null;
     this.initialized = false;
     this.L = null;
   }
 
   private cleanMarkers(): void {
-    if (!this.map || !this.L) return;
+    const map = this.map;
+    if (!map || !this.L) return;
 
     this.markers.forEach((marker) => {
-      this.map.removeLayer(marker);
+      map.removeLayer(marker);
     });
     this.markers = [];
 
     this.parkingMarkers.forEach((marker) => {
-      this.map.removeLayer(marker);
+      map.removeLayer(marker);
     });
     this.parkingMarkers = [];
   }
@@ -638,6 +656,8 @@ export class MapBuilder {
           marker.on('click', (e: LeafletEvent) => {
             e.originalEvent?.preventDefault?.();
             (e.originalEvent as Event | undefined)?.stopPropagation?.();
+
+            if (!this.map) return;
 
             const bounds = new L.LatLngBounds(
               group.markers.map((c) => [c.latitude, c.longitude]),
