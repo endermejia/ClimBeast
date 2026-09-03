@@ -227,7 +227,7 @@ import { TourHintComponent } from './tour-hint';
               "
             >
               <tui-icon
-                [icon]="authState.isAdmin() ? '@tui.shield' : '@tui.map'"
+                icon="@tui.shield"
                 [style.color]="
                   adminNav.isActive
                     ? 'var(--tui-text-negative)'

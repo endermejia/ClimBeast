@@ -70,8 +70,10 @@ import { IS_BROWSER } from '../../app/is-browser';
 interface UserWithRole {
   id: string;
   name: string | null;
+  email: string | null;
   avatar: string | null;
   is_admin: boolean;
+  canDelete: boolean;
   assignedAreas: AreaListItem[];
   areasControl: FormControl<AreaListItem[]>;
   assignedCenters: IndoorCenterDto[];
@@ -212,15 +214,23 @@ interface UserWithRole {
                 <th
                   *tuiHead="'user'"
                   tuiTh
-                  class="user-column min-w-[240px]"
+                  class="user-column min-w-[220px]"
                   [sorter]="userSorter"
                 >
                   {{ 'user' | translate }}
                 </th>
                 <th
+                  *tuiHead="'email'"
+                  tuiTh
+                  class="email-column min-w-[200px]"
+                  [sorter]="emailSorter"
+                >
+                  {{ 'email' | translate }}
+                </th>
+                <th
                   *tuiHead="'role'"
                   tuiTh
-                  class="role-column min-w-[240px]"
+                  class="role-column min-w-[140px]"
                   [sorter]="roleSorter"
                 >
                   {{ 'role' | translate }}
@@ -228,7 +238,7 @@ interface UserWithRole {
                 <th
                   *tuiHead="'areas'"
                   tuiTh
-                  class="areas-column min-w-[260px]"
+                  class="areas-column min-w-[240px]"
                   [sorter]="areasSorter"
                 >
                   {{ 'areas' | translate }}
@@ -236,7 +246,7 @@ interface UserWithRole {
                 <th
                   *tuiHead="'centers'"
                   tuiTh
-                  class="centers-column min-w-[260px]"
+                  class="centers-column min-w-[240px]"
                   [sorter]="centersSorter"
                 >
                   {{ 'indoor.title' | translate }}
@@ -256,6 +266,9 @@ interface UserWithRole {
                         ></div>
                         <div [tuiSkeleton]="true" class="w-32 h-4"></div>
                       </div>
+                    </td>
+                    <td *tuiCell="'email'" tuiTd class="email-column">
+                      <div [tuiSkeleton]="true" class="w-32 h-4"></div>
                     </td>
                     <td *tuiCell="'role'" tuiTd class="role-cell">
                       <div [tuiSkeleton]="true" class="w-24 h-8"></div>
@@ -298,8 +311,29 @@ interface UserWithRole {
                               ({{ 'you' | translate }})
                             </span>
                           }
+                          @if (user.canDelete) {
+                            <button
+                              size="s"
+                              appearance="negative"
+                              iconStart="@tui.trash"
+                              tuiIconButton
+                              type="button"
+                              class="rounded-full! shrink-0"
+                              [title]="'admin.users.delete' | translate"
+                              (click.zoneless)="deleteUser(user)"
+                            >
+                              {{ 'admin.users.delete' | translate }}
+                            </button>
+                          }
                         </div>
                       </div>
+                    </td>
+                    <td *tuiCell="'email'" tuiTd class="email-column">
+                      <span
+                        class="text-sm truncate text-neutral-600 dark:text-neutral-400 font-mono"
+                      >
+                        {{ user.email || '-' }}
+                      </span>
                     </td>
                     <td *tuiCell="'role'" tuiTd class="role-cell">
                       <button
@@ -431,19 +465,23 @@ interface UserWithRole {
       }
 
       .user-column {
-        min-width: 240px;
+        min-width: 220px;
+      }
+
+      .email-column {
+        min-width: 200px;
       }
 
       .role-column {
-        min-width: 240px;
+        min-width: 140px;
       }
 
       .areas-column {
-        min-width: 280px;
+        min-width: 240px;
       }
 
       .centers-column {
-        min-width: 280px;
+        min-width: 240px;
       }
 
       .user-cell {
@@ -466,7 +504,7 @@ export class AdminUsersListComponent {
   private readonly toast = inject(ToastService);
   private readonly cache = inject(CacheService);
 
-  protected readonly columns = ['user', 'role', 'areas', 'centers'];
+  protected readonly columns = ['user', 'email', 'role', 'areas', 'centers'];
 
   protected readonly searchQuery = signal('');
   protected readonly filterArea = signal<AreaListItem | null>(null);
@@ -500,7 +538,11 @@ export class AdminUsersListComponent {
     let list = this.users();
 
     if (query) {
-      list = list.filter((u) => matchesQuery(u.name, query));
+      list = list.filter(
+        (u) =>
+          matchesQuery(u.name, query) ||
+          (u.email ? matchesQuery(u.email, query) : false),
+      );
     }
 
     if (area) {
@@ -559,6 +601,12 @@ export class AdminUsersListComponent {
     tuiDefaultSort(a.name || '', b.name || '');
 
   /**
+   * Sorter logic for Email column: Sorts alphabetically by email.
+   */
+  protected readonly emailSorter: TuiComparator<UserWithRole> = (a, b) =>
+    tuiDefaultSort(a.email || '', b.email || '');
+
+  /**
    * Sorter logic for Areas column: Sorts by count of assigned areas.
    */
   protected readonly areasSorter: TuiComparator<UserWithRole> = (a, b) =>
@@ -603,11 +651,9 @@ export class AdminUsersListComponent {
       const areas = this.outdoorData.areasList();
       const areasMap = new Map(areas.map((a) => [a.id, a]));
 
-      // 2. Fetch user profiles (including is_admin)
+      // 2. Fetch user profiles (including email and is_admin)
       const { data: profiles, error: profilesError } =
-        await this.supabase.client
-          .from('user_profiles')
-          .select('id, name, avatar, is_admin');
+        await this.supabase.client.rpc('get_admin_users');
 
       if (profilesError) throw profilesError;
       if (!profiles) {
@@ -649,12 +695,14 @@ export class AdminUsersListComponent {
       this.availableCenters.set(centers);
       const centersMap = new Map(centers.map((c) => [c.id, c]));
 
+      const currentId = this.currentUserId();
       const usersWithRoles: UserWithRole[] = profiles.map(
         (profile: {
           id: string;
           name: string | null;
+          email: string | null;
           avatar: string | null;
-          is_admin: boolean | null;
+          is_admin: boolean;
         }) => {
           const assignedAreaIds = mappingsByEquipper.get(profile.id) || [];
           const assignedAreas = assignedAreaIds
@@ -689,11 +737,20 @@ export class AdminUsersListComponent {
             this.injector,
           );
 
+          const isNameSameAsEmail =
+            !!profile.name &&
+            !!profile.email &&
+            profile.name.trim().toLowerCase() ===
+              profile.email.trim().toLowerCase();
+          const canDelete = isNameSameAsEmail && profile.id !== currentId;
+
           return {
             id: profile.id,
             name: profile.name,
+            email: profile.email,
             avatar: profile.avatar,
             is_admin: !!profile.is_admin,
+            canDelete,
             assignedAreas,
             areasControl,
             assignedCenters,
@@ -707,6 +764,57 @@ export class AdminUsersListComponent {
       console.error('[UsersListAdmin] Exception loading users:', e);
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  protected deleteUser(user: UserWithRole): void {
+    if (!user.canDelete) return;
+
+    void firstValueFrom(
+      this.dialogs.open<boolean>(TUI_CONFIRM, {
+        label: this.translate.instant('admin.users.deleteConfirmTitle'),
+        size: 's',
+        data: {
+          content: this.translate.instant('admin.users.deleteConfirm', {
+            name: user.name || user.email || this.translate.instant('user'),
+          }),
+          yes: this.translate.instant('delete'),
+          no: this.translate.instant('cancel'),
+          appearance: 'negative',
+        } as TuiConfirmData,
+      }),
+      { defaultValue: false },
+    ).then((confirmed) => {
+      if (confirmed) {
+        void this.performDeleteUser(user);
+      }
+    });
+  }
+
+  private async performDeleteUser(user: UserWithRole): Promise<void> {
+    try {
+      const response = await this.supabase.client.functions.invoke(
+        'delete-user',
+        {
+          method: 'POST',
+          body: { userId: user.id },
+          headers: {
+            'ngsw-bypass': 'true',
+          },
+        },
+      );
+
+      if (response.error) {
+        console.error('[UsersListAdmin] Error deleting user:', response.error);
+        this.toast.error(this.translate.instant('admin.users.deleteError'));
+        return;
+      }
+
+      this.users.set(this.users().filter((u) => u.id !== user.id));
+      this.toast.success(this.translate.instant('admin.users.deleted'));
+    } catch (e) {
+      console.error('[UsersListAdmin] Exception deleting user:', e);
+      this.toast.error(this.translate.instant('admin.users.deleteError'));
     }
   }
 

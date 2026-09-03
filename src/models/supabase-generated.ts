@@ -3822,6 +3822,16 @@ export type Database = {
         Returns: boolean;
       };
       geomfromewkt: { Args: { '': string }; Returns: unknown };
+      get_admin_users: {
+        Args: never;
+        Returns: {
+          avatar: string;
+          email: string;
+          id: string;
+          is_admin: boolean;
+          name: string;
+        }[];
+      };
       get_area_balance: { Args: { p_area_id: number }; Returns: Json };
       get_area_public_timeline: { Args: { p_area_id: number }; Returns: Json };
       get_areas_list: {

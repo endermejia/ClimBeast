@@ -68,7 +68,38 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const userId = userResult.user.id;
+    const callerId = userResult.user.id;
+    let targetUserId = callerId;
+
+    try {
+      const body = await req.json();
+      if (body?.userId && body.userId !== callerId) {
+        const { data: callerProfile, error: callerError } =
+          await supabaseAdminClient
+            .from('user_profiles')
+            .select('is_admin')
+            .eq('id', callerId)
+            .maybeSingle();
+
+        if (callerError || !callerProfile?.is_admin) {
+          return new Response(
+            JSON.stringify({
+              error: 'Unauthorized: only admins can delete other users',
+            }),
+            {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            },
+          );
+        }
+
+        targetUserId = body.userId;
+      }
+    } catch {
+      // Empty or non-JSON body: proceed with caller
+    }
+
+    const userId = targetUserId;
 
     console.info(`[delete-user] Cleaning up data for user: ${userId}`);
 
@@ -94,9 +125,25 @@ Deno.serve(async (req: Request) => {
         .in('route_ascent_id', ascentIds);
     }
 
+    // Set foreign key references that don't cascade to null
+    await supabaseAdminClient
+      .from('equippers')
+      .update({ user_id: null })
+      .eq('user_id', userId);
+    await supabaseAdminClient
+      .from('area_material_requests')
+      .update({ user_id: null })
+      .eq('user_id', userId);
+    await supabaseAdminClient
+      .from('area_material_requests')
+      .update({ reviewed_by: null })
+      .eq('reviewed_by', userId);
+
     // 2. Comprehensive table cleanup
     const tablesToClean = [
       { table: 'area_admins', column: 'user_id' },
+      { table: 'indoor_center_admins', column: 'user_id' },
+      { table: 'indoor_center_routesetters', column: 'user_id' },
       { table: 'area_likes', column: 'user_id' },
       { table: 'crag_likes', column: 'user_id' },
       { table: 'route_likes', column: 'user_id' },
@@ -112,6 +159,9 @@ Deno.serve(async (req: Request) => {
       { table: 'route_ascent_comments', column: 'user_id' },
       { table: 'route_ascent_likes', column: 'user_id' },
       { table: 'route_ascents', column: 'user_id' },
+      { table: 'user_pyramid_slots', column: 'user_id' },
+      { table: 'push_subscriptions', column: 'user_id' },
+      { table: 'cart_items', column: 'user_id' },
       { table: 'user_profiles', column: 'id' },
     ];
 

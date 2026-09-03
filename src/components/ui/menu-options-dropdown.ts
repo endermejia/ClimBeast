@@ -111,7 +111,7 @@ import { Themes } from '../../models';
             (click)="navigateToMyAreas()"
             class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors text-left text-inherit outline-none cursor-pointer"
           >
-            <tui-icon icon="@tui.map" class="opacity-70" />
+            <tui-icon icon="@tui.shield" class="opacity-70" />
             {{ 'admin.manageMyAreas' | translate }}
           </button>
         }
