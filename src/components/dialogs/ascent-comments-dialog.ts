@@ -603,7 +603,7 @@ export class AscentCommentsDialogComponent {
       content: this.translate.instant('deleteCommentConfirm'),
       yes: this.translate.instant('delete'),
       no: this.translate.instant('cancel'),
-      appearance: 'negative',
+      appearance: 'primary-destructive',
     };
 
     const confirmed = await firstValueFrom(

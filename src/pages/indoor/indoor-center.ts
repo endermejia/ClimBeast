@@ -870,7 +870,7 @@ export class IndoorCenterComponent {
           }),
           yes: this.translate.instant('delete'),
           no: this.translate.instant('cancel'),
-          appearance: 'negative',
+          appearance: 'primary-destructive',
         } as TuiConfirmData,
       }),
       { defaultValue: false },
@@ -1067,7 +1067,7 @@ export class IndoorCenterComponent {
       content: message,
       yes: this.translate.instant('delete'),
       no: this.translate.instant('cancel'),
-      appearance: 'negative',
+      appearance: 'primary-destructive',
     };
     const confirmed = await firstValueFrom(
       this.dialogs.open<boolean>(TUI_CONFIRM, {

@@ -11,6 +11,8 @@ import {
   TuiButton,
   TuiError,
   TuiIcon,
+  TuiInput,
+  TuiLabel,
   TuiNotification,
   TuiTextfield,
   TuiTitle,
@@ -28,6 +30,8 @@ import { Observer } from 'rxjs';
     TuiButton,
     TuiError,
     TuiIcon,
+    TuiInput,
+    TuiLabel,
     TuiNotification,
     TuiPassword,
     TuiTextfield,
@@ -88,7 +92,7 @@ import { Observer } from 'rxjs';
       <div class="flex flex-col gap-4">
         <h3 tuiTitle>{{ 'auth.setNewPassword' | translate }}</h3>
 
-        <tui-textfield>
+        <tui-textfield class="block">
           <label tuiLabel for="newPasswordInput">{{
             'newPassword' | translate
           }}</label>
@@ -103,7 +107,7 @@ import { Observer } from 'rxjs';
           <tui-icon tuiPassword />
         </tui-textfield>
 
-        <tui-textfield>
+        <tui-textfield class="block">
           <label tuiLabel for="confirmPasswordInput">{{
             'confirmPassword' | translate
           }}</label>
@@ -164,17 +168,25 @@ import { Observer } from 'rxjs';
           {{ 'profile.deleteAccount.instruction_suffix' | translate }}
         </p>
 
-        <tui-textfield>
+        <tui-textfield class="block">
+          <label tuiLabel for="deleteEmailInput">{{
+            'email' | translate
+          }}</label>
           <input
+            id="deleteEmailInput"
             tuiInput
+            type="email"
             [ngModel]="deleteEmail()"
             (ngModelChange)="updateDeleteEmail.emit($event)"
             (paste)="$event.preventDefault()"
+            [invalid]="deleteEmailInvalid()"
             autocomplete="off"
             placeholder="email@example.com"
           />
         </tui-textfield>
-        <tui-error [error]="deleteEmailError()" />
+        @if (deleteEmailError(); as err) {
+          <tui-error [error]="err" />
+        }
 
         <div class="flex justify-end gap-2">
           <button
@@ -186,7 +198,7 @@ import { Observer } from 'rxjs';
           </button>
           <button
             tuiButton
-            appearance="negative"
+            appearance="primary-destructive"
             [disabled]="deleteEmail() !== userEmail()"
             (click)="confirmDeleteAccount.emit(observer)"
           >

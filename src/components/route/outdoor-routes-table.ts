@@ -272,7 +272,7 @@ export class OutdoorRoutesTableComponent {
           }),
           yes: this.translate.instant('delete'),
           no: this.translate.instant('cancel'),
-          appearance: 'negative',
+          appearance: 'primary-destructive',
         } as TuiConfirmData,
       }),
     ).then((confirmed) => {

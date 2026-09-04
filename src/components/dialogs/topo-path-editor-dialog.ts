@@ -1685,7 +1685,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
           content: this.translate.instant('topos.editor.removePathConfirm'),
           yes: this.translate.instant('delete'),
           no: this.translate.instant('cancel'),
-          appearance: 'negative',
+          appearance: 'primary-destructive',
         },
       }),
       { defaultValue: false },
