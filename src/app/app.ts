@@ -7,7 +7,6 @@ import {
   OnDestroy,
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { Meta } from '@angular/platform-browser';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 
@@ -79,7 +78,6 @@ export class AppComponent implements OnDestroy {
     this.cartService.showCart.set(false);
     void this.router.navigate(['/merchandising/checkout']);
   }
-  private meta = inject(Meta);
   private translate = inject(TranslateService);
   private storage = inject(LocalStorage);
   private readonly notifications = inject(NotificationService);
@@ -141,14 +139,6 @@ export class AppComponent implements OnDestroy {
     effect(() => {
       if (this.langChange()) {
         this.updateSeoTags();
-      }
-    });
-
-    effect(() => {
-      const dark = this.isDark();
-      if (this.isBrowser) {
-        const color = dark ? '#0b1220' : '#ffffff';
-        this.meta.updateTag({ name: 'theme-color', content: color });
       }
     });
 

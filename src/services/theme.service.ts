@@ -1,5 +1,7 @@
+import { DOCUMENT } from '@angular/common';
 import {
   computed,
+  DestroyRef,
   effect,
   inject,
   Injectable,
@@ -14,7 +16,6 @@ import { triggerThemeTransition } from '../utils';
 import { IS_BROWSER } from '../app/is-browser';
 
 import { LocalStorage } from './local-storage';
-
 import { SupabaseService } from './supabase.service';
 
 /**
@@ -23,11 +24,21 @@ import { SupabaseService } from './supabase.service';
  */
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
+  private readonly doc = inject(DOCUMENT);
   private readonly supabase = inject(SupabaseService);
   private readonly localStorage = inject(LocalStorage);
   private readonly isBrowser = inject(IS_BROWSER);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly themeStorageKey = 'app_theme';
+
+  private readonly systemPrefersDark = signal(
+    this.isBrowser &&
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-color-scheme: dark)').matches
+      : false,
+  );
 
   readonly theme: WritableSignal<Theme> = signal<Theme>(
     (() => {
@@ -50,10 +61,25 @@ export class ThemeService {
     const t = this.theme();
     if (t === Themes.DARK) return true;
     if (t === Themes.LIGHT) return false;
-    // 'system' — check prefers-color-scheme
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return this.systemPrefersDark();
   });
+
+  constructor() {
+    if (
+      this.isBrowser &&
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function'
+    ) {
+      const media = window.matchMedia('(prefers-color-scheme: dark)');
+      const listener = (e: MediaQueryListEvent) => {
+        this.systemPrefersDark.set(e.matches);
+      };
+      media.addEventListener('change', listener);
+      this.destroyRef.onDestroy(() => {
+        media.removeEventListener('change', listener);
+      });
+    }
+  }
 
   // Persist theme changes to localStorage
   protected readonly _persistThemeEffect = effect(() => {
@@ -70,6 +96,51 @@ export class ThemeService {
       this.theme.set(profile.theme as Theme);
     }
   });
+
+  // Apply theme attributes, meta tags, and color-scheme to the DOM
+  protected readonly _applyThemeEffect = effect(() => {
+    const dark = this.isDark();
+    if (!this.isBrowser) return;
+
+    const color = dark ? '#0b1220' : '#ffffff';
+    const statusBarStyle = dark ? 'black' : 'default';
+    const colorScheme = dark ? 'dark' : 'light';
+
+    // 1. Root & body styling and attributes
+    const docEl = this.doc.documentElement;
+    docEl.setAttribute('tuiTheme', dark ? 'dark' : 'light');
+    docEl.style.setProperty('color-scheme', colorScheme);
+    docEl.style.setProperty('--tui-theme-color', color);
+    docEl.style.backgroundColor = color;
+    if (this.doc.body) {
+      this.doc.body.style.backgroundColor = color;
+    }
+    docEl.classList.toggle('dark', dark);
+    docEl.classList.toggle('light', !dark);
+
+    // 2. Force re-evaluation of meta tags for mobile browsers (WebKit & Chromium)
+    this.updateMetaTag('theme-color', color);
+    this.updateMetaTag('apple-mobile-web-app-status-bar-style', statusBarStyle);
+    this.updateMetaTag('color-scheme', colorScheme);
+  });
+
+  private updateMetaTag(name: string, content: string): void {
+    let meta = this.doc.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
+    if (!meta) {
+      meta = this.doc.createElement('meta');
+      meta.setAttribute('name', name);
+      this.doc.head.appendChild(meta);
+    }
+    meta.setAttribute('content', content);
+
+    // Re-inserting the element forces WebKit and Chromium browsers (e.g. Chrome on Android,
+    // Safari on iOS, PWA standalone windows) to observe the change and repaint the status bar.
+    const parent = meta.parentNode;
+    if (parent) {
+      parent.removeChild(meta);
+      parent.appendChild(meta);
+    }
+  }
 
   setTheme(newTheme: Theme, event?: MouseEvent): void {
     if (this.theme() === newTheme) return;

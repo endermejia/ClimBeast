@@ -38,4 +38,38 @@ describe('ThemeService', () => {
   it('should expose readonly selectedTheme', () => {
     expect(service.selectedTheme()).toBe(Themes.LIGHT);
   });
+
+  it('should update DOM meta tags and attributes on theme change', () => {
+    service.setTheme(Themes.DARK);
+    TestBed.flushEffects();
+
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    const statusBarStyle = document.querySelector(
+      'meta[name="apple-mobile-web-app-status-bar-style"]',
+    );
+    const colorScheme = document.querySelector('meta[name="color-scheme"]');
+
+    expect(themeColor?.getAttribute('content')).toBe('#0b1220');
+    expect(statusBarStyle?.getAttribute('content')).toBe('black');
+    expect(colorScheme?.getAttribute('content')).toBe('dark');
+    expect(document.documentElement.getAttribute('tuiTheme')).toBe('dark');
+    expect(document.documentElement.style.colorScheme).toBe('dark');
+
+    service.setTheme(Themes.LIGHT);
+    TestBed.flushEffects();
+
+    expect(themeColor?.getAttribute('content')).toBe('#ffffff');
+    expect(statusBarStyle?.getAttribute('content')).toBe('default');
+    expect(colorScheme?.getAttribute('content')).toBe('light');
+    expect(document.documentElement.getAttribute('tuiTheme')).toBe('light');
+    expect(document.documentElement.style.colorScheme).toBe('light');
+  });
+
+  it('should correctly evaluate isDark for dark and light themes', () => {
+    service.setTheme(Themes.DARK);
+    expect(service.isDark()).toBe(true);
+
+    service.setTheme(Themes.LIGHT);
+    expect(service.isDark()).toBe(false);
+  });
 });
