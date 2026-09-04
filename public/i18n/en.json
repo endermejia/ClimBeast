@@ -165,6 +165,7 @@
   "areaRevenue.currentPotBalance": "Current pot balance",
   "areaRevenue.deliveredEquipment": "Hardware supplied to crag",
   "areaRevenue.directDonations": "Direct donations",
+  "areaRevenue.goalSupplyInfo": "Upon reaching each goal, ClimBeast directly purchases and supplies certified climbing hardware to local equippers for area maintenance and re-bolting.",
   "areaRevenue.hideDetails": "Hide details",
   "areaRevenue.history": "History",
   "areaRevenue.material": "Hardware supplied",

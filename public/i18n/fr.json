@@ -165,6 +165,7 @@
   "areaRevenue.currentPotBalance": "Current pot balance",
   "areaRevenue.deliveredEquipment": "Hardware supplied to crag",
   "areaRevenue.directDonations": "Direct donations",
+  "areaRevenue.goalSupplyInfo": "À chaque palier atteint, ClimBeast se charge d'acheter et de fournir directement le matériel homologué aux équipeurs locaux pour l'entretien et le rééquipement de la falaise.",
   "areaRevenue.hideDetails": "Masquer les détails",
   "areaRevenue.history": "History",
   "areaRevenue.material": "Material suministrado",
