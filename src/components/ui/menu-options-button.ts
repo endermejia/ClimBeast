@@ -118,6 +118,7 @@ import { MenuOptionsDropdownComponent } from './menu-options-dropdown';
       <app-menu-options-dropdown
         [showNavigationOptions]="showNavigationOptions()"
         [showProfile]="avatarMode() || showProfile()"
+        [showLogout]="shouldShowLogout()"
         (closeDropdown)="open.set(false)"
       />
     </ng-template>
@@ -135,6 +136,7 @@ export class MenuOptionsButtonComponent {
   label = input<string>('');
   showNavigationOptions = input<boolean>(false);
   showProfile = input<boolean>(false);
+  showLogout = input<boolean | undefined>(undefined);
   holdToOpen = input<boolean | undefined>(undefined);
   loading = input<boolean>(false);
   direction = input<'top' | 'bottom'>('top');
@@ -142,6 +144,10 @@ export class MenuOptionsButtonComponent {
 
   protected readonly shouldHoldToOpen = computed(
     () => this.holdToOpen() ?? this.avatarMode(),
+  );
+
+  protected readonly shouldShowLogout = computed(
+    () => this.showLogout() ?? !this.avatarMode(),
   );
 
   protected open = signal(false);

@@ -258,6 +258,7 @@ import { TourHintComponent } from './tour-hint';
             [isActive]="isProfileActive()"
             [label]="'nav.profile' | translate"
             [showNavigationOptions]="true"
+            [showLogout]="false"
             [loading]="loading()"
             direction="top"
             class="lg:mt-auto"

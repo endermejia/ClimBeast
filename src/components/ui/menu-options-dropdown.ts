@@ -171,18 +171,20 @@ import { Themes } from '../../models';
         </tui-segmented>
       </div>
 
-      <div class="h-px bg-(--tui-border-normal) my-1 mx-2"></div>
+      @if (showLogout()) {
+        <div class="h-px bg-(--tui-border-normal) my-1 mx-2"></div>
 
-      <!-- Logout -->
-      <button
-        type="button"
-        [tuiAppearance]="'secondary'"
-        (click)="logout()"
-        class="flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left outline-none cursor-pointer"
-      >
-        <tui-icon icon="@tui.log-out" class="opacity-70" />
-        {{ 'auth.logout' | translate }}
-      </button>
+        <!-- Logout -->
+        <button
+          type="button"
+          [tuiAppearance]="'secondary'"
+          (click)="logout()"
+          class="flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left outline-none cursor-pointer"
+        >
+          <tui-icon icon="@tui.log-out" class="opacity-70" />
+          {{ 'auth.logout' | translate }}
+        </button>
+      }
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -190,6 +192,7 @@ import { Themes } from '../../models';
 export class MenuOptionsDropdownComponent {
   showNavigationOptions = input<boolean>(false);
   showProfile = input<boolean>(false);
+  showLogout = input<boolean>(true);
 
   readonly closeDropdown = output<void>();
 
