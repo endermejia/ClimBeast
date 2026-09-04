@@ -262,17 +262,18 @@ export class MapBuilder {
       }
     }
 
-    if (this.currentSession !== session || !this.map) return;
+    const map = this.map;
+    if (this.currentSession !== session || !map) return;
 
-    this.map.on('click', (e: LeafletEvent) => {
+    map.on('click', (e: LeafletEvent) => {
       const latlng = e.latlng;
       cb.onSelectedCragChange(null);
       if (latlng) cb.onMapClick(latlng.lat, latlng.lng);
     });
 
     const collapseOnInteraction = () => cb.onInteractionStart();
-    this.map.on('movestart', collapseOnInteraction);
-    this.map.on('zoomstart', collapseOnInteraction);
+    map.on('movestart', collapseOnInteraction);
+    map.on('zoomstart', collapseOnInteraction);
 
     const emitViewport = () => {
       if (!this.map || this.currentSession !== session) return;
@@ -289,7 +290,7 @@ export class MapBuilder {
       });
     };
 
-    this.map.on('moveend', async () => {
+    map.on('moveend', async () => {
       if (this.currentSession !== session || !this.map) return;
       this.animateClustersOnNextBuild = false;
       await this.rebuildMarkers(
@@ -303,7 +304,7 @@ export class MapBuilder {
       );
       emitViewport();
     });
-    this.map.on('zoomend', async () => {
+    map.on('zoomend', async () => {
       if (this.currentSession !== session || !this.map) return;
       this.animateClustersOnNextBuild = false;
       await this.rebuildMarkers(
@@ -370,15 +371,19 @@ export class MapBuilder {
     this.mapCragItems = mapCragItems;
     this.mapIndoorItems = mapIndoorItems;
 
-    await this.rebuildMarkers(
-      mapCragItems,
-      selectedMapCragItem,
-      mapParkingItems,
-      selectedMapParkingItem,
-      mapAreaItems,
-      mapIndoorItems,
-      cb,
-    );
+    try {
+      await this.rebuildMarkers(
+        mapCragItems,
+        selectedMapCragItem,
+        mapParkingItems,
+        selectedMapParkingItem,
+        mapAreaItems,
+        mapIndoorItems,
+        cb,
+      );
+    } catch (e) {
+      console.warn('[MapBuilder] Failed to update markers', e);
+    }
     if (this.currentSession !== session || !this.map) return;
   }
 
@@ -415,6 +420,7 @@ export class MapBuilder {
             // ignore
           }
         }
+        (this.map as unknown as { off?: () => void }).off?.();
         this.map.stop?.();
         this.map.remove?.();
       }
@@ -584,18 +590,19 @@ export class MapBuilder {
     mapIndoorItems: readonly MapIndoorCenterItem[],
     cb: MapBuilderCallbacks,
   ): Promise<void> {
-    if (!this.map || !this.L) return;
+    const map = this.map;
     const L = this.L;
+    if (!map || !L) return;
 
     this.cleanMarkers();
 
     const clustering = this.shouldCluster();
-    const currentZoom = this.map.getZoom();
+    const currentZoom = map.getZoom();
     const minZoomForParkings = 14; // Minimum zoom level to show parking markers
 
     // Render Parkings only if Zoom is enough
     if (currentZoom >= minZoomForParkings) {
-      const viewportBounds = this.map.getBounds().pad(0.1);
+      const viewportBounds = map.getBounds().pad(0.1);
       const visibleParkings = mapParkingItems.filter((p) =>
         viewportBounds.contains(new L.LatLng(p.latitude, p.longitude)),
       );
@@ -631,7 +638,7 @@ export class MapBuilder {
           iconAnchor: [0, 0],
         });
 
-        const marker = new L.Marker(latLng, { icon }).addTo(this.map);
+        const marker = new L.Marker(latLng, { icon }).addTo(map);
         this.parkingMarkers.push(marker);
 
         const onSelect = () => {
@@ -677,7 +684,7 @@ export class MapBuilder {
             iconAnchor: [0, 0],
           });
 
-          const marker = new L.Marker(latLng, { icon }).addTo(this.map);
+          const marker = new L.Marker(latLng, { icon }).addTo(map);
           this.markers.push(marker);
 
           const onSelect = async () => {
@@ -731,7 +738,7 @@ export class MapBuilder {
 
           const marker = new L.Marker(latLng as [number, number], {
             icon,
-          }).addTo(this.map);
+          }).addTo(map);
           this.markers.push(marker);
 
           marker.on('click', (e: LeafletEvent) => {
@@ -770,7 +777,7 @@ export class MapBuilder {
 
     // Non-clustered: render API items as before
     // Only render markers within the current viewport (with slight padding)
-    const bounds = this.map.getBounds().pad(0.1);
+    const bounds = map.getBounds().pad(0.1);
     const visibleItems = mapCragItems.filter((c) =>
       bounds.contains(new L.LatLng(c.latitude, c.longitude)),
     );
@@ -790,7 +797,7 @@ export class MapBuilder {
         iconAnchor: [0, 0],
       });
 
-      const marker = new L.Marker(latLng, { icon }).addTo(this.map);
+      const marker = new L.Marker(latLng, { icon }).addTo(map);
       this.markers.push(marker);
 
       marker.on('click', (e: LeafletEvent) => {
@@ -820,7 +827,7 @@ export class MapBuilder {
         iconAnchor: [0, 0],
       });
 
-      const marker = new L.Marker(latLng, { icon }).addTo(this.map);
+      const marker = new L.Marker(latLng, { icon }).addTo(map);
       this.markers.push(marker);
 
       marker.on('click', (e: LeafletEvent) => {
