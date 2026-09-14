@@ -58,28 +58,45 @@ serve(async (req) => {
         }
       }
 
+      stripeFee = Math.round(stripeFee * 100) / 100;
+      netAmount = Math.round(netAmount * 100) / 100;
+
       // Case 1: Area Donation
-      if (
+      const isDonation =
         session.metadata?.single_item_type === 'area_donation' ||
-        session.metadata?.anonymous !== undefined
-      ) {
-        const areaId = parseInt(session.metadata?.area_id || '0', 10);
-        const isAnonymous = session.metadata?.anonymous === 'true';
+        session.metadata?.item_types === 'area_donation' ||
+        session.metadata?.donation_area_id !== undefined ||
+        session.metadata?.anonymous !== undefined ||
+        session.metadata?.is_anonymous !== undefined;
+
+      if (isDonation) {
+        const rawAreaId =
+          session.metadata?.area_id ||
+          session.metadata?.donation_area_id ||
+          '0';
+        const areaId = parseInt(rawAreaId, 10);
+        const isAnonymous =
+          session.metadata?.anonymous === 'true' ||
+          session.metadata?.is_anonymous === 'true';
         const message = session.metadata?.donor_message || null;
 
         if (areaId > 0) {
+          // Idempotent upsert into area_donations (user_id is NULL if anonymous to protect privacy)
           const { error: donationError } = await supabaseAdmin
             .from('area_donations')
-            .insert({
-              area_id: areaId,
-              user_id: isAnonymous ? null : userId,
-              gross_amount: totalGross,
-              stripe_fee: stripeFee,
-              net_amount: netAmount,
-              anonymous: isAnonymous,
-              donor_message: message,
-              stripe_session_id: session.id,
-            });
+            .upsert(
+              {
+                area_id: areaId,
+                user_id: isAnonymous ? null : userId,
+                gross_amount: totalGross,
+                stripe_fee: stripeFee,
+                net_amount: netAmount,
+                anonymous: isAnonymous,
+                donor_message: message,
+                stripe_session_id: session.id,
+              },
+              { onConflict: 'stripe_session_id' },
+            );
 
           if (donationError) {
             console.error('Error inserting donation:', donationError);
@@ -142,98 +159,130 @@ serve(async (req) => {
       ) {
         const areaId = parseInt(session.metadata.area_id, 10);
         if (areaId > 0 && userId) {
-          const { error: purchaseError } = await supabaseAdmin
+          const { data: existingPurchase } = await supabaseAdmin
             .from('area_purchases')
-            .insert({
-              user_id: userId,
-              area_id: areaId,
-              amount: totalGross, // legacy field
-              gross_amount: totalGross,
-              stripe_fee: stripeFee,
-              net_amount: netAmount,
-              stripe_session_id: session.id,
-            });
+            .select('id')
+            .eq('stripe_session_id', session.id)
+            .maybeSingle();
 
-          if (purchaseError) {
-            console.error('Error inserting area purchase:', purchaseError);
-            throw purchaseError;
+          if (!existingPurchase) {
+            const { error: purchaseError } = await supabaseAdmin
+              .from('area_purchases')
+              .insert({
+                user_id: userId,
+                area_id: areaId,
+                amount: totalGross, // legacy field
+                gross_amount: totalGross,
+                stripe_fee: stripeFee,
+                net_amount: netAmount,
+                stripe_session_id: session.id,
+              });
+
+            if (purchaseError) {
+              console.error('Error inserting area purchase:', purchaseError);
+              throw purchaseError;
+            }
           }
         }
       }
       // Case 3: Shop Orders (Physical Merchandise)
-      else if (session.metadata?.shipping_name) {
-        const lineItems = await stripe.checkout.sessions.listLineItems(
-          session.id,
-          { expand: ['data.price.product'] },
-        );
-
-        const { data: order, error: orderError } = await supabaseAdmin
+      else if (
+        session.metadata?.shipping_name ||
+        session.metadata?.shipping_full_name
+      ) {
+        const { data: existingOrder } = await supabaseAdmin
           .from('orders')
-          .insert({
-            user_id: userId,
-            status: 'paid',
-            total_amount: totalGross,
-            currency: session.currency || 'eur',
-            shipping_name: session.metadata.shipping_name,
-            shipping_phone: session.metadata.shipping_phone || '',
-            shipping_address: session.metadata.shipping_address,
-            shipping_city: session.metadata.shipping_city,
-            shipping_zip: session.metadata.shipping_zip,
-            shipping_country: session.metadata.shipping_country,
-            stripe_session_id: session.id,
-          })
-          .select()
-          .single();
+          .select('id')
+          .eq('stripe_session_id', session.id)
+          .maybeSingle();
 
-        if (orderError) throw orderError;
+        if (!existingOrder) {
+          const lineItems = await stripe.checkout.sessions.listLineItems(
+            session.id,
+            { expand: ['data.price.product'] },
+          );
 
-        const orderItems = lineItems.data.map((item) => {
-          const product = item.price?.product as Stripe.Product;
-          const metadata = product.metadata;
+          const shippingName =
+            session.metadata.shipping_full_name ||
+            session.metadata.shipping_name ||
+            '';
+          const shippingAddress =
+            session.metadata.shipping_address_line1 ||
+            session.metadata.shipping_address ||
+            '';
+          const shippingZip =
+            session.metadata.shipping_postal_code ||
+            session.metadata.shipping_zip ||
+            '';
 
-          return {
-            order_id: order.id,
-            item_type: metadata.item_type || 'merchandise',
-            item_id: metadata.item_id,
-            item_numeric_id: null,
-            quantity: item.quantity || 1,
-            unit_price: metadata.unit_price
-              ? parseFloat(metadata.unit_price)
-              : item.price?.unit_amount
-                ? item.price.unit_amount / 100
-                : 0,
-            selected_size: metadata.selected_size || null,
-            selected_color: metadata.selected_color || null,
-          };
-        });
+          const { data: order, error: orderError } = await supabaseAdmin
+            .from('orders')
+            .insert({
+              user_id: userId,
+              status: 'paid',
+              total_amount: totalGross,
+              currency: session.currency || 'eur',
+              shipping_name: shippingName,
+              shipping_phone: session.metadata.shipping_phone || '',
+              shipping_address: shippingAddress,
+              shipping_city: session.metadata.shipping_city || '',
+              shipping_zip: shippingZip,
+              shipping_country: session.metadata.shipping_country || '',
+              stripe_session_id: session.id,
+            })
+            .select()
+            .single();
 
-        const { error: itemsError } = await supabaseAdmin
-          .from('order_items')
-          .insert(orderItems);
+          if (orderError) throw orderError;
 
-        if (itemsError) throw itemsError;
+          const orderItems = lineItems.data.map((item) => {
+            const product = item.price?.product as Stripe.Product;
+            const metadata = product.metadata;
 
-        // Decrement stock for merchandise items
-        for (const item of orderItems) {
-          if (item.item_type === 'merchandise' && item.item_id) {
-            const qty = item.quantity || 1;
-            if (item.selected_size) {
-              const { data: stockRow } = await supabaseAdmin
-                .from('merchandise_stock')
-                .select('id, stock')
-                .eq('item_id', item.item_id)
-                .eq('size', item.selected_size)
-                .maybeSingle();
+            return {
+              order_id: order.id,
+              item_type: metadata.item_type || 'merchandise',
+              item_id: metadata.item_id,
+              item_numeric_id: null,
+              quantity: item.quantity || 1,
+              unit_price: metadata.unit_price
+                ? parseFloat(metadata.unit_price)
+                : item.price?.unit_amount
+                  ? item.price.unit_amount / 100
+                  : 0,
+              selected_size: metadata.selected_size || null,
+              selected_color: metadata.selected_color || null,
+            };
+          });
 
-              if (stockRow) {
-                const updatedStock = Math.max(0, (stockRow.stock || 0) - qty);
-                await supabaseAdmin
+          const { error: itemsError } = await supabaseAdmin
+            .from('order_items')
+            .insert(orderItems);
+
+          if (itemsError) throw itemsError;
+
+          // Decrement stock for merchandise items
+          for (const item of orderItems) {
+            if (item.item_type === 'merchandise' && item.item_id) {
+              const qty = item.quantity || 1;
+              if (item.selected_size) {
+                const { data: stockRow } = await supabaseAdmin
                   .from('merchandise_stock')
-                  .update({
-                    stock: updatedStock,
-                    updated_at: new Date().toISOString(),
-                  })
-                  .eq('id', stockRow.id);
+                  .select('id, stock')
+                  .eq('item_id', item.item_id)
+                  .eq('size', item.selected_size)
+                  .maybeSingle();
+
+                if (stockRow) {
+                  const updatedStock = Math.max(0, (stockRow.stock || 0) - qty);
+                  await supabaseAdmin
+                    .from('merchandise_stock')
+                    .update({
+                      stock: updatedStock,
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq('id', stockRow.id);
+                }
               }
             }
           }

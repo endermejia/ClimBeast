@@ -1,5 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { inject, Injectable, signal } from '@angular/core';
+import { Router } from '@angular/router';
 
 import { TuiDialogService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
@@ -28,6 +29,7 @@ export class AreaDonationsService {
   private readonly document = inject(DOCUMENT);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
+  private readonly router = inject(Router);
 
   readonly loading = signal(false);
 
@@ -40,6 +42,19 @@ export class AreaDonationsService {
     if (!this.isBrowser) return false;
     this.loading.set(true);
     await this.supabase.whenReady();
+
+    const userId = this.supabase.authUserId();
+    if (!userId) {
+      this.toast.error('errors.unauthorized');
+      const currentPath =
+        this.document.defaultView?.location.pathname || '/explore';
+      void this.router.navigate(['/login'], {
+        queryParams: { returnUrl: currentPath },
+      });
+      this.loading.set(false);
+      return false;
+    }
+
     try {
       const { data, error } = await this.supabase.client.functions.invoke(
         'create-checkout-session',
@@ -61,7 +76,34 @@ export class AreaDonationsService {
         },
       );
 
-      if (error) throw error;
+      if (error) {
+        if (
+          typeof error === 'object' &&
+          error !== null &&
+          'context' in error &&
+          typeof (error as { context?: { json?: () => Promise<unknown> } })
+            .context?.json === 'function'
+        ) {
+          try {
+            const body = (await (
+              error as { context: { json: () => Promise<unknown> } }
+            ).context.json()) as { error?: string } | null;
+            if (body?.error) {
+              throw new Error(body.error);
+            }
+          } catch (jsonErr: unknown) {
+            if (
+              jsonErr instanceof Error &&
+              jsonErr.message &&
+              jsonErr.message !== error.message
+            ) {
+              throw jsonErr;
+            }
+          }
+        }
+        throw error;
+      }
+
       if (data?.url && this.document.defaultView) {
         this.document.defaultView.location.href = data.url;
         return true;

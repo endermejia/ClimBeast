@@ -5,8 +5,44 @@ import Stripe from 'https://esm.sh/stripe@13.10.0?target=deno';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
+    'authorization, x-client-info, apikey, content-type, ngsw-bypass',
 };
+
+function validateRedirectUrl(
+  urlStr: unknown,
+  origin: string,
+  defaultPath: string,
+): string {
+  if (typeof urlStr !== 'string' || !urlStr.trim()) {
+    return `${origin}${defaultPath}`;
+  }
+  const trimmed = urlStr.trim();
+  if (trimmed.startsWith('/')) {
+    return `${origin}${trimmed}`;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    const allowedHosts = [
+      'climbeast.com',
+      'www.climbeast.com',
+      'localhost',
+      '127.0.0.1',
+    ];
+    const originHost = origin ? new URL(origin).hostname : '';
+    if (originHost && parsed.hostname === originHost) {
+      return parsed.toString();
+    }
+    if (
+      allowedHosts.includes(parsed.hostname) ||
+      parsed.hostname.endsWith('.vercel.app')
+    ) {
+      return parsed.toString();
+    }
+  } catch {
+    // Fall through to default
+  }
+  return `${origin}${defaultPath}`;
+}
 
 interface RequestItem {
   type: 'merchandise' | 'area' | 'area_donation';
@@ -127,12 +163,21 @@ serve(async (req: Request) => {
         const urls = data.image_urls as string[] | null;
         enrichedItems.push({
           ...item,
+          quantity: requestedQty,
           name: data.name,
           price: data.price,
           image_url: urls?.[0] || null,
         });
       } else if (item.type === 'area') {
-        const areaId = item.id || item.numericId || item.areaId;
+        const rawAreaId = item.id || item.numericId || item.areaId;
+        const areaId =
+          typeof rawAreaId === 'number'
+            ? rawAreaId
+            : parseInt(String(rawAreaId), 10);
+        if (!Number.isInteger(areaId) || areaId <= 0) {
+          throw new Error('Invalid area ID');
+        }
+
         const { data } = await supabaseAdmin
           .from('areas')
           .select('id, name, price')
@@ -151,11 +196,30 @@ serve(async (req: Request) => {
           image_url: null,
         });
       } else if (item.type === 'area_donation') {
-        const areaId = item.areaId || item.id || item.numericId;
-        const donationAmount = Number(item.amount);
-        if (!donationAmount || donationAmount < 1.0) {
-          throw new Error('Donation amount must be at least €1.00');
+        const rawAreaId = item.areaId || item.id || item.numericId;
+        const areaId =
+          typeof rawAreaId === 'number'
+            ? rawAreaId
+            : parseInt(String(rawAreaId), 10);
+        if (!Number.isInteger(areaId) || areaId <= 0) {
+          throw new Error('Invalid area ID');
         }
+
+        const donationAmount = Number(item.amount);
+        if (
+          !Number.isFinite(donationAmount) ||
+          donationAmount < 1.0 ||
+          donationAmount > 10000.0
+        ) {
+          throw new Error(
+            'Donation amount must be between €1.00 and €10,000.00',
+          );
+        }
+        const sanitizedAmount = Math.round(donationAmount * 100) / 100;
+        const sanitizedMessage =
+          typeof item.message === 'string'
+            ? item.message.trim().slice(0, 500)
+            : '';
 
         const { data } = await supabaseAdmin
           .from('areas')
@@ -168,11 +232,11 @@ serve(async (req: Request) => {
           ...item,
           id: data.id.toString(),
           name: `Donación al equipamiento: ${data.name}`,
-          price: donationAmount,
+          price: sanitizedAmount,
           quantity: 1,
           image_url: null,
           anonymous: !!item.anonymous,
-          message: item.message || '',
+          message: sanitizedMessage,
         });
       } else {
         throw new Error(`Unsupported item type: ${item.type}`);
@@ -189,11 +253,11 @@ serve(async (req: Request) => {
           metadata: {
             item_id: item.id?.toString(),
             item_type: item.type,
-            selected_size: item.selectedSize || '',
-            selected_color: item.selectedColor || '',
+            selected_size: (item.selectedSize || '').slice(0, 50),
+            selected_color: (item.selectedColor || '').slice(0, 50),
             unit_price: item.price.toString(),
             anonymous: item.anonymous ? 'true' : 'false',
-            donor_message: item.message || '',
+            donor_message: (item.message || '').slice(0, 500),
           },
         },
         unit_amount: Math.round(item.price * 100),
@@ -204,7 +268,7 @@ serve(async (req: Request) => {
     // 3. Build session metadata
     const sessionMetadata: Record<string, string> = {
       user_id: user.id,
-      user_email: user.email || '',
+      user_email: (user.email || '').slice(0, 500),
       has_physical_items: hasPhysicalItems ? 'true' : 'false',
       item_count: enrichedItems.length.toString(),
       item_types: Array.from(new Set(enrichedItems.map((i) => i.type))).join(
@@ -213,42 +277,82 @@ serve(async (req: Request) => {
     };
 
     if (hasPhysicalItems && shipping_info) {
-      sessionMetadata.shipping_full_name = shipping_info.full_name || '';
-      sessionMetadata.shipping_address_line1 =
-        shipping_info.address_line1 || '';
-      sessionMetadata.shipping_address_line2 =
-        shipping_info.address_line2 || '';
-      sessionMetadata.shipping_city = shipping_info.city || '';
-      sessionMetadata.shipping_state = shipping_info.state || '';
-      sessionMetadata.shipping_postal_code = shipping_info.postal_code || '';
-      sessionMetadata.shipping_country = shipping_info.country || '';
-      sessionMetadata.shipping_phone = shipping_info.phone || '';
-      sessionMetadata.shipping_notes = shipping_info.notes || '';
+      sessionMetadata.shipping_full_name = String(
+        shipping_info.full_name || shipping_info.name || '',
+      ).slice(0, 200);
+      sessionMetadata.shipping_address_line1 = String(
+        shipping_info.address_line1 || shipping_info.address || '',
+      ).slice(0, 200);
+      sessionMetadata.shipping_address_line2 = String(
+        shipping_info.address_line2 || '',
+      ).slice(0, 200);
+      sessionMetadata.shipping_city = String(shipping_info.city || '').slice(
+        0,
+        100,
+      );
+      sessionMetadata.shipping_state = String(shipping_info.state || '').slice(
+        0,
+        100,
+      );
+      sessionMetadata.shipping_postal_code = String(
+        shipping_info.postal_code || shipping_info.zip || '',
+      ).slice(0, 20);
+      sessionMetadata.shipping_country = String(
+        shipping_info.country || '',
+      ).slice(0, 100);
+      sessionMetadata.shipping_phone = String(shipping_info.phone || '').slice(
+        0,
+        50,
+      );
+      sessionMetadata.shipping_notes = String(shipping_info.notes || '').slice(
+        0,
+        500,
+      );
+      // Compatibility keys
+      sessionMetadata.shipping_name = sessionMetadata.shipping_full_name;
+      sessionMetadata.shipping_address = sessionMetadata.shipping_address_line1;
+      sessionMetadata.shipping_zip = sessionMetadata.shipping_postal_code;
     }
 
     // If single digital item (area / donation), add convenience metadata
     if (enrichedItems.length === 1) {
       const singleItem = enrichedItems[0];
       if (singleItem.type === 'area') {
+        sessionMetadata.single_item_type = 'area';
         sessionMetadata.area_id = singleItem.id?.toString() || '';
       } else if (singleItem.type === 'area_donation') {
+        sessionMetadata.single_item_type = 'area_donation';
+        sessionMetadata.area_id = singleItem.id?.toString() || '';
         sessionMetadata.donation_area_id = singleItem.id?.toString() || '';
+        sessionMetadata.anonymous = singleItem.anonymous ? 'true' : 'false';
         sessionMetadata.is_anonymous = singleItem.anonymous ? 'true' : 'false';
-        sessionMetadata.donor_message = singleItem.message || '';
+        sessionMetadata.donor_message = (singleItem.message || '').slice(
+          0,
+          500,
+        );
       }
     }
+
+    const origin = req.headers.get('origin') || 'https://climbeast.com';
+    const successUrl = validateRedirectUrl(
+      body.success_url,
+      origin,
+      '/order-success?session_id={CHECKOUT_SESSION_ID}',
+    );
+    const cancelUrl = validateRedirectUrl(
+      body.cancel_url,
+      origin,
+      hasPhysicalItems ? '/merchandising/checkout' : '/explore',
+    );
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items,
       mode: 'payment',
+      client_reference_id: user.id,
       customer_email: user.email || undefined,
-      success_url:
-        body.success_url ||
-        `${req.headers.get('origin')}/order-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url:
-        body.cancel_url ||
-        `${req.headers.get('origin')}/merchandising/checkout`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       metadata: sessionMetadata,
     });
 
