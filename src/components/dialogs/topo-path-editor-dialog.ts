@@ -134,18 +134,6 @@ export interface TopoPathEditorConfig {
               class="flex items-center justify-between px-5 pt-4 pb-2 shrink-0"
             >
               <div class="flex items-center gap-2">
-                <button
-                  tuiIconButton
-                  appearance="flat"
-                  size="s"
-                  iconStart="@tui.x"
-                  class="rounded-full! xl:hidden!"
-                  type="button"
-                  [attr.aria-label]="'close' | translate"
-                  (click)="sidebarOpen.set(false)"
-                >
-                  {{ 'close' | translate }}
-                </button>
                 <p class="sidebar-label m-0! p-0!">
                   {{ 'routes' | translate }}
                 </p>
@@ -1048,26 +1036,26 @@ export interface TopoPathEditorConfig {
             </div>
           }
         </div>
-
-        <!-- Mobile FAB to toggle sidebar -->
-        @if (!sidebarOpen()) {
-          <button
-            tuiIconButton
-            appearance="floating"
-            size="m"
-            class="fab-routes bg-(--tui-background-base)!"
-            type="button"
-            [attr.aria-label]="'routes' | translate"
-            (click)="sidebarOpen.set(true)"
-          >
-            <tui-icon icon="@tui.list" />
-          </button>
-        }
       </div>
 
       <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
       <footer class="editor-footer">
-        <div class="footer-actions-left">
+        <div class="footer-actions-left xl:hidden!">
+          <button
+            tuiIconButton
+            appearance="flat"
+            size="m"
+            class="xl:hidden!"
+            type="button"
+            [iconStart]="sidebarOpen() ? '@tui.x' : '@tui.list'"
+            [attr.aria-label]="(sidebarOpen() ? 'close' : 'routes') | translate"
+            (click)="toggleSidebar()"
+          >
+            {{ (sidebarOpen() ? 'close' : 'routes') | translate }}
+          </button>
+        </div>
+
+        <div class="footer-actions-right">
           <button
             tuiButton
             type="button"
@@ -1077,9 +1065,6 @@ export interface TopoPathEditorConfig {
           >
             {{ 'cancel' | translate }}
           </button>
-        </div>
-
-        <div class="footer-actions-right">
           <button
             tuiButton
             type="button"
@@ -1128,11 +1113,15 @@ export interface TopoPathEditorConfig {
       z-index: 50;
     }
 
-    .footer-actions-left,
+    .footer-actions-left {
+      display: none;
+    }
+
     .footer-actions-right {
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      margin-left: auto;
     }
 
     /* ── Body ── */
@@ -1380,8 +1369,10 @@ export interface TopoPathEditorConfig {
         transform: translateX(0);
       }
 
-      .fab-routes {
-        display: flex !important;
+      .footer-actions-left {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
       }
     }
 
@@ -1390,11 +1381,11 @@ export interface TopoPathEditorConfig {
         transform: none !important;
       }
 
-      .fab-routes {
+      .mobile-backdrop {
         display: none !important;
       }
 
-      .mobile-backdrop {
+      .footer-actions-left {
         display: none !important;
       }
     }
@@ -1405,16 +1396,6 @@ export interface TopoPathEditorConfig {
       inset: 0;
       background: rgba(0, 0, 0, 0.45);
       z-index: 15;
-    }
-
-    .fab-routes {
-      position: absolute;
-      top: 1rem;
-      left: 1rem;
-      z-index: 30;
-      border-radius: 50% !important;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      display: none;
     }
 
     /* ── Canvas area ── */
@@ -1507,6 +1488,10 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   loading = signal(false);
   selectedRoute = signal<TopoRouteWithRoute | null>(null);
   sidebarOpen = signal(false);
+
+  toggleSidebar(): void {
+    this.sidebarOpen.update((v) => !v);
+  }
   topoRoutes: TopoRouteWithRoute[] = [];
   hiddenRouteIds = signal<Set<string | number>>(new Set());
   areAllRoutesVisible = computed<boolean>(() => {
