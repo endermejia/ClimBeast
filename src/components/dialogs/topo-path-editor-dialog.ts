@@ -210,7 +210,9 @@ export interface TopoPathEditorConfig {
                       cdkDragHandle
                       (click)="$event.stopPropagation()"
                     />
-                    <div class="route-num">{{ idx + 1 }}</div>
+                    @if (!context.data.isIndoor) {
+                      <div class="route-num">{{ idx + 1 }}</div>
+                    }
                     <div class="route-info">
                       <div class="route-name">{{ tr.route.name }}</div>
                       @if (isTraverse) {
@@ -420,25 +422,25 @@ export interface TopoPathEditorConfig {
                         <span
                           class="w-2.5 h-2.5 rounded-full bg-[#22C55E] inline-block"
                         ></span>
-                        <span>S: {{ 'topos.legend.start' | translate }}</span>
+                        <span>{{ 'topos.legend.start' | translate }}</span>
                       </div>
                       <div class="flex items-center gap-1">
                         <span
                           class="w-2.5 h-2.5 rounded-full bg-[#EF4444] inline-block"
                         ></span>
-                        <span>T: {{ 'topos.legend.top' | translate }}</span>
+                        <span>{{ 'topos.legend.top' | translate }}</span>
                       </div>
                       <div class="flex items-center gap-1">
                         <span
                           class="w-2.5 h-2.5 rounded-full bg-[#3B82F6] inline-block"
                         ></span>
-                        <span>M: {{ 'topos.legend.match' | translate }}</span>
+                        <span>{{ 'topos.legend.match' | translate }}</span>
                       </div>
                       <div class="flex items-center gap-1">
                         <span
                           class="w-2.5 h-2.5 rounded-full bg-[#EAB308] inline-block"
                         ></span>
-                        <span>F: {{ 'topos.legend.foot' | translate }}</span>
+                        <span>{{ 'topos.legend.foot' | translate }}</span>
                       </div>
                     </div>
                   </div>
