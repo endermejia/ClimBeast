@@ -151,6 +151,20 @@ export interface TopoPathEditorConfig {
                 </p>
               </div>
               <div class="flex items-center gap-1">
+                @if (topoRoutes.length > 1) {
+                  <button
+                    tuiButton
+                    appearance="flat"
+                    size="s"
+                    iconStart="@tui.list-ordered"
+                    class="rounded-full!"
+                    [title]="'topos.editor.sort' | translate"
+                    [disabled]="loading()"
+                    (click)="sortByPosition()"
+                  >
+                    {{ 'topos.editor.sort' | translate }}
+                  </button>
+                }
                 @if (topoRoutes.length > 0) {
                   <button
                     tuiIconButton
@@ -291,21 +305,23 @@ export interface TopoPathEditorConfig {
                         {{ 'edit' | translate }}
                       </button>
                       @if (hasPath) {
-                        @if (selectedRoute()?.route_id === tr.route_id) {
-                          <button
-                            tuiIconButton
-                            appearance="flat"
-                            size="s"
-                            iconStart="@tui.trash"
-                            class="rounded-full!"
-                            [class.text-white!]="true"
-                            (click)="removePath(tr); $event.stopPropagation()"
-                          >
-                            {{ 'delete' | translate }}
-                          </button>
-                        } @else {
-                          <tui-icon icon="@tui.check" class="path-check" />
-                        }
+                        <div class="route-action-slot">
+                          @if (selectedRoute()?.route_id === tr.route_id) {
+                            <button
+                              tuiIconButton
+                              appearance="flat"
+                              size="s"
+                              iconStart="@tui.trash"
+                              class="rounded-full!"
+                              [class.text-white!]="true"
+                              (click)="removePath(tr); $event.stopPropagation()"
+                            >
+                              {{ 'delete' | translate }}
+                            </button>
+                          } @else {
+                            <tui-icon icon="@tui.check" class="path-check" />
+                          }
+                        </div>
                       }
                     </div>
                     <div
@@ -326,30 +342,62 @@ export interface TopoPathEditorConfig {
                   <tui-icon icon="@tui.move" class="tip-icon" />
                   {{ 'topos.editor.movePoint' | translate }}
                 </p>
+                <div class="tip items-start!">
+                  <tui-icon
+                    icon="@tui.mouse-pointer-click"
+                    class="tip-icon mt-0.5 shrink-0"
+                  />
+                  <div class="flex-1 flex flex-col gap-1.5 min-w-0">
+                    <span>
+                      {{ 'topos.editor.cyclePointState' | translate }}:
+                    </span>
+                    <div
+                      class="flex items-center justify-between flex-wrap gap-x-1.5 gap-y-1"
+                    >
+                      <div class="flex items-center gap-1 shrink-0">
+                        <span
+                          class="w-2.5 h-2.5 rounded-full bg-[#22C55E] inline-block shrink-0 shadow-xs"
+                        ></span>
+                        <span>{{ 'topos.legend.start' | translate }}</span>
+                      </div>
+                      <tui-icon
+                        icon="@tui.chevron-right"
+                        class="text-[10px] opacity-35 shrink-0"
+                      />
+                      <div class="flex items-center gap-1 shrink-0">
+                        <span
+                          class="w-2.5 h-2.5 rounded-full bg-[#EF4444] inline-block shrink-0 shadow-xs"
+                        ></span>
+                        <span>{{ 'topos.legend.top' | translate }}</span>
+                      </div>
+                      <tui-icon
+                        icon="@tui.chevron-right"
+                        class="text-[10px] opacity-35 shrink-0"
+                      />
+                      <div class="flex items-center gap-1 shrink-0">
+                        <span
+                          class="w-2.5 h-2.5 rounded-full bg-[#3B82F6] inline-block shrink-0 shadow-xs"
+                        ></span>
+                        <span>{{ 'topos.legend.match' | translate }}</span>
+                      </div>
+                      <tui-icon
+                        icon="@tui.chevron-right"
+                        class="text-[10px] opacity-35 shrink-0"
+                      />
+                      <div class="flex items-center gap-1 shrink-0">
+                        <span
+                          class="w-2.5 h-2.5 rounded-full bg-[#EAB308] inline-block shrink-0 shadow-xs"
+                        ></span>
+                        <span>{{ 'topos.legend.foot' | translate }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </tui-scrollbar>
 
             <!-- Compact Fixed Bottom Controls -->
             <div class="sidebar-controls">
-              <!-- Line Width Slider -->
-              <div class="line-width-control">
-                <div class="control-header">
-                  <span class="control-label">{{
-                    'topos.editor.lineWidth' | translate
-                  }}</span>
-                  <span class="control-value">{{ lineWidth() }}</span>
-                </div>
-                <input
-                  tuiSlider
-                  type="range"
-                  [min]="1"
-                  [max]="15"
-                  [step]="0.5"
-                  [ngModel]="lineWidth()"
-                  (ngModelChange)="lineWidth.set($event)"
-                />
-              </div>
-
               <!-- Path Type Selector & Traverse Toggle -->
               @if (selectedRoute()) {
                 <div class="path-type-control">
@@ -407,45 +455,27 @@ export interface TopoPathEditorConfig {
                     <tui-icon icon="@tui.arrow-right-left" class="mr-1" />
                     <span>{{ 'topos.editor.traverse' | translate }}</span>
                   </button>
-
-                  <!-- Point states help & legend -->
-                  <div
-                    class="mt-3 pt-3 border-t border-(--tui-border-normal) text-xs flex flex-col gap-1.5 opacity-80"
-                  >
-                    <span
-                      class="font-medium text-[11px] text-(--tui-text-tertiary)"
-                    >
-                      {{ 'topos.editor.cyclePointState' | translate }}
-                    </span>
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-1">
-                        <span
-                          class="w-2.5 h-2.5 rounded-full bg-[#22C55E] inline-block"
-                        ></span>
-                        <span>{{ 'topos.legend.start' | translate }}</span>
-                      </div>
-                      <div class="flex items-center gap-1">
-                        <span
-                          class="w-2.5 h-2.5 rounded-full bg-[#EF4444] inline-block"
-                        ></span>
-                        <span>{{ 'topos.legend.top' | translate }}</span>
-                      </div>
-                      <div class="flex items-center gap-1">
-                        <span
-                          class="w-2.5 h-2.5 rounded-full bg-[#3B82F6] inline-block"
-                        ></span>
-                        <span>{{ 'topos.legend.match' | translate }}</span>
-                      </div>
-                      <div class="flex items-center gap-1">
-                        <span
-                          class="w-2.5 h-2.5 rounded-full bg-[#EAB308] inline-block"
-                        ></span>
-                        <span>{{ 'topos.legend.foot' | translate }}</span>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               }
+
+              <!-- Line Width Slider -->
+              <div class="line-width-control">
+                <div class="control-header">
+                  <span class="control-label">{{
+                    'topos.editor.lineWidth' | translate
+                  }}</span>
+                  <span class="control-value">{{ lineWidth() }}</span>
+                </div>
+                <input
+                  tuiSlider
+                  type="range"
+                  [min]="1"
+                  [max]="15"
+                  [step]="0.5"
+                  [ngModel]="lineWidth()"
+                  (ngModelChange)="lineWidth.set($event)"
+                />
+              </div>
             </div>
           </div>
         </aside>
@@ -1053,18 +1083,6 @@ export interface TopoPathEditorConfig {
           <button
             tuiButton
             type="button"
-            appearance="flat"
-            size="m"
-            [disabled]="loading()"
-            (click)="sortByPosition()"
-          >
-            <tui-icon icon="@tui.list-ordered" class="mr-1" />
-            <span>{{ 'topos.editor.sort' | translate }}</span>
-          </button>
-
-          <button
-            tuiButton
-            type="button"
             appearance="primary"
             size="m"
             [disabled]="loading()"
@@ -1115,17 +1133,6 @@ export interface TopoPathEditorConfig {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-    }
-
-    /* Hide sort button text on very small screens if necessary */
-    @media (max-width: 480px) {
-      .footer-actions-right span {
-        display: none;
-      }
-      .footer-actions-right button {
-        min-width: 2.5rem;
-        padding: 0 0.5rem;
-      }
     }
 
     /* ── Body ── */
@@ -1267,15 +1274,20 @@ export interface TopoPathEditorConfig {
       opacity: 0.85;
     }
 
-    .path-check {
-      color: var(--tui-text-positive);
-      font-size: 0.875rem;
+    .route-action-slot {
+      width: var(--tui-height-s);
+      height: var(--tui-height-s);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       flex-shrink: 0;
-      filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.1));
     }
 
-    .route-item--active .path-check {
-      color: white;
+    .path-check {
+      color: var(--tui-text-positive);
+      font-size: 1rem;
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.1));
     }
 
     .tips {
@@ -1326,6 +1338,11 @@ export interface TopoPathEditorConfig {
       gap: 0.5rem;
     }
 
+    .path-type-control + .line-width-control {
+      border-top: 1px solid var(--tui-border-normal);
+      padding-top: 0.75rem;
+    }
+
     .control-header {
       display: flex;
       justify-content: space-between;
@@ -1361,10 +1378,6 @@ export interface TopoPathEditorConfig {
 
       .route-sidebar.sidebar-open {
         transform: translateX(0);
-      }
-
-      .tips {
-        display: none;
       }
 
       .fab-routes {
