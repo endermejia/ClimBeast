@@ -24,6 +24,7 @@ import { MapComponent } from './map';
         [selection]="selection()"
         [options]="mapOptions()"
         (mapClick)="onMapClick($event)"
+        (selectionChange)="onMapClick($event)"
       />
 
       <!-- Overlay Controls -->

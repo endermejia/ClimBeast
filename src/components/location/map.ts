@@ -130,6 +130,8 @@ export class MapComponent {
     lat: number;
     lng: number;
   } | null>(null);
+  public selectionChange: OutputEmitterRef<{ lat: number; lng: number }> =
+    output<{ lat: number; lng: number }>();
 
   public options: InputSignal<MapOptions> = input<MapOptions>({
     center: [38.7, -0.7],
@@ -186,8 +188,16 @@ export class MapComponent {
 
     effect(() => {
       const selection = this.selection();
-      if (this.mapInitialized() && !this.isDestroyed && selection) {
-        this.mapBuilder.setSelectionMarker(selection.lat, selection.lng);
+      if (this.mapInitialized() && !this.isDestroyed) {
+        if (selection) {
+          this.mapBuilder.setSelectionMarker(
+            selection.lat,
+            selection.lng,
+            (lat, lng) => this.selectionChange.emit({ lat, lng }),
+          );
+        } else {
+          this.mapBuilder.clearSelectionMarker();
+        }
       }
     });
 

@@ -432,7 +432,7 @@ export class MapBuilder {
     this.L = null;
   }
 
-  private cleanMarkers(): void {
+  private cleanDataMarkers(): void {
     const map = this.map;
     if (!map || !this.L) return;
 
@@ -453,6 +453,13 @@ export class MapBuilder {
       }
     });
     this.parkingMarkers = [];
+  }
+
+  private cleanMarkers(): void {
+    this.cleanDataMarkers();
+
+    const map = this.map;
+    if (!map || !this.L) return;
 
     if (this.userMarker) {
       try {
@@ -463,14 +470,7 @@ export class MapBuilder {
       this.userMarker = null;
     }
 
-    if (this.selectionMarker) {
-      try {
-        map.removeLayer(this.selectionMarker);
-      } catch {
-        // ignore
-      }
-      this.selectionMarker = null;
-    }
+    this.clearSelectionMarker();
   }
 
   private shouldCluster(): boolean {
@@ -594,7 +594,7 @@ export class MapBuilder {
     const L = this.L;
     if (!map || !L) return;
 
-    this.cleanMarkers();
+    this.cleanDataMarkers();
 
     const clustering = this.shouldCluster();
     const currentZoom = map.getZoom();
@@ -987,11 +987,22 @@ export class MapBuilder {
   }
 
   private selectionMarker: Marker | null = null;
-  public setSelectionMarker(lat: number, lng: number): void {
+  public setSelectionMarker(
+    lat: number,
+    lng: number,
+    onDrag?: (lat: number, lng: number) => void,
+  ): void {
     if (!this.map || !this.L) return;
     const L = this.L;
 
     if (this.selectionMarker) {
+      const currentPos = this.selectionMarker.getLatLng();
+      if (
+        Math.abs(currentPos.lat - lat) < 1e-6 &&
+        Math.abs(currentPos.lng - lng) < 1e-6
+      ) {
+        return;
+      }
       try {
         this.map.removeLayer(this.selectionMarker);
       } catch {
@@ -1002,25 +1013,43 @@ export class MapBuilder {
 
     const icon = new L.DivIcon({
       html: `
-        <div class="relative -translate-x-1/2 -translate-y-full">
+        <div class="cursor-grab active:cursor-grabbing drop-shadow-md">
            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="var(--tui-text-primary)" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
              <circle cx="12" cy="10" r="3" fill="var(--tui-background-base)"></circle>
            </svg>
         </div>`,
-      className: 'pointer-events-none display-contents',
-      iconSize: [0, 0],
-      iconAnchor: [0, 0],
+      className: '!border-0 !bg-transparent',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
     });
 
     try {
-      this.selectionMarker = new L.Marker([lat, lng], {
+      const marker = new L.Marker([lat, lng], {
         icon,
         zIndexOffset: 2000,
+        draggable: true,
       }).addTo(this.map);
+
+      marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        onDrag?.(pos.lat, pos.lng);
+      });
+
+      this.selectionMarker = marker;
     } catch {
       // ignore
     }
+  }
+
+  public clearSelectionMarker(): void {
+    if (!this.map || !this.selectionMarker) return;
+    try {
+      this.map.removeLayer(this.selectionMarker);
+    } catch {
+      // ignore
+    }
+    this.selectionMarker = null;
   }
 
   /**
