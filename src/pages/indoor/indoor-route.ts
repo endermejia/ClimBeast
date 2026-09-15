@@ -269,7 +269,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                 </span>
                 <div class="flex flex-wrap gap-2 justify-center">
                   @for (e of r.equippers; track e.id) {
-                    <button
+                    <a
                       tuiButton
                       appearance="secondary"
                       size="s"
@@ -277,7 +277,31 @@ import { IS_BROWSER } from '../../app/is-browser';
                       [routerLink]="['/equipper', e.id]"
                     >
                       {{ e.name }}
-                    </button>
+                    </a>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Topos (Croquis) -->
+            @if (r.topos && r.topos.length > 0) {
+              <div class="flex flex-col items-center">
+                <span
+                  class="text-xs uppercase opacity-60 font-semibold tracking-wider mb-2"
+                >
+                  {{ (r.topos.length === 1 ? 'topo' : 'topos') | translate }}
+                </span>
+                <div class="flex flex-wrap gap-2 justify-center">
+                  @for (t of r.topos; track t.id) {
+                    <a
+                      tuiButton
+                      appearance="secondary"
+                      size="s"
+                      class="min-w-fit!"
+                      [routerLink]="['/indoor', centerSlug(), 'topo', t.id]"
+                    >
+                      {{ t.name }}
+                    </a>
                   }
                 </div>
               </div>

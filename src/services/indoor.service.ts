@@ -617,7 +617,9 @@ export class IndoorService {
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('indoor_routes')
-      .select('*, center:indoor_centers!inner(name, slug)')
+      .select(
+        '*, center:indoor_centers!inner(name, slug), topo_routes:indoor_topo_routes(topo:indoor_topos(id, name, legacy))',
+      )
       .eq('slug', routeSlug)
       .eq('center.slug', centerSlug)
       .maybeSingle();
@@ -627,13 +629,23 @@ export class IndoorService {
 
     const route = data as IndoorRouteDto & {
       center?: { name: string; slug: string } | null;
+      topo_routes?: {
+        topo: Pick<IndoorTopoDto, 'id' | 'name' | 'legacy'> | null;
+      }[];
     };
     const equippers = await this.getRouteEquippers(route.id);
+    const topos = (route.topo_routes ?? [])
+      .map((entry) => entry.topo)
+      .filter(
+        (topo): topo is Pick<IndoorTopoDto, 'id' | 'name' | 'legacy'> =>
+          topo !== null,
+      );
     return {
       ...route,
       center_name: route.center?.name,
       center_slug: route.center?.slug,
       equippers,
+      topos,
     } as IndoorRouteWithExtras;
   }
 

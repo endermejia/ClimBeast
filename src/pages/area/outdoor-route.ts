@@ -12,7 +12,7 @@ import {
   untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { TuiDialogService } from '@taiga-ui/core';
 import {
@@ -73,6 +73,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     FormsModule,
     GradeComponent,
     LowerCasePipe,
+    RouterLink,
     SectionHeaderComponent,
     TranslatePipe,
     TuiAvatar,
@@ -306,15 +307,15 @@ import { IS_BROWSER } from '../../app/is-browser';
                   </span>
                   <div class="flex flex-wrap gap-2 justify-center">
                     @for (e of equippers(); track e.id) {
-                      <button
+                      <a
                         tuiButton
                         appearance="secondary"
                         size="s"
                         class="min-w-fit!"
-                        (click)="router.navigate(['/equipper', e.id])"
+                        [routerLink]="['/equipper', e.id]"
                       >
                         {{ e.name }}
-                      </button>
+                      </a>
                     }
                   </div>
                 </div>
@@ -329,23 +330,21 @@ import { IS_BROWSER } from '../../app/is-browser';
                   </span>
                   <div class="flex flex-wrap gap-2 justify-center">
                     @for (t of r.topos; track t.id) {
-                      <button
+                      <a
                         tuiButton
                         appearance="secondary"
                         size="s"
                         class="min-w-fit!"
-                        (click.zoneless)="
-                          router.navigate([
-                            '/area',
-                            areaSlug(),
-                            cragSlug(),
-                            'topo',
-                            t.id,
-                          ])
-                        "
+                        [routerLink]="[
+                          '/area',
+                          areaSlug(),
+                          cragSlug(),
+                          'topo',
+                          t.id,
+                        ]"
                       >
                         {{ t.name }}
-                      </button>
+                      </a>
                     }
                   </div>
                 </div>
