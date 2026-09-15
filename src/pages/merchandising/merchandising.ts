@@ -12,20 +12,22 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 
-import { TuiDialogService } from '@taiga-ui/core';
 import {
   TuiAppearance,
   TuiButton,
+  TuiDialogService,
   TuiIcon,
   TuiNotification,
   TuiScrollbar,
   TuiTitle,
 } from '@taiga-ui/core';
 import {
+  TUI_CONFIRM,
+  TuiBadgeNotification,
+  TuiBadgedContentComponent,
+  type TuiConfirmData,
   TuiFilter,
   TuiSkeleton,
-  TuiBadgedContentComponent,
-  TuiBadgeNotification,
 } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
@@ -37,6 +39,7 @@ import { firstValueFrom, startWith } from 'rxjs';
 import { AuthStateService } from '../../services/auth-state.service';
 import { CartService } from '../../services/cart.service';
 import { MerchandiseService } from '../../services/merchandise.service';
+import { ToastService } from '../../services/toast.service';
 
 import { AdminMerchandiseDialogComponent } from '../../components/dialogs/admin-merchandise-dialog';
 import { MerchandiseCardComponent } from '../../components/merchandise/merchandise-card';
@@ -190,6 +193,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                   [item]="item"
                   (clicked)="openItemDetail($event)"
                   (edit)="editItem($event)"
+                  (delete)="deleteItem($event)"
                 />
               } @empty {
                 <div
@@ -228,6 +232,7 @@ export class MerchandisingComponent {
   private readonly merchService = inject(MerchandiseService);
   protected readonly authState = inject(AuthStateService);
   protected readonly cartService = inject(CartService);
+  private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly dialogService = inject(TuiDialogService);
@@ -327,6 +332,38 @@ export class MerchandisingComponent {
     );
     if (result) {
       void this.itemsResource.reload();
+    }
+  }
+
+  protected async deleteItem(item: MerchandiseItemDetail): Promise<void> {
+    const confirmed = await firstValueFrom(
+      this.dialogService.open<boolean>(TUI_CONFIRM, {
+        label: this.translate.instant('merchandising.items.deleteTitle'),
+        size: 's',
+        data: {
+          content: this.translate.instant('merchandising.items.deleteConfirm', {
+            name: item.name,
+          }),
+          yes: this.translate.instant('delete'),
+          no: this.translate.instant('cancel'),
+          appearance: 'primary-destructive',
+        } as TuiConfirmData,
+      }),
+      { defaultValue: false },
+    );
+
+    if (confirmed) {
+      const ok = await this.merchService.deleteMerchandiseItem(item.id);
+      if (ok) {
+        this.toast.success(
+          this.translate.instant('merchandising.items.deleteSuccess'),
+        );
+        void this.itemsResource.reload();
+      } else {
+        this.toast.error(
+          this.translate.instant('merchandising.items.deleteError'),
+        );
+      }
     }
   }
 }

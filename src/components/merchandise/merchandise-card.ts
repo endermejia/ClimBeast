@@ -80,16 +80,31 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
 
         @if (isAdmin() && authState.editingMode()) {
           <div class="absolute top-3 left-3 flex flex-col gap-2 z-10">
-            <button
-              tuiIconButton
-              appearance="accent"
-              size="s"
-              type="button"
-              class="rounded-xl! shadow-lg bg-(--tui-background-accent-1)! text-(--tui-background-base)!"
-              (click)="edit.emit(item()); $event.stopPropagation()"
-            >
-              <tui-icon icon="@tui.pencil" />
-            </button>
+            <div class="flex gap-2">
+              <button
+                tuiIconButton
+                appearance="accent"
+                size="s"
+                type="button"
+                class="rounded-xl! shadow-lg bg-(--tui-background-accent-1)! text-(--tui-background-base)!"
+                (click)="edit.emit(item()); $event.stopPropagation()"
+                [attr.aria-label]="'edit' | translate"
+              >
+                <tui-icon icon="@tui.pencil" />
+              </button>
+
+              <button
+                tuiIconButton
+                appearance="negative"
+                size="s"
+                type="button"
+                class="rounded-xl! shadow-lg"
+                (click)="delete.emit(item()); $event.stopPropagation()"
+                [attr.aria-label]="'delete' | translate"
+              >
+                <tui-icon icon="@tui.trash" />
+              </button>
+            </div>
 
             @if (item().active === false) {
               <span tuiBadge size="s">
@@ -129,6 +144,7 @@ export class MerchandiseCardComponent {
   item = input.required<MerchandiseItemDetail>();
   clicked = output<MerchandiseItemDetail>();
   edit = output<MerchandiseItemDetail>();
+  delete = output<MerchandiseItemDetail>();
 
   protected readonly index = signal(0);
 
