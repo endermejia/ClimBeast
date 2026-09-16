@@ -50,6 +50,7 @@ import { MessagingService } from '../../services/messaging.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
+import { UserReportsService } from '../../services/user-reports.service';
 
 import {
   ChatMessageDto,
@@ -235,19 +236,31 @@ export interface ChatDialogData {
                 room.participant?.name
               }}</span>
             </button>
-            <button
-              tuiIconButton
-              type="button"
-              [appearance]="
-                isBlockedByMe() ? 'primary-destructive' : 'flat-grayscale'
-              "
-              size="s"
-              [iconStart]="isBlockedByMe() ? '@tui.lock' : '@tui.lock-open'"
-              (click)="room.participant && toggleBlock(room.participant.id)"
-              class="ml-auto"
-            >
-              {{ (isBlockedByMe() ? 'unblock' : 'block') | translate }}
-            </button>
+            <div class="ml-auto flex items-center gap-1">
+              <button
+                tuiIconButton
+                type="button"
+                appearance="flat-grayscale"
+                size="s"
+                iconStart="@tui.flag"
+                (click)="room.participant && openReportDialog(room.participant)"
+                [attr.aria-label]="'reportUser' | translate"
+              >
+                {{ 'reportUser' | translate }}
+              </button>
+              <button
+                tuiIconButton
+                type="button"
+                [appearance]="
+                  isBlockedByMe() ? 'primary-destructive' : 'flat-grayscale'
+                "
+                size="s"
+                [iconStart]="isBlockedByMe() ? '@tui.lock' : '@tui.lock-open'"
+                (click)="room.participant && toggleBlock(room.participant.id)"
+              >
+                {{ (isBlockedByMe() ? 'unblock' : 'block') | translate }}
+              </button>
+            </div>
           </div>
 
           <!-- Messages List -->
@@ -294,6 +307,7 @@ export class ChatDialogComponent implements OnDestroy {
   protected readonly toast = inject(ToastService);
   protected readonly translate = inject(TranslateService);
   protected readonly dialogs = inject(TuiDialogService);
+  protected readonly userReportsService = inject(UserReportsService);
   private readonly router = inject(Router);
   protected readonly context =
     injectContext<TuiDialogContext<void, ChatDialogData>>();
@@ -514,6 +528,14 @@ export class ChatDialogComponent implements OnDestroy {
     if (!userId) return;
     this.context.completeWith();
     void this.router.navigate(['/profile', userId]);
+  }
+
+  protected openReportDialog(participant: UserProfileBasicDto): void {
+    void this.userReportsService.openReportDialog({
+      userId: participant.id,
+      userName: participant.name,
+      userAvatar: participant.avatar,
+    });
   }
 
   protected onSelectUser(user: UserProfileBasicDto) {

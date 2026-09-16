@@ -112,6 +112,10 @@ export const serverRoutes: ServerRoute[] = [
     path: 'admin/error-logs',
     renderMode: RenderMode.Prerender,
   },
+  {
+    path: 'admin/user-reports',
+    renderMode: RenderMode.Prerender,
+  },
   // INDOOR
   {
     path: 'indoor',

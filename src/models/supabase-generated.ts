@@ -3500,6 +3500,51 @@ export type Database = {
           },
         ];
       };
+      user_reports: {
+        Row: {
+          created_at: string;
+          details: string | null;
+          id: number;
+          reason: string;
+          reported_id: string;
+          reporter_id: string;
+          status: string;
+        };
+        Insert: {
+          created_at?: string;
+          details?: string | null;
+          id?: number;
+          reason: string;
+          reported_id: string;
+          reporter_id: string;
+          status?: string;
+        };
+        Update: {
+          created_at?: string;
+          details?: string | null;
+          id?: number;
+          reason?: string;
+          reported_id?: string;
+          reporter_id?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'user_reports_reported_id_fkey';
+            columns: ['reported_id'];
+            isOneToOne: false;
+            referencedRelation: 'user_profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'user_reports_reporter_id_fkey';
+            columns: ['reporter_id'];
+            isOneToOne: false;
+            referencedRelation: 'user_profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       geography_columns: {

@@ -41,6 +41,7 @@ import { ProfileDataService } from '../../services/profile-data.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
+import { UserReportsService } from '../../services/user-reports.service';
 
 import { UserListDialogComponent } from '../../components/dialogs/user-list-dialog';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
@@ -164,6 +165,14 @@ import { IS_BROWSER } from '../../app/is-browser';
                         (blockAscents ? 'ascentsHidden' : 'hideAscents')
                           | translate
                       }}
+                    </button>
+                    <button
+                      tuiOption
+                      tuiAppearance="negative"
+                      iconStart="@tui.flag"
+                      (click)="openReportDialog(); dropdownOpen.set(false)"
+                    >
+                      {{ 'reportUser' | translate }}
                     </button>
                   </tui-data-list>
                 </ng-template>
@@ -361,6 +370,7 @@ export class UserProfileComponent {
   private readonly filterState = inject(FilterStateService);
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
+  private readonly userReportsService = inject(UserReportsService);
 
   // Route param (optional)
   id = input<string | undefined>();
@@ -897,6 +907,18 @@ export class UserProfileComponent {
         this.onUnfollow(userId);
       }
     }
+  }
+
+  protected openReportDialog(): void {
+    const profile = this.profile();
+    const userId = profile?.id;
+    if (!userId || this.isOwnProfile()) return;
+
+    void this.userReportsService.openReportDialog({
+      userId,
+      userName: profile.name,
+      userAvatar: profile.avatar,
+    });
   }
 
   protected openFollowsDialog(type: 'followers' | 'following'): void {

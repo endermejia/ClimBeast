@@ -232,6 +232,43 @@ import { IS_BROWSER } from '../../app/is-browser';
                 class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
               />
             </a>
+
+            <!-- User Reports -->
+            <a
+              routerLink="/admin/user-reports"
+              class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
+            >
+              <tui-badged-content [style.--tui-radius.%]="50" class="shrink-0">
+                @if (countsResource.value()?.userReports; as count) {
+                  <ng-container tuiSlot="top">
+                    <tui-badge-notification tuiAppearance="accent" size="s">
+                      {{ count }}
+                    </tui-badge-notification>
+                  </ng-container>
+                }
+                <div
+                  class="w-11 h-11 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0"
+                >
+                  <tui-icon icon="@tui.flag" />
+                </div>
+              </tui-badged-content>
+
+              <div class="flex-1 min-w-0">
+                <span class="font-bold text-sm block truncate">
+                  {{ 'admin.userReports.title' | translate }}
+                </span>
+                <p
+                  class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+                >
+                  {{ 'admin.userReports.description' | translate }}
+                </p>
+              </div>
+
+              <tui-icon
+                icon="@tui.chevron-right"
+                class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+              />
+            </a>
           </div>
         </section>
 
@@ -509,6 +546,7 @@ export class AdminComponent {
         parkingsRes,
         equippersRes,
         usersRes,
+        userReportsRes,
       ] = await Promise.all([
         this.supabase.client
           .from('orders')
@@ -542,6 +580,10 @@ export class AdminComponent {
         this.supabase.client
           .from('user_profiles')
           .select('*', { count: 'exact', head: true }),
+        this.supabase.client
+          .from('user_reports')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending'),
       ]);
 
       return {
@@ -554,6 +596,7 @@ export class AdminComponent {
         parkings: parkingsRes.count ?? 0,
         equippers: equippersRes.count ?? 0,
         users: usersRes.count ?? 0,
+        userReports: userReportsRes.count ?? 0,
       };
     },
   });
