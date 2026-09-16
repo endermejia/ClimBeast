@@ -115,6 +115,7 @@ import { UserInfoComponent } from './user-info';
             [data]="ascent"
             [showUser]="false"
             [showPhoto]="false"
+            [showComment]="false"
           />
         </div>
       }

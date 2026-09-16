@@ -280,6 +280,36 @@ describe('AscentCardComponent', () => {
       expect(fixture.componentInstance.showRoute()).toBe(true);
     });
 
+    it('showComment defaults to true', () => {
+      const fixture = TestBed.createComponent(AscentCardComponent);
+      fixture.componentRef.setInput('data', createMockAscent());
+      expect(fixture.componentInstance.showComment()).toBe(true);
+    });
+
+    it('renders comment when showComment is true and comment is present', async () => {
+      const fixture = TestBed.createComponent(AscentCardComponent);
+      fixture.componentRef.setInput(
+        'data',
+        createMockAscent({ comment: 'Great climb!' }),
+      );
+      fixture.componentRef.setInput('showComment', true);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(fixture.nativeElement.textContent).toContain('Great climb!');
+    });
+
+    it('does not render comment when showComment is false', async () => {
+      const fixture = TestBed.createComponent(AscentCardComponent);
+      fixture.componentRef.setInput(
+        'data',
+        createMockAscent({ comment: 'Great climb!' }),
+      );
+      fixture.componentRef.setInput('showComment', false);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(fixture.nativeElement.textContent).not.toContain('Great climb!');
+    });
+
     it('isFollowed defaults to false', () => {
       const fixture = TestBed.createComponent(AscentCardComponent);
       fixture.componentRef.setInput('data', createMockAscent());

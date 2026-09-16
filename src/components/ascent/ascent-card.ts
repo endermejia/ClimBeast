@@ -346,7 +346,7 @@ import { AscentTypeComponent } from './ascent-type';
         </div>
       </div>
 
-      @if (ascent.comment; as ascentComment) {
+      @if (showComment() && ascent.comment; as ascentComment) {
         <p
           class="text-sm italic border-l-2 border-(--tui-border-normal) pl-3 py-1 self-start"
         >
@@ -385,7 +385,9 @@ import { AscentTypeComponent } from './ascent-type';
               [isPrivate]="!!ascent.private_ascent"
             />
           </div>
-          <app-ascent-last-comment [ascentId]="ascent.id" />
+          @if (showComment()) {
+            <app-ascent-last-comment [ascentId]="ascent.id" />
+          }
         </footer>
       }
     </div>
@@ -420,6 +422,7 @@ export class AscentCardComponent {
   showUser = input(true);
   showRoute = input(true);
   showPhoto = input(true);
+  showComment = input(true);
   isFollowed = input(false);
   priority = input(false);
   highlightOwn = input(false);
