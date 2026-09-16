@@ -2352,6 +2352,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
             route_id: String(tr.route_id),
             number: idx,
             path: path ? topoPathToJson(path) : null,
+            user_creator_id: this.supabase.authUserId(),
           });
         });
         const upsertResults = await Promise.all(upsertPromises);

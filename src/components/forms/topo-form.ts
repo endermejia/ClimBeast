@@ -822,6 +822,7 @@ export class TopoFormComponent {
             legacy: legacy || false,
             start_date: null,
             end_date: null,
+            user_creator_id: null,
           };
 
           let topoId: string | undefined;
@@ -871,6 +872,7 @@ export class TopoFormComponent {
                 route_id: String(r.id),
                 number: idx,
                 path: pendingPath || existingPath,
+                user_creator_id: this.supabase.authUserId(),
               });
             });
             await Promise.all(upsertPromises);

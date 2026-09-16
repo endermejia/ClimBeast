@@ -77,6 +77,14 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Prerender,
   },
   {
+    path: 'my-indoor-centers',
+    renderMode: RenderMode.Prerender,
+  },
+  {
+    path: 'routesetting',
+    renderMode: RenderMode.Prerender,
+  },
+  {
     path: 'admin/users',
     renderMode: RenderMode.Prerender,
   },
@@ -114,6 +122,22 @@ export const serverRoutes: ServerRoute[] = [
   },
   {
     path: 'admin/user-reports',
+    renderMode: RenderMode.Prerender,
+  },
+  {
+    path: 'admin/comment-reports',
+    renderMode: RenderMode.Prerender,
+  },
+  {
+    path: 'admin/indoor-admin-requests',
+    renderMode: RenderMode.Prerender,
+  },
+  {
+    path: 'admin/routesetter-requests',
+    renderMode: RenderMode.Prerender,
+  },
+  {
+    path: 'admin/area-funds',
     renderMode: RenderMode.Prerender,
   },
   // INDOOR

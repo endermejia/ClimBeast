@@ -69,7 +69,7 @@ interface StatusFilter {
     TuiTable,
   ],
   template: `
-    <section class="flex flex-col w-full max-w-5xl mx-auto p-4 grow min-h-0">
+    <section class="flex flex-col w-full max-w-7xl mx-auto p-4 grow min-h-0">
       <!-- Header with same admin styling -->
       <header class="mb-4 flex flex-wrap items-center justify-between gap-4">
         <h1 class="text-2xl font-bold m-0">
@@ -97,18 +97,19 @@ interface StatusFilter {
         </h1>
       </header>
 
+      <p class="mb-6 text-tui-text-secondary opacity-60">
+        {{ 'admin.userReports.description' | translate }}
+      </p>
+
       <!-- Filter chips -->
       <div class="flex items-center gap-2 overflow-x-auto pb-3">
         @for (st of statusFilters; track st.id) {
           <button
+            tuiButton
             type="button"
-            class="px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer border"
-            [class.bg-(--tui-background-accent-1)]="selectedStatus() === st.id"
-            [class.text-(--tui-background-base)]="selectedStatus() === st.id"
-            [class.border-(--tui-border-focus)]="selectedStatus() === st.id"
-            [class.bg-(--tui-background-neutral-1)]="selectedStatus() !== st.id"
-            [class.text-(--tui-text-primary)]="selectedStatus() !== st.id"
-            [class.border-(--tui-border-normal)]="selectedStatus() !== st.id"
+            size="s"
+            class="shrink-0"
+            [appearance]="selectedStatus() === st.id ? 'primary' : 'secondary'"
             (click)="selectedStatus.set(st.id)"
           >
             {{ st.labelKey | translate }}

@@ -1,11 +1,11 @@
-﻿import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 import { TuiDialogContext } from '@taiga-ui/core';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
-import { ReportUserFormComponent } from '../forms/report-user-form';
-
 import { ReportUserDialogData } from '../../models';
+
+import { ReportUserFormComponent } from '../forms/report-user-form';
 
 @Component({
   selector: 'app-report-user-dialog',

@@ -78,6 +78,8 @@ interface UserWithRole {
   areasControl: FormControl<AreaListItem[]>;
   assignedCenters: IndoorCenterDto[];
   centersControl: FormControl<IndoorCenterDto[]>;
+  routesetterCenters: IndoorCenterDto[];
+  routesetterCentersControl: FormControl<IndoorCenterDto[]>;
 }
 
 @Component({
@@ -115,7 +117,7 @@ interface UserWithRole {
     WaIntersectionObserver,
   ],
   template: `
-    <section class="flex flex-col w-full max-w-5xl mx-auto p-4">
+    <section class="flex flex-col w-full max-w-7xl mx-auto p-4">
       <header class="mb-4 flex items-center justify-between gap-2">
         <h1 class="text-2xl font-bold">
           <a
@@ -141,6 +143,10 @@ interface UserWithRole {
           </a>
         </h1>
       </header>
+
+      <p class="mb-6 text-tui-text-secondary opacity-60">
+        {{ 'admin.users.description' | translate }}
+      </p>
 
       <div class="mb-6 flex flex-col sm:flex-row gap-3">
         <tui-textfield class="grow" [tuiTextfieldCleaner]="true">
@@ -241,7 +247,7 @@ interface UserWithRole {
                   class="areas-column min-w-[240px]"
                   [sorter]="areasSorter"
                 >
-                  {{ 'areas' | translate }}
+                  {{ 'admin.users.adminInArea' | translate }}
                 </th>
                 <th
                   *tuiHead="'centers'"
@@ -249,7 +255,15 @@ interface UserWithRole {
                   class="centers-column min-w-[240px]"
                   [sorter]="centersSorter"
                 >
-                  {{ 'indoor.title' | translate }}
+                  {{ 'admin.users.adminInCenter' | translate }}
+                </th>
+                <th
+                  *tuiHead="'routesetters'"
+                  tuiTh
+                  class="routesetters-column min-w-[240px]"
+                  [sorter]="routesettersSorter"
+                >
+                  {{ 'admin.users.routesetterIn' | translate }}
                 </th>
               </tr>
             </thead>
@@ -277,6 +291,13 @@ interface UserWithRole {
                       <div [tuiSkeleton]="true" class="w-full h-10"></div>
                     </td>
                     <td *tuiCell="'centers'" tuiTd class="centers-column">
+                      <div [tuiSkeleton]="true" class="w-full h-10"></div>
+                    </td>
+                    <td
+                      *tuiCell="'routesetters'"
+                      tuiTd
+                      class="routesetters-column"
+                    >
                       <div [tuiSkeleton]="true" class="w-full h-10"></div>
                     </td>
                   </tr>
@@ -447,6 +468,53 @@ interface UserWithRole {
                         </tui-data-list>
                       </tui-textfield>
                     </td>
+                    <td
+                      *tuiCell="'routesetters'"
+                      tuiTd
+                      class="routesetters-column"
+                    >
+                      <tui-textfield
+                        multi
+                        tuiChevron
+                        [stringify]="stringifyCenter"
+                        [disabledItemHandler]="strings"
+                        [identityMatcher]="centerIdentityMatcher"
+                        [tuiTextfieldCleaner]="false"
+                      >
+                        <input
+                          tuiInputChip
+                          id="routesetters-select-{{ user.id }}"
+                          [formControl]="user.routesetterCentersControl"
+                          [placeholder]="'select' | translate"
+                          autocomplete="off"
+                        />
+                        <tui-input-chip *tuiItem />
+                        <tui-data-list *tuiDropdown>
+                          <tui-opt-group
+                            [label]="'indoor.title' | translate"
+                            tuiMultiSelectGroup
+                          >
+                            @for (
+                              center of availableCenters() | tuiFilterByInput;
+                              track center.id
+                            ) {
+                              <button
+                                type="button"
+                                new
+                                tuiOption
+                                [value]="center"
+                              >
+                                <div tuiCell size="s">
+                                  <div tuiTitle>
+                                    {{ center.name }}
+                                  </div>
+                                </div>
+                              </button>
+                            }
+                          </tui-opt-group>
+                        </tui-data-list>
+                      </tui-textfield>
+                    </td>
                   </tr>
                 }
               }
@@ -484,6 +552,10 @@ interface UserWithRole {
         min-width: 240px;
       }
 
+      .routesetters-column {
+        min-width: 240px;
+      }
+
       .user-cell {
         padding: 0.75rem 0.5rem;
       }
@@ -504,7 +576,14 @@ export class AdminUsersListComponent {
   private readonly toast = inject(ToastService);
   private readonly cache = inject(CacheService);
 
-  protected readonly columns = ['user', 'email', 'role', 'areas', 'centers'];
+  protected readonly columns = [
+    'user',
+    'email',
+    'role',
+    'areas',
+    'centers',
+    'routesetters',
+  ];
 
   protected readonly searchQuery = signal('');
   protected readonly filterArea = signal<AreaListItem | null>(null);
@@ -521,7 +600,10 @@ export class AdminUsersListComponent {
   protected readonly centerFilterOptions = computed(() => {
     const centers = this.availableCenters();
     const assignedIds = new Set(
-      this.users().flatMap((u) => u.assignedCenters.map((c) => c.id)),
+      this.users().flatMap((u) => [
+        ...u.assignedCenters.map((c) => c.id),
+        ...u.routesetterCenters.map((c) => c.id),
+      ]),
     );
     return centers.filter((c) => assignedIds.has(c.id));
   });
@@ -550,8 +632,10 @@ export class AdminUsersListComponent {
     }
 
     if (center) {
-      list = list.filter((u) =>
-        u.assignedCenters.some((c) => c.id === center.id),
+      list = list.filter(
+        (u) =>
+          u.assignedCenters.some((c) => c.id === center.id) ||
+          u.routesetterCenters.some((c) => c.id === center.id),
       );
     }
 
@@ -617,6 +701,12 @@ export class AdminUsersListComponent {
    */
   protected readonly centersSorter: TuiComparator<UserWithRole> = (a, b) =>
     tuiDefaultSort(a.assignedCenters.length, b.assignedCenters.length);
+
+  /**
+   * Sorter logic for Routesetters column: Sorts by count of routesetter centers.
+   */
+  protected readonly routesettersSorter: TuiComparator<UserWithRole> = (a, b) =>
+    tuiDefaultSort(a.routesetterCenters.length, b.routesetterCenters.length);
 
   protected readonly defaultSorter: TuiComparator<UserWithRole> =
     this.roleSorter;
@@ -690,7 +780,25 @@ export class AdminUsersListComponent {
         },
       );
 
-      // 5. Fetch available centers
+      // 5. Fetch indoor center routesetters
+      const { data: routesetterMappings, error: routesetterMappingsError } =
+        await this.supabase.client
+          .from('indoor_center_routesetters')
+          .select('*');
+
+      if (routesetterMappingsError) throw routesetterMappingsError;
+
+      const routesetterMappingsByUser = new Map<string, string[]>();
+      (routesetterMappings || []).forEach(
+        (m: { user_id: string | null; center_id: string | null }) => {
+          if (!m.user_id || !m.center_id) return;
+          const list = routesetterMappingsByUser.get(m.user_id) || [];
+          list.push(m.center_id);
+          routesetterMappingsByUser.set(m.user_id, list);
+        },
+      );
+
+      // 6. Fetch available centers
       const centers = await this.indoor.getAllCenters();
       this.availableCenters.set(centers);
       const centersMap = new Map(centers.map((c) => [c.id, c]));
@@ -737,6 +845,26 @@ export class AdminUsersListComponent {
             this.injector,
           );
 
+          const routesetterCenterIds =
+            routesetterMappingsByUser.get(profile.id) || [];
+          const routesetterCenters = routesetterCenterIds
+            .map((id) => centersMap.get(id))
+            .filter((c): c is IndoorCenterDto => !!c);
+
+          const routesetterCentersControl = new FormControl(
+            routesetterCenters,
+            {
+              nonNullable: true,
+            },
+          );
+          reactToObservable(
+            routesetterCentersControl.valueChanges,
+            (newCenters: IndoorCenterDto[]) => {
+              void this.onRoutesettersChange(profile.id, newCenters);
+            },
+            this.injector,
+          );
+
           const isNameSameAsEmail =
             !!profile.name &&
             !!profile.email &&
@@ -755,6 +883,8 @@ export class AdminUsersListComponent {
             areasControl,
             assignedCenters,
             centersControl,
+            routesetterCenters,
+            routesetterCentersControl,
           };
         },
       );
@@ -966,6 +1096,53 @@ export class AdminUsersListComponent {
       }
     } catch (e) {
       console.error('[UsersListAdmin] Exception updating centers:', e);
+    }
+  }
+
+  protected async onRoutesettersChange(
+    userId: string,
+    newCenters: IndoorCenterDto[],
+  ): Promise<void> {
+    try {
+      const user = this.users().find((u) => u.id === userId);
+      if (!user) return;
+
+      const oldCenterIds = user.routesetterCenters.map((c) => c.id);
+      const newCenterIds = newCenters.map((c) => c.id);
+
+      const toAdd = newCenterIds.filter((id) => !oldCenterIds.includes(id));
+      const toRemove = oldCenterIds.filter((id) => !newCenterIds.includes(id));
+
+      if (toAdd.length === 0 && toRemove.length === 0) return;
+
+      if (toAdd.length > 0) {
+        const { error: addError } = await this.supabase.client
+          .from('indoor_center_routesetters')
+          .insert(
+            toAdd.map((center_id) => ({
+              user_id: userId,
+              center_id,
+            })),
+          );
+        if (addError) throw addError;
+      }
+
+      if (toRemove.length > 0) {
+        const { error: removeError } = await this.supabase.client
+          .from('indoor_center_routesetters')
+          .delete()
+          .eq('user_id', userId)
+          .in('center_id', toRemove);
+        if (removeError) throw removeError;
+      }
+
+      user.routesetterCenters = newCenters;
+
+      if (userId === this.currentUserId()) {
+        this.supabase.routesetterIndoorCentersResource.reload();
+      }
+    } catch (e) {
+      console.error('[UsersListAdmin] Exception updating routesetters:', e);
     }
   }
 }

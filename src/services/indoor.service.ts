@@ -7,7 +7,6 @@ import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { IndoorCenterFormComponent } from '../components/forms/indoor-center-form';
-
 import IndoorRouteFormComponent from '../components/forms/indoor-route-form';
 import TopoFormComponent from '../components/forms/topo-form';
 
@@ -17,7 +16,9 @@ import {
   IndoorAscentInsertDto,
   IndoorAscentQueryRow,
   IndoorAscentWithExtras,
+  IndoorCenterAdminRequestWithCenter,
   IndoorCenterDto,
+  IndoorCenterRoutesetterRequestWithCenter,
   IndoorInventoryDto,
   IndoorRouteDto,
   IndoorRouteWithExtras,
@@ -30,17 +31,20 @@ import {
   IndoorVoucherPurchaseDto,
   RouteAscentWithExtras,
 } from '../models';
-
 import type { TopoPath } from '../models/topo.model';
 
+import { CACHE_KEYS } from '../constants';
 import { handleErrorToast } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 
 import { AscentsService } from './ascents.service';
 import { AuthStateService } from './auth-state.service';
+import { CacheService } from './cache.service';
+
 import { EquipperService } from './equipper.service';
 import { IndoorCentersDataService } from './indoor-centers-data.service';
+
 import { IndoorDataService } from './indoor-data.service';
 import { SupabaseService } from './supabase.service';
 import { ToastService } from './toast.service';
@@ -61,6 +65,7 @@ export class IndoorService {
   private readonly indoorData = inject(IndoorDataService);
   private readonly ascentsService = inject(AscentsService);
   private readonly equipperService = inject(EquipperService);
+  private readonly cache = inject(CacheService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
@@ -422,9 +427,13 @@ export class IndoorService {
   async createRoute(
     payload: Omit<IndoorRouteDto, 'id' | 'created_at'>,
   ): Promise<IndoorRouteDto | null> {
+    const toInsert = {
+      ...payload,
+      user_creator_id: payload.user_creator_id ?? this.supabase.authUserId(),
+    };
     const { data, error } = await this.supabase.client
       .from('indoor_routes')
-      .insert(payload)
+      .insert(toInsert)
       .select('*')
       .single();
 
@@ -463,9 +472,13 @@ export class IndoorService {
   async createTopo(
     payload: Omit<IndoorTopoDto, 'id' | 'created_at'>,
   ): Promise<IndoorTopoDto | null> {
+    const toInsert = {
+      ...payload,
+      user_creator_id: payload.user_creator_id ?? this.supabase.authUserId(),
+    };
     const { data, error } = await this.supabase.client
       .from('indoor_topos')
-      .insert(payload)
+      .insert(toInsert)
       .select('*')
       .single();
 
@@ -953,5 +966,253 @@ export class IndoorService {
           }
         });
     });
+  }
+
+  // --- Indoor Center Admin Requests ---
+  async requestIndoorCenterAdmin(centerId: string): Promise<boolean> {
+    if (!this.isBrowser) return false;
+    await this.supabase.whenReady();
+    const userId = this.authState.userProfile()?.id;
+    if (!userId) return false;
+
+    this.loading.set(true);
+    try {
+      const { error } = await this.supabase.client
+        .from('indoor_center_admin_requests')
+        .insert({ center_id: centerId, user_id: userId });
+
+      if (error) {
+        if (error.code === '23505') {
+          this.toast.info('admin.indoorAdminRequests.alreadyRequested');
+          return true;
+        }
+        throw error;
+      }
+
+      this.toast.success('admin.indoorAdminRequests.requestSent');
+      return true;
+    } catch (e) {
+      console.error('[IndoorService] requestIndoorCenterAdmin error', e);
+      this.toast.error('errors.unexpected');
+      return false;
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  async getIndoorCenterAdminRequests(): Promise<
+    IndoorCenterAdminRequestWithCenter[]
+  > {
+    if (!this.isBrowser) return [];
+    await this.supabase.whenReady();
+    const { data, error } = await this.supabase.client
+      .from('indoor_center_admin_requests')
+      .select(
+        'id, created_at, center:indoor_centers(id, name, slug), user:user_profiles(id, name, avatar)',
+      )
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error(
+        '[IndoorService] getIndoorCenterAdminRequests error',
+        error,
+      );
+      return [];
+    }
+    return (data || []) as unknown as IndoorCenterAdminRequestWithCenter[];
+  }
+
+  async approveIndoorCenterAdminRequest(
+    requestId: string,
+    centerId: string,
+    userId: string,
+  ): Promise<boolean> {
+    if (!this.isBrowser) return false;
+    await this.supabase.whenReady();
+    this.loading.set(true);
+    try {
+      const { error: insertError } = await this.supabase.client
+        .from('indoor_center_admins')
+        .insert({ center_id: centerId, user_id: userId, role: 'admin' });
+
+      if (insertError) {
+        if (insertError.code !== '23505') throw insertError;
+      }
+
+      const { error: deleteError } = await this.supabase.client
+        .from('indoor_center_admin_requests')
+        .delete()
+        .eq('id', requestId);
+
+      if (deleteError) throw deleteError;
+
+      if (userId === this.supabase.authUserId()) {
+        this.cache.remove(CACHE_KEYS.adminIndoorCenters(userId));
+        this.supabase.adminIndoorCentersResource.reload();
+      }
+
+      this.toast.success('admin.indoorAdminRequests.requestApproved');
+      return true;
+    } catch (e) {
+      console.error('[IndoorService] approveIndoorCenterAdminRequest error', e);
+      this.toast.error('errors.unexpected');
+      return false;
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  async rejectIndoorCenterAdminRequest(requestId: string): Promise<boolean> {
+    if (!this.isBrowser) return false;
+    await this.supabase.whenReady();
+    this.loading.set(true);
+    try {
+      const { error } = await this.supabase.client
+        .from('indoor_center_admin_requests')
+        .delete()
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      this.toast.success('admin.indoorAdminRequests.requestRejected');
+      return true;
+    } catch (e) {
+      console.error('[IndoorService] rejectIndoorCenterAdminRequest error', e);
+      this.toast.error('errors.unexpected');
+      return false;
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  // --- Indoor Center Routesetter Requests ---
+  async requestIndoorCenterRoutesetter(centerId: string): Promise<boolean> {
+    if (!this.isBrowser) return false;
+    await this.supabase.whenReady();
+    const userId = this.authState.userProfile()?.id;
+    if (!userId) return false;
+
+    this.loading.set(true);
+    try {
+      const { error } = await this.supabase.client
+        .from('indoor_center_routesetter_requests')
+        .insert({ center_id: centerId, user_id: userId });
+
+      if (error) {
+        if (error.code === '23505') {
+          this.toast.info('admin.routesetterRequests.alreadyRequested');
+          return true;
+        }
+        throw error;
+      }
+
+      this.toast.success('admin.routesetterRequests.requestSent');
+      return true;
+    } catch (e) {
+      console.error('[IndoorService] requestIndoorCenterRoutesetter error', e);
+      this.toast.error('errors.unexpected');
+      return false;
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  async getIndoorCenterRoutesetterRequests(
+    centerId?: string,
+  ): Promise<IndoorCenterRoutesetterRequestWithCenter[]> {
+    if (!this.isBrowser) return [];
+    await this.supabase.whenReady();
+    let query = this.supabase.client
+      .from('indoor_center_routesetter_requests')
+      .select(
+        'id, created_at, center:indoor_centers(id, name, slug), user:user_profiles(id, name, avatar)',
+      )
+      .order('created_at', { ascending: false });
+
+    if (centerId) {
+      query = query.eq('center_id', centerId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error(
+        '[IndoorService] getIndoorCenterRoutesetterRequests error',
+        error,
+      );
+      return [];
+    }
+    return (data ||
+      []) as unknown as IndoorCenterRoutesetterRequestWithCenter[];
+  }
+
+  async approveIndoorCenterRoutesetterRequest(
+    requestId: string,
+    centerId: string,
+    userId: string,
+  ): Promise<boolean> {
+    if (!this.isBrowser) return false;
+    await this.supabase.whenReady();
+    this.loading.set(true);
+    try {
+      const { error: insertError } = await this.supabase.client
+        .from('indoor_center_routesetters')
+        .insert({ center_id: centerId, user_id: userId });
+
+      if (insertError) {
+        if (insertError.code !== '23505') throw insertError;
+      }
+
+      const { error: deleteError } = await this.supabase.client
+        .from('indoor_center_routesetter_requests')
+        .delete()
+        .eq('id', requestId);
+
+      if (deleteError) throw deleteError;
+
+      if (userId === this.supabase.authUserId()) {
+        this.supabase.routesetterIndoorCentersResource.reload();
+      }
+
+      this.toast.success('admin.routesetterRequests.requestApproved');
+      return true;
+    } catch (e) {
+      console.error(
+        '[IndoorService] approveIndoorCenterRoutesetterRequest error',
+        e,
+      );
+      this.toast.error('errors.unexpected');
+      return false;
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  async rejectIndoorCenterRoutesetterRequest(
+    requestId: string,
+  ): Promise<boolean> {
+    if (!this.isBrowser) return false;
+    await this.supabase.whenReady();
+    this.loading.set(true);
+    try {
+      const { error } = await this.supabase.client
+        .from('indoor_center_routesetter_requests')
+        .delete()
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      this.toast.success('admin.routesetterRequests.requestRejected');
+      return true;
+    } catch (e) {
+      console.error(
+        '[IndoorService] rejectIndoorCenterRoutesetterRequest error',
+        e,
+      );
+      this.toast.error('errors.unexpected');
+      return false;
+    } finally {
+      this.loading.set(false);
+    }
   }
 }

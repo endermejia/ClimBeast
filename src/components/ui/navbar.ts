@@ -220,19 +220,15 @@ import { TourHintComponent } from './tour-hint';
             </span>
           </button>
 
-          @let showAdmin = authState.isAdmin() || authState.isAreaAdmin();
-          @if (showAdmin) {
-            <!-- Administration / Manage My Areas -->
+          @if (authState.isAdmin()) {
+            <!-- Administration -->
             <a
               #adminNav="routerLinkActive"
-              [routerLink]="authState.isAdmin() ? '/admin' : '/my-areas'"
+              routerLink="/admin"
               routerLinkActive
               tuiAppearance="flat-grayscale"
               class="hidden md:flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full group"
-              [attr.aria-label]="
-                (authState.isAdmin() ? 'admin.title' : 'admin.manageMyAreas')
-                  | translate
-              "
+              [attr.aria-label]="'admin.title' | translate"
             >
               <tui-icon
                 icon="@tui.shield"
@@ -245,11 +241,85 @@ import { TourHintComponent } from './tour-hint';
               <span
                 class="hidden md:group-hover:block transition-opacity duration-300 whitespace-nowrap overflow-hidden"
               >
-                @if (authState.isAdmin()) {
-                  {{ 'admin.title' | translate }}
-                } @else {
-                  {{ 'admin.manageMyAreas' | translate }}
-                }
+                {{ 'admin.title' | translate }}
+              </span>
+            </a>
+          }
+
+          @if (!authState.isAdmin() && authState.isAreaAdmin()) {
+            <!-- Manage My Areas -->
+            <a
+              #myAreasNav="routerLinkActive"
+              routerLink="/my-areas"
+              routerLinkActive
+              tuiAppearance="flat-grayscale"
+              class="hidden md:flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full group"
+              [attr.aria-label]="'admin.manageMyAreas' | translate"
+            >
+              <tui-icon
+                icon="@tui.map-pin"
+                [style.color]="
+                  myAreasNav.isActive
+                    ? 'var(--tui-text-negative)'
+                    : 'var(--tui-text-primary)'
+                "
+              />
+              <span
+                class="hidden md:group-hover:block transition-opacity duration-300 whitespace-nowrap overflow-hidden"
+              >
+                {{ 'admin.manageMyAreas' | translate }}
+              </span>
+            </a>
+          }
+
+          @if (authState.isIndoorAdmin()) {
+            <!-- Mis rocódromos -->
+            <a
+              #myGymsNav="routerLinkActive"
+              routerLink="/my-indoor-centers"
+              routerLinkActive
+              tuiAppearance="flat-grayscale"
+              class="hidden md:flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full group"
+              [attr.aria-label]="'nav.my-indoor-centers' | translate"
+            >
+              <tui-icon
+                icon="@tui.dumbbell"
+                [style.color]="
+                  myGymsNav.isActive
+                    ? 'var(--tui-text-negative)'
+                    : 'var(--tui-text-primary)'
+                "
+              />
+              <span
+                class="hidden md:group-hover:block transition-opacity duration-300 whitespace-nowrap overflow-hidden"
+              >
+                {{ 'nav.my-indoor-centers' | translate }}
+              </span>
+            </a>
+          }
+
+          @if (authState.isIndoorRoutesetter()) {
+            <!-- Routesetting -->
+            <a
+              #routesettingNav="routerLinkActive"
+              routerLink="/routesetting"
+              routerLinkActive
+              tuiAppearance="flat-grayscale"
+              class="hidden md:flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full group"
+              [attr.aria-label]="'nav.routesetting' | translate"
+            >
+              <tui-icon
+                icon="@tui.wrench"
+                [style.color]="
+                  routesettingNav.isActive
+                    ? 'var(--tui-text-negative)'
+                    : 'var(--tui-text-primary)'
+                "
+              />
+              <span
+                class="hidden md:group-hover:block transition-opacity duration-300 whitespace-nowrap overflow-hidden"
+              >
+                {{ 'nav.routesetting' | translate }}
               </span>
             </a>
           }

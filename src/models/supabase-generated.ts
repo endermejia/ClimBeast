@@ -379,6 +379,83 @@ export type Database = {
           },
         ];
       };
+      mfa_recovery_code_sets: {
+        Row: {
+          created_at: string;
+          failed_verification_count: number;
+          id: string;
+          mfa_factor_id: string;
+          updated_at: string;
+          user_id: string;
+          verification_locked_until: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          failed_verification_count?: number;
+          id: string;
+          mfa_factor_id: string;
+          updated_at?: string;
+          user_id: string;
+          verification_locked_until?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          failed_verification_count?: number;
+          id?: string;
+          mfa_factor_id?: string;
+          updated_at?: string;
+          user_id?: string;
+          verification_locked_until?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'mfa_recovery_code_sets_mfa_factor_id_fkey';
+            columns: ['mfa_factor_id'];
+            isOneToOne: true;
+            referencedRelation: 'mfa_factors';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'mfa_recovery_code_sets_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: true;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      mfa_recovery_codes: {
+        Row: {
+          code_hash: string;
+          consumed_at: string | null;
+          created_at: string;
+          id: string;
+          mfa_recovery_code_set_id: string;
+        };
+        Insert: {
+          code_hash: string;
+          consumed_at?: string | null;
+          created_at?: string;
+          id: string;
+          mfa_recovery_code_set_id: string;
+        };
+        Update: {
+          code_hash?: string;
+          consumed_at?: string | null;
+          created_at?: string;
+          id?: string;
+          mfa_recovery_code_set_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'mfa_recovery_codes_mfa_recovery_code_set_id_fkey';
+            columns: ['mfa_recovery_code_set_id'];
+            isOneToOne: false;
+            referencedRelation: 'mfa_recovery_code_sets';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       oauth_authorizations: {
         Row: {
           approved_at: string | null;
@@ -571,6 +648,7 @@ export type Database = {
       one_time_tokens: {
         Row: {
           created_at: string;
+          expires_at: string | null;
           id: string;
           relates_to: string;
           token_hash: string;
@@ -580,6 +658,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          expires_at?: string | null;
           id: string;
           relates_to: string;
           token_hash: string;
@@ -589,6 +668,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          expires_at?: string | null;
           id?: string;
           relates_to?: string;
           token_hash?: string;
@@ -753,6 +833,101 @@ export type Database = {
           version?: string;
         };
         Relationships: [];
+      };
+      scim_tokens: {
+        Row: {
+          created_at: string;
+          expires_at: string | null;
+          id: string;
+          last_used_at: string | null;
+          prefix: string;
+          revoked_at: string | null;
+          sso_provider_id: string;
+          token_hash: string;
+        };
+        Insert: {
+          created_at?: string;
+          expires_at?: string | null;
+          id: string;
+          last_used_at?: string | null;
+          prefix: string;
+          revoked_at?: string | null;
+          sso_provider_id: string;
+          token_hash: string;
+        };
+        Update: {
+          created_at?: string;
+          expires_at?: string | null;
+          id?: string;
+          last_used_at?: string | null;
+          prefix?: string;
+          revoked_at?: string | null;
+          sso_provider_id?: string;
+          token_hash?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'scim_tokens_sso_provider_id_fkey';
+            columns: ['sso_provider_id'];
+            isOneToOne: false;
+            referencedRelation: 'sso_providers';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      scim_users: {
+        Row: {
+          active: boolean;
+          created_at: string;
+          deleted_at: string | null;
+          external_id: string | null;
+          id: string;
+          resource: Json;
+          sso_provider_id: string;
+          updated_at: string;
+          user_id: string | null;
+          user_name: string;
+        };
+        Insert: {
+          active?: boolean;
+          created_at?: string;
+          deleted_at?: string | null;
+          external_id?: string | null;
+          id: string;
+          resource: Json;
+          sso_provider_id: string;
+          updated_at?: string;
+          user_id?: string | null;
+          user_name?: string;
+        };
+        Update: {
+          active?: boolean;
+          created_at?: string;
+          deleted_at?: string | null;
+          external_id?: string | null;
+          id?: string;
+          resource?: Json;
+          sso_provider_id?: string;
+          updated_at?: string;
+          user_id?: string | null;
+          user_name?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'scim_users_sso_provider_id_fkey';
+            columns: ['sso_provider_id'];
+            isOneToOne: false;
+            referencedRelation: 'sso_providers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'scim_users_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       sessions: {
         Row: {
@@ -1101,7 +1276,7 @@ export type Database = {
       aal_level: 'aal1' | 'aal2' | 'aal3';
       code_challenge_method: 's256' | 'plain';
       factor_status: 'unverified' | 'verified';
-      factor_type: 'totp' | 'webauthn' | 'phone';
+      factor_type: 'totp' | 'webauthn' | 'phone' | 'recovery_code';
       oauth_authorization_status: 'pending' | 'approved' | 'denied' | 'expired';
       oauth_client_type: 'public' | 'confidential';
       oauth_registration_type: 'dynamic' | 'manual';
@@ -1997,6 +2172,42 @@ export type Database = {
           },
         ];
       };
+      indoor_center_admin_requests: {
+        Row: {
+          center_id: string;
+          created_at: string;
+          id: string;
+          user_id: string;
+        };
+        Insert: {
+          center_id: string;
+          created_at?: string;
+          id?: string;
+          user_id: string;
+        };
+        Update: {
+          center_id?: string;
+          created_at?: string;
+          id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'indoor_center_admin_requests_center_id_fkey';
+            columns: ['center_id'];
+            isOneToOne: false;
+            referencedRelation: 'indoor_centers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'indoor_center_admin_requests_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'user_profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       indoor_center_admins: {
         Row: {
           center_id: string | null;
@@ -2025,6 +2236,42 @@ export type Database = {
             columns: ['center_id'];
             isOneToOne: false;
             referencedRelation: 'indoor_centers';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      indoor_center_routesetter_requests: {
+        Row: {
+          center_id: string;
+          created_at: string;
+          id: string;
+          user_id: string;
+        };
+        Insert: {
+          center_id: string;
+          created_at?: string;
+          id?: string;
+          user_id: string;
+        };
+        Update: {
+          center_id?: string;
+          created_at?: string;
+          id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'indoor_center_routesetter_requests_center_id_fkey';
+            columns: ['center_id'];
+            isOneToOne: false;
+            referencedRelation: 'indoor_centers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'indoor_center_routesetter_requests_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'user_profiles';
             referencedColumns: ['id'];
           },
         ];
@@ -2072,6 +2319,7 @@ export type Database = {
           location: unknown;
           longitude: number | null;
           name: string;
+          permissions: Json;
           schedule: Json | null;
           slug: string;
           warning: string | null;
@@ -2089,6 +2337,7 @@ export type Database = {
           location?: unknown;
           longitude?: number | null;
           name: string;
+          permissions?: Json;
           schedule?: Json | null;
           slug: string;
           warning?: string | null;
@@ -2106,6 +2355,7 @@ export type Database = {
           location?: unknown;
           longitude?: number | null;
           name?: string;
+          permissions?: Json;
           schedule?: Json | null;
           slug?: string;
           warning?: string | null;
@@ -2195,6 +2445,7 @@ export type Database = {
           name: string;
           slug: string;
           topo_id: string | null;
+          user_creator_id: string | null;
         };
         Insert: {
           center_id?: string | null;
@@ -2207,6 +2458,7 @@ export type Database = {
           name: string;
           slug: string;
           topo_id?: string | null;
+          user_creator_id?: string | null;
         };
         Update: {
           center_id?: string | null;
@@ -2219,6 +2471,7 @@ export type Database = {
           name?: string;
           slug?: string;
           topo_id?: string | null;
+          user_creator_id?: string | null;
         };
         Relationships: [
           {
@@ -2233,6 +2486,13 @@ export type Database = {
             columns: ['topo_id'];
             isOneToOne: false;
             referencedRelation: 'indoor_topos';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'indoor_routes_user_creator_id_fkey';
+            columns: ['user_creator_id'];
+            isOneToOne: false;
+            referencedRelation: 'user_profiles';
             referencedColumns: ['id'];
           },
         ];
@@ -2316,18 +2576,21 @@ export type Database = {
           path: Json | null;
           route_id: string;
           topo_id: string;
+          user_creator_id: string | null;
         };
         Insert: {
           number?: number | null;
           path?: Json | null;
           route_id: string;
           topo_id: string;
+          user_creator_id?: string | null;
         };
         Update: {
           number?: number | null;
           path?: Json | null;
           route_id?: string;
           topo_id?: string;
+          user_creator_id?: string | null;
         };
         Relationships: [
           {
@@ -2344,6 +2607,13 @@ export type Database = {
             referencedRelation: 'indoor_topos';
             referencedColumns: ['id'];
           },
+          {
+            foreignKeyName: 'indoor_topo_routes_user_creator_id_fkey';
+            columns: ['user_creator_id'];
+            isOneToOne: false;
+            referencedRelation: 'user_profiles';
+            referencedColumns: ['id'];
+          },
         ];
       };
       indoor_topos: {
@@ -2357,6 +2627,7 @@ export type Database = {
           legacy: boolean | null;
           name: string;
           start_date: string | null;
+          user_creator_id: string | null;
         };
         Insert: {
           center_id?: string | null;
@@ -2368,6 +2639,7 @@ export type Database = {
           legacy?: boolean | null;
           name: string;
           start_date?: string | null;
+          user_creator_id?: string | null;
         };
         Update: {
           center_id?: string | null;
@@ -2379,6 +2651,7 @@ export type Database = {
           legacy?: boolean | null;
           name?: string;
           start_date?: string | null;
+          user_creator_id?: string | null;
         };
         Relationships: [
           {
@@ -2386,6 +2659,13 @@ export type Database = {
             columns: ['center_id'];
             isOneToOne: false;
             referencedRelation: 'indoor_centers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'indoor_topos_user_creator_id_fkey';
+            columns: ['user_creator_id'];
+            isOneToOne: false;
+            referencedRelation: 'user_profiles';
             referencedColumns: ['id'];
           },
         ];
@@ -3921,6 +4201,10 @@ export type Database = {
           user_creator_id: string;
         }[];
       };
+      get_indoor_center_permission: {
+        Args: { p_center_id: string; p_permission_key: string };
+        Returns: string;
+      };
       get_indoor_centers_in_bounds: {
         Args: {
           max_lat: number;
@@ -5376,7 +5660,7 @@ export const Constants = {
       aal_level: ['aal1', 'aal2', 'aal3'],
       code_challenge_method: ['s256', 'plain'],
       factor_status: ['unverified', 'verified'],
-      factor_type: ['totp', 'webauthn', 'phone'],
+      factor_type: ['totp', 'webauthn', 'phone', 'recovery_code'],
       oauth_authorization_status: ['pending', 'approved', 'denied', 'expired'],
       oauth_client_type: ['public', 'confidential'],
       oauth_registration_type: ['dynamic', 'manual'],

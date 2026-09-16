@@ -31,10 +31,10 @@ import { IndoorService } from '../../services/indoor.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 
-import type { IndoorTopoListItem } from '../../models/indoor.model';
-
 import { TopoCardComponent } from '../topo/topo-card';
 import { EmptyStateComponent } from '../ui/empty-state';
+
+import type { IndoorCenterDto, IndoorTopoListItem } from '../../models';
 
 @Component({
   selector: 'app-indoor-topos',
@@ -105,6 +105,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
 export class IndoorToposComponent {
   centerId = input.required<string>();
   centerSlug = input.required<string>();
+  center = input<IndoorCenterDto | null>(null);
 
   protected readonly indoor = inject(IndoorService);
   protected readonly supabase = inject(SupabaseService);
@@ -115,7 +116,8 @@ export class IndoorToposComponent {
   private readonly toast = inject(ToastService);
 
   protected readonly canCreate = computed(() => {
-    return this.authState.canCreateIndoorInCenter(this.centerId());
+    const c = this.center() ?? ({ id: this.centerId() } as IndoorCenterDto);
+    return this.authState.canCreateIndoorTopo(c);
   });
 
   protected readonly canEdit = computed(() => {

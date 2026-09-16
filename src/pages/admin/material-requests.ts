@@ -54,46 +54,43 @@ import { AvatarUrlPipe } from '../../pipes';
     TuiTextfield,
   ],
   template: `
-    <div
-      class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8"
-    >
+    <div class="p-4 flex flex-col max-w-7xl mx-auto w-full">
       <!-- Header -->
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <h1 class="text-2xl sm:text-3xl font-black tracking-tight m-0">
+      <header class="mb-4 flex flex-wrap items-center justify-between gap-4">
+        <h1 class="text-2xl font-bold m-0">
           <a
             routerLink="/admin"
             class="no-underline text-inherit flex items-center gap-2"
           >
             <tui-icon icon="@tui.arrow-left" />
             <div
-              class="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0"
+              class="w-11 h-11 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0"
             >
               <tui-icon icon="@tui.package" />
             </div>
             {{ 'admin.materialRequests.title' | translate }}
           </a>
         </h1>
-      </div>
+      </header>
+
+      <p class="mb-6 text-tui-text-secondary opacity-60">
+        {{ 'admin.materialRequests.description' | translate }}
+      </p>
 
       <!-- Filter chips -->
       <div class="flex items-center gap-2 overflow-x-auto pb-2">
         @for (st of statusFilters; track st) {
           <button
+            tuiButton
             type="button"
-            class="px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer border"
-            [class.bg-(--tui-background-accent-1)]="selectedStatus() === st"
-            [class.text-(--tui-background-base)]="selectedStatus() === st"
-            [class.border-(--tui-border-focus)]="selectedStatus() === st"
-            [class.bg-(--tui-background-neutral-1)]="selectedStatus() !== st"
-            [class.text-(--tui-text-primary)]="selectedStatus() !== st"
-            [class.border-(--tui-border-normal)]="selectedStatus() !== st"
+            size="s"
+            class="shrink-0"
+            [appearance]="selectedStatus() === st ? 'primary' : 'secondary'"
             (click)="selectedStatus.set(st)"
           >
             {{ 'admin.materialRequests.filters.' + st | translate }}
             @if (st === 'pending' && pendingCount() > 0) {
-              <span
-                class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-(--tui-background-negative-neutral) text-(--tui-status-negative)"
-              >
+              <span tuiBadge size="s" appearance="negative" class="ml-1">
                 {{ pendingCount() }}
               </span>
             }

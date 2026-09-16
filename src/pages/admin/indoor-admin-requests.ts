@@ -31,20 +31,21 @@ import {
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import { AreasService } from '../../services/areas.service';
+import { IndoorService } from '../../services/indoor.service';
 import { LayoutService } from '../../services/layout.service';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 
-import { AreaAdminRequestWithArea as AreaAdminRequest } from '../../models';
+import type { IndoorCenterAdminRequestWithCenter } from '../../models';
 
 import { AvatarUrlPipe } from '../../pipes';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
-  selector: 'app-admin-area-requests',
+  selector: 'app-admin-indoor-admin-requests',
+  standalone: true,
   imports: [
     AvatarUrlPipe,
     EmptyStateComponent,
@@ -62,7 +63,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiTable,
   ],
   template: `
-    <section class="flex flex-col w-full max-w-7xl mx-auto p-4">
+    <section class="flex flex-col w-full max-w-7xl mx-auto p-4 grow min-h-0">
       <header class="mb-4 flex items-center justify-between gap-2">
         <h1 class="text-2xl font-bold">
           <a
@@ -81,18 +82,18 @@ import { IS_BROWSER } from '../../app/is-browser';
                 </tui-badge-notification>
               }
               <div
-                class="w-11 h-11 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0"
+                class="w-11 h-11 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0"
               >
-                <tui-icon icon="@tui.shield" />
+                <tui-icon icon="@tui.dumbbell" />
               </div>
             </tui-badged-content>
-            {{ 'adminRequests.manageTitle' | translate }}
+            {{ 'admin.indoorAdminRequests.title' | translate }}
           </a>
         </h1>
       </header>
 
       <p class="mb-6 text-tui-text-secondary opacity-60">
-        {{ 'adminRequests.manageDescription' | translate }}
+        {{ 'admin.indoorAdminRequests.description' | translate }}
       </p>
 
       <tui-scrollbar class="flex grow">
@@ -116,15 +117,15 @@ import { IS_BROWSER } from '../../app/is-browser';
                   [sorter]="userSorter"
                   [sticky]="true"
                 >
-                  {{ 'adminRequests.user' | translate }}
+                  {{ 'admin.indoorAdminRequests.user' | translate }}
                 </th>
                 <th
-                  *tuiHead="'area'"
+                  *tuiHead="'center'"
                   tuiTh
-                  class="area-column"
-                  [sorter]="areaSorter"
+                  class="center-column"
+                  [sorter]="centerSorter"
                 >
-                  {{ 'adminRequests.area' | translate }}
+                  {{ 'admin.indoorAdminRequests.center' | translate }}
                 </th>
                 <th
                   *tuiHead="'actions'"
@@ -144,7 +145,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                     <td *tuiCell="'user'" tuiTd class="p-4">
                       <div [tuiSkeleton]="true" class="w-32 h-4"></div>
                     </td>
-                    <td *tuiCell="'area'" tuiTd class="p-4">
+                    <td *tuiCell="'center'" tuiTd class="p-4">
                       <div [tuiSkeleton]="true" class="w-48 h-4"></div>
                     </td>
                     <td *tuiCell="'actions'" tuiTd class="p-4">
@@ -184,11 +185,13 @@ import { IS_BROWSER } from '../../app/is-browser';
                         </a>
                       </div>
                     </td>
-                    <td *tuiCell="'area'" tuiTd class="p-4">
+                    <td *tuiCell="'center'" tuiTd class="p-4">
                       <div class="font-medium">
-                        <a tuiLink [routerLink]="['/area', req.area.slug]">{{
-                          req.area.name
-                        }}</a>
+                        <a
+                          tuiLink
+                          [routerLink]="['/indoor', req.center.slug]"
+                          >{{ req.center.name }}</a
+                        >
                       </div>
                     </td>
                     <td *tuiCell="'actions'" tuiTd class="p-4">
@@ -225,7 +228,7 @@ import { IS_BROWSER } from '../../app/is-browser';
         } @else {
           <app-empty-state
             icon="@tui.shield"
-            [message]="'adminRequests.empty' | translate"
+            [message]="'admin.indoorAdminRequests.empty' | translate"
           />
         }
       </tui-scrollbar>
@@ -236,7 +239,7 @@ import { IS_BROWSER } from '../../app/is-browser';
       .user-column {
         min-width: 250px;
       }
-      .area-column {
+      .center-column {
         min-width: 250px;
       }
       .actions-column {
@@ -247,31 +250,39 @@ import { IS_BROWSER } from '../../app/is-browser';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex grow min-h-0' },
 })
-export class AdminAreaRequestsComponent {
+export class AdminIndoorAdminRequestsComponent {
   protected readonly layoutService = inject(LayoutService);
   protected readonly supabase = inject(SupabaseService);
-  protected readonly areas = inject(AreasService);
+  protected readonly indoor = inject(IndoorService);
   private readonly isBrowser = inject(IS_BROWSER);
   protected readonly translate = inject(TranslateService);
 
-  protected readonly columns = computed(() => ['user', 'area', 'actions']);
+  protected readonly columns = computed(() => ['user', 'center', 'actions']);
 
   protected readonly loading: WritableSignal<boolean> = signal(true);
-  protected readonly requests: WritableSignal<AreaAdminRequest[]> = signal([]);
+  protected readonly requests: WritableSignal<
+    IndoorCenterAdminRequestWithCenter[]
+  > = signal([]);
 
   protected readonly skeletons = Array(5).fill(0);
   protected readonly direction = signal<TuiSortDirection>(TuiSortDirection.Asc);
-  protected readonly sorter = signal<TuiComparator<AreaAdminRequest>>((a, b) =>
-    tuiDefaultSort(a.created_at, b.created_at),
-  );
+  protected readonly sorter = signal<
+    TuiComparator<IndoorCenterAdminRequestWithCenter>
+  >((a, b) => tuiDefaultSort(a.created_at, b.created_at));
 
-  protected userSorter: TuiComparator<AreaAdminRequest> = (a, b) =>
-    tuiDefaultSort(a.user.name || '', b.user.name || '');
+  protected userSorter: TuiComparator<IndoorCenterAdminRequestWithCenter> = (
+    a,
+    b,
+  ) => tuiDefaultSort(a.user.name || '', b.user.name || '');
 
-  protected areaSorter: TuiComparator<AreaAdminRequest> = (a, b) =>
-    tuiDefaultSort(a.area.name || '', b.area.name || '');
+  protected centerSorter: TuiComparator<IndoorCenterAdminRequestWithCenter> = (
+    a,
+    b,
+  ) => tuiDefaultSort(a.center.name || '', b.center.name || '');
 
-  protected onSortChange(sort: TuiTableSortChange<AreaAdminRequest>): void {
+  protected onSortChange(
+    sort: TuiTableSortChange<IndoorCenterAdminRequestWithCenter>,
+  ): void {
     this.direction.set(sort.sortDirection);
     this.sorter.set(sort.sortComparator || this.userSorter);
   }
@@ -285,32 +296,39 @@ export class AdminAreaRequestsComponent {
   private async loadRequests(): Promise<void> {
     try {
       this.loading.set(true);
-      const reqs = await this.areas.getAreaAdminRequests();
+      const reqs = await this.indoor.getIndoorCenterAdminRequests();
       this.requests.set(reqs);
     } catch (e) {
-      console.error('[AdminAreaRequests] Exception loading requests:', e);
+      console.error(
+        '[AdminIndoorAdminRequests] Exception loading requests:',
+        e,
+      );
     } finally {
       this.loading.set(false);
     }
   }
 
-  protected async approve(req: AreaAdminRequest): Promise<void> {
-    const success = await this.areas.approveAreaAdminRequest(
+  protected async approve(
+    req: IndoorCenterAdminRequestWithCenter,
+  ): Promise<void> {
+    const success = await this.indoor.approveIndoorCenterAdminRequest(
       req.id,
-      req.area.id,
+      req.center.id,
       req.user.id,
     );
     if (success) {
       this.requests.update((list) => list.filter((r) => r.id !== req.id));
-      this.supabase.adminAreasResource.reload();
+      this.supabase.adminIndoorCentersResource.reload();
     }
   }
 
-  protected async reject(req: AreaAdminRequest): Promise<void> {
-    const success = await this.areas.rejectAreaAdminRequest(req.id);
+  protected async reject(
+    req: IndoorCenterAdminRequestWithCenter,
+  ): Promise<void> {
+    const success = await this.indoor.rejectIndoorCenterAdminRequest(req.id);
     if (success) {
       this.requests.update((list) => list.filter((r) => r.id !== req.id));
     }
   }
 }
-export default AdminAreaRequestsComponent;
+export default AdminIndoorAdminRequestsComponent;

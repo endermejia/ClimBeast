@@ -71,7 +71,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiTable,
   ],
   template: `
-    <section class="flex flex-col w-full max-w-5xl mx-auto p-4">
+    <section class="flex flex-col w-full max-w-7xl mx-auto p-4">
       <header class="mb-4 flex items-center justify-between gap-2">
         <h1 class="text-2xl font-bold">
           <a
@@ -109,6 +109,10 @@ import { IS_BROWSER } from '../../app/is-browser';
           {{ 'new' | translate }}
         </button>
       </header>
+
+      <p class="mb-6 text-tui-text-secondary opacity-60">
+        {{ 'admin.parkings.description' | translate }}
+      </p>
 
       <div class="mb-6">
         <tui-textfield class="grow" [tuiTextfieldCleaner]="true">

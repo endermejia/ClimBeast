@@ -490,6 +490,7 @@ export default class IndoorRouteFormComponent {
           color: m.color || null,
           topo_id: assignedTopoId,
           legacy: m.legacy,
+          user_creator_id: null,
         };
 
         let savedRouteId = this.context.data.routeData?.id;
@@ -519,6 +520,7 @@ export default class IndoorRouteFormComponent {
               route_id: savedRouteId,
               number: 0,
               path: null,
+              user_creator_id: this.supabase.authUserId(),
             });
           }
         }

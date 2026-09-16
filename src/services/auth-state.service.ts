@@ -12,6 +12,8 @@ import {
   AreaListItem,
   CragDetail,
   CragListItem,
+  IndoorCenterDto,
+  parseIndoorCenterPermissions,
   RouteWithExtras,
 } from '../models';
 
@@ -85,6 +87,8 @@ export class AuthStateService {
   readonly routesetterIndoorCenters = computed(() =>
     this.supabase.routesetterIndoorCenters(),
   );
+  readonly routesetterIndoorCentersResource =
+    this.supabase.routesetterIndoorCentersResource;
   readonly isIndoorRoutesetter = computed(
     () => this.routesetterIndoorCenters().length > 0,
   );
@@ -108,6 +112,46 @@ export class AuthStateService {
 
   readonly pendingAdminRequestAreaIds = computed(
     () => new Set(this.pendingAdminRequestsResource.value() ?? []),
+  );
+
+  readonly pendingIndoorAdminRequestsResource = resource({
+    params: () => this.supabase.authUserId(),
+    loader: async ({ params: userId }) => {
+      if (!userId || !this.isBrowser) return [] as string[];
+      await this.supabase.whenReady();
+      const { data, error } = await this.supabase.client
+        .from('indoor_center_admin_requests')
+        .select('center_id')
+        .eq('user_id', userId);
+      if (error) {
+        return [] as string[];
+      }
+      return (data ?? []).map((r) => r.center_id);
+    },
+  });
+
+  readonly pendingIndoorAdminRequestCenterIds = computed(
+    () => new Set(this.pendingIndoorAdminRequestsResource.value() ?? []),
+  );
+
+  readonly pendingIndoorRoutesetterRequestsResource = resource({
+    params: () => this.supabase.authUserId(),
+    loader: async ({ params: userId }) => {
+      if (!userId || !this.isBrowser) return [] as string[];
+      await this.supabase.whenReady();
+      const { data, error } = await this.supabase.client
+        .from('indoor_center_routesetter_requests')
+        .select('center_id')
+        .eq('user_id', userId);
+      if (error) {
+        return [] as string[];
+      }
+      return (data ?? []).map((r) => r.center_id);
+    },
+  });
+
+  readonly pendingIndoorRoutesetterRequestCenterIds = computed(
+    () => new Set(this.pendingIndoorRoutesetterRequestsResource.value() ?? []),
   );
 
   // ---- Edit Permissions ----
@@ -162,6 +206,164 @@ export class AuthStateService {
       !!this.indoorAdminPermissions()[id] ||
       this.routesetterIndoorCenters().includes(id)
     );
+  };
+
+  readonly canCreateIndoorRoute = (
+    center: IndoorCenterDto | null | undefined,
+  ): boolean => {
+    if (this.isAdmin()) return true;
+    if (!center) return false;
+    const centerId = String(center.id);
+    if (
+      this.adminIndoorCenters().includes(centerId) ||
+      this.routesetterIndoorCenters().includes(centerId)
+    ) {
+      return true;
+    }
+    const perms = parseIndoorCenterPermissions(center.permissions);
+    return perms.can_create_routes === 'all' && !!this.supabase.authUserId();
+  };
+
+  readonly canEditIndoorRoute = (
+    center: IndoorCenterDto | null | undefined,
+    route?: { user_creator_id?: string | null } | null,
+  ): boolean => {
+    if (this.isAdmin()) return true;
+    if (!center) return false;
+    const centerId = String(center.id);
+    if (
+      this.adminIndoorCenters().includes(centerId) ||
+      this.routesetterIndoorCenters().includes(centerId)
+    ) {
+      return true;
+    }
+    const currentUserId = this.supabase.authUserId();
+    if (!currentUserId) return false;
+    if (route?.user_creator_id && route.user_creator_id === currentUserId) {
+      return true;
+    }
+    const perms = parseIndoorCenterPermissions(center.permissions);
+    return perms.can_edit_routes === 'all';
+  };
+
+  readonly canArchiveIndoorRoute = (
+    center: IndoorCenterDto | null | undefined,
+    route?: { user_creator_id?: string | null } | null,
+  ): boolean => {
+    if (this.isAdmin()) return true;
+    if (!center) return false;
+    const centerId = String(center.id);
+    if (
+      this.adminIndoorCenters().includes(centerId) ||
+      this.routesetterIndoorCenters().includes(centerId)
+    ) {
+      return true;
+    }
+    const currentUserId = this.supabase.authUserId();
+    if (!currentUserId) return false;
+    if (route?.user_creator_id && route.user_creator_id === currentUserId) {
+      return true;
+    }
+    const perms = parseIndoorCenterPermissions(center.permissions);
+    return perms.can_archive_routes === 'all';
+  };
+
+  readonly canCreateIndoorTopo = (
+    center: IndoorCenterDto | null | undefined,
+  ): boolean => {
+    if (this.isAdmin()) return true;
+    if (!center) return false;
+    const centerId = String(center.id);
+    if (
+      this.adminIndoorCenters().includes(centerId) ||
+      this.routesetterIndoorCenters().includes(centerId)
+    ) {
+      return true;
+    }
+    const perms = parseIndoorCenterPermissions(center.permissions);
+    return perms.can_create_topos === 'all' && !!this.supabase.authUserId();
+  };
+
+  readonly canEditIndoorTopo = (
+    center: IndoorCenterDto | null | undefined,
+    topo?: { user_creator_id?: string | null } | null,
+  ): boolean => {
+    if (this.isAdmin()) return true;
+    if (!center) return false;
+    const centerId = String(center.id);
+    if (
+      this.adminIndoorCenters().includes(centerId) ||
+      this.routesetterIndoorCenters().includes(centerId)
+    ) {
+      return true;
+    }
+    const currentUserId = this.supabase.authUserId();
+    if (!currentUserId) return false;
+    if (topo?.user_creator_id && topo.user_creator_id === currentUserId) {
+      return true;
+    }
+    const perms = parseIndoorCenterPermissions(center.permissions);
+    return perms.can_edit_topos === 'all';
+  };
+
+  readonly canArchiveIndoorTopo = (
+    center: IndoorCenterDto | null | undefined,
+    topo?: { user_creator_id?: string | null } | null,
+  ): boolean => {
+    if (this.isAdmin()) return true;
+    if (!center) return false;
+    const centerId = String(center.id);
+    if (
+      this.adminIndoorCenters().includes(centerId) ||
+      this.routesetterIndoorCenters().includes(centerId)
+    ) {
+      return true;
+    }
+    const currentUserId = this.supabase.authUserId();
+    if (!currentUserId) return false;
+    if (topo?.user_creator_id && topo.user_creator_id === currentUserId) {
+      return true;
+    }
+    const perms = parseIndoorCenterPermissions(center.permissions);
+    return perms.can_archive_topos === 'all';
+  };
+
+  readonly canCreateIndoorLine = (
+    center: IndoorCenterDto | null | undefined,
+  ): boolean => {
+    if (this.isAdmin()) return true;
+    if (!center) return false;
+    const centerId = String(center.id);
+    if (
+      this.adminIndoorCenters().includes(centerId) ||
+      this.routesetterIndoorCenters().includes(centerId)
+    ) {
+      return true;
+    }
+    const perms = parseIndoorCenterPermissions(center.permissions);
+    return perms.can_create_lines === 'all' && !!this.supabase.authUserId();
+  };
+
+  readonly canEditIndoorLine = (
+    center: IndoorCenterDto | null | undefined,
+    line?: { user_creator_id?: string | null } | null,
+  ): boolean => {
+    if (this.isAdmin()) return true;
+    if (!center) return false;
+    const centerId = String(center.id);
+    if (
+      this.adminIndoorCenters().includes(centerId) ||
+      this.routesetterIndoorCenters().includes(centerId)
+    ) {
+      return true;
+    }
+    const currentUserId = this.supabase.authUserId();
+    if (!currentUserId) return false;
+    if (line?.user_creator_id && line.user_creator_id === currentUserId) {
+      return true;
+    }
+    const perms = parseIndoorCenterPermissions(center.permissions);
+    return perms.can_edit_lines === 'all';
   };
 
   readonly checkAreaEditPermission = (

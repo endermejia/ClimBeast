@@ -325,13 +325,15 @@ export class IndoorTopoComponent extends TopoPageBase {
   });
 
   protected readonly canEdit = computed(() => {
-    const centerId = this.topo()?.center_id;
-    return this.authState.canEditIndoorInCenter(centerId);
+    const t = this.topo();
+    if (!t) return false;
+    return this.authState.canEditIndoorTopo(t.indoor_center, t);
   });
 
   protected readonly canDraw = computed(() => {
-    const centerId = this.topo()?.center_id;
-    return this.authState.canCreateIndoorInCenter(centerId);
+    const t = this.topo();
+    if (!t) return false;
+    return this.authState.canCreateIndoorLine(t.indoor_center);
   });
 
   protected readonly columns = computed(() => {

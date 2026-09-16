@@ -2,9 +2,8 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TuiIcon, TuiTitle } from '@taiga-ui/core';
+import { TuiIcon } from '@taiga-ui/core';
 import { TuiTabs } from '@taiga-ui/kit';
-import { TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -21,15 +20,13 @@ import { SuggestedUnifiedRoutesComponent } from '../../components/admin/suggeste
     SuggestedUnifiedCragsComponent,
     SuggestedUnifiedRoutesComponent,
     TranslatePipe,
-    TuiHeader,
     TuiIcon,
     TuiTabs,
-    TuiTitle,
   ],
   template: `
-    <div class="p-4 flex flex-col gap-4 max-w-5xl mx-auto w-full">
-      <header tuiHeader>
-        <h1 tuiTitle>
+    <div class="p-4 flex flex-col gap-4 max-w-7xl mx-auto w-full">
+      <header class="mb-4 flex items-center justify-between gap-2">
+        <h1 class="text-2xl font-bold m-0">
           <a
             routerLink="/admin"
             class="no-underline text-inherit flex items-center gap-2"
@@ -44,6 +41,10 @@ import { SuggestedUnifiedRoutesComponent } from '../../components/admin/suggeste
           </a>
         </h1>
       </header>
+
+      <p class="mb-6 text-tui-text-secondary opacity-60">
+        {{ 'admin.unifyDescription' | translate }}
+      </p>
 
       <tui-tabs
         [activeItemIndex]="activeTab()"

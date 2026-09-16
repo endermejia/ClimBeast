@@ -79,3 +79,79 @@ export const areaAdminGuard: CanMatchFn = async (): Promise<
 
   return router.createUrlTree(['/page-not-found']);
 };
+
+/** Allows route matching for admin or indoor center admin users. On server, always allow. */
+export const indoorAdminGuard: CanMatchFn = async (): Promise<
+  boolean | UrlTree
+> => {
+  const router = inject(Router);
+  const supabase = inject(SupabaseService);
+  const isBrowser = inject(IS_BROWSER);
+
+  if (!isBrowser) return true;
+
+  await supabase.whenReady();
+  const session = await supabase.getSession();
+
+  if (!session) {
+    return router.createUrlTree(['/login']);
+  }
+
+  const profile = await waitForResource(supabase.userProfileResource);
+
+  if (profile !== undefined) {
+    if (profile?.is_admin) {
+      return true;
+    }
+
+    // Check if user has indoor center admin permissions
+    const centers = await waitForResource(supabase.adminIndoorCentersResource);
+    if (centers !== undefined && centers.length > 0) {
+      return true;
+    }
+
+    console.warn(
+      '[IndoorAdminGuard] User has no indoor center admin permissions',
+    );
+  }
+
+  return router.createUrlTree(['/page-not-found']);
+};
+
+/** Allows route matching for admin or routesetters. On server, always allow. */
+export const routesetterGuard: CanMatchFn = async (): Promise<
+  boolean | UrlTree
+> => {
+  const router = inject(Router);
+  const supabase = inject(SupabaseService);
+  const isBrowser = inject(IS_BROWSER);
+
+  if (!isBrowser) return true;
+
+  await supabase.whenReady();
+  const session = await supabase.getSession();
+
+  if (!session) {
+    return router.createUrlTree(['/login']);
+  }
+
+  const profile = await waitForResource(supabase.userProfileResource);
+
+  if (profile !== undefined) {
+    if (profile?.is_admin) {
+      return true;
+    }
+
+    // Check if user is routesetter in any indoor center
+    const centers = await waitForResource(
+      supabase.routesetterIndoorCentersResource,
+    );
+    if (centers !== undefined && centers.length > 0) {
+      return true;
+    }
+
+    console.warn('[RoutesetterGuard] User has no routesetter permissions');
+  }
+
+  return router.createUrlTree(['/page-not-found']);
+};

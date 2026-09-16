@@ -6,14 +6,13 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TuiAppearance, TuiIcon, TuiScrollbar, TuiTitle } from '@taiga-ui/core';
+import { TuiAppearance, TuiIcon, TuiScrollbar } from '@taiga-ui/core';
 import {
   TuiAvatar,
   TuiAvatarStack,
   TuiBadgedContent,
   TuiBadgeNotification,
 } from '@taiga-ui/kit';
-import { TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -35,29 +34,34 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiAvatarStack,
     TuiBadgedContent,
     TuiBadgeNotification,
-    TuiHeader,
     TuiIcon,
     TuiScrollbar,
-    TuiTitle,
   ],
   template: `
     <tui-scrollbar class="flex grow">
-      <div class="p-4 md:p-6 flex flex-col gap-8 max-w-5xl mx-auto w-full">
-        <header tuiHeader>
-          <h1 tuiTitle class="text-2xl font-bold">
+      <div class="p-4 flex flex-col gap-6 max-w-7xl mx-auto w-full">
+        <header class="mb-4 flex items-center justify-between gap-2">
+          <h1 class="text-2xl font-bold flex items-center gap-2 m-0">
+            <div
+              class="w-11 h-11 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0"
+            >
+              <tui-icon icon="@tui.shield" />
+            </div>
             {{ 'admin.title' | translate }}
           </h1>
         </header>
 
-        <!-- Section 1: Users & Permissions -->
+        <!-- Section 1: Usuarios -->
         <section class="flex flex-col gap-3">
           <h2
             class="text-xs font-semibold uppercase tracking-wider text-(--tui-text-tertiary) px-1"
           >
-            {{ 'admin.categories.usersAndPermissions' | translate }}
+            {{ 'admin.categories.users' | translate }}
           </h2>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5"
+          >
             <!-- Users -->
             <a
               routerLink="/admin/users"
@@ -111,7 +115,85 @@ import { IS_BROWSER } from '../../app/is-browser';
               />
             </a>
 
-            <!-- Area Requests -->
+            <!-- User Reports -->
+            <a
+              routerLink="/admin/user-reports"
+              class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
+            >
+              <tui-badged-content [style.--tui-radius.%]="50" class="shrink-0">
+                @if (countsResource.value()?.userReports; as count) {
+                  <ng-container tuiSlot="top">
+                    <tui-badge-notification tuiAppearance="accent" size="s">
+                      {{ count }}
+                    </tui-badge-notification>
+                  </ng-container>
+                }
+                <div
+                  class="w-11 h-11 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0"
+                >
+                  <tui-icon icon="@tui.flag" />
+                </div>
+              </tui-badged-content>
+
+              <div class="flex-1 min-w-0">
+                <span class="font-bold text-sm block truncate">
+                  {{ 'admin.userReports.title' | translate }}
+                </span>
+                <p
+                  class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+                >
+                  {{ 'admin.userReports.description' | translate }}
+                </p>
+              </div>
+
+              <tui-icon
+                icon="@tui.chevron-right"
+                class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+              />
+            </a>
+
+            <!-- Comment Reports (Nuevo) -->
+            <a
+              routerLink="/admin/comment-reports"
+              class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
+            >
+              <div
+                class="w-11 h-11 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0"
+              >
+                <tui-icon icon="@tui.message-square-warning" />
+              </div>
+
+              <div class="flex-1 min-w-0">
+                <span class="font-bold text-sm block truncate">
+                  {{ 'admin.commentReports.title' | translate }}
+                </span>
+                <p
+                  class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+                >
+                  {{ 'admin.commentReports.description' | translate }}
+                </p>
+              </div>
+
+              <tui-icon
+                icon="@tui.chevron-right"
+                class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+              />
+            </a>
+          </div>
+        </section>
+
+        <!-- Section 2: Outdoor -->
+        <section class="flex flex-col gap-3">
+          <h2
+            class="text-xs font-semibold uppercase tracking-wider text-(--tui-text-tertiary) px-1"
+          >
+            {{ 'admin.categories.outdoor' | translate }}
+          </h2>
+
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5"
+          >
+            <!-- Solicitudes administración de áreas -->
             <a
               routerLink="/admin/requests"
               class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
@@ -147,10 +229,165 @@ import { IS_BROWSER } from '../../app/is-browser';
                 class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
               />
             </a>
+
+            <!-- Unification -->
+            <a
+              routerLink="/admin/unify"
+              class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
+            >
+              <div
+                class="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0"
+              >
+                <tui-icon icon="@tui.copy" />
+              </div>
+
+              <div class="flex-1 min-w-0">
+                <span class="font-bold text-sm block truncate">
+                  {{ 'admin.unifyTitle' | translate }}
+                </span>
+                <p
+                  class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+                >
+                  {{ 'admin.unifyDescription' | translate }}
+                </p>
+              </div>
+
+              <tui-icon
+                icon="@tui.chevron-right"
+                class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+              />
+            </a>
+
+            <!-- Parkings -->
+            <a
+              routerLink="/admin/parkings"
+              class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
+            >
+              <tui-badged-content [style.--tui-radius.%]="50" class="shrink-0">
+                @if (countsResource.value()?.parkings; as count) {
+                  <ng-container tuiSlot="top">
+                    <tui-badge-notification tuiAppearance="accent" size="s">
+                      {{ count }}
+                    </tui-badge-notification>
+                  </ng-container>
+                }
+                <div
+                  class="w-11 h-11 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center"
+                >
+                  <tui-icon icon="@tui.map-pin" />
+                </div>
+              </tui-badged-content>
+
+              <div class="flex-1 min-w-0">
+                <span class="font-bold text-sm block truncate">
+                  {{ 'nav.admin-parkings' | translate }}
+                </span>
+                <p
+                  class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+                >
+                  {{ 'admin.parkings.description' | translate }}
+                </p>
+              </div>
+
+              <tui-icon
+                icon="@tui.chevron-right"
+                class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+              />
+            </a>
           </div>
         </section>
 
-        <!-- Section 2: Equippers -->
+        <!-- Section 3: Indoor -->
+        <section class="flex flex-col gap-3">
+          <h2
+            class="text-xs font-semibold uppercase tracking-wider text-(--tui-text-tertiary) px-1"
+          >
+            {{ 'admin.categories.indoor' | translate }}
+          </h2>
+
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5"
+          >
+            <!-- Solicitud para ser admin de un indoor-center (Nuevo) -->
+            <a
+              routerLink="/admin/indoor-admin-requests"
+              class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
+            >
+              <tui-badged-content [style.--tui-radius.%]="50" class="shrink-0">
+                @if (countsResource.value()?.indoorAdminRequests; as count) {
+                  <ng-container tuiSlot="top">
+                    <tui-badge-notification tuiAppearance="accent" size="s">
+                      {{ count }}
+                    </tui-badge-notification>
+                  </ng-container>
+                }
+                <div
+                  class="w-11 h-11 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0"
+                >
+                  <tui-icon icon="@tui.dumbbell" />
+                </div>
+              </tui-badged-content>
+
+              <div class="flex-1 min-w-0">
+                <span class="font-bold text-sm block truncate">
+                  {{ 'admin.indoorAdminRequests.title' | translate }}
+                </span>
+                <p
+                  class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+                >
+                  {{ 'admin.indoorAdminRequests.description' | translate }}
+                </p>
+              </div>
+
+              <tui-icon
+                icon="@tui.chevron-right"
+                class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+              />
+            </a>
+
+            <!-- Solicitud para ser routesetter (Nuevo) -->
+            <a
+              routerLink="/admin/routesetter-requests"
+              class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
+            >
+              <tui-badged-content [style.--tui-radius.%]="50" class="shrink-0">
+                @if (
+                  countsResource.value()?.indoorRoutesetterRequests;
+                  as count
+                ) {
+                  <ng-container tuiSlot="top">
+                    <tui-badge-notification tuiAppearance="accent" size="s">
+                      {{ count }}
+                    </tui-badge-notification>
+                  </ng-container>
+                }
+                <div
+                  class="w-11 h-11 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0"
+                >
+                  <tui-icon icon="@tui.wrench" />
+                </div>
+              </tui-badged-content>
+
+              <div class="flex-1 min-w-0">
+                <span class="font-bold text-sm block truncate">
+                  {{ 'admin.routesetterRequests.title' | translate }}
+                </span>
+                <p
+                  class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+                >
+                  {{ 'admin.routesetterRequests.description' | translate }}
+                </p>
+              </div>
+
+              <tui-icon
+                icon="@tui.chevron-right"
+                class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+              />
+            </a>
+          </div>
+        </section>
+
+        <!-- Section 4: Equipadores -->
         <section class="flex flex-col gap-3">
           <h2
             class="text-xs font-semibold uppercase tracking-wider text-(--tui-text-tertiary) px-1"
@@ -158,7 +395,9 @@ import { IS_BROWSER } from '../../app/is-browser';
             {{ 'admin.categories.equippers' | translate }}
           </h2>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5"
+          >
             <!-- Equippers List -->
             <a
               routerLink="/admin/equippers"
@@ -232,138 +471,27 @@ import { IS_BROWSER } from '../../app/is-browser';
                 class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
               />
             </a>
-
-            <!-- User Reports -->
-            <a
-              routerLink="/admin/user-reports"
-              class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
-            >
-              <tui-badged-content [style.--tui-radius.%]="50" class="shrink-0">
-                @if (countsResource.value()?.userReports; as count) {
-                  <ng-container tuiSlot="top">
-                    <tui-badge-notification tuiAppearance="accent" size="s">
-                      {{ count }}
-                    </tui-badge-notification>
-                  </ng-container>
-                }
-                <div
-                  class="w-11 h-11 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0"
-                >
-                  <tui-icon icon="@tui.flag" />
-                </div>
-              </tui-badged-content>
-
-              <div class="flex-1 min-w-0">
-                <span class="font-bold text-sm block truncate">
-                  {{ 'admin.userReports.title' | translate }}
-                </span>
-                <p
-                  class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
-                >
-                  {{ 'admin.userReports.description' | translate }}
-                </p>
-              </div>
-
-              <tui-icon
-                icon="@tui.chevron-right"
-                class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
-              />
-            </a>
           </div>
         </section>
 
-        <!-- Section 3: Content & Map -->
+        <!-- Section 5: Donaciones -->
         <section class="flex flex-col gap-3">
           <h2
             class="text-xs font-semibold uppercase tracking-wider text-(--tui-text-tertiary) px-1"
           >
-            {{ 'admin.categories.contentAndMap' | translate }}
+            {{ 'admin.categories.donations' | translate }}
           </h2>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            <!-- Unification -->
-            <a
-              routerLink="/admin/unify"
-              class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
-            >
-              <div
-                class="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0"
-              >
-                <tui-icon icon="@tui.copy" />
-              </div>
-
-              <div class="flex-1 min-w-0">
-                <span class="font-bold text-sm block truncate">
-                  {{ 'admin.unifyTitle' | translate }}
-                </span>
-                <p
-                  class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
-                >
-                  {{ 'admin.unifyDescription' | translate }}
-                </p>
-              </div>
-
-              <tui-icon
-                icon="@tui.chevron-right"
-                class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
-              />
-            </a>
-
-            <!-- Parkings -->
-            <a
-              routerLink="/admin/parkings"
-              class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
-            >
-              <tui-badged-content [style.--tui-radius.%]="50" class="shrink-0">
-                @if (countsResource.value()?.parkings; as count) {
-                  <ng-container tuiSlot="top">
-                    <tui-badge-notification tuiAppearance="accent" size="s">
-                      {{ count }}
-                    </tui-badge-notification>
-                  </ng-container>
-                }
-                <div
-                  class="w-11 h-11 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center"
-                >
-                  <tui-icon icon="@tui.map-pin" />
-                </div>
-              </tui-badged-content>
-
-              <div class="flex-1 min-w-0">
-                <span class="font-bold text-sm block truncate">
-                  {{ 'nav.admin-parkings' | translate }}
-                </span>
-                <p
-                  class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
-                >
-                  {{ 'admin.parkings.description' | translate }}
-                </p>
-              </div>
-
-              <tui-icon
-                icon="@tui.chevron-right"
-                class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
-              />
-            </a>
-          </div>
-        </section>
-
-        <!-- Section 4: Shop & System -->
-        <section class="flex flex-col gap-3">
-          <h2
-            class="text-xs font-semibold uppercase tracking-wider text-(--tui-text-tertiary) px-1"
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5"
           >
-            {{ 'admin.categories.shopAndSystem' | translate }}
-          </h2>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            <!-- Orders -->
+            <!-- Material Catalog -->
             <a
-              routerLink="/admin/orders"
+              routerLink="/admin/material-catalog"
               class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
             >
               <tui-badged-content [style.--tui-radius.%]="50" class="shrink-0">
-                @if (countsResource.value()?.orders; as count) {
+                @if (countsResource.value()?.materialCatalog; as count) {
                   <ng-container tuiSlot="top">
                     <tui-badge-notification tuiAppearance="accent" size="s">
                       {{ count }}
@@ -371,20 +499,20 @@ import { IS_BROWSER } from '../../app/is-browser';
                   </ng-container>
                 }
                 <div
-                  class="w-11 h-11 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center"
+                  class="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center"
                 >
-                  <tui-icon icon="@tui.shopping-bag" />
+                  <tui-icon icon="@tui.hammer" />
                 </div>
               </tui-badged-content>
 
               <div class="flex-1 min-w-0">
                 <span class="font-bold text-sm block truncate">
-                  {{ 'admin.orders.title' | translate }}
+                  {{ 'admin.materialCatalog.title' | translate }}
                 </span>
                 <p
                   class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
                 >
-                  {{ 'admin.orders.description' | translate }}
+                  {{ 'admin.materialCatalog.description' | translate }}
                 </p>
               </div>
 
@@ -431,13 +559,13 @@ import { IS_BROWSER } from '../../app/is-browser';
               />
             </a>
 
-            <!-- Material Catalog -->
+            <!-- Areas con sus botes (Nuevo) -->
             <a
-              routerLink="/admin/material-catalog"
+              routerLink="/admin/area-funds"
               class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
             >
               <tui-badged-content [style.--tui-radius.%]="50" class="shrink-0">
-                @if (countsResource.value()?.materialCatalog; as count) {
+                @if (countsResource.value()?.areaDonations; as count) {
                   <ng-container tuiSlot="top">
                     <tui-badge-notification tuiAppearance="accent" size="s">
                       {{ count }}
@@ -445,20 +573,20 @@ import { IS_BROWSER } from '../../app/is-browser';
                   </ng-container>
                 }
                 <div
-                  class="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center"
+                  class="w-11 h-11 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center"
                 >
-                  <tui-icon icon="@tui.hammer" />
+                  <tui-icon icon="@tui.coins" />
                 </div>
               </tui-badged-content>
 
               <div class="flex-1 min-w-0">
                 <span class="font-bold text-sm block truncate">
-                  {{ 'admin.materialCatalog.title' | translate }}
+                  {{ 'admin.areaFunds.title' | translate }}
                 </span>
                 <p
                   class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
                 >
-                  {{ 'admin.materialCatalog.description' | translate }}
+                  {{ 'admin.areaFunds.description' | translate }}
                 </p>
               </div>
 
@@ -467,7 +595,70 @@ import { IS_BROWSER } from '../../app/is-browser';
                 class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
               />
             </a>
+          </div>
+        </section>
 
+        <!-- Section 6: Tienda -->
+        <section class="flex flex-col gap-3">
+          <h2
+            class="text-xs font-semibold uppercase tracking-wider text-(--tui-text-tertiary) px-1"
+          >
+            {{ 'admin.categories.shop' | translate }}
+          </h2>
+
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5"
+          >
+            <!-- Orders -->
+            <a
+              routerLink="/admin/orders"
+              class="group flex items-center gap-3.5 p-4 bg-(--tui-background-base) rounded-2xl border border-(--tui-border-normal) no-underline text-inherit hover:bg-(--tui-background-neutral-1) hover:border-(--tui-border-hover) hover:shadow-xs transition-all"
+            >
+              <tui-badged-content [style.--tui-radius.%]="50" class="shrink-0">
+                @if (countsResource.value()?.orders; as count) {
+                  <ng-container tuiSlot="top">
+                    <tui-badge-notification tuiAppearance="accent" size="s">
+                      {{ count }}
+                    </tui-badge-notification>
+                  </ng-container>
+                }
+                <div
+                  class="w-11 h-11 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center"
+                >
+                  <tui-icon icon="@tui.shopping-bag" />
+                </div>
+              </tui-badged-content>
+
+              <div class="flex-1 min-w-0">
+                <span class="font-bold text-sm block truncate">
+                  {{ 'admin.orders.title' | translate }}
+                </span>
+                <p
+                  class="text-xs text-(--tui-text-secondary) mt-0.5 line-clamp-1"
+                >
+                  {{ 'admin.orders.description' | translate }}
+                </p>
+              </div>
+
+              <tui-icon
+                icon="@tui.chevron-right"
+                class="text-(--tui-text-tertiary) text-sm group-hover:translate-x-0.5 transition-transform shrink-0"
+              />
+            </a>
+          </div>
+        </section>
+
+        <!-- Section 7: Sistema -->
+        <section class="flex flex-col gap-3">
+          <h2
+            class="text-xs font-semibold uppercase tracking-wider text-(--tui-text-tertiary) px-1"
+          >
+            {{ 'admin.categories.system' | translate }}
+          </h2>
+
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5"
+          >
             <!-- Error Logs -->
             <a
               routerLink="/admin/error-logs"
@@ -547,6 +738,9 @@ export class AdminComponent {
         equippersRes,
         usersRes,
         userReportsRes,
+        areaDonationsRes,
+        indoorAdminReqsRes,
+        indoorRoutesetterReqsRes,
       ] = await Promise.all([
         this.supabase.client
           .from('orders')
@@ -584,6 +778,15 @@ export class AdminComponent {
           .from('user_reports')
           .select('*', { count: 'exact', head: true })
           .eq('status', 'pending'),
+        this.supabase.client
+          .from('area_donations')
+          .select('*', { count: 'exact', head: true }),
+        this.supabase.client
+          .from('indoor_center_admin_requests')
+          .select('*', { count: 'exact', head: true }),
+        this.supabase.client
+          .from('indoor_center_routesetter_requests')
+          .select('*', { count: 'exact', head: true }),
       ]);
 
       return {
@@ -597,6 +800,9 @@ export class AdminComponent {
         equippers: equippersRes.count ?? 0,
         users: usersRes.count ?? 0,
         userReports: userReportsRes.count ?? 0,
+        areaDonations: areaDonationsRes.count ?? 0,
+        indoorAdminRequests: indoorAdminReqsRes.count ?? 0,
+        indoorRoutesetterRequests: indoorRoutesetterReqsRes.count ?? 0,
       };
     },
   });

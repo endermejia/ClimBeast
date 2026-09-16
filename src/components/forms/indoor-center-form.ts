@@ -8,37 +8,43 @@ import {
   inject,
   input,
   InputSignal,
+  resource,
   Signal,
   signal,
   untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { form, FormField, required, submit } from '@angular/forms/signals';
+import { RouterLink } from '@angular/router';
 
 import { type TuiDialogContext } from '@taiga-ui/core';
 import {
-  TuiButton,
-  TuiDialogService,
-  TuiError,
-  TuiLabel,
-  TuiInput,
-  TuiTextfield,
-  TuiNumberFormat,
-  TuiCheckbox,
   TuiAppearance,
+  TuiButton,
+  TuiCheckbox,
+  TuiDialogService,
   TuiDropdown,
+  TuiError,
+  TuiIcon,
+  TuiInput,
+  TuiLabel,
+  TuiLoader,
+  TuiNumberFormat,
+  TuiTextfield,
 } from '@taiga-ui/core';
-import { TuiIcon, TuiLoader } from '@taiga-ui/core';
 import {
-  TuiTextarea,
-  TuiInputNumber,
-  TuiFiles,
-  TuiTabs,
-  TuiSelect,
-  TuiDataListWrapper,
+  TuiAvatar,
+  TuiBadgeNotification,
   TuiChevron,
+  TuiComboBox,
+  TuiDataListWrapper,
+  TuiFiles,
+  TuiInputNumber,
+  TuiSegmented,
+  TuiSelect,
+  TuiTabs,
+  TuiTextarea,
 } from '@taiga-ui/kit';
-
 import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -50,49 +56,68 @@ import { MapService } from '../../services/map.service';
 import { SlugService } from '../../services/slug.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
-
-import { IndoorCenterDto, IndoorSchedule } from '../../models';
-import { scheduleToJson, scheduleFromJson } from '../../models/indoor.model';
+import { UserProfilesService } from '../../services/user-profiles.service';
 
 import {
-  handleErrorToast,
-  slugify,
+  DEFAULT_INDOOR_CENTER_PERMISSIONS,
+  IndoorCenterDto,
+  IndoorCenterPermissions,
+  IndoorCenterRoutesetterRequestWithCenter,
+  IndoorSchedule,
+  Json,
+  parseIndoorCenterPermissions,
+  UserProfileBasicDto,
+} from '../../models';
+import { scheduleToJson, scheduleFromJson } from '../../models/indoor.model';
+
+import { AvatarUrlPipe } from '../../pipes';
+import {
   COMMON_IMAGE_EDITOR_CONFIG,
-  fileToDataUrl,
   createNewPhoto,
+  fileToDataUrl,
+  handleErrorToast,
   NewPhoto,
   reorderGallery,
+  slugify,
 } from '../../utils';
 import { openImageEditor } from '../../utils/open-image-editor';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-indoor-center-form',
   standalone: true,
   imports: [
+    AvatarUrlPipe,
+    CdkDrag,
+    CdkDropList,
     CommonModule,
     FormField,
     FormsModule,
+    RouterLink,
     TranslatePipe,
+    TuiAppearance,
+    TuiAvatar,
+    TuiBadgeNotification,
     TuiButton,
+    TuiCheckbox,
+    TuiChevron,
+    TuiComboBox,
+    TuiDataListWrapper,
+    TuiDropdown,
     TuiError,
+    TuiFiles,
+    TuiIcon,
     TuiInput,
     TuiInputNumber,
     TuiLabel,
+    TuiLoader,
     TuiNumberFormat,
+    TuiSegmented,
+    TuiSelect,
+    TuiTabs,
     TuiTextarea,
     TuiTextfield,
-    TuiFiles,
-    TuiIcon,
-    TuiLoader,
-    TuiTabs,
-    TuiCheckbox,
-    TuiAppearance,
-    TuiDropdown,
-    TuiSelect,
-    TuiDataListWrapper,
-    TuiChevron,
-    CdkDrag,
-    CdkDropList,
   ],
   template: `
     @if (isEdit()) {
@@ -101,6 +126,19 @@ import { openImageEditor } from '../../utils/open-image-editor';
           <button tuiTab>{{ 'details' | translate }}</button>
           <button tuiTab>{{ 'indoor.schedule' | translate }}</button>
           <button tuiTab>{{ 'indoor.vouchers' | translate }}</button>
+          <button tuiTab>
+            {{ 'routesetters' | translate }}
+            @if (centerRoutesetterRequests().length > 0) {
+              <tui-badge-notification
+                tuiAppearance="accent"
+                size="s"
+                class="ml-1.5"
+              >
+                {{ centerRoutesetterRequests().length }}
+              </tui-badge-notification>
+            }
+          </button>
+          <button tuiTab>{{ 'indoor.permissions.title' | translate }}</button>
         </tui-tabs>
       </div>
     }
@@ -597,6 +635,495 @@ import { openImageEditor } from '../../utils/open-image-editor';
               }
             </div>
           }
+          @case (3) {
+            <div class="flex flex-col gap-6">
+              <!-- Pending Requests Section -->
+              @let pendingRequests = centerRoutesetterRequests();
+              <div class="flex flex-col gap-3">
+                <div class="flex items-center gap-2">
+                  <tui-icon
+                    icon="@tui.clock"
+                    class="text-xs text-(--tui-text-accent)"
+                  />
+                  <span
+                    class="text-xs uppercase font-semibold tracking-wider opacity-75"
+                  >
+                    {{ 'admin.routesetterRequests.title' | translate }}
+                  </span>
+                  @if (pendingRequests.length > 0) {
+                    <tui-badge-notification tuiAppearance="accent" size="s">
+                      {{ pendingRequests.length }}
+                    </tui-badge-notification>
+                  }
+                </div>
+
+                @if (pendingRequests.length > 0) {
+                  <div class="flex flex-col gap-2.5">
+                    @for (req of pendingRequests; track req.id) {
+                      <div
+                        class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+                      >
+                        <a
+                          [routerLink]="['/profile', req.user.id]"
+                          class="flex items-center gap-3 no-underline text-inherit"
+                        >
+                          <span tuiAvatar size="m">
+                            @if (req.user.avatar; as avatar) {
+                              <img [src]="avatar | avatarUrl" alt="avatar" />
+                            } @else {
+                              <tui-icon icon="@tui.user" />
+                            }
+                          </span>
+                          <div class="flex flex-col min-w-0">
+                            <span class="font-bold text-sm truncate">
+                              {{ req.user.name || ('anonymous' | translate) }}
+                            </span>
+                            <span class="text-xs opacity-60">
+                              {{ req.created_at | date: 'mediumDate' }}
+                            </span>
+                          </div>
+                        </a>
+
+                        <div
+                          class="flex items-center gap-2 flex-nowrap whitespace-nowrap self-end sm:self-auto shrink-0"
+                        >
+                          <button
+                            tuiButton
+                            size="s"
+                            appearance="primary"
+                            type="button"
+                            class="rounded-full! shrink-0"
+                            (click.zoneless)="approveRoutesetter(req, $event)"
+                          >
+                            {{ 'adminRequests.approve' | translate }}
+                          </button>
+                          <button
+                            tuiButton
+                            size="s"
+                            appearance="negative"
+                            type="button"
+                            class="rounded-full! shrink-0"
+                            (click.zoneless)="rejectRoutesetter(req, $event)"
+                          >
+                            {{ 'adminRequests.reject' | translate }}
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div
+                    class="p-4 text-center text-xs opacity-60 rounded-xl bg-(--tui-background-neutral-1) border border-dashed border-(--tui-border-normal)"
+                  >
+                    {{ 'admin.routesetterRequests.empty' | translate }}
+                  </div>
+                }
+              </div>
+
+              <!-- Current Routesetters Section -->
+              @let currentRoutesetters = centerRoutesetters();
+              <div class="flex flex-col gap-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <span
+                    class="text-xs uppercase font-semibold tracking-wider opacity-75"
+                  >
+                    {{ 'routesetters' | translate }}
+                  </span>
+
+                  <!-- Add Routesetter Search / Combobox -->
+                  <div class="w-64 max-w-full">
+                    <tui-textfield
+                      appearance="floating"
+                      size="s"
+                      tuiChevron
+                      [tuiTextfieldCleaner]="true"
+                      [stringify]="stringifyUser"
+                      class="rounded-full!"
+                    >
+                      <label tuiLabel for="form-routesetter-search">
+                        {{ 'addUser' | translate }}
+                      </label>
+                      <input
+                        id="form-routesetter-search"
+                        tuiComboBox
+                        [placeholder]="'searchPlaceholder' | translate"
+                        (ngModelChange)="onRoutesetterSelected($event)"
+                        [ngModel]="null"
+                        (input.zoneless)="
+                          routesetterSearchQuery.set(
+                            formRoutesetterSearchInput.value
+                          )
+                        "
+                        #formRoutesetterSearchInput
+                      />
+                      <tui-data-list-wrapper
+                        *tuiDropdown
+                        [items]="foundRoutesetterUsers()"
+                      />
+                    </tui-textfield>
+                  </div>
+                </div>
+
+                @if (currentRoutesetters.length > 0) {
+                  <div class="flex flex-wrap gap-2.5 items-center">
+                    @for (rs of currentRoutesetters; track rs.user_id) {
+                      <div
+                        class="flex items-center gap-2 bg-(--tui-background-neutral-1) py-1 pr-2 rounded-full border border-(--tui-border-normal) group"
+                        [class.pl-1]="rs.user.avatar"
+                        [class.pl-3]="!rs.user.avatar"
+                      >
+                        <a
+                          [routerLink]="['/profile', rs.user_id]"
+                          class="flex items-center gap-2 no-underline text-inherit select-none"
+                        >
+                          @if (rs.user.avatar) {
+                            <span tuiAvatar size="s">
+                              <img
+                                [src]="rs.user.avatar | avatarUrl"
+                                [alt]="rs.user.name"
+                              />
+                            </span>
+                          }
+                          <span class="text-sm font-medium">
+                            {{ rs.user.name }}
+                          </span>
+                        </a>
+                        <button
+                          tuiIconButton
+                          appearance="flat"
+                          size="xs"
+                          type="button"
+                          iconStart="@tui.x"
+                          [attr.aria-label]="'delete' | translate"
+                          class="opacity-0 group-hover:opacity-50 hover:opacity-100! transition-opacity -mr-1"
+                          (click.zoneless)="
+                            removeRoutesetter(rs.user_id || '', $event)
+                          "
+                        ></button>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div
+                    class="p-4 text-center text-xs opacity-60 rounded-xl bg-(--tui-background-neutral-1) border border-dashed border-(--tui-border-normal)"
+                  >
+                    {{ 'empty' | translate }}
+                  </div>
+                }
+              </div>
+            </div>
+          }
+          @case (4) {
+            <div class="flex flex-col gap-6 w-full max-w-2xl">
+              <p class="text-sm opacity-70 -mt-2 mb-2">
+                {{ 'indoor.permissions.description' | translate }}
+              </p>
+
+              <!-- Rutas -->
+              <div
+                class="flex flex-col gap-4 p-4 sm:p-5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+              >
+                <div class="flex items-center gap-2">
+                  <tui-icon
+                    icon="@tui.route"
+                    class="text-xs text-(--tui-text-accent)"
+                  />
+                  <span
+                    class="text-xs uppercase font-semibold tracking-wider opacity-75"
+                  >
+                    {{ 'indoor.permissions.routesSection' | translate }}
+                  </span>
+                </div>
+
+                <!-- can_create_routes -->
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-(--tui-border-normal)/50"
+                >
+                  <span class="text-sm font-medium">
+                    {{ 'indoor.permissions.canCreateRoutes' | translate }}
+                  </span>
+                  <tui-segmented
+                    size="s"
+                    class="shrink-0"
+                    [activeItemIndex]="
+                      model().permissions.can_create_routes === 'all' ? 0 : 1
+                    "
+                    (activeItemIndexChange)="
+                      onPermissionChange(
+                        'can_create_routes',
+                        $event === 0 ? 'all' : 'routesetters'
+                      )
+                    "
+                  >
+                    <button type="button">
+                      {{ 'indoor.permissions.options.all' | translate }}
+                    </button>
+                    <button type="button">
+                      {{
+                        'indoor.permissions.options.routesetters' | translate
+                      }}
+                    </button>
+                  </tui-segmented>
+                </div>
+
+                <!-- can_edit_routes -->
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-(--tui-border-normal)/50"
+                >
+                  <span class="text-sm font-medium">
+                    {{ 'indoor.permissions.canEditRoutes' | translate }}
+                  </span>
+                  <tui-segmented
+                    size="s"
+                    class="shrink-0"
+                    [activeItemIndex]="
+                      model().permissions.can_edit_routes === 'all' ? 0 : 1
+                    "
+                    (activeItemIndexChange)="
+                      onPermissionChange(
+                        'can_edit_routes',
+                        $event === 0 ? 'all' : 'routesetters_and_creator'
+                      )
+                    "
+                  >
+                    <button type="button">
+                      {{ 'indoor.permissions.options.all' | translate }}
+                    </button>
+                    <button type="button">
+                      {{
+                        'indoor.permissions.options.routesettersAndCreator'
+                          | translate
+                      }}
+                    </button>
+                  </tui-segmented>
+                </div>
+
+                <!-- can_archive_routes -->
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2"
+                >
+                  <span class="text-sm font-medium">
+                    {{ 'indoor.permissions.canArchiveRoutes' | translate }}
+                  </span>
+                  <tui-segmented
+                    size="s"
+                    class="shrink-0"
+                    [activeItemIndex]="
+                      model().permissions.can_archive_routes === 'all' ? 0 : 1
+                    "
+                    (activeItemIndexChange)="
+                      onPermissionChange(
+                        'can_archive_routes',
+                        $event === 0 ? 'all' : 'routesetters_and_creator'
+                      )
+                    "
+                  >
+                    <button type="button">
+                      {{ 'indoor.permissions.options.all' | translate }}
+                    </button>
+                    <button type="button">
+                      {{
+                        'indoor.permissions.options.routesettersAndCreator'
+                          | translate
+                      }}
+                    </button>
+                  </tui-segmented>
+                </div>
+              </div>
+
+              <!-- Croquis -->
+              <div
+                class="flex flex-col gap-4 p-4 sm:p-5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+              >
+                <div class="flex items-center gap-2">
+                  <tui-icon
+                    icon="@tui.image"
+                    class="text-xs text-(--tui-text-accent)"
+                  />
+                  <span
+                    class="text-xs uppercase font-semibold tracking-wider opacity-75"
+                  >
+                    {{ 'indoor.permissions.toposSection' | translate }}
+                  </span>
+                </div>
+
+                <!-- can_create_topos -->
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-(--tui-border-normal)/50"
+                >
+                  <span class="text-sm font-medium">
+                    {{ 'indoor.permissions.canCreateTopos' | translate }}
+                  </span>
+                  <tui-segmented
+                    size="s"
+                    class="shrink-0"
+                    [activeItemIndex]="
+                      model().permissions.can_create_topos === 'all' ? 0 : 1
+                    "
+                    (activeItemIndexChange)="
+                      onPermissionChange(
+                        'can_create_topos',
+                        $event === 0 ? 'all' : 'routesetters'
+                      )
+                    "
+                  >
+                    <button type="button">
+                      {{ 'indoor.permissions.options.all' | translate }}
+                    </button>
+                    <button type="button">
+                      {{
+                        'indoor.permissions.options.routesetters' | translate
+                      }}
+                    </button>
+                  </tui-segmented>
+                </div>
+
+                <!-- can_edit_topos -->
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-(--tui-border-normal)/50"
+                >
+                  <span class="text-sm font-medium">
+                    {{ 'indoor.permissions.canEditTopos' | translate }}
+                  </span>
+                  <tui-segmented
+                    size="s"
+                    class="shrink-0"
+                    [activeItemIndex]="
+                      model().permissions.can_edit_topos === 'all' ? 0 : 1
+                    "
+                    (activeItemIndexChange)="
+                      onPermissionChange(
+                        'can_edit_topos',
+                        $event === 0 ? 'all' : 'routesetters_and_creator'
+                      )
+                    "
+                  >
+                    <button type="button">
+                      {{ 'indoor.permissions.options.all' | translate }}
+                    </button>
+                    <button type="button">
+                      {{
+                        'indoor.permissions.options.routesettersAndCreator'
+                          | translate
+                      }}
+                    </button>
+                  </tui-segmented>
+                </div>
+
+                <!-- can_archive_topos -->
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2"
+                >
+                  <span class="text-sm font-medium">
+                    {{ 'indoor.permissions.canArchiveTopos' | translate }}
+                  </span>
+                  <tui-segmented
+                    size="s"
+                    class="shrink-0"
+                    [activeItemIndex]="
+                      model().permissions.can_archive_topos === 'all' ? 0 : 1
+                    "
+                    (activeItemIndexChange)="
+                      onPermissionChange(
+                        'can_archive_topos',
+                        $event === 0 ? 'all' : 'routesetters_and_creator'
+                      )
+                    "
+                  >
+                    <button type="button">
+                      {{ 'indoor.permissions.options.all' | translate }}
+                    </button>
+                    <button type="button">
+                      {{
+                        'indoor.permissions.options.routesettersAndCreator'
+                          | translate
+                      }}
+                    </button>
+                  </tui-segmented>
+                </div>
+              </div>
+
+              <!-- Líneas de croquis -->
+              <div
+                class="flex flex-col gap-4 p-4 sm:p-5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+              >
+                <div class="flex items-center gap-2">
+                  <tui-icon
+                    icon="@tui.spline"
+                    class="text-xs text-(--tui-text-accent)"
+                  />
+                  <span
+                    class="text-xs uppercase font-semibold tracking-wider opacity-75"
+                  >
+                    {{ 'indoor.permissions.linesSection' | translate }}
+                  </span>
+                </div>
+
+                <!-- can_create_lines -->
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-(--tui-border-normal)/50"
+                >
+                  <span class="text-sm font-medium">
+                    {{ 'indoor.permissions.canCreateLines' | translate }}
+                  </span>
+                  <tui-segmented
+                    size="s"
+                    class="shrink-0"
+                    [activeItemIndex]="
+                      model().permissions.can_create_lines === 'all' ? 0 : 1
+                    "
+                    (activeItemIndexChange)="
+                      onPermissionChange(
+                        'can_create_lines',
+                        $event === 0 ? 'all' : 'routesetters'
+                      )
+                    "
+                  >
+                    <button type="button">
+                      {{ 'indoor.permissions.options.all' | translate }}
+                    </button>
+                    <button type="button">
+                      {{
+                        'indoor.permissions.options.routesetters' | translate
+                      }}
+                    </button>
+                  </tui-segmented>
+                </div>
+
+                <!-- can_edit_lines -->
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2"
+                >
+                  <span class="text-sm font-medium">
+                    {{ 'indoor.permissions.canEditLines' | translate }}
+                  </span>
+                  <tui-segmented
+                    size="s"
+                    class="shrink-0"
+                    [activeItemIndex]="
+                      model().permissions.can_edit_lines === 'all' ? 0 : 1
+                    "
+                    (activeItemIndexChange)="
+                      onPermissionChange(
+                        'can_edit_lines',
+                        $event === 0 ? 'all' : 'routesetters_and_creator'
+                      )
+                    "
+                  >
+                    <button type="button">
+                      {{ 'indoor.permissions.options.all' | translate }}
+                    </button>
+                    <button type="button">
+                      {{
+                        'indoor.permissions.options.routesettersAndLineCreator'
+                          | translate
+                      }}
+                    </button>
+                  </tui-segmented>
+                </div>
+              </div>
+            </div>
+          }
         }
       </div>
 
@@ -638,6 +1165,8 @@ export class IndoorCenterFormComponent {
   private readonly toast = inject(ToastService);
   protected readonly mapService = inject(MapService);
   private readonly dialogs = inject(TuiDialogService);
+  private readonly userProfiles = inject(UserProfilesService);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   private readonly _dialogCtx: TuiDialogContext<
     string | boolean | null,
@@ -670,6 +1199,87 @@ export class IndoorCenterFormComponent {
   protected readonly activeTabIndex = signal(0);
   protected readonly centerId = computed(() => this.effectiveCenterData()?.id);
 
+  protected readonly routesetterSearchQuery = signal('');
+
+  protected readonly centerRoutesetterRequestsResource = resource({
+    params: () => this.centerId(),
+    loader: async ({ params: centerId }) => {
+      if (!centerId || !this.isBrowser) return [];
+      return await this.indoor.getIndoorCenterRoutesetterRequests(centerId);
+    },
+  });
+
+  protected readonly centerRoutesetterRequests = computed(
+    () => this.centerRoutesetterRequestsResource.value() ?? [],
+  );
+
+  protected readonly centerRoutesettersResource = resource({
+    params: () => this.centerId(),
+    loader: async ({ params: centerId }) => {
+      if (!centerId || !this.isBrowser) return [];
+      await this.supabase.whenReady();
+
+      const { data: mappings, error: mappingError } = await this.supabase.client
+        .from('indoor_center_routesetters')
+        .select('user_id')
+        .eq('center_id', centerId);
+
+      if (mappingError || !mappings?.length) {
+        if (mappingError) {
+          console.error(
+            '[IndoorCenterFormComponent] Error fetching center routesetter mappings:',
+            mappingError,
+          );
+        }
+        return [];
+      }
+
+      const userIds = mappings
+        .map((m) => m.user_id)
+        .filter((id): id is string => !!id);
+      const { data: profiles, error: profilesError } =
+        await this.supabase.client
+          .from('user_profiles')
+          .select('id, name, avatar')
+          .in('id', userIds);
+
+      if (profilesError) {
+        console.error(
+          '[IndoorCenterFormComponent] Error fetching routesetter profiles:',
+          profilesError,
+        );
+        return [];
+      }
+
+      return mappings.map((m) => ({
+        user_id: m.user_id,
+        user: profiles.find((p) => p.id === m.user_id) || {
+          id: m.user_id || '',
+          name: 'Unknown',
+          avatar: null,
+        },
+      }));
+    },
+  });
+
+  protected readonly centerRoutesetters = computed(
+    () => this.centerRoutesettersResource.value() ?? [],
+  );
+
+  protected readonly foundRoutesetterUsersResource = resource({
+    params: () => this.routesetterSearchQuery().trim(),
+    loader: async ({ params: query }) => {
+      if (query.length < 2) return [];
+      return await this.userProfiles.searchUsers(query);
+    },
+  });
+
+  protected readonly foundRoutesetterUsers = computed(
+    () => this.foundRoutesetterUsersResource.value() ?? [],
+  );
+
+  protected readonly stringifyUser = (u: UserProfileBasicDto) => u.name || '';
+
   readonly isSaving = signal(false);
   readonly isUploading = signal(false);
   protected readonly newPhotos = signal<NewPhoto[]>([]);
@@ -684,6 +1294,7 @@ export class IndoorCenterFormComponent {
     latitude: number | null;
     longitude: number | null;
     gallery_urls: string[];
+    permissions: IndoorCenterPermissions;
   }>({
     name: '',
     slug: '',
@@ -693,6 +1304,7 @@ export class IndoorCenterFormComponent {
     latitude: null,
     longitude: null,
     gallery_urls: [],
+    permissions: { ...DEFAULT_INDOOR_CENTER_PERMISSIONS },
   });
 
   protected readonly galleryUrls = computed(() => {
@@ -803,6 +1415,19 @@ export class IndoorCenterFormComponent {
     return this.translate.instant('indoor.voucherKinds.' + kind);
   };
 
+  protected onPermissionChange<K extends keyof IndoorCenterPermissions>(
+    key: K,
+    value: IndoorCenterPermissions[K],
+  ): void {
+    this.model.update((m) => ({
+      ...m,
+      permissions: {
+        ...m.permissions,
+        [key]: value,
+      },
+    }));
+  }
+
   constructor() {
     effect(() => {
       const data = this.effectiveCenterData();
@@ -818,6 +1443,7 @@ export class IndoorCenterFormComponent {
         latitude: data.latitude ?? null,
         longitude: data.longitude ?? null,
         gallery_urls: data.gallery_urls || [],
+        permissions: parseIndoorCenterPermissions(data.permissions),
       }));
 
       // Initialize Schedule
@@ -1084,6 +1710,7 @@ export class IndoorCenterFormComponent {
           gallery_urls: modelVal.gallery_urls,
           schedule: scheduleToJson(schedulePayload as IndoorSchedule),
           location: this.effectiveCenterData()?.location ?? null,
+          permissions: modelVal.permissions as unknown as Json,
         };
 
         // 2. Save center and retrieve center ID
@@ -1243,5 +1870,106 @@ export class IndoorCenterFormComponent {
       latitude: lat != null ? parseFloat(lat.toFixed(6)) : null,
       longitude: lng != null ? parseFloat(lng.toFixed(6)) : null,
     }));
+  }
+
+  protected async approveRoutesetter(
+    req: IndoorCenterRoutesetterRequestWithCenter,
+    event?: Event,
+  ): Promise<void> {
+    event?.preventDefault();
+    event?.stopPropagation();
+    const centerId = this.centerId();
+    if (!centerId) return;
+    const success = await this.indoor.approveIndoorCenterRoutesetterRequest(
+      req.id,
+      centerId,
+      req.user.id,
+    );
+    if (success) {
+      this.centerRoutesetterRequestsResource.reload();
+      this.centerRoutesettersResource.reload();
+    }
+  }
+
+  protected async rejectRoutesetter(
+    req: IndoorCenterRoutesetterRequestWithCenter,
+    event?: Event,
+  ): Promise<void> {
+    event?.preventDefault();
+    event?.stopPropagation();
+    const success = await this.indoor.rejectIndoorCenterRoutesetterRequest(
+      req.id,
+    );
+    if (success) {
+      this.centerRoutesetterRequestsResource.reload();
+    }
+  }
+
+  async addRoutesetter(
+    user: UserProfileBasicDto,
+    event?: Event,
+  ): Promise<void> {
+    event?.preventDefault();
+    event?.stopPropagation();
+    const centerId = this.centerId();
+    if (!centerId) return;
+
+    const { error } = await this.supabase.client
+      .from('indoor_center_routesetters')
+      .insert({ center_id: centerId, user_id: user.id });
+
+    if (error) {
+      if (error.code === '23505') {
+        this.toast.info('adminRequests.alreadyRequested');
+      } else {
+        console.error(
+          '[IndoorCenterFormComponent] Error adding routesetter:',
+          error,
+        );
+        this.toast.error('errors.unexpected');
+      }
+      return;
+    }
+
+    this.toast.success('messages.toasts.routesetterAdded');
+    this.centerRoutesettersResource.reload();
+    if (user.id === this.supabase.authUserId()) {
+      this.supabase.routesetterIndoorCentersResource.reload();
+    }
+    this.routesetterSearchQuery.set('');
+  }
+
+  async removeRoutesetter(userId: string | null, event?: Event): Promise<void> {
+    event?.preventDefault();
+    event?.stopPropagation();
+    const centerId = this.centerId();
+    if (!centerId || !userId) return;
+
+    const { error } = await this.supabase.client
+      .from('indoor_center_routesetters')
+      .delete()
+      .eq('center_id', centerId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error(
+        '[IndoorCenterFormComponent] Error removing routesetter:',
+        error,
+      );
+      this.toast.error('errors.unexpected');
+      return;
+    }
+
+    this.toast.success('messages.toasts.routesetterRemoved');
+    this.centerRoutesettersResource.reload();
+    if (userId === this.supabase.authUserId()) {
+      this.supabase.routesetterIndoorCentersResource.reload();
+    }
+  }
+
+  protected onRoutesetterSelected(user: UserProfileBasicDto | null): void {
+    if (user) {
+      this.addRoutesetter(user);
+    }
   }
 }

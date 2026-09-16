@@ -58,10 +58,9 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiScrollbar,
     TuiSkeleton,
     TuiTable,
-    AvatarUrlPipe,
   ],
   template: `
-    <section class="flex flex-col w-full max-w-5xl mx-auto p-4 grow min-h-0">
+    <section class="flex flex-col w-full max-w-7xl mx-auto p-4 grow min-h-0">
       <header class="mb-4 flex items-center justify-between gap-2">
         <h1 class="text-2xl font-bold">
           <a
@@ -88,6 +87,10 @@ import { IS_BROWSER } from '../../app/is-browser';
           </a>
         </h1>
       </header>
+
+      <p class="mb-6 text-tui-text-secondary opacity-60">
+        {{ 'adminEquipperRequests.description' | translate }}
+      </p>
 
       <tui-scrollbar class="grow min-h-0">
         @if (loading() || requests().length > 0) {

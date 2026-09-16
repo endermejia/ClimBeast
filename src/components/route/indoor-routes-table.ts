@@ -275,6 +275,7 @@ export class IndoorRoutesTableComponent {
           topo_id: tid,
           route_id: rid,
           number: 0,
+          user_creator_id: this.supabaseService.authUserId(),
         });
         if (error) throw error;
       }

@@ -9,6 +9,60 @@ import {
 } from './supabase-interfaces';
 
 // --- Indoor DTOs ---
+export type IndoorPermissionBinary = 'all' | 'routesetters';
+export type IndoorPermissionWithCreator = 'all' | 'routesetters_and_creator';
+
+export interface IndoorCenterPermissions {
+  can_create_routes: IndoorPermissionBinary;
+  can_edit_routes: IndoorPermissionWithCreator;
+  can_archive_routes: IndoorPermissionWithCreator;
+  can_create_topos: IndoorPermissionBinary;
+  can_edit_topos: IndoorPermissionWithCreator;
+  can_archive_topos: IndoorPermissionWithCreator;
+  can_create_lines: IndoorPermissionBinary;
+  can_edit_lines: IndoorPermissionWithCreator;
+}
+
+export const DEFAULT_INDOOR_CENTER_PERMISSIONS: IndoorCenterPermissions = {
+  can_create_routes: 'routesetters',
+  can_edit_routes: 'routesetters_and_creator',
+  can_archive_routes: 'routesetters_and_creator',
+  can_create_topos: 'routesetters',
+  can_edit_topos: 'routesetters_and_creator',
+  can_archive_topos: 'routesetters_and_creator',
+  can_create_lines: 'routesetters',
+  can_edit_lines: 'routesetters_and_creator',
+};
+
+export function parseIndoorCenterPermissions(
+  permissions: Json | null | undefined,
+): IndoorCenterPermissions {
+  if (
+    !permissions ||
+    typeof permissions !== 'object' ||
+    Array.isArray(permissions)
+  ) {
+    return { ...DEFAULT_INDOOR_CENTER_PERMISSIONS };
+  }
+  const p = permissions as Record<string, unknown>;
+  return {
+    can_create_routes:
+      p['can_create_routes'] === 'all' ? 'all' : 'routesetters',
+    can_edit_routes:
+      p['can_edit_routes'] === 'all' ? 'all' : 'routesetters_and_creator',
+    can_archive_routes:
+      p['can_archive_routes'] === 'all' ? 'all' : 'routesetters_and_creator',
+    can_create_topos: p['can_create_topos'] === 'all' ? 'all' : 'routesetters',
+    can_edit_topos:
+      p['can_edit_topos'] === 'all' ? 'all' : 'routesetters_and_creator',
+    can_archive_topos:
+      p['can_archive_topos'] === 'all' ? 'all' : 'routesetters_and_creator',
+    can_create_lines: p['can_create_lines'] === 'all' ? 'all' : 'routesetters',
+    can_edit_lines:
+      p['can_edit_lines'] === 'all' ? 'all' : 'routesetters_and_creator',
+  };
+}
+
 export type IndoorCenterDto = TableRow<'indoor_centers'>;
 export type IndoorCenterInsertDto = TableInsert<'indoor_centers'>;
 export type IndoorCenterUpdateDto = TableUpdate<'indoor_centers'>;
@@ -17,11 +71,39 @@ export type IndoorCenterAdminDto = TableRow<'indoor_center_admins'>;
 export type IndoorCenterAdminInsertDto = TableInsert<'indoor_center_admins'>;
 export type IndoorCenterAdminUpdateDto = TableUpdate<'indoor_center_admins'>;
 
+export type IndoorCenterAdminRequestDto =
+  TableRow<'indoor_center_admin_requests'>;
+export type IndoorCenterAdminRequestInsertDto =
+  TableInsert<'indoor_center_admin_requests'>;
+export type IndoorCenterAdminRequestUpdateDto =
+  TableUpdate<'indoor_center_admin_requests'>;
+
+export interface IndoorCenterAdminRequestWithCenter {
+  id: string;
+  created_at: string;
+  center: { id: string; name: string; slug: string };
+  user: { id: string; name: string | null; avatar: string | null };
+}
+
 export type IndoorCenterRoutesetterDto = TableRow<'indoor_center_routesetters'>;
 export type IndoorCenterRoutesetterInsertDto =
   TableInsert<'indoor_center_routesetters'>;
 export type IndoorCenterRoutesetterUpdateDto =
   TableUpdate<'indoor_center_routesetters'>;
+
+export type IndoorCenterRoutesetterRequestDto =
+  TableRow<'indoor_center_routesetter_requests'>;
+export type IndoorCenterRoutesetterRequestInsertDto =
+  TableInsert<'indoor_center_routesetter_requests'>;
+export type IndoorCenterRoutesetterRequestUpdateDto =
+  TableUpdate<'indoor_center_routesetter_requests'>;
+
+export interface IndoorCenterRoutesetterRequestWithCenter {
+  id: string;
+  created_at: string;
+  center: { id: string; name: string; slug: string };
+  user: { id: string; name: string | null; avatar: string | null };
+}
 
 export type IndoorRouteDto = TableRow<'indoor_routes'>;
 export type IndoorRouteInsertDto = TableInsert<'indoor_routes'>;

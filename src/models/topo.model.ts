@@ -1,5 +1,5 @@
 import { AmountByEveryGrade } from './grade.model';
-import { IndoorRouteDto } from './indoor.model';
+import { IndoorCenterDto, IndoorRouteDto } from './indoor.model';
 import { RouteBasicWithOwnData } from './route.model';
 
 import { Json, RouteAscentDto, RouteDto, TopoDto } from './supabase-interfaces';
@@ -49,6 +49,7 @@ export interface TopoRouteWithRoute {
   number: number;
   route: RouteBasicWithOwnData;
   path?: TopoPath | null;
+  user_creator_id?: string | null;
 }
 
 export interface TopoDetail extends Omit<TopoDto, 'id'> {
@@ -56,6 +57,8 @@ export interface TopoDetail extends Omit<TopoDto, 'id'> {
   topo_routes: TopoRouteWithRoute[];
   legacy?: boolean | null;
   center_id?: string | null;
+  user_creator_id?: string | null;
+  indoor_center?: IndoorCenterDto | null;
   crag?: {
     id: number;
     name: string;

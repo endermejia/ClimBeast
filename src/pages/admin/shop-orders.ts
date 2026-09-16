@@ -34,7 +34,6 @@ import {
   TuiIcon,
   TuiLink,
   TuiLoader,
-  TuiTitle,
 } from '@taiga-ui/core';
 import {
   TuiBadgeNotification,
@@ -42,7 +41,6 @@ import {
   TuiBadgedContentDirective,
   TuiChevron,
 } from '@taiga-ui/kit';
-import { TuiHeader } from '@taiga-ui/layout';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -78,7 +76,6 @@ import {
     TuiChevron,
     TuiDataList,
     TuiDropdown,
-    TuiHeader,
     TuiIcon,
     TuiLink,
     TuiLoader,
@@ -90,13 +87,12 @@ import {
     TuiTableTh,
     TuiTableThGroup,
     TuiTableTr,
-    TuiTitle,
     UpperCasePipe,
   ],
   template: `
-    <div class="p-4 flex flex-col gap-6 max-w-5xl mx-auto w-full">
-      <header tuiHeader>
-        <h1 tuiTitle>
+    <div class="p-4 flex flex-col gap-6 max-w-7xl mx-auto w-full">
+      <header class="mb-4 flex items-center justify-between gap-2">
+        <h1 class="text-2xl font-bold m-0">
           <a
             routerLink="/admin"
             class="no-underline text-inherit flex items-center gap-2"
@@ -121,6 +117,10 @@ import {
           </a>
         </h1>
       </header>
+
+      <p class="mb-6 text-tui-text-secondary opacity-60">
+        {{ 'admin.orders.description' | translate }}
+      </p>
 
       <tui-loader [overlay]="true" [loading]="ordersResource.isLoading()">
         @if (ordersResource.value(); as orders) {

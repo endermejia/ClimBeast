@@ -30,9 +30,9 @@ import { AreaMaterialRequestsService } from '../../services/area-material-reques
 import { AreaRevenueService } from '../../services/area-revenue.service';
 import { AuthStateService } from '../../services/auth-state.service';
 
-import { EmptyStateComponent } from '../ui/empty-state';
-
 import type { AreaBalanceSummary, AreaPublicTimeline } from '../../models';
+
+import { EmptyStateComponent } from '../ui/empty-state';
 
 @Component({
   selector: 'app-area-revenue-panel',

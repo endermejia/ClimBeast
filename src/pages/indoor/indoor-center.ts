@@ -73,6 +73,7 @@ import {
   ClimbingKinds,
   GRADE_NUMBER_TO_LABEL,
   IndoorCenterDto,
+  IndoorCenterRoutesetterRequestWithCenter,
   IndoorRouteWithExtras,
   ORDERED_GRADE_VALUES,
   PROJECT_GRADE_LABEL,
@@ -163,6 +164,33 @@ import { IS_BROWSER } from '../../app/is-browser';
                       (click.zoneless)="deleteCenter()"
                     >
                       {{ 'delete' | translate }}
+                    </button>
+                  }
+                } @else if (authState.editingMode() && !isAdmin()) {
+                  @if (!hasPendingAdminRequest()) {
+                    <button
+                      tuiButton
+                      size="s"
+                      appearance="secondary"
+                      iconStart="@tui.shield-alert"
+                      type="button"
+                      class="rounded-full!"
+                      (click.zoneless)="requestAdmin()"
+                    >
+                      {{ 'admin.indoorAdminRequests.button' | translate }}
+                    </button>
+                  }
+                  @if (!isRoutesetter() && !hasPendingRoutesetterRequest()) {
+                    <button
+                      tuiButton
+                      size="s"
+                      appearance="secondary"
+                      iconStart="@tui.wrench"
+                      type="button"
+                      class="rounded-full!"
+                      (click.zoneless)="requestRoutesetter()"
+                    >
+                      {{ 'admin.routesetterRequests.button' | translate }}
                     </button>
                   }
                 }
@@ -398,6 +426,7 @@ import { IS_BROWSER } from '../../app/is-browser';
 
           <!-- Routesetters Section -->
           @let routesettersList = centerRoutesetters();
+          @let pendingRoutesetterRequests = centerRoutesetterRequests();
           @if (canEdit()) {
             <div class="flex flex-col gap-3 mt-6">
               <span
@@ -405,6 +434,77 @@ import { IS_BROWSER } from '../../app/is-browser';
               >
                 {{ 'routesetters' | translate }}
               </span>
+
+              @if (pendingRoutesetterRequests.length > 0) {
+                <div
+                  class="flex flex-col gap-2.5 p-3.5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+                >
+                  <div class="flex items-center gap-2">
+                    <tui-icon
+                      icon="@tui.clock"
+                      class="text-xs text-(--tui-text-accent)"
+                    />
+                    <span
+                      class="text-xs uppercase font-semibold tracking-wider opacity-75"
+                    >
+                      {{ 'admin.routesetterRequests.title' | translate }}
+                    </span>
+                    <tui-badge-notification tuiAppearance="accent" size="s">
+                      {{ pendingRoutesetterRequests.length }}
+                    </tui-badge-notification>
+                  </div>
+
+                  <div class="flex flex-wrap gap-2.5 items-center">
+                    @for (req of pendingRoutesetterRequests; track req.id) {
+                      <div
+                        class="flex items-center gap-3 bg-(--tui-background-base) py-1.5 px-3 rounded-full border border-(--tui-border-normal)"
+                      >
+                        <a
+                          [routerLink]="['/profile', req.user.id]"
+                          class="flex items-center gap-2 no-underline text-inherit"
+                        >
+                          <span tuiAvatar size="s">
+                            @if (req.user.avatar; as avatar) {
+                              <img [src]="avatar | avatarUrl" alt="avatar" />
+                            } @else {
+                              <tui-icon icon="@tui.user" />
+                            }
+                          </span>
+                          <span class="text-sm font-medium">
+                            {{ req.user.name || ('anonymous' | translate) }}
+                          </span>
+                        </a>
+
+                        <div
+                          class="flex items-center gap-1.5 flex-nowrap whitespace-nowrap"
+                        >
+                          <button
+                            tuiButton
+                            size="s"
+                            appearance="primary"
+                            type="button"
+                            class="rounded-full! shrink-0"
+                            (click.zoneless)="approveRoutesetter(req)"
+                          >
+                            {{ 'adminRequests.approve' | translate }}
+                          </button>
+                          <button
+                            tuiButton
+                            size="s"
+                            appearance="negative"
+                            type="button"
+                            class="rounded-full! shrink-0"
+                            (click.zoneless)="rejectRoutesetter(req)"
+                          >
+                            {{ 'adminRequests.reject' | translate }}
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
               <div class="flex flex-wrap gap-4 items-center">
                 @for (rs of routesettersList; track rs.user_id) {
                   <div
@@ -505,7 +605,11 @@ import { IS_BROWSER } from '../../app/is-browser';
                 [hidden]="activeTabIndex() !== 0"
                 [class.hidden]="activeTabIndex() !== 0"
               >
-                <app-indoor-topos [centerId]="c.id" [centerSlug]="c.slug" />
+                <app-indoor-topos
+                  [centerId]="c.id"
+                  [centerSlug]="c.slug"
+                  [center]="c"
+                />
               </div>
             }
             @if (loadedTabs().has(1)) {
@@ -872,7 +976,7 @@ export class IndoorCenterComponent {
 
   protected readonly canCreateRoute = computed(() => {
     const center = this.center();
-    return this.authState.canCreateIndoorInCenter(center?.id);
+    return this.authState.canCreateIndoorRoute(center);
   });
 
   protected readonly canEdit = computed(() => {
@@ -880,6 +984,100 @@ export class IndoorCenterComponent {
     if (!center) return false;
     return !!this.authState.indoorAdminPermissions()[center.id];
   });
+
+  protected readonly hasPendingAdminRequest = computed(() => {
+    const center = this.center();
+    if (!center) return false;
+    return this.authState.pendingIndoorAdminRequestCenterIds().has(center.id);
+  });
+
+  protected async requestAdmin(): Promise<void> {
+    const center = this.center();
+    if (!center || !this.isBrowser) return;
+
+    const t = await firstValueFrom(
+      this.translate.get([
+        'admin.indoorAdminRequests.confirmTitle',
+        'admin.indoorAdminRequests.confirmMessage',
+      ]),
+    );
+    const title = t['admin.indoorAdminRequests.confirmTitle'];
+    const message = t['admin.indoorAdminRequests.confirmMessage'];
+
+    const data: TuiConfirmData = {
+      content: message,
+      yes: this.translate.instant('accept'),
+      no: this.translate.instant('cancel'),
+      appearance: 'primary',
+    };
+
+    const confirmed = await firstValueFrom(
+      this.dialogs.open<boolean>(TUI_CONFIRM, {
+        label: title,
+        size: 's',
+        data,
+      }),
+      { defaultValue: false },
+    );
+
+    if (!confirmed) return;
+
+    const success = await this.indoor.requestIndoorCenterAdmin(center.id);
+    if (success) {
+      this.authState.pendingIndoorAdminRequestsResource.reload();
+    }
+  }
+
+  protected readonly isRoutesetter = computed(() => {
+    const center = this.center();
+    if (!center) return false;
+    return this.authState.routesetterIndoorCenters().includes(center.id);
+  });
+
+  protected readonly hasPendingRoutesetterRequest = computed(() => {
+    const center = this.center();
+    if (!center) return false;
+    return this.authState
+      .pendingIndoorRoutesetterRequestCenterIds()
+      .has(center.id);
+  });
+
+  protected async requestRoutesetter(): Promise<void> {
+    const center = this.center();
+    if (!center || !this.isBrowser) return;
+
+    const t = await firstValueFrom(
+      this.translate.get([
+        'admin.routesetterRequests.confirmTitle',
+        'admin.routesetterRequests.confirmMessage',
+      ]),
+    );
+    const title = t['admin.routesetterRequests.confirmTitle'];
+    const message = t['admin.routesetterRequests.confirmMessage'];
+
+    const data: TuiConfirmData = {
+      content: message,
+      yes: this.translate.instant('accept'),
+      no: this.translate.instant('cancel'),
+      appearance: 'primary',
+    };
+
+    const confirmed = await firstValueFrom(
+      this.dialogs.open<boolean>(TUI_CONFIRM, {
+        label: title,
+        size: 's',
+        data,
+      }),
+      { defaultValue: false },
+    );
+
+    if (!confirmed) return;
+
+    const success = await this.indoor.requestIndoorCenterRoutesetter(center.id);
+    if (success) {
+      this.authState.pendingIndoorRoutesetterRequestsResource.reload();
+    }
+  }
 
   protected async openEditCenter(): Promise<void> {
     const center = this.center();
@@ -889,6 +1087,8 @@ export class IndoorCenterComponent {
     });
     if (success) {
       this.centerResource.reload();
+      this.centerRoutesettersResource.reload();
+      this.centerRoutesetterRequestsResource.reload();
     }
   }
 
@@ -1141,6 +1341,18 @@ export class IndoorCenterComponent {
     () => this.centerRoutesettersResource.value() ?? [],
   );
 
+  protected readonly centerRoutesetterRequestsResource = resource({
+    params: () => this.center()?.id,
+    loader: async ({ params: centerId }) => {
+      if (!centerId || !this.isBrowser || !this.canEdit()) return [];
+      return await this.indoor.getIndoorCenterRoutesetterRequests(centerId);
+    },
+  });
+
+  protected readonly centerRoutesetterRequests = computed(
+    () => this.centerRoutesetterRequestsResource.value() ?? [],
+  );
+
   protected readonly foundRoutesetterUsersResource = resource({
     params: () => this.routesetterSearchQuery().trim(),
     loader: async ({ params: query }) => {
@@ -1211,6 +1423,33 @@ export class IndoorCenterComponent {
   protected onRoutesetterSelected(user: UserProfileBasicDto | null): void {
     if (user) {
       this.addRoutesetter(user);
+    }
+  }
+
+  protected async approveRoutesetter(
+    req: IndoorCenterRoutesetterRequestWithCenter,
+  ): Promise<void> {
+    const center = this.center();
+    if (!center) return;
+    const success = await this.indoor.approveIndoorCenterRoutesetterRequest(
+      req.id,
+      center.id,
+      req.user.id,
+    );
+    if (success) {
+      this.centerRoutesetterRequestsResource.reload();
+      this.centerRoutesettersResource.reload();
+    }
+  }
+
+  protected async rejectRoutesetter(
+    req: IndoorCenterRoutesetterRequestWithCenter,
+  ): Promise<void> {
+    const success = await this.indoor.rejectIndoorCenterRoutesetterRequest(
+      req.id,
+    );
+    if (success) {
+      this.centerRoutesetterRequestsResource.reload();
     }
   }
 

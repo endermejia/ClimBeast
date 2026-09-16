@@ -21,7 +21,6 @@ import {
   TuiLoader,
   TuiScrollbar,
   TuiTextfield,
-  TuiTitle,
 } from '@taiga-ui/core';
 import {
   TUI_CONFIRM,
@@ -33,7 +32,6 @@ import {
   TuiCopy,
   type TuiConfirmData,
 } from '@taiga-ui/kit';
-import { TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -69,7 +67,6 @@ import { matchesQuery } from '../../utils';
     TuiBadgeNotification,
     TuiButton,
     TuiCopy,
-    TuiHeader,
     TuiIcon,
     TuiInput,
     TuiLink,
@@ -77,45 +74,36 @@ import { matchesQuery } from '../../utils';
     TuiScrollbar,
     TuiTable,
     TuiTextfield,
-    TuiTitle,
     UpperCasePipe,
   ],
   template: `
     <tui-scrollbar class="flex grow">
-      <div class="p-4 flex flex-col gap-4 max-w-5xl mx-auto w-full">
-        <header
-          tuiHeader
-          class="flex flex-wrap items-center justify-between gap-4"
-        >
-          <div>
-            <h1 tuiTitle>
-              <a
-                routerLink="/admin"
-                class="no-underline text-inherit flex items-center gap-2"
-              >
-                <tui-icon icon="@tui.arrow-left" />
-                <tui-badged-content [style.--tui-radius.%]="50">
-                  @if (totalCount(); as logsCount) {
-                    <ng-container tuiSlot="top">
-                      <tui-badge-notification tuiAppearance="accent" size="s">
-                        {{ logsCount }}
-                      </tui-badge-notification>
-                    </ng-container>
-                  }
-                  <div
-                    class="w-11 h-11 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0"
-                  >
-                    <tui-icon icon="@tui.triangle-alert" />
-                  </div>
-                </tui-badged-content>
+      <div class="p-4 flex flex-col gap-4 max-w-7xl mx-auto w-full">
+        <header class="mb-4 flex flex-wrap items-center justify-between gap-4">
+          <h1 class="text-2xl font-bold m-0">
+            <a
+              routerLink="/admin"
+              class="no-underline text-inherit flex items-center gap-2"
+            >
+              <tui-icon icon="@tui.arrow-left" />
+              <tui-badged-content [style.--tui-radius.%]="50">
+                @if (totalCount(); as logsCount) {
+                  <ng-container tuiSlot="top">
+                    <tui-badge-notification tuiAppearance="accent" size="s">
+                      {{ logsCount }}
+                    </tui-badge-notification>
+                  </ng-container>
+                }
+                <div
+                  class="w-11 h-11 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0"
+                >
+                  <tui-icon icon="@tui.triangle-alert" />
+                </div>
+              </tui-badged-content>
 
-                {{ 'admin.errorLogs.title' | translate }}
-              </a>
-            </h1>
-            <p class="text-sm text-(--tui-text-secondary) mt-1">
-              {{ 'admin.errorLogs.description' | translate }}
-            </p>
-          </div>
+              {{ 'admin.errorLogs.title' | translate }}
+            </a>
+          </h1>
 
           <div class="flex items-center gap-2 flex-wrap">
             <button
@@ -154,6 +142,10 @@ import { matchesQuery } from '../../utils';
             </button>
           </div>
         </header>
+
+        <p class="mb-6 text-tui-text-secondary opacity-60">
+          {{ 'admin.errorLogs.description' | translate }}
+        </p>
 
         <!-- Controls & Filters -->
         <div

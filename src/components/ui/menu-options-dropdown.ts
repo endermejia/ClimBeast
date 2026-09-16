@@ -91,7 +91,12 @@ import { Themes } from '../../models';
         <div class="h-px bg-(--tui-border-normal) my-1 mx-2"></div>
       }
 
-      @if (authState.isAdmin() || authState.isAreaAdmin()) {
+      @let hasAdminRoles =
+        authState.isAdmin() ||
+        authState.isAreaAdmin() ||
+        authState.isIndoorAdmin() ||
+        authState.isIndoorRoutesetter();
+      @if (hasAdminRoles) {
         @if (authState.isAdmin()) {
           <!-- Administration -->
           <button
@@ -111,8 +116,32 @@ import { Themes } from '../../models';
             (click)="navigateToMyAreas()"
             class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors text-left text-inherit outline-none cursor-pointer"
           >
-            <tui-icon icon="@tui.shield" class="opacity-70" />
+            <tui-icon icon="@tui.map-pin" class="opacity-70" />
             {{ 'admin.manageMyAreas' | translate }}
+          </button>
+        }
+
+        @if (authState.isIndoorAdmin()) {
+          <!-- Manage My Indoor Centers -->
+          <button
+            type="button"
+            (click)="navigateToMyIndoorCenters()"
+            class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors text-left text-inherit outline-none cursor-pointer"
+          >
+            <tui-icon icon="@tui.dumbbell" class="opacity-70" />
+            {{ 'nav.my-indoor-centers' | translate }}
+          </button>
+        }
+
+        @if (authState.isIndoorRoutesetter()) {
+          <!-- Routesetting -->
+          <button
+            type="button"
+            (click)="navigateToRoutesetting()"
+            class="flex items-center gap-3 px-3 py-2 text-sm hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors text-left text-inherit outline-none cursor-pointer"
+          >
+            <tui-icon icon="@tui.wrench" class="opacity-70" />
+            {{ 'nav.routesetting' | translate }}
           </button>
         }
 
@@ -235,6 +264,16 @@ export class MenuOptionsDropdownComponent {
   protected navigateToMyAreas(): void {
     this.closeDropdown.emit();
     void this.router.navigate(['/my-areas']);
+  }
+
+  protected navigateToMyIndoorCenters(): void {
+    this.closeDropdown.emit();
+    void this.router.navigate(['/my-indoor-centers']);
+  }
+
+  protected navigateToRoutesetting(): void {
+    this.closeDropdown.emit();
+    void this.router.navigate(['/routesetting']);
   }
 
   protected openConfig(): void {

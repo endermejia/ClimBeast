@@ -1,6 +1,11 @@
 import { Routes } from '@angular/router';
 
-import { adminGuard, areaAdminGuard } from '../guard/admin.guard';
+import {
+  adminGuard,
+  areaAdminGuard,
+  indoorAdminGuard,
+  routesetterGuard,
+} from '../guard/admin.guard';
 import { authGuard } from '../guard/auth.guard';
 import { noAuthGuard } from '../guard/no-auth.guard';
 import { rootRedirectGuard } from '../guard/root-redirect.guard';
@@ -180,6 +185,22 @@ export const routes: Routes = [
       import('../pages/area/my-areas').then((m) => m.MyAreasComponent),
   },
   {
+    path: 'my-indoor-centers',
+    canMatch: [indoorAdminGuard],
+    loadComponent: () =>
+      import('../pages/indoor/my-indoor-centers').then(
+        (m) => m.MyIndoorCentersComponent,
+      ),
+  },
+  {
+    path: 'routesetting',
+    canMatch: [routesetterGuard],
+    loadComponent: () =>
+      import('../pages/indoor/routesetting').then(
+        (m) => m.RoutesettingComponent,
+      ),
+  },
+  {
     path: 'admin/users',
     canMatch: [adminGuard],
     loadComponent: () =>
@@ -257,6 +278,38 @@ export const routes: Routes = [
     loadComponent: () =>
       import('../pages/admin/user-reports-list').then(
         (m) => m.AdminUserReportsListComponent,
+      ),
+  },
+  {
+    path: 'admin/comment-reports',
+    canMatch: [adminGuard],
+    loadComponent: () =>
+      import('../pages/admin/comment-reports').then(
+        (m) => m.AdminCommentReportsComponent,
+      ),
+  },
+  {
+    path: 'admin/indoor-admin-requests',
+    canMatch: [adminGuard],
+    loadComponent: () =>
+      import('../pages/admin/indoor-admin-requests').then(
+        (m) => m.AdminIndoorAdminRequestsComponent,
+      ),
+  },
+  {
+    path: 'admin/routesetter-requests',
+    canMatch: [adminGuard],
+    loadComponent: () =>
+      import('../pages/admin/routesetter-requests').then(
+        (m) => m.AdminRoutesetterRequestsComponent,
+      ),
+  },
+  {
+    path: 'admin/area-funds',
+    canMatch: [adminGuard],
+    loadComponent: () =>
+      import('../pages/admin/area-funds').then(
+        (m) => m.AdminAreaFundsComponent,
       ),
   },
   // Public landing page

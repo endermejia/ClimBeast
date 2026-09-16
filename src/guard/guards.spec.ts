@@ -9,7 +9,12 @@ import { SupabaseService } from '../services/supabase.service';
 
 import { IS_BROWSER } from '../app/is-browser';
 import { MockSupabaseService } from '../testing';
-import { adminGuard, areaAdminGuard } from './admin.guard';
+import {
+  adminGuard,
+  areaAdminGuard,
+  indoorAdminGuard,
+  routesetterGuard,
+} from './admin.guard';
 import { authGuard } from './auth.guard';
 
 import { noAuthGuard } from './no-auth.guard';
@@ -443,5 +448,155 @@ describe('areaAdminGuard', () => {
     const router = TestBed.inject(Router);
     await router.navigate(['area-admin']);
     expect(router.url).toBe('/area-admin');
+  });
+});
+
+describe('indoorAdminGuard', () => {
+  let mockSupabase: MockSupabaseService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([
+          {
+            path: 'indoor-admin',
+            canMatch: [indoorAdminGuard],
+            component: { template: '' } as any,
+          },
+          {
+            path: 'login',
+            component: { template: '' } as any,
+          },
+          {
+            path: 'page-not-found',
+            component: { template: '' } as any,
+          },
+        ]),
+        { provide: SupabaseService, useClass: MockSupabaseService },
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
+      ],
+    });
+    mockSupabase = TestBed.inject(
+      SupabaseService,
+    ) as unknown as MockSupabaseService;
+  });
+
+  it('should redirect to /login when no session', async () => {
+    mockSupabase.setSession(null);
+    const router = TestBed.inject(Router);
+    await router.navigate(['indoor-admin']);
+    expect(router.url).toBe('/login');
+  });
+
+  it('should allow access for admin user', async () => {
+    mockSupabase.setSession(createMockSession());
+    (mockSupabase.userProfileResource as any)._setValue({
+      name: 'Admin',
+      is_admin: true,
+    });
+    const router = TestBed.inject(Router);
+    await router.navigate(['indoor-admin']);
+    expect(router.url).toBe('/indoor-admin');
+  });
+
+  it('should allow access for indoor admin user', async () => {
+    mockSupabase.setSession(createMockSession());
+    (mockSupabase.userProfileResource as any)._setValue({
+      name: 'Indoor Admin',
+      is_admin: false,
+    });
+    (mockSupabase.adminIndoorCentersResource as any)._setValue(['center-1']);
+    const router = TestBed.inject(Router);
+    await router.navigate(['indoor-admin']);
+    expect(router.url).toBe('/indoor-admin');
+  });
+
+  it('should redirect non-indoor-admin to /page-not-found', async () => {
+    mockSupabase.setSession(createMockSession());
+    (mockSupabase.userProfileResource as any)._setValue({
+      name: 'User',
+      is_admin: false,
+    });
+    (mockSupabase.adminIndoorCentersResource as any)._setValue([]);
+    const router = TestBed.inject(Router);
+    await router.navigate(['indoor-admin']);
+    expect(router.url).toBe('/page-not-found');
+  });
+});
+
+describe('routesetterGuard', () => {
+  let mockSupabase: MockSupabaseService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([
+          {
+            path: 'routesetting-route',
+            canMatch: [routesetterGuard],
+            component: { template: '' } as any,
+          },
+          {
+            path: 'login',
+            component: { template: '' } as any,
+          },
+          {
+            path: 'page-not-found',
+            component: { template: '' } as any,
+          },
+        ]),
+        { provide: SupabaseService, useClass: MockSupabaseService },
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
+      ],
+    });
+    mockSupabase = TestBed.inject(
+      SupabaseService,
+    ) as unknown as MockSupabaseService;
+  });
+
+  it('should redirect to /login when no session', async () => {
+    mockSupabase.setSession(null);
+    const router = TestBed.inject(Router);
+    await router.navigate(['routesetting-route']);
+    expect(router.url).toBe('/login');
+  });
+
+  it('should allow access for admin user', async () => {
+    mockSupabase.setSession(createMockSession());
+    (mockSupabase.userProfileResource as any)._setValue({
+      name: 'Admin',
+      is_admin: true,
+    });
+    const router = TestBed.inject(Router);
+    await router.navigate(['routesetting-route']);
+    expect(router.url).toBe('/routesetting-route');
+  });
+
+  it('should allow access for routesetter user', async () => {
+    mockSupabase.setSession(createMockSession());
+    (mockSupabase.userProfileResource as any)._setValue({
+      name: 'Setter',
+      is_admin: false,
+    });
+    (mockSupabase.routesetterIndoorCentersResource as any)._setValue([
+      'center-1',
+    ]);
+    const router = TestBed.inject(Router);
+    await router.navigate(['routesetting-route']);
+    expect(router.url).toBe('/routesetting-route');
+  });
+
+  it('should redirect non-routesetter to /page-not-found', async () => {
+    mockSupabase.setSession(createMockSession());
+    (mockSupabase.userProfileResource as any)._setValue({
+      name: 'User',
+      is_admin: false,
+    });
+    (mockSupabase.routesetterIndoorCentersResource as any)._setValue([]);
+    const router = TestBed.inject(Router);
+    await router.navigate(['routesetting-route']);
+    expect(router.url).toBe('/page-not-found');
   });
 });

@@ -14,10 +14,8 @@ import {
   TuiDialogService,
   TuiIcon,
   TuiScrollbar,
-  TuiTitle,
 } from '@taiga-ui/core';
 import { TUI_CONFIRM, type TuiConfirmData, TuiSkeleton } from '@taiga-ui/kit';
-import { TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
@@ -40,24 +38,16 @@ import type { MaterialCatalogItem } from '../../models';
     RouterLink,
     TranslatePipe,
     TuiButton,
-    TuiHeader,
     TuiIcon,
     TuiScrollbar,
     TuiSkeleton,
-    TuiTitle,
   ],
   template: `
     <tui-scrollbar class="h-full">
-      <div
-        class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-24 flex flex-col gap-8"
-      >
+      <div class="p-4 pb-24 flex flex-col max-w-7xl mx-auto w-full">
         <!-- Header -->
-        <header tuiHeader class="flex items-center justify-between">
-          <h1
-            tuiTitle
-            size="xl"
-            class="font-black tracking-tight flex items-center gap-2 m-0"
-          >
+        <header class="mb-4 flex items-center justify-between gap-2">
+          <h1 class="text-2xl font-bold flex items-center gap-2 m-0">
             <a
               routerLink="/admin"
               class="no-underline text-inherit flex items-center gap-2"
@@ -84,6 +74,10 @@ import type { MaterialCatalogItem } from '../../models';
             <tui-icon icon="@tui.plus" />
           </button>
         </header>
+
+        <p class="mb-6 text-tui-text-secondary opacity-60">
+          {{ 'admin.materialCatalog.description' | translate }}
+        </p>
 
         <!-- Items Grid -->
         <div

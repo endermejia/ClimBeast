@@ -26,9 +26,9 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { AreaDonationsService } from '../../services/area-donations.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 
-import { TopoCardComponent } from '../topo/topo-card';
-
 import { TopoListItem } from '../../models';
+
+import { TopoCardComponent } from '../topo/topo-card';
 
 export interface AreaDonationDialogData {
   areaId: number;

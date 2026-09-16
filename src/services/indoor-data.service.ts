@@ -9,10 +9,11 @@ import {
 
 import {
   ClimbingKind,
+  ClimbingKinds,
   IndoorAscentDto,
+  IndoorCenterDto,
   IndoorRouteWithExtras,
   RouteAscentDto,
-  ClimbingKinds,
   TopoDetail,
   TopoListItem,
   TopoPath,
@@ -185,7 +186,7 @@ export class IndoorDataService {
         `
         *,
         center: indoor_centers!inner (
-          id, name, slug
+          *
         )
       `,
       )
@@ -199,7 +200,7 @@ export class IndoorDataService {
         `
         *,
         route: indoor_routes!inner (
-          id, name, slug, grade, climbing_kind, color,
+          id, name, slug, grade, climbing_kind, color, user_creator_id,
           own_ascent: indoor_ascents!left (*)
         )
       `,
@@ -236,6 +237,7 @@ export class IndoorDataService {
             route_id: tr.route_id,
             number: tr.number ?? 0,
             path: tr.path as TopoPath | null,
+            user_creator_id: tr.user_creator_id,
             route: {
               id: tr.route.id,
               name: tr.route.name,
@@ -257,13 +259,15 @@ export class IndoorDataService {
       name: topo.name,
       photo: topo.image_url,
       crag_id: 0,
-      created_at: '',
+      created_at: topo.created_at ?? '',
       slug: '',
       shade_afternoon: false,
       shade_change_hour: null,
       shade_morning: false,
       legacy: topo.legacy,
       center_id: topo.center_id,
+      user_creator_id: topo.user_creator_id,
+      indoor_center: topo.center as unknown as IndoorCenterDto,
       topo_routes,
       crag: topo.center
         ? {
