@@ -34,7 +34,9 @@ export const TOPO_ROUTE_SORTERS: Record<string, TuiComparator<TopoRouteRow>> = {
 })
 export class TableSorterPipe implements PipeTransform {
   transform(col: string): TuiComparator<TopoRouteRow> | null {
-    if (col === 'actions' || col === 'admin_actions') return null;
+    if (col === 'actions' || col === 'admin_actions' || col === 'visibility') {
+      return null;
+    }
     return TOPO_ROUTE_SORTERS[col] ?? null;
   }
 }

@@ -68,6 +68,39 @@ describe('FilterStateService', () => {
     expect(service.profileAscentsShowOutdoor()).toBe(false);
   });
 
+  it('should have default indoor topo filters', () => {
+    expect(service.indoorTopoGradeRange()).toEqual([
+      0,
+      ORDERED_GRADE_VALUES.length - 2,
+    ]);
+    expect(service.indoorTopoMovesRange()).toEqual([0, 100]);
+  });
+
+  it('should set indoor topo filters and reset them individually', () => {
+    service.indoorTopoGradeRange.set([5, 20]);
+    service.indoorTopoMovesRange.set([2, 15]);
+    expect(service.indoorTopoGradeRange()).toEqual([5, 20]);
+    expect(service.indoorTopoMovesRange()).toEqual([2, 15]);
+
+    service.resetIndoorTopoGradeRange();
+    expect(service.indoorTopoGradeRange()).toEqual([
+      0,
+      ORDERED_GRADE_VALUES.length - 2,
+    ]);
+    expect(service.indoorTopoMovesRange()).toEqual([2, 15]);
+
+    service.resetIndoorTopoMovesRange(30);
+    expect(service.indoorTopoMovesRange()).toEqual([0, 30]);
+
+    service.indoorTopoGradeRange.set([5, 20]);
+    service.resetIndoorTopoFilters(25);
+    expect(service.indoorTopoGradeRange()).toEqual([
+      0,
+      ORDERED_GRADE_VALUES.length - 2,
+    ]);
+    expect(service.indoorTopoMovesRange()).toEqual([0, 25]);
+  });
+
   it('should set grade range', () => {
     service.areaListGradeRange.set([10, 25]);
     expect(service.areaListGradeRange()).toEqual([10, 25]);

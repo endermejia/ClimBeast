@@ -37,7 +37,7 @@ import { Observer } from 'rxjs';
   ],
   template: `
     <div
-      class="flex flex-col gap-4 p-5 rounded-2xl bg-(--tui-base-02) border border-(--tui-border-normal)"
+      class="flex flex-col gap-4 p-5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
     >
       <h3
         class="text-base font-semibold flex items-center gap-2 m-0 text-(--tui-text-secondary)"

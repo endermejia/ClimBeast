@@ -191,6 +191,7 @@ import { TopoPageBase } from './topo-page-base';
               />
 
               <app-topo-routes-table
+                class="w-full h-full min-w-0 min-h-0 overflow-hidden"
                 [sortedTableData]="sortedTableData()"
                 [columns]="columns()"
                 [canEdit]="canEdit()"

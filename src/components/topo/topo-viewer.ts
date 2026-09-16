@@ -126,7 +126,6 @@ import {
             appearance="floating"
             iconStart="@tui.x"
             size="s"
-            class="rounded-full!"
             (click)="toggleFullscreen(false); $event.stopPropagation()"
           >
             {{ 'close' | translate }}
@@ -188,7 +187,6 @@ import {
                 appearance="flat"
                 size="s"
                 iconStart="@tui.chevron-left"
-                class="rounded-full!"
                 [title]="'previous' | translate"
                 [attr.aria-label]="'previous' | translate"
                 (click)="selectPrevRoute(); $event.stopPropagation()"
@@ -214,7 +212,6 @@ import {
                 appearance="flat"
                 size="s"
                 iconStart="@tui.chevron-right"
-                class="rounded-full! mr-1"
                 [title]="'next' | translate"
                 [attr.aria-label]="'next' | translate"
                 (click)="selectNextRoute(); $event.stopPropagation()"

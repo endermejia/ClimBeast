@@ -39,6 +39,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { IndoorDataService } from '../../services/indoor-data.service';
 import { IndoorService } from '../../services/indoor.service';
+import { LayoutService } from '../../services/layout.service';
 import { RoutesService } from '../../services/routes.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -243,9 +244,15 @@ export interface TopoPathEditorConfig {
                             : topoRoutes.length;
                       <button
                         tuiIconButton
-                        appearance="flat"
                         size="s"
-                        class="rounded-full! shrink-0 transition-opacity"
+                        class="rounded-full! shrink-0"
+                        [appearance]="
+                          visState === 'solo'
+                            ? 'accent'
+                            : visState === 'hidden'
+                              ? 'flat-grayscale'
+                              : 'flat'
+                        "
                         [iconStart]="
                           visState === 'hidden'
                             ? '@tui.eye-off'
@@ -253,31 +260,22 @@ export interface TopoPathEditorConfig {
                               ? '@tui.scan-eye'
                               : '@tui.eye'
                         "
-                        [class.opacity-30]="visState === 'hidden'"
-                        [class.opacity-60]="visState === 'visible'"
-                        [class.hover:opacity-100]="
-                          visState === 'visible' || visState === 'hidden'
-                        "
-                        [class.opacity-100]="visState === 'solo'"
-                        [class.text-(--tui-text-accent-1)!]="
-                          visState === 'solo'
-                        "
                         [title]="
-                          (visState === 'hidden'
+                          (visState === 'visible'
                             ? 'showOnly'
                             : visState === 'solo'
-                              ? 'showAll'
-                              : 'hide'
+                              ? 'hide'
+                              : 'show'
                           ) | translate
                         "
                         (click)="toggleRouteVisibility(tr.route_id, $event)"
                       >
                         {{
-                          (visState === 'hidden'
+                          (visState === 'visible'
                             ? 'showOnly'
                             : visState === 'solo'
-                              ? 'showAll'
-                              : 'hide'
+                              ? 'hide'
+                              : 'show'
                           ) | translate
                         }}
                       </button>
@@ -329,6 +327,10 @@ export interface TopoPathEditorConfig {
                 <p class="tip">
                   <tui-icon icon="@tui.move" class="tip-icon" />
                   {{ 'topos.editor.movePoint' | translate }}
+                </p>
+                <p class="tip">
+                  <tui-icon icon="@tui.trash" class="tip-icon" />
+                  {{ deletePointTipKey() | translate }}
                 </p>
                 <div class="tip items-start!">
                   <tui-icon
@@ -1471,12 +1473,19 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   private readonly topos = inject(ToposService);
   private readonly indoor = inject(IndoorService);
   private readonly indoorData = inject(IndoorDataService);
+  private readonly layoutService = inject(LayoutService);
   private readonly routesService = inject(RoutesService);
   private readonly supabase = inject(SupabaseService);
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
   private readonly cdr = inject(ChangeDetectorRef);
+
+  protected readonly deletePointTipKey = computed(() =>
+    this.layoutService.isMobile()
+      ? 'topos.editor.deletePointMobile'
+      : 'topos.editor.deletePoint',
+  );
 
   protected readonly imageElement =
     viewChild.required<ElementRef<HTMLImageElement>>('image');
@@ -1822,11 +1831,35 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         return new Set(allOtherIds);
       }
 
+      if (totalCount <= 1) {
+        const next = new Set(set);
+        if (isHidden) {
+          next.delete(routeId);
+        } else {
+          next.add(routeId);
+        }
+        return next;
+      }
+
+      // Cyclical order: ver (visible) -> focus (solo) -> ocultar (hidden) -> ver (visible)
       if (isSolo) {
+        // focus -> ocultar: restore pre-solo routes, hide this route
         const saved = this.preSoloHiddenRouteIds ?? new Set();
         this.preSoloHiddenRouteIds = null;
-        return new Set([...saved].filter((id) => id !== routeId));
+        if (this.selectedRoute()?.route_id === routeId) {
+          this.selectedRoute.set(null);
+        }
+        const next = new Set(saved);
+        next.add(routeId);
+        return next;
       } else if (isHidden) {
+        // ocultar -> ver: unhide this route
+        this.preSoloHiddenRouteIds = null;
+        const next = new Set(set);
+        next.delete(routeId);
+        return next;
+      } else {
+        // ver -> focus: hide all other routes
         if (!this.preSoloHiddenRouteIds) {
           this.preSoloHiddenRouteIds = new Set(set);
         }
@@ -1836,13 +1869,6 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         const matching = this.topoRoutes.find((r) => r.route_id === routeId);
         if (matching) this.selectedRoute.set(matching);
         return new Set(allOtherIds);
-      } else {
-        if (this.selectedRoute()?.route_id === routeId) {
-          this.selectedRoute.set(null);
-        }
-        const next = new Set(set);
-        next.add(routeId);
-        return next;
       }
     });
   }

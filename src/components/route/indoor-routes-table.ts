@@ -82,7 +82,7 @@ import { RoutesTableComponent } from './routes-table';
           @for (e of item.equippers; track e.id) {
             <a
               tuiLink
-              class="text-xs bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 px-2 py-0.5 rounded-md transition-colors truncate max-w-full font-medium"
+              class="text-xs bg-(--tui-background-neutral-1) hover:bg-(--tui-background-neutral-1-hover) text-(--tui-text-primary) px-2 py-0.5 rounded-md transition-colors truncate max-w-full font-medium"
               [routerLink]="['/equipper', e.id]"
             >
               {{ e.name }}

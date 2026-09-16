@@ -174,7 +174,7 @@ import { IS_BROWSER } from '../../app/is-browser';
             <div class="flex flex-col gap-4 grow">
               <!-- Gallery/Avatar -->
               <div
-                class="relative rounded-3xl overflow-hidden aspect-video bg-neutral-100 dark:bg-neutral-800"
+                class="relative rounded-3xl overflow-hidden aspect-video bg-(--tui-background-neutral-1)"
               >
                 @if (carouselItems().length > 0) {
                   <app-custom-carousel

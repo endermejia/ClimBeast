@@ -187,7 +187,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                 <div class="flex items-center gap-2">
                   @if (r.color) {
                     <span
-                      class="w-5 h-5 rounded-full border border-neutral-300 dark:border-neutral-700 block shrink-0"
+                      class="w-5 h-5 rounded-full border border-(--tui-border-normal) block shrink-0"
                       [style.backgroundColor]="r.color"
                     ></span>
                     <span class="text-xl font-semibold">

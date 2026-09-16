@@ -96,11 +96,13 @@ import { openImageEditor } from '../../utils/open-image-editor';
   ],
   template: `
     @if (isEdit()) {
-      <tui-tabs [(activeItemIndex)]="activeTabIndex" class="mb-4">
-        <button tuiTab>{{ 'details' | translate }}</button>
-        <button tuiTab>{{ 'indoor.schedule' | translate }}</button>
-        <button tuiTab>{{ 'indoor.vouchers' | translate }}</button>
-      </tui-tabs>
+      <div class="overflow-x-auto no-scrollbar mb-4">
+        <tui-tabs [(activeItemIndex)]="activeTabIndex">
+          <button tuiTab>{{ 'details' | translate }}</button>
+          <button tuiTab>{{ 'indoor.schedule' | translate }}</button>
+          <button tuiTab>{{ 'indoor.vouchers' | translate }}</button>
+        </tui-tabs>
+      </div>
     }
 
     <form class="flex flex-col grow" (submit.zoneless)="onSubmit($event)">
@@ -306,87 +308,115 @@ import { openImageEditor } from '../../utils/open-image-editor';
           }
 
           @case (1) {
-            <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-3">
               @for (d of scheduleDays(); track d.day) {
                 <div
-                  class="flex flex-wrap items-center gap-4 p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-900 border border-(--tui-border-normal)"
+                  class="flex flex-col gap-3 p-3.5 sm:p-4 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
                 >
-                  <span class="font-bold w-24 capitalize">{{
-                    d.day | translate
-                  }}</span>
+                  <div class="flex items-center justify-between gap-4">
+                    <span class="font-bold text-base capitalize">{{
+                      d.day | translate
+                    }}</span>
 
-                  <label class="flex items-center gap-2">
-                    <input
-                      tuiCheckbox
-                      type="checkbox"
-                      [ngModel]="d.closed"
-                      (ngModelChange)="onClosedChange(d.day, $event)"
-                      [ngModelOptions]="{ standalone: true }"
-                    />
-                    <span>{{ 'indoor.closed' | translate }}</span>
-                  </label>
-
-                  @if (!d.closed) {
-                    <div class="flex items-center gap-2">
-                      <tui-textfield tuiTextfieldSize="s" class="w-36">
-                        <input
-                          tuiInput
-                          type="time"
-                          [ngModel]="d.open"
-                          (ngModelChange)="onTimeChange(d.day, 'open', $event)"
-                          [ngModelOptions]="{ standalone: true }"
-                        />
-                      </tui-textfield>
-                      <span>-</span>
-                      <tui-textfield tuiTextfieldSize="s" class="w-36">
-                        <input
-                          tuiInput
-                          type="time"
-                          [ngModel]="d.close"
-                          (ngModelChange)="onTimeChange(d.day, 'close', $event)"
-                          [ngModelOptions]="{ standalone: true }"
-                        />
-                      </tui-textfield>
-                    </div>
-
-                    <label class="flex items-center gap-2 ml-4">
+                    <label
+                      class="flex items-center gap-2 cursor-pointer select-none"
+                    >
                       <input
                         tuiCheckbox
                         type="checkbox"
-                        [ngModel]="d.hasSplit"
-                        (ngModelChange)="onSplitChange(d.day, $event)"
+                        [ngModel]="d.closed"
+                        (ngModelChange)="onClosedChange(d.day, $event)"
                         [ngModelOptions]="{ standalone: true }"
                       />
-                      <span>Jornada partida</span>
+                      <span class="text-sm">{{
+                        'indoor.closed' | translate
+                      }}</span>
                     </label>
+                  </div>
 
-                    @if (d.hasSplit) {
-                      <div class="flex items-center gap-2">
-                        <tui-textfield tuiTextfieldSize="s" class="w-36">
+                  @if (!d.closed) {
+                    <div
+                      class="flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3 pt-2 border-t border-(--tui-border-normal)/40"
+                    >
+                      <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <tui-textfield
+                          tuiTextfieldSize="s"
+                          class="flex-1 sm:w-32"
+                        >
                           <input
                             tuiInput
                             type="time"
-                            [ngModel]="d.open2"
+                            [ngModel]="d.open"
                             (ngModelChange)="
-                              onTimeChange(d.day, 'open2', $event)
+                              onTimeChange(d.day, 'open', $event)
                             "
                             [ngModelOptions]="{ standalone: true }"
                           />
                         </tui-textfield>
-                        <span>-</span>
-                        <tui-textfield tuiTextfieldSize="s" class="w-36">
+                        <span class="text-xs opacity-60 shrink-0">-</span>
+                        <tui-textfield
+                          tuiTextfieldSize="s"
+                          class="flex-1 sm:w-32"
+                        >
                           <input
                             tuiInput
                             type="time"
-                            [ngModel]="d.close2"
+                            [ngModel]="d.close"
                             (ngModelChange)="
-                              onTimeChange(d.day, 'close2', $event)
+                              onTimeChange(d.day, 'close', $event)
                             "
                             [ngModelOptions]="{ standalone: true }"
                           />
                         </tui-textfield>
                       </div>
-                    }
+
+                      <label
+                        class="flex items-center gap-2 cursor-pointer select-none sm:ml-2"
+                      >
+                        <input
+                          tuiCheckbox
+                          type="checkbox"
+                          [ngModel]="d.hasSplit"
+                          (ngModelChange)="onSplitChange(d.day, $event)"
+                          [ngModelOptions]="{ standalone: true }"
+                        />
+                        <span class="text-sm">Jornada partida</span>
+                      </label>
+
+                      @if (d.hasSplit) {
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                          <tui-textfield
+                            tuiTextfieldSize="s"
+                            class="flex-1 sm:w-32"
+                          >
+                            <input
+                              tuiInput
+                              type="time"
+                              [ngModel]="d.open2"
+                              (ngModelChange)="
+                                onTimeChange(d.day, 'open2', $event)
+                              "
+                              [ngModelOptions]="{ standalone: true }"
+                            />
+                          </tui-textfield>
+                          <span class="text-xs opacity-60 shrink-0">-</span>
+                          <tui-textfield
+                            tuiTextfieldSize="s"
+                            class="flex-1 sm:w-32"
+                          >
+                            <input
+                              tuiInput
+                              type="time"
+                              [ngModel]="d.close2"
+                              (ngModelChange)="
+                                onTimeChange(d.day, 'close2', $event)
+                              "
+                              [ngModelOptions]="{ standalone: true }"
+                            />
+                          </tui-textfield>
+                        </div>
+                      }
+                    </div>
                   }
                 </div>
               }
@@ -394,10 +424,10 @@ import { openImageEditor } from '../../utils/open-image-editor';
           }
 
           @case (2) {
-            <div class="flex flex-col gap-6 max-w-2xl">
+            <div class="flex flex-col gap-6 w-full max-w-2xl">
               <!-- Compact Create Voucher Form -->
               <div
-                class="flex flex-col gap-4 p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-850"
+                class="flex flex-col gap-4 p-4 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
               >
                 <!-- First line: Name -->
                 <div class="w-full">
@@ -490,15 +520,15 @@ import { openImageEditor } from '../../utils/open-image-editor';
 
               <!-- Sleek Vouchers List -->
               @if (activeLocalVouchers().length > 0) {
-                <div class="flex flex-col gap-2">
+                <div class="flex flex-col gap-2.5">
                   @for (v of activeLocalVouchers(); track $index) {
                     <div
-                      class="flex items-center justify-between p-4 rounded-2xl tui-appearance-floating"
+                      class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl tui-appearance-floating"
                       tuiAppearance="floating"
                     >
-                      <div class="flex items-center gap-3">
+                      <div class="flex items-center gap-3 min-w-0">
                         <div
-                          class="w-10 h-10 rounded-xl tui-appearance-primary flex items-center justify-center"
+                          class="w-10 h-10 shrink-0 rounded-xl tui-appearance-primary flex items-center justify-center"
                           tuiAppearance="primary"
                         >
                           <tui-icon
@@ -510,50 +540,57 @@ import { openImageEditor } from '../../utils/open-image-editor';
                             class="text-lg"
                           />
                         </div>
-                        <div class="flex flex-col">
-                          <span class="font-bold text-base">{{ v.name }}</span>
+                        <div class="flex flex-col min-w-0">
+                          <span class="font-bold text-base truncate">{{
+                            v.name
+                          }}</span>
                           @if (v.description) {
-                            <span class="text-xs opacity-60">{{
-                              v.description
-                            }}</span>
+                            <span
+                              class="text-xs opacity-60 line-clamp-2 break-words"
+                              >{{ v.description }}</span
+                            >
                           }
                         </div>
                       </div>
 
-                      <div class="flex items-center gap-4">
+                      <div
+                        class="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t border-(--tui-border-normal)/40 sm:border-0"
+                      >
                         <span
-                          class="text-base font-extrabold px-3 py-1.5 rounded-xl"
+                          class="text-sm sm:text-base font-extrabold px-3 py-1 sm:py-1.5 rounded-xl whitespace-nowrap"
                           tuiAppearance="primary"
                         >
                           {{ v.price | number: '1.2-2' }} €
                         </span>
-                        <button
-                          tuiIconButton
-                          appearance="flat-grayscale"
-                          size="s"
-                          iconStart="@tui.edit"
-                          type="button"
-                          class="rounded-full! text-neutral-500"
-                          [attr.aria-label]="'edit' | translate"
-                          (click.zoneless)="editLocalVoucher(v, $event)"
-                        ></button>
-                        <button
-                          tuiIconButton
-                          appearance="flat-grayscale"
-                          size="s"
-                          iconStart="@tui.trash"
-                          type="button"
-                          class="rounded-full! text-red-550"
-                          [attr.aria-label]="'delete' | translate"
-                          (click.zoneless)="deleteLocalVoucher(v, $event)"
-                        ></button>
+                        <div class="flex items-center gap-1">
+                          <button
+                            tuiIconButton
+                            appearance="flat-grayscale"
+                            size="s"
+                            iconStart="@tui.edit"
+                            type="button"
+                            class="rounded-full! text-(--tui-text-secondary)"
+                            [attr.aria-label]="'edit' | translate"
+                            (click.zoneless)="editLocalVoucher(v, $event)"
+                          ></button>
+                          <button
+                            tuiIconButton
+                            appearance="flat-grayscale"
+                            size="s"
+                            iconStart="@tui.trash"
+                            type="button"
+                            class="rounded-full! text-(--tui-status-negative)"
+                            [attr.aria-label]="'delete' | translate"
+                            (click.zoneless)="deleteLocalVoucher(v, $event)"
+                          ></button>
+                        </div>
                       </div>
                     </div>
                   }
                 </div>
               } @else {
                 <div
-                  class="p-10 text-center opacity-50 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl"
+                  class="p-8 text-center text-(--tui-text-secondary) border border-dashed border-(--tui-border-normal) rounded-2xl bg-(--tui-background-neutral-1)"
                 >
                   {{ 'empty' | translate }}
                 </div>

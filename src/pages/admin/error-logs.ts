@@ -179,12 +179,13 @@ import { matchesQuery } from '../../utils';
             <button
               type="button"
               class="px-3 py-1.5 rounded-xl text-xs border transition-all flex items-center gap-1.5 cursor-pointer font-medium"
-              [class.bg-slate-900]="selectedSeverity() === 'all'"
-              [class.border-slate-900]="selectedSeverity() === 'all'"
-              [class.text-white]="selectedSeverity() === 'all'"
-              [class.dark:bg-slate-100]="selectedSeverity() === 'all'"
-              [class.dark:border-slate-100]="selectedSeverity() === 'all'"
-              [class.dark:text-slate-900]="selectedSeverity() === 'all'"
+              [class.bg-(--tui-background-accent-1)]="
+                selectedSeverity() === 'all'
+              "
+              [class.border-transparent]="selectedSeverity() === 'all'"
+              [class.text-(--tui-background-base)]="
+                selectedSeverity() === 'all'
+              "
               [class.bg-(--tui-background-neutral-1)]="
                 selectedSeverity() !== 'all'
               "
@@ -197,10 +198,12 @@ import { matchesQuery } from '../../utils';
               <span>{{ 'admin.errorLogs.severities.all' | translate }}</span>
               <span
                 class="px-1.5 py-0.5 text-[10px] rounded-full"
-                [class.bg-slate-700]="selectedSeverity() === 'all'"
-                [class.text-white]="selectedSeverity() === 'all'"
-                [class.dark:bg-slate-300]="selectedSeverity() === 'all'"
-                [class.dark:text-slate-900]="selectedSeverity() === 'all'"
+                [class.bg-(--tui-background-base)/20]="
+                  selectedSeverity() === 'all'
+                "
+                [class.text-(--tui-background-base)]="
+                  selectedSeverity() === 'all'
+                "
                 [class.bg-(--tui-background-base)]="
                   selectedSeverity() !== 'all'
                 "

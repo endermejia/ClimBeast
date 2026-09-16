@@ -224,7 +224,7 @@ export interface MaterialCatalogFormData {
 
         <!-- Active Switch -->
         <div
-          class="flex items-center justify-between gap-4 p-4 rounded-xl bg-(--tui-base-02)"
+          class="flex items-center justify-between gap-4 p-4 rounded-xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
         >
           <span class="font-semibold">
             {{ 'admin.materialCatalog.active' | translate }}

@@ -32,13 +32,13 @@ import {
   TuiDropdown,
 } from '@taiga-ui/core';
 import {
-  TuiChevron,
   TUI_CONFIRM,
+  TuiChevron,
+  TuiFiles,
   TuiInputChip,
+  TuiInputFiles,
   TuiInputTime,
   TuiMultiSelect,
-  TuiFiles,
-  TuiInputFiles,
 } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
@@ -388,17 +388,6 @@ import { GradeComponent } from '../ui/avatar-grade';
         >
           {{ 'cancel' | translate }}
         </button>
-        @if (model().selectedRoutes.length > 0) {
-          <button
-            tuiButton
-            appearance="flat"
-            type="button"
-            (click)="sortRoutesByPosition()"
-          >
-            <tui-icon icon="@tui.list-ordered" class="mr-2" />
-            {{ 'topos.editor.sort' | translate }}
-          </button>
-        }
         <button
           [disabled]="
             topoForm.name().invalid() || topoForm.shade_change_hour().invalid()
@@ -1149,55 +1138,6 @@ export class TopoFormComponent {
         handleErrorToast(e, this.toast);
       }
     }
-  }
-
-  protected async sortRoutesByPosition(): Promise<void> {
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('topos.editor.sort'),
-        size: 's',
-        data: {
-          content: this.translate.instant('topos.editor.sortConfirm'),
-          yes: this.translate.instant('apply'),
-          no: this.translate.instant('cancel'),
-        },
-      }),
-      { defaultValue: false },
-    );
-
-    if (!confirmed) return;
-
-    const routes = [...this.model().selectedRoutes];
-    const pending = this.pendingPaths();
-
-    let existingMap: Map<
-      string | number,
-      { path?: { points?: { x: number; y: number }[] } | null }
-    >;
-    if (this.isIndoor()) {
-      const initial = this._dialogCtx?.data?.initialRoutes || [];
-      existingMap = new Map(initial.map((e) => [e.id, { path: e.path }]));
-    } else {
-      const existing = this.effectiveTopoData()?.topo_routes || [];
-      existingMap = new Map(existing.map((e) => [e.route_id, e]));
-    }
-
-    const pendingMap = new Map(pending.map((p) => [p.routeId, p]));
-
-    const routesWithX = routes.map((r) => {
-      const p = pendingMap.get(r.id);
-      const e = existingMap.get(r.id);
-      const points = p?.path?.points || e?.path?.points || [];
-      const minX =
-        points.length > 0 ? Math.min(...points.map((pt) => pt.x)) : 999;
-      return { r, minX };
-    });
-
-    routesWithX.sort((a, b) => a.minX - b.minX);
-    this.model.update((m) => ({
-      ...m,
-      selectedRoutes: routesWithX.map((item) => item.r),
-    }));
   }
 
   protected async openPathEditor(overrideUrl?: string): Promise<void> {

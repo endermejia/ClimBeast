@@ -79,6 +79,16 @@ export class FilterStateService {
   indoorRoutesCategories: WritableSignal<number[]> = signal([]);
   indoorRoutesToposOnly: WritableSignal<boolean> = signal(false);
 
+  // ---- Indoor Topo Filters ----
+  private readonly indoorTopoGradeRangeKey = 'indoor_topo_grade_range_v1';
+  private readonly indoorTopoMovesRangeKey = 'indoor_topo_moves_range_v1';
+
+  indoorTopoGradeRange: WritableSignal<[number, number]> = signal([
+    0,
+    ORDERED_GRADE_VALUES.length - 2,
+  ]);
+  indoorTopoMovesRange: WritableSignal<[number, number]> = signal([0, 100]);
+
   readonly isOwnProfile = signal<boolean>(true);
 
   constructor() {
@@ -201,6 +211,20 @@ export class FilterStateService {
         String(this.indoorRoutesToposOnly()),
       );
     });
+
+    // Indoor topo persistence
+    effect(() => {
+      this.localStorage.setItem(
+        this.indoorTopoGradeRangeKey,
+        JSON.stringify(this.indoorTopoGradeRange()),
+      );
+    });
+    effect(() => {
+      this.localStorage.setItem(
+        this.indoorTopoMovesRangeKey,
+        JSON.stringify(this.indoorTopoMovesRange()),
+      );
+    });
   }
 
   private hydrate(): void {
@@ -302,6 +326,27 @@ export class FilterStateService {
         this.indoorRoutesToposOnly.set(rawIndoorToposOnly === 'true');
       }
 
+      // Indoor topo
+      const rawIndoorTopoGradeRange = this.localStorage.getItem(
+        this.indoorTopoGradeRangeKey,
+      );
+      if (rawIndoorTopoGradeRange) {
+        const parsed = JSON.parse(rawIndoorTopoGradeRange);
+        if (Array.isArray(parsed) && parsed.length === 2) {
+          this.indoorTopoGradeRange.set(parsed as [number, number]);
+        }
+      }
+
+      const rawIndoorTopoMovesRange = this.localStorage.getItem(
+        this.indoorTopoMovesRangeKey,
+      );
+      if (rawIndoorTopoMovesRange) {
+        const parsed = JSON.parse(rawIndoorTopoMovesRange);
+        if (Array.isArray(parsed) && parsed.length === 2) {
+          this.indoorTopoMovesRange.set(parsed as [number, number]);
+        }
+      }
+
       // Profile ascents
       this.hydrateProfileFilters();
     } catch {
@@ -399,5 +444,18 @@ export class FilterStateService {
     this.profileAscentsCategories.set([]);
     this.profileAscentsShowIndoor.set(false);
     this.profileAscentsShowOutdoor.set(false);
+  }
+
+  resetIndoorTopoGradeRange(): void {
+    this.indoorTopoGradeRange.set([0, ORDERED_GRADE_VALUES.length - 2]);
+  }
+
+  resetIndoorTopoMovesRange(maxMoves = 100): void {
+    this.indoorTopoMovesRange.set([0, maxMoves]);
+  }
+
+  resetIndoorTopoFilters(maxMoves = 100): void {
+    this.resetIndoorTopoGradeRange();
+    this.resetIndoorTopoMovesRange(maxMoves);
   }
 }
