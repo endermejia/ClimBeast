@@ -125,8 +125,8 @@ import type { TopoRouteRow } from './topo.types';
                       *tuiHead="col"
                       tuiTh
                       [sorter]="col | tableSorter"
-                      [minWidth]="COL_MIN_PX[col] ?? null"
-                      [maxWidth]="COL_MIN_PX[col] ?? null"
+                      [style.min-width.px]="isMobile() ? null : COL_MIN_PX[col]"
+                      [style.max-width.px]="isMobile() ? null : COL_MIN_PX[col]"
                       class="text-center"
                       [class.p-0!]="col === 'visibility'"
                     >

@@ -339,7 +339,7 @@ export class IndoorTopoComponent extends TopoPageBase {
     const base = isMobile
       ? ['visibility', 'grade', 'name', 'moves']
       : ['visibility', 'grade', 'name', 'moves', 'actions'];
-    if (!isMobile && this.canEdit()) {
+    if (this.canEdit()) {
       base.push('admin_actions');
     }
     return base;
