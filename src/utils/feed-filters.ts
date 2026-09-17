@@ -103,10 +103,10 @@ export function applyUserFilter<
       q = q.in(userFilterColumn, options.followedIds);
       break;
     case HomeFeedFilters.FAVORITE_AREAS:
-      q = q.in('route.crag.area_id', options.likedAreaIds);
+      q = q.in('routes.crags.area_id', options.likedAreaIds);
       break;
     case HomeFeedFilters.FAVORITE_CRAGS:
-      q = q.in('route.crag_id', options.likedCragIds);
+      q = q.in('routes.crag_id', options.likedCragIds);
       break;
     case HomeFeedFilters.FAVORITE_ROUTES:
       q = q.in('route_id', options.likedRouteIds);

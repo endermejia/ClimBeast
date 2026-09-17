@@ -818,7 +818,10 @@ export class HomeComponent {
 
     let countQuery = this.supabase.client
       .from('route_ascents')
-      .select('*', { count: 'exact', head: true });
+      .select('*, route:routes!inner(*, crag:crags!inner(area_id))', {
+        count: 'exact',
+        head: true,
+      });
     countQuery = applyUserFilter(countQuery, filterOptions);
     countQuery = applyCategoryFilter(
       countQuery,
