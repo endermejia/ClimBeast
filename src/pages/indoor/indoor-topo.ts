@@ -227,7 +227,6 @@ import { TopoPageBase } from '../area/topo-page-base';
                 class="flex-1 min-h-0 min-w-0 overflow-hidden"
                 [sortedTableData]="sortedTableData()"
                 [columns]="columns()"
-                [canEdit]="canEdit()"
                 [isMobile]="isMobile"
                 [selectedRouteId]="selectedRouteId()"
                 [hiddenRouteIds]="hiddenRouteIds()"
@@ -266,11 +265,6 @@ export class IndoorTopoComponent extends TopoPageBase {
   protected readonly indoorService = inject(IndoorService);
 
   override isIndoor = computed(() => true);
-
-  protected readonly canEditAsAdmin = computed(() => {
-    const centerId = this.topo()?.center_id ?? '';
-    return !!this.authState.indoorAdminPermissions()[centerId];
-  });
 
   protected readonly topoImageResource = resource({
     params: () => {
@@ -337,7 +331,7 @@ export class IndoorTopoComponent extends TopoPageBase {
   protected readonly columns = computed(() => {
     const isMobile = this.layoutService.isMobile();
     const hasMoves = this.hasMovesData();
-    const base = isMobile
+    return isMobile
       ? ['visibility', 'grade', 'name', ...(hasMoves ? ['moves'] : [])]
       : [
           'visibility',
@@ -346,10 +340,6 @@ export class IndoorTopoComponent extends TopoPageBase {
           ...(hasMoves ? ['moves'] : []),
           'actions',
         ];
-    if (this.canEdit()) {
-      base.push('admin_actions');
-    }
-    return base;
   });
 
   protected override readonly direction = signal<TuiSortDirection>(

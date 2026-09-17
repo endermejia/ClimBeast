@@ -3,13 +3,11 @@ import {
   Component,
   computed,
   effect,
-  ElementRef,
   inject,
   input,
   output,
-  viewChildren,
+  signal,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import {
@@ -25,33 +23,23 @@ import {
 } from '@taiga-ui/addon-table';
 import type { TuiTableSortChange } from '@taiga-ui/addon-table';
 import type { TuiComparator } from '@taiga-ui/addon-table/types';
-import { TuiDialogService } from '@taiga-ui/core';
 import {
   TuiButton,
+  TuiDataList,
+  TuiDropdown,
   TuiIcon,
   TuiLink,
   TuiScrollbar,
-  TuiTextfield,
 } from '@taiga-ui/core';
-import {
-  TUI_CONFIRM,
-  TuiAvatar,
-  type TuiConfirmData,
-  TuiInputNumber,
-} from '@taiga-ui/kit';
+import { TuiAvatar } from '@taiga-ui/kit';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
-import { IndoorDataService } from '../../services/indoor-data.service';
-import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { RoutesService } from '../../services/routes.service';
-import { SupabaseService } from '../../services/supabase.service';
-import { ToastService } from '../../services/toast.service';
-import { ToposService } from '../../services/topos.service';
 
-import { topoPathToJson, type TopoRouteWithRoute } from '../../models';
+import { type TopoRouteWithRoute } from '../../models';
 
 import {
   AscentInfoPipe,
@@ -59,7 +47,6 @@ import {
   TopoIsRouteVisiblePipe,
   TopoRouteVisibilityStatePipe,
 } from '../../pipes';
-import { handleErrorToast } from '../../utils';
 
 import { PaywallComponent } from '../paywall/paywall';
 import { GradeComponent } from '../ui/avatar-grade';
@@ -74,7 +61,6 @@ import type { TopoRouteRow } from './topo.types';
   },
   imports: [
     EmptyStateComponent,
-    FormsModule,
     GradeComponent,
     PaywallComponent,
     RouterLink,
@@ -85,11 +71,11 @@ import type { TopoRouteRow } from './topo.types';
     TranslatePipe,
     TuiAvatar,
     TuiButton,
+    TuiDataList,
+    TuiDropdown,
     TuiIcon,
-    TuiInputNumber,
     TuiLink,
     TuiScrollbar,
-    TuiTextfield,
     TuiTable,
     TuiTableTbody,
     TuiTableThGroup,
@@ -171,7 +157,7 @@ import type { TopoRouteRow } from './topo.types';
                             </span>
                           }
                           @case ('grade') {
-                            {{ 'grade' | translate }}
+                            {{ 'gradeShort' | translate }}
                           }
                           @case ('height') {
                             {{ 'routes.height' | translate }}
@@ -239,31 +225,7 @@ import type { TopoRouteRow } from './topo.types';
                             <div
                               class="flex items-center justify-center w-full h-full min-w-0"
                             >
-                              @if (canEdit()) {
-                                <tui-textfield
-                                  tuiTextfieldSize="s"
-                                  class="w-full h-8!"
-                                >
-                                  <input
-                                    #indexInput
-                                    tuiInputNumber
-                                    [min]="1"
-                                    class="text-center h-full! border-none! p-0! route-index-input"
-                                    [ngModel]="item.index + 1"
-                                    (blur.zoneless)="
-                                      onUpdateRouteNumber(item, $event)
-                                    "
-                                    (keydown.enter)="
-                                      onUpdateRouteNumber(item, $event);
-                                      $event.stopPropagation()
-                                    "
-                                    (keydown)="onTableKeyDown($event, i)"
-                                    autocomplete="off"
-                                  />
-                                </tui-textfield>
-                              } @else {
-                                {{ item.index + 1 }}
-                              }
+                              {{ item.index + 1 }}
                             </div>
                           }
                           @case ('visibility') {
@@ -364,31 +326,7 @@ import type { TopoRouteRow } from './topo.types';
                             <div
                               class="flex items-center justify-center w-full h-full min-w-0"
                             >
-                              @if (canEdit()) {
-                                <tui-textfield
-                                  tuiTextfieldSize="s"
-                                  class="w-full h-8!"
-                                >
-                                  <input
-                                    #heightInput
-                                    tuiInputNumber
-                                    class="text-center h-full! border-none! p-0! route-height-input"
-                                    [ngModel]="item.height"
-                                    (blur.zoneless)="
-                                      onUpdateRouteHeight(item._ref, $event)
-                                    "
-                                    (keydown.enter)="
-                                      onUpdateRouteHeight(item._ref, $event);
-                                      $event.stopPropagation()
-                                    "
-                                    (keydown)="onTableKeyDown($event, i)"
-                                    autocomplete="off"
-                                  />
-                                  <span class="tui-textfield__suffix">m</span>
-                                </tui-textfield>
-                              } @else {
-                                {{ item.height ? item.height + 'm' : '-' }}
-                              }
+                              {{ item.height ? item.height + 'm' : '-' }}
                             </div>
                           }
                           @case ('moves') {
@@ -406,16 +344,83 @@ import type { TopoRouteRow } from './topo.types';
                                 <button
                                   tuiIconButton
                                   [size]="isMobile() ? 'xs' : 'm'"
-                                  appearance="neutral"
-                                  iconStart="@tui.circle-plus"
-                                  class="rounded-full!"
-                                  (click.zoneless)="
-                                    onLogAscent(item._ref);
-                                    $event.stopPropagation()
+                                  [appearance]="
+                                    item.project ? 'info' : 'neutral'
                                   "
+                                  [iconStart]="
+                                    item.project
+                                      ? '@tui.bookmark'
+                                      : '@tui.circle-plus'
+                                  "
+                                  class="rounded-full!"
+                                  [tuiDropdown]="actionMenu"
+                                  [tuiDropdownOpen]="
+                                    openActionId() === item._ref.route_id
+                                  "
+                                  (tuiDropdownOpenChange)="
+                                    openActionId.set(
+                                      $event ? item._ref.route_id : null
+                                    )
+                                  "
+                                  (click.zoneless)="$event.stopPropagation()"
                                 >
-                                  {{ 'ascent.new' | translate }}
+                                  {{
+                                    item.project
+                                      ? ('project' | translate)
+                                      : ('ascent.new' | translate)
+                                  }}
                                 </button>
+                                <ng-template #actionMenu>
+                                  <tui-data-list>
+                                    <button
+                                      tuiOption
+                                      appearance="positive"
+                                      (click)="
+                                        onLogAscent(item._ref);
+                                        openActionId.set(null)
+                                      "
+                                    >
+                                      <tui-icon
+                                        icon="@tui.square-check"
+                                        class="mr-2"
+                                      />
+                                      {{ 'ascent.new' | translate }}
+                                    </button>
+                                    @if (!isIndoor()) {
+                                      @if (item.project) {
+                                        <button
+                                          tuiOption
+                                          appearance="negative"
+                                          (click)="
+                                            onToggleProject(item);
+                                            openActionId.set(null)
+                                          "
+                                        >
+                                          <tui-icon
+                                            icon="@tui.bookmark"
+                                            class="mr-2"
+                                          />
+                                          {{ 'project.remove' | translate }}
+                                        </button>
+                                      } @else {
+                                        <button
+                                          tuiOption
+                                          appearance="info"
+                                          (click)="
+                                            onToggleProject(item);
+                                            openActionId.set(null)
+                                          "
+                                        >
+                                          <tui-icon
+                                            icon="@tui.bookmark"
+                                            class="mr-2"
+                                          />
+                                          {{ 'project.add' | translate }}
+                                        </button>
+                                      }
+                                    }
+                                  </tui-data-list>
+                                </ng-template>
                               } @else if (
                                 item._ref.route.own_ascent;
                                 as ascentToEdit
@@ -442,44 +447,6 @@ import type { TopoRouteRow } from './topo.types';
                                     "
                                   />
                                 </span>
-                              }
-                              @if (!item.climbed && !isIndoor()) {
-                                <button
-                                  tuiIconButton
-                                  [size]="isMobile() ? 'xs' : 'm'"
-                                  [appearance]="
-                                    item.project ? 'info' : 'neutral'
-                                  "
-                                  iconStart="@tui.bookmark"
-                                  class="rounded-full!"
-                                  (click.zoneless)="
-                                    onToggleProject(item);
-                                    $event.stopPropagation()
-                                  "
-                                >
-                                  {{ 'project' | translate }}
-                                </button>
-                              }
-                            </div>
-                          }
-                          @case ('admin_actions') {
-                            <div
-                              class="flex items-center justify-center w-full h-full min-w-0"
-                            >
-                              @if (canEdit()) {
-                                <button
-                                  tuiIconButton
-                                  [size]="isMobile() ? 'xs' : 's'"
-                                  appearance="negative"
-                                  iconStart="@tui.unlink"
-                                  class="rounded-full!"
-                                  (click.zoneless)="
-                                    deleteTopoRoute(item._ref);
-                                    $event.stopPropagation()
-                                  "
-                                >
-                                  {{ 'unlink' | translate }}
-                                </button>
                               }
                             </div>
                           }
@@ -510,17 +477,9 @@ import type { TopoRouteRow } from './topo.types';
 export class TopoRoutesTableComponent {
   private readonly ascentsService = inject(AscentsService);
   private readonly routesService = inject(RoutesService);
-  private readonly supabase = inject(SupabaseService);
-  private readonly toposService = inject(ToposService);
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly translate = inject(TranslateService);
-  private readonly toast = inject(ToastService);
-  private readonly outdoorData = inject(OutdoorDataService);
-  private readonly indoorData = inject(IndoorDataService);
 
   sortedTableData = input.required<TopoRouteRow[]>();
   columns = input.required<string[]>();
-  canEdit = input(false);
   isMobile = input(false);
   selectedRouteId = input<string | number | null>(null);
   hasAccess = input(false);
@@ -531,6 +490,8 @@ export class TopoRoutesTableComponent {
   areaId = input(0);
   areaPrice = input(0);
   hiddenRouteIds = input<Set<string | number>>(new Set());
+
+  protected readonly openActionId = signal<string | number | null>(null);
 
   selectedRouteIdChange = output<string | number | null>();
   hoveredRouteIdChange = output<string | number | null>();
@@ -572,13 +533,7 @@ export class TopoRoutesTableComponent {
     moves: 60,
     height: 68,
     actions: 44,
-    admin_actions: 44,
   };
-
-  protected readonly indexInputs =
-    viewChildren<ElementRef<HTMLInputElement>>('indexInput');
-  protected readonly heightInputs =
-    viewChildren<ElementRef<HTMLInputElement>>('heightInput');
 
   constructor() {
     effect(() => {
@@ -648,172 +603,18 @@ export class TopoRoutesTableComponent {
     );
   }
 
-  protected onUpdateRouteNumber(item: TopoRouteRow, event: Event): void {
-    const tr = item._ref;
-    const inputEl = event.target as HTMLInputElement;
-    const newNumber = inputEl.value;
-    const val =
-      typeof newNumber === 'string' ? parseInt(newNumber, 10) : newNumber;
-
-    const currentDisplayVal = item.index + 1;
-    if (val === null || isNaN(val) || val < 1 || val === currentDisplayVal) {
-      inputEl.value = String(currentDisplayVal);
-      return;
-    }
-
-    const targetDbNumber = Math.max(0, val - 1);
-    const topoId = String(this.topoId() || tr.topo_id);
-
-    if (this.isIndoor()) {
-      this.supabase.client
-        .from('indoor_topo_routes')
-        .update({ number: targetDbNumber })
-        .eq('topo_id', topoId)
-        .eq('route_id', String(tr.route_id))
-        .then(({ error }) => {
-          if (error) {
-            handleErrorToast(error, this.toast);
-          } else {
-            this.indoorData.topoDetailResource.reload();
-            this.toast.success('messages.toasts.routeUpdated');
-          }
-        });
-      return;
-    }
-
-    this.toposService
-      .updateRouteOrder(topoId, tr.route_id, targetDbNumber)
-      .catch((err) => handleErrorToast(err, this.toast));
-  }
-
-  protected onUpdateRouteHeight(tr: TopoRouteWithRoute, event: Event): void {
-    const newHeight = (event.target as HTMLInputElement).value;
-    const val =
-      newHeight === null || newHeight === ''
-        ? null
-        : typeof newHeight === 'string'
-          ? parseInt(newHeight, 10)
-          : newHeight;
-    if (val === tr.route?.height) return;
-    this.routesService
-      .update(tr.route_id as number, { height: val })
-      .catch((err) => handleErrorToast(err, this.toast));
-  }
-
-  protected deleteTopoRoute(topoRoute: TopoRouteWithRoute): void {
-    void firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('topos.removeRouteTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('topos.removeRouteConfirm', {
-            name: topoRoute.route.name,
-          }),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    ).then((confirmed) => {
-      if (!confirmed) return;
-      if (this.isIndoor()) {
-        this.supabase.client
-          .from('indoor_topo_routes')
-          .delete()
-          .eq('topo_id', String(topoRoute.topo_id))
-          .eq('route_id', String(topoRoute.route_id))
-          .then(({ error }) => {
-            if (error) {
-              handleErrorToast(error, this.toast);
-            } else {
-              this.toast.showWithUndo('messages.toasts.routeRemoved', () => {
-                this.supabase.client
-                  .from('indoor_topo_routes')
-                  .insert({
-                    topo_id: String(topoRoute.topo_id),
-                    route_id: String(topoRoute.route_id),
-                    number: Number(topoRoute.number || 0),
-                    path: topoPathToJson(topoRoute.path),
-                  })
-                  .then(({ error: undoError }) => {
-                    if (undoError) {
-                      handleErrorToast(undoError, this.toast);
-                    } else {
-                      this.indoorData.topoDetailResource.reload();
-                    }
-                  });
-              });
-              this.indoorData.topoDetailResource.reload();
-            }
-          });
-      } else {
-        this.toposService
-          .removeRoute(topoRoute.topo_id, topoRoute.route_id, false)
-          .then(() => {
-            this.toast.showWithUndo('messages.toasts.routeRemoved', () => {
-              void this.toposService.addRoute({
-                topo_id: Number(topoRoute.topo_id),
-                route_id: Number(topoRoute.route_id),
-                number: 0,
-              });
-            });
-            this.outdoorData.topoDetailResource.reload();
-          })
-          .catch((err) => handleErrorToast(err, this.toast));
-      }
-    });
-  }
-
-  protected onTableKeyDown(event: KeyboardEvent, index?: number): void {
+  protected onTableKeyDown(event: KeyboardEvent): void {
     const target = event.target as HTMLElement;
-    const isInput = target.tagName === 'INPUT';
-    if ((target.tagName === 'TEXTAREA' || target.isContentEditable) && !isInput)
+    if (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.isContentEditable
+    )
       return;
     if (['ArrowUp', 'ArrowDown'].includes(event.key)) {
       const data = this.sortedTableData();
       if (data.length === 0) return;
       const step = event.key === 'ArrowUp' ? -1 : 1;
-      let nextItem: TopoRouteRow | undefined;
-      let nextIdx: number | undefined;
-      if (isInput) {
-        if (index !== undefined) {
-          nextIdx = (index + step + data.length) % data.length;
-        } else {
-          const tr = target.closest('tr');
-          const rowIdAttr = tr?.getAttribute('id') || '';
-          const match = rowIdAttr.match(/route-row-(\d+)-(\d+)/);
-          if (match) {
-            const routeId = parseInt(match[2], 10);
-            const currentIndex = data.findIndex(
-              (item) => item?._ref?.route_id === routeId,
-            );
-            if (currentIndex !== -1) {
-              nextIdx = (currentIndex + step + data.length) % data.length;
-            }
-          }
-        }
-        if (nextIdx !== undefined) {
-          nextItem = data[nextIdx];
-          if (nextItem?._ref) {
-            event.preventDefault();
-            this.selectedRouteIdChange.emit(nextItem._ref.route_id);
-            const inputClass = target.classList.contains('route-index-input')
-              ? '.route-index-input'
-              : '.route-height-input';
-            const inputs =
-              inputClass === '.route-index-input'
-                ? this.indexInputs()
-                : this.heightInputs();
-            const nextInput = inputs[nextIdx!];
-            if (nextInput?.nativeElement) {
-              nextInput.nativeElement.focus();
-              nextInput.nativeElement.select();
-            }
-          }
-        }
-        return;
-      }
       const currentId = this.selectedRouteId();
       let nextIndex = 0;
       if (currentId) {
@@ -824,7 +625,7 @@ export class TopoRoutesTableComponent {
           nextIndex = (currentIndex + step + data.length) % data.length;
         }
       }
-      nextItem = data[nextIndex];
+      const nextItem = data[nextIndex];
       if (nextItem?._ref) {
         this.selectedRouteIdChange.emit(nextItem._ref.route_id);
         event.preventDefault();

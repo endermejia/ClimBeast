@@ -3,12 +3,15 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
+  ElementRef,
+  inject,
   input,
   output,
   signal,
   TemplateRef,
-  viewChildren,
+  viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -23,7 +26,6 @@ import {
   TuiTableTd,
   TuiTableHead,
   TuiTableCell,
-  TuiTableExpand,
   TuiTableSortChange,
   TuiTableSortPipe,
 } from '@taiga-ui/addon-table';
@@ -40,30 +42,23 @@ import {
   TuiCell,
   TuiInput,
 } from '@taiga-ui/core';
-import {
-  TuiBadge,
-  TuiChevron,
-  TuiInputNumber,
-  TuiPin,
-  TuiRating,
-} from '@taiga-ui/kit';
+import { TuiBadge, TuiInputNumber, TuiPin, TuiRating } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
+import { GradeComponent } from '../ui/avatar-grade';
+import { EmptyStateComponent } from '../ui/empty-state';
+
 import {
+  AscentType,
+  INDOOR_ROUTE_COLORS,
   RoutesTableKey,
   RoutesTableRow,
-  INDOOR_ROUTE_COLORS,
-  AscentType,
 } from '../../models';
 
 import { IncludesIdPipe } from '../../pipes';
 import { ROUTE_TABLE_SORTERS } from '../../utils';
-
-import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
-
-import { GradeComponent } from '../ui/avatar-grade';
-import { EmptyStateComponent } from '../ui/empty-state';
 
 @Component({
   selector: 'app-routes-table',
@@ -79,7 +74,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
     TuiBadge,
     TuiButton,
     TuiCell,
-    TuiChevron,
     TuiDataList,
     TuiDropdown,
     TuiGroup,
@@ -99,7 +93,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
     TuiTableTd,
     TuiTableHead,
     TuiTableCell,
-    TuiTableExpand,
     TuiTableSortPipe,
     NgTemplateOutlet,
   ],
@@ -107,12 +100,18 @@ import { EmptyStateComponent } from '../ui/empty-state';
     @if (data(); as d) {
       @if (d.length > 0) {
         @let isMobile = this.isMobile();
-        <tui-scrollbar class="grow min-h-0 no-scrollbar">
+        <tui-scrollbar
+          #scrollbar
+          class="grow min-h-0 w-full overflow-x-auto no-scrollbar"
+          (scroll.zoneless)="onScroll($event)"
+        >
           <table
+            #table
             tuiTable
             [size]="isMobile ? 's' : 'm'"
-            class="w-full"
-            [class.table-fixed]="isMobile"
+            class="w-full min-w-max"
+            [class.table-stuck-left]="isStuckLeft()"
+            [class.table-stuck-right]="isStuckRight()"
             [columns]="visibleColumns()"
             [direction]="currentDirection"
             [sorter]="currentSorter"
@@ -125,35 +124,47 @@ import { EmptyStateComponent } from '../ui/empty-state';
                     *tuiHead="col"
                     tuiTh
                     [sorter]="sorters[col]"
-                    [class.text-right]="
-                      col === 'actions' || col === 'admin_actions'
-                    "
-                    [class.w-12!]="col === 'expand'"
+                    [class.text-center]="col === 'actions'"
+                    [class.sticky-col-left]="col === 'grade'"
+                    [class.sticky-col-right]="col === 'actions'"
                     [class.w-16!]="col === 'height'"
-                    [class.w-20!]="col === 'grade' || col === 'ascents'"
+                    [class.w-20!]="col === 'ascents'"
                     [class.w-24!]="col === 'rating' || col === 'color'"
-                    [class.w-32!]="col === 'actions' || col === 'admin_actions'"
                     [class.w-64!]="col === 'equippers'"
+                    [class.min-w-36!]="col === 'route'"
+                    [class.min-w-28!]="col === 'topo'"
+                    [class.w-min!]="col === 'grade' || col === 'actions'"
+                    class="whitespace-nowrap"
                   >
-                    <div class="flex items-center gap-1">
-                      @if (col === 'expand') {
-                        <button
-                          appearance="flat-grayscale"
-                          size="xs"
-                          tuiIconButton
-                          type="button"
-                          class="rounded-full!"
-                          [tuiChevron]="allExpanded()"
-                          (click.zoneless)="toggleAllExpanded()"
-                        >
-                          Toggle All
-                        </button>
+                    <div
+                      class="flex items-center gap-1 w-full"
+                      [class.justify-center]="col === 'actions'"
+                    >
+                      @if (col === 'actions') {
+                        @if (canEditAny()) {
+                          <button
+                            appearance="action-grayscale"
+                            size="xs"
+                            tuiIconButton
+                            type="button"
+                            class="rounded-full!"
+                            [iconStart]="
+                              isEditing() ? '@tui.pencil-off' : '@tui.pencil'
+                            "
+                            [tuiHint]="
+                              (isEditing() ? 'stopEditing' : 'edit') | translate
+                            "
+                            (click.zoneless)="isEditing.update((v) => !v)"
+                          >
+                            {{
+                              (isEditing() ? 'stopEditing' : 'edit') | translate
+                            }}
+                          </button>
+                        }
+                      } @else if (col === 'grade') {
+                        {{ 'gradeShort' | translate }}
                       } @else {
-                        {{
-                          col === 'actions' || col === 'admin_actions'
-                            ? ''
-                            : (col | translate)
-                        }}
+                        {{ col | translate }}
                       }
                     </div>
                   </th>
@@ -161,47 +172,33 @@ import { EmptyStateComponent } from '../ui/empty-state';
               </tr>
             </thead>
             @let sortedData = d | tuiTableSort;
-            @for (item of sortedData; track item.key) {
-              @let canEditRoute = item.canEdit;
-              <tbody
-                tuiTbody
-                class="[content-visibility:auto] [contain-intrinsic-size:0_48px]"
-              >
+            <tbody tuiTbody>
+              @for (item of sortedData; track item.key) {
+                @let canEditRoute = item.canEdit;
+                @let rowBg =
+                  showRowColors()
+                    ? item.climbed
+                      ? (ascentInfo()[item.own_ascent?.type || 'default']
+                          ?.backgroundSubtle ?? '')
+                      : item.project
+                        ? 'var(--tui-status-info-pale)'
+                        : ''
+                    : '';
                 <tr
                   tuiTr
-                  [style.background]="
-                    showRowColors()
-                      ? item.climbed
-                        ? (ascentInfo()[item.own_ascent?.type || 'default']
-                            ?.backgroundSubtle ?? '')
-                        : item.project
-                          ? 'var(--tui-status-info-pale)'
-                          : ''
-                      : ''
-                  "
+                  [style.background]="rowBg"
+                  [style.--row-bg]="rowBg || null"
                 >
                   @for (col of visibleColumns(); track col) {
                     <td
                       *tuiCell="col"
                       tuiTd
-                      [class.text-right]="
-                        col === 'actions' || col === 'admin_actions'
-                      "
+                      [class.text-right]="col === 'actions'"
+                      [class.sticky-col-left]="col === 'grade'"
+                      [class.sticky-col-right]="col === 'actions'"
+                      [class.w-min!]="col === 'grade' || col === 'actions'"
                     >
                       @switch (col) {
-                        @case ('expand') {
-                          <button
-                            appearance="flat-grayscale"
-                            size="xs"
-                            tuiIconButton
-                            type="button"
-                            class="rounded-full!"
-                            [tuiChevron]="exp.expanded()"
-                            (click.zoneless)="exp.toggle()"
-                          >
-                            Toggle
-                          </button>
-                        }
                         @case ('grade') {
                           <div tuiCell size="m">
                             <app-grade
@@ -269,13 +266,13 @@ import { EmptyStateComponent } from '../ui/empty-state';
                         }
                         @case ('height') {
                           <div tuiCell size="m" class="justify-center h-full">
-                            @if (canEditRoute) {
+                            @if (isEditing() && canEditRoute) {
                               <tui-textfield
                                 [tuiTextfieldCleaner]="false"
                                 tuiTextfieldSize="s"
                                 [class.w-16!]="!isMobile"
                                 [class.w-12!]="isMobile"
-                                class="h-8!"
+                                class="h-8! items-center"
                               >
                                 <input
                                   tuiInputNumber
@@ -285,7 +282,10 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                   (keydown.enter)="onEnterHeight(item, $event)"
                                   autocomplete="off"
                                 />
-                                <span class="tui-textfield__suffix">m</span>
+                                <span
+                                  class="tui-textfield__suffix flex items-center self-center"
+                                  >m</span
+                                >
                               </tui-textfield>
                             } @else {
                               {{ item.height ? item.height + 'm' : '-' }}
@@ -339,6 +339,11 @@ import { EmptyStateComponent } from '../ui/empty-state';
                             <div class="flex flex-wrap gap-1 min-w-0">
                               <div class="flex flex-wrap gap-x-1 gap-y-0">
                                 @let toposCount = item.topos.length;
+                                @let canAddTopo =
+                                  isEditing() &&
+                                  item.canAddTopo &&
+                                  showAddRouteToTopo() &&
+                                  availableTopos().length > 0;
                                 @if (toposCount > 0) {
                                   <div tuiGroup [collapsed]="true">
                                     @for (t of item.topos; track t.id) {
@@ -352,9 +357,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                         {{ t.name }}
                                       </button>
                                     }
-                                    @if (
-                                      item.canAddTopo && showAddRouteToTopo()
-                                    ) {
+                                    @if (canAddTopo) {
                                       <button
                                         appearance="secondary"
                                         size="xs"
@@ -375,9 +378,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                       </button>
                                     }
                                   </div>
-                                } @else if (
-                                  item.canAddTopo && showAddRouteToTopo()
-                                ) {
+                                } @else if (canAddTopo) {
                                   <button
                                     appearance="flat-grayscale"
                                     size="xs"
@@ -397,6 +398,8 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                   >
                                     {{ 'addRouteToTopo' | translate }}
                                   </button>
+                                } @else {
+                                  <span class="opacity-50 text-xs">-</span>
                                 }
                                 <ng-template #toposMenu>
                                   <tui-data-list>
@@ -446,16 +449,38 @@ import { EmptyStateComponent } from '../ui/empty-state';
                               <ng-container
                                 *ngTemplateOutlet="
                                   tpl;
-                                  context: { $implicit: item }
+                                  context: {
+                                    $implicit: item,
+                                    isEditing: isEditing() && canEditRoute,
+                                  }
                                 "
                               />
+                            } @else {
+                              <div class="flex flex-wrap gap-1 items-center">
+                                @for (e of item.equippers; track e.id) {
+                                  <a
+                                    tuiLink
+                                    class="text-xs bg-(--tui-background-neutral-1) hover:bg-(--tui-background-neutral-1-hover) text-(--tui-text-primary) px-2 py-0.5 rounded-md transition-colors truncate max-w-full font-medium"
+                                    [routerLink]="['/equipper', e.id]"
+                                  >
+                                    {{ e.name }}
+                                  </a>
+                                } @empty {
+                                  <span class="opacity-50 text-xs">-</span>
+                                }
+                              </div>
                             }
                           </div>
                         }
                         @case ('actions') {
-                          <div tuiCell size="m">
+                          <div
+                            tuiCell
+                            size="m"
+                            class="flex items-center justify-end gap-1 shrink-0 whitespace-nowrap"
+                          >
                             @if (item.own_ascent; as ascent) {
                               <app-button-ascent-type
+                                [size]="isMobile ? 's' : 'm'"
                                 [type]="ascent.type"
                                 [active]="true"
                                 class="cursor-pointer"
@@ -466,92 +491,88 @@ import { EmptyStateComponent } from '../ui/empty-state';
                               />
                             } @else {
                               <button
-                                size="m"
-                                appearance="neutral"
-                                iconStart="@tui.circle-plus"
-                                tuiIconButton
-                                type="button"
-                                class="rounded-full!"
-                                [tuiHint]="'ascent.new' | translate"
-                                (click.zoneless)="logAscent.emit(item)"
-                              >
-                                {{ 'ascent.new' | translate }}
-                              </button>
-                            }
-
-                            @if (!item.isIndoor && !item.climbed) {
-                              <button
-                                size="m"
+                                [size]="isMobile ? 's' : 'm'"
                                 [appearance]="item.project ? 'info' : 'neutral'"
-                                iconStart="@tui.bookmark"
+                                [iconStart]="
+                                  item.project
+                                    ? '@tui.bookmark'
+                                    : '@tui.circle-plus'
+                                "
                                 tuiIconButton
                                 type="button"
                                 class="rounded-full!"
-                                [tuiHint]="'project' | translate"
-                                (click.zoneless)="toggleProject.emit(item)"
+                                [tuiDropdown]="actionMenu"
+                                [tuiDropdownOpen]="openActionId() === item.key"
+                                (tuiDropdownOpenChange)="
+                                  openActionId.set($event ? item.key : null)
+                                "
+                                (click.zoneless)="$event.stopPropagation()"
                               >
-                                {{ 'project' | translate }}
+                                {{
+                                  item.project
+                                    ? ('project' | translate)
+                                    : ('ascent.new' | translate)
+                                }}
                               </button>
                             }
-                          </div>
-                        }
-                        @case ('admin_actions') {
-                          <div class="flex gap-1 justify-end items-center">
-                            @if (item.canEdit) {
-                              <button
-                                size="s"
-                                appearance="neutral"
-                                iconStart="@tui.square-pen"
-                                tuiIconButton
-                                type="button"
-                                class="rounded-full!"
-                                [tuiHint]="'edit' | translate"
-                                (click.zoneless)="editRoute.emit(item)"
-                              >
-                                {{ 'edit' | translate }}
-                              </button>
-                            }
-                            @if (item.canDelete) {
-                              <button
-                                size="s"
-                                appearance="negative"
-                                iconStart="@tui.trash"
-                                tuiIconButton
-                                type="button"
-                                class="rounded-full!"
-                                [tuiHint]="'delete' | translate"
-                                (click.zoneless)="deleteRoute.emit(item)"
-                              >
-                                {{ 'delete' | translate }}
-                              </button>
-                            }
+                            <ng-template #actionMenu>
+                              <tui-data-list>
+                                <button
+                                  tuiOption
+                                  appearance="positive"
+                                  (click)="
+                                    logAscent.emit(item); openActionId.set(null)
+                                  "
+                                >
+                                  <tui-icon
+                                    icon="@tui.square-check"
+                                    class="mr-2"
+                                  />
+                                  {{ 'ascent.new' | translate }}
+                                </button>
+                                @if (!item.isIndoor && !item.climbed) {
+                                  @if (item.project) {
+                                    <button
+                                      tuiOption
+                                      appearance="negative"
+                                      (click)="
+                                        toggleProject.emit(item);
+                                        openActionId.set(null)
+                                      "
+                                    >
+                                      <tui-icon
+                                        icon="@tui.bookmark"
+                                        class="mr-2"
+                                      />
+                                      {{ 'project.remove' | translate }}
+                                    </button>
+                                  } @else {
+                                    <button
+                                      tuiOption
+                                      appearance="info"
+                                      (click)="
+                                        toggleProject.emit(item);
+                                        openActionId.set(null)
+                                      "
+                                    >
+                                      <tui-icon
+                                        icon="@tui.bookmark"
+                                        class="mr-2"
+                                      />
+                                      {{ 'project.add' | translate }}
+                                    </button>
+                                  }
+                                }
+                              </tui-data-list>
+                            </ng-template>
                           </div>
                         }
                       }
                     </td>
                   }
                 </tr>
-                <tui-table-expand #exp [expanded]="false">
-                  <tr>
-                    <td
-                      [colSpan]="visibleColumns().length"
-                      class="p-0! border-none! w-full! max-w-full!"
-                    >
-                      @if (exp.expanded()) {
-                        @if (expandedTemplate(); as tpl) {
-                          <ng-container
-                            *ngTemplateOutlet="
-                              tpl;
-                              context: { $implicit: item }
-                            "
-                          />
-                        }
-                      }
-                    </td>
-                  </tr>
-                </tui-table-expand>
-              </tbody>
-            }
+              }
+            </tbody>
           </table>
         </tui-scrollbar>
       } @else {
@@ -569,7 +590,6 @@ export class RoutesTableComponent {
   direction = input<TuiSortDirection>(TuiSortDirection.Desc);
   activeCol = input<RoutesTableKey>('ascents');
   showRowColors = input(true);
-  expandableMobile = input(true);
   showAddRouteToTopo = input(false);
   showLocation = input(false);
   isMobile = input(false);
@@ -577,12 +597,10 @@ export class RoutesTableComponent {
   ascentInfo = input<Record<string, { backgroundSubtle?: string }>>({});
 
   // Templates
-  equippersTemplate = input<TemplateRef<{ $implicit: RoutesTableRow }> | null>(
-    null,
-  );
-  expandedTemplate = input<TemplateRef<{ $implicit: RoutesTableRow }> | null>(
-    null,
-  );
+  equippersTemplate = input<TemplateRef<{
+    $implicit: RoutesTableRow;
+    isEditing?: boolean;
+  }> | null>(null);
 
   // Outputs
   sortChange = output<{ key: RoutesTableKey; direction: TuiSortDirection }>();
@@ -601,8 +619,12 @@ export class RoutesTableComponent {
     ascent: { id: number | string; type: AscentType | null };
   }>();
   toggleProject = output<RoutesTableRow>();
-  editRoute = output<RoutesTableRow>();
-  deleteRoute = output<RoutesTableRow>();
+
+  readonly isEditing = signal(false);
+
+  protected readonly canEditAny = computed(() =>
+    this.data().some((item) => !!item.canEdit),
+  );
 
   protected readonly sorters = ROUTE_TABLE_SORTERS;
 
@@ -612,27 +634,11 @@ export class RoutesTableComponent {
   protected currentDirection: TuiSortDirection = this.direction();
 
   protected readonly openDropdownId = signal<string | null>(null);
-
-  protected readonly expanders = viewChildren(TuiTableExpand);
-  protected readonly allExpanded = signal(false);
+  protected readonly openActionId = signal<string | null>(null);
 
   protected readonly visibleColumns = computed(() => {
-    const isMobile = this.isMobile() && this.expandableMobile();
-    if (isMobile) {
-      return ['expand', 'grade', 'route'];
-    }
     return this.columns();
   });
-
-  protected toggleAllExpanded() {
-    this.allExpanded.update((v) => !v);
-    const expandState = this.allExpanded();
-    for (const exp of this.expanders()) {
-      if (exp.expanded() !== expandState) {
-        exp.expanded.set(expandState);
-      }
-    }
-  }
 
   protected onBlurHeight(item: RoutesTableRow, event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -644,11 +650,67 @@ export class RoutesTableComponent {
     this.updateRouteHeight.emit({ row: item, height: input.value });
   }
 
+  private readonly scrollbar = viewChild<ElementRef<HTMLElement>>('scrollbar');
+  private readonly table = viewChild<ElementRef<HTMLElement>>('table');
+  private readonly destroyRef = inject(DestroyRef);
+  protected readonly isStuckLeft = signal(false);
+  protected readonly isStuckRight = signal(false);
+
   constructor() {
     effect(() => {
       this.currentDirection = this.direction();
       this.currentSorter = this.sorters[this.activeCol()];
     });
+
+    effect(() => {
+      this.data();
+      this.visibleColumns();
+      requestAnimationFrame(() => this.updateFromHost());
+    });
+
+    effect(() => {
+      const el = this.scrollbar()?.nativeElement;
+      if (!el) return;
+      requestAnimationFrame(() => this.updateFromHost());
+    });
+
+    effect(() => {
+      const tableEl = this.table()?.nativeElement;
+      if (!tableEl || typeof ResizeObserver === 'undefined') return;
+      const ro = new ResizeObserver(() => this.updateFromHost());
+      ro.observe(tableEl);
+      this.destroyRef.onDestroy(() => ro.disconnect());
+    });
+  }
+
+  protected onScroll(event: Event): void {
+    this.updateStuck(event.target as HTMLElement);
+  }
+
+  private updateFromHost(): void {
+    const el = this.scrollbar()?.nativeElement;
+    if (el) this.updateStuck(el);
+  }
+
+  private updateStuck(el: HTMLElement): void {
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    const maxScroll = scrollWidth - clientWidth;
+
+    if (maxScroll <= 1) {
+      if (this.isStuckLeft()) this.isStuckLeft.set(false);
+      if (this.isStuckRight()) this.isStuckRight.set(false);
+      return;
+    }
+
+    const stuckLeft = scrollLeft > 2;
+    const stuckRight = maxScroll - scrollLeft > 2;
+
+    if (this.isStuckLeft() !== stuckLeft) {
+      this.isStuckLeft.set(stuckLeft);
+    }
+    if (this.isStuckRight() !== stuckRight) {
+      this.isStuckRight.set(stuckRight);
+    }
   }
 
   protected readonly indoorRouteColors = INDOOR_ROUTE_COLORS;

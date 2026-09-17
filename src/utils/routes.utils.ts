@@ -122,6 +122,15 @@ export const ROUTE_TABLE_SORTERS: Record<
   height: (a, b) => tuiDefaultSort(a.height ?? 0, b.height ?? 0),
   rating: (a, b) => tuiDefaultSort(a.rating, b.rating),
   ascents: (a, b) => tuiDefaultSort(a.ascents, b.ascents),
+  equippers: (a, b) => {
+    const aVal = (a.equippers || [])
+      .map((e) => normalizeName(e.name))
+      .join(', ');
+    const bVal = (b.equippers || [])
+      .map((e) => normalizeName(e.name))
+      .join(', ');
+    return tuiDefaultSort(aVal, bVal);
+  },
   topo: (a, b) => {
     const aVal = a.topos.map((t) => normalizeName(t.name)).join(', ');
     const bVal = b.topos.map((t) => normalizeName(t.name)).join(', ');

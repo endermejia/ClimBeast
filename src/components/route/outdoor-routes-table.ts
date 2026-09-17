@@ -6,10 +6,10 @@ import {
   inject,
   input,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { TuiSortDirection } from '@taiga-ui/addon-table';
-import { TuiDialogService } from '@taiga-ui/core';
+import { TuiDialogService, TuiLink } from '@taiga-ui/core';
 import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit';
 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -24,6 +24,11 @@ import { RoutesService } from '../../services/routes.service';
 import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
 
+import { IS_BROWSER } from '../../app/is-browser';
+
+import { RouteEquippersInputComponent } from './route-equippers-input';
+import { RoutesTableComponent } from './routes-table';
+
 import {
   RouteItem,
   RoutesTableRow,
@@ -35,18 +40,15 @@ import {
 
 import { mapRouteToTableRow, handleErrorToast } from '../../utils';
 
-import { IS_BROWSER } from '../../app/is-browser';
-
-import { RouteRowExpandedComponent } from './route-row-expanded';
-import { RoutesTableComponent } from './routes-table';
-
 @Component({
   selector: 'app-outdoor-routes-table',
   imports: [
     CommonModule,
-    TranslateModule,
+    RouteEquippersInputComponent,
+    RouterLink,
     RoutesTableComponent,
-    RouteRowExpandedComponent,
+    TranslateModule,
+    TuiLink,
   ],
   template: `
     <app-routes-table
@@ -55,12 +57,11 @@ import { RoutesTableComponent } from './routes-table';
       [direction]="direction()"
       [activeCol]="activeCol()"
       [showRowColors]="showRowColors()"
-      [expandableMobile]="expandableMobile()"
       [showAddRouteToTopo]="showAddRouteToTopo()"
       [availableTopos]="availableTopos()"
       [ascentInfo]="ascentsService.ascentInfo()"
       [isMobile]="layoutService.isMobile()"
-      [expandedTemplate]="expandedTpl"
+      [equippersTemplate]="equippersTpl"
       (updateRouteHeight)="onUpdateRouteHeight($event.row, $event.height)"
       (toggleRouteOnTopo)="
         toggleRouteOnTopo($event.topoId, $event.routeId, $event.isAttached)
@@ -68,26 +69,26 @@ import { RoutesTableComponent } from './routes-table';
       (logAscent)="onLogAscent($event)"
       (viewAscent)="onViewAscent($event.row, $event.ascent)"
       (toggleProject)="onToggleProject($event)"
-      (editRoute)="openEditRoute($event)"
-      (deleteRoute)="deleteRoute($event)"
     />
 
-    <ng-template #expandedTpl let-item>
-      <app-route-row-expanded
-        [route]="item"
-        [showAdminActions]="showAdminActions()"
-        [showLocation]="showLocation()"
-        [showAddRouteToTopo]="showAddRouteToTopo()"
-        [availableTopos]="availableTopos()"
-        (logAscent)="onLogAscent($event)"
-        (viewAscent)="onViewAscent($event.route, $event.own_ascent)"
-        (toggleProject)="onToggleProject($event)"
-        (editRoute)="openEditRoute($event)"
-        (deleteRoute)="deleteRoute($event)"
-        (toggleRouteOnTopo)="
-          toggleRouteOnTopo($event.topoId, $event.routeId, $event.isAttached)
-        "
-      />
+    <ng-template #equippersTpl let-item let-isEditing="isEditing">
+      @if (isEditing) {
+        <app-route-equippers-input [route]="outdoorRefMap()[item.id]" />
+      } @else {
+        <div class="flex flex-wrap gap-1 items-center">
+          @for (e of item.equippers; track e.id) {
+            <a
+              tuiLink
+              class="text-xs bg-(--tui-background-neutral-1) hover:bg-(--tui-background-neutral-1-hover) text-(--tui-text-primary) px-2 py-0.5 rounded-md transition-colors truncate max-w-full font-medium"
+              [routerLink]="['/equipper', e.id]"
+            >
+              {{ e.name }}
+            </a>
+          } @empty {
+            <span class="opacity-50 text-xs">-</span>
+          }
+        </div>
+      }
     </ng-template>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -111,7 +112,6 @@ export class OutdoorRoutesTableComponent {
   showLocation = input(false);
   showAdminActions = input(true);
   showRowColors = input(true);
-  expandableMobile = input(true);
   showAddRouteToTopo = input(false);
   hiddenColumns = input<string[]>([]);
   activeCol = input<RoutesTableKey>('ascents');
@@ -131,28 +131,25 @@ export class OutdoorRoutesTableComponent {
     });
   });
 
+  protected readonly outdoorRefMap = computed(() => {
+    const map: Record<string | number, RouteItem> = {};
+    for (const r of this.data()) {
+      map[r.id] = r;
+    }
+    return map;
+  });
+
   protected readonly columns = computed(() => {
     const cols = [
       'grade',
       'route',
       'topo',
+      'equippers',
       'height',
       'rating',
       'ascents',
       'actions',
     ];
-
-    const canEditAny = this.data().some((r) =>
-      this.authState.checkRouteEditPermission(r),
-    );
-
-    if (
-      this.authState.editingMode() &&
-      this.showAdminActions() &&
-      (this.authState.canEditAsAdmin() || canEditAny)
-    ) {
-      cols.push('admin_actions');
-    }
 
     return cols.filter((c) => !this.hiddenColumns().includes(c));
   });

@@ -38,7 +38,6 @@ import { IS_BROWSER } from '../../app/is-browser';
 
 import { IndoorRouteEquippersInputComponent } from './indoor-route-equippers-input';
 
-import { RouteRowExpandedComponent } from './route-row-expanded';
 import { RoutesTableComponent } from './routes-table';
 
 @Component({
@@ -48,7 +47,6 @@ import { RoutesTableComponent } from './routes-table';
     TranslateModule,
     RoutesTableComponent,
     IndoorRouteEquippersInputComponent,
-    RouteRowExpandedComponent,
     RouterLink,
     TuiLink,
   ],
@@ -61,18 +59,15 @@ import { RoutesTableComponent } from './routes-table';
       [ascentInfo]="ascentsService.ascentInfo()"
       [isMobile]="layoutService.isMobile()"
       [equippersTemplate]="equippersTpl"
-      [expandedTemplate]="expandedTpl"
       (logAscent)="logIndoorAscent($event)"
       (viewAscent)="viewIndoorAscent($event.row, $event.ascent)"
-      (editRoute)="editIndoorRoute($event)"
-      (deleteRoute)="deleteIndoorRoute($event)"
       (toggleRouteOnTopo)="
         toggleRouteOnTopo($event.topoId, $event.routeId, $event.isAttached)
       "
     />
 
-    <ng-template #equippersTpl let-item>
-      @if (canEditIndoor()) {
+    <ng-template #equippersTpl let-item let-isEditing="isEditing">
+      @if (isEditing) {
         <app-indoor-route-equippers-input
           [route]="indoorRefMap()[item.id]"
           (equippersChanged)="indoorService.reloadCenterRoutes()"
@@ -92,23 +87,6 @@ import { RoutesTableComponent } from './routes-table';
           }
         </div>
       }
-    </ng-template>
-
-    <ng-template #expandedTpl let-item>
-      <app-route-row-expanded
-        [route]="item"
-        [showAdminActions]="true"
-        [showLocation]="false"
-        [showAddRouteToTopo]="true"
-        [availableTopos]="availableTopos()"
-        (logAscent)="logIndoorAscent($event)"
-        (viewAscent)="viewIndoorAscent($event.route, $event.own_ascent)"
-        (editRoute)="editIndoorRoute($event)"
-        (deleteRoute)="deleteIndoorRoute($event)"
-        (toggleRouteOnTopo)="
-          toggleRouteOnTopo($event.topoId, $event.routeId, $event.isAttached)
-        "
-      />
     </ng-template>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -157,23 +135,16 @@ export class IndoorRoutesTableComponent {
   });
 
   protected readonly columns = computed(() => {
-    const cols = [
+    return [
       'grade',
       'route',
       'topo',
       'color',
+      'equippers',
       'rating',
       'ascents',
       'actions',
     ];
-    if (this.canEditIndoor()) {
-      cols.splice(cols.indexOf('rating'), 1);
-      cols.splice(cols.indexOf('ascents'), 1);
-      cols.splice(cols.indexOf('actions'), 1);
-      cols.push('equippers');
-      cols.push('admin_actions');
-    }
-    return cols;
   });
 
   protected getIndoorRef(item: RoutesTableRow): IndoorRouteWithExtras {

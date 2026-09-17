@@ -33,7 +33,6 @@ import { OutdoorRoutesTableComponent } from '../../route/outdoor-routes-table';
         [showAdminActions]="false"
         [showLocation]="true"
         [showRowColors]="false"
-        [expandableMobile]="false"
         [hiddenColumns]="['topo', 'height', 'rating', 'ascents']"
         activeCol="grade"
         [direction]="sortDesc"

@@ -8,7 +8,6 @@ import {
   computed,
   signal,
   effect,
-  viewChildren,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -22,7 +21,6 @@ import {
   TuiTableTd,
   TuiTableCell,
   TuiTableHead,
-  TuiTableExpand,
   TuiTableSortChange,
   TuiSortDirection,
 } from '@taiga-ui/addon-table';
@@ -37,13 +35,7 @@ import {
   TuiCheckbox,
   TuiDialogService,
 } from '@taiga-ui/core';
-import {
-  TuiBadge,
-  TuiPin,
-  TuiChevron,
-  TUI_CONFIRM,
-  TuiConfirmData,
-} from '@taiga-ui/kit';
+import { TuiBadge, TuiPin, TUI_CONFIRM, TuiConfirmData } from '@taiga-ui/kit';
 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
@@ -61,16 +53,12 @@ import {
   ClimbingKind,
   RouteAscentWithExtras,
   INDOOR_ROUTE_COLORS,
-  RoutesTableRow,
 } from '../../models';
-
-import { mapRouteToTableRow } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
 import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
 import { IndoorRouteEquippersInputComponent } from '../route/indoor-route-equippers-input';
-import { RouteRowExpandedComponent } from '../route/route-row-expanded';
 import { GradeComponent } from '../ui/avatar-grade';
 import { EmptyStateComponent } from '../ui/empty-state';
 
@@ -96,15 +84,12 @@ import { EmptyStateComponent } from '../ui/empty-state';
     TuiTableTd,
     TuiTableCell,
     TuiTableHead,
-    TuiTableExpand,
     GradeComponent,
     EmptyStateComponent,
     IndoorRouteEquippersInputComponent,
     ButtonAscentTypeComponent,
-    RouteRowExpandedComponent,
     TuiCheckbox,
     TuiPin,
-    TuiChevron,
   ],
   template: `
     <div class="flex flex-col gap-4">
@@ -191,31 +176,16 @@ import { EmptyStateComponent } from '../ui/empty-state';
                     [class.text-right]="
                       col === 'actions' || col === 'admin_actions'
                     "
-                    [class.w-12!]="col === 'expand'"
                     [class.w-20!]="col === 'grade'"
                     [class.w-24!]="col === 'color'"
                     [class.w-32!]="col === 'actions' || col === 'admin_actions'"
                     [class.w-64!]="col === 'equippers'"
                   >
-                    @if (col === 'expand') {
-                      <button
-                        appearance="flat-grayscale"
-                        size="xs"
-                        tuiIconButton
-                        type="button"
-                        class="rounded-full!"
-                        [tuiChevron]="allExpanded()"
-                        (click.zoneless)="toggleAllExpanded()"
-                      >
-                        Toggle All
-                      </button>
-                    } @else {
-                      {{
-                        col === 'actions' || col === 'admin_actions'
-                          ? ''
-                          : (col | translate)
-                      }}
-                    }
+                    {{
+                      col === 'actions' || col === 'admin_actions'
+                        ? ''
+                        : (col | translate)
+                    }}
                   </th>
                 }
               </tr>
@@ -233,19 +203,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
                       "
                     >
                       @switch (col) {
-                        @case ('expand') {
-                          <button
-                            appearance="flat-grayscale"
-                            size="xs"
-                            tuiIconButton
-                            type="button"
-                            class="rounded-full!"
-                            [tuiChevron]="exp.expanded()"
-                            (click.zoneless)="exp.toggle()"
-                          >
-                            Toggle
-                          </button>
-                        }
                         @case ('grade') {
                           <div tuiCell size="m">
                             <app-grade
@@ -411,24 +368,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
                     </td>
                   }
                 </tr>
-                <tui-table-expand #exp [expanded]="false">
-                  <tr>
-                    <td
-                      [colSpan]="columns().length"
-                      class="p-0! border-none! w-full! max-w-full!"
-                    >
-                      <app-route-row-expanded
-                        [route]="routeRowMap()['' + item.id]"
-                        (logAscent)="logAscent($event)"
-                        (viewAscent)="
-                          viewAscent($event.route, $event.own_ascent)
-                        "
-                        (editRoute)="editRoute($event)"
-                        (deleteRoute)="deleteRoute($event)"
-                      />
-                    </td>
-                  </tr>
-                </tui-table-expand>
               }
             </tbody>
           </table>
@@ -458,7 +397,7 @@ export class IndoorRoutesComponent {
 
   protected readonly columns = computed(() => {
     if (this.layoutService.isMobile()) {
-      return ['expand', 'grade', 'route'];
+      return ['grade', 'route'];
     }
     const cols = [
       'grade',
@@ -610,12 +549,7 @@ export class IndoorRoutesComponent {
   protected readonly columnSorterMap = computed(() => {
     const map: Record<string, TuiComparator<IndoorRouteWithExtras> | null> = {};
     for (const col of this.columns()) {
-      if (
-        col === 'actions' ||
-        col === 'admin_actions' ||
-        col === 'expand' ||
-        col === 'equippers'
-      ) {
+      if (col === 'actions' || col === 'admin_actions' || col === 'equippers') {
         map[col] = null;
       } else {
         const sorters: Record<string, TuiComparator<IndoorRouteWithExtras>> = {
@@ -629,19 +563,6 @@ export class IndoorRoutesComponent {
         };
         map[col] = sorters[col] ?? null;
       }
-    }
-    return map;
-  });
-
-  protected readonly routeRowMap = computed(() => {
-    const map: Record<string, RoutesTableRow> = {};
-    const isEdit = this.canEdit();
-    for (const r of this.routes()) {
-      const row = mapRouteToTableRow(r);
-      row.canEdit = isEdit;
-      row.canDelete = isEdit;
-      row.canAddTopo = isEdit;
-      map[String(r.id)] = row;
     }
     return map;
   });
@@ -671,19 +592,6 @@ export class IndoorRoutesComponent {
     return colorName
       ? this.translate.instant('colors.' + colorName)
       : colorValue;
-  }
-
-  protected readonly expanders = viewChildren(TuiTableExpand);
-  protected readonly allExpanded = signal(false);
-
-  protected toggleAllExpanded() {
-    this.allExpanded.update((v) => !v);
-    const expandState = this.allExpanded();
-    for (const exp of this.expanders()) {
-      if (exp.expanded() !== expandState) {
-        exp.expanded.set(expandState);
-      }
-    }
   }
 
   protected currentDirection: TuiSortDirection = 1;

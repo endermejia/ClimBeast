@@ -169,7 +169,6 @@ import { TopoPageBase } from './topo-page-base';
                 class="w-full h-full min-w-0 min-h-0 overflow-hidden"
                 [sortedTableData]="sortedTableData()"
                 [columns]="columns()"
-                [canEdit]="canEdit()"
                 [isMobile]="isMobile"
                 [selectedRouteId]="selectedRouteId()"
                 [hasAccess]="hasAccess"
@@ -236,8 +235,6 @@ export class OutdoorTopoComponent extends TopoPageBase {
     },
   });
 
-  protected readonly canEdit = computed(() => this.authState.canEditCrag());
-
   protected readonly canDraw = computed(() => {
     const t = this.topo();
     if (!t || !t.photo) return false;
@@ -288,17 +285,9 @@ export class OutdoorTopoComponent extends TopoPageBase {
 
   protected readonly columns = computed(() => {
     const isMobile = this.layoutService.isMobile();
-    const base = isMobile
+    return isMobile
       ? ['index', 'grade', 'name']
       : ['index', 'grade', 'name', 'height', 'actions'];
-    const crag = this.crag();
-    if (
-      !isMobile &&
-      this.authState.areaAdminPermissions()[crag?.area_id ?? -1]
-    ) {
-      base.push('admin_actions');
-    }
-    return base;
   });
 
   protected readonly tableData = computed(() => {
