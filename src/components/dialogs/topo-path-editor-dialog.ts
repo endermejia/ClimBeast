@@ -1518,15 +1518,16 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       _ref: TopoRouteWithRoute;
     }
   >();
-  lineWidth = signal(5);
+  lineWidth = signal(1.5);
   protected pathsVersion = signal(0);
 
   protected readonly selectedRoutePathType = computed<'line' | 'circle'>(() => {
     this.pathsVersion();
     const selected = this.selectedRoute();
-    if (!selected) return 'line';
+    const defaultType = this.context.data.isIndoor ? 'circle' : 'line';
+    if (!selected) return defaultType;
     const path = this.pathsMap.get(selected.route_id);
-    return (path?.type as 'line' | 'circle') || 'line';
+    return (path?.type as 'line' | 'circle') || defaultType;
   });
 
   protected readonly selectedRouteIsTraverse = computed<boolean>(() => {
@@ -1908,7 +1909,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       this.newIndoorRoutes.push(newRoute);
       this.pathsMap.set(newRoute.id, {
         points: [],
-        type: 'line',
+        type: 'circle',
         _ref: newTopoRoute,
       });
       this.pathsVersion.update((v) => v + 1);
@@ -2165,12 +2166,13 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     const route = this.selectedRoute();
     if (!route) return;
 
+    const defaultType = this.context.data.isIndoor ? 'circle' : 'line';
     addPointToPath(
       event,
       route.route_id,
       this.containerElement().nativeElement,
       this.pathsMap,
-      { _ref: route },
+      { _ref: route, type: defaultType },
     );
     this.pathsVersion.update((v) => v + 1);
     this.cdr.markForCheck();

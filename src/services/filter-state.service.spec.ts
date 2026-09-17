@@ -89,16 +89,16 @@ describe('FilterStateService', () => {
     ]);
     expect(service.indoorTopoMovesRange()).toEqual([2, 15]);
 
-    service.resetIndoorTopoMovesRange(30);
-    expect(service.indoorTopoMovesRange()).toEqual([0, 30]);
+    service.resetIndoorTopoMovesRange();
+    expect(service.indoorTopoMovesRange()).toEqual([0, 100]);
 
     service.indoorTopoGradeRange.set([5, 20]);
-    service.resetIndoorTopoFilters(25);
+    service.resetIndoorTopoFilters();
     expect(service.indoorTopoGradeRange()).toEqual([
       0,
       ORDERED_GRADE_VALUES.length - 2,
     ]);
-    expect(service.indoorTopoMovesRange()).toEqual([0, 25]);
+    expect(service.indoorTopoMovesRange()).toEqual([0, 100]);
   });
 
   it('should set grade range', () => {

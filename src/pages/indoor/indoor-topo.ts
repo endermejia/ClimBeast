@@ -221,45 +221,47 @@ import { TopoPageBase } from '../area/topo-page-base';
                 </div>
 
                 <!-- Moves Slider -->
-                <div class="flex flex-col gap-1">
-                  <div
-                    class="flex items-center justify-between text-xs font-semibold h-5"
-                  >
-                    <span>{{ 'moves' | translate }}</span>
-                    <div class="flex items-center gap-1.5 font-medium">
-                      @if (hasActiveMovesFilter()) {
-                        <button
-                          tuiIconButton
-                          type="button"
-                          size="xs"
-                          appearance="flat-grayscale"
-                          iconStart="@tui.rotate-ccw"
-                          class="rounded-full!"
-                          [style.--t-size.rem]="1.25"
-                          [title]="'clear' | translate"
-                          (click.zoneless)="resetMovesFilter()"
-                        >
-                          {{ 'clear' | translate }}
-                        </button>
-                      }
-                      <div class="flex items-center gap-1 opacity-80">
-                        <span>{{ currentMovesRange()[0] }}</span>
-                        <span>-</span>
-                        <span>{{ currentMovesRange()[1] }}</span>
+                @if (hasMovesData()) {
+                  <div class="flex flex-col gap-1">
+                    <div
+                      class="flex items-center justify-between text-xs font-semibold h-5"
+                    >
+                      <span>{{ 'moves' | translate }}</span>
+                      <div class="flex items-center gap-1.5 font-medium">
+                        @if (hasActiveMovesFilter()) {
+                          <button
+                            tuiIconButton
+                            type="button"
+                            size="xs"
+                            appearance="flat-grayscale"
+                            iconStart="@tui.rotate-ccw"
+                            class="rounded-full!"
+                            [style.--t-size.rem]="1.25"
+                            [title]="'clear' | translate"
+                            (click.zoneless)="resetMovesFilter()"
+                          >
+                            {{ 'clear' | translate }}
+                          </button>
+                        }
+                        <div class="flex items-center gap-1 opacity-80">
+                          <span>{{ currentMovesRange()[0] }}</span>
+                          <span>-</span>
+                          <span>{{ currentMovesRange()[1] }}</span>
+                        </div>
                       </div>
                     </div>
+                    <tui-range
+                      [style.--tui-thumb-size.rem]="0.75"
+                      [min]="0"
+                      [max]="maxPossibleMoves()"
+                      [step]="1"
+                      [segments]="movesSegments()"
+                      [attr.aria-label]="'moves' | translate"
+                      [ngModel]="currentMovesRange()"
+                      (ngModelChange)="onMovesRangeChange($event)"
+                    />
                   </div>
-                  <tui-range
-                    [style.--tui-thumb-size.rem]="0.75"
-                    [min]="0"
-                    [max]="maxPossibleMoves()"
-                    [step]="1"
-                    [segments]="movesSegments()"
-                    [attr.aria-label]="'moves' | translate"
-                    [ngModel]="currentMovesRange()"
-                    (ngModelChange)="onMovesRangeChange($event)"
-                  />
-                </div>
+                }
               </div>
 
               <!-- Routes Table -->
@@ -338,9 +340,16 @@ export class IndoorTopoComponent extends TopoPageBase {
 
   protected readonly columns = computed(() => {
     const isMobile = this.layoutService.isMobile();
+    const hasMoves = this.hasMovesData();
     const base = isMobile
-      ? ['visibility', 'grade', 'name', 'moves']
-      : ['visibility', 'grade', 'name', 'moves', 'actions'];
+      ? ['visibility', 'grade', 'name', ...(hasMoves ? ['moves'] : [])]
+      : [
+          'visibility',
+          'grade',
+          'name',
+          ...(hasMoves ? ['moves'] : []),
+          'actions',
+        ];
     if (this.canEdit()) {
       base.push('admin_actions');
     }
@@ -365,8 +374,11 @@ export class IndoorTopoComponent extends TopoPageBase {
       const m = calculateRouteMoves(tr.path);
       if (m > max) max = m;
     }
-    return Math.max(max, 1);
+    return max;
   });
+
+  /** True if at least one route in this topo has a drawn path with moves */
+  protected readonly hasMovesData = computed(() => this.maxPossibleMoves() > 0);
 
   protected readonly gradeKeySteps: TuiKeySteps = [
     [0, 0],
@@ -379,7 +391,8 @@ export class IndoorTopoComponent extends TopoPageBase {
   ];
 
   protected readonly movesSegments = computed(() => {
-    return Math.min(Math.max(this.maxPossibleMoves(), 1), 10);
+    const max = this.maxPossibleMoves();
+    return Math.min(Math.max(max, 1), 10);
   });
 
   protected readonly currentGradeRange = computed<[number, number]>(() => {
@@ -444,8 +457,7 @@ export class IndoorTopoComponent extends TopoPageBase {
   }
 
   protected resetMovesFilter(): void {
-    const maxMoves = this.maxPossibleMoves();
-    this.filterState.resetIndoorTopoMovesRange(maxMoves);
+    this.filterState.resetIndoorTopoMovesRange();
   }
 
   protected toggleAllRoutesVisibility(): void {

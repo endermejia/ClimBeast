@@ -450,12 +450,12 @@ export class FilterStateService {
     this.indoorTopoGradeRange.set([0, ORDERED_GRADE_VALUES.length - 2]);
   }
 
-  resetIndoorTopoMovesRange(maxMoves = 100): void {
-    this.indoorTopoMovesRange.set([0, maxMoves]);
+  resetIndoorTopoMovesRange(): void {
+    this.indoorTopoMovesRange.set([0, 100]);
   }
 
-  resetIndoorTopoFilters(maxMoves = 100): void {
+  resetIndoorTopoFilters(): void {
     this.resetIndoorTopoGradeRange();
-    this.resetIndoorTopoMovesRange(maxMoves);
+    this.resetIndoorTopoMovesRange();
   }
 }
