@@ -78,7 +78,7 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
           </span>
         </div>
 
-        @if (isAdmin() && authState.editingMode()) {
+        @if (isAdmin()) {
           <div class="absolute top-3 left-3 flex flex-col gap-2 z-10">
             <div class="flex gap-2">
               <button

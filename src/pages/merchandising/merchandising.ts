@@ -152,7 +152,7 @@ import { IS_BROWSER } from '../../app/is-browser';
             <h2 tuiTitle size="xl" class="font-black tracking-tight">
               {{ 'merchandising.items.title' | translate }}
             </h2>
-            @if (isAdmin() && authState.editingMode()) {
+            @if (isAdmin()) {
               <button
                 tuiIconButton
                 appearance="accent"
@@ -242,7 +242,7 @@ export class MerchandisingComponent {
     { onlyActive: boolean }
   >({
     params: () => ({
-      onlyActive: !(this.isAdmin() && this.authState.editingMode()),
+      onlyActive: !this.isAdmin(),
     }),
     loader: ({ params }: { params: { onlyActive: boolean } }) =>
       this.merchService.getMerchandiseItems(params.onlyActive, true),

@@ -8,7 +8,7 @@ Este documento registra todas las ubicaciones donde se utiliza `editingMode` / `
 
 - **Fase 1: Cabeceras de Sección (`app-section-header`)**: ✅ Completada
 - **Fase 2: Tablas y Listados**: ⏳ Pendiente
-- **Fase 3: Merchandising**: ⏳ Pendiente
+- **Fase 3: Merchandising**: ✅ Completada
 - **Fase 4: Preferencias de Usuario y Switches en UI**: ⏳ Pendiente
 - **Fase 5: Servicio de Autenticación, Modelos y Base de Datos**: ⏳ Pendiente
 
@@ -43,9 +43,9 @@ Sustituir botones sueltos de acciones de cabecera por un menú de 3 puntos (`@tu
 
 ### Fase 3: Merchandising
 
-- [ ] `src/components/merchandise/merchandise-card.ts` (L81) — Botones de editar/borrar producto en tarjeta (`isAdmin() && authState.editingMode()`).
-- [ ] `src/pages/merchandising/merchandising.ts` (L155) — Botón de nuevo producto (`isAdmin() && authState.editingMode()`).
-- [ ] `src/pages/merchandising/merchandising.ts` (L245) — Filtro `onlyActive` de productos basado en `editingMode`.
+- [x] `src/components/merchandise/merchandise-card.ts` (L81) — Botones de editar/borrar producto en tarjeta (`isAdmin()`).
+- [x] `src/pages/merchandising/merchandising.ts` (L155) — Botón de nuevo producto (`isAdmin()`).
+- [x] `src/pages/merchandising/merchandising.ts` (L245) — Filtro `onlyActive` de productos basado en `isAdmin()`.
 
 ---
 
