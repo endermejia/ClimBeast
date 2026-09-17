@@ -36,7 +36,10 @@ import { LayoutService } from '../../services/layout.service';
 import { TopoRoutesTableComponent } from '../../components/topo/topo-routes-table';
 import { TopoViewerComponent } from '../../components/topo/topo-viewer';
 import type { TopoRouteRow } from '../../components/topo/topo.types';
-import { SectionHeaderComponent } from '../../components/ui/section-header';
+import {
+  SectionHeaderAction,
+  SectionHeaderComponent,
+} from '../../components/ui/section-header';
 
 import {
   GRADE_NUMBER_TO_LABEL,
@@ -79,6 +82,7 @@ import { TopoPageBase } from '../area/topo-page-base';
               [title]="t.name"
               [showLike]="false"
               [titleDropdown]="topoDropdown"
+              [actions]="headerActions()"
             >
               <ng-container titleInfo>
                 @if (t.legacy) {
@@ -108,52 +112,6 @@ import { TopoPageBase } from '../area/topo-page-base';
                   }
                 </tui-data-list>
               </ng-template>
-
-              <div actionButtons class="flex gap-2">
-                @if (canDraw()) {
-                  <button
-                    tuiButton
-                    size="s"
-                    appearance="neutral"
-                    [iconStart]="'/image/topo.svg'"
-                    class="rounded-full!"
-                    type="button"
-                    (click.zoneless)="openDrawTopo(t)"
-                  >
-                    {{ 'draw' | translate }}
-                  </button>
-                }
-                @if (canEdit()) {
-                  <button
-                    tuiIconButton
-                    size="s"
-                    appearance="neutral"
-                    iconStart="@tui.square-pen"
-                    class="rounded-full!"
-                    [attr.aria-label]="'edit' | translate"
-                    [title]="'edit' | translate"
-                    type="button"
-                    (click.zoneless)="openEditTopo(t)"
-                  >
-                    {{ 'edit' | translate }}
-                  </button>
-                  @if (canEditAsAdmin()) {
-                    <button
-                      tuiIconButton
-                      size="s"
-                      appearance="negative"
-                      iconStart="@tui.trash"
-                      class="rounded-full!"
-                      [attr.aria-label]="'delete' | translate"
-                      [title]="'delete' | translate"
-                      type="button"
-                      (click.zoneless)="deleteTopo(t)"
-                    >
-                      {{ 'delete' | translate }}
-                    </button>
-                  }
-                }
-              </div>
             </app-section-header>
           </div>
 
@@ -336,6 +294,44 @@ export class IndoorTopoComponent extends TopoPageBase {
     const t = this.topo();
     if (!t) return false;
     return this.authState.canCreateIndoorLine(t.indoor_center);
+  });
+
+  protected readonly headerActions = computed<SectionHeaderAction[]>(() => {
+    const t = this.topo();
+    if (!t) return [];
+
+    const actions: SectionHeaderAction[] = [];
+    const centerId = t.center_id ?? '';
+    const isAdmin = this.authState.isAdmin();
+    const isCenterAdmin = this.authState.isIndoorAdminOf(centerId);
+    const canDelete = isAdmin || isCenterAdmin;
+
+    if (this.canDraw()) {
+      actions.push({
+        label: 'draw',
+        icon: '/image/topo.svg',
+        appearance: 'neutral',
+        action: () => this.openDrawTopo(t),
+      });
+    }
+    if (this.canEdit()) {
+      actions.push({
+        label: 'edit',
+        icon: '@tui.square-pen',
+        appearance: 'neutral',
+        action: () => this.openEditTopo(t),
+      });
+      if (canDelete) {
+        actions.push({
+          label: 'delete',
+          icon: '@tui.trash',
+          appearance: 'negative',
+          action: () => this.deleteTopo(t),
+        });
+      }
+    }
+
+    return actions;
   });
 
   protected readonly columns = computed(() => {

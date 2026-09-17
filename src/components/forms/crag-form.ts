@@ -27,11 +27,12 @@ import { type TuiDialogContext } from '@taiga-ui/core';
 import {
   TuiButton,
   TuiError,
+  TuiFilterByInputPipe,
+  TuiInput,
   TuiLabel,
   TuiNumberFormat,
-  TuiInput,
+  TuiScrollbar,
   TuiTextfield,
-  TuiFilterByInputPipe,
 } from '@taiga-ui/core';
 import {
   TuiInputNumber,
@@ -110,181 +111,195 @@ interface CragFormModel {
     TuiInputNumber,
     TuiLabel,
     TuiNumberFormat,
+    TuiScrollbar,
     TuiSelect,
     TuiTextarea,
     TuiTextfield,
   ],
   template: `
-    <form class="grid gap-4" (submit.zoneless)="onSubmit($event)">
-      <tui-textfield
-        tuiChevron
-        [tuiTextfieldCleaner]="false"
-        [stringify]="areaStringify"
-        [identityMatcher]="areaIdentityMatcher"
-      >
-        <label tuiLabel for="area">
-          {{ 'area' | translate }}
-        </label>
-        <input
-          tuiComboBox
-          id="area"
-          [ngModel]="model().area"
-          (ngModelChange)="onAreaChange($event)"
-          name="area"
-          autocomplete="off"
-        />
-        <tui-data-list-wrapper
-          *tuiDropdown
-          new
-          [items]="areaOptions.value() || [] | tuiFilterByInput"
-        />
-      </tui-textfield>
-
-      <tui-textfield [tuiTextfieldCleaner]="false">
-        <label tuiLabel for="crag-name">{{ 'name' | translate }}</label>
-        <input
-          tuiInput
-          id="crag-name"
-          [formField]="cragForm.name"
-          type="text"
-          autocomplete="off"
-        />
-      </tui-textfield>
-      @if (cragForm.name().invalid() && cragForm.name().touched()) {
-        <tui-error [error]="'errors.required' | translate" />
-      }
-
-      @if (isEdit() || authState.isAdmin()) {
-        <tui-textfield [tuiTextfieldCleaner]="false">
-          <label tuiLabel for="crag-slug">{{ 'slug' | translate }}</label>
-          <input
-            tuiInput
-            id="crag-slug"
-            [formField]="cragForm.slug"
-            type="text"
-            autocomplete="off"
-          />
-        </tui-textfield>
-        @if (cragForm.slug().invalid() && cragForm.slug().touched()) {
-          <tui-error [error]="'errors.required' | translate" />
-        }
-      }
-
-      <div class="flex flex-wrap items-center gap-4">
-        <h3 class="font-bold text-lg">{{ 'location' | translate }}</h3>
-        <button
-          tuiButton
-          appearance="secondary-grayscale"
-          size="s"
-          type="button"
-          iconStart="@tui.map-pin"
-          (click.zoneless)="pickLocation()"
-        >
-          {{ 'pickOnMap' | translate }}
-        </button>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="grid grid-cols-2 gap-4">
-          <tui-textfield [tuiTextfieldCleaner]="false">
-            <label tuiLabel for="lat">{{ 'lat' | translate }}</label>
+    <form
+      class="flex flex-col grow max-h-[70dvh] min-h-0 w-full overflow-hidden"
+      (submit.zoneless)="onSubmit($event)"
+    >
+      <tui-scrollbar class="grow min-h-0 overflow-x-hidden!">
+        <div class="grid gap-4 pt-1 pr-2 pb-2">
+          <tui-textfield
+            tuiChevron
+            [tuiTextfieldCleaner]="false"
+            [stringify]="areaStringify"
+            [identityMatcher]="areaIdentityMatcher"
+          >
+            <label tuiLabel for="area">
+              {{ 'area' | translate }}
+            </label>
             <input
-              tuiInputNumber
-              id="lat"
-              [ngModel]="model().latitude"
-              (ngModelChange)="onLatChange($event)"
-              name="latitude"
-              [tuiNumberFormat]="{ precision: 6 }"
-              (paste)="onPasteLocation($event)"
-              (change.zoneless)="sanitizeCoordinates()"
+              tuiComboBox
+              id="area"
+              [ngModel]="model().area"
+              (ngModelChange)="onAreaChange($event)"
+              name="area"
+              autocomplete="off"
+            />
+            <tui-data-list-wrapper
+              *tuiDropdown
+              new
+              [items]="areaOptions.value() || [] | tuiFilterByInput"
+            />
+          </tui-textfield>
+
+          <tui-textfield [tuiTextfieldCleaner]="false">
+            <label tuiLabel for="crag-name">{{ 'name' | translate }}</label>
+            <input
+              tuiInput
+              id="crag-name"
+              [formField]="cragForm.name"
+              type="text"
               autocomplete="off"
             />
           </tui-textfield>
-          <tui-textfield [tuiTextfieldCleaner]="false">
-            <label tuiLabel for="lng">{{ 'lng' | translate }}</label>
-            <input
-              tuiInputNumber
-              id="lng"
-              [tuiNumberFormat]="{ precision: 6 }"
-              [ngModel]="model().longitude"
-              (ngModelChange)="onLngChange($event)"
-              name="longitude"
-              (change.zoneless)="sanitizeCoordinates()"
-              autocomplete="off"
+          @if (cragForm.name().invalid() && cragForm.name().touched()) {
+            <tui-error [error]="'errors.required' | translate" />
+          }
+
+          @if (isEdit() || authState.isAdmin()) {
+            <tui-textfield [tuiTextfieldCleaner]="false">
+              <label tuiLabel for="crag-slug">{{ 'slug' | translate }}</label>
+              <input
+                tuiInput
+                id="crag-slug"
+                [formField]="cragForm.slug"
+                type="text"
+                autocomplete="off"
+              />
+            </tui-textfield>
+            @if (cragForm.slug().invalid() && cragForm.slug().touched()) {
+              <tui-error [error]="'errors.required' | translate" />
+            }
+          }
+
+          <div class="flex flex-wrap items-center gap-4">
+            <h3 class="font-bold text-lg">{{ 'location' | translate }}</h3>
+            <button
+              tuiButton
+              appearance="secondary-grayscale"
+              size="s"
+              type="button"
+              iconStart="@tui.map-pin"
+              (click.zoneless)="pickLocation()"
+            >
+              {{ 'pickOnMap' | translate }}
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-4">
+              <tui-textfield [tuiTextfieldCleaner]="false">
+                <label tuiLabel for="lat">{{ 'lat' | translate }}</label>
+                <input
+                  tuiInputNumber
+                  id="lat"
+                  [ngModel]="model().latitude"
+                  (ngModelChange)="onLatChange($event)"
+                  name="latitude"
+                  [tuiNumberFormat]="{ precision: 6 }"
+                  (paste)="onPasteLocation($event)"
+                  (change.zoneless)="sanitizeCoordinates()"
+                  autocomplete="off"
+                />
+              </tui-textfield>
+              <tui-textfield [tuiTextfieldCleaner]="false">
+                <label tuiLabel for="lng">{{ 'lng' | translate }}</label>
+                <input
+                  tuiInputNumber
+                  id="lng"
+                  [tuiNumberFormat]="{ precision: 6 }"
+                  [ngModel]="model().longitude"
+                  (ngModelChange)="onLngChange($event)"
+                  name="longitude"
+                  (change.zoneless)="sanitizeCoordinates()"
+                  autocomplete="off"
+                />
+              </tui-textfield>
+            </div>
+            <app-counter
+              [ngModel]="model().approach"
+              (ngModelChange)="onApproachChange($event)"
+              name="approach"
+              label="approach"
+              suffix="min."
             />
+          </div>
+
+          <tui-textfield [tuiTextfieldCleaner]="false">
+            <label tuiLabel for="desc-es">{{
+              'description_es' | translate
+            }}</label>
+            <textarea
+              tuiTextarea
+              id="desc-es"
+              [ngModel]="model().description_es"
+              (ngModelChange)="updateField('description_es', $event)"
+              name="description_es"
+            ></textarea>
           </tui-textfield>
+
+          <tui-textfield [tuiTextfieldCleaner]="false">
+            <label tuiLabel for="desc-en">{{
+              'description_en' | translate
+            }}</label>
+            <textarea
+              tuiTextarea
+              id="desc-en"
+              [ngModel]="model().description_en"
+              (ngModelChange)="updateField('description_en', $event)"
+              name="description_en"
+            ></textarea>
+          </tui-textfield>
+
+          <tui-textfield [tuiTextfieldCleaner]="false">
+            <label tuiLabel for="warn-es">{{ 'warning_es' | translate }}</label>
+            <textarea
+              tuiTextarea
+              id="warn-es"
+              [ngModel]="model().warning_es"
+              (ngModelChange)="updateField('warning_es', $event)"
+              name="warning_es"
+            ></textarea>
+          </tui-textfield>
+
+          <tui-textfield [tuiTextfieldCleaner]="false">
+            <label tuiLabel for="warn-en">{{ 'warning_en' | translate }}</label>
+            <textarea
+              tuiTextarea
+              id="warn-en"
+              [ngModel]="model().warning_en"
+              (ngModelChange)="updateField('warning_en', $event)"
+              name="warning_en"
+            ></textarea>
+          </tui-textfield>
+
+          @if (isEdit()) {
+            <tui-textfield multi class="block">
+              <label tuiLabel for="eight-anu-slugs">
+                {{ 'import8a.slugs' | translate }}
+              </label>
+              <input
+                tuiInputChip
+                id="eight-anu-slugs"
+                [ngModel]="model().eight_anu_sector_slugs"
+                (ngModelChange)="onSlugsChange($event)"
+                name="eight_anu_sector_slugs"
+                autocomplete="off"
+              />
+              <tui-input-chip *tuiItem />
+            </tui-textfield>
+          }
         </div>
-        <app-counter
-          [ngModel]="model().approach"
-          (ngModelChange)="onApproachChange($event)"
-          name="approach"
-          label="approach"
-          suffix="min."
-        />
-      </div>
+      </tui-scrollbar>
 
-      <tui-textfield [tuiTextfieldCleaner]="false">
-        <label tuiLabel for="desc-es">{{ 'description_es' | translate }}</label>
-        <textarea
-          tuiTextarea
-          id="desc-es"
-          [ngModel]="model().description_es"
-          (ngModelChange)="updateField('description_es', $event)"
-          name="description_es"
-        ></textarea>
-      </tui-textfield>
-
-      <tui-textfield [tuiTextfieldCleaner]="false">
-        <label tuiLabel for="desc-en">{{ 'description_en' | translate }}</label>
-        <textarea
-          tuiTextarea
-          id="desc-en"
-          [ngModel]="model().description_en"
-          (ngModelChange)="updateField('description_en', $event)"
-          name="description_en"
-        ></textarea>
-      </tui-textfield>
-
-      <tui-textfield [tuiTextfieldCleaner]="false">
-        <label tuiLabel for="warn-es">{{ 'warning_es' | translate }}</label>
-        <textarea
-          tuiTextarea
-          id="warn-es"
-          [ngModel]="model().warning_es"
-          (ngModelChange)="updateField('warning_es', $event)"
-          name="warning_es"
-        ></textarea>
-      </tui-textfield>
-
-      <tui-textfield [tuiTextfieldCleaner]="false">
-        <label tuiLabel for="warn-en">{{ 'warning_en' | translate }}</label>
-        <textarea
-          tuiTextarea
-          id="warn-en"
-          [ngModel]="model().warning_en"
-          (ngModelChange)="updateField('warning_en', $event)"
-          name="warning_en"
-        ></textarea>
-      </tui-textfield>
-
-      @if (isEdit()) {
-        <tui-textfield multi class="block">
-          <label tuiLabel for="eight-anu-slugs">
-            {{ 'import8a.slugs' | translate }}
-          </label>
-          <input
-            tuiInputChip
-            id="eight-anu-slugs"
-            [ngModel]="model().eight_anu_sector_slugs"
-            (ngModelChange)="onSlugsChange($event)"
-            name="eight_anu_sector_slugs"
-            autocomplete="off"
-          />
-          <tui-input-chip *tuiItem />
-        </tui-textfield>
-      }
-
-      <div class="flex flex-wrap gap-2 justify-end">
+      <div
+        class="flex flex-wrap gap-2 justify-end pt-4 border-t border-(--tui-border-normal) shrink-0"
+      >
         <button
           tuiButton
           appearance="flat"
@@ -309,7 +324,7 @@ interface CragFormModel {
     </form>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
+  host: { class: 'flex flex-col max-h-[70dvh] min-h-0 w-full overflow-hidden' },
 })
 export class CragFormComponent {
   protected readonly mapService = inject(MapService);

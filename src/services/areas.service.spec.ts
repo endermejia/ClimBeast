@@ -10,8 +10,6 @@ import { IS_BROWSER } from '../app/is-browser';
 import { MockSupabaseService } from '../testing/mock-supabase.service';
 import { AreasService } from './areas.service';
 import { CacheService } from './cache.service';
-import { EightAnuService } from './eight-anu.service';
-import { NotificationService } from './notification.service';
 import { SupabaseService } from './supabase.service';
 import { ToastService } from './toast.service';
 
@@ -70,15 +68,6 @@ describe('AreasService', () => {
         },
         { provide: ToastService, useValue: mockToast },
         { provide: TuiDialogService, useValue: { open: vi.fn() } },
-        {
-          provide: EightAnuService,
-          useValue: {
-            searchCrag: vi.fn(),
-            getAllRoutes: vi.fn().mockResolvedValue([]),
-            normalizeDifficulty: vi.fn(),
-          },
-        },
-        { provide: NotificationService, useValue: { success: vi.fn() } },
         { provide: TranslateService, useValue: MOCK_TRANSLATE },
         { provide: TranslateStore, useValue: {} },
       ],
@@ -110,8 +99,6 @@ describe('AreasService', () => {
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
-          { provide: EightAnuService, useValue: {} },
-          { provide: NotificationService, useValue: {} },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
           { provide: TranslateStore, useValue: {} },
         ],
@@ -133,8 +120,6 @@ describe('AreasService', () => {
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
-          { provide: EightAnuService, useValue: {} },
-          { provide: NotificationService, useValue: {} },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
           { provide: TranslateStore, useValue: {} },
         ],
@@ -156,8 +141,6 @@ describe('AreasService', () => {
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
-          { provide: EightAnuService, useValue: {} },
-          { provide: NotificationService, useValue: {} },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
           { provide: TranslateStore, useValue: {} },
         ],
@@ -179,8 +162,6 @@ describe('AreasService', () => {
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
-          { provide: EightAnuService, useValue: {} },
-          { provide: NotificationService, useValue: {} },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
           { provide: TranslateStore, useValue: {} },
         ],
@@ -203,8 +184,6 @@ describe('AreasService', () => {
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
-          { provide: EightAnuService, useValue: {} },
-          { provide: NotificationService, useValue: {} },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
           { provide: TranslateStore, useValue: {} },
         ],
@@ -226,8 +205,6 @@ describe('AreasService', () => {
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
-          { provide: EightAnuService, useValue: {} },
-          { provide: NotificationService, useValue: {} },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
           { provide: TranslateStore, useValue: {} },
         ],
@@ -249,8 +226,6 @@ describe('AreasService', () => {
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
-          { provide: EightAnuService, useValue: {} },
-          { provide: NotificationService, useValue: {} },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
           { provide: TranslateStore, useValue: {} },
         ],
@@ -272,8 +247,6 @@ describe('AreasService', () => {
           { provide: CacheService, useValue: { fetchOrCache: vi.fn() } },
           { provide: ToastService, useValue: mockToast },
           { provide: TuiDialogService, useValue: { open: vi.fn() } },
-          { provide: EightAnuService, useValue: {} },
-          { provide: NotificationService, useValue: {} },
           { provide: TranslateService, useValue: MOCK_TRANSLATE },
           { provide: TranslateStore, useValue: {} },
         ],

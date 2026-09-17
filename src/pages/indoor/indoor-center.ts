@@ -19,8 +19,9 @@ import {
   TuiButton,
   TuiCarousel,
   TuiCheckbox,
+  TuiDataList,
   TuiDialogService,
-  TuiHint,
+  TuiDropdown,
   TuiIcon,
   TuiInput,
   TuiLabel,
@@ -34,10 +35,7 @@ import {
   TuiAvatar,
   TuiBadgedContent,
   TuiBadgeNotification,
-  TuiChevron,
-  TuiComboBox,
   TuiConfirmData,
-  TuiDataListWrapper,
   TuiTabs,
 } from '@taiga-ui/kit';
 
@@ -47,7 +45,6 @@ import { firstValueFrom } from 'rxjs';
 
 import { AuthStateService } from '../../services/auth-state.service';
 import { BreadcrumbsService } from '../../services/breadcrumbs.service';
-import { CacheService } from '../../services/cache.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
@@ -55,7 +52,6 @@ import { IndoorService } from '../../services/indoor.service';
 import { MapDataService } from '../../services/map-data.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
-import { UserProfilesService } from '../../services/user-profiles.service';
 
 import { AscentCardComponent } from '../../components/ascent/ascent-card';
 import { IndoorToposComponent } from '../../components/indoor/indoor-topos';
@@ -66,24 +62,23 @@ import {
   CarouselItem,
 } from '../../components/ui/custom-carousel';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
-import { SectionHeaderComponent } from '../../components/ui/section-header';
-import { UserInfoHintComponent } from '../../components/ui/user-info-hint';
+import {
+  SectionHeaderAction,
+  SectionHeaderComponent,
+} from '../../components/ui/section-header';
 
 import {
   ClimbingKinds,
   GRADE_NUMBER_TO_LABEL,
   IndoorCenterDto,
-  IndoorCenterRoutesetterRequestWithCenter,
   IndoorRouteWithExtras,
   ORDERED_GRADE_VALUES,
   PROJECT_GRADE_LABEL,
   RouteAscentWithExtras,
-  UserProfileBasicDto,
   VERTICAL_LIFE_GRADES,
 } from '../../models';
 
-import { CACHE_KEYS } from '../../constants';
-import { AnyToSchedulePipe, AvatarUrlPipe } from '../../pipes';
+import { AnyToSchedulePipe } from '../../pipes';
 import { handleErrorToast, mapLocationUrl, matchesQuery } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
@@ -102,10 +97,8 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiButton,
     TuiCarousel,
     TuiCheckbox,
-    TuiChevron,
-    TuiComboBox,
-    TuiDataListWrapper,
-    TuiHint,
+    TuiDataList,
+    TuiDropdown,
     TuiIcon,
     TuiInput,
     TuiLabel,
@@ -121,17 +114,19 @@ import { IS_BROWSER } from '../../app/is-browser';
     IndoorToposComponent,
     AnyToSchedulePipe,
     CustomCarouselComponent,
-    AvatarUrlPipe,
     EmptyStateComponent,
     AscentCardComponent,
-    UserInfoHintComponent,
   ],
   template: `
     <tui-scrollbar class="flex grow">
       <section class="w-full max-w-5xl mx-auto p-4 flex flex-col min-h-full">
         @if (center(); as c) {
           <div class="mb-6">
-            <app-section-header [title]="c.name" [showLike]="false">
+            <app-section-header
+              [title]="c.name"
+              [showLike]="false"
+              [actions]="headerActions()"
+            >
               <span
                 titleInfo
                 class="flex items-center gap-1 text-sm font-normal text-(--tui-text-secondary) mt-1.5 select-none"
@@ -139,62 +134,6 @@ import { IS_BROWSER } from '../../app/is-browser';
                 <tui-icon icon="@tui.map-pin" />
                 <span>{{ c.city }}</span>
               </span>
-
-              <div actionButtons class="flex gap-2">
-                @if (canEdit()) {
-                  <button
-                    tuiIconButton
-                    size="s"
-                    appearance="neutral"
-                    iconStart="@tui.square-pen"
-                    class="rounded-full!"
-                    type="button"
-                    (click)="openEditCenter()"
-                  >
-                    {{ 'edit' | translate }}
-                  </button>
-                  @if (isAdmin()) {
-                    <button
-                      tuiIconButton
-                      size="s"
-                      appearance="negative"
-                      iconStart="@tui.trash"
-                      class="rounded-full!"
-                      type="button"
-                      (click.zoneless)="deleteCenter()"
-                    >
-                      {{ 'delete' | translate }}
-                    </button>
-                  }
-                } @else if (authState.editingMode() && !isAdmin()) {
-                  @if (!hasPendingAdminRequest()) {
-                    <button
-                      tuiButton
-                      size="s"
-                      appearance="secondary"
-                      iconStart="@tui.shield-alert"
-                      type="button"
-                      class="rounded-full!"
-                      (click.zoneless)="requestAdmin()"
-                    >
-                      {{ 'admin.indoorAdminRequests.button' | translate }}
-                    </button>
-                  }
-                  @if (!isRoutesetter() && !hasPendingRoutesetterRequest()) {
-                    <button
-                      tuiButton
-                      size="s"
-                      appearance="secondary"
-                      iconStart="@tui.wrench"
-                      type="button"
-                      class="rounded-full!"
-                      (click.zoneless)="requestRoutesetter()"
-                    >
-                      {{ 'admin.routesetterRequests.button' | translate }}
-                    </button>
-                  }
-                }
-              </div>
             </app-section-header>
           </div>
 
@@ -328,267 +267,7 @@ import { IS_BROWSER } from '../../app/is-browser';
             </div>
           </div>
 
-          <!-- Admins Section -->
-          @let admins = centerAdmins();
-          @if (canEdit()) {
-            <div class="flex flex-col gap-3 mt-6">
-              <span
-                class="text-xs uppercase opacity-60 font-semibold tracking-wider"
-              >
-                {{ 'admins' | translate }}
-              </span>
-              <div class="flex flex-wrap gap-4 items-center">
-                @for (admin of admins; track admin.user_id) {
-                  <div
-                    class="flex items-center gap-2 bg-(--tui-background-neutral-1) py-1 pr-3 rounded-full border border-(--tui-border-normal) group transition-all hover:bg-(--tui-background-neutral-1-hover) no-underline text-inherit"
-                    [class.pl-1]="admin.user.avatar"
-                    [class.pl-3]="!admin.user.avatar"
-                  >
-                    <a
-                      [routerLink]="['/profile', admin.user_id]"
-                      [tuiHint]="adminUserHint"
-                      (contextmenu.zoneless)="$event.preventDefault()"
-                      class="flex items-center gap-2 no-underline text-inherit cursor-pointer select-none"
-                    >
-                      @if (admin.user.avatar) {
-                        <span tuiAvatar size="s">
-                          <img
-                            [src]="admin.user.avatar | avatarUrl"
-                            [alt]="admin.user.name"
-                          />
-                        </span>
-                      }
-                      <span class="text-sm font-medium">{{
-                        admin.user.name
-                      }}</span>
-                    </a>
-                    <ng-template #adminUserHint>
-                      <app-user-info-hint
-                        [userId]="admin.user_id"
-                        [fallbackName]="admin.user.name"
-                        [fallbackAvatar]="admin.user.avatar"
-                      />
-                    </ng-template>
-                    @if (canEdit()) {
-                      <button
-                        tuiIconButton
-                        appearance="flat"
-                        size="xs"
-                        type="button"
-                        iconStart="@tui.x"
-                        [attr.aria-label]="'delete' | translate"
-                        class="opacity-0 group-hover:opacity-50 hover:opacity-100! transition-opacity -mr-1"
-                        (click.zoneless)="
-                          removeAdmin(
-                            admin.user_id || '',
-                            admin.user.name || ''
-                          )
-                        "
-                      ></button>
-                    }
-                  </div>
-                }
-
-                @if (canEdit()) {
-                  <div class="w-64">
-                    <tui-textfield
-                      appearance="floating"
-                      size="s"
-                      tuiChevron
-                      [tuiTextfieldCleaner]="true"
-                      [stringify]="stringifyUser"
-                      class="rounded-full!"
-                    >
-                      <label tuiLabel for="admin-search-input">{{
-                        'addUser' | translate
-                      }}</label>
-                      <input
-                        id="admin-search-input"
-                        tuiComboBox
-                        [placeholder]="'searchPlaceholder' | translate"
-                        (ngModelChange)="onAdminSelected($event)"
-                        [ngModel]="null"
-                        (input.zoneless)="
-                          userSearchQuery.set(adminSearchInput.value)
-                        "
-                        #adminSearchInput
-                      />
-                      <tui-data-list-wrapper
-                        *tuiDropdown
-                        [items]="foundUsers()"
-                      />
-                    </tui-textfield>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-
-          <!-- Routesetters Section -->
-          @let routesettersList = centerRoutesetters();
-          @let pendingRoutesetterRequests = centerRoutesetterRequests();
-          @if (canEdit()) {
-            <div class="flex flex-col gap-3 mt-6">
-              <span
-                class="text-xs uppercase opacity-60 font-semibold tracking-wider"
-              >
-                {{ 'routesetters' | translate }}
-              </span>
-
-              @if (pendingRoutesetterRequests.length > 0) {
-                <div
-                  class="flex flex-col gap-2.5 p-3.5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
-                >
-                  <div class="flex items-center gap-2">
-                    <tui-icon
-                      icon="@tui.clock"
-                      class="text-xs text-(--tui-text-accent)"
-                    />
-                    <span
-                      class="text-xs uppercase font-semibold tracking-wider opacity-75"
-                    >
-                      {{ 'admin.routesetterRequests.title' | translate }}
-                    </span>
-                    <tui-badge-notification tuiAppearance="accent" size="s">
-                      {{ pendingRoutesetterRequests.length }}
-                    </tui-badge-notification>
-                  </div>
-
-                  <div class="flex flex-wrap gap-2.5 items-center">
-                    @for (req of pendingRoutesetterRequests; track req.id) {
-                      <div
-                        class="flex items-center gap-3 bg-(--tui-background-base) py-1.5 px-3 rounded-full border border-(--tui-border-normal)"
-                      >
-                        <a
-                          [routerLink]="['/profile', req.user.id]"
-                          class="flex items-center gap-2 no-underline text-inherit"
-                        >
-                          <span tuiAvatar size="s">
-                            @if (req.user.avatar; as avatar) {
-                              <img [src]="avatar | avatarUrl" alt="avatar" />
-                            } @else {
-                              <tui-icon icon="@tui.user" />
-                            }
-                          </span>
-                          <span class="text-sm font-medium">
-                            {{ req.user.name || ('anonymous' | translate) }}
-                          </span>
-                        </a>
-
-                        <div
-                          class="flex items-center gap-1.5 flex-nowrap whitespace-nowrap"
-                        >
-                          <button
-                            tuiButton
-                            size="s"
-                            appearance="primary"
-                            type="button"
-                            class="rounded-full! shrink-0"
-                            (click.zoneless)="approveRoutesetter(req)"
-                          >
-                            {{ 'adminRequests.approve' | translate }}
-                          </button>
-                          <button
-                            tuiButton
-                            size="s"
-                            appearance="negative"
-                            type="button"
-                            class="rounded-full! shrink-0"
-                            (click.zoneless)="rejectRoutesetter(req)"
-                          >
-                            {{ 'adminRequests.reject' | translate }}
-                          </button>
-                        </div>
-                      </div>
-                    }
-                  </div>
-                </div>
-              }
-
-              <div class="flex flex-wrap gap-4 items-center">
-                @for (rs of routesettersList; track rs.user_id) {
-                  <div
-                    class="flex items-center gap-2 bg-(--tui-background-neutral-1) py-1 pr-3 rounded-full border border-(--tui-border-normal) group transition-all hover:bg-(--tui-background-neutral-1-hover) no-underline text-inherit"
-                    [class.pl-1]="rs.user.avatar"
-                    [class.pl-3]="!rs.user.avatar"
-                  >
-                    <a
-                      [routerLink]="['/profile', rs.user_id]"
-                      [tuiHint]="rsUserHint"
-                      (contextmenu.zoneless)="$event.preventDefault()"
-                      class="flex items-center gap-2 no-underline text-inherit cursor-pointer select-none"
-                    >
-                      @if (rs.user.avatar) {
-                        <span tuiAvatar size="s">
-                          <img
-                            [src]="rs.user.avatar | avatarUrl"
-                            [alt]="rs.user.name"
-                          />
-                        </span>
-                      }
-                      <span class="text-sm font-medium">{{
-                        rs.user.name
-                      }}</span>
-                    </a>
-                    <ng-template #rsUserHint>
-                      <app-user-info-hint
-                        [userId]="rs.user_id"
-                        [fallbackName]="rs.user.name"
-                        [fallbackAvatar]="rs.user.avatar"
-                      />
-                    </ng-template>
-                    @if (canEdit()) {
-                      <button
-                        tuiIconButton
-                        appearance="flat"
-                        size="xs"
-                        type="button"
-                        iconStart="@tui.x"
-                        [attr.aria-label]="'delete' | translate"
-                        class="opacity-0 group-hover:opacity-50 hover:opacity-100! transition-opacity -mr-1"
-                        (click.zoneless)="removeRoutesetter(rs.user_id || '')"
-                      ></button>
-                    }
-                  </div>
-                }
-
-                @if (canEdit()) {
-                  <div class="w-64">
-                    <tui-textfield
-                      appearance="floating"
-                      size="s"
-                      tuiChevron
-                      [tuiTextfieldCleaner]="true"
-                      [stringify]="stringifyUser"
-                      class="rounded-full!"
-                    >
-                      <label tuiLabel for="routesetter-search-input">{{
-                        'addUser' | translate
-                      }}</label>
-                      <input
-                        id="routesetter-search-input"
-                        tuiComboBox
-                        [placeholder]="'searchPlaceholder' | translate"
-                        (ngModelChange)="onRoutesetterSelected($event)"
-                        [ngModel]="null"
-                        (input.zoneless)="
-                          routesetterSearchQuery.set(
-                            routesetterSearchInput.value
-                          )
-                        "
-                        #routesetterSearchInput
-                      />
-                      <tui-data-list-wrapper
-                        *tuiDropdown
-                        [items]="foundRoutesetterUsers()"
-                      />
-                    </tui-textfield>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-          <div class="overflow-x-auto no-scrollbar">
+          <div class="overflow-x-auto no-scrollbar mt-6">
             <tui-tabs [(activeItemIndex)]="activeTabIndex">
               <button tuiTab>{{ 'indoor.topos' | translate }}</button>
               <button tuiTab>{{ 'indoor.routes' | translate }}</button>
@@ -785,12 +464,10 @@ export class IndoorCenterComponent {
   protected readonly indoor = inject(IndoorService);
   protected readonly supabase = inject(SupabaseService);
   protected readonly router = inject(Router);
-  protected readonly userProfiles = inject(UserProfilesService);
   private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly isBrowser = inject(IS_BROWSER);
-  private readonly cache = inject(CacheService);
 
   protected readonly activeTabIndex = signal(0);
   protected readonly loadedTabs = signal<Set<number>>(new Set([0]));
@@ -985,6 +662,52 @@ export class IndoorCenterComponent {
     return !!this.authState.indoorAdminPermissions()[center.id];
   });
 
+  protected readonly headerActions = computed<SectionHeaderAction[]>(() => {
+    const c = this.center();
+    if (!c) return [];
+
+    const actions: SectionHeaderAction[] = [];
+    const isAdmin = this.authState.isAdmin();
+    const isCenterAdmin = this.authState.isIndoorAdminOf(c.id);
+    const canEdit = isAdmin || isCenterAdmin;
+
+    if (canEdit) {
+      actions.push({
+        label: 'edit',
+        icon: '@tui.square-pen',
+        appearance: 'neutral',
+        action: () => this.openEditCenter(),
+      });
+      if (isAdmin) {
+        actions.push({
+          label: 'delete',
+          icon: '@tui.trash',
+          appearance: 'negative',
+          action: () => this.deleteCenter(),
+        });
+      }
+    } else if (!isAdmin && this.authState.userProfile()?.id) {
+      if (!this.hasPendingAdminRequest()) {
+        actions.push({
+          label: 'admin.indoorAdminRequests.button',
+          icon: '@tui.shield-alert',
+          appearance: 'secondary',
+          action: () => this.requestAdmin(),
+        });
+      }
+      if (!this.isRoutesetter() && !this.hasPendingRoutesetterRequest()) {
+        actions.push({
+          label: 'admin.routesetterRequests.button',
+          icon: '@tui.wrench',
+          appearance: 'secondary',
+          action: () => this.requestRoutesetter(),
+        });
+      }
+    }
+
+    return actions;
+  });
+
   protected readonly hasPendingAdminRequest = computed(() => {
     const center = this.center();
     if (!center) return false;
@@ -1087,79 +810,8 @@ export class IndoorCenterComponent {
     });
     if (success) {
       this.centerResource.reload();
-      this.centerRoutesettersResource.reload();
-      this.centerRoutesetterRequestsResource.reload();
     }
   }
-
-  protected readonly userSearchQuery = signal('');
-
-  protected readonly centerAdminsResource = resource({
-    params: () => this.center()?.id,
-    loader: async ({ params: centerId }) => {
-      if (!centerId) return [];
-      await this.supabase.whenReady();
-
-      const { data: mappings, error: mappingError } = await this.supabase.client
-        .from('indoor_center_admins')
-        .select('user_id')
-        .eq('center_id', centerId);
-
-      if (mappingError || !mappings?.length) {
-        if (mappingError) {
-          console.error(
-            '[IndoorCenterComponent] Error fetching center admin mappings:',
-            mappingError,
-          );
-        }
-        return [];
-      }
-
-      const userIds = mappings
-        .map((m) => m.user_id)
-        .filter((id): id is string => !!id);
-      const { data: profiles, error: profilesError } =
-        await this.supabase.client
-          .from('user_profiles')
-          .select('id, name, avatar')
-          .in('id', userIds);
-
-      if (profilesError) {
-        console.error(
-          '[IndoorCenterComponent] Error fetching admin profiles:',
-          profilesError,
-        );
-        return [];
-      }
-
-      return mappings.map((m) => ({
-        user_id: m.user_id,
-        user: profiles.find((p) => p.id === m.user_id) || {
-          id: m.user_id || '',
-          name: 'Unknown',
-          avatar: null,
-        },
-      }));
-    },
-  });
-
-  protected readonly centerAdmins = computed(
-    () => this.centerAdminsResource.value() ?? [],
-  );
-
-  protected readonly foundUsersResource = resource({
-    params: () => this.userSearchQuery().trim(),
-    loader: async ({ params: query }) => {
-      if (query.length < 2) return [];
-      return await this.userProfiles.searchUsers(query);
-    },
-  });
-
-  protected readonly foundUsers = computed(
-    () => this.foundUsersResource.value() ?? [],
-  );
-
-  protected readonly stringifyUser = (u: UserProfileBasicDto) => u.name || '';
 
   constructor() {
     inject(DestroyRef).onDestroy(() => {
@@ -1207,250 +859,6 @@ export class IndoorCenterComponent {
         return next;
       });
     });
-  }
-
-  async addAdmin(user: UserProfileBasicDto): Promise<void> {
-    const centerId = this.center()?.id;
-    if (!centerId) return;
-
-    const { error } = await this.supabase.client
-      .from('indoor_center_admins')
-      .insert({ center_id: centerId, user_id: user.id });
-
-    if (error) {
-      if (error.code === '23505') {
-        this.toast.info('adminRequests.alreadyRequested');
-      } else {
-        console.error('[IndoorCenterComponent] Error adding admin:', error);
-        this.toast.error('errors.unexpected');
-      }
-      return;
-    }
-
-    this.toast.success('messages.toasts.adminAdded');
-    this.centerAdminsResource.reload();
-    if (user.id === this.supabase.authUserId()) {
-      this.cache.remove(CACHE_KEYS.adminIndoorCenters(user.id));
-      this.supabase.adminIndoorCentersResource.reload();
-    }
-    this.userSearchQuery.set('');
-  }
-
-  async removeAdmin(userId: string, userName?: string): Promise<void> {
-    const centerId = this.center()?.id;
-    if (!centerId) return;
-    if (!this.isBrowser) return;
-
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('indoor.removeAdminTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('indoor.removeAdminConfirm', {
-            name: userName || this.translate.instant('user'),
-          }),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    );
-
-    if (!confirmed) return;
-
-    const { error } = await this.supabase.client
-      .from('indoor_center_admins')
-      .delete()
-      .eq('center_id', centerId)
-      .eq('user_id', userId);
-
-    if (error) {
-      console.error('[IndoorCenterComponent] Error removing admin:', error);
-      this.toast.error('errors.unexpected');
-      return;
-    }
-
-    this.toast.success('messages.toasts.adminRemoved');
-    this.centerAdminsResource.reload();
-    if (userId === this.supabase.authUserId()) {
-      this.cache.remove(CACHE_KEYS.adminIndoorCenters(userId));
-      this.supabase.adminIndoorCentersResource.reload();
-    }
-  }
-
-  protected onAdminSelected(user: UserProfileBasicDto | null): void {
-    if (user) {
-      this.addAdmin(user);
-    }
-  }
-
-  // ---- Routesetters ----
-  protected readonly routesetterSearchQuery = signal('');
-
-  protected readonly centerRoutesettersResource = resource({
-    params: () => this.center()?.id,
-    loader: async ({ params: centerId }) => {
-      if (!centerId) return [];
-      await this.supabase.whenReady();
-
-      const { data: mappings, error: mappingError } = await this.supabase.client
-        .from('indoor_center_routesetters')
-        .select('user_id')
-        .eq('center_id', centerId);
-
-      if (mappingError || !mappings?.length) {
-        if (mappingError) {
-          console.error(
-            '[IndoorCenterComponent] Error fetching center routesetter mappings:',
-            mappingError,
-          );
-        }
-        return [];
-      }
-
-      const userIds = mappings
-        .map((m) => m.user_id)
-        .filter((id): id is string => !!id);
-      const { data: profiles, error: profilesError } =
-        await this.supabase.client
-          .from('user_profiles')
-          .select('id, name, avatar')
-          .in('id', userIds);
-
-      if (profilesError) {
-        console.error(
-          '[IndoorCenterComponent] Error fetching routesetter profiles:',
-          profilesError,
-        );
-        return [];
-      }
-
-      return mappings.map((m) => ({
-        user_id: m.user_id,
-        user: profiles.find((p) => p.id === m.user_id) || {
-          id: m.user_id || '',
-          name: 'Unknown',
-          avatar: null,
-        },
-      }));
-    },
-  });
-
-  protected readonly centerRoutesetters = computed(
-    () => this.centerRoutesettersResource.value() ?? [],
-  );
-
-  protected readonly centerRoutesetterRequestsResource = resource({
-    params: () => this.center()?.id,
-    loader: async ({ params: centerId }) => {
-      if (!centerId || !this.isBrowser || !this.canEdit()) return [];
-      return await this.indoor.getIndoorCenterRoutesetterRequests(centerId);
-    },
-  });
-
-  protected readonly centerRoutesetterRequests = computed(
-    () => this.centerRoutesetterRequestsResource.value() ?? [],
-  );
-
-  protected readonly foundRoutesetterUsersResource = resource({
-    params: () => this.routesetterSearchQuery().trim(),
-    loader: async ({ params: query }) => {
-      if (query.length < 2) return [];
-      return await this.userProfiles.searchUsers(query);
-    },
-  });
-
-  protected readonly foundRoutesetterUsers = computed(
-    () => this.foundRoutesetterUsersResource.value() ?? [],
-  );
-
-  async addRoutesetter(user: UserProfileBasicDto): Promise<void> {
-    const centerId = this.center()?.id;
-    if (!centerId) return;
-
-    const { error } = await this.supabase.client
-      .from('indoor_center_routesetters')
-      .insert({ center_id: centerId, user_id: user.id });
-
-    if (error) {
-      if (error.code === '23505') {
-        this.toast.info('adminRequests.alreadyRequested');
-      } else {
-        console.error(
-          '[IndoorCenterComponent] Error adding routesetter:',
-          error,
-        );
-        this.toast.error('errors.unexpected');
-      }
-      return;
-    }
-
-    this.toast.success('messages.toasts.routesetterAdded');
-    this.centerRoutesettersResource.reload();
-    if (user.id === this.supabase.authUserId()) {
-      this.supabase.routesetterIndoorCentersResource.reload();
-    }
-    this.routesetterSearchQuery.set('');
-  }
-
-  async removeRoutesetter(userId: string): Promise<void> {
-    const centerId = this.center()?.id;
-    if (!centerId) return;
-
-    const { error } = await this.supabase.client
-      .from('indoor_center_routesetters')
-      .delete()
-      .eq('center_id', centerId)
-      .eq('user_id', userId);
-
-    if (error) {
-      console.error(
-        '[IndoorCenterComponent] Error removing routesetter:',
-        error,
-      );
-      this.toast.error('errors.unexpected');
-      return;
-    }
-
-    this.toast.success('messages.toasts.routesetterRemoved');
-    this.centerRoutesettersResource.reload();
-    if (userId === this.supabase.authUserId()) {
-      this.supabase.routesetterIndoorCentersResource.reload();
-    }
-  }
-
-  protected onRoutesetterSelected(user: UserProfileBasicDto | null): void {
-    if (user) {
-      this.addRoutesetter(user);
-    }
-  }
-
-  protected async approveRoutesetter(
-    req: IndoorCenterRoutesetterRequestWithCenter,
-  ): Promise<void> {
-    const center = this.center();
-    if (!center) return;
-    const success = await this.indoor.approveIndoorCenterRoutesetterRequest(
-      req.id,
-      center.id,
-      req.user.id,
-    );
-    if (success) {
-      this.centerRoutesetterRequestsResource.reload();
-      this.centerRoutesettersResource.reload();
-    }
-  }
-
-  protected async rejectRoutesetter(
-    req: IndoorCenterRoutesetterRequestWithCenter,
-  ): Promise<void> {
-    const success = await this.indoor.rejectIndoorCenterRoutesetterRequest(
-      req.id,
-    );
-    if (success) {
-      this.centerRoutesetterRequestsResource.reload();
-    }
   }
 
   protected readonly mapLocationUrl = mapLocationUrl;

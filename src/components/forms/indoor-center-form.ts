@@ -17,8 +17,8 @@ import { FormsModule } from '@angular/forms';
 import { form, FormField, required, submit } from '@angular/forms/signals';
 import { RouterLink } from '@angular/router';
 
-import { type TuiDialogContext } from '@taiga-ui/core';
 import {
+  type TuiDialogContext,
   TuiAppearance,
   TuiButton,
   TuiCheckbox,
@@ -30,6 +30,7 @@ import {
   TuiLabel,
   TuiLoader,
   TuiNumberFormat,
+  TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
 import {
@@ -37,6 +38,8 @@ import {
   TuiBadgeNotification,
   TuiChevron,
   TuiComboBox,
+  TuiConfirmData,
+  TUI_CONFIRM,
   TuiDataListWrapper,
   TuiFiles,
   TuiInputNumber,
@@ -48,8 +51,10 @@ import {
 import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
 
 import { AuthStateService } from '../../services/auth-state.service';
+import { CacheService } from '../../services/cache.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 import { IndoorService } from '../../services/indoor.service';
 import { MapService } from '../../services/map.service';
@@ -66,10 +71,12 @@ import {
   IndoorSchedule,
   Json,
   parseIndoorCenterPermissions,
+  scheduleFromJson,
+  scheduleToJson,
   UserProfileBasicDto,
 } from '../../models';
-import { scheduleToJson, scheduleFromJson } from '../../models/indoor.model';
 
+import { CACHE_KEYS } from '../../constants';
 import { AvatarUrlPipe } from '../../pipes';
 import {
   COMMON_IMAGE_EDITOR_CONFIG,
@@ -113,6 +120,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiLabel,
     TuiLoader,
     TuiNumberFormat,
+    TuiScrollbar,
     TuiSegmented,
     TuiSelect,
     TuiTabs,
@@ -120,308 +128,276 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiTextfield,
   ],
   template: `
-    @if (isEdit()) {
-      <div class="overflow-x-auto no-scrollbar mb-4">
-        <tui-tabs [(activeItemIndex)]="activeTabIndex">
-          <button tuiTab>{{ 'details' | translate }}</button>
-          <button tuiTab>{{ 'indoor.schedule' | translate }}</button>
-          <button tuiTab>{{ 'indoor.vouchers' | translate }}</button>
-          <button tuiTab>
-            {{ 'routesetters' | translate }}
-            @if (centerRoutesetterRequests().length > 0) {
-              <tui-badge-notification
-                tuiAppearance="accent"
-                size="s"
-                class="ml-1.5"
-              >
-                {{ centerRoutesetterRequests().length }}
-              </tui-badge-notification>
-            }
-          </button>
-          <button tuiTab>{{ 'indoor.permissions.title' | translate }}</button>
-        </tui-tabs>
-      </div>
-    }
-
-    <form class="flex flex-col grow" (submit.zoneless)="onSubmit($event)">
-      <div class="grow min-h-[400px]">
-        @switch (activeTabIndex()) {
-          @case (0) {
-            <div class="grid gap-4">
-              <tui-textfield class="block" [tuiTextfieldCleaner]="false">
-                <label tuiLabel for="center-name">{{
-                  'name' | translate
-                }}</label>
-                <input
-                  tuiInput
-                  id="center-name"
-                  [formField]="centerForm.name"
-                  type="text"
-                  autocomplete="off"
-                />
-              </tui-textfield>
-              @if (centerForm.name().invalid() && centerForm.name().touched()) {
-                <tui-error [error]="'errors.required' | translate" />
-              }
-
-              <tui-textfield class="block" [tuiTextfieldCleaner]="false">
-                <label tuiLabel for="center-city">{{
-                  'city' | translate
-                }}</label>
-                <input
-                  tuiInput
-                  id="center-city"
-                  [formField]="centerForm.city"
-                  type="text"
-                  autocomplete="off"
-                />
-              </tui-textfield>
-
-              <tui-textfield class="block" [tuiTextfieldCleaner]="false">
-                <label tuiLabel for="center-desc">{{
-                  'description' | translate
-                }}</label>
-                <textarea
-                  tuiTextarea
-                  id="center-desc"
-                  [ngModel]="model().description"
-                  (ngModelChange)="onDescriptionChange($event)"
-                  name="description"
-                ></textarea>
-              </tui-textfield>
-
-              <tui-textfield class="block">
-                <label tuiLabel for="center-warning">{{
-                  'indoor.warning' | translate
-                }}</label>
-                <textarea
-                  tuiTextarea
-                  id="center-warning"
-                  [ngModel]="model().warning"
-                  (ngModelChange)="onWarningChange($event)"
-                  name="warning"
-                ></textarea>
-              </tui-textfield>
-
-              <div class="flex flex-wrap items-center gap-4">
-                <h3 class="font-bold text-lg">{{ 'location' | translate }}</h3>
-                <button
-                  tuiButton
-                  appearance="secondary-grayscale"
+    <form
+      class="flex flex-col grow max-h-[70dvh] min-h-0 w-full overflow-hidden"
+      (submit.zoneless)="onSubmit($event)"
+    >
+      @if (isEdit()) {
+        <div class="overflow-x-auto no-scrollbar mb-4 shrink-0">
+          <tui-tabs [(activeItemIndex)]="activeTabIndex">
+            <button tuiTab type="button">{{ 'details' | translate }}</button>
+            <button tuiTab type="button">
+              {{ 'indoor.schedule' | translate }}
+            </button>
+            <button tuiTab type="button">
+              {{ 'indoor.vouchers' | translate }}
+            </button>
+            <button tuiTab type="button">
+              {{ 'admin.title' | translate }}
+              @if (centerRoutesetterRequests().length > 0) {
+                <tui-badge-notification
+                  tuiAppearance="accent"
                   size="s"
-                  type="button"
-                  iconStart="@tui.map-pin"
-                  (click.zoneless)="pickLocation()"
+                  class="ml-1.5"
                 >
-                  {{ 'pickOnMap' | translate }}
-                </button>
-              </div>
+                  {{ centerRoutesetterRequests().length }}
+                </tui-badge-notification>
+              }
+            </button>
+            <button tuiTab type="button">
+              {{ 'indoor.permissions.title' | translate }}
+            </button>
+          </tui-tabs>
+        </div>
+      }
 
-              <div class="grid grid-cols-2 gap-4">
-                <tui-textfield [tuiTextfieldCleaner]="false">
-                  <label tuiLabel for="lat">{{ 'lat' | translate }}</label>
+      <tui-scrollbar class="grow min-h-0 overflow-x-hidden!">
+        <div class="pt-1 pr-2 pb-2">
+          @switch (activeTabIndex()) {
+            @case (0) {
+              <div class="grid gap-4">
+                <tui-textfield class="block" [tuiTextfieldCleaner]="false">
+                  <label tuiLabel for="center-name">{{
+                    'name' | translate
+                  }}</label>
                   <input
-                    tuiInputNumber
-                    id="lat"
-                    [ngModel]="model().latitude"
-                    (ngModelChange)="onLatChange($event)"
-                    name="latitude"
-                    [tuiNumberFormat]="{ precision: 6 }"
-                    (paste)="onPasteLocation($event)"
-                    (change.zoneless)="sanitizeCoordinates()"
+                    tuiInput
+                    id="center-name"
+                    [formField]="centerForm.name"
+                    type="text"
                     autocomplete="off"
                   />
                 </tui-textfield>
-                <tui-textfield [tuiTextfieldCleaner]="false">
-                  <label tuiLabel for="lng">{{ 'lng' | translate }}</label>
+                @if (
+                  centerForm.name().invalid() && centerForm.name().touched()
+                ) {
+                  <tui-error [error]="'errors.required' | translate" />
+                }
+
+                <tui-textfield class="block" [tuiTextfieldCleaner]="false">
+                  <label tuiLabel for="center-city">{{
+                    'city' | translate
+                  }}</label>
                   <input
-                    tuiInputNumber
-                    id="lng"
-                    [tuiNumberFormat]="{ precision: 6 }"
-                    [ngModel]="model().longitude"
-                    (ngModelChange)="onLngChange($event)"
-                    name="longitude"
-                    (change.zoneless)="sanitizeCoordinates()"
+                    tuiInput
+                    id="center-city"
+                    [formField]="centerForm.city"
+                    type="text"
                     autocomplete="off"
                   />
                 </tui-textfield>
-              </div>
 
-              <!-- Gallery -->
-              <div class="flex flex-col gap-3">
-                <div class="flex items-center justify-between px-1">
+                <tui-textfield class="block" [tuiTextfieldCleaner]="false">
+                  <label tuiLabel for="center-desc">{{
+                    'description' | translate
+                  }}</label>
+                  <textarea
+                    tuiTextarea
+                    id="center-desc"
+                    [ngModel]="model().description"
+                    (ngModelChange)="onDescriptionChange($event)"
+                    name="description"
+                  ></textarea>
+                </tui-textfield>
+
+                <tui-textfield class="block">
+                  <label tuiLabel for="center-warning">{{
+                    'indoor.warning' | translate
+                  }}</label>
+                  <textarea
+                    tuiTextarea
+                    id="center-warning"
+                    [ngModel]="model().warning"
+                    (ngModelChange)="onWarningChange($event)"
+                    name="warning"
+                  ></textarea>
+                </tui-textfield>
+
+                <div class="flex flex-wrap items-center gap-4">
                   <h3 class="font-bold text-lg">
-                    {{ 'merchandising.items.gallery' | translate }}
+                    {{ 'location' | translate }}
                   </h3>
-                  <label tuiInputFiles>
+                  <button
+                    tuiButton
+                    appearance="secondary-grayscale"
+                    size="s"
+                    type="button"
+                    iconStart="@tui.map-pin"
+                    (click.zoneless)="pickLocation()"
+                  >
+                    {{ 'pickOnMap' | translate }}
+                  </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                  <tui-textfield [tuiTextfieldCleaner]="false">
+                    <label tuiLabel for="lat">{{ 'lat' | translate }}</label>
                     <input
-                      accept="image/*"
-                      type="file"
-                      tuiInputFiles
-                      multiple
-                      [ngModel]="null"
-                      [ngModelOptions]="{ standalone: true }"
-                      (change)="onFilesChange($event)"
+                      tuiInputNumber
+                      id="lat"
+                      [ngModel]="model().latitude"
+                      (ngModelChange)="onLatChange($event)"
+                      name="latitude"
+                      [tuiNumberFormat]="{ precision: 6 }"
+                      (paste)="onPasteLocation($event)"
+                      (change.zoneless)="sanitizeCoordinates()"
+                      autocomplete="off"
                     />
-                    <button
-                      tuiButton
-                      type="button"
-                      appearance="secondary-grayscale"
-                      size="s"
-                      iconStart="@tui.plus"
-                    >
-                      {{ 'merchandising.items.addImage' | translate }}
-                    </button>
-                  </label>
+                  </tui-textfield>
+                  <tui-textfield [tuiTextfieldCleaner]="false">
+                    <label tuiLabel for="lng">{{ 'lng' | translate }}</label>
+                    <input
+                      tuiInputNumber
+                      id="lng"
+                      [tuiNumberFormat]="{ precision: 6 }"
+                      [ngModel]="model().longitude"
+                      (ngModelChange)="onLngChange($event)"
+                      name="longitude"
+                      (change.zoneless)="sanitizeCoordinates()"
+                      autocomplete="off"
+                    />
+                  </tui-textfield>
                 </div>
 
-                <div
-                  class="grid grid-cols-2 sm:grid-cols-4 gap-3"
-                  cdkDropList
-                  cdkDropListOrientation="mixed"
-                  (cdkDropListDropped)="dropImage($event)"
-                >
-                  @for (img of galleryUrls(); track img) {
-                    <div
-                      cdkDrag
-                      class="relative aspect-square rounded-xl overflow-hidden border border-(--tui-border-normal) group cursor-grab active:cursor-grabbing"
-                    >
-                      <img
-                        [src]="img"
-                        class="w-full h-full object-cover"
-                        alt="Gallery image"
-                      />
-                      <div
-                        class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <div
-                          class="bg-(--tui-background-base) rounded-xl p-0.5"
-                        >
-                          <button
-                            tuiButton
-                            type="button"
-                            appearance="destructive"
-                            size="s"
-                            (click)="removeExistingImage(img)"
-                          >
-                            <tui-icon icon="@tui.trash" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  }
-
-                  @for (item of newPhotos(); track item.id) {
-                    <div
-                      cdkDrag
-                      class="relative aspect-square rounded-xl overflow-hidden border border-accent border-dashed group cursor-grab active:cursor-grabbing"
-                    >
-                      <img
-                        [src]="item.preview"
-                        class="w-full h-full object-cover"
-                        alt="New photo"
-                      />
-                      <div
-                        class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <div
-                          class="bg-(--tui-background-base) rounded-xl p-0.5"
-                        >
-                          <button
-                            tuiButton
-                            type="button"
-                            appearance="destructive"
-                            size="s"
-                            (click)="removeNewPhoto(item.id)"
-                          >
-                            <tui-icon icon="@tui.trash" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  }
-                </div>
-              </div>
-            </div>
-          }
-
-          @case (1) {
-            <div class="flex flex-col gap-3">
-              @for (d of scheduleDays(); track d.day) {
-                <div
-                  class="flex flex-col gap-3 p-3.5 sm:p-4 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
-                >
-                  <div class="flex items-center justify-between gap-4">
-                    <span class="font-bold text-base capitalize">{{
-                      d.day | translate
-                    }}</span>
-
-                    <label
-                      class="flex items-center gap-2 cursor-pointer select-none"
-                    >
+                <!-- Gallery -->
+                <div class="flex flex-col gap-3">
+                  <div class="flex items-center justify-between px-1">
+                    <h3 class="font-bold text-lg">
+                      {{ 'merchandising.items.gallery' | translate }}
+                    </h3>
+                    <label tuiInputFiles>
                       <input
-                        tuiCheckbox
-                        type="checkbox"
-                        [ngModel]="d.closed"
-                        (ngModelChange)="onClosedChange(d.day, $event)"
+                        accept="image/*"
+                        type="file"
+                        tuiInputFiles
+                        multiple
+                        [ngModel]="null"
                         [ngModelOptions]="{ standalone: true }"
+                        (change)="onFilesChange($event)"
                       />
-                      <span class="text-sm">{{
-                        'indoor.closed' | translate
-                      }}</span>
+                      <button
+                        tuiButton
+                        type="button"
+                        appearance="secondary-grayscale"
+                        size="s"
+                        iconStart="@tui.plus"
+                      >
+                        {{ 'merchandising.items.addImage' | translate }}
+                      </button>
                     </label>
                   </div>
 
-                  @if (!d.closed) {
-                    <div
-                      class="flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3 pt-2 border-t border-(--tui-border-normal)/40"
-                    >
-                      <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <tui-textfield
-                          tuiTextfieldSize="s"
-                          class="flex-1 sm:w-32"
+                  <div
+                    class="grid grid-cols-2 sm:grid-cols-4 gap-3"
+                    cdkDropList
+                    cdkDropListOrientation="mixed"
+                    (cdkDropListDropped)="dropImage($event)"
+                  >
+                    @for (img of galleryUrls(); track img) {
+                      <div
+                        cdkDrag
+                        class="relative aspect-square rounded-xl overflow-hidden border border-(--tui-border-normal) group cursor-grab active:cursor-grabbing"
+                      >
+                        <img
+                          [src]="img"
+                          class="w-full h-full object-cover"
+                          alt="Gallery image"
+                        />
+                        <div
+                          class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <input
-                            tuiInput
-                            type="time"
-                            [ngModel]="d.open"
-                            (ngModelChange)="
-                              onTimeChange(d.day, 'open', $event)
-                            "
-                            [ngModelOptions]="{ standalone: true }"
-                          />
-                        </tui-textfield>
-                        <span class="text-xs opacity-60 shrink-0">-</span>
-                        <tui-textfield
-                          tuiTextfieldSize="s"
-                          class="flex-1 sm:w-32"
-                        >
-                          <input
-                            tuiInput
-                            type="time"
-                            [ngModel]="d.close"
-                            (ngModelChange)="
-                              onTimeChange(d.day, 'close', $event)
-                            "
-                            [ngModelOptions]="{ standalone: true }"
-                          />
-                        </tui-textfield>
+                          <div
+                            class="bg-(--tui-background-base) rounded-xl p-0.5"
+                          >
+                            <button
+                              tuiButton
+                              type="button"
+                              appearance="destructive"
+                              size="s"
+                              (click)="removeExistingImage(img)"
+                            >
+                              <tui-icon icon="@tui.trash" />
+                            </button>
+                          </div>
+                        </div>
                       </div>
+                    }
+
+                    @for (item of newPhotos(); track item.id) {
+                      <div
+                        cdkDrag
+                        class="relative aspect-square rounded-xl overflow-hidden border border-accent border-dashed group cursor-grab active:cursor-grabbing"
+                      >
+                        <img
+                          [src]="item.preview"
+                          class="w-full h-full object-cover"
+                          alt="New photo"
+                        />
+                        <div
+                          class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <div
+                            class="bg-(--tui-background-base) rounded-xl p-0.5"
+                          >
+                            <button
+                              tuiButton
+                              type="button"
+                              appearance="destructive"
+                              size="s"
+                              (click)="removeNewPhoto(item.id)"
+                            >
+                              <tui-icon icon="@tui.trash" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+            @case (1) {
+              <div class="flex flex-col gap-3">
+                @for (d of scheduleDays(); track d.day) {
+                  <div
+                    class="flex flex-col gap-3 p-3.5 sm:p-4 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+                  >
+                    <div class="flex items-center justify-between gap-4">
+                      <span class="font-bold text-base capitalize">{{
+                        d.day | translate
+                      }}</span>
 
                       <label
-                        class="flex items-center gap-2 cursor-pointer select-none sm:ml-2"
+                        class="flex items-center gap-2 cursor-pointer select-none"
                       >
                         <input
                           tuiCheckbox
                           type="checkbox"
-                          [ngModel]="d.hasSplit"
-                          (ngModelChange)="onSplitChange(d.day, $event)"
+                          [ngModel]="d.closed"
+                          (ngModelChange)="onClosedChange(d.day, $event)"
                           [ngModelOptions]="{ standalone: true }"
                         />
-                        <span class="text-sm">Jornada partida</span>
+                        <span class="text-sm">{{
+                          'indoor.closed' | translate
+                        }}</span>
                       </label>
+                    </div>
 
-                      @if (d.hasSplit) {
+                    @if (!d.closed) {
+                      <div
+                        class="flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3 pt-2 border-t border-(--tui-border-normal)/40"
+                      >
                         <div class="flex items-center gap-2 w-full sm:w-auto">
                           <tui-textfield
                             tuiTextfieldSize="s"
@@ -430,9 +406,9 @@ import { IS_BROWSER } from '../../app/is-browser';
                             <input
                               tuiInput
                               type="time"
-                              [ngModel]="d.open2"
+                              [ngModel]="d.open"
                               (ngModelChange)="
-                                onTimeChange(d.day, 'open2', $event)
+                                onTimeChange(d.day, 'open', $event)
                               "
                               [ngModelOptions]="{ standalone: true }"
                             />
@@ -445,691 +421,861 @@ import { IS_BROWSER } from '../../app/is-browser';
                             <input
                               tuiInput
                               type="time"
-                              [ngModel]="d.close2"
+                              [ngModel]="d.close"
                               (ngModelChange)="
-                                onTimeChange(d.day, 'close2', $event)
+                                onTimeChange(d.day, 'close', $event)
                               "
                               [ngModelOptions]="{ standalone: true }"
                             />
                           </tui-textfield>
                         </div>
-                      }
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-          }
 
-          @case (2) {
-            <div class="flex flex-col gap-6 w-full max-w-2xl">
-              <!-- Compact Create Voucher Form -->
-              <div
-                class="flex flex-col gap-4 p-4 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
-              >
-                <!-- First line: Name -->
-                <div class="w-full">
-                  <tui-textfield>
-                    <label tuiLabel for="new-v-name">{{
-                      'name' | translate
-                    }}</label>
-                    <input
-                      tuiInput
-                      id="new-v-name"
-                      [(ngModel)]="newVoucherName"
-                      name="newVoucherName"
-                      autocomplete="off"
-                      placeholder="Ej. Pase diario, Bono de 10"
-                    />
-                  </tui-textfield>
-                </div>
-
-                <!-- Second line: Description (Textarea) -->
-                <div class="w-full">
-                  <tui-textfield class="block">
-                    <label tuiLabel for="new-v-desc">{{
-                      'description' | translate
-                    }}</label>
-                    <textarea
-                      tuiTextarea
-                      id="new-v-desc"
-                      [(ngModel)]="newVoucherDescription"
-                      name="newVoucherDescription"
-                      placeholder="Ej. Acceso libre por un día"
-                    ></textarea>
-                  </tui-textfield>
-                </div>
-
-                <!-- Third line: Type and Price together, plus Add button -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-                  <!-- Kind (Type) -->
-                  <tui-textfield
-                    class="w-full"
-                    tuiChevron
-                    [stringify]="stringifyVoucherKind"
-                  >
-                    <label tuiLabel for="new-v-kind">{{
-                      'indoor.voucherKind' | translate
-                    }}</label>
-                    <input
-                      tuiSelect
-                      id="new-v-kind"
-                      [(ngModel)]="newVoucherKind"
-                      name="newVoucherKind"
-                      autocomplete="off"
-                    />
-                    <tui-data-list-wrapper
-                      *tuiDropdown
-                      [items]="['pass', 'subscription']"
-                    ></tui-data-list-wrapper>
-                  </tui-textfield>
-
-                  <!-- Price -->
-                  <tui-textfield class="w-full">
-                    <label tuiLabel for="new-v-price">{{
-                      'price' | translate
-                    }}</label>
-                    <input
-                      tuiInputNumber
-                      id="new-v-price"
-                      [(ngModel)]="newVoucherPrice"
-                      name="newVoucherPrice"
-                      [tuiNumberFormat]="{ precision: 2 }"
-                      autocomplete="off"
-                      placeholder="0.00"
-                    />
-                    <span class="tui-textfield__suffix">€</span>
-                  </tui-textfield>
-
-                  <!-- Add Button -->
-                  <button
-                    tuiButton
-                    type="button"
-                    appearance="primary"
-                    class="w-full font-bold"
-                    [disabled]="!newVoucherName"
-                    (click.zoneless)="addLocalVoucher($event)"
-                  >
-                    <tui-icon icon="@tui.plus" />
-                    {{ 'add' | translate }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- Sleek Vouchers List -->
-              @if (activeLocalVouchers().length > 0) {
-                <div class="flex flex-col gap-2.5">
-                  @for (v of activeLocalVouchers(); track $index) {
-                    <div
-                      class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl tui-appearance-floating"
-                      tuiAppearance="floating"
-                    >
-                      <div class="flex items-center gap-3 min-w-0">
-                        <div
-                          class="w-10 h-10 shrink-0 rounded-xl tui-appearance-primary flex items-center justify-center"
-                          tuiAppearance="primary"
+                        <label
+                          class="flex items-center gap-2 cursor-pointer select-none sm:ml-2"
                         >
-                          <tui-icon
-                            [icon]="
-                              v.kind === 'subscription'
-                                ? '@tui.id-card'
-                                : '@tui.ticket'
-                            "
-                            class="text-lg"
+                          <input
+                            tuiCheckbox
+                            type="checkbox"
+                            [ngModel]="d.hasSplit"
+                            (ngModelChange)="onSplitChange(d.day, $event)"
+                            [ngModelOptions]="{ standalone: true }"
                           />
-                        </div>
-                        <div class="flex flex-col min-w-0">
-                          <span class="font-bold text-base truncate">{{
-                            v.name
-                          }}</span>
-                          @if (v.description) {
-                            <span
-                              class="text-xs opacity-60 line-clamp-2 break-words"
-                              >{{ v.description }}</span
+                          <span class="text-sm">Jornada partida</span>
+                        </label>
+
+                        @if (d.hasSplit) {
+                          <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <tui-textfield
+                              tuiTextfieldSize="s"
+                              class="flex-1 sm:w-32"
                             >
-                          }
-                        </div>
-                      </div>
-
-                      <div
-                        class="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t border-(--tui-border-normal)/40 sm:border-0"
-                      >
-                        <span
-                          class="text-sm sm:text-base font-extrabold px-3 py-1 sm:py-1.5 rounded-xl whitespace-nowrap"
-                          tuiAppearance="primary"
-                        >
-                          {{ v.price | number: '1.2-2' }} €
-                        </span>
-                        <div class="flex items-center gap-1">
-                          <button
-                            tuiIconButton
-                            appearance="flat-grayscale"
-                            size="s"
-                            iconStart="@tui.edit"
-                            type="button"
-                            class="rounded-full! text-(--tui-text-secondary)"
-                            [attr.aria-label]="'edit' | translate"
-                            (click.zoneless)="editLocalVoucher(v, $event)"
-                          ></button>
-                          <button
-                            tuiIconButton
-                            appearance="flat-grayscale"
-                            size="s"
-                            iconStart="@tui.trash"
-                            type="button"
-                            class="rounded-full! text-(--tui-status-negative)"
-                            [attr.aria-label]="'delete' | translate"
-                            (click.zoneless)="deleteLocalVoucher(v, $event)"
-                          ></button>
-                        </div>
-                      </div>
-                    </div>
-                  }
-                </div>
-              } @else {
-                <div
-                  class="p-8 text-center text-(--tui-text-secondary) border border-dashed border-(--tui-border-normal) rounded-2xl bg-(--tui-background-neutral-1)"
-                >
-                  {{ 'empty' | translate }}
-                </div>
-              }
-            </div>
-          }
-          @case (3) {
-            <div class="flex flex-col gap-6">
-              <!-- Pending Requests Section -->
-              @let pendingRequests = centerRoutesetterRequests();
-              <div class="flex flex-col gap-3">
-                <div class="flex items-center gap-2">
-                  <tui-icon
-                    icon="@tui.clock"
-                    class="text-xs text-(--tui-text-accent)"
-                  />
-                  <span
-                    class="text-xs uppercase font-semibold tracking-wider opacity-75"
-                  >
-                    {{ 'admin.routesetterRequests.title' | translate }}
-                  </span>
-                  @if (pendingRequests.length > 0) {
-                    <tui-badge-notification tuiAppearance="accent" size="s">
-                      {{ pendingRequests.length }}
-                    </tui-badge-notification>
-                  }
-                </div>
-
-                @if (pendingRequests.length > 0) {
-                  <div class="flex flex-col gap-2.5">
-                    @for (req of pendingRequests; track req.id) {
-                      <div
-                        class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
-                      >
-                        <a
-                          [routerLink]="['/profile', req.user.id]"
-                          class="flex items-center gap-3 no-underline text-inherit"
-                        >
-                          <span tuiAvatar size="m">
-                            @if (req.user.avatar; as avatar) {
-                              <img [src]="avatar | avatarUrl" alt="avatar" />
-                            } @else {
-                              <tui-icon icon="@tui.user" />
-                            }
-                          </span>
-                          <div class="flex flex-col min-w-0">
-                            <span class="font-bold text-sm truncate">
-                              {{ req.user.name || ('anonymous' | translate) }}
-                            </span>
-                            <span class="text-xs opacity-60">
-                              {{ req.created_at | date: 'mediumDate' }}
-                            </span>
+                              <input
+                                tuiInput
+                                type="time"
+                                [ngModel]="d.open2"
+                                (ngModelChange)="
+                                  onTimeChange(d.day, 'open2', $event)
+                                "
+                                [ngModelOptions]="{ standalone: true }"
+                              />
+                            </tui-textfield>
+                            <span class="text-xs opacity-60 shrink-0">-</span>
+                            <tui-textfield
+                              tuiTextfieldSize="s"
+                              class="flex-1 sm:w-32"
+                            >
+                              <input
+                                tuiInput
+                                type="time"
+                                [ngModel]="d.close2"
+                                (ngModelChange)="
+                                  onTimeChange(d.day, 'close2', $event)
+                                "
+                                [ngModelOptions]="{ standalone: true }"
+                              />
+                            </tui-textfield>
                           </div>
-                        </a>
-
-                        <div
-                          class="flex items-center gap-2 flex-nowrap whitespace-nowrap self-end sm:self-auto shrink-0"
-                        >
-                          <button
-                            tuiButton
-                            size="s"
-                            appearance="primary"
-                            type="button"
-                            class="rounded-full! shrink-0"
-                            (click.zoneless)="approveRoutesetter(req, $event)"
-                          >
-                            {{ 'adminRequests.approve' | translate }}
-                          </button>
-                          <button
-                            tuiButton
-                            size="s"
-                            appearance="negative"
-                            type="button"
-                            class="rounded-full! shrink-0"
-                            (click.zoneless)="rejectRoutesetter(req, $event)"
-                          >
-                            {{ 'adminRequests.reject' | translate }}
-                          </button>
-                        </div>
+                        }
                       </div>
                     }
-                  </div>
-                } @else {
-                  <div
-                    class="p-4 text-center text-xs opacity-60 rounded-xl bg-(--tui-background-neutral-1) border border-dashed border-(--tui-border-normal)"
-                  >
-                    {{ 'admin.routesetterRequests.empty' | translate }}
                   </div>
                 }
               </div>
+            }
 
-              <!-- Current Routesetters Section -->
-              @let currentRoutesetters = centerRoutesetters();
-              <div class="flex flex-col gap-3">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <span
-                    class="text-xs uppercase font-semibold tracking-wider opacity-75"
-                  >
-                    {{ 'routesetters' | translate }}
-                  </span>
-
-                  <!-- Add Routesetter Search / Combobox -->
-                  <div class="w-64 max-w-full">
-                    <tui-textfield
-                      appearance="floating"
-                      size="s"
-                      tuiChevron
-                      [tuiTextfieldCleaner]="true"
-                      [stringify]="stringifyUser"
-                      class="rounded-full!"
-                    >
-                      <label tuiLabel for="form-routesetter-search">
-                        {{ 'addUser' | translate }}
-                      </label>
+            @case (2) {
+              <div class="flex flex-col gap-6 w-full max-w-2xl">
+                <!-- Compact Create Voucher Form -->
+                <div
+                  class="flex flex-col gap-4 p-4 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+                >
+                  <!-- First line: Name -->
+                  <div class="w-full">
+                    <tui-textfield>
+                      <label tuiLabel for="new-v-name">{{
+                        'name' | translate
+                      }}</label>
                       <input
-                        id="form-routesetter-search"
-                        tuiComboBox
-                        [placeholder]="'searchPlaceholder' | translate"
-                        (ngModelChange)="onRoutesetterSelected($event)"
-                        [ngModel]="null"
-                        (input.zoneless)="
-                          routesetterSearchQuery.set(
-                            formRoutesetterSearchInput.value
-                          )
-                        "
-                        #formRoutesetterSearchInput
-                      />
-                      <tui-data-list-wrapper
-                        *tuiDropdown
-                        [items]="foundRoutesetterUsers()"
+                        tuiInput
+                        id="new-v-name"
+                        [(ngModel)]="newVoucherName"
+                        name="newVoucherName"
+                        autocomplete="off"
+                        placeholder="Ej. Pase diario, Bono de 10"
                       />
                     </tui-textfield>
                   </div>
+
+                  <!-- Second line: Description (Textarea) -->
+                  <div class="w-full">
+                    <tui-textfield class="block">
+                      <label tuiLabel for="new-v-desc">{{
+                        'description' | translate
+                      }}</label>
+                      <textarea
+                        tuiTextarea
+                        id="new-v-desc"
+                        [(ngModel)]="newVoucherDescription"
+                        name="newVoucherDescription"
+                        placeholder="Ej. Acceso libre por un día"
+                      ></textarea>
+                    </tui-textfield>
+                  </div>
+
+                  <!-- Third line: Type and Price together, plus Add button -->
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                    <!-- Kind (Type) -->
+                    <tui-textfield
+                      class="w-full"
+                      tuiChevron
+                      [stringify]="stringifyVoucherKind"
+                    >
+                      <label tuiLabel for="new-v-kind">{{
+                        'indoor.voucherKind' | translate
+                      }}</label>
+                      <input
+                        tuiSelect
+                        id="new-v-kind"
+                        [(ngModel)]="newVoucherKind"
+                        name="newVoucherKind"
+                        autocomplete="off"
+                      />
+                      <tui-data-list-wrapper
+                        *tuiDropdown
+                        [items]="['pass', 'subscription']"
+                      ></tui-data-list-wrapper>
+                    </tui-textfield>
+
+                    <!-- Price -->
+                    <tui-textfield class="w-full">
+                      <label tuiLabel for="new-v-price">{{
+                        'price' | translate
+                      }}</label>
+                      <input
+                        tuiInputNumber
+                        id="new-v-price"
+                        [(ngModel)]="newVoucherPrice"
+                        name="newVoucherPrice"
+                        [tuiNumberFormat]="{ precision: 2 }"
+                        autocomplete="off"
+                        placeholder="0.00"
+                      />
+                      <span class="tui-textfield__suffix">€</span>
+                    </tui-textfield>
+
+                    <!-- Add Button -->
+                    <button
+                      tuiButton
+                      type="button"
+                      appearance="primary"
+                      class="w-full font-bold"
+                      [disabled]="!newVoucherName"
+                      (click.zoneless)="addLocalVoucher($event)"
+                    >
+                      <tui-icon icon="@tui.plus" />
+                      {{ 'add' | translate }}
+                    </button>
+                  </div>
                 </div>
 
-                @if (currentRoutesetters.length > 0) {
-                  <div class="flex flex-wrap gap-2.5 items-center">
-                    @for (rs of currentRoutesetters; track rs.user_id) {
+                <!-- Sleek Vouchers List -->
+                @if (activeLocalVouchers().length > 0) {
+                  <div class="flex flex-col gap-2.5">
+                    @for (v of activeLocalVouchers(); track $index) {
                       <div
-                        class="flex items-center gap-2 bg-(--tui-background-neutral-1) py-1 pr-2 rounded-full border border-(--tui-border-normal) group"
-                        [class.pl-1]="rs.user.avatar"
-                        [class.pl-3]="!rs.user.avatar"
+                        class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl tui-appearance-floating"
+                        tuiAppearance="floating"
                       >
-                        <a
-                          [routerLink]="['/profile', rs.user_id]"
-                          class="flex items-center gap-2 no-underline text-inherit select-none"
+                        <div class="flex items-center gap-3 min-w-0">
+                          <div
+                            class="w-10 h-10 shrink-0 rounded-xl tui-appearance-primary flex items-center justify-center"
+                            tuiAppearance="primary"
+                          >
+                            <tui-icon
+                              [icon]="
+                                v.kind === 'subscription'
+                                  ? '@tui.id-card'
+                                  : '@tui.ticket'
+                              "
+                              class="text-lg"
+                            />
+                          </div>
+                          <div class="flex flex-col min-w-0">
+                            <span class="font-bold text-base truncate">{{
+                              v.name
+                            }}</span>
+                            @if (v.description) {
+                              <span
+                                class="text-xs opacity-60 line-clamp-2 break-words"
+                                >{{ v.description }}</span
+                              >
+                            }
+                          </div>
+                        </div>
+
+                        <div
+                          class="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t border-(--tui-border-normal)/40 sm:border-0"
                         >
-                          @if (rs.user.avatar) {
-                            <span tuiAvatar size="s">
-                              <img
-                                [src]="rs.user.avatar | avatarUrl"
-                                [alt]="rs.user.name"
-                              />
-                            </span>
-                          }
-                          <span class="text-sm font-medium">
-                            {{ rs.user.name }}
+                          <span
+                            class="text-sm sm:text-base font-extrabold px-3 py-1 sm:py-1.5 rounded-xl whitespace-nowrap"
+                            tuiAppearance="primary"
+                          >
+                            {{ v.price | number: '1.2-2' }} €
                           </span>
-                        </a>
-                        <button
-                          tuiIconButton
-                          appearance="flat"
-                          size="xs"
-                          type="button"
-                          iconStart="@tui.x"
-                          [attr.aria-label]="'delete' | translate"
-                          class="opacity-0 group-hover:opacity-50 hover:opacity-100! transition-opacity -mr-1"
-                          (click.zoneless)="
-                            removeRoutesetter(rs.user_id || '', $event)
-                          "
-                        ></button>
+                          <div class="flex items-center gap-1">
+                            <button
+                              tuiIconButton
+                              appearance="flat-grayscale"
+                              size="s"
+                              iconStart="@tui.edit"
+                              type="button"
+                              class="rounded-full! text-(--tui-text-secondary)"
+                              [attr.aria-label]="'edit' | translate"
+                              (click.zoneless)="editLocalVoucher(v, $event)"
+                            ></button>
+                            <button
+                              tuiIconButton
+                              appearance="flat-grayscale"
+                              size="s"
+                              iconStart="@tui.trash"
+                              type="button"
+                              class="rounded-full! text-(--tui-status-negative)"
+                              [attr.aria-label]="'delete' | translate"
+                              (click.zoneless)="deleteLocalVoucher(v, $event)"
+                            ></button>
+                          </div>
+                        </div>
                       </div>
                     }
                   </div>
                 } @else {
                   <div
-                    class="p-4 text-center text-xs opacity-60 rounded-xl bg-(--tui-background-neutral-1) border border-dashed border-(--tui-border-normal)"
+                    class="p-8 text-center text-(--tui-text-secondary) border border-dashed border-(--tui-border-normal) rounded-2xl bg-(--tui-background-neutral-1)"
                   >
                     {{ 'empty' | translate }}
                   </div>
                 }
               </div>
-            </div>
+            }
+            @case (3) {
+              <div class="flex flex-col gap-8">
+                <!-- Current Admins Section -->
+                @let currentAdmins = centerAdmins();
+                <div class="flex flex-col gap-3">
+                  <div
+                    class="flex flex-wrap items-center justify-between gap-2"
+                  >
+                    <span
+                      class="text-xs uppercase font-semibold tracking-wider opacity-75"
+                    >
+                      {{ 'admins' | translate }}
+                    </span>
+
+                    <!-- Add Admin Search / Combobox -->
+                    <div class="w-64 max-w-full">
+                      <tui-textfield
+                        appearance="floating"
+                        size="s"
+                        tuiChevron
+                        [tuiTextfieldCleaner]="true"
+                        [stringify]="stringifyUser"
+                        class="rounded-full!"
+                      >
+                        <label tuiLabel for="form-admin-search">
+                          {{ 'addUser' | translate }}
+                        </label>
+                        <input
+                          id="form-admin-search"
+                          tuiComboBox
+                          [matcher]="null"
+                          [placeholder]="'searchPlaceholder' | translate"
+                          (ngModelChange)="
+                            onAdminSelected($event, formAdminSearchInput)
+                          "
+                          [ngModel]="selectedAdminUser()"
+                          [ngModelOptions]="{ standalone: true }"
+                          (input.zoneless)="
+                            adminSearchQuery.set(formAdminSearchInput.value)
+                          "
+                          #formAdminSearchInput
+                        />
+                        <tui-data-list-wrapper
+                          *tuiDropdown
+                          [items]="foundAdminUsers()"
+                        />
+                      </tui-textfield>
+                    </div>
+                  </div>
+
+                  @if (currentAdmins.length > 0) {
+                    <div class="flex flex-wrap gap-2.5 items-center">
+                      @for (admin of currentAdmins; track admin.user_id) {
+                        <div
+                          class="flex items-center gap-2 bg-(--tui-background-neutral-1) py-1 pr-2 rounded-full border border-(--tui-border-normal) group"
+                          [class.pl-1]="admin.user.avatar"
+                          [class.pl-3]="!admin.user.avatar"
+                        >
+                          <a
+                            [routerLink]="['/profile', admin.user_id]"
+                            class="flex items-center gap-2 no-underline text-inherit select-none"
+                          >
+                            @if (admin.user.avatar) {
+                              <span tuiAvatar size="s">
+                                <img
+                                  [src]="admin.user.avatar | avatarUrl"
+                                  [alt]="admin.user.name"
+                                />
+                              </span>
+                            }
+                            <span class="text-sm font-medium">
+                              {{ admin.user.name }}
+                            </span>
+                          </a>
+                          <button
+                            tuiIconButton
+                            appearance="flat"
+                            size="xs"
+                            type="button"
+                            iconStart="@tui.x"
+                            [attr.aria-label]="'delete' | translate"
+                            class="opacity-0 group-hover:opacity-50 hover:opacity-100! transition-opacity -mr-1"
+                            (click.zoneless)="
+                              removeAdmin(
+                                admin.user_id || '',
+                                admin.user.name,
+                                $event
+                              )
+                            "
+                          ></button>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <div
+                      class="p-4 text-center text-xs opacity-60 rounded-xl bg-(--tui-background-neutral-1) border border-dashed border-(--tui-border-normal)"
+                    >
+                      {{ 'empty' | translate }}
+                    </div>
+                  }
+                </div>
+
+                <div class="border-t border-(--tui-border-normal)"></div>
+
+                <!-- Routesetters Section -->
+                <div class="flex flex-col gap-6">
+                  <!-- Pending Requests Section -->
+                  @let pendingRequests = centerRoutesetterRequests();
+                  <div class="flex flex-col gap-3">
+                    <div class="flex items-center gap-2">
+                      <tui-icon
+                        icon="@tui.clock"
+                        class="text-xs text-(--tui-text-accent)"
+                      />
+                      <span
+                        class="text-xs uppercase font-semibold tracking-wider opacity-75"
+                      >
+                        {{ 'admin.routesetterRequests.title' | translate }}
+                      </span>
+                      @if (pendingRequests.length > 0) {
+                        <tui-badge-notification tuiAppearance="accent" size="s">
+                          {{ pendingRequests.length }}
+                        </tui-badge-notification>
+                      }
+                    </div>
+
+                    @if (pendingRequests.length > 0) {
+                      <div class="flex flex-col gap-2.5">
+                        @for (req of pendingRequests; track req.id) {
+                          <div
+                            class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+                          >
+                            <a
+                              [routerLink]="['/profile', req.user.id]"
+                              class="flex items-center gap-3 no-underline text-inherit"
+                            >
+                              <span tuiAvatar size="m">
+                                @if (req.user.avatar; as avatar) {
+                                  <img
+                                    [src]="avatar | avatarUrl"
+                                    alt="avatar"
+                                  />
+                                } @else {
+                                  <tui-icon icon="@tui.user" />
+                                }
+                              </span>
+                              <div class="flex flex-col min-w-0">
+                                <span class="font-bold text-sm truncate">
+                                  {{
+                                    req.user.name || ('anonymous' | translate)
+                                  }}
+                                </span>
+                                <span class="text-xs opacity-60">
+                                  {{ req.created_at | date: 'mediumDate' }}
+                                </span>
+                              </div>
+                            </a>
+
+                            <div
+                              class="flex items-center gap-2 flex-nowrap whitespace-nowrap self-end sm:self-auto shrink-0"
+                            >
+                              <button
+                                tuiButton
+                                size="s"
+                                appearance="primary"
+                                type="button"
+                                class="rounded-full! shrink-0"
+                                (click.zoneless)="
+                                  approveRoutesetter(req, $event)
+                                "
+                              >
+                                {{ 'adminRequests.approve' | translate }}
+                              </button>
+                              <button
+                                tuiButton
+                                size="s"
+                                appearance="negative"
+                                type="button"
+                                class="rounded-full! shrink-0"
+                                (click.zoneless)="
+                                  rejectRoutesetter(req, $event)
+                                "
+                              >
+                                {{ 'adminRequests.reject' | translate }}
+                              </button>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    } @else {
+                      <div
+                        class="p-4 text-center text-xs opacity-60 rounded-xl bg-(--tui-background-neutral-1) border border-dashed border-(--tui-border-normal)"
+                      >
+                        {{ 'admin.routesetterRequests.empty' | translate }}
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Current Routesetters Section -->
+                  @let currentRoutesetters = centerRoutesetters();
+                  <div class="flex flex-col gap-3">
+                    <div
+                      class="flex flex-wrap items-center justify-between gap-2"
+                    >
+                      <span
+                        class="text-xs uppercase font-semibold tracking-wider opacity-75"
+                      >
+                        {{ 'routesetters' | translate }}
+                      </span>
+
+                      <!-- Add Routesetter Search / Combobox -->
+                      <div class="w-64 max-w-full">
+                        <tui-textfield
+                          appearance="floating"
+                          size="s"
+                          tuiChevron
+                          [tuiTextfieldCleaner]="true"
+                          [stringify]="stringifyUser"
+                          class="rounded-full!"
+                        >
+                          <label tuiLabel for="form-routesetter-search">
+                            {{ 'addUser' | translate }}
+                          </label>
+                          <input
+                            id="form-routesetter-search"
+                            tuiComboBox
+                            [matcher]="null"
+                            [placeholder]="'searchPlaceholder' | translate"
+                            (ngModelChange)="
+                              onRoutesetterSelected(
+                                $event,
+                                formRoutesetterSearchInput
+                              )
+                            "
+                            [ngModel]="selectedRoutesetterUser()"
+                            [ngModelOptions]="{ standalone: true }"
+                            (input.zoneless)="
+                              routesetterSearchQuery.set(
+                                formRoutesetterSearchInput.value
+                              )
+                            "
+                            #formRoutesetterSearchInput
+                          />
+                          <tui-data-list-wrapper
+                            *tuiDropdown
+                            [items]="foundRoutesetterUsers()"
+                          />
+                        </tui-textfield>
+                      </div>
+                    </div>
+
+                    @if (currentRoutesetters.length > 0) {
+                      <div class="flex flex-wrap gap-2.5 items-center">
+                        @for (rs of currentRoutesetters; track rs.user_id) {
+                          <div
+                            class="flex items-center gap-2 bg-(--tui-background-neutral-1) py-1 pr-2 rounded-full border border-(--tui-border-normal) group"
+                            [class.pl-1]="rs.user.avatar"
+                            [class.pl-3]="!rs.user.avatar"
+                          >
+                            <a
+                              [routerLink]="['/profile', rs.user_id]"
+                              class="flex items-center gap-2 no-underline text-inherit select-none"
+                            >
+                              @if (rs.user.avatar) {
+                                <span tuiAvatar size="s">
+                                  <img
+                                    [src]="rs.user.avatar | avatarUrl"
+                                    [alt]="rs.user.name"
+                                  />
+                                </span>
+                              }
+                              <span class="text-sm font-medium">
+                                {{ rs.user.name }}
+                              </span>
+                            </a>
+                            <button
+                              tuiIconButton
+                              appearance="flat"
+                              size="xs"
+                              type="button"
+                              iconStart="@tui.x"
+                              [attr.aria-label]="'delete' | translate"
+                              class="opacity-0 group-hover:opacity-50 hover:opacity-100! transition-opacity -mr-1"
+                              (click.zoneless)="
+                                removeRoutesetter(rs.user_id || '', $event)
+                              "
+                            ></button>
+                          </div>
+                        }
+                      </div>
+                    } @else {
+                      <div
+                        class="p-4 text-center text-xs opacity-60 rounded-xl bg-(--tui-background-neutral-1) border border-dashed border-(--tui-border-normal)"
+                      >
+                        {{ 'empty' | translate }}
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+            @case (4) {
+              <div class="flex flex-col gap-6 w-full max-w-2xl">
+                <p class="text-sm opacity-70 mb-2">
+                  {{ 'indoor.permissions.description' | translate }}
+                </p>
+
+                <!-- Rutas -->
+                <div
+                  class="flex flex-col gap-4 p-4 sm:p-5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+                >
+                  <div class="flex items-center gap-2">
+                    <tui-icon
+                      icon="@tui.route"
+                      class="text-xs text-(--tui-text-accent)"
+                    />
+                    <span
+                      class="text-xs uppercase font-semibold tracking-wider opacity-75"
+                    >
+                      {{ 'indoor.permissions.routesSection' | translate }}
+                    </span>
+                  </div>
+
+                  <!-- can_create_routes -->
+                  <div
+                    class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-(--tui-border-normal)/50"
+                  >
+                    <span class="text-sm font-medium">
+                      {{ 'indoor.permissions.canCreateRoutes' | translate }}
+                    </span>
+                    <tui-segmented
+                      size="s"
+                      class="shrink-0"
+                      [activeItemIndex]="
+                        model().permissions.can_create_routes === 'all' ? 0 : 1
+                      "
+                      (activeItemIndexChange)="
+                        onPermissionChange(
+                          'can_create_routes',
+                          $event === 0 ? 'all' : 'routesetters'
+                        )
+                      "
+                    >
+                      <button type="button">
+                        {{ 'indoor.permissions.options.all' | translate }}
+                      </button>
+                      <button type="button">
+                        {{
+                          'indoor.permissions.options.routesetters' | translate
+                        }}
+                      </button>
+                    </tui-segmented>
+                  </div>
+
+                  <!-- can_edit_routes -->
+                  <div
+                    class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-(--tui-border-normal)/50"
+                  >
+                    <span class="text-sm font-medium">
+                      {{ 'indoor.permissions.canEditRoutes' | translate }}
+                    </span>
+                    <tui-segmented
+                      size="s"
+                      class="shrink-0"
+                      [activeItemIndex]="
+                        model().permissions.can_edit_routes === 'all' ? 0 : 1
+                      "
+                      (activeItemIndexChange)="
+                        onPermissionChange(
+                          'can_edit_routes',
+                          $event === 0 ? 'all' : 'routesetters_and_creator'
+                        )
+                      "
+                    >
+                      <button type="button">
+                        {{ 'indoor.permissions.options.all' | translate }}
+                      </button>
+                      <button type="button">
+                        {{
+                          'indoor.permissions.options.routesettersAndCreator'
+                            | translate
+                        }}
+                      </button>
+                    </tui-segmented>
+                  </div>
+
+                  <!-- can_archive_routes -->
+                  <div
+                    class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2"
+                  >
+                    <span class="text-sm font-medium">
+                      {{ 'indoor.permissions.canArchiveRoutes' | translate }}
+                    </span>
+                    <tui-segmented
+                      size="s"
+                      class="shrink-0"
+                      [activeItemIndex]="
+                        model().permissions.can_archive_routes === 'all' ? 0 : 1
+                      "
+                      (activeItemIndexChange)="
+                        onPermissionChange(
+                          'can_archive_routes',
+                          $event === 0 ? 'all' : 'routesetters_and_creator'
+                        )
+                      "
+                    >
+                      <button type="button">
+                        {{ 'indoor.permissions.options.all' | translate }}
+                      </button>
+                      <button type="button">
+                        {{
+                          'indoor.permissions.options.routesettersAndCreator'
+                            | translate
+                        }}
+                      </button>
+                    </tui-segmented>
+                  </div>
+                </div>
+
+                <!-- Croquis -->
+                <div
+                  class="flex flex-col gap-4 p-4 sm:p-5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+                >
+                  <div class="flex items-center gap-2">
+                    <tui-icon
+                      icon="@tui.image"
+                      class="text-xs text-(--tui-text-accent)"
+                    />
+                    <span
+                      class="text-xs uppercase font-semibold tracking-wider opacity-75"
+                    >
+                      {{ 'indoor.permissions.toposSection' | translate }}
+                    </span>
+                  </div>
+
+                  <!-- can_create_topos -->
+                  <div
+                    class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-(--tui-border-normal)/50"
+                  >
+                    <span class="text-sm font-medium">
+                      {{ 'indoor.permissions.canCreateTopos' | translate }}
+                    </span>
+                    <tui-segmented
+                      size="s"
+                      class="shrink-0"
+                      [activeItemIndex]="
+                        model().permissions.can_create_topos === 'all' ? 0 : 1
+                      "
+                      (activeItemIndexChange)="
+                        onPermissionChange(
+                          'can_create_topos',
+                          $event === 0 ? 'all' : 'routesetters'
+                        )
+                      "
+                    >
+                      <button type="button">
+                        {{ 'indoor.permissions.options.all' | translate }}
+                      </button>
+                      <button type="button">
+                        {{
+                          'indoor.permissions.options.routesetters' | translate
+                        }}
+                      </button>
+                    </tui-segmented>
+                  </div>
+
+                  <!-- can_edit_topos -->
+                  <div
+                    class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-(--tui-border-normal)/50"
+                  >
+                    <span class="text-sm font-medium">
+                      {{ 'indoor.permissions.canEditTopos' | translate }}
+                    </span>
+                    <tui-segmented
+                      size="s"
+                      class="shrink-0"
+                      [activeItemIndex]="
+                        model().permissions.can_edit_topos === 'all' ? 0 : 1
+                      "
+                      (activeItemIndexChange)="
+                        onPermissionChange(
+                          'can_edit_topos',
+                          $event === 0 ? 'all' : 'routesetters_and_creator'
+                        )
+                      "
+                    >
+                      <button type="button">
+                        {{ 'indoor.permissions.options.all' | translate }}
+                      </button>
+                      <button type="button">
+                        {{
+                          'indoor.permissions.options.routesettersAndCreator'
+                            | translate
+                        }}
+                      </button>
+                    </tui-segmented>
+                  </div>
+
+                  <!-- can_archive_topos -->
+                  <div
+                    class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2"
+                  >
+                    <span class="text-sm font-medium">
+                      {{ 'indoor.permissions.canArchiveTopos' | translate }}
+                    </span>
+                    <tui-segmented
+                      size="s"
+                      class="shrink-0"
+                      [activeItemIndex]="
+                        model().permissions.can_archive_topos === 'all' ? 0 : 1
+                      "
+                      (activeItemIndexChange)="
+                        onPermissionChange(
+                          'can_archive_topos',
+                          $event === 0 ? 'all' : 'routesetters_and_creator'
+                        )
+                      "
+                    >
+                      <button type="button">
+                        {{ 'indoor.permissions.options.all' | translate }}
+                      </button>
+                      <button type="button">
+                        {{
+                          'indoor.permissions.options.routesettersAndCreator'
+                            | translate
+                        }}
+                      </button>
+                    </tui-segmented>
+                  </div>
+                </div>
+
+                <!-- Líneas de croquis -->
+                <div
+                  class="flex flex-col gap-4 p-4 sm:p-5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+                >
+                  <div class="flex items-center gap-2">
+                    <tui-icon
+                      icon="@tui.spline"
+                      class="text-xs text-(--tui-text-accent)"
+                    />
+                    <span
+                      class="text-xs uppercase font-semibold tracking-wider opacity-75"
+                    >
+                      {{ 'indoor.permissions.linesSection' | translate }}
+                    </span>
+                  </div>
+
+                  <!-- can_create_lines -->
+                  <div
+                    class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-(--tui-border-normal)/50"
+                  >
+                    <span class="text-sm font-medium">
+                      {{ 'indoor.permissions.canCreateLines' | translate }}
+                    </span>
+                    <tui-segmented
+                      size="s"
+                      class="shrink-0"
+                      [activeItemIndex]="
+                        model().permissions.can_create_lines === 'all' ? 0 : 1
+                      "
+                      (activeItemIndexChange)="
+                        onPermissionChange(
+                          'can_create_lines',
+                          $event === 0 ? 'all' : 'routesetters'
+                        )
+                      "
+                    >
+                      <button type="button">
+                        {{ 'indoor.permissions.options.all' | translate }}
+                      </button>
+                      <button type="button">
+                        {{
+                          'indoor.permissions.options.routesetters' | translate
+                        }}
+                      </button>
+                    </tui-segmented>
+                  </div>
+
+                  <!-- can_edit_lines -->
+                  <div
+                    class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2"
+                  >
+                    <span class="text-sm font-medium">
+                      {{ 'indoor.permissions.canEditLines' | translate }}
+                    </span>
+                    <tui-segmented
+                      size="s"
+                      class="shrink-0"
+                      [activeItemIndex]="
+                        model().permissions.can_edit_lines === 'all' ? 0 : 1
+                      "
+                      (activeItemIndexChange)="
+                        onPermissionChange(
+                          'can_edit_lines',
+                          $event === 0 ? 'all' : 'routesetters_and_creator'
+                        )
+                      "
+                    >
+                      <button type="button">
+                        {{ 'indoor.permissions.options.all' | translate }}
+                      </button>
+                      <button type="button">
+                        {{
+                          'indoor.permissions.options.routesettersAndLineCreator'
+                            | translate
+                        }}
+                      </button>
+                    </tui-segmented>
+                  </div>
+                </div>
+              </div>
+            }
           }
-          @case (4) {
-            <div class="flex flex-col gap-6 w-full max-w-2xl">
-              <p class="text-sm opacity-70 -mt-2 mb-2">
-                {{ 'indoor.permissions.description' | translate }}
-              </p>
-
-              <!-- Rutas -->
-              <div
-                class="flex flex-col gap-4 p-4 sm:p-5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
-              >
-                <div class="flex items-center gap-2">
-                  <tui-icon
-                    icon="@tui.route"
-                    class="text-xs text-(--tui-text-accent)"
-                  />
-                  <span
-                    class="text-xs uppercase font-semibold tracking-wider opacity-75"
-                  >
-                    {{ 'indoor.permissions.routesSection' | translate }}
-                  </span>
-                </div>
-
-                <!-- can_create_routes -->
-                <div
-                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-(--tui-border-normal)/50"
-                >
-                  <span class="text-sm font-medium">
-                    {{ 'indoor.permissions.canCreateRoutes' | translate }}
-                  </span>
-                  <tui-segmented
-                    size="s"
-                    class="shrink-0"
-                    [activeItemIndex]="
-                      model().permissions.can_create_routes === 'all' ? 0 : 1
-                    "
-                    (activeItemIndexChange)="
-                      onPermissionChange(
-                        'can_create_routes',
-                        $event === 0 ? 'all' : 'routesetters'
-                      )
-                    "
-                  >
-                    <button type="button">
-                      {{ 'indoor.permissions.options.all' | translate }}
-                    </button>
-                    <button type="button">
-                      {{
-                        'indoor.permissions.options.routesetters' | translate
-                      }}
-                    </button>
-                  </tui-segmented>
-                </div>
-
-                <!-- can_edit_routes -->
-                <div
-                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-(--tui-border-normal)/50"
-                >
-                  <span class="text-sm font-medium">
-                    {{ 'indoor.permissions.canEditRoutes' | translate }}
-                  </span>
-                  <tui-segmented
-                    size="s"
-                    class="shrink-0"
-                    [activeItemIndex]="
-                      model().permissions.can_edit_routes === 'all' ? 0 : 1
-                    "
-                    (activeItemIndexChange)="
-                      onPermissionChange(
-                        'can_edit_routes',
-                        $event === 0 ? 'all' : 'routesetters_and_creator'
-                      )
-                    "
-                  >
-                    <button type="button">
-                      {{ 'indoor.permissions.options.all' | translate }}
-                    </button>
-                    <button type="button">
-                      {{
-                        'indoor.permissions.options.routesettersAndCreator'
-                          | translate
-                      }}
-                    </button>
-                  </tui-segmented>
-                </div>
-
-                <!-- can_archive_routes -->
-                <div
-                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2"
-                >
-                  <span class="text-sm font-medium">
-                    {{ 'indoor.permissions.canArchiveRoutes' | translate }}
-                  </span>
-                  <tui-segmented
-                    size="s"
-                    class="shrink-0"
-                    [activeItemIndex]="
-                      model().permissions.can_archive_routes === 'all' ? 0 : 1
-                    "
-                    (activeItemIndexChange)="
-                      onPermissionChange(
-                        'can_archive_routes',
-                        $event === 0 ? 'all' : 'routesetters_and_creator'
-                      )
-                    "
-                  >
-                    <button type="button">
-                      {{ 'indoor.permissions.options.all' | translate }}
-                    </button>
-                    <button type="button">
-                      {{
-                        'indoor.permissions.options.routesettersAndCreator'
-                          | translate
-                      }}
-                    </button>
-                  </tui-segmented>
-                </div>
-              </div>
-
-              <!-- Croquis -->
-              <div
-                class="flex flex-col gap-4 p-4 sm:p-5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
-              >
-                <div class="flex items-center gap-2">
-                  <tui-icon
-                    icon="@tui.image"
-                    class="text-xs text-(--tui-text-accent)"
-                  />
-                  <span
-                    class="text-xs uppercase font-semibold tracking-wider opacity-75"
-                  >
-                    {{ 'indoor.permissions.toposSection' | translate }}
-                  </span>
-                </div>
-
-                <!-- can_create_topos -->
-                <div
-                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-(--tui-border-normal)/50"
-                >
-                  <span class="text-sm font-medium">
-                    {{ 'indoor.permissions.canCreateTopos' | translate }}
-                  </span>
-                  <tui-segmented
-                    size="s"
-                    class="shrink-0"
-                    [activeItemIndex]="
-                      model().permissions.can_create_topos === 'all' ? 0 : 1
-                    "
-                    (activeItemIndexChange)="
-                      onPermissionChange(
-                        'can_create_topos',
-                        $event === 0 ? 'all' : 'routesetters'
-                      )
-                    "
-                  >
-                    <button type="button">
-                      {{ 'indoor.permissions.options.all' | translate }}
-                    </button>
-                    <button type="button">
-                      {{
-                        'indoor.permissions.options.routesetters' | translate
-                      }}
-                    </button>
-                  </tui-segmented>
-                </div>
-
-                <!-- can_edit_topos -->
-                <div
-                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-(--tui-border-normal)/50"
-                >
-                  <span class="text-sm font-medium">
-                    {{ 'indoor.permissions.canEditTopos' | translate }}
-                  </span>
-                  <tui-segmented
-                    size="s"
-                    class="shrink-0"
-                    [activeItemIndex]="
-                      model().permissions.can_edit_topos === 'all' ? 0 : 1
-                    "
-                    (activeItemIndexChange)="
-                      onPermissionChange(
-                        'can_edit_topos',
-                        $event === 0 ? 'all' : 'routesetters_and_creator'
-                      )
-                    "
-                  >
-                    <button type="button">
-                      {{ 'indoor.permissions.options.all' | translate }}
-                    </button>
-                    <button type="button">
-                      {{
-                        'indoor.permissions.options.routesettersAndCreator'
-                          | translate
-                      }}
-                    </button>
-                  </tui-segmented>
-                </div>
-
-                <!-- can_archive_topos -->
-                <div
-                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2"
-                >
-                  <span class="text-sm font-medium">
-                    {{ 'indoor.permissions.canArchiveTopos' | translate }}
-                  </span>
-                  <tui-segmented
-                    size="s"
-                    class="shrink-0"
-                    [activeItemIndex]="
-                      model().permissions.can_archive_topos === 'all' ? 0 : 1
-                    "
-                    (activeItemIndexChange)="
-                      onPermissionChange(
-                        'can_archive_topos',
-                        $event === 0 ? 'all' : 'routesetters_and_creator'
-                      )
-                    "
-                  >
-                    <button type="button">
-                      {{ 'indoor.permissions.options.all' | translate }}
-                    </button>
-                    <button type="button">
-                      {{
-                        'indoor.permissions.options.routesettersAndCreator'
-                          | translate
-                      }}
-                    </button>
-                  </tui-segmented>
-                </div>
-              </div>
-
-              <!-- Líneas de croquis -->
-              <div
-                class="flex flex-col gap-4 p-4 sm:p-5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
-              >
-                <div class="flex items-center gap-2">
-                  <tui-icon
-                    icon="@tui.spline"
-                    class="text-xs text-(--tui-text-accent)"
-                  />
-                  <span
-                    class="text-xs uppercase font-semibold tracking-wider opacity-75"
-                  >
-                    {{ 'indoor.permissions.linesSection' | translate }}
-                  </span>
-                </div>
-
-                <!-- can_create_lines -->
-                <div
-                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-(--tui-border-normal)/50"
-                >
-                  <span class="text-sm font-medium">
-                    {{ 'indoor.permissions.canCreateLines' | translate }}
-                  </span>
-                  <tui-segmented
-                    size="s"
-                    class="shrink-0"
-                    [activeItemIndex]="
-                      model().permissions.can_create_lines === 'all' ? 0 : 1
-                    "
-                    (activeItemIndexChange)="
-                      onPermissionChange(
-                        'can_create_lines',
-                        $event === 0 ? 'all' : 'routesetters'
-                      )
-                    "
-                  >
-                    <button type="button">
-                      {{ 'indoor.permissions.options.all' | translate }}
-                    </button>
-                    <button type="button">
-                      {{
-                        'indoor.permissions.options.routesetters' | translate
-                      }}
-                    </button>
-                  </tui-segmented>
-                </div>
-
-                <!-- can_edit_lines -->
-                <div
-                  class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2"
-                >
-                  <span class="text-sm font-medium">
-                    {{ 'indoor.permissions.canEditLines' | translate }}
-                  </span>
-                  <tui-segmented
-                    size="s"
-                    class="shrink-0"
-                    [activeItemIndex]="
-                      model().permissions.can_edit_lines === 'all' ? 0 : 1
-                    "
-                    (activeItemIndexChange)="
-                      onPermissionChange(
-                        'can_edit_lines',
-                        $event === 0 ? 'all' : 'routesetters_and_creator'
-                      )
-                    "
-                  >
-                    <button type="button">
-                      {{ 'indoor.permissions.options.all' | translate }}
-                    </button>
-                    <button type="button">
-                      {{
-                        'indoor.permissions.options.routesettersAndLineCreator'
-                          | translate
-                      }}
-                    </button>
-                  </tui-segmented>
-                </div>
-              </div>
-            </div>
-          }
-        }
-      </div>
+        </div>
+      </tui-scrollbar>
 
       <!-- Unified Footer Action Buttons -->
       <div
-        class="flex flex-wrap gap-2 justify-end mt-6 pt-4 border-t border-(--tui-border-normal)"
+        class="flex flex-wrap gap-2 justify-end pt-4 border-t border-(--tui-border-normal) shrink-0"
       >
         <button
           tuiButton
@@ -1153,7 +1299,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     </form>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
+  host: { class: 'flex flex-col max-h-[70dvh] min-h-0 w-full overflow-hidden' },
 })
 export class IndoorCenterFormComponent {
   private readonly indoor = inject(IndoorService);
@@ -1199,7 +1345,81 @@ export class IndoorCenterFormComponent {
   protected readonly activeTabIndex = signal(0);
   protected readonly centerId = computed(() => this.effectiveCenterData()?.id);
 
+  private readonly cache = inject(CacheService);
+
+  protected readonly adminSearchQuery = signal('');
+  protected readonly selectedAdminUser = signal<UserProfileBasicDto | null>(
+    null,
+  );
+
+  protected readonly centerAdminsResource = resource({
+    params: () => this.centerId(),
+    loader: async ({ params: centerId }) => {
+      if (!centerId || !this.isBrowser) return [];
+      await this.supabase.whenReady();
+
+      const { data: mappings, error: mappingError } = await this.supabase.client
+        .from('indoor_center_admins')
+        .select('user_id')
+        .eq('center_id', centerId);
+
+      if (mappingError || !mappings?.length) {
+        if (mappingError) {
+          console.error(
+            '[IndoorCenterFormComponent] Error fetching center admin mappings:',
+            mappingError,
+          );
+        }
+        return [];
+      }
+
+      const userIds = mappings
+        .map((m) => m.user_id)
+        .filter((id): id is string => !!id);
+      const { data: profiles, error: profilesError } =
+        await this.supabase.client
+          .from('user_profiles')
+          .select('id, name, avatar')
+          .in('id', userIds);
+
+      if (profilesError) {
+        console.error(
+          '[IndoorCenterFormComponent] Error fetching admin profiles:',
+          profilesError,
+        );
+        return [];
+      }
+
+      return mappings.map((m) => ({
+        user_id: m.user_id,
+        user: profiles.find((p) => p.id === m.user_id) || {
+          id: m.user_id || '',
+          name: 'Unknown',
+          avatar: null,
+        },
+      }));
+    },
+  });
+
+  protected readonly centerAdmins = computed(
+    () => this.centerAdminsResource.value() ?? [],
+  );
+
+  protected readonly foundAdminUsersResource = resource({
+    params: () => this.adminSearchQuery().trim(),
+    loader: async ({ params: query }) => {
+      if (query.length < 2) return [];
+      return await this.userProfiles.searchUsers(query);
+    },
+  });
+
+  protected readonly foundAdminUsers = computed(
+    () => this.foundAdminUsersResource.value() ?? [],
+  );
+
   protected readonly routesetterSearchQuery = signal('');
+  protected readonly selectedRoutesetterUser =
+    signal<UserProfileBasicDto | null>(null);
 
   protected readonly centerRoutesetterRequestsResource = resource({
     params: () => this.centerId(),
@@ -1967,9 +2187,115 @@ export class IndoorCenterFormComponent {
     }
   }
 
-  protected onRoutesetterSelected(user: UserProfileBasicDto | null): void {
-    if (user) {
-      this.addRoutesetter(user);
+  protected onRoutesetterSelected(
+    user: UserProfileBasicDto | null,
+    inputEl?: HTMLInputElement,
+  ): void {
+    if (!user) return;
+    this.addRoutesetter(user);
+    this.routesetterSearchQuery.set('');
+    this.selectedRoutesetterUser.set(user);
+    setTimeout(() => {
+      this.selectedRoutesetterUser.set(null);
+      if (inputEl) {
+        inputEl.value = '';
+        inputEl.blur();
+      }
+    });
+  }
+
+  async addAdmin(user: UserProfileBasicDto, event?: Event): Promise<void> {
+    event?.preventDefault();
+    event?.stopPropagation();
+    const centerId = this.centerId();
+    if (!centerId) return;
+
+    const { error } = await this.supabase.client
+      .from('indoor_center_admins')
+      .insert({ center_id: centerId, user_id: user.id });
+
+    if (error) {
+      if (error.code === '23505') {
+        this.toast.info('adminRequests.alreadyRequested');
+      } else {
+        console.error('[IndoorCenterFormComponent] Error adding admin:', error);
+        this.toast.error('errors.unexpected');
+      }
+      return;
     }
+
+    this.toast.success('messages.toasts.adminAdded');
+    this.centerAdminsResource.reload();
+    if (user.id === this.supabase.authUserId()) {
+      this.cache.remove(CACHE_KEYS.adminIndoorCenters(user.id));
+      this.supabase.adminIndoorCentersResource.reload();
+    }
+    this.adminSearchQuery.set('');
+  }
+
+  async removeAdmin(
+    userId: string,
+    userName?: string | null,
+    event?: Event,
+  ): Promise<void> {
+    event?.preventDefault();
+    event?.stopPropagation();
+    const centerId = this.centerId();
+    if (!centerId || !userId) return;
+    if (!this.isBrowser) return;
+
+    const confirmed = await firstValueFrom(
+      this.dialogs.open<boolean>(TUI_CONFIRM, {
+        label: this.translate.instant('indoor.removeAdminTitle'),
+        size: 's',
+        data: {
+          content: this.translate.instant('indoor.removeAdminConfirm', {
+            name: userName || this.translate.instant('user'),
+          }),
+          yes: this.translate.instant('delete'),
+          no: this.translate.instant('cancel'),
+          appearance: 'primary-destructive',
+        } as TuiConfirmData,
+      }),
+      { defaultValue: false },
+    );
+
+    if (!confirmed) return;
+
+    const { error } = await this.supabase.client
+      .from('indoor_center_admins')
+      .delete()
+      .eq('center_id', centerId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('[IndoorCenterFormComponent] Error removing admin:', error);
+      this.toast.error('errors.unexpected');
+      return;
+    }
+
+    this.toast.success('messages.toasts.adminRemoved');
+    this.centerAdminsResource.reload();
+    if (userId === this.supabase.authUserId()) {
+      this.cache.remove(CACHE_KEYS.adminIndoorCenters(userId));
+      this.supabase.adminIndoorCentersResource.reload();
+    }
+  }
+
+  protected onAdminSelected(
+    user: UserProfileBasicDto | null,
+    inputEl?: HTMLInputElement,
+  ): void {
+    if (!user) return;
+    this.addAdmin(user);
+    this.adminSearchQuery.set('');
+    this.selectedAdminUser.set(user);
+    setTimeout(() => {
+      this.selectedAdminUser.set(null);
+      if (inputEl) {
+        inputEl.value = '';
+        inputEl.blur();
+      }
+    });
   }
 }

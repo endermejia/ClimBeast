@@ -11,7 +11,13 @@ import {
 import { RouterLink } from '@angular/router';
 
 import { TuiItem } from '@taiga-ui/cdk';
-import { TuiButton, TuiLink } from '@taiga-ui/core';
+import {
+  TuiAppearance,
+  TuiButton,
+  TuiDataList,
+  TuiDropdown,
+  TuiLink,
+} from '@taiga-ui/core';
 import { TuiBreadcrumbs } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
@@ -22,6 +28,13 @@ import { OnlineStatusService } from '../../services/online-status.service';
 
 import { DropdownButtonComponent } from './dropdown-button';
 
+export interface SectionHeaderAction {
+  label: string;
+  icon: string;
+  action: () => void;
+  appearance?: 'neutral' | 'negative' | 'secondary' | 'accent' | string;
+}
+
 @Component({
   selector: 'app-section-header',
   imports: [
@@ -29,8 +42,11 @@ import { DropdownButtonComponent } from './dropdown-button';
     DropdownButtonComponent,
     RouterLink,
     TranslatePipe,
+    TuiAppearance,
     TuiBreadcrumbs,
     TuiButton,
+    TuiDataList,
+    TuiDropdown,
     TuiItem,
     TuiLink,
   ],
@@ -71,6 +87,7 @@ import { DropdownButtonComponent } from './dropdown-button';
               {{ lastUpdated()! | date: 'shortTime' }}
             </span>
           }
+
           <!-- Like button -->
           @if (showLike()) {
             <button
@@ -84,6 +101,40 @@ import { DropdownButtonComponent } from './dropdown-button';
             >
               {{ (liked() ? 'favorite.remove' : 'favorite.add') | translate }}
             </button>
+          }
+
+          <!-- Ellipsis action menu -->
+          @if (actions().length > 0) {
+            <button
+              size="s"
+              appearance="neutral"
+              iconStart="@tui.ellipsis-vertical"
+              tuiIconButton
+              type="button"
+              class="rounded-full!"
+              [tuiDropdown]="actionsDropdown"
+              [(tuiDropdownOpen)]="actionsDropdownOpen"
+              [attr.aria-label]="'options' | translate"
+            >
+              {{ 'options' | translate }}
+            </button>
+            <ng-template #actionsDropdown>
+              <tui-data-list>
+                @for (item of actions(); track item.label) {
+                  <button
+                    tuiOption
+                    type="button"
+                    [tuiAppearance]="item.appearance ?? 'neutral'"
+                    [iconStart]="item.icon"
+                    (click.zoneless)="
+                      item.action(); actionsDropdownOpen.set(false)
+                    "
+                  >
+                    {{ item.label | translate }}
+                  </button>
+                }
+              </tui-data-list>
+            </ng-template>
           }
           <!-- Custom action buttons slot -->
           <ng-content select="[actionButtons]" />
@@ -123,8 +174,10 @@ export class SectionHeaderComponent {
   liked = input(false);
   showLike = input(true);
   lastUpdated = input<Date | null>(null);
+  actions = input<SectionHeaderAction[]>([]);
 
   dropdownOpen = signal(false);
+  actionsDropdownOpen = signal(false);
 
   toggleLike = output<void>();
 }

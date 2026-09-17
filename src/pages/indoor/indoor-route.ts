@@ -41,7 +41,10 @@ import { AscentCardComponent } from '../../components/ascent/ascent-card';
 import { ChartAscentsByGradeComponent } from '../../components/charts/chart-ascents-by-grade';
 import { ChartAscentsByStyleComponent } from '../../components/charts/chart-ascents-by-style';
 import { GradeComponent } from '../../components/ui/avatar-grade';
-import { SectionHeaderComponent } from '../../components/ui/section-header';
+import {
+  SectionHeaderAction,
+  SectionHeaderComponent,
+} from '../../components/ui/section-header';
 
 import {
   CLIMBING_ICONS,
@@ -87,6 +90,7 @@ import { IS_BROWSER } from '../../app/is-browser';
             [title]="r.name"
             [liked]="false"
             [showLike]="false"
+            [actions]="headerActions()"
           >
             <app-grade
               [grade]="r.grade || 0"
@@ -104,32 +108,6 @@ import { IS_BROWSER } from '../../app/is-browser';
               >
                 {{ 'indoor.legacy' | translate }}
               </span>
-            }
-            @if (canEdit()) {
-              <div actionButtons class="flex gap-2">
-                <button
-                  size="s"
-                  appearance="neutral"
-                  iconStart="@tui.square-pen"
-                  tuiIconButton
-                  type="button"
-                  class="rounded-full!"
-                  (click.zoneless)="openEditRoute()"
-                >
-                  {{ 'edit' | translate }}
-                </button>
-                <button
-                  size="s"
-                  appearance="negative"
-                  iconStart="@tui.trash"
-                  tuiIconButton
-                  type="button"
-                  class="rounded-full!"
-                  (click.zoneless)="deleteRoute()"
-                >
-                  {{ 'delete' | translate }}
-                </button>
-              </div>
             }
           </app-section-header>
         </div>
@@ -442,6 +420,35 @@ export class IndoorRouteComponent {
     return r.center_id
       ? this.authState.indoorAdminPermissions()[r.center_id] || false
       : false;
+  });
+
+  protected readonly headerActions = computed<SectionHeaderAction[]>(() => {
+    const r = this.route();
+    if (!r) return [];
+
+    const actions: SectionHeaderAction[] = [];
+    const isAdmin = this.authState.isAdmin();
+    const isCenterAdmin = r.center_id
+      ? this.authState.isIndoorAdminOf(r.center_id)
+      : false;
+    const canEdit = isAdmin || isCenterAdmin;
+
+    if (canEdit) {
+      actions.push({
+        label: 'edit',
+        icon: '@tui.square-pen',
+        appearance: 'neutral',
+        action: () => this.openEditRoute(),
+      });
+      actions.push({
+        label: 'delete',
+        icon: '@tui.trash',
+        appearance: 'negative',
+        action: () => this.deleteRoute(),
+      });
+    }
+
+    return actions;
   });
 
   constructor() {

@@ -44,7 +44,10 @@ import { ChartRoutesByGradeComponent } from '../../components/charts/chart-route
 import { CragParkingsComponent } from '../../components/crag/crag-parkings';
 import { CragRoutesComponent } from '../../components/crag/crag-routes';
 import { CragToposComponent } from '../../components/crag/crag-topos';
-import { SectionHeaderComponent } from '../../components/ui/section-header';
+import {
+  SectionHeaderAction,
+  SectionHeaderComponent,
+} from '../../components/ui/section-header';
 import { WeatherForecastComponent } from '../../components/ui/weather-forecast';
 
 import {
@@ -80,7 +83,6 @@ import { IS_BROWSER } from '../../app/is-browser';
   template: `
     <tui-scrollbar class="flex grow">
       <section class="w-full max-w-5xl mx-auto p-4 flex flex-col min-h-full">
-        @let canEditAsAdmin = authState.canEditAsAdmin();
         @if (cragDetail(); as c) {
           <ng-template #cragSwitcher>
             <tui-data-list>
@@ -103,38 +105,9 @@ import { IS_BROWSER } from '../../app/is-browser';
               [title]="c.name"
               [liked]="c.liked"
               [titleDropdown]="cragSwitcher"
+              [actions]="headerActions()"
               (toggleLike)="onToggleLike()"
-            >
-              @let canAreaAdmin = authState.areaAdminPermissions()[c.area_id];
-              @if (authState.canEditCrag()) {
-                <div actionButtons class="flex gap-2">
-                  <button
-                    size="s"
-                    appearance="neutral"
-                    iconStart="@tui.square-pen"
-                    tuiIconButton
-                    type="button"
-                    class="rounded-full!"
-                    (click.zoneless)="openEditCrag()"
-                  >
-                    {{ 'edit' | translate }}
-                  </button>
-                  @if (canEditAsAdmin || canAreaAdmin) {
-                    <button
-                      size="s"
-                      appearance="negative"
-                      iconStart="@tui.trash"
-                      tuiIconButton
-                      type="button"
-                      class="rounded-full!"
-                      (click.zoneless)="deleteCrag()"
-                    >
-                      {{ 'delete' | translate }}
-                    </button>
-                  }
-                </div>
-              }
-            </app-section-header>
+            />
           </div>
 
           <div class="flex flex-col md:flex-row md:justify-between gap-4">
@@ -380,6 +353,35 @@ export class CragComponent {
     if (this.showParkingsTab()) tabs.push(2);
     if (this.showWeatherTab()) tabs.push(3);
     return tabs;
+  });
+
+  protected readonly headerActions = computed<SectionHeaderAction[]>(() => {
+    const c = this.cragDetail();
+    if (!c) return [];
+
+    const actions: SectionHeaderAction[] = [];
+    const isAdmin = this.authState.isAdmin();
+    const canAreaAdmin = this.authState.isAreaAdminOf(c.area_id);
+    const canEdit = this.authState.checkCragEditPermissionDirect(c);
+
+    if (canEdit) {
+      actions.push({
+        label: 'edit',
+        icon: '@tui.square-pen',
+        appearance: 'neutral',
+        action: () => this.openEditCrag(),
+      });
+      if (isAdmin || canAreaAdmin) {
+        actions.push({
+          label: 'delete',
+          icon: '@tui.trash',
+          appearance: 'negative',
+          action: () => this.deleteCrag(),
+        });
+      }
+    }
+
+    return actions;
   });
 
   areaSlug: InputSignal<string> = input.required<string>();

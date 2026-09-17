@@ -24,11 +24,12 @@ import { LayoutService } from '../../services/layout.service';
 import { TopoRoutesTableComponent } from '../../components/topo/topo-routes-table';
 import { TopoViewerComponent } from '../../components/topo/topo-viewer';
 import type { TopoRouteRow } from '../../components/topo/topo.types';
-import { SectionHeaderComponent } from '../../components/ui/section-header';
+import {
+  SectionHeaderAction,
+  SectionHeaderComponent,
+} from '../../components/ui/section-header';
 
-import { TopoRouteWithRoute } from '../../models';
-
-import type { TopoDetail } from '../../models';
+import type { TopoDetail, TopoRouteWithRoute } from '../../models';
 
 import { ShadeInfoPipe } from '../../pipes';
 
@@ -64,6 +65,7 @@ import { TopoPageBase } from './topo-page-base';
               [title]="t.name"
               [showLike]="false"
               [titleDropdown]="topoDropdown"
+              [actions]="headerActions()"
             >
               <ng-container titleInfo>
                 @if (t.legacy) {
@@ -109,33 +111,6 @@ import { TopoPageBase } from './topo-page-base';
                   }
                 </tui-data-list>
               </ng-template>
-
-              <div actionButtons class="flex gap-2">
-                @if (canEdit()) {
-                  <button
-                    tuiIconButton
-                    size="s"
-                    appearance="neutral"
-                    iconStart="@tui.square-pen"
-                    class="rounded-full!"
-                    (click.zoneless)="openEditTopo(t)"
-                  >
-                    {{ 'edit' | translate }}
-                  </button>
-                  @if (canEditAsAdmin || canAreaAdmin) {
-                    <button
-                      tuiIconButton
-                      size="s"
-                      appearance="negative"
-                      iconStart="@tui.trash"
-                      class="rounded-full!"
-                      (click.zoneless)="deleteTopo(t)"
-                    >
-                      {{ 'delete' | translate }}
-                    </button>
-                  }
-                }
-              </div>
             </app-section-header>
           </div>
 
@@ -263,6 +238,54 @@ export class OutdoorTopoComponent extends TopoPageBase {
 
   protected readonly canEdit = computed(() => this.authState.canEditCrag());
 
+  protected readonly canDraw = computed(() => {
+    const t = this.topo();
+    if (!t || !t.photo) return false;
+    const crag = this.crag();
+    return this.authState.checkCragEditPermissionDirect(t.crag ?? crag);
+  });
+
+  protected readonly headerActions = computed<SectionHeaderAction[]>(() => {
+    const t = this.topo();
+    if (!t) return [];
+
+    const actions: SectionHeaderAction[] = [];
+    const isAdmin = this.authState.isAdmin();
+    const crag = this.crag();
+    const areaId = t.crag?.area_id ?? crag?.area_id ?? -1;
+    const canAreaAdmin = this.authState.isAreaAdminOf(areaId);
+    const canEdit = this.authState.checkCragEditPermissionDirect(
+      t.crag ?? crag,
+    );
+
+    if (this.canDraw()) {
+      actions.push({
+        label: 'draw',
+        icon: '/image/topo.svg',
+        appearance: 'neutral',
+        action: () => this.openDrawTopo(t),
+      });
+    }
+    if (canEdit) {
+      actions.push({
+        label: 'edit',
+        icon: '@tui.square-pen',
+        appearance: 'neutral',
+        action: () => this.openEditTopo(t),
+      });
+      if (isAdmin || canAreaAdmin) {
+        actions.push({
+          label: 'delete',
+          icon: '@tui.trash',
+          appearance: 'negative',
+          action: () => this.deleteTopo(t),
+        });
+      }
+    }
+
+    return actions;
+  });
+
   protected readonly columns = computed(() => {
     const isMobile = this.layoutService.isMobile();
     const base = isMobile
@@ -309,6 +332,40 @@ export class OutdoorTopoComponent extends TopoPageBase {
       return direction === 1 ? -result : result;
     });
   });
+
+  protected async openDrawTopo(topo: TopoDetail): Promise<void> {
+    if (!this.isBrowser) return;
+    const photoPath = topo.photo;
+    if (!photoPath) return;
+    const imageUrl =
+      this.topoImageResource.value() ||
+      (await this.supabase.getTopoSignedUrl(
+        photoPath,
+        this.outdoorData.topoPhotoVersion(),
+      ));
+    if (!imageUrl) return;
+
+    const routes = (topo.topo_routes || []).map((tr, i) => ({
+      topo_id: topo.id,
+      route_id: tr.route_id,
+      number: tr.number ?? i,
+      route: tr.route,
+      path: tr.path,
+    }));
+
+    const result = await this.toposService.openTopoPathEditor({
+      imageUrl,
+      topoRoutes: routes as TopoRouteWithRoute[],
+      topoName: topo.name,
+      topoId: topo.id,
+      standalone: true,
+      isIndoor: false,
+    });
+
+    if (result) {
+      this.outdoorData.topoDetailResource.reload();
+    }
+  }
 
   protected openEditTopo(topo: TopoDetail): void {
     if (!this.isBrowser) return;

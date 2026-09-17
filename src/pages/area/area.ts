@@ -60,7 +60,10 @@ import { ChartRoutesByGradeComponent } from '../../components/charts/chart-route
 import { CragCardComponent } from '../../components/crag/crag-card';
 import { GradeComponent } from '../../components/ui/avatar-grade';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
-import { SectionHeaderComponent } from '../../components/ui/section-header';
+import {
+  SectionHeaderAction,
+  SectionHeaderComponent,
+} from '../../components/ui/section-header';
 import { UserInfoHintComponent } from '../../components/ui/user-info-hint';
 
 import {
@@ -119,75 +122,14 @@ import { IS_BROWSER } from '../../app/is-browser';
         @let canEditAsAdmin = authState.canEditAsAdmin();
         @if (outdoorData.selectedArea(); as area) {
           @let canAreaAdmin = authState.areaAdminPermissions()[area.id];
-          @let hasPendingRequest =
-            authState.pendingAdminRequestAreaIds().has(area.id);
           <div class="mb-4">
             <app-section-header
               class="w-full"
               [title]="area.name"
               [liked]="area.liked"
+              [actions]="headerActions()"
               (toggleLike)="onToggleLike()"
             >
-              @if (authState.canEditArea()) {
-                <div actionButtons class="flex gap-2">
-                  @if (!isPublic()) {
-                    <button
-                      size="s"
-                      appearance="neutral"
-                      iconStart="@tui.users"
-                      tuiButton
-                      type="button"
-                      class="rounded-full!"
-                      (click.zoneless)="openAccessManager()"
-                    >
-                      {{ 'areas.manageAccess' | translate }}
-                    </button>
-                  }
-                  <button
-                    size="s"
-                    appearance="neutral"
-                    iconStart="@tui.square-pen"
-                    tuiIconButton
-                    type="button"
-                    class="rounded-full!"
-                    (click.zoneless)="openEditArea()"
-                  >
-                    {{ 'edit' | translate }}
-                  </button>
-                  @if (canEditAsAdmin) {
-                    <button
-                      size="s"
-                      appearance="negative"
-                      iconStart="@tui.trash"
-                      tuiIconButton
-                      type="button"
-                      class="rounded-full!"
-                      (click.zoneless)="deleteArea()"
-                    >
-                      {{ 'delete' | translate }}
-                    </button>
-                  }
-                </div>
-              } @else if (
-                authState.editingMode() &&
-                !canEditAsAdmin &&
-                !canAreaAdmin &&
-                !hasPendingRequest
-              ) {
-                <div actionButtons class="flex gap-2">
-                  <button
-                    tuiButton
-                    size="s"
-                    appearance="secondary"
-                    iconStart="@tui.shield-alert"
-                    type="button"
-                    class="rounded-full!"
-                    (click.zoneless)="requestAdmin()"
-                  >
-                    {{ 'adminRequests.button' | translate }}
-                  </button>
-                </div>
-              }
               @if (!isPublic()) {
                 <tui-icon icon="@tui.lock" />
               }
@@ -350,9 +292,12 @@ import { IS_BROWSER } from '../../app/is-browser';
                       <input
                         id="admin-search-input"
                         tuiComboBox
+                        [matcher]="null"
                         [placeholder]="'searchPlaceholder' | translate"
-                        (ngModelChange)="onAdminSelected($event)"
-                        [ngModel]="null"
+                        (ngModelChange)="
+                          onAdminSelected($event, adminSearchInput)
+                        "
+                        [ngModel]="selectedAdminUser()"
                         (input.zoneless)="
                           userSearchQuery.set(adminSearchInput.value)
                         "
@@ -410,19 +355,6 @@ import { IS_BROWSER } from '../../app/is-browser';
               >
                 {{ 'new' | translate }}
               </button>
-              @if (canEditAsAdmin) {
-                <button
-                  tuiButton
-                  appearance="textfield"
-                  size="s"
-                  type="button"
-                  (click.zoneless)="onSync8a()"
-                  [iconStart]="'@tui.refresh-ccw'"
-                  [disabled]="areas.loading()"
-                >
-                  {{ 'import8a.button' | translate }}
-                </button>
-              }
             </div>
           </div>
 
@@ -569,6 +501,9 @@ export class AreaComponent {
   areaSlug: InputSignal<string> = input.required<string>();
   readonly query: WritableSignal<string> = signal('');
   protected readonly userSearchQuery = signal('');
+  protected readonly selectedAdminUser = signal<UserProfileBasicDto | null>(
+    null,
+  );
   readonly selectedGradeRange = this.filterState.areaListGradeRange;
   readonly selectedCategories = this.filterState.areaListCategories;
   readonly selectedShade = this.filterState.areaListShade;
@@ -609,6 +544,55 @@ export class AreaComponent {
   protected readonly isPublic = computed(
     () => this.areaDetail()?.is_public ?? true,
   );
+
+  protected readonly headerActions = computed<SectionHeaderAction[]>(() => {
+    const area = this.outdoorData.selectedArea();
+    if (!area) return [];
+
+    const actions: SectionHeaderAction[] = [];
+    const isAdmin = this.authState.isAdmin();
+    const canAreaAdmin = this.authState.isAreaAdminOf(area.id);
+    const canEdit = this.authState.checkAreaEditPermissionDirect(area);
+    const userId = this.authState.userProfile()?.id;
+
+    if (canEdit) {
+      if (!this.isPublic()) {
+        actions.push({
+          label: 'areas.manageAccess',
+          icon: '@tui.users',
+          appearance: 'neutral',
+          action: () => this.openAccessManager(),
+        });
+      }
+      actions.push({
+        label: 'edit',
+        icon: '@tui.square-pen',
+        appearance: 'neutral',
+        action: () => this.openEditArea(),
+      });
+      if (isAdmin) {
+        actions.push({
+          label: 'delete',
+          icon: '@tui.trash',
+          appearance: 'negative',
+          action: () => this.deleteArea(),
+        });
+      }
+    } else if (
+      userId &&
+      !canAreaAdmin &&
+      !this.authState.pendingAdminRequestAreaIds().has(area.id)
+    ) {
+      actions.push({
+        label: 'adminRequests.button',
+        icon: '@tui.shield-alert',
+        appearance: 'secondary',
+        action: () => this.requestAdmin(),
+      });
+    }
+
+    return actions;
+  });
 
   protected readonly routesResource = resource({
     params: () => {
@@ -820,10 +804,21 @@ export class AreaComponent {
     }
   }
 
-  protected onAdminSelected(user: UserProfileBasicDto | null): void {
-    if (user) {
-      void this.addAdmin(user);
-    }
+  protected onAdminSelected(
+    user: UserProfileBasicDto | null,
+    inputEl?: HTMLInputElement,
+  ): void {
+    if (!user) return;
+    void this.addAdmin(user);
+    this.userSearchQuery.set('');
+    this.selectedAdminUser.set(user);
+    setTimeout(() => {
+      this.selectedAdminUser.set(null);
+      if (inputEl) {
+        inputEl.value = '';
+        inputEl.blur();
+      }
+    });
   }
 
   constructor() {
@@ -927,12 +922,6 @@ export class AreaComponent {
     const current = this.outdoorData.selectedArea();
     if (!current) return;
     this.cragsService.openCragForm({ areaId: current.id });
-  }
-
-  async onSync8a(): Promise<void> {
-    const area = this.outdoorData.selectedArea();
-    if (!area) return;
-    await this.areas.syncAreaWith8a(area.id);
   }
 
   async viewOnMap(): Promise<void> {

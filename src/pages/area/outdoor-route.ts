@@ -48,7 +48,10 @@ import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
 import { ChartAscentsByGradeComponent } from '../../components/charts/chart-ascents-by-grade';
 import { ChartAscentsByStyleComponent } from '../../components/charts/chart-ascents-by-style';
 import { GradeComponent } from '../../components/ui/avatar-grade';
-import { SectionHeaderComponent } from '../../components/ui/section-header';
+import {
+  SectionHeaderAction,
+  SectionHeaderComponent,
+} from '../../components/ui/section-header';
 
 import {
   CLIMBING_ICONS,
@@ -87,13 +90,13 @@ import { IS_BROWSER } from '../../app/is-browser';
   template: `
     <tui-scrollbar class="h-full">
       <section class="w-full max-w-5xl mx-auto p-4">
-        @let canEditAsAdmin = authState.canEditAsAdmin();
         @if (route(); as r) {
           <div class="mb-4 flex items-center justify-between gap-2">
             <app-section-header
               class="w-full"
               [title]="r.name"
               [liked]="r.liked"
+              [actions]="headerActions()"
               (toggleLike)="routesService.toggleRouteLike(r.id, r)"
             >
               <app-grade
@@ -102,36 +105,6 @@ import { IS_BROWSER } from '../../app/is-browser';
                 size="l"
                 titleInfo
               />
-              @if (authState.canEditRoute()) {
-                <div actionButtons class="flex gap-2">
-                  @let canAreaAdmin =
-                    authState.areaAdminPermissions()[r.area_id ?? -1];
-                  <button
-                    size="s"
-                    appearance="neutral"
-                    iconStart="@tui.square-pen"
-                    tuiIconButton
-                    type="button"
-                    class="rounded-full!"
-                    (click.zoneless)="openEditRoute()"
-                  >
-                    {{ 'edit' | translate }}
-                  </button>
-                  @if (canEditAsAdmin || canAreaAdmin) {
-                    <button
-                      size="s"
-                      appearance="negative"
-                      iconStart="@tui.trash"
-                      tuiIconButton
-                      type="button"
-                      class="rounded-full!"
-                      (click.zoneless)="deleteRoute()"
-                    >
-                      {{ 'delete' | translate }}
-                    </button>
-                  }
-                </div>
-              }
             </app-section-header>
           </div>
 
@@ -583,6 +556,36 @@ export class OutdoorRouteComponent {
       ? (GRADE_NUMBER_TO_LABEL[grade as VERTICAL_LIFE_GRADES] ??
           PROJECT_GRADE_LABEL)
       : PROJECT_GRADE_LABEL;
+  });
+
+  protected readonly headerActions = computed<SectionHeaderAction[]>(() => {
+    const r = this.route();
+    if (!r) return [];
+
+    const actions: SectionHeaderAction[] = [];
+    const isAdmin = this.authState.isAdmin();
+    const areaId = r.area_id ?? -1;
+    const canAreaAdmin = this.authState.isAreaAdminOf(areaId);
+    const canEdit = this.authState.checkRouteEditPermissionDirect(r);
+
+    if (canEdit) {
+      actions.push({
+        label: 'edit',
+        icon: '@tui.square-pen',
+        appearance: 'neutral',
+        action: () => this.openEditRoute(),
+      });
+      if (isAdmin || canAreaAdmin) {
+        actions.push({
+          label: 'delete',
+          icon: '@tui.trash',
+          appearance: 'negative',
+          action: () => this.deleteRoute(),
+        });
+      }
+    }
+
+    return actions;
   });
 
   readonly climbingIcons = CLIMBING_ICONS;

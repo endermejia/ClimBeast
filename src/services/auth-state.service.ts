@@ -385,6 +385,39 @@ export class AuthStateService {
     return isCreator && this.isWithinOneWeek(area.created_at);
   };
 
+  readonly isAreaAdminOf = (areaId: number | null | undefined): boolean => {
+    if (this.isAdmin()) return true;
+    if (areaId === null || areaId === undefined) return false;
+    return this.adminAreas().includes(areaId);
+  };
+
+  readonly isIndoorAdminOf = (
+    centerId: string | number | null | undefined,
+  ): boolean => {
+    if (this.isAdmin()) return true;
+    if (!centerId) return false;
+    return this.adminIndoorCenters().includes(String(centerId));
+  };
+
+  readonly checkAreaEditPermissionDirect = (
+    area:
+      | AreaListItem
+      | {
+          id: number;
+          user_creator_id?: string | null;
+          created_at?: string | null;
+        }
+      | null
+      | undefined,
+  ): boolean => {
+    if (!area) return false;
+    if (this.isAdmin() || this.adminAreas().includes(area.id)) return true;
+    const userId = this.userProfile()?.id;
+    if (!userId) return false;
+    const isCreator = area.user_creator_id === userId;
+    return isCreator && this.isWithinOneWeek(area.created_at);
+  };
+
   readonly checkCragEditPermission = (
     crag: CragListItem | CragDetail | null | undefined,
   ): boolean => {
@@ -395,6 +428,28 @@ export class AuthStateService {
       return true;
     const userId = this.userProfile()?.id;
     if (!crag || !userId || !this.editingMode()) return false;
+    const isCreator = crag.user_creator_id === userId;
+    return isCreator && this.isWithinOneWeek(crag.created_at);
+  };
+
+  readonly checkCragEditPermissionDirect = (
+    crag:
+      | CragListItem
+      | CragDetail
+      | {
+          id: number;
+          area_id?: number | null;
+          user_creator_id?: string | null;
+          created_at?: string | null;
+        }
+      | null
+      | undefined,
+  ): boolean => {
+    if (!crag) return false;
+    const areaId = crag.area_id ?? -1;
+    if (this.isAdmin() || this.adminAreas().includes(areaId)) return true;
+    const userId = this.userProfile()?.id;
+    if (!userId) return false;
     const isCreator = crag.user_creator_id === userId;
     return isCreator && this.isWithinOneWeek(crag.created_at);
   };
@@ -423,13 +478,27 @@ export class AuthStateService {
     return isCreator && this.isWithinOneWeek(route.created_at);
   };
 
-  private isWithinOneWeek(createdAt: string | null | undefined): boolean {
+  readonly checkRouteEditPermissionDirect = (
+    route: RouteWithExtras | null | undefined,
+  ): boolean => {
+    if (!route) return false;
+    const areaId = route.area_id ?? -1;
+    if (this.isAdmin() || this.adminAreas().includes(areaId)) return true;
+    const userId = this.userProfile()?.id;
+    if (!userId) return false;
+    const isCreator = route.user_creator_id === userId;
+    return isCreator && this.isWithinOneWeek(route.created_at);
+  };
+
+  readonly isWithinOneWeek = (
+    createdAt: string | null | undefined,
+  ): boolean => {
     if (!createdAt) return true;
     const date = new Date(createdAt);
     const now = new Date();
     const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
     return now.getTime() - date.getTime() < oneWeekInMs;
-  }
+  };
 
   // ---- Persistence ----
   hydrateEditingMode(): void {
