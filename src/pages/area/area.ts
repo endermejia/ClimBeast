@@ -859,7 +859,7 @@ export class AreaComponent {
       await this.supabase.whenReady();
       const { data: routes } = await this.supabase.client
         .from('routes')
-        .select('id')
+        .select('id, crag:crags!inner(area_id)')
         .eq('crag.area_id', areaId);
       if (!routes?.length) return 0;
       const { count } = await this.supabase.client
