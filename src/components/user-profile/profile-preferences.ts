@@ -6,13 +6,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import {
-  TuiDropdown,
-  TuiError,
-  TuiIcon,
-  TuiNotification,
-  TuiTextfield,
-} from '@taiga-ui/core';
+import { TuiDropdown, TuiError, TuiIcon, TuiTextfield } from '@taiga-ui/core';
 import {
   TuiChevron,
   TuiDataListWrapper,
@@ -37,7 +31,6 @@ import { Language, ProfileConfigModel, Themes } from '../../models';
     TuiDropdown,
     TuiError,
     TuiIcon,
-    TuiNotification,
     TuiSegmented,
     TuiSelect,
     TuiSkeleton,
@@ -159,70 +152,6 @@ import { Language, ProfileConfigModel, Themes } from '../../models';
         </div>
       </div>
     </div>
-
-    <!-- Modo Edición -->
-    <div class="mt-8 pt-8 border-t border-(--tui-border-normal)">
-      <div class="flex items-center justify-between gap-4 mb-4">
-        <h2 class="text-lg font-bold m-0 flex items-center gap-2">
-          <tui-icon icon="@tui.pencil" />
-          {{ 'editingMode' | translate }}
-        </h2>
-        <input
-          id="editingSwitch"
-          tuiSwitch
-          type="checkbox"
-          [ngModel]="model().editingMode"
-          (ngModelChange)="editingModeChange.emit($event)"
-          autocomplete="off"
-        />
-      </div>
-
-      <div tuiNotification appearance="info" class="mt-2">
-        <div
-          class="text-base font-bold text-(--tui-text-primary) border-b border-(--tui-border-hint) pb-2 mb-3"
-        >
-          {{ 'profile.editing.infoTitle' | translate }}
-        </div>
-        <ul class="list-none p-0 m-0 space-y-4 opacity-90">
-          <li class="flex items-start gap-3">
-            <tui-icon icon="@tui.plus" size="s" class="mt-0.5 text-primary" />
-            <span>{{ 'profile.editing.infoContribute' | translate }}</span>
-          </li>
-
-          <li class="flex flex-col gap-3">
-            <div class="flex items-start gap-3">
-              <tui-icon
-                icon="@tui.user-plus"
-                size="s"
-                class="mt-0.5 text-primary"
-              />
-              <span>{{ 'profile.editing.infoRequestAdmin' | translate }}</span>
-            </div>
-
-            <ul class="list-none pl-9 m-0 space-y-2 opacity-90 text-[0.95em]">
-              <li class="flex items-start gap-2">
-                <tui-icon
-                  icon="@tui.image"
-                  size="xs"
-                  class="mt-1 text-primary"
-                />
-                <span>{{ 'profile.editing.infoManageTopos' | translate }}</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <tui-icon
-                  icon="@tui.credit-card"
-                  size="xs"
-                  class="mt-1 text-primary"
-                />
-                <span>{{
-                  'profile.editing.infoMonetization' | translate
-                }}</span>
-              </li>
-            </ul>
-          </li>
-        </ul>
-      </div>
-    </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -244,7 +173,6 @@ export class ProfilePreferencesComponent {
   readonly messageSoundChange = output<boolean>();
   readonly notificationSoundChange = output<boolean>();
   readonly privateProfileChange = output<boolean>();
-  readonly editingModeChange = output<boolean>();
 
   readonly Themes = Themes;
 

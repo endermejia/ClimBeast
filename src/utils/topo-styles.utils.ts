@@ -96,6 +96,7 @@ export function getRouteStyleProperties(
   isHovered: boolean,
   grade: string | number | null | undefined,
   customColor?: string | null,
+  hasSelection = false,
 ): { stroke: string; opacity: number; isDashed: boolean } {
   const isZero =
     grade === null ||
@@ -117,8 +118,19 @@ export function getRouteStyleProperties(
       ? customColor
       : getRouteColor(grade);
 
-  // Opacity: Selected/Hovered = 1, Default = 0.8
-  const opacity = isSelected || isHovered ? 1 : 0.8;
+  // Opacity:
+  // If a route is selected:
+  //   Selected or hovered route = 1
+  //   Other routes = 0.5 (reduced opacity)
+  // If no route is selected:
+  //   Hovered = 1, Default = 0.8
+  const opacity = hasSelection
+    ? isSelected || isHovered
+      ? 1
+      : 0.5
+    : isHovered
+      ? 1
+      : 0.8;
 
   // Dash: Selected/Hovered = Solid, Default = Dashed
   const isDashed = !isSelected && !isHovered;

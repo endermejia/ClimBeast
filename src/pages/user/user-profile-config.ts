@@ -179,7 +179,6 @@ interface Country {
           (messageSoundChange)="onMessageSoundChange($event)"
           (notificationSoundChange)="onNotificationSoundChange($event)"
           (privateProfileChange)="onPrivateProfileChange($event)"
-          (editingModeChange)="onEditingModeChange($event)"
         />
 
         <!-- Account Actions Header -->
@@ -321,7 +320,6 @@ export class UserProfileConfigComponent {
     deleteEmail: '',
     messageSound: true,
     notificationSound: true,
-    editingMode: false,
     restartFirstSteps: false,
   });
 
@@ -554,7 +552,6 @@ export class UserProfileConfigComponent {
       notificationSound:
         profile.notification_sound ??
         this.audioPrefs.notificationSoundEnabled(),
-      editingMode: profile.editing_mode ?? this.authState.editingMode(),
       restartFirstSteps: false,
     });
   }
@@ -961,28 +958,6 @@ export class UserProfileConfigComponent {
     this.audioPrefs.notificationSoundEnabled.set(enabled);
   }
 
-  async onEditingModeChange(enabled: boolean): Promise<void> {
-    if (enabled) {
-      const confirmed = await this.toggleEditingMode(true);
-      if (confirmed) {
-        this.updateModel('editingMode', true);
-        await this.updateProfile(
-          { editing_mode: true },
-          'profile.updated.editing_mode',
-        );
-      } else {
-        this.updateModel('editingMode', false);
-      }
-    } else {
-      this.updateModel('editingMode', false);
-      this.authState.editingMode.set(false);
-      await this.updateProfile(
-        { editing_mode: false },
-        'profile.updated.editing_mode',
-      );
-    }
-  }
-
   onPrivateProfileChange(enabled: boolean): void {
     this.updateModel('isPrivate', enabled);
     void this.togglePrivateProfile(enabled);
@@ -1003,41 +978,6 @@ export class UserProfileConfigComponent {
         lang: updates.language || this.languageService.selectedLanguage(),
       });
     }
-  }
-
-  async toggleEditingMode(enabled: boolean): Promise<boolean> {
-    if (this.authState.editingMode() === enabled) {
-      return true;
-    }
-
-    if (enabled && !this.authState.isAdmin()) {
-      const hasPermissions = this.authState.isAreaAdmin();
-      const messageKey = hasPermissions
-        ? 'profile.editing.confirmationEquipper'
-        : 'profile.editing.confirmationUser';
-
-      const confirmed = await firstValueFrom(
-        this.dialogs.open<boolean>(TUI_CONFIRM, {
-          label: this.translate.instant('profile.editing.confirmationTitle'),
-          size: 'm',
-          data: {
-            content: this.translate.instant(messageKey),
-            yes: this.translate.instant('accept'),
-            no: this.translate.instant('cancel'),
-          } as TuiConfirmData,
-        }),
-        { defaultValue: false },
-      );
-
-      if (!confirmed) {
-        this.updateModel('editingMode', false);
-        this.authState.editingMode.set(false);
-        return false;
-      }
-    }
-
-    this.authState.editingMode.set(enabled);
-    return true;
   }
 
   async logout(): Promise<void> {

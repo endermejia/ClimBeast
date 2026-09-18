@@ -7,6 +7,7 @@ import {
   getPointStateColor,
   getPointStateLabel,
   getPointsString,
+  getRouteStyleProperties,
   hasPath,
 } from './topo-styles.utils';
 
@@ -140,6 +141,32 @@ describe('topo-styles.utils', () => {
           ],
         }),
       ).toBe(5);
+    });
+  });
+
+  describe('getRouteStyleProperties', () => {
+    it('returns solid line and opacity 1 when selected', () => {
+      const style = getRouteStyleProperties(true, false, '6a', null, true);
+      expect(style.opacity).toBe(1);
+      expect(style.isDashed).toBe(false);
+    });
+
+    it('returns reduced opacity (0.5) for unselected routes when selection is active', () => {
+      const style = getRouteStyleProperties(false, false, '6a', null, true);
+      expect(style.opacity).toBe(0.5);
+      expect(style.isDashed).toBe(true);
+    });
+
+    it('returns default opacity 0.8 when no selection is active', () => {
+      const style = getRouteStyleProperties(false, false, '6a', null, false);
+      expect(style.opacity).toBe(0.8);
+      expect(style.isDashed).toBe(true);
+    });
+
+    it('returns opacity 1 for hovered route even when unselected', () => {
+      const style = getRouteStyleProperties(false, true, '6a', null, true);
+      expect(style.opacity).toBe(1);
+      expect(style.isDashed).toBe(false);
     });
   });
 });

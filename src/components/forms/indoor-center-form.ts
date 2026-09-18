@@ -53,7 +53,6 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
-import { AuthStateService } from '../../services/auth-state.service';
 import { CacheService } from '../../services/cache.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 import { IndoorService } from '../../services/indoor.service';
@@ -1303,7 +1302,6 @@ import { IS_BROWSER } from '../../app/is-browser';
 })
 export class IndoorCenterFormComponent {
   private readonly indoor = inject(IndoorService);
-  private readonly authState = inject(AuthStateService);
   private readonly indoorCentersData = inject(IndoorCentersDataService);
   private readonly location = inject(Location);
   protected readonly supabase = inject(SupabaseService);
@@ -2011,7 +2009,6 @@ export class IndoorCenterFormComponent {
           this._dialogCtx.completeWith(true);
         } else {
           this.indoorCentersData.indoorCentersResource.reload();
-          this.authState.editingMode.set(false);
         }
       } catch (e) {
         const error = e as Error;

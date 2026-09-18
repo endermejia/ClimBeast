@@ -81,7 +81,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     AscentCardComponent,
   ],
   template: `
-    <section class="w-full max-w-5xl mx-auto p-4">
+    <section class="w-full max-w-[1600px] mx-auto p-4">
       @if (route(); as r) {
         <!-- Section Header -->
         <div class="mb-4 flex items-center justify-between gap-2">

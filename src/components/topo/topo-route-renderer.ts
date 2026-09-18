@@ -80,144 +80,61 @@ export interface RenderedRoute extends TopoRouteWithRoute {
               selectedRouteId() === tr.route_id ||
               hoveredRouteId() === tr.route_id;
             @let isTraverse = tr.path.isTraverse;
-            @if (tr.path.type === 'circle') {
-              @for (pt of tr.path.points; track $index) {
-                @let ptColor = pt.state | topoPointStateColor: tr.style.stroke;
-                @let badge = pt.state | topoPointStateBadge;
-                <circle
-                  [attr.cx]="pt.x * 1000"
-                  [attr.cy]="pt.y * hScale"
-                  [attr.r]="circleR"
-                  fill="none"
-                  stroke="white"
-                  [style.opacity]="tr.style.isDashed ? 1 : 0.7"
-                  [attr.stroke-width]="
-                    tr.width * 1000 + (tr.style.isDashed ? 2.5 : 1.5)
-                  "
-                  [attr.stroke-dasharray]="tr.style.isDashed ? '6, 6' : 'none'"
-                  stroke-linejoin="round"
-                  stroke-linecap="round"
-                  class="transition-all duration-300"
-                />
-                <circle
-                  [attr.cx]="pt.x * 1000"
-                  [attr.cy]="pt.y * hScale"
-                  [attr.r]="circleR"
-                  fill="rgba(0,0,0,0.05)"
-                  [attr.stroke]="tr.style.stroke"
-                  [style.color]="tr.style.stroke"
-                  [style.opacity]="tr.style.opacity"
-                  [attr.stroke-width]="tr.width * 1000"
-                  [attr.stroke-dasharray]="tr.style.isDashed ? '6, 6' : 'none'"
-                  stroke-linejoin="round"
-                  stroke-linecap="round"
-                  class="transition-all duration-300"
-                  [class.selected-circle-pulse]="isSel"
-                />
-                @if (isTraverse) {
-                  <text
-                    [attr.x]="pt.x * 1000"
-                    [attr.y]="pt.y * hScale + circleR * 0.35"
-                    text-anchor="middle"
-                    fill="white"
-                    font-weight="bold"
-                    [attr.font-size]="circleR * 0.85"
-                    style="pointer-events: none; user-select: none; text-shadow: 0 0 3px rgba(0,0,0,0.9)"
-                  >
-                    {{ $index + 1 }}
-                  </text>
-                }
-                @if (badge) {
-                  @let label = pt.state | topoPointStateLabel;
-                  @let pillW =
-                    tr.width *
-                    (pt.state === 'match'
-                      ? 5800
-                      : pt.state === 'start'
-                        ? 5500
-                        : pt.state === 'foot'
-                          ? 5000
-                          : 4200);
-                  @let pillH = tr.width * 2100;
-                  @let pillY = pt.y * hScale + circleR + pillH * 0.45;
-                  <g class="pointer-events-none" style="user-select: none">
-                    <rect
-                      [attr.x]="pt.x * 1000 - pillW / 2"
-                      [attr.y]="pillY - pillH / 2"
-                      [attr.width]="pillW"
-                      [attr.height]="pillH"
-                      [attr.rx]="pillH / 2"
-                      [attr.fill]="ptColor"
-                      stroke="white"
-                      stroke-width="0.75"
-                    />
-                    <text
-                      [attr.x]="pt.x * 1000"
-                      [attr.y]="pillY + pillH * 0.32"
-                      text-anchor="middle"
-                      fill="white"
-                      font-weight="bold"
-                      [attr.font-size]="tr.width * 1500"
-                      font-family="sans-serif"
-                      style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                    >
-                      {{ label }}
-                    </text>
-                  </g>
-                }
-              }
-            } @else {
-              <polyline
-                [attr.points]="tr.pointsString"
-                fill="none"
-                stroke="white"
-                [style.opacity]="tr.style.isDashed ? 1 : 0.7"
-                [attr.stroke-width]="
-                  tr.width * 1000 + (tr.style.isDashed ? 2.5 : 1.5)
-                "
-                [attr.stroke-dasharray]="tr.style.isDashed ? '10, 10' : 'none'"
-                stroke-linejoin="round"
-                stroke-linecap="round"
-                class="transition-all duration-300"
-              />
-              <polyline
-                [attr.points]="tr.pointsString"
-                fill="none"
-                [attr.stroke]="tr.style.stroke"
-                [style.color]="tr.style.stroke"
-                [style.opacity]="tr.style.opacity"
-                [attr.stroke-width]="tr.width * 1000"
-                [attr.stroke-dasharray]="tr.style.isDashed ? '10, 10' : 'none'"
-                stroke-linejoin="round"
-                stroke-linecap="round"
-                class="transition-all duration-300"
-                [class.selected-line-glow]="isGlowActive() && isSel"
-              />
-              @if (isTraverse) {
+            <g
+              [style.opacity]="tr.style.opacity"
+              class="transition-opacity duration-300"
+            >
+              @if (tr.path.type === 'circle') {
                 @for (pt of tr.path.points; track $index) {
                   @let ptColor =
                     pt.state | topoPointStateColor: tr.style.stroke;
                   @let badge = pt.state | topoPointStateBadge;
-                  @let ptR = tr.width * 1800;
                   <circle
                     [attr.cx]="pt.x * 1000"
                     [attr.cy]="pt.y * hScale"
-                    [attr.r]="ptR"
-                    [attr.fill]="tr.style.stroke"
+                    [attr.r]="circleR"
+                    fill="none"
                     stroke="white"
-                    stroke-width="1"
+                    [style.opacity]="tr.style.isDashed ? 1 : 0.7"
+                    [attr.stroke-width]="
+                      tr.width * 1000 + (tr.style.isDashed ? 2.5 : 1.5)
+                    "
+                    [attr.stroke-dasharray]="
+                      tr.style.isDashed ? '6, 6' : 'none'
+                    "
+                    stroke-linejoin="round"
+                    stroke-linecap="round"
+                    class="transition-all duration-300"
                   />
-                  <text
-                    [attr.x]="pt.x * 1000"
-                    [attr.y]="pt.y * hScale + ptR * 0.35"
-                    text-anchor="middle"
-                    fill="white"
-                    font-weight="bold"
-                    [attr.font-size]="ptR * 0.85"
-                    style="pointer-events: none; user-select: none; text-shadow: 0 0 3px rgba(0,0,0,0.9)"
-                  >
-                    {{ $index + 1 }}
-                  </text>
+                  <circle
+                    [attr.cx]="pt.x * 1000"
+                    [attr.cy]="pt.y * hScale"
+                    [attr.r]="circleR"
+                    fill="rgba(0,0,0,0.05)"
+                    [attr.stroke]="tr.style.stroke"
+                    [style.color]="tr.style.stroke"
+                    [attr.stroke-width]="tr.width * 1000"
+                    [attr.stroke-dasharray]="
+                      tr.style.isDashed ? '6, 6' : 'none'
+                    "
+                    stroke-linejoin="round"
+                    stroke-linecap="round"
+                    class="transition-all duration-300"
+                    [class.selected-circle-pulse]="isSel"
+                  />
+                  @if (isTraverse) {
+                    <text
+                      [attr.x]="pt.x * 1000"
+                      [attr.y]="pt.y * hScale + circleR * 0.35"
+                      text-anchor="middle"
+                      fill="white"
+                      font-weight="bold"
+                      [attr.font-size]="circleR * 0.85"
+                      style="pointer-events: none; user-select: none; text-shadow: 0 0 3px rgba(0,0,0,0.9)"
+                    >
+                      {{ $index + 1 }}
+                    </text>
+                  }
                   @if (badge) {
                     @let label = pt.state | topoPointStateLabel;
                     @let pillW =
@@ -230,7 +147,7 @@ export interface RenderedRoute extends TopoRouteWithRoute {
                             ? 5000
                             : 4200);
                     @let pillH = tr.width * 2100;
-                    @let pillY = pt.y * hScale + ptR + pillH * 0.45;
+                    @let pillY = pt.y * hScale + circleR + pillH * 0.45;
                     <g class="pointer-events-none" style="user-select: none">
                       <rect
                         [attr.x]="pt.x * 1000 - pillW / 2"
@@ -258,110 +175,204 @@ export interface RenderedRoute extends TopoRouteWithRoute {
                   }
                 }
               } @else {
-                <!-- Intermediate state points for polylines -->
-                @for (pt of tr.path.points; track $index) {
-                  @if (
-                    $index > 0 &&
-                    $index < tr.path.points.length - 1 &&
-                    pt.state &&
-                    pt.state !== 'neutral'
-                  ) {
+                <polyline
+                  [attr.points]="tr.pointsString"
+                  fill="none"
+                  stroke="white"
+                  [style.opacity]="tr.style.isDashed ? 1 : 0.7"
+                  [attr.stroke-width]="
+                    tr.width * 1000 + (tr.style.isDashed ? 2.5 : 1.5)
+                  "
+                  [attr.stroke-dasharray]="
+                    tr.style.isDashed ? '10, 10' : 'none'
+                  "
+                  stroke-linejoin="round"
+                  stroke-linecap="round"
+                  class="transition-all duration-300"
+                />
+                <polyline
+                  [attr.points]="tr.pointsString"
+                  fill="none"
+                  [attr.stroke]="tr.style.stroke"
+                  [style.color]="tr.style.stroke"
+                  [attr.stroke-width]="tr.width * 1000"
+                  [attr.stroke-dasharray]="
+                    tr.style.isDashed ? '10, 10' : 'none'
+                  "
+                  stroke-linejoin="round"
+                  stroke-linecap="round"
+                  class="transition-all duration-300"
+                  [class.selected-line-glow]="isGlowActive() && isSel"
+                />
+                @if (isTraverse) {
+                  @for (pt of tr.path.points; track $index) {
                     @let ptColor =
                       pt.state | topoPointStateColor: tr.style.stroke;
-                    @let label = pt.state | topoPointStateLabel;
-                    @let ptR = tr.width * 1400;
-                    @let pillW =
-                      tr.width *
-                      (pt.state === 'match'
-                        ? 5800
-                        : pt.state === 'start'
-                          ? 5500
-                          : pt.state === 'foot'
-                            ? 5000
-                            : 4200);
-                    @let pillH = tr.width * 2100;
-                    @let pillY = pt.y * hScale + ptR + pillH * 0.45;
+                    @let badge = pt.state | topoPointStateBadge;
+                    @let ptR = tr.width * 1800;
                     <circle
                       [attr.cx]="pt.x * 1000"
                       [attr.cy]="pt.y * hScale"
                       [attr.r]="ptR"
-                      fill="white"
-                      [attr.stroke]="tr.style.stroke"
-                      stroke-width="1.5"
+                      [attr.fill]="tr.style.stroke"
+                      stroke="white"
+                      stroke-width="1"
                     />
-                    <g class="pointer-events-none" style="user-select: none">
-                      <rect
-                        [attr.x]="pt.x * 1000 - pillW / 2"
-                        [attr.y]="pillY - pillH / 2"
-                        [attr.width]="pillW"
-                        [attr.height]="pillH"
-                        [attr.rx]="pillH / 2"
-                        [attr.fill]="ptColor"
-                        stroke="white"
-                        stroke-width="0.75"
-                      />
-                      <text
-                        [attr.x]="pt.x * 1000"
-                        [attr.y]="pillY + pillH * 0.32"
-                        text-anchor="middle"
-                        fill="white"
-                        font-weight="bold"
-                        [attr.font-size]="tr.width * 1500"
-                        font-family="sans-serif"
-                        style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                      >
-                        {{ label }}
-                      </text>
-                    </g>
+                    <text
+                      [attr.x]="pt.x * 1000"
+                      [attr.y]="pt.y * hScale + ptR * 0.35"
+                      text-anchor="middle"
+                      fill="white"
+                      font-weight="bold"
+                      [attr.font-size]="ptR * 0.85"
+                      style="pointer-events: none; user-select: none; text-shadow: 0 0 3px rgba(0,0,0,0.9)"
+                    >
+                      {{ $index + 1 }}
+                    </text>
+                    @if (badge) {
+                      @let label = pt.state | topoPointStateLabel;
+                      @let pillW =
+                        tr.width *
+                        (pt.state === 'match'
+                          ? 5800
+                          : pt.state === 'start'
+                            ? 5500
+                            : pt.state === 'foot'
+                              ? 5000
+                              : 4200);
+                      @let pillH = tr.width * 2100;
+                      @let pillY = pt.y * hScale + ptR + pillH * 0.45;
+                      <g class="pointer-events-none" style="user-select: none">
+                        <rect
+                          [attr.x]="pt.x * 1000 - pillW / 2"
+                          [attr.y]="pillY - pillH / 2"
+                          [attr.width]="pillW"
+                          [attr.height]="pillH"
+                          [attr.rx]="pillH / 2"
+                          [attr.fill]="ptColor"
+                          stroke="white"
+                          stroke-width="0.75"
+                        />
+                        <text
+                          [attr.x]="pt.x * 1000"
+                          [attr.y]="pillY + pillH * 0.32"
+                          text-anchor="middle"
+                          fill="white"
+                          font-weight="bold"
+                          [attr.font-size]="tr.width * 1500"
+                          font-family="sans-serif"
+                          style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
+                        >
+                          {{ label }}
+                        </text>
+                      </g>
+                    }
                   }
-                }
-                <!-- Last point / end dot -->
-                @if (tr.path.points[tr.path.points.length - 1]; as last) {
-                  @let isTop = last.state === 'top';
-                  @let endR = tr.width * 1200;
-                  <circle
-                    [attr.cx]="last.x * 1000"
-                    [attr.cy]="last.y * hScale"
-                    [attr.r]="endR"
-                    fill="white"
-                    [style.opacity]="tr.style.opacity"
-                    stroke="black"
-                    stroke-width="0.5"
-                    class="transition-all duration-300"
-                    [class.selected-circle-pulse]="!isGlowActive() && isSel"
-                  />
-                  @if (isTop) {
-                    @let pillW = tr.width * 4200;
-                    @let pillH = tr.width * 2100;
-                    @let pillY = last.y * hScale - endR - pillH * 0.45;
-                    <g class="pointer-events-none" style="user-select: none">
-                      <rect
-                        [attr.x]="last.x * 1000 - pillW / 2"
-                        [attr.y]="pillY - pillH / 2"
-                        [attr.width]="pillW"
-                        [attr.height]="pillH"
-                        [attr.rx]="pillH / 2"
-                        fill="#EF4444"
-                        stroke="white"
-                        stroke-width="0.75"
-                      />
-                      <text
-                        [attr.x]="last.x * 1000"
-                        [attr.y]="pillY + pillH * 0.32"
-                        text-anchor="middle"
+                } @else {
+                  <!-- Intermediate state points for polylines -->
+                  @for (pt of tr.path.points; track $index) {
+                    @if (
+                      $index > 0 &&
+                      $index < tr.path.points.length - 1 &&
+                      pt.state &&
+                      pt.state !== 'neutral'
+                    ) {
+                      @let ptColor =
+                        pt.state | topoPointStateColor: tr.style.stroke;
+                      @let label = pt.state | topoPointStateLabel;
+                      @let ptR = tr.width * 1400;
+                      @let pillW =
+                        tr.width *
+                        (pt.state === 'match'
+                          ? 5800
+                          : pt.state === 'start'
+                            ? 5500
+                            : pt.state === 'foot'
+                              ? 5000
+                              : 4200);
+                      @let pillH = tr.width * 2100;
+                      @let pillY = pt.y * hScale + ptR + pillH * 0.45;
+                      <circle
+                        [attr.cx]="pt.x * 1000"
+                        [attr.cy]="pt.y * hScale"
+                        [attr.r]="ptR"
                         fill="white"
-                        font-weight="bold"
-                        [attr.font-size]="tr.width * 1500"
-                        font-family="sans-serif"
-                        style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                      >
-                        TOP
-                      </text>
-                    </g>
+                        [attr.stroke]="tr.style.stroke"
+                        stroke-width="1.5"
+                      />
+                      <g class="pointer-events-none" style="user-select: none">
+                        <rect
+                          [attr.x]="pt.x * 1000 - pillW / 2"
+                          [attr.y]="pillY - pillH / 2"
+                          [attr.width]="pillW"
+                          [attr.height]="pillH"
+                          [attr.rx]="pillH / 2"
+                          [attr.fill]="ptColor"
+                          stroke="white"
+                          stroke-width="0.75"
+                        />
+                        <text
+                          [attr.x]="pt.x * 1000"
+                          [attr.y]="pillY + pillH * 0.32"
+                          text-anchor="middle"
+                          fill="white"
+                          font-weight="bold"
+                          [attr.font-size]="tr.width * 1500"
+                          font-family="sans-serif"
+                          style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
+                        >
+                          {{ label }}
+                        </text>
+                      </g>
+                    }
+                  }
+                  <!-- Last point / end dot -->
+                  @if (tr.path.points[tr.path.points.length - 1]; as last) {
+                    @let isTop = last.state === 'top';
+                    @let endR = tr.width * 1200;
+                    <circle
+                      [attr.cx]="last.x * 1000"
+                      [attr.cy]="last.y * hScale"
+                      [attr.r]="endR"
+                      fill="white"
+                      stroke="black"
+                      stroke-width="0.5"
+                      class="transition-all duration-300"
+                      [class.selected-circle-pulse]="!isGlowActive() && isSel"
+                    />
+                    @if (isTop) {
+                      @let pillW = tr.width * 4200;
+                      @let pillH = tr.width * 2100;
+                      @let pillY = last.y * hScale - endR - pillH * 0.45;
+                      <g class="pointer-events-none" style="user-select: none">
+                        <rect
+                          [attr.x]="last.x * 1000 - pillW / 2"
+                          [attr.y]="pillY - pillH / 2"
+                          [attr.width]="pillW"
+                          [attr.height]="pillH"
+                          [attr.rx]="pillH / 2"
+                          fill="#EF4444"
+                          stroke="white"
+                          stroke-width="0.75"
+                        />
+                        <text
+                          [attr.x]="last.x * 1000"
+                          [attr.y]="pillY + pillH * 0.32"
+                          text-anchor="middle"
+                          fill="white"
+                          font-weight="bold"
+                          [attr.font-size]="tr.width * 1500"
+                          font-family="sans-serif"
+                          style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
+                        >
+                          TOP
+                        </text>
+                      </g>
+                    }
                   }
                 }
               }
-            }
+            </g>
           }
         }
 
@@ -372,7 +383,8 @@ export interface RenderedRoute extends TopoRouteWithRoute {
               <!-- Traverse route grade pill at start point -->
               @if (tr.path.points[0]; as first) {
                 <g
-                  class="pointer-events-auto cursor-pointer"
+                  class="pointer-events-auto cursor-pointer transition-opacity duration-300"
+                  [style.opacity]="tr.style.opacity"
                   (click)="onPathClick($event, tr); $event.stopPropagation()"
                   (mouseenter)="hoverRoute.emit(tr.route_id)"
                   (mouseleave)="unhoverRoute.emit()"
@@ -404,7 +416,8 @@ export interface RenderedRoute extends TopoRouteWithRoute {
             } @else {
               <!-- Standard route grade circle at start point -->
               <g
-                class="pointer-events-auto cursor-pointer"
+                class="pointer-events-auto cursor-pointer transition-opacity duration-300"
+                [style.opacity]="tr.style.opacity"
                 (click)="onPathClick($event, tr); $event.stopPropagation()"
                 (mouseenter)="hoverRoute.emit(tr.route_id)"
                 (mouseleave)="unhoverRoute.emit()"

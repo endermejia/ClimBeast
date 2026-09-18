@@ -119,7 +119,9 @@ import { IS_BROWSER } from '../../app/is-browser';
   ],
   template: `
     <tui-scrollbar class="flex grow">
-      <section class="w-full max-w-5xl mx-auto p-4 flex flex-col min-h-full">
+      <section
+        class="w-full max-w-[1600px] mx-auto p-4 flex flex-col min-h-full"
+      >
         @if (center(); as c) {
           <div class="mb-6">
             <app-section-header

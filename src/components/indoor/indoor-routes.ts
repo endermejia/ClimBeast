@@ -184,7 +184,9 @@ import { EmptyStateComponent } from '../ui/empty-state';
                     {{
                       col === 'actions' || col === 'admin_actions'
                         ? ''
-                        : (col | translate)
+                        : col === 'grade'
+                          ? ('gradeShort' | translate)
+                          : (col | translate)
                     }}
                   </th>
                 }

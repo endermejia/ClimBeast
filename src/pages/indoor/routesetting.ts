@@ -52,7 +52,7 @@ import { matchesQuery } from '../../utils';
   ],
   template: `
     <tui-scrollbar class="flex grow">
-      <section class="w-full max-w-5xl mx-auto p-4 pb-32">
+      <section class="w-full max-w-[1600px] mx-auto p-4 pb-32">
         <header class="flex items-center justify-between gap-2">
           @let centersCount = filtered().length;
           <h1

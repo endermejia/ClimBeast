@@ -387,7 +387,7 @@ export class AreaFormComponent {
   readonly isAdmin: Signal<boolean> = computed(() => this.authState.isAdmin());
 
   readonly canEditAdminSettings: Signal<boolean> = computed(() => {
-    const isAdmin = this.authState.canEditAsAdmin() || this.authState.isAdmin();
+    const isAdmin = this.authState.isAdmin();
     const areaId = this.editingId;
     const isAreaAdmin = areaId
       ? !!this.authState.areaAdminPermissions()[areaId]

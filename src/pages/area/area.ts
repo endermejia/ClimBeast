@@ -118,7 +118,7 @@ import { IS_BROWSER } from '../../app/is-browser';
   ],
   template: `
     <tui-scrollbar class="flex grow">
-      <section class="w-full max-w-5xl mx-auto p-4">
+      <section class="w-full max-w-[1600px] mx-auto p-4">
         @let canEditAsAdmin = authState.canEditAsAdmin();
         @if (outdoorData.selectedArea(); as area) {
           @let canAreaAdmin = authState.areaAdminPermissions()[area.id];

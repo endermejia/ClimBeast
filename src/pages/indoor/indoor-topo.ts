@@ -123,6 +123,7 @@ import { TopoPageBase } from '../area/topo-page-base';
               [topoImage]="topoImageResource.value()"
               [topoName]="t.name"
               [renderedRoutes]="filteredRenderedTopoRoutes()"
+              [hideUnselected]="true"
               [hasAccess]="true"
               [selectedRouteId]="selectedRouteId()"
               [hoveredRouteId]="hoveredRouteId()"
@@ -134,15 +135,15 @@ import { TopoPageBase } from '../area/topo-page-base';
             <div class="flex flex-col h-full min-h-0 min-w-0 lg:col-span-1">
               <!-- Route Sliders Filters -->
               <div
-                class="px-4 py-3 flex flex-col gap-2.5 shrink-0 border-b border-(--tui-border-normal)"
+                class="px-3 md:px-4 py-2 md:py-2.5 flex flex-row lg:flex-col gap-3 lg:gap-2 shrink-0 border-b border-(--tui-border-normal)"
               >
                 <!-- Grade Slider -->
-                <div class="flex flex-col gap-1">
+                <div class="flex flex-col gap-1 flex-1 min-w-0">
                   <div
-                    class="flex items-center justify-between text-xs font-semibold h-5"
+                    class="flex items-center justify-between text-xs font-semibold h-5 gap-1 min-w-0"
                   >
-                    <span>{{ 'grade' | translate }}</span>
-                    <div class="flex items-center gap-1.5 font-medium">
+                    <span class="truncate">{{ 'grade' | translate }}</span>
+                    <div class="flex items-center gap-1.5 font-medium shrink-0">
                       @if (hasActiveGradeFilter()) {
                         <button
                           tuiIconButton
@@ -158,7 +159,7 @@ import { TopoPageBase } from '../area/topo-page-base';
                           {{ 'clear' | translate }}
                         </button>
                       }
-                      <div class="flex items-center gap-1 opacity-80">
+                      <div class="flex items-center gap-1 opacity-80 shrink-0">
                         <span>{{ selectedMinGradeLabel() }}</span>
                         <span>-</span>
                         <span>{{ selectedMaxGradeLabel() }}</span>
@@ -180,12 +181,14 @@ import { TopoPageBase } from '../area/topo-page-base';
 
                 <!-- Moves Slider -->
                 @if (hasMovesData()) {
-                  <div class="flex flex-col gap-1">
+                  <div class="flex flex-col gap-1 flex-1 min-w-0">
                     <div
-                      class="flex items-center justify-between text-xs font-semibold h-5"
+                      class="flex items-center justify-between text-xs font-semibold h-5 gap-1 min-w-0"
                     >
-                      <span>{{ 'moves' | translate }}</span>
-                      <div class="flex items-center gap-1.5 font-medium">
+                      <span class="truncate">{{ 'moves' | translate }}</span>
+                      <div
+                        class="flex items-center gap-1.5 font-medium shrink-0"
+                      >
                         @if (hasActiveMovesFilter()) {
                           <button
                             tuiIconButton
@@ -201,7 +204,9 @@ import { TopoPageBase } from '../area/topo-page-base';
                             {{ 'clear' | translate }}
                           </button>
                         }
-                        <div class="flex items-center gap-1 opacity-80">
+                        <div
+                          class="flex items-center gap-1 opacity-80 shrink-0"
+                        >
                           <span>{{ currentMovesRange()[0] }}</span>
                           <span>-</span>
                           <span>{{ currentMovesRange()[1] }}</span>
@@ -229,7 +234,6 @@ import { TopoPageBase } from '../area/topo-page-base';
                 [columns]="columns()"
                 [isMobile]="isMobile"
                 [selectedRouteId]="selectedRouteId()"
-                [hiddenRouteIds]="hiddenRouteIds()"
                 [hasAccess]="true"
                 [isIndoor]="true"
                 [direction]="direction()"
@@ -238,8 +242,6 @@ import { TopoPageBase } from '../area/topo-page-base';
                 (selectedRouteIdChange)="selectedRouteId.set($event)"
                 (hoveredRouteIdChange)="hoveredRouteId.set($event)"
                 (sortChange)="onSortChange($event)"
-                (toggleRouteVisibility)="toggleRouteVisibility($event)"
-                (toggleAllRoutesVisibility)="toggleAllRoutesVisibility()"
               />
             </div>
           </div>
@@ -329,17 +331,14 @@ export class IndoorTopoComponent extends TopoPageBase {
   });
 
   protected readonly columns = computed(() => {
-    const isMobile = this.layoutService.isMobile();
     const hasMoves = this.hasMovesData();
-    return isMobile
-      ? ['visibility', 'grade', 'name', ...(hasMoves ? ['moves'] : [])]
-      : [
-          'visibility',
-          'grade',
-          'name',
-          ...(hasMoves ? ['moves'] : []),
-          'actions',
-        ];
+    return [
+      'index',
+      'grade',
+      'name',
+      ...(hasMoves ? ['moves'] : []),
+      'actions',
+    ];
   });
 
   protected override readonly direction = signal<TuiSortDirection>(
@@ -417,8 +416,6 @@ export class IndoorTopoComponent extends TopoPageBase {
     return mr[0] > 0 || mr[1] < maxMoves;
   });
 
-  protected readonly hiddenRouteIds = signal<Set<string | number>>(new Set());
-
   protected onGradeRangeChange(range: [number, number]): void {
     if (!range || range.length !== 2) return;
     const lo = clamp(Math.round(range[0]), 0, this.maxGradeIndex);
@@ -444,87 +441,6 @@ export class IndoorTopoComponent extends TopoPageBase {
 
   protected resetMovesFilter(): void {
     this.filterState.resetIndoorTopoMovesRange();
-  }
-
-  protected toggleAllRoutesVisibility(): void {
-    this.preSoloHiddenRouteIds = null;
-    const allRoutes = this.tableData();
-    const hidden = this.hiddenRouteIds();
-    if (hidden.size === 0) {
-      this.hiddenRouteIds.set(new Set(allRoutes.map((r) => r._ref.route_id)));
-    } else {
-      this.hiddenRouteIds.set(new Set());
-    }
-  }
-
-  private preSoloHiddenRouteIds: Set<string | number> | null = null;
-
-  protected toggleRouteVisibility(event: {
-    routeId: string | number;
-    isAlt?: boolean;
-  }): void {
-    const { routeId, isAlt } = event;
-    const allRoutes = this.tableData();
-    const totalCount = allRoutes.length;
-    this.hiddenRouteIds.update((set) => {
-      const isHidden = set.has(routeId);
-      const isSolo = totalCount > 1 && !isHidden && set.size >= totalCount - 1;
-
-      if (isAlt) {
-        if (isSolo) {
-          const saved = this.preSoloHiddenRouteIds ?? new Set();
-          this.preSoloHiddenRouteIds = null;
-          return new Set([...saved].filter((id) => id !== routeId));
-        }
-        if (!this.preSoloHiddenRouteIds) {
-          this.preSoloHiddenRouteIds = new Set(set);
-        }
-        const allOtherIds = allRoutes
-          .map((r) => r._ref.route_id)
-          .filter((id) => id !== routeId);
-        this.selectedRouteId.set(routeId);
-        return new Set(allOtherIds);
-      }
-
-      if (totalCount <= 1) {
-        const next = new Set(set);
-        if (isHidden) {
-          next.delete(routeId);
-        } else {
-          next.add(routeId);
-        }
-        return next;
-      }
-
-      // Cyclical order: ver (visible) -> focus (solo) -> ocultar (hidden) -> ver (visible)
-      if (isSolo) {
-        // focus -> ocultar: restore pre-solo routes, hide this route
-        const saved = this.preSoloHiddenRouteIds ?? new Set();
-        this.preSoloHiddenRouteIds = null;
-        if (this.selectedRouteId() === routeId) {
-          this.selectedRouteId.set(null);
-        }
-        const next = new Set(saved);
-        next.add(routeId);
-        return next;
-      } else if (isHidden) {
-        // ocultar -> ver: unhide this route
-        this.preSoloHiddenRouteIds = null;
-        const next = new Set(set);
-        next.delete(routeId);
-        return next;
-      } else {
-        // ver -> focus: hide all other routes
-        if (!this.preSoloHiddenRouteIds) {
-          this.preSoloHiddenRouteIds = new Set(set);
-        }
-        const allOtherIds = allRoutes
-          .map((r) => r._ref.route_id)
-          .filter((id) => id !== routeId);
-        this.selectedRouteId.set(routeId);
-        return new Set(allOtherIds);
-      }
-    });
   }
 
   protected readonly tableData = computed(() => {
@@ -589,14 +505,11 @@ export class IndoorTopoComponent extends TopoPageBase {
 
   protected readonly filteredRenderedTopoRoutes = computed(() => {
     const all = this.renderedTopoRoutes();
-    const hidden = this.hiddenRouteIds();
     const gr = this.currentGradeRange();
     const mr = this.currentMovesRange();
     const maxMoves = this.maxPossibleMoves();
 
     return all.filter((tr) => {
-      if (hidden.has(tr.route_id)) return false;
-
       if (mr && (mr[0] > 0 || mr[1] < maxMoves)) {
         const moves = calculateRouteMoves(tr.path);
         if (moves < mr[0] || moves > mr[1]) return false;

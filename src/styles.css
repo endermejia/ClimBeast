@@ -165,44 +165,32 @@ td.sticky-col-right,
 
 /* Sticky drop shadows when stuck — clip to horizontal side only */
 .table-stuck-left th.sticky-col-left,
-.table-stuck-left [tuiTh].sticky-col-left {
-  box-shadow: none !important;
-}
-
 .table-stuck-left td.sticky-col-left,
+.table-stuck-left [tuiTh].sticky-col-left,
 .table-stuck-left [tuiTd].sticky-col-left {
   box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.16) !important;
   clip-path: inset(0 -20px 0 0);
 }
 
 .table-stuck-right th.sticky-col-right,
-.table-stuck-right [tuiTh].sticky-col-right {
-  box-shadow: none !important;
-}
-
 .table-stuck-right td.sticky-col-right,
+.table-stuck-right [tuiTh].sticky-col-right,
 .table-stuck-right [tuiTd].sticky-col-right {
   box-shadow: -4px 0 8px -2px rgba(0, 0, 0, 0.16) !important;
   clip-path: inset(0 0 0 -20px);
 }
 
 .dark .table-stuck-left th.sticky-col-left,
-.dark .table-stuck-left [tuiTh].sticky-col-left {
-  box-shadow: none !important;
-}
-
 .dark .table-stuck-left td.sticky-col-left,
+.dark .table-stuck-left [tuiTh].sticky-col-left,
 .dark .table-stuck-left [tuiTd].sticky-col-left {
   box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.45) !important;
   clip-path: inset(0 -20px 0 0);
 }
 
 .dark .table-stuck-right th.sticky-col-right,
-.dark .table-stuck-right [tuiTh].sticky-col-right {
-  box-shadow: none !important;
-}
-
 .dark .table-stuck-right td.sticky-col-right,
+.dark .table-stuck-right [tuiTh].sticky-col-right,
 .dark .table-stuck-right [tuiTd].sticky-col-right {
   box-shadow: -4px 0 8px -2px rgba(0, 0, 0, 0.45) !important;
   clip-path: inset(0 0 0 -20px);

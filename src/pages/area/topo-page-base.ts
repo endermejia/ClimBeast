@@ -102,23 +102,28 @@ export abstract class TopoPageBase {
     const hoveredId = this.hoveredRouteId();
     const ratio = this.imageRatio();
     const hScale = 1000 / ratio;
+    const hasSelection = selectedId !== null && selectedId !== undefined;
     const routes = [...t.topo_routes];
     routes.sort((a, b) => {
       const getPriority = (id: string | number) => {
-        if (id === selectedId) return 2;
-        if (id === hoveredId) return 1;
+        if (id === selectedId || String(id) === String(selectedId)) return 2;
+        if (id === hoveredId || String(id) === String(hoveredId)) return 1;
         return 0;
       };
       return getPriority(a.route_id) - getPriority(b.route_id);
     });
     return routes.map((tr) => {
-      const isSelected = tr.route_id === selectedId;
-      const isHovered = tr.route_id === hoveredId;
+      const isSelected =
+        tr.route_id === selectedId ||
+        String(tr.route_id) === String(selectedId);
+      const isHovered =
+        tr.route_id === hoveredId || String(tr.route_id) === String(hoveredId);
       const style = getRouteStyleProperties(
         isSelected,
         isHovered,
         tr.route.grade,
         tr.route.color || tr.path?.color,
+        hasSelection,
       );
       const width = getRouteStrokeWidth(
         isSelected,

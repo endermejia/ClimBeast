@@ -380,7 +380,7 @@ export class CragRoutesComponent {
           for (const local of matchingLocals) {
             const currentSlugs = local.eight_anu_route_slugs || [];
             if (!currentSlugs.includes(itemSlug)) {
-              if (this.authState.editingMode()) {
+              if (this.canEditAsAdmin() || this.canAreaAdmin()) {
                 updatePromises.push(
                   this.routesService.update(
                     local.id,

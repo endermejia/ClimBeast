@@ -5,20 +5,16 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import { IS_BROWSER } from '../app/is-browser';
 
-import { MockLocalStorage } from '../testing/mock-local-storage';
 import { MockSupabaseService } from '../testing/mock-supabase.service';
 import { AuthStateService } from './auth-state.service';
-import { LocalStorage } from './local-storage';
 import { SupabaseService } from './supabase.service';
 
 describe('AuthStateService', () => {
   let service: AuthStateService;
   let mockSupabase: MockSupabaseService;
-  let mockStorage: MockLocalStorage;
 
   beforeEach(() => {
     mockSupabase = new MockSupabaseService();
-    mockStorage = new MockLocalStorage();
 
     TestBed.configureTestingModule({
       providers: [
@@ -26,21 +22,9 @@ describe('AuthStateService', () => {
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: IS_BROWSER, useValue: true },
         { provide: SupabaseService, useValue: mockSupabase },
-        { provide: LocalStorage, useValue: mockStorage },
       ],
     });
     service = TestBed.inject(AuthStateService);
-  });
-
-  describe('editingMode', () => {
-    it('defaults to false', () => {
-      expect(service.editingMode()).toBe(false);
-    });
-
-    it('can be set and read', () => {
-      service.editingMode.set(true);
-      expect(service.editingMode()).toBe(true);
-    });
   });
 
   describe('isAdmin', () => {
@@ -68,16 +52,7 @@ describe('AuthStateService', () => {
   });
 
   describe('canEditAsAdmin', () => {
-    it('returns false when not editing mode', () => {
-      mockSupabase.setUserProfile({
-        id: 'u1',
-        is_admin: true,
-      } as never);
-      expect(service.canEditAsAdmin()).toBe(false);
-    });
-
     it('returns false when not admin', () => {
-      service.editingMode.set(true);
       mockSupabase.setUserProfile({
         id: 'u1',
         is_admin: false,
@@ -85,8 +60,7 @@ describe('AuthStateService', () => {
       expect(service.canEditAsAdmin()).toBe(false);
     });
 
-    it('returns true when both editing mode and admin', () => {
-      service.editingMode.set(true);
+    it('returns true when admin', () => {
       mockSupabase.setUserProfile({
         id: 'u1',
         is_admin: true,
@@ -107,60 +81,8 @@ describe('AuthStateService', () => {
     });
   });
 
-  describe('hydrateEditingMode', () => {
-    it('reads from localStorage and sets editing mode', () => {
-      mockStorage.setItem(service.editingModeStorageKey, 'true');
-      service.hydrateEditingMode();
-      expect(service.editingMode()).toBe(true);
-    });
-
-    it('does not change editing mode when key is missing', () => {
-      service.hydrateEditingMode();
-      expect(service.editingMode()).toBe(false);
-    });
-  });
-
-  describe('persistEditingMode', () => {
-    it('saves current editing mode to localStorage', () => {
-      service.editingMode.set(true);
-      service.persistEditingMode();
-      expect(mockStorage.getItem(service.editingModeStorageKey)).toBe('true');
-    });
-
-    it('saves false when editing mode is off', () => {
-      service.persistEditingMode();
-      expect(mockStorage.getItem(service.editingModeStorageKey)).toBe('false');
-    });
-  });
-
-  describe('syncFromProfile', () => {
-    it('sets editing mode from profile', () => {
-      mockSupabase.setUserProfile({
-        id: 'u1',
-        editing_mode: true,
-      } as never);
-      service.syncFromProfile();
-      expect(service.editingMode()).toBe(true);
-    });
-
-    it('does nothing when profile is null', () => {
-      service.syncFromProfile();
-      expect(service.editingMode()).toBe(false);
-    });
-
-    it('handles null editing_mode in profile', () => {
-      mockSupabase.setUserProfile({
-        id: 'u1',
-        editing_mode: null,
-      } as never);
-      service.syncFromProfile();
-      expect(service.editingMode()).toBe(false);
-    });
-  });
-
   describe('checkAreaEditPermission', () => {
     it('returns true when canEditAsAdmin', () => {
-      service.editingMode.set(true);
       mockSupabase.setUserProfile({
         id: 'u1',
         is_admin: true,
@@ -174,21 +96,20 @@ describe('AuthStateService', () => {
       expect(service.checkAreaEditPermission(area)).toBe(true);
     });
 
-    it('returns false when not editing mode', () => {
+    it('returns false when not creator and not admin', () => {
       mockSupabase.setUserProfile({
         id: 'u1',
         is_admin: false,
       } as never);
       const area = {
         id: 1,
-        user_creator_id: 'u1',
+        user_creator_id: 'other-user',
         created_at: new Date().toISOString(),
       };
       expect(service.checkAreaEditPermission(area)).toBe(false);
     });
 
     it('returns false when area is null', () => {
-      service.editingMode.set(true);
       mockSupabase.setUserProfile({
         id: 'u1',
         is_admin: false,
@@ -197,7 +118,6 @@ describe('AuthStateService', () => {
     });
 
     it('returns true when creator within one week', () => {
-      service.editingMode.set(true);
       mockSupabase.setUserProfile({
         id: 'u1',
         is_admin: false,
@@ -215,7 +135,6 @@ describe('AuthStateService', () => {
     });
 
     it('returns false when creator but older than one week', () => {
-      service.editingMode.set(true);
       mockSupabase.setUserProfile({
         id: 'u1',
         is_admin: false,
@@ -233,7 +152,6 @@ describe('AuthStateService', () => {
     });
 
     it('returns true when area has no created_at (isWithinOneWeek defaults true)', () => {
-      service.editingMode.set(true);
       mockSupabase.setUserProfile({
         id: 'u1',
         is_admin: false,
@@ -250,7 +168,6 @@ describe('AuthStateService', () => {
 
   describe('checkCragEditPermission', () => {
     it('returns true when canEditAsAdmin', () => {
-      service.editingMode.set(true);
       mockSupabase.setUserProfile({
         id: 'u1',
         is_admin: true,
@@ -266,7 +183,6 @@ describe('AuthStateService', () => {
     });
 
     it('returns false when crag is null', () => {
-      service.editingMode.set(true);
       mockSupabase.setUserProfile({
         id: 'u1',
         is_admin: false,
@@ -277,7 +193,6 @@ describe('AuthStateService', () => {
 
   describe('checkRouteEditPermission', () => {
     it('returns true when canEditAsAdmin', () => {
-      service.editingMode.set(true);
       mockSupabase.setUserProfile({
         id: 'u1',
         is_admin: true,
@@ -293,7 +208,6 @@ describe('AuthStateService', () => {
     });
 
     it('returns false when route is null', () => {
-      service.editingMode.set(true);
       mockSupabase.setUserProfile({
         id: 'u1',
         is_admin: false,
@@ -314,20 +228,12 @@ describe('AuthStateService', () => {
       expect(service.canEditIndoorInCenter('center-456')).toBe(false);
     });
 
-    it('returns true when user is center admin in editing mode', () => {
-      service.editingMode.set(true);
+    it('returns true when user is center admin', () => {
       mockSupabase.setAdminIndoorCenters(['center-123']);
       expect(service.canEditIndoorInCenter('center-123')).toBe(true);
     });
 
-    it('returns false when user is center admin but editing mode is off', () => {
-      service.editingMode.set(false);
-      mockSupabase.setAdminIndoorCenters(['center-123']);
-      expect(service.canEditIndoorInCenter('center-123')).toBe(false);
-    });
-
-    it('returns true when user is global admin in editing mode', () => {
-      service.editingMode.set(true);
+    it('returns true when user is global admin', () => {
       mockSupabase.setUserProfile({
         id: 'u1',
         is_admin: true,

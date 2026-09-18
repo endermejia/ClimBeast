@@ -8,16 +8,10 @@ import {
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
-import { TuiAppearance, TuiDialogService, TuiIcon } from '@taiga-ui/core';
-import {
-  TUI_CONFIRM,
-  TuiConfirmData,
-  TuiSegmented,
-  TuiSwitch,
-} from '@taiga-ui/kit';
+import { TuiAppearance, TuiIcon } from '@taiga-ui/core';
+import { TuiSegmented } from '@taiga-ui/kit';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { AuthStateService } from '../../services/auth-state.service';
 import { SupabaseService } from '../../services/supabase.service';
@@ -29,14 +23,7 @@ import { Themes } from '../../models';
 
 @Component({
   selector: 'app-menu-options-dropdown',
-  imports: [
-    FormsModule,
-    TranslatePipe,
-    TuiAppearance,
-    TuiIcon,
-    TuiSegmented,
-    TuiSwitch,
-  ],
+  imports: [FormsModule, TranslatePipe, TuiAppearance, TuiIcon, TuiSegmented],
   template: `
     <div
       role="menu"
@@ -160,23 +147,6 @@ import { Themes } from '../../models';
 
       <div class="h-px bg-(--tui-border-normal) my-1 mx-2"></div>
 
-      <!-- Editing Mode -->
-      <label
-        class="flex items-center justify-between gap-4 px-3 py-2 w-full cursor-pointer hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors"
-      >
-        <div class="flex items-center gap-3 text-sm">
-          <tui-icon icon="@tui.pencil" class="opacity-70" />
-          {{ 'editingMode' | translate }}
-        </div>
-        <input
-          tuiSwitch
-          type="checkbox"
-          [ngModel]="authState.editingMode()"
-          (ngModelChange)="toggleEditingMode($event)"
-          autocomplete="off"
-        />
-      </label>
-
       <!-- Theme Selection -->
       <div
         class="flex items-center justify-between gap-4 px-3 py-2 w-full hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors"
@@ -233,8 +203,6 @@ export class MenuOptionsDropdownComponent {
   private readonly supabase = inject(SupabaseService);
   private readonly userProfilesService = inject(UserProfilesService);
   private readonly toast = inject(ToastService);
-  private readonly translate = inject(TranslateService);
-  private readonly dialogs = inject(TuiDialogService);
 
   protected navigateToProfile(): void {
     this.closeDropdown.emit();
@@ -284,55 +252,6 @@ export class MenuOptionsDropdownComponent {
   protected async logout(): Promise<void> {
     this.closeDropdown.emit();
     await this.supabase.logout();
-  }
-
-  protected async toggleEditingMode(enabled: boolean): Promise<boolean> {
-    if (this.authState.editingMode() === enabled) {
-      return true;
-    }
-
-    if (enabled && !this.authState.isAdmin()) {
-      const hasPermissions = this.authState.isAreaAdmin();
-      const messageKey = hasPermissions
-        ? 'profile.editing.confirmationEquipper'
-        : 'profile.editing.confirmationUser';
-
-      const confirmed = await firstValueFrom(
-        this.dialogs.open<boolean>(TUI_CONFIRM, {
-          label: this.translate.instant('profile.editing.confirmationTitle'),
-          size: 'm',
-          data: {
-            content: this.translate.instant(messageKey),
-            yes: this.translate.instant('accept'),
-            no: this.translate.instant('cancel'),
-          } as TuiConfirmData,
-        }),
-        { defaultValue: false },
-      );
-
-      if (!confirmed) {
-        this.authState.editingMode.set(false);
-        return false;
-      }
-    }
-
-    this.authState.editingMode.set(enabled);
-    const result = await this.userProfilesService.updateUserProfile({
-      editing_mode: enabled,
-    });
-
-    if (!result.success) {
-      console.error(
-        '[MenuOptionsDropdownComponent] Error updating editing mode:',
-        result.error,
-      );
-      this.toast.error('profile.saveError');
-      this.authState.editingMode.set(!enabled);
-      return false;
-    } else {
-      this.toast.success('profile.updated.editing_mode');
-      return true;
-    }
   }
 
   protected toggleTheme(dark: boolean): void {

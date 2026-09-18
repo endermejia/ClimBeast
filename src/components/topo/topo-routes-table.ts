@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   effect,
   inject,
   input,
@@ -27,11 +26,11 @@ import {
   TuiButton,
   TuiDataList,
   TuiDropdown,
+  TuiHint,
   TuiIcon,
   TuiLink,
   TuiScrollbar,
 } from '@taiga-ui/core';
-import { TuiAvatar } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
@@ -41,13 +40,9 @@ import { RoutesService } from '../../services/routes.service';
 
 import { type TopoRouteWithRoute } from '../../models';
 
-import {
-  AscentInfoPipe,
-  TableSorterPipe,
-  TopoIsRouteVisiblePipe,
-  TopoRouteVisibilityStatePipe,
-} from '../../pipes';
+import { AscentInfoPipe, TableSorterPipe } from '../../pipes';
 
+import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
 import { PaywallComponent } from '../paywall/paywall';
 import { GradeComponent } from '../ui/avatar-grade';
 import { EmptyStateComponent } from '../ui/empty-state';
@@ -60,19 +55,18 @@ import type { TopoRouteRow } from './topo.types';
     class: 'block w-full h-full min-w-0 min-h-0 overflow-hidden',
   },
   imports: [
+    ButtonAscentTypeComponent,
     EmptyStateComponent,
     GradeComponent,
     PaywallComponent,
     RouterLink,
     AscentInfoPipe,
     TableSorterPipe,
-    TopoIsRouteVisiblePipe,
-    TopoRouteVisibilityStatePipe,
     TranslatePipe,
-    TuiAvatar,
     TuiButton,
     TuiDataList,
     TuiDropdown,
+    TuiHint,
     TuiIcon,
     TuiLink,
     TuiScrollbar,
@@ -114,40 +108,11 @@ import type { TopoRouteRow } from './topo.types';
                       [style.min-width.px]="isMobile() ? null : COL_MIN_PX[col]"
                       [style.max-width.px]="isMobile() ? null : COL_MIN_PX[col]"
                       class="text-center"
-                      [class.p-0!]="col === 'visibility'"
                     >
                       <div
                         class="flex items-center justify-center w-full h-full min-w-0"
                       >
                         @switch (col) {
-                          @case ('visibility') {
-                            <button
-                              tuiIconButton
-                              type="button"
-                              size="xs"
-                              class="rounded-full! shrink-0"
-                              [appearance]="
-                                isAllRoutesHidden() ? 'flat-grayscale' : 'flat'
-                              "
-                              [iconStart]="
-                                isAllRoutesHidden()
-                                  ? '@tui.eye-off'
-                                  : '@tui.eye'
-                              "
-                              [title]="
-                                (!isAllRoutesVisible() ? 'showAll' : 'hideAll')
-                                  | translate
-                              "
-                              (click.zoneless)="
-                                onToggleAllRoutesVisibility($event)
-                              "
-                            >
-                              {{
-                                (!isAllRoutesVisible() ? 'showAll' : 'hideAll')
-                                  | translate
-                              }}
-                            </button>
-                          }
                           @case ('index') {
                             #
                           }
@@ -201,13 +166,6 @@ import type { TopoRouteRow } from './topo.types';
                           ? 'var(--tui-status-info-pale)'
                           : ''
                     "
-                    [class.opacity-50]="
-                      isIndoor() &&
-                      !(
-                        item._ref.route_id
-                        | topoIsRouteVisible: hiddenRouteIds()
-                      )
-                    "
                     class="group cursor-pointer"
                     (mouseenter)="hoveredRouteIdChange.emit(item._ref.route_id)"
                     (mouseleave)="hoveredRouteIdChange.emit(null)"
@@ -218,7 +176,6 @@ import type { TopoRouteRow } from './topo.types';
                         *tuiCell="col"
                         tuiTd
                         class="overflow-hidden text-center"
-                        [class.p-0!]="col === 'visibility'"
                       >
                         @switch (col) {
                           @case ('index') {
@@ -226,61 +183,6 @@ import type { TopoRouteRow } from './topo.types';
                               class="flex items-center justify-center w-full h-full min-w-0"
                             >
                               {{ item.index + 1 }}
-                            </div>
-                          }
-                          @case ('visibility') {
-                            <div
-                              class="flex items-center justify-center w-full h-full min-w-0"
-                            >
-                              @let visState =
-                                item._ref.route_id
-                                  | topoRouteVisibilityState
-                                    : hiddenRouteIds()
-                                    : sortedTableData().length;
-                              <button
-                                tuiIconButton
-                                type="button"
-                                size="xs"
-                                class="rounded-full! shrink-0"
-                                [appearance]="
-                                  visState === 'solo'
-                                    ? 'accent'
-                                    : visState === 'hidden'
-                                      ? 'flat-grayscale'
-                                      : 'flat'
-                                "
-                                [iconStart]="
-                                  visState === 'hidden'
-                                    ? '@tui.eye-off'
-                                    : visState === 'solo'
-                                      ? '@tui.scan-eye'
-                                      : '@tui.eye'
-                                "
-                                [title]="
-                                  (visState === 'visible'
-                                    ? 'showOnly'
-                                    : visState === 'solo'
-                                      ? 'hide'
-                                      : 'show'
-                                  ) | translate
-                                "
-                                (click.zoneless)="
-                                  onToggleRouteVisibility(
-                                    item._ref.route_id,
-                                    $event
-                                  );
-                                  $event.stopPropagation()
-                                "
-                              >
-                                {{
-                                  (visState === 'visible'
-                                    ? 'showOnly'
-                                    : visState === 'solo'
-                                      ? 'hide'
-                                      : 'show'
-                                  ) | translate
-                                }}
-                              </button>
                             </div>
                           }
                           @case ('name') {
@@ -293,7 +195,7 @@ import type { TopoRouteRow } from './topo.types';
                                 <a
                                   tuiLink
                                   [routerLink]="item.link"
-                                  class="text-left truncate block w-full"
+                                  class="text-left truncate max-w-full w-fit block"
                                 >
                                   {{ item.name }}
                                 </a>
@@ -318,7 +220,6 @@ import type { TopoRouteRow } from './topo.types';
                               <app-grade
                                 [grade]="item.grade"
                                 [kind]="item._ref.route.climbing_kind"
-                                [size]="isMobile() ? 's' : 'l'"
                               />
                             </div>
                           }
@@ -341,56 +242,77 @@ import type { TopoRouteRow } from './topo.types';
                               class="flex items-center justify-center gap-1 w-full h-full min-w-0"
                             >
                               @if (!item.climbed) {
-                                <button
-                                  tuiIconButton
-                                  [size]="isMobile() ? 'xs' : 'm'"
-                                  [appearance]="
-                                    item.project ? 'info' : 'neutral'
-                                  "
-                                  [iconStart]="
-                                    item.project
-                                      ? '@tui.bookmark'
-                                      : '@tui.circle-plus'
-                                  "
-                                  class="rounded-full!"
-                                  [tuiDropdown]="actionMenu"
-                                  [tuiDropdownOpen]="
-                                    openActionId() === item._ref.route_id
-                                  "
-                                  (tuiDropdownOpenChange)="
-                                    openActionId.set(
-                                      $event ? item._ref.route_id : null
-                                    )
-                                  "
-                                  (click.zoneless)="$event.stopPropagation()"
-                                >
-                                  {{
-                                    item.project
-                                      ? ('project' | translate)
-                                      : ('ascent.new' | translate)
-                                  }}
-                                </button>
-                                <ng-template #actionMenu>
-                                  <tui-data-list>
-                                    <button
-                                      tuiOption
-                                      appearance="positive"
-                                      (click)="
-                                        onLogAscent(item._ref);
-                                        openActionId.set(null)
-                                      "
-                                    >
-                                      <tui-icon
-                                        icon="@tui.square-check"
-                                        class="mr-2"
-                                      />
-                                      {{ 'ascent.new' | translate }}
-                                    </button>
-                                    @if (!isIndoor()) {
+                                @if (isIndoor()) {
+                                  <button
+                                    tuiIconButton
+                                    type="button"
+                                    [size]="isMobile() ? 's' : 'm'"
+                                    appearance="neutral"
+                                    iconStart="@tui.circle-plus"
+                                    class="rounded-full!"
+                                    [tuiHint]="'ascent.new' | translate"
+                                    (click.zoneless)="
+                                      onLogAscent(item._ref);
+                                      $event.stopPropagation()
+                                    "
+                                  >
+                                    {{ 'ascent.new' | translate }}
+                                  </button>
+                                } @else {
+                                  <button
+                                    tuiIconButton
+                                    type="button"
+                                    [size]="isMobile() ? 's' : 'm'"
+                                    [appearance]="
+                                      item.project ? 'info' : 'neutral'
+                                    "
+                                    [iconStart]="
+                                      item.project
+                                        ? '@tui.bookmark'
+                                        : '@tui.circle-plus'
+                                    "
+                                    class="rounded-full!"
+                                    [tuiDropdown]="actionMenu"
+                                    tuiDropdownAlign="end"
+                                    [tuiDropdownMinHeight]="140"
+                                    [tuiDropdownOpen]="
+                                      openActionId() === item._ref.route_id
+                                    "
+                                    (tuiDropdownOpenChange)="
+                                      openActionId.set(
+                                        $event ? item._ref.route_id : null
+                                      )
+                                    "
+                                    (click.zoneless)="$event.stopPropagation()"
+                                  >
+                                    {{
+                                      item.project
+                                        ? ('project' | translate)
+                                        : ('ascent.new' | translate)
+                                    }}
+                                  </button>
+                                  <ng-template #actionMenu>
+                                    <tui-data-list size="m">
+                                      <button
+                                        tuiOption
+                                        appearance="positive"
+                                        class="whitespace-nowrap"
+                                        (click)="
+                                          onLogAscent(item._ref);
+                                          openActionId.set(null)
+                                        "
+                                      >
+                                        <tui-icon
+                                          icon="@tui.square-check"
+                                          class="mr-2"
+                                        />
+                                        {{ 'ascent.new' | translate }}
+                                      </button>
                                       @if (item.project) {
                                         <button
                                           tuiOption
                                           appearance="negative"
+                                          class="whitespace-nowrap"
                                           (click)="
                                             onToggleProject(item);
                                             openActionId.set(null)
@@ -406,6 +328,7 @@ import type { TopoRouteRow } from './topo.types';
                                         <button
                                           tuiOption
                                           appearance="info"
+                                          class="whitespace-nowrap"
                                           (click)="
                                             onToggleProject(item);
                                             openActionId.set(null)
@@ -418,35 +341,24 @@ import type { TopoRouteRow } from './topo.types';
                                           {{ 'project.add' | translate }}
                                         </button>
                                       }
-                                    }
-                                  </tui-data-list>
-                                </ng-template>
+                                    </tui-data-list>
+                                  </ng-template>
+                                }
                               } @else if (
                                 item._ref.route.own_ascent;
                                 as ascentToEdit
                               ) {
-                                <span
-                                  tuiAvatar
-                                  class="cursor-pointer text-(--tui-text-primary-on-accent-1)!"
-                                  [style.background]="
-                                    (ascentToEdit?.type | ascentInfo).background
-                                  "
-                                  tabindex="0"
+                                <app-button-ascent-type
+                                  [size]="isMobile() ? 's' : 'm'"
+                                  [type]="ascentToEdit.type"
+                                  [active]="true"
+                                  class="cursor-pointer"
+                                  [tuiHint]="'ascent.view' | translate"
                                   (click.zoneless)="
                                     onViewAscent(ascentToEdit);
                                     $event.stopPropagation()
                                   "
-                                  (keydown.enter)="
-                                    onViewAscent(ascentToEdit);
-                                    $event.stopPropagation()
-                                  "
-                                >
-                                  <tui-icon
-                                    [icon]="
-                                      (ascentToEdit?.type | ascentInfo).icon
-                                    "
-                                  />
-                                </span>
+                                />
                               }
                             </div>
                           }
@@ -489,45 +401,15 @@ export class TopoRoutesTableComponent {
   topoId = input.required<string | number>();
   areaId = input(0);
   areaPrice = input(0);
-  hiddenRouteIds = input<Set<string | number>>(new Set());
 
   protected readonly openActionId = signal<string | number | null>(null);
 
   selectedRouteIdChange = output<string | number | null>();
   hoveredRouteIdChange = output<string | number | null>();
   sortChange = output<TuiTableSortChange<TopoRouteRow>>();
-  toggleRouteVisibility = output<{
-    routeId: string | number;
-    isAlt?: boolean;
-  }>();
-  toggleAllRoutesVisibility = output<void>();
-
-  protected readonly isAllRoutesHidden = computed(() => {
-    const data = this.sortedTableData();
-    if (data.length === 0) return false;
-    const hidden = this.hiddenRouteIds();
-    if (!hidden) return false;
-    if (hidden instanceof Set) {
-      return data.every((r) => hidden.has(r._ref.route_id));
-    }
-    return data.every((r) =>
-      (hidden as (string | number)[]).includes(r._ref.route_id),
-    );
-  });
-
-  protected readonly isAllRoutesVisible = computed(() => {
-    const hidden = this.hiddenRouteIds();
-    return (
-      !hidden ||
-      (hidden instanceof Set
-        ? hidden.size === 0
-        : (hidden as (string | number)[]).length === 0)
-    );
-  });
 
   /** Fixed pixel widths per column. Name is absent → TuiTh uses auto sizing. */
   protected readonly COL_MIN_PX: Record<string, number> = {
-    visibility: 40,
     index: 44,
     grade: 68,
     moves: 60,
@@ -557,19 +439,6 @@ export class TopoRoutesTableComponent {
 
   protected onSortChange(event: TuiTableSortChange<TopoRouteRow>): void {
     this.sortChange.emit(event);
-  }
-
-  protected onToggleRouteVisibility(
-    routeId: string | number,
-    event: Event,
-  ): void {
-    const isAlt = event instanceof MouseEvent ? event.altKey : false;
-    this.toggleRouteVisibility.emit({ routeId, isAlt });
-  }
-
-  protected onToggleAllRoutesVisibility(event: Event): void {
-    event.stopPropagation();
-    this.toggleAllRoutesVisibility.emit();
   }
 
   protected onLogAscent(tr: TopoRouteWithRoute): void {

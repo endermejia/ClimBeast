@@ -25,6 +25,5 @@ export interface ProfileConfigModel {
   deleteEmail: string;
   messageSound: boolean;
   notificationSound: boolean;
-  editingMode: boolean;
   restartFirstSteps: boolean;
 }

@@ -43,7 +43,7 @@ import { IS_BROWSER } from './is-browser';
     TuiRoot,
   ],
   template: `
-    <tui-root [attr.tuiTheme]="theme()">
+    <tui-root [attr.tuiTheme]="isDark() ? 'dark' : 'light'">
       <app-offline-banner />
       <div
         class="fixed inset-0 w-full h-full overflow-hidden flex flex-col-reverse md:flex-row"

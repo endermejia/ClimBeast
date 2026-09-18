@@ -1496,7 +1496,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
 
   loading = signal(false);
   selectedRoute = signal<TopoRouteWithRoute | null>(null);
-  sidebarOpen = signal(false);
+  sidebarOpen = signal(true);
 
   toggleSidebar(): void {
     this.sidebarOpen.update((v) => !v);
@@ -1689,6 +1689,12 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         });
       }
     });
+
+    if (this.context.data.isIndoor) {
+      this.hiddenRouteIds.set(
+        new Set(this.topoRoutes.map((tr) => tr.route_id)),
+      );
+    }
   }
 
   ngAfterViewInit(): void {

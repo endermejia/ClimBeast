@@ -85,7 +85,7 @@ import {
             (load)="onImageLoad($event)"
           />
           <app-topo-route-renderer
-            [renderedRoutes]="renderedRoutes()"
+            [renderedRoutes]="displayedRoutes()"
             [imageRatio]="imageRatio()"
             [selectedRouteId]="selectedRouteId()"
             [hoveredRouteId]="hoveredRouteId()"
@@ -161,7 +161,7 @@ import {
             (load)="onImageLoad($event)"
           />
           <app-topo-route-renderer
-            [renderedRoutes]="renderedRoutes()"
+            [renderedRoutes]="displayedRoutes()"
             [imageRatio]="imageRatio()"
             [selectedRouteId]="selectedRouteId()"
             [hoveredRouteId]="hoveredRouteId()"
@@ -230,9 +230,21 @@ export class TopoViewerComponent {
   readonly topoImage = input<string | null | undefined>(null);
   readonly topoName = input<string>('');
   readonly renderedRoutes = input<RenderedRoute[]>([]);
+  readonly hideUnselected = input(false);
   readonly hasAccess = input(false);
   readonly selectedRouteId = input<string | number | null>(null);
   readonly hoveredRouteId = input<string | number | null>(null);
+
+  protected readonly displayedRoutes = computed(() => {
+    const routes = this.renderedRoutes();
+    const selId = this.selectedRouteId();
+    if (this.hideUnselected() && selId !== null && selId !== undefined) {
+      return routes.filter(
+        (r) => r.route_id === selId || String(r.route_id) === String(selId),
+      );
+    }
+    return routes;
+  });
 
   readonly selectedRouteIdChange = output<string | number | null>();
   readonly hoveredRouteIdChange = output<string | number | null>();
@@ -293,7 +305,11 @@ export class TopoViewerComponent {
   protected readonly selectedRouteInfo = computed(() => {
     const id = this.selectedRouteId();
     if (!id) return null;
-    return this.renderedRoutes().find((r) => r.route_id === id) || null;
+    return (
+      this.renderedRoutes().find(
+        (r) => r.route_id === id || String(r.route_id) === String(id),
+      ) || null
+    );
   });
 
   constructor() {
@@ -342,7 +358,12 @@ export class TopoViewerComponent {
       return;
     }
 
-    if (!this.selectedRouteId() && !this.isFullscreen()) {
+    if (this.selectedRouteId() !== null) {
+      this.selectedRouteIdChange.emit(null);
+      return;
+    }
+
+    if (!this.isFullscreen()) {
       this.toggleFullscreen(!!this.topoImage());
     }
   }
@@ -373,13 +394,23 @@ export class TopoViewerComponent {
 
   private navigateDrawnRoute(step: number): void {
     const currentId = this.selectedRouteId();
-    if (!currentId) return;
     const drawn = this.renderedRoutes()
       .filter((tr) => tr.path && tr.path.points.length > 0)
       .sort((a, b) => a.number - b.number);
     if (drawn.length === 0) return;
-    const idx = drawn.findIndex((r) => r.route_id === currentId);
-    if (idx === -1) return;
+    if (!currentId) {
+      const initialIdx = step > 0 ? 0 : drawn.length - 1;
+      this.selectedRouteIdChange.emit(drawn[initialIdx].route_id);
+      return;
+    }
+    const idx = drawn.findIndex(
+      (r) =>
+        r.route_id === currentId || String(r.route_id) === String(currentId),
+    );
+    if (idx === -1) {
+      this.selectedRouteIdChange.emit(drawn[0].route_id);
+      return;
+    }
     const next = (idx + step + drawn.length) % drawn.length;
     this.selectedRouteIdChange.emit(drawn[next].route_id);
   }

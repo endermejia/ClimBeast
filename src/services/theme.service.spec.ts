@@ -49,7 +49,7 @@ describe('ThemeService', () => {
     );
     const colorScheme = document.querySelector('meta[name="color-scheme"]');
 
-    expect(themeColor?.getAttribute('content')).toBe('#0b1220');
+    expect(themeColor?.getAttribute('content')).toBe('#222');
     expect(statusBarStyle?.getAttribute('content')).toBe('black');
     expect(colorScheme?.getAttribute('content')).toBe('dark');
     expect(document.documentElement.getAttribute('tuiTheme')).toBe('dark');
@@ -57,7 +57,7 @@ describe('ThemeService', () => {
     service.setTheme(Themes.LIGHT);
     TestBed.flushEffects();
 
-    expect(themeColor?.getAttribute('content')).toBe('#0b1220');
+    expect(themeColor?.getAttribute('content')).toBe('#222');
     expect(statusBarStyle?.getAttribute('content')).toBe('black');
     expect(colorScheme?.getAttribute('content')).toBe('dark');
     expect(document.documentElement.getAttribute('tuiTheme')).toBe('light');

@@ -221,7 +221,7 @@ import { ROUTE_TABLE_SORTERS } from '../../utils';
                                       ? 'var(--tui-status-negative)'
                                       : ''
                                   "
-                                  class="align-self-start font-bold text-base truncate max-w-full block"
+                                  class="self-start font-bold text-base truncate max-w-full w-fit block"
                                 >
                                   {{ item.route || ('route' | translate) }}
                                 </a>
@@ -502,6 +502,8 @@ import { ROUTE_TABLE_SORTERS } from '../../utils';
                                 type="button"
                                 class="rounded-full!"
                                 [tuiDropdown]="actionMenu"
+                                tuiDropdownAlign="end"
+                                [tuiDropdownMinHeight]="140"
                                 [tuiDropdownOpen]="openActionId() === item.key"
                                 (tuiDropdownOpenChange)="
                                   openActionId.set($event ? item.key : null)
@@ -516,10 +518,11 @@ import { ROUTE_TABLE_SORTERS } from '../../utils';
                               </button>
                             }
                             <ng-template #actionMenu>
-                              <tui-data-list>
+                              <tui-data-list size="m">
                                 <button
                                   tuiOption
                                   appearance="positive"
+                                  class="whitespace-nowrap"
                                   (click)="
                                     logAscent.emit(item); openActionId.set(null)
                                   "
@@ -535,6 +538,7 @@ import { ROUTE_TABLE_SORTERS } from '../../utils';
                                     <button
                                       tuiOption
                                       appearance="negative"
+                                      class="whitespace-nowrap"
                                       (click)="
                                         toggleProject.emit(item);
                                         openActionId.set(null)
@@ -550,6 +554,7 @@ import { ROUTE_TABLE_SORTERS } from '../../utils';
                                     <button
                                       tuiOption
                                       appearance="info"
+                                      class="whitespace-nowrap"
                                       (click)="
                                         toggleProject.emit(item);
                                         openActionId.set(null)
@@ -650,8 +655,12 @@ export class RoutesTableComponent {
     this.updateRouteHeight.emit({ row: item, height: input.value });
   }
 
-  private readonly scrollbar = viewChild<ElementRef<HTMLElement>>('scrollbar');
-  private readonly table = viewChild<ElementRef<HTMLElement>>('table');
+  private readonly scrollbar = viewChild('scrollbar', {
+    read: ElementRef<HTMLElement>,
+  });
+  private readonly table = viewChild('table', {
+    read: ElementRef<HTMLElement>,
+  });
   private readonly destroyRef = inject(DestroyRef);
   protected readonly isStuckLeft = signal(false);
   protected readonly isStuckRight = signal(false);
@@ -669,16 +678,18 @@ export class RoutesTableComponent {
     });
 
     effect(() => {
-      const el = this.scrollbar()?.nativeElement;
-      if (!el) return;
-      requestAnimationFrame(() => this.updateFromHost());
-    });
-
-    effect(() => {
+      const scrollbarEl = this.scrollbar()?.nativeElement;
       const tableEl = this.table()?.nativeElement;
-      if (!tableEl || typeof ResizeObserver === 'undefined') return;
+      if (typeof ResizeObserver === 'undefined') {
+        if (scrollbarEl || tableEl) {
+          requestAnimationFrame(() => this.updateFromHost());
+        }
+        return;
+      }
       const ro = new ResizeObserver(() => this.updateFromHost());
-      ro.observe(tableEl);
+      if (scrollbarEl) ro.observe(scrollbarEl);
+      if (tableEl) ro.observe(tableEl);
+      requestAnimationFrame(() => this.updateFromHost());
       this.destroyRef.onDestroy(() => ro.disconnect());
     });
   }

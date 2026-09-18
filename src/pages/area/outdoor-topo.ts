@@ -286,7 +286,7 @@ export class OutdoorTopoComponent extends TopoPageBase {
   protected readonly columns = computed(() => {
     const isMobile = this.layoutService.isMobile();
     return isMobile
-      ? ['index', 'grade', 'name']
+      ? ['index', 'grade', 'name', 'actions']
       : ['index', 'grade', 'name', 'height', 'actions'];
   });
 

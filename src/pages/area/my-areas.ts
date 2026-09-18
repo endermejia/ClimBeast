@@ -67,7 +67,7 @@ import { matchesQuery } from '../../utils';
   ],
   template: `
     <tui-scrollbar class="flex grow">
-      <section class="w-full max-w-5xl mx-auto p-4">
+      <section class="w-full max-w-[1600px] mx-auto p-4">
         <header class="flex items-center justify-between gap-2">
           @let areasCount = filtered().length;
           <h1

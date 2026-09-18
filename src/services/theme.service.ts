@@ -102,7 +102,7 @@ export class ThemeService {
     const dark = this.isDark();
     if (!this.isBrowser) return;
 
-    const color = dark ? '#0b1220' : '#ffffff';
+    const color = dark ? '#222' : '#ffffff';
 
     // 1. Root & body styling and attributes
     const docEl = this.doc.documentElement;
@@ -115,9 +115,9 @@ export class ThemeService {
     docEl.classList.toggle('dark', dark);
     docEl.classList.toggle('light', !dark);
 
-    // 2. Mobile OS status bar: always maintain dark theme (#0b1220) with white icons ('black' / 'dark')
+    // 2. Mobile OS status bar: always maintain dark theme (#222) with white icons ('black' / 'dark')
     // so icons are consistently visible and never disappear on Android WebAPK or iOS PWA
-    this.updateThemeColor('#0b1220');
+    this.updateThemeColor('#222');
     this.updateMetaTag('apple-mobile-web-app-status-bar-style', 'black');
     this.updateMetaTag('color-scheme', 'dark');
   });
