@@ -332,12 +332,7 @@ export class IndoorTopoComponent extends TopoPageBase {
 
   protected readonly columns = computed(() => {
     const hasMoves = this.hasMovesData();
-    return [
-      'grade',
-      'name',
-      ...(hasMoves ? ['moves'] : []),
-      'actions',
-    ];
+    return ['grade', 'name', ...(hasMoves ? ['moves'] : []), 'actions'];
   });
 
   protected override readonly direction = signal<TuiSortDirection>(
