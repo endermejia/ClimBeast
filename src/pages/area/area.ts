@@ -878,8 +878,7 @@ export class AreaComponent {
   );
 
   protected readonly segmentedTabs = computed(() => {
-    const tabs: number[] = [];
-    if (this.allRoutes().length > 0) tabs.push(0);
+    const tabs: number[] = [0];
     if (this.cragsCount() > 0) tabs.push(1);
     if (this.layoutService.isNotDesktop()) {
       tabs.push(2);
