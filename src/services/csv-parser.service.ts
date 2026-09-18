@@ -214,6 +214,10 @@ export class CsvParserService {
     const t = type.toLowerCase().trim();
     const st = subType.toLowerCase().trim();
 
+    if (t === 'go' || st === 'go') {
+      return AscentTypes.ATTEMPT;
+    }
+
     if (
       t.includes('os') ||
       t.includes('onsight') ||
