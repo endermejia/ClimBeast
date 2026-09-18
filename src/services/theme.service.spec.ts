@@ -57,9 +57,9 @@ describe('ThemeService', () => {
     service.setTheme(Themes.LIGHT);
     TestBed.flushEffects();
 
-    expect(themeColor?.getAttribute('content')).toBe('#222');
-    expect(statusBarStyle?.getAttribute('content')).toBe('black');
-    expect(colorScheme?.getAttribute('content')).toBe('dark');
+    expect(themeColor?.getAttribute('content')).toBe('#ffffff');
+    expect(statusBarStyle?.getAttribute('content')).toBe('default');
+    expect(colorScheme?.getAttribute('content')).toBe('light');
     expect(document.documentElement.getAttribute('tuiTheme')).toBe('light');
   });
 

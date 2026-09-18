@@ -103,11 +103,14 @@ export class ThemeService {
     if (!this.isBrowser) return;
 
     const color = dark ? '#222' : '#ffffff';
+    const statusBarStyle = dark ? 'black' : 'default';
+    const colorScheme = dark ? 'dark' : 'light';
 
     // 1. Root & body styling and attributes
     const docEl = this.doc.documentElement;
     docEl.setAttribute('tuiTheme', dark ? 'dark' : 'light');
     docEl.style.setProperty('--tui-theme-color', color);
+    docEl.style.setProperty('color-scheme', colorScheme);
     docEl.style.backgroundColor = color;
     if (this.doc.body) {
       this.doc.body.style.backgroundColor = color;
@@ -115,11 +118,10 @@ export class ThemeService {
     docEl.classList.toggle('dark', dark);
     docEl.classList.toggle('light', !dark);
 
-    // 2. Mobile OS status bar: always maintain dark theme (#222) with white icons ('black' / 'dark')
-    // so icons are consistently visible and never disappear on Android WebAPK or iOS PWA
-    this.updateThemeColor('#222');
-    this.updateMetaTag('apple-mobile-web-app-status-bar-style', 'black');
-    this.updateMetaTag('color-scheme', 'dark');
+    // 2. Mobile OS status bar & theme meta tags
+    this.updateThemeColor(color);
+    this.updateMetaTag('apple-mobile-web-app-status-bar-style', statusBarStyle);
+    this.updateMetaTag('color-scheme', colorScheme);
   });
 
   private updateThemeColor(color: string): void {
