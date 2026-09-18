@@ -31,7 +31,7 @@ import { ContextIndexPipe } from '../../../pipes';
   ],
   template: `
     <div
-      class="bg-(--tui-background-base) shadow-md p-4 sm:p-6 rounded-2xl border border-(--tui-border-normal) w-full min-w-0"
+      class="bg-(--tui-background-base) shadow-md p-4 sm:p-6 rounded-2xl border border-(--tui-border-normal) w-full min-w-0 overflow-hidden"
     >
       @if (trendData().years.length > 0) {
         <div class="relative pt-2 pb-2 w-full min-w-0">
@@ -124,9 +124,9 @@ import { ContextIndexPipe } from '../../../pipes';
   `,
   styles: `
     .chart-container {
-      height: 200px;
       width: 100%;
-      max-width: 100%;
+      min-width: 0;
+      height: 200px;
     }
     .trend-hint {
       display: flex;
