@@ -105,4 +105,15 @@ describe('CsvParserService', () => {
     expect(result[0].climbing_kind).toBe(ClimbingKinds.BOULDER);
     expect(result[0].tries).toBe(1);
   });
+
+  it('parses ascent with type "go" as ATTEMPT', () => {
+    const csv = createCsv([
+      '"ROUTE","Attempt Route","Siurana","El Pati","Catalunya","ES","2024-01-01","go","","0","1","1","0","8a","","work in progress","30","0","0"',
+    ]);
+
+    const result = service.parseCSV(csv);
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('Attempt Route');
+    expect(result[0].type).toBe(AscentTypes.ATTEMPT);
+  });
 });
