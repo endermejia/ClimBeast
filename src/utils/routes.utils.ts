@@ -119,6 +119,7 @@ export const ROUTE_TABLE_SORTERS: Record<
 > = {
   grade: (a, b) => tuiDefaultSort(a.gradeValue, b.gradeValue),
   route: (a, b) => tuiDefaultSort(a.route, b.route),
+  crag: (a, b) => tuiDefaultSort(a.crag_name || '', b.crag_name || ''),
   height: (a, b) => tuiDefaultSort(a.height ?? 0, b.height ?? 0),
   rating: (a, b) => tuiDefaultSort(a.rating, b.rating),
   ascents: (a, b) => tuiDefaultSort(a.ascents, b.ascents),

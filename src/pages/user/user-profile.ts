@@ -98,7 +98,7 @@ import { IS_BROWSER } from '../../app/is-browser';
       >
         <!-- Left Column: User Info + Statistics -->
         <div
-          class="flex flex-col gap-6 w-full px-4 lg:px-0 lg:flex-1 min-w-0 lg:h-full lg:overflow-hidden"
+          class="flex flex-col gap-6 w-full px-4 lg:px-0 lg:flex-1 min-w-0 lg:h-full lg:overflow-hidden overflow-x-hidden"
         >
           @let loading = !profile();
           <app-user-info

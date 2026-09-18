@@ -143,6 +143,7 @@ export class OutdoorRoutesTableComponent {
     const cols = [
       'grade',
       'route',
+      ...(this.showLocation() ? ['crag'] : []),
       'topo',
       'equippers',
       'height',

@@ -83,6 +83,7 @@ export type RouteItem = RouteWithExtras;
 export type RoutesTableKey =
   | 'grade'
   | 'route'
+  | 'crag'
   | 'topo'
   | 'height'
   | 'rating'

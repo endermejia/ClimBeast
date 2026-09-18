@@ -115,166 +115,159 @@ const PAGE_SIZE = 20;
         @if (cragDetail(); as c) {
           <!-- Left Column: Info + Segmented Tabs -->
           <div
-            class="flex flex-col gap-4 w-full px-4 lg:px-0 lg:flex-1 min-w-0 lg:h-full lg:min-h-0 lg:overflow-y-auto"
+            class="flex flex-col w-full lg:flex-1 min-w-0 lg:h-full lg:min-h-0 lg:overflow-hidden"
           >
-            <ng-template #cragSwitcher>
-              <tui-data-list>
-                @for (cragItem of sortedCrags(); track cragItem.id) {
-                  <button
-                    tuiOption
-                    (click)="
-                      router.navigate(['/area', areaSlug(), cragItem.slug])
-                    "
-                  >
-                    {{ cragItem.name }}
-                  </button>
-                }
-              </tui-data-list>
-            </ng-template>
-
-            <div class="mb-2">
-              <app-section-header
-                [title]="c.name"
-                [liked]="c.liked"
-                [titleDropdown]="cragSwitcher"
-                [itemCount]="sortedCrags().length"
-                [actions]="headerActions()"
-                (toggleLike)="onToggleLike()"
-              />
-            </div>
-
-            @let lang = languageService.selectedLanguage();
-            @let desc = lang === 'es' ? c.description_es : c.description_en;
-            @let warn = lang === 'es' ? c.warning_es : c.warning_en;
-
-            @if (desc) {
-              <p class="text-lg">{{ desc }}</p>
-            }
-
-            <div class="flex flex-wrap justify-between items-center gap-2">
-              <div class="flex gap-2 items-center">
-                @if (c.latitude && c.longitude) {
-                  <app-ubicacion-dropdown
-                    [latitude]="c.latitude"
-                    [longitude]="c.longitude"
-                    (viewOnMap)="viewOnMap(c.latitude, c.longitude)"
-                  />
-                  <app-meteo-button
-                    [latitude]="c.latitude"
-                    [longitude]="c.longitude"
-                  />
-                }
-                @if (c.parkings.length) {
-                  <app-parking-button [crag]="c" />
-                }
-                @if (c.approach) {
-                  <div class="flex w-fit items-center gap-1 opacity-70">
-                    <tui-icon icon="@tui.footprints" />
-                    <span class="text-lg font-medium whitespace-nowrap">
-                      {{ c.approach }}
-                      min.
-                    </span>
-                  </div>
-                }
-              </div>
-              @defer (on viewport; hydrate on viewport) {
-                <app-chart-routes-by-grade
-                  class="hidden md:block self-end"
-                  [grades]="c.grades"
-                />
-              } @placeholder {
-                <div class="hidden md:flex h-20 items-center justify-center">
-                  <tui-loader size="s" />
-                </div>
-              }
-            </div>
-
-            @defer (on viewport; hydrate on viewport) {
-              <app-chart-routes-by-grade
-                class="md:hidden! self-end"
-                [grades]="c.grades"
-              />
-            } @placeholder {
-              <div class="h-20 md:hidden! flex items-center justify-center">
-                <tui-loader size="s" />
-              </div>
-            }
-
-            @if (warn) {
-              <div tuiNotification appearance="warning">
-                {{ warn }}
-              </div>
-            }
-
-            @if (segmentedTabs().length > 1) {
-              <tui-segmented
-                [activeItemIndex]="activeTabIndex()"
-                (activeItemIndexChange)="activeTabIndex.set($event)"
-              >
-                @for (tabIdx of segmentedTabs(); track tabIdx) {
-                  <button type="button">
-                    @if (tabIdx === 0) {
-                      {{ routesCount() }}
-                      {{ 'routes' | translate | lowercase }}
-                    } @else if (tabIdx === 1) {
-                      {{ toposCount() }}
-                      {{ 'topos' | translate | lowercase }}
-                    } @else {
-                      {{ ascentsCount() }}
-                      {{ 'ascents' | translate | lowercase }}
+            <tui-scrollbar class="w-full h-full min-h-0">
+              <div class="flex flex-col gap-4 w-full min-w-0 px-4 lg:px-0 pb-6">
+                <ng-template #cragSwitcher>
+                  <tui-data-list>
+                    @for (cragItem of sortedCrags(); track cragItem.id) {
+                      <button
+                        tuiOption
+                        (click)="
+                          router.navigate(['/area', areaSlug(), cragItem.slug])
+                        "
+                      >
+                        {{ cragItem.name }}
+                      </button>
                     }
-                  </button>
-                }
-              </tui-segmented>
-            }
+                  </tui-data-list>
+                </ng-template>
 
-            <div class="mt-2 lg:flex-1 lg:min-h-0 lg:overflow-hidden">
-              @let currentTab = segmentedTabs()[activeTabIndex()];
-              @if (loadedTabs().has(0)) {
-                <div
-                  [hidden]="currentTab !== 0"
-                  [class.hidden]="currentTab !== 0"
-                >
-                  <app-crag-routes [crag]="c" />
+                <div class="mb-2">
+                  <app-section-header
+                    [title]="c.name"
+                    [liked]="c.liked"
+                    [titleDropdown]="cragSwitcher"
+                    [itemCount]="sortedCrags().length"
+                    [actions]="headerActions()"
+                    (toggleLike)="onToggleLike()"
+                  />
                 </div>
-              }
-              @if (loadedTabs().has(1)) {
-                <div
-                  [hidden]="currentTab !== 1"
-                  [class.hidden]="currentTab !== 1"
-                >
+
+                @let lang = languageService.selectedLanguage();
+                @let desc = lang === 'es' ? c.description_es : c.description_en;
+                @let warn = lang === 'es' ? c.warning_es : c.warning_en;
+
+                @if (desc) {
+                  <p class="text-lg">{{ desc }}</p>
+                }
+
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                  <div class="flex gap-2 items-center">
+                    @if (c.latitude && c.longitude) {
+                      <app-ubicacion-dropdown
+                        [latitude]="c.latitude"
+                        [longitude]="c.longitude"
+                        (viewOnMap)="viewOnMap(c.latitude, c.longitude)"
+                      />
+                      <app-meteo-button
+                        [latitude]="c.latitude"
+                        [longitude]="c.longitude"
+                      />
+                    }
+                    @if (c.parkings.length) {
+                      <app-parking-button [crag]="c" />
+                    }
+                    @if (c.approach) {
+                      <div class="flex w-fit items-center gap-1 opacity-70">
+                        <tui-icon icon="@tui.footprints" />
+                        <span class="text-lg font-medium whitespace-nowrap">
+                          {{ c.approach }}
+                          min.
+                        </span>
+                      </div>
+                    }
+                  </div>
                   @defer (on viewport; hydrate on viewport) {
-                    <app-crag-topos
-                      [crag]="c"
-                      [areaSlug]="areaSlug()"
-                      [cragSlug]="cragSlug()"
+                    <app-chart-routes-by-grade
+                      class="self-end"
+                      [grades]="c.grades"
                     />
                   } @placeholder {
-                    <div
-                      class="flex items-center justify-center py-16 min-h-32"
-                    >
-                      <tui-loader size="l" />
+                    <div class="h-20 items-center justify-center">
+                      <tui-loader size="s" />
                     </div>
                   }
                 </div>
-              }
-              @if (loadedTabs().has(2)) {
-                <div
-                  [hidden]="currentTab !== 2"
-                  [class.hidden]="currentTab !== 2"
-                >
-                  <app-ascents-feed
-                    [ascents]="accumulatedAscents()"
-                    [isLoading]="ascentsLoading()"
-                    [hasMore]="hasMoreAscents()"
-                    [showRoute]="true"
-                    [showCrag]="false"
-                    [showArea]="false"
-                    (loadMore)="loadMoreAscents()"
-                  />
+
+                @if (warn) {
+                  <div tuiNotification appearance="warning">
+                    {{ warn }}
+                  </div>
+                }
+
+                @if (segmentedTabs().length > 1) {
+                  <tui-segmented
+                    [activeItemIndex]="activeTabIndex()"
+                    (activeItemIndexChange)="activeTabIndex.set($event)"
+                  >
+                    @for (tabIdx of segmentedTabs(); track tabIdx) {
+                      <button type="button">
+                        @if (tabIdx === 0) {
+                          {{ routesCount() }}
+                          {{ 'routes' | translate | lowercase }}
+                        } @else if (tabIdx === 1) {
+                          {{ toposCount() }}
+                          {{ 'topos' | translate | lowercase }}
+                        } @else {
+                          {{ ascentsCount() }}
+                          {{ 'ascents' | translate | lowercase }}
+                        }
+                      </button>
+                    }
+                  </tui-segmented>
+                }
+
+                <div class="mt-2 lg:flex-1 lg:min-h-0 lg:overflow-hidden">
+                  @let currentTab = segmentedTabs()[activeTabIndex()];
+                  @if (loadedTabs().has(0)) {
+                    <div
+                      [hidden]="currentTab !== 0"
+                      [class.hidden]="currentTab !== 0"
+                    >
+                      <app-crag-routes [crag]="c" />
+                    </div>
+                  }
+                  @if (loadedTabs().has(1)) {
+                    <div
+                      [hidden]="currentTab !== 1"
+                      [class.hidden]="currentTab !== 1"
+                    >
+                      @defer (on viewport; hydrate on viewport) {
+                        <app-crag-topos
+                          [crag]="c"
+                          [areaSlug]="areaSlug()"
+                          [cragSlug]="cragSlug()"
+                        />
+                      } @placeholder {
+                        <div
+                          class="flex items-center justify-center py-16 min-h-32"
+                        >
+                          <tui-loader size="l" />
+                        </div>
+                      }
+                    </div>
+                  }
+                  @if (loadedTabs().has(2)) {
+                    <div
+                      [hidden]="currentTab !== 2"
+                      [class.hidden]="currentTab !== 2"
+                    >
+                      <app-ascents-feed
+                        [ascents]="accumulatedAscents()"
+                        [isLoading]="ascentsLoading()"
+                        [hasMore]="hasMoreAscents()"
+                        [showRoute]="true"
+                        [showCrag]="false"
+                        [showArea]="false"
+                        (loadMore)="loadMoreAscents()"
+                      />
+                    </div>
+                  }
                 </div>
-              }
-            </div>
+              </div>
+            </tui-scrollbar>
           </div>
 
           <!-- Right Column: Ascents Sidebar (desktop only) -->

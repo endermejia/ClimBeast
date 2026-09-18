@@ -248,20 +248,26 @@ import { ROUTE_TABLE_SORTERS } from '../../utils';
                                   >
                                     {{ item.area_name }}
                                   </a>
-                                  <span>/</span>
-                                  <a
-                                    tuiLink
-                                    [routerLink]="[
-                                      '/area',
-                                      item.area_slug,
-                                      item.crag_slug || 'general',
-                                    ]"
-                                  >
-                                    {{ item.crag_name }}
-                                  </a>
                                 </div>
                               }
                             </div>
+                          </div>
+                        }
+                        @case ('crag') {
+                          <div tuiCell size="m">
+                            @if (item.crag_name) {
+                              <a
+                                tuiLink
+                                [routerLink]="[
+                                  '/area',
+                                  item.area_slug,
+                                  item.crag_slug || 'general',
+                                ]"
+                                class="text-sm truncate max-w-full"
+                              >
+                                {{ item.crag_name }}
+                              </a>
+                            }
                           </div>
                         }
                         @case ('height') {

@@ -1,6 +1,5 @@
-import { Location } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { TuiButton, TuiIcon } from '@taiga-ui/core';
 import { TuiBlockStatus } from '@taiga-ui/layout';
@@ -37,12 +36,7 @@ import { IconSrcPipe } from '../../pipes/icon-src.pipe';
             <tui-icon icon="@tui.refresh-cw" class="mr-2" />
             {{ 'notFound.refresh' | translate }}
           </button>
-          <button
-            tuiButton
-            type="button"
-            appearance="flat"
-            (click)="location.back()"
-          >
+          <button tuiButton type="button" appearance="flat" (click)="goBack()">
             <tui-icon icon="@tui.arrow-left" class="mr-2" />
             {{ 'notFound.goBack' | translate }}
           </button>
@@ -65,7 +59,15 @@ import { IconSrcPipe } from '../../pipes/icon-src.pipe';
   },
 })
 export class PageNotFoundComponent {
-  protected readonly location = inject(Location);
+  private readonly router = inject(Router);
+
+  protected goBack(): void {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      void this.router.navigateByUrl('/home');
+    }
+  }
 
   protected refresh(): void {
     window.location.reload();

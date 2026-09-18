@@ -150,298 +150,306 @@ const PAGE_SIZE = 20;
       >
         <!-- Left Column -->
         <div
-          class="flex flex-col w-full px-4 lg:px-0 lg:flex-1 min-w-0 lg:h-full lg:min-h-0 lg:overflow-y-auto"
+          class="flex flex-col w-full lg:flex-1 min-w-0 lg:h-full lg:min-h-0 lg:overflow-hidden"
         >
-          @let canEditAsAdmin = authState.canEditAsAdmin();
-          @if (outdoorData.selectedArea(); as area) {
-            @let canAreaAdmin = authState.areaAdminPermissions()[area.id];
-            <div class="mb-4">
-              <app-section-header
-                class="w-full"
-                [title]="area.name"
-                [liked]="area.liked"
-                [actions]="headerActions()"
-                (toggleLike)="onToggleLike()"
-              >
-                @if (!isPublic()) {
-                  <tui-icon icon="@tui.lock" />
-                }
-              </app-section-header>
-            </div>
+          <tui-scrollbar class="w-full h-full min-h-0">
+            <div class="flex flex-col gap-4 w-full min-w-0 px-4 lg:px-0 pb-6">
+              @let canEditAsAdmin = authState.canEditAsAdmin();
+              @if (outdoorData.selectedArea(); as area) {
+                @let canAreaAdmin = authState.areaAdminPermissions()[area.id];
+                <div class="mb-4">
+                  <app-section-header
+                    class="w-full"
+                    [title]="area.name"
+                    [liked]="area.liked"
+                    [actions]="headerActions()"
+                    (toggleLike)="onToggleLike()"
+                  >
+                    @if (!isPublic()) {
+                      <tui-icon icon="@tui.lock" />
+                    }
+                  </app-section-header>
+                </div>
 
-            <div class="mb-4 flex flex-wrap justify-between items-center gap-2">
-              <div class="flex gap-2">
-                @if (areaCenter(); as center) {
-                  <app-ubicacion-dropdown
-                    [latitude]="center.latitude"
-                    [longitude]="center.longitude"
-                    (viewOnMap)="viewOnMap()"
-                  />
-                  <app-meteo-button
-                    [latitude]="center.latitude"
-                    [longitude]="center.longitude"
-                  />
-                } @else {
-                  <app-ubicacion-dropdown (viewOnMap)="viewOnMap()" />
-                }
+                <div
+                  class="mb-4 flex flex-wrap justify-between items-center gap-2"
+                >
+                  <div class="flex gap-2">
+                    @if (areaCenter(); as center) {
+                      <app-ubicacion-dropdown
+                        [latitude]="center.latitude"
+                        [longitude]="center.longitude"
+                        (viewOnMap)="viewOnMap()"
+                      />
+                      <app-meteo-button
+                        [latitude]="center.latitude"
+                        [longitude]="center.longitude"
+                      />
+                    } @else {
+                      <app-ubicacion-dropdown (viewOnMap)="viewOnMap()" />
+                    }
 
-                @if (hasTopos()) {
-                  @let details = areaDetail();
-                  @let hasAccess =
-                    canEditAsAdmin ||
-                    canAreaAdmin ||
-                    details?.is_public ||
-                    details?.purchased;
+                    @if (hasTopos()) {
+                      @let details = areaDetail();
+                      @let hasAccess =
+                        canEditAsAdmin ||
+                        canAreaAdmin ||
+                        details?.is_public ||
+                        details?.purchased;
 
-                  @if (hasAccess) {
-                    <button
-                      tuiButton
-                      appearance="flat"
-                      size="m"
-                      type="button"
-                      (click.zoneless)="viewFirstTopo()"
-                      [iconStart]="'/image/topo.svg'"
-                    >
-                      {{ 'topos' | translate }}
-                    </button>
-                  } @else if (!areaDetailResource.isLoading()) {
-                    @let isSecret =
-                      details &&
-                      !details.is_public &&
-                      (details.price === null || details.price === 0);
-                    @if (!isSecret) {
-                      <div class="flex flex-col gap-2">
+                      @if (hasAccess) {
                         <button
                           tuiButton
-                          appearance="accent"
+                          appearance="flat"
                           size="m"
                           type="button"
-                          (click.zoneless)="buyTopo()"
-                          [iconStart]="'@tui.hand-heart'"
+                          (click.zoneless)="viewFirstTopo()"
+                          [iconStart]="'/image/topo.svg'"
                         >
-                          {{ 'payments.getTopos' | translate }}
+                          {{ 'topos' | translate }}
                         </button>
-                      </div>
-                    } @else {
-                      <div
-                        class="flex items-center gap-1.5 opacity-60 text-xs py-2"
-                      >
-                        <tui-icon icon="@tui.lock" />
-                        <span>{{ 'topos.secretText' | translate }}</span>
-                      </div>
-                    }
-                  }
-                }
-              </div>
-              @defer (on viewport; hydrate on viewport) {
-                <app-chart-routes-by-grade [grades]="area.grades" />
-              } @placeholder {
-                <div class="h-20 flex items-center justify-center">
-                  <tui-loader size="s" />
-                </div>
-              } @error {
-                <div class="p-4 text-center text-xs opacity-60">
-                  {{ 'errors.unexpected' | translate }}
-                </div>
-              }
-            </div>
-
-            <app-area-revenue-panel
-              [areaId]="area.id"
-              [areaName]="area.name"
-              [isPaywalled]="!isPublic()"
-              [areaPrice]="areaDetail()?.price || 0"
-              [isPurchased]="!!areaDetail()?.purchased"
-              [toposCount]="area.topos_count || 0"
-              class="mb-6 block"
-            />
-
-            @let admins = areaAdmins();
-            @if (admins.length > 0 || canEditAsAdmin) {
-              <div class="flex flex-col gap-3 mb-6">
-                <span
-                  class="text-xs uppercase opacity-60 font-semibold tracking-wider"
-                >
-                  {{ 'admins' | translate }}
-                </span>
-                <div class="flex flex-wrap gap-4 items-center">
-                  @for (admin of admins; track admin.user_id) {
-                    <div
-                      class="flex items-center gap-2 bg-(--tui-background-neutral-1) py-1 pr-3 rounded-full border border-(--tui-border-normal) group transition-all hover:bg-(--tui-background-neutral-1-hover) no-underline text-inherit"
-                      [class.pl-1]="admin.user.avatar"
-                      [class.pl-3]="!admin.user.avatar"
-                    >
-                      <a
-                        [routerLink]="['/profile', admin.user_id]"
-                        [tuiHint]="adminUserHint"
-                        (contextmenu.zoneless)="$event.preventDefault()"
-                        class="flex items-center gap-2 no-underline text-inherit cursor-pointer select-none"
-                      >
-                        @if (admin.user.avatar) {
-                          <span tuiAvatar size="s">
-                            <img
-                              [src]="admin.user.avatar | avatarUrl"
-                              [alt]="admin.user.name"
-                            />
-                          </span>
+                      } @else if (!areaDetailResource.isLoading()) {
+                        @let isSecret =
+                          details &&
+                          !details.is_public &&
+                          (details.price === null || details.price === 0);
+                        @if (!isSecret) {
+                          <div class="flex flex-col gap-2">
+                            <button
+                              tuiButton
+                              appearance="accent"
+                              size="m"
+                              type="button"
+                              (click.zoneless)="buyTopo()"
+                              [iconStart]="'@tui.hand-heart'"
+                            >
+                              {{ 'payments.getTopos' | translate }}
+                            </button>
+                          </div>
+                        } @else {
+                          <div
+                            class="flex items-center gap-1.5 opacity-60 text-xs py-2"
+                          >
+                            <tui-icon icon="@tui.lock" />
+                            <span>{{ 'topos.secretText' | translate }}</span>
+                          </div>
                         }
-                        <span class="text-sm font-medium">{{
-                          admin.user.name
-                        }}</span>
-                      </a>
-                      <ng-template #adminUserHint>
-                        <app-user-info-hint
-                          [userId]="admin.user_id"
-                          [fallbackName]="admin.user.name"
-                          [fallbackAvatar]="admin.user.avatar"
-                        />
-                      </ng-template>
+                      }
+                    }
+                  </div>
+                  @defer (on viewport; hydrate on viewport) {
+                    <app-chart-routes-by-grade [grades]="area.grades" />
+                  } @placeholder {
+                    <div class="h-20 flex items-center justify-center">
+                      <tui-loader size="s" />
+                    </div>
+                  } @error {
+                    <div class="p-4 text-center text-xs opacity-60">
+                      {{ 'errors.unexpected' | translate }}
+                    </div>
+                  }
+                </div>
+
+                <app-area-revenue-panel
+                  [areaId]="area.id"
+                  [areaName]="area.name"
+                  [isPaywalled]="!isPublic()"
+                  [areaPrice]="areaDetail()?.price || 0"
+                  [isPurchased]="!!areaDetail()?.purchased"
+                  [toposCount]="area.topos_count || 0"
+                  class="mb-6 block"
+                />
+
+                @let admins = areaAdmins();
+                @if (admins.length > 0 || canEditAsAdmin) {
+                  <div class="flex flex-col gap-3 mb-6">
+                    <span
+                      class="text-xs uppercase opacity-60 font-semibold tracking-wider"
+                    >
+                      {{ 'admins' | translate }}
+                    </span>
+                    <div class="flex flex-wrap gap-4 items-center">
+                      @for (admin of admins; track admin.user_id) {
+                        <div
+                          class="flex items-center gap-2 bg-(--tui-background-neutral-1) py-1 pr-3 rounded-full border border-(--tui-border-normal) group transition-all hover:bg-(--tui-background-neutral-1-hover) no-underline text-inherit"
+                          [class.pl-1]="admin.user.avatar"
+                          [class.pl-3]="!admin.user.avatar"
+                        >
+                          <a
+                            [routerLink]="['/profile', admin.user_id]"
+                            [tuiHint]="adminUserHint"
+                            (contextmenu.zoneless)="$event.preventDefault()"
+                            class="flex items-center gap-2 no-underline text-inherit cursor-pointer select-none"
+                          >
+                            @if (admin.user.avatar) {
+                              <span tuiAvatar size="s">
+                                <img
+                                  [src]="admin.user.avatar | avatarUrl"
+                                  [alt]="admin.user.name"
+                                />
+                              </span>
+                            }
+                            <span class="text-sm font-medium">{{
+                              admin.user.name
+                            }}</span>
+                          </a>
+                          <ng-template #adminUserHint>
+                            <app-user-info-hint
+                              [userId]="admin.user_id"
+                              [fallbackName]="admin.user.name"
+                              [fallbackAvatar]="admin.user.avatar"
+                            />
+                          </ng-template>
+                          @if (canEditAsAdmin) {
+                            <button
+                              tuiIconButton
+                              appearance="flat"
+                              size="xs"
+                              type="button"
+                              iconStart="@tui.x"
+                              [attr.aria-label]="'delete' | translate"
+                              class="opacity-0 group-hover:opacity-50 hover:opacity-100! transition-opacity -mr-1"
+                              (click.zoneless)="removeAdmin(admin.user_id)"
+                            ></button>
+                          }
+                        </div>
+                      }
+
                       @if (canEditAsAdmin) {
-                        <button
-                          tuiIconButton
-                          appearance="flat"
-                          size="xs"
-                          type="button"
-                          iconStart="@tui.x"
-                          [attr.aria-label]="'delete' | translate"
-                          class="opacity-0 group-hover:opacity-50 hover:opacity-100! transition-opacity -mr-1"
-                          (click.zoneless)="removeAdmin(admin.user_id)"
-                        ></button>
+                        <div class="w-64">
+                          <tui-textfield
+                            appearance="floating"
+                            size="s"
+                            tuiChevron
+                            [tuiTextfieldCleaner]="true"
+                            [stringify]="stringifyUser"
+                            class="rounded-full!"
+                          >
+                            <label tuiLabel for="admin-search-input">{{
+                              'addUser' | translate
+                            }}</label>
+                            <input
+                              id="admin-search-input"
+                              tuiComboBox
+                              [matcher]="null"
+                              [placeholder]="'searchPlaceholder' | translate"
+                              (ngModelChange)="
+                                onAdminSelected($event, adminSearchInput)
+                              "
+                              [ngModel]="selectedAdminUser()"
+                              (input.zoneless)="
+                                userSearchQuery.set(adminSearchInput.value)
+                              "
+                              #adminSearchInput
+                            />
+                            <tui-data-list-wrapper
+                              *tuiDropdown
+                              [items]="foundUsers()"
+                            />
+                          </tui-textfield>
+                        </div>
                       }
                     </div>
-                  }
-
-                  @if (canEditAsAdmin) {
-                    <div class="w-64">
-                      <tui-textfield
-                        appearance="floating"
-                        size="s"
-                        tuiChevron
-                        [tuiTextfieldCleaner]="true"
-                        [stringify]="stringifyUser"
-                        class="rounded-full!"
-                      >
-                        <label tuiLabel for="admin-search-input">{{
-                          'addUser' | translate
-                        }}</label>
-                        <input
-                          id="admin-search-input"
-                          tuiComboBox
-                          [matcher]="null"
-                          [placeholder]="'searchPlaceholder' | translate"
-                          (ngModelChange)="
-                            onAdminSelected($event, adminSearchInput)
-                          "
-                          [ngModel]="selectedAdminUser()"
-                          (input.zoneless)="
-                            userSearchQuery.set(adminSearchInput.value)
-                          "
-                          #adminSearchInput
-                        />
-                        <tui-data-list-wrapper
-                          *tuiDropdown
-                          [items]="foundUsers()"
-                        />
-                      </tui-textfield>
-                    </div>
-                  }
-                </div>
-              </div>
-            }
-
-            <!-- Segmented: Crags / Routes -->
-            <tui-segmented
-              [activeItemIndex]="contentTabIndex()"
-              (activeItemIndexChange)="contentTabIndex.set($event)"
-              class="mb-4"
-            >
-              <button type="button">
-                {{ cragsCount() }}
-                {{
-                  (cragsCount() === 1 ? 'crag' : 'crags')
-                    | translate
-                    | lowercase
-                }}
-              </button>
-              <button type="button">
-                {{ allRoutes().length }}
-                {{ 'routes' | translate | lowercase }}
-              </button>
-            </tui-segmented>
-
-            @if (contentTabIndex() === 0) {
-              <!-- Search + Filters for Crags -->
-              <div
-                class="sticky top-0 z-10 py-4 flex items-end gap-2 bg-(--tui-background-base)"
-              >
-                <tui-textfield
-                  appearance="floating"
-                  class="grow block"
-                  tuiTextfieldSize="l"
-                >
-                  <label tuiLabel for="crags-search">{{
-                    'searchPlaceholder' | translate
-                  }}</label>
-                  <input
-                    tuiInput
-                    #cragsSearch
-                    id="crags-search"
-                    autocomplete="off"
-                    [value]="query()"
-                    (input.zoneless)="onQuery(cragsSearch.value)"
-                  />
-                </tui-textfield>
-                <tui-badged-content class="rounded-2xl">
-                  @if (hasActiveFilters()) {
-                    <tui-badge-notification
-                      tuiAppearance="accent"
-                      size="s"
-                      tuiSlot="top"
-                    />
-                  }
-                  <button
-                    tuiButton
-                    appearance="textfield"
-                    size="l"
-                    type="button"
-                    iconStart="@tui.sliders-horizontal"
-                    [attr.aria-label]="'filters' | translate"
-                    (click.zoneless)="openFilters()"
-                  ></button>
-                </tui-badged-content>
-              </div>
-
-              <div class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-                @for (crag of crags(); track crag.slug) {
-                  <app-crag-card
-                    [crag]="{ ...crag, area_slug: areaSlug() }"
-                    [showAreaName]="false"
-                  />
-                } @empty {
-                  <app-empty-state
-                    class="col-span-full"
-                    icon="@tui.layout-grid"
-                  />
+                  </div>
                 }
-              </div>
-            } @else {
-              <!-- Routes Table -->
-              @if (allRoutes().length > 0) {
-                <app-outdoor-routes-table
-                  [data]="allRoutes()"
-                  [showLocation]="true"
-                  [showRowColors]="true"
-                  [hiddenColumns]="['topo', 'equippers']"
-                />
+
+                <!-- Segmented: Crags / Routes -->
+                <tui-segmented
+                  [activeItemIndex]="contentTabIndex()"
+                  (activeItemIndexChange)="contentTabIndex.set($event)"
+                  class="mb-4"
+                >
+                  <button type="button">
+                    {{ cragsCount() }}
+                    {{
+                      (cragsCount() === 1 ? 'crag' : 'crags')
+                        | translate
+                        | lowercase
+                    }}
+                  </button>
+                  <button type="button">
+                    {{ allRoutes().length }}
+                    {{ 'routes' | translate | lowercase }}
+                  </button>
+                </tui-segmented>
+
+                @if (contentTabIndex() === 0) {
+                  <!-- Search + Filters for Crags -->
+                  <div
+                    class="sticky top-0 z-10 py-4 flex items-end gap-2 bg-(--tui-background-base)"
+                  >
+                    <tui-textfield
+                      appearance="floating"
+                      class="grow block"
+                      tuiTextfieldSize="l"
+                    >
+                      <label tuiLabel for="crags-search">{{
+                        'searchPlaceholder' | translate
+                      }}</label>
+                      <input
+                        tuiInput
+                        #cragsSearch
+                        id="crags-search"
+                        autocomplete="off"
+                        [value]="query()"
+                        (input.zoneless)="onQuery(cragsSearch.value)"
+                      />
+                    </tui-textfield>
+                    <tui-badged-content class="rounded-2xl">
+                      @if (hasActiveFilters()) {
+                        <tui-badge-notification
+                          tuiAppearance="accent"
+                          size="s"
+                          tuiSlot="top"
+                        />
+                      }
+                      <button
+                        tuiButton
+                        appearance="textfield"
+                        size="l"
+                        type="button"
+                        iconStart="@tui.sliders-horizontal"
+                        [attr.aria-label]="'filters' | translate"
+                        (click.zoneless)="openFilters()"
+                      ></button>
+                    </tui-badged-content>
+                  </div>
+
+                  <div
+                    class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+                  >
+                    @for (crag of crags(); track crag.slug) {
+                      <app-crag-card
+                        [crag]="{ ...crag, area_slug: areaSlug() }"
+                        [showAreaName]="false"
+                      />
+                    } @empty {
+                      <app-empty-state
+                        class="col-span-full"
+                        icon="@tui.layout-grid"
+                      />
+                    }
+                  </div>
+                } @else {
+                  <!-- Routes Table -->
+                  @if (allRoutes().length > 0) {
+                    <app-outdoor-routes-table
+                      [data]="allRoutes()"
+                      [showLocation]="true"
+                      [showRowColors]="true"
+                      [hiddenColumns]="['topo', 'equippers']"
+                    />
+                  } @else {
+                    <app-empty-state class="mt-8" icon="@tui.route" />
+                  }
+                }
               } @else {
-                <app-empty-state class="mt-8" icon="@tui.route" />
+                <div class="flex items-center justify-center py-16">
+                  <tui-loader size="xxl" />
+                </div>
               }
-            }
-          } @else {
-            <div class="flex items-center justify-center py-16">
-              <tui-loader size="xxl" />
             </div>
-          }
+          </tui-scrollbar>
         </div>
 
         <!-- Right Column: Ascents Sidebar (desktop only) -->
