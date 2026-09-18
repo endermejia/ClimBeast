@@ -29,6 +29,14 @@ export class LayoutService {
     },
   );
 
+  /** Signal that is true if the viewport is NOT desktop-sized (mobile or small desktop). */
+  readonly isNotDesktop = toSignal(
+    this.breakpoint$.pipe(map((b) => b !== 'desktopLarge')),
+    {
+      initialValue: true,
+    },
+  );
+
   /** Signal to show/hide the main navigation loading indicator. */
   readonly isNavLoading: WritableSignal<boolean> = signal(false);
 

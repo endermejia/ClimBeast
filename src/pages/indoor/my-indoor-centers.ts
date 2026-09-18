@@ -105,7 +105,7 @@ import { matchesQuery } from '../../utils';
 
         <!-- Indoor Centers list -->
         @if (!loading()) {
-          <div class="grid gap-3 grid-cols-1 md:grid-cols-2">
+          <div class="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             @for (center of filtered(); track center.id) {
               <app-indoor-center-card [item]="center" />
             } @empty {

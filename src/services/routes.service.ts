@@ -69,6 +69,7 @@ export class RoutesService {
 
   openRouteForm(data: {
     cragId?: number;
+    areaId?: number;
     routeData?: {
       id?: number;
       crag_id?: number;

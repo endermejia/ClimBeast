@@ -1105,6 +1105,8 @@
   "search": "Suchen",
   "searchPlaceholder": "Suchen...",
   "searchUser": "Benutzer suchen",
+  "sectors.newTitle": "Neuer Sektor",
+  "sectors.unifyTitle": "Sektoren zusammenführen",
   "securityAndSession": "Sicherheit & Sitzung",
   "select": "Auswählen",
   "selectAll": "Alles auswählen",

@@ -129,11 +129,11 @@ import { EmptyStateComponent } from '../ui/empty-state';
       <div class="flex flex-col gap-4 sm:gap-5 pt-3">
         <!-- 1. Bloque superior asimétrico -->
         <div
-          class="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 items-stretch w-full"
+          class="grid grid-cols-1 xl:grid-cols-12 gap-3 sm:gap-4 items-stretch w-full"
         >
           <!-- Tarjeta destacada Saldo Actual (Izquierda) -->
           <div
-            class="md:col-span-7 lg:col-span-8 flex flex-col justify-between p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 gap-4"
+            class="xl:col-span-7 2xl:col-span-8 flex flex-col justify-between p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 gap-4"
           >
             <div class="flex items-start justify-between gap-2">
               <div class="flex items-center gap-3.5 sm:gap-4 min-w-0">
@@ -178,7 +178,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
 
           <!-- Columna derecha: tarjetas métricas apiladas -->
           <div
-            class="md:col-span-5 lg:col-span-4 flex flex-col justify-between gap-2.5 sm:gap-3"
+            class="xl:col-span-5 2xl:col-span-4 flex flex-col justify-between gap-2.5 sm:gap-3"
           >
             <!-- 1. Total recaudado -->
             <div

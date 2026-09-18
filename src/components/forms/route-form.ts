@@ -341,13 +341,13 @@ export class RouteFormComponent {
 
   private readonly _dialogCtx: TuiDialogContext<
     string | boolean | null,
-    { cragId?: number; routeData?: MinimalRoute }
+    { cragId?: number; areaId?: number; routeData?: MinimalRoute }
   > | null = (() => {
     try {
       return injectContext<
         TuiDialogContext<
           string | boolean | null,
-          { cragId?: number; routeData?: MinimalRoute }
+          { cragId?: number; areaId?: number; routeData?: MinimalRoute }
         >
       >();
     } catch {
@@ -358,15 +358,22 @@ export class RouteFormComponent {
   cragId: InputSignal<number | undefined> = input<number | undefined>(
     undefined,
   );
+  areaId: InputSignal<number | undefined> = input<number | undefined>(
+    undefined,
+  );
   routeData: InputSignal<MinimalRoute | undefined> = input<
     MinimalRoute | undefined
   >(undefined);
 
   private readonly dialogCragId = this._dialogCtx?.data?.cragId;
+  private readonly dialogAreaId = this._dialogCtx?.data?.areaId;
   private readonly dialogRouteData = this._dialogCtx?.data?.routeData;
 
   private readonly effectiveCragId: Signal<number | undefined> = computed(
     () => this.dialogCragId ?? this.cragId(),
+  );
+  private readonly effectiveAreaId: Signal<number | undefined> = computed(
+    () => this.dialogAreaId ?? this.areaId(),
   );
   private readonly effectiveRouteData: Signal<MinimalRoute | undefined> =
     computed(() => this.dialogRouteData ?? this.routeData());
@@ -505,16 +512,18 @@ export class RouteFormComponent {
     params: () => {
       const initialCragId = this.effectiveCragId();
       const inputCragId = this.effectiveRouteData()?.crag_id;
-      return inputCragId ?? initialCragId;
+      const directAreaId = this.effectiveAreaId();
+      return { cragId: inputCragId ?? initialCragId, directAreaId };
     },
-    loader: async ({ params: targetCragId }) => {
-      if (!targetCragId) return null;
+    loader: async ({ params }) => {
+      if (params.directAreaId) return params.directAreaId;
+      if (!params.cragId) return null;
       await this.supabase.whenReady();
       if (!this.isBrowser) return null;
       const { data: crag } = await this.supabase.client
         .from('crags')
         .select('area_id')
-        .eq('id', targetCragId)
+        .eq('id', params.cragId)
         .maybeSingle();
       return crag?.area_id ?? null;
     },

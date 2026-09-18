@@ -138,7 +138,9 @@ import { matchesQuery } from '../../utils';
 
         <!-- Areas list -->
         @if (!loading()) {
-          <div class="grid gap-2 grid-cols-1 md:grid-cols-2">
+          <div
+            class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          >
             @for (a of filtered(); track a.id) {
               <button
                 class="p-6 rounded-3xl"

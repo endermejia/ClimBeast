@@ -118,7 +118,9 @@ const PAGE_SIZE = 20;
             class="flex flex-col w-full lg:flex-1 min-w-0 lg:h-full lg:min-h-0 lg:overflow-hidden"
           >
             <tui-scrollbar class="w-full h-full min-h-0">
-              <div class="flex flex-col gap-4 w-full min-w-0 px-4 lg:px-0 pb-6">
+              <div
+                class="flex flex-col gap-4 w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6"
+              >
                 <ng-template #cragSwitcher>
                   <tui-data-list>
                     @for (cragItem of sortedCrags(); track cragItem.id) {
@@ -153,8 +155,8 @@ const PAGE_SIZE = 20;
                   <p class="text-lg">{{ desc }}</p>
                 }
 
-                <div class="flex flex-wrap justify-between items-center gap-2">
-                  <div class="flex gap-2 items-center">
+                <div class="flex flex-wrap items-center gap-2">
+                  <div class="flex gap-2 items-center flex-wrap">
                     @if (c.latitude && c.longitude) {
                       <app-ubicacion-dropdown
                         [latitude]="c.latitude"
@@ -181,7 +183,7 @@ const PAGE_SIZE = 20;
                   </div>
                   @defer (on viewport; hydrate on viewport) {
                     <app-chart-routes-by-grade
-                      class="self-end"
+                      class="ml-auto"
                       [grades]="c.grades"
                     />
                   } @placeholder {
@@ -276,7 +278,7 @@ const PAGE_SIZE = 20;
           >
             <div class="flex flex-col w-full lg:h-full min-w-0 lg:min-h-0">
               <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
-                <div class="w-full min-w-0 px-4 lg:px-0 pb-6">
+                <div class="w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6">
                   <app-ascents-feed
                     [ascents]="accumulatedAscents()"
                     [isLoading]="ascentsLoading()"
@@ -452,7 +454,7 @@ export class CragComponent {
 
   protected readonly segmentedTabs = computed(() => {
     const tabs = [...this.visibleTabs()];
-    if (this.layoutService.isMobile()) {
+    if (this.layoutService.isNotDesktop()) {
       tabs.push(2);
     }
     return tabs;

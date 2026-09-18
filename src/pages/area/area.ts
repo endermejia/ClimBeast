@@ -8,6 +8,8 @@ import {
   InputSignal,
   resource,
   signal,
+  TemplateRef,
+  ViewChild,
   untracked,
   WritableSignal,
 } from '@angular/core';
@@ -53,6 +55,7 @@ import { FiltersService } from '../../services/filters.service';
 import { LayoutService } from '../../services/layout.service';
 import { MapDataService } from '../../services/map-data.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
+import { RoutesService } from '../../services/routes.service';
 import { SeoService } from '../../services/seo.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -62,6 +65,7 @@ import { AreaRevenuePanelComponent } from '../../components/area/area-revenue-pa
 import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
 import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
 import { CragCardComponent } from '../../components/crag/crag-card';
+import { ParkingCardComponent } from '../../components/location/parking-card';
 import { OutdoorRoutesTableComponent } from '../../components/route/outdoor-routes-table';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { MeteoButtonComponent } from '../../components/ui/meteo-button';
@@ -74,11 +78,13 @@ import { UserInfoHintComponent } from '../../components/ui/user-info-hint';
 
 import {
   AreaDetail,
+  AscentTypes,
   ClimbingKinds,
   type FeedItem,
   isGradeRangeOverlap,
   normalizeRoutesByGrade,
   ORDERED_GRADE_VALUES,
+  type ParkingDto,
   type RouteItem,
   type UserProfileBasicDto,
 } from '../../models';
@@ -126,6 +132,7 @@ const PAGE_SIZE = 20;
     TuiTextfield,
     UbicacionDropdownComponent,
     MeteoButtonComponent,
+    ParkingCardComponent,
     UserInfoHintComponent,
   ],
   styles: `
@@ -153,7 +160,9 @@ const PAGE_SIZE = 20;
           class="flex flex-col w-full lg:flex-1 min-w-0 lg:h-full lg:min-h-0 lg:overflow-hidden"
         >
           <tui-scrollbar class="w-full h-full min-h-0">
-            <div class="flex flex-col gap-4 w-full min-w-0 px-4 lg:px-0 pb-6">
+            <div
+              class="flex flex-col gap-4 w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6"
+            >
               @let canEditAsAdmin = authState.canEditAsAdmin();
               @if (outdoorData.selectedArea(); as area) {
                 @let canAreaAdmin = authState.areaAdminPermissions()[area.id];
@@ -171,10 +180,8 @@ const PAGE_SIZE = 20;
                   </app-section-header>
                 </div>
 
-                <div
-                  class="mb-4 flex flex-wrap justify-between items-center gap-2"
-                >
-                  <div class="flex gap-2">
+                <div class="mb-4 flex flex-wrap items-center gap-2">
+                  <div class="flex gap-2 flex-wrap">
                     @if (areaCenter(); as center) {
                       <app-ubicacion-dropdown
                         [latitude]="center.latitude"
@@ -185,6 +192,19 @@ const PAGE_SIZE = 20;
                         [latitude]="center.latitude"
                         [longitude]="center.longitude"
                       />
+                      @if (totalParkingCapacity() > 0) {
+                        <button
+                          tuiButton
+                          appearance="flat-grayscale"
+                          size="m"
+                          type="button"
+                          iconStart="@tui.square-parking"
+                          (click.zoneless)="openAreaParkings()"
+                        >
+                          {{ totalParkingCapacity() }}
+                          {{ 'capacityShort' | translate }}
+                        </button>
+                      }
                     } @else {
                       <app-ubicacion-dropdown (viewOnMap)="viewOnMap()" />
                     }
@@ -238,7 +258,10 @@ const PAGE_SIZE = 20;
                     }
                   </div>
                   @defer (on viewport; hydrate on viewport) {
-                    <app-chart-routes-by-grade [grades]="area.grades" />
+                    <app-chart-routes-by-grade
+                      class="ml-auto"
+                      [grades]="area.grades"
+                    />
                   } @placeholder {
                     <div class="h-20 flex items-center justify-center">
                       <tui-loader size="s" />
@@ -353,95 +376,128 @@ const PAGE_SIZE = 20;
                   </div>
                 }
 
-                <!-- Segmented: Crags / Routes -->
-                <tui-segmented
-                  [activeItemIndex]="contentTabIndex()"
-                  (activeItemIndexChange)="contentTabIndex.set($event)"
-                  class="mb-4"
-                >
-                  <button type="button">
-                    {{ cragsCount() }}
-                    {{
-                      (cragsCount() === 1 ? 'crag' : 'crags')
-                        | translate
-                        | lowercase
-                    }}
-                  </button>
-                  <button type="button">
-                    {{ allRoutes().length }}
-                    {{ 'routes' | translate | lowercase }}
-                  </button>
-                </tui-segmented>
-
-                @if (contentTabIndex() === 0) {
-                  <!-- Search + Filters for Crags -->
-                  <div
-                    class="sticky top-0 z-10 py-4 flex items-end gap-2 bg-(--tui-background-base)"
+                <!-- Segmented: Routes / Crags / Ascents -->
+                @if (segmentedTabs().length > 1) {
+                  <tui-segmented
+                    [activeItemIndex]="activeTabIndex()"
+                    (activeItemIndexChange)="activeTabIndex.set($event)"
+                    class="mb-4"
                   >
-                    <tui-textfield
-                      appearance="floating"
-                      class="grow block"
-                      tuiTextfieldSize="l"
-                    >
-                      <label tuiLabel for="crags-search">{{
-                        'searchPlaceholder' | translate
-                      }}</label>
-                      <input
-                        tuiInput
-                        #cragsSearch
-                        id="crags-search"
-                        autocomplete="off"
-                        [value]="query()"
-                        (input.zoneless)="onQuery(cragsSearch.value)"
-                      />
-                    </tui-textfield>
-                    <tui-badged-content class="rounded-2xl">
-                      @if (hasActiveFilters()) {
-                        <tui-badge-notification
-                          tuiAppearance="accent"
-                          size="s"
-                          tuiSlot="top"
-                        />
-                      }
-                      <button
-                        tuiButton
-                        appearance="textfield"
-                        size="l"
-                        type="button"
-                        iconStart="@tui.sliders-horizontal"
-                        [attr.aria-label]="'filters' | translate"
-                        (click.zoneless)="openFilters()"
-                      ></button>
-                    </tui-badged-content>
-                  </div>
+                    @for (tabIdx of segmentedTabs(); track tabIdx) {
+                      <button type="button">
+                        @if (tabIdx === 0) {
+                          {{ allRoutes().length }}
+                          {{ 'routes' | translate | lowercase }}
+                        } @else if (tabIdx === 1) {
+                          {{ cragsCount() }}
+                          {{
+                            (cragsCount() === 1 ? 'crag' : 'crags')
+                              | translate
+                              | lowercase
+                          }}
+                        } @else {
+                          {{ ascentsCount() }}
+                          {{ 'ascents' | translate | lowercase }}
+                        }
+                      </button>
+                    }
+                  </tui-segmented>
+                }
 
+                @let currentTab = segmentedTabs()[activeTabIndex()];
+                @if (loadedTabs().has(0)) {
                   <div
-                    class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+                    [hidden]="currentTab !== 0"
+                    [class.hidden]="currentTab !== 0"
                   >
-                    @for (crag of crags(); track crag.slug) {
-                      <app-crag-card
-                        [crag]="{ ...crag, area_slug: areaSlug() }"
-                        [showAreaName]="false"
+                    <!-- Routes Table -->
+                    @if (allRoutes().length > 0) {
+                      <app-outdoor-routes-table
+                        [data]="allRoutes()"
+                        [showLocation]="true"
+                        [showRowColors]="true"
+                        [hiddenColumns]="['topo']"
                       />
-                    } @empty {
-                      <app-empty-state
-                        class="col-span-full"
-                        icon="@tui.layout-grid"
-                      />
+                    } @else {
+                      <app-empty-state class="mt-8" icon="@tui.route" />
                     }
                   </div>
-                } @else {
-                  <!-- Routes Table -->
-                  @if (allRoutes().length > 0) {
-                    <app-outdoor-routes-table
-                      [data]="allRoutes()"
-                      [showLocation]="true"
-                      [showRowColors]="true"
-                      [hiddenColumns]="['topo', 'equippers']"
+                }
+                @if (loadedTabs().has(1)) {
+                  <div
+                    [hidden]="currentTab !== 1"
+                    [class.hidden]="currentTab !== 1"
+                  >
+                    <!-- Search + Filters for Crags -->
+                    <div
+                      class="sticky top-0 z-10 py-4 flex items-end gap-2 bg-(--tui-background-base)"
+                    >
+                      <tui-textfield
+                        appearance="floating"
+                        class="grow block"
+                        tuiTextfieldSize="l"
+                      >
+                        <label tuiLabel for="crags-search">{{
+                          'searchPlaceholder' | translate
+                        }}</label>
+                        <input
+                          tuiInput
+                          #cragsSearch
+                          id="crags-search"
+                          autocomplete="off"
+                          [value]="query()"
+                          (input.zoneless)="onQuery(cragsSearch.value)"
+                        />
+                      </tui-textfield>
+                      <tui-badged-content class="rounded-2xl">
+                        @if (hasActiveFilters()) {
+                          <tui-badge-notification
+                            tuiAppearance="accent"
+                            size="s"
+                            tuiSlot="top"
+                          />
+                        }
+                        <button
+                          tuiButton
+                          appearance="textfield"
+                          size="l"
+                          type="button"
+                          iconStart="@tui.sliders-horizontal"
+                          [attr.aria-label]="'filters' | translate"
+                          (click.zoneless)="openFilters()"
+                        ></button>
+                      </tui-badged-content>
+                    </div>
+
+                    <div class="grid gap-2 grid-cols-1 xl:grid-cols-2">
+                      @for (crag of crags(); track crag.slug) {
+                        <app-crag-card
+                          [crag]="{ ...crag, area_slug: areaSlug() }"
+                          [showAreaName]="false"
+                        />
+                      } @empty {
+                        <app-empty-state
+                          class="col-span-full"
+                          icon="@tui.layout-grid"
+                        />
+                      }
+                    </div>
+                  </div>
+                }
+                @if (loadedTabs().has(2)) {
+                  <div
+                    [hidden]="currentTab !== 2"
+                    [class.hidden]="currentTab !== 2"
+                  >
+                    <app-ascents-feed
+                      [ascents]="accumulatedAscents()"
+                      [isLoading]="ascentsLoading()"
+                      [hasMore]="hasMoreAscents()"
+                      [showRoute]="true"
+                      [showArea]="false"
+                      (loadMore)="loadMoreAscents()"
                     />
-                  } @else {
-                    <app-empty-state class="mt-8" icon="@tui.route" />
-                  }
+                  </div>
                 }
               } @else {
                 <div class="flex items-center justify-center py-16">
@@ -458,7 +514,7 @@ const PAGE_SIZE = 20;
         >
           <div class="flex flex-col w-full lg:h-full min-w-0 lg:min-h-0">
             <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
-              <div class="w-full min-w-0 px-4 lg:px-0 pb-6">
+              <div class="w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6">
                 <app-ascents-feed
                   [ascents]="accumulatedAscents()"
                   [isLoading]="ascentsLoading()"
@@ -473,6 +529,22 @@ const PAGE_SIZE = 20;
         </div>
       </section>
     </tui-scrollbar>
+    <ng-template #parkingsDialogTpl>
+      <div class="flex items-center gap-2 mb-4">
+        <h2 class="text-2xl font-semibold">
+          {{ 'parkings' | translate }}
+        </h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        @for (p of areaParkings(); track p.id) {
+          <app-parking-card [parking]="p" />
+        } @empty {
+          <div class="col-span-full text-center opacity-60 text-sm py-8">
+            {{ 'parkings.empty' | translate }}
+          </div>
+        }
+      </div>
+    </ng-template>
   `,
   host: { class: 'flex flex-col w-full h-full min-h-0' },
 })
@@ -483,6 +555,7 @@ export class AreaComponent {
   protected readonly layoutService = inject(LayoutService);
   protected readonly mapData = inject(MapDataService);
   protected readonly router = inject(Router);
+  private readonly routesService = inject(RoutesService);
   protected readonly toast = inject(ToastService);
   protected readonly isBrowser = inject(IS_BROWSER);
   protected readonly areas = inject(AreasService);
@@ -506,7 +579,8 @@ export class AreaComponent {
   readonly selectedCategories = this.filterState.areaListCategories;
   readonly selectedShade = this.filterState.areaListShade;
 
-  protected readonly contentTabIndex = signal(0);
+  protected readonly activeTabIndex = signal(0);
+  protected readonly loadedTabs = signal<Set<number>>(new Set([0]));
 
   private readonly ascentsPage = signal(0);
   protected readonly accumulatedAscents = signal<FeedItem[]>([]);
@@ -656,6 +730,24 @@ export class AreaComponent {
         appearance: 'neutral',
         action: () => this.openEditArea(),
       });
+      actions.push({
+        label: 'sectors.newTitle',
+        icon: '@tui.plus',
+        appearance: 'neutral',
+        action: () => this.openCreateCrag(),
+      });
+      actions.push({
+        label: 'sectors.unifyTitle',
+        icon: '@tui.blend',
+        appearance: 'neutral',
+        action: () => this.cragsService.openUnifyCrags(),
+      });
+      actions.push({
+        label: 'routes.newTitle',
+        icon: '@tui.plus',
+        appearance: 'neutral',
+        action: () => this.openCreateRoute(),
+      });
       if (isAdmin) {
         actions.push({
           label: 'delete',
@@ -711,12 +803,37 @@ export class AreaComponent {
       if (!data) return [];
 
       return data.map((r) => {
-        const { crag, liked, project, own_ascent, ...rest } = r;
+        const {
+          crag,
+          liked,
+          project,
+          own_ascent,
+          ascents,
+          route_equippers,
+          topo_routes,
+          ...rest
+        } = r;
         const cragArea = (
           crag as { area?: { slug?: string; name?: string } } | null
         )?.area;
+        const rates =
+          ascents
+            ?.map((a) => a.rate)
+            .filter((rate): rate is number => rate != null) ?? [];
+        const rating =
+          rates.length > 0
+            ? rates.reduce((a, b) => a + b, 0) / rates.length
+            : 0;
+        const ascent_count =
+          ascents?.filter((a) => a.type !== AscentTypes.ATTEMPT).length ?? 0;
         return {
           ...rest,
+          equippers: (route_equippers ?? [])
+            .map((re) => re.equipper)
+            .filter(Boolean),
+          topos: (topo_routes ?? []).map((tr) => tr.topo).filter(Boolean),
+          rating,
+          ascent_count,
           liked: (liked?.length ?? 0) > 0,
           project: (project?.length ?? 0) > 0,
           own_ascent: own_ascent?.[0] ?? null,
@@ -734,6 +851,41 @@ export class AreaComponent {
   protected readonly allRoutes = computed(
     () => this.allRoutesResource.value() ?? [],
   );
+
+  protected readonly ascentsCountResource = resource({
+    params: () => this.outdoorData.selectedArea()?.id,
+    loader: async ({ params: areaId }) => {
+      if (!areaId || !this.isBrowser) return 0;
+      await this.supabase.whenReady();
+      const { data: routes } = await this.supabase.client
+        .from('routes')
+        .select('id')
+        .eq('crag.area_id', areaId);
+      if (!routes?.length) return 0;
+      const { count } = await this.supabase.client
+        .from('route_ascents')
+        .select('*', { count: 'exact', head: true })
+        .in(
+          'route_id',
+          routes.map((r) => r.id),
+        );
+      return count ?? 0;
+    },
+  });
+
+  protected readonly ascentsCount = computed(
+    () => this.ascentsCountResource.value() ?? 0,
+  );
+
+  protected readonly segmentedTabs = computed(() => {
+    const tabs: number[] = [];
+    if (this.allRoutes().length > 0) tabs.push(0);
+    if (this.cragsCount() > 0) tabs.push(1);
+    if (this.layoutService.isNotDesktop()) {
+      tabs.push(2);
+    }
+    return tabs;
+  });
 
   readonly filteredCrags = computed(() => {
     const query = this.query();
@@ -876,6 +1028,35 @@ export class AreaComponent {
     this.areaCenterResource.value(),
   );
 
+  protected readonly areaParkingsResource = resource({
+    params: () => this.outdoorData.cragsList(),
+    loader: async ({ params: crags }) => {
+      if (!crags?.length || !this.isBrowser) return [];
+      await this.supabase.whenReady();
+      const cragIds = crags.map((c) => c.id);
+      const { data, error } = await this.supabase.client
+        .from('crag_parkings')
+        .select('parking:parkings(*)')
+        .in('crag_id', cragIds);
+      if (error || !data) return [];
+      const unique = [
+        ...new Map(data.map((cp) => [cp.parking.id, cp.parking])).values(),
+      ];
+      return unique as ParkingDto[];
+    },
+  });
+
+  protected readonly areaParkings = computed(
+    () => this.areaParkingsResource.value() ?? [],
+  );
+
+  protected readonly totalParkingCapacity = computed(() =>
+    this.areaParkings().reduce((sum, p) => sum + (p.size ?? 0), 0),
+  );
+
+  @ViewChild('parkingsDialogTpl')
+  private readonly parkingsDialogTpl!: TemplateRef<unknown>;
+
   protected readonly stringifyUser = (u: UserProfileBasicDto) => u.name || '';
 
   constructor() {
@@ -885,6 +1066,8 @@ export class AreaComponent {
       untracked(() => {
         this.ascentsPage.set(0);
         this.accumulatedAscents.set([]);
+        const currentTab = this.segmentedTabs()[this.activeTabIndex()] ?? 0;
+        this.loadedTabs.set(new Set([currentTab]));
       });
     });
 
@@ -898,6 +1081,25 @@ export class AreaComponent {
           this.accumulatedAscents.update((prev) => [...prev, ...newItems]);
         }
       });
+    });
+
+    effect(() => {
+      const currentTab = this.segmentedTabs()[this.activeTabIndex()];
+      if (currentTab !== undefined) {
+        this.loadedTabs.update((set) => {
+          if (set.has(currentTab)) return set;
+          const next = new Set(set);
+          next.add(currentTab);
+          return next;
+        });
+      }
+    });
+
+    effect(() => {
+      const tabs = this.segmentedTabs();
+      if (this.activeTabIndex() >= tabs.length && tabs.length > 0) {
+        this.activeTabIndex.set(0);
+      }
     });
 
     effect(() => {
@@ -1000,6 +1202,11 @@ export class AreaComponent {
     const current = this.outdoorData.selectedArea();
     if (!current) return;
     this.cragsService.openCragForm({ areaId: current.id });
+  }
+
+  openCreateRoute(): void {
+    const area = this.outdoorData.selectedArea();
+    this.routesService.openRouteForm({ areaId: area?.id });
   }
 
   async viewOnMap(): Promise<void> {
@@ -1161,6 +1368,13 @@ export class AreaComponent {
       'topo',
       firstTopo.id,
     ]);
+  }
+
+  openAreaParkings(): void {
+    void firstValueFrom(
+      this.dialogs.open(this.parkingsDialogTpl, { size: 'l' }),
+      { defaultValue: undefined },
+    );
   }
 
   buyTopo(): void {
