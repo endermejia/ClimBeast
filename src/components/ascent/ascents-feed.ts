@@ -82,6 +82,8 @@ export interface ProcessedFeedItem {
               [data]="ascent"
               [showUser]="showUser()"
               [showRoute]="showRoute()"
+              [showCrag]="showCrag()"
+              [showArea]="showArea()"
               [isFollowed]="processed.isFollowed"
               [priority]="true"
               [highlightOwn]="highlightOwn()"
@@ -94,6 +96,8 @@ export interface ProcessedFeedItem {
                 [data]="ascent"
                 [showUser]="showUser()"
                 [showRoute]="showRoute()"
+                [showCrag]="showCrag()"
+                [showArea]="showArea()"
                 [isFollowed]="processed.isFollowed"
                 [priority]="false"
                 [highlightOwn]="highlightOwn()"
@@ -144,6 +148,8 @@ export class AscentsFeedComponent {
   hasMore = input(false);
   showUser = input(true);
   showRoute = input(true);
+  showCrag = input(true);
+  showArea = input(true);
   followedIds = input<Set<string>>(new Set());
   columns = input<number>(1);
   highlightOwn = input(false);

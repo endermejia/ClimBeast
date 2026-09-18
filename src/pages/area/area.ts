@@ -150,7 +150,7 @@ const PAGE_SIZE = 20;
       >
         <!-- Left Column -->
         <div
-          class="flex flex-col w-full px-4 lg:px-0 lg:flex-1 min-w-0 lg:h-full lg:overflow-hidden"
+          class="flex flex-col w-full px-4 lg:px-0 lg:flex-1 min-w-0 lg:h-full lg:min-h-0 lg:overflow-y-auto"
         >
           @let canEditAsAdmin = authState.canEditAsAdmin();
           @if (outdoorData.selectedArea(); as area) {
@@ -456,6 +456,7 @@ const PAGE_SIZE = 20;
                   [isLoading]="ascentsLoading()"
                   [hasMore]="hasMoreAscents()"
                   [showRoute]="true"
+                  [showArea]="false"
                   (loadMore)="loadMoreAscents()"
                 />
               </div>
@@ -521,7 +522,7 @@ export class AreaComponent {
           *,
           route:routes!inner(
             *,
-            crag:crags!inner(id, slug, name, area_id)
+            crag:crags!inner(id, slug, name, area_id, area:areas(slug, name))
           )
         `,
         )
@@ -551,8 +552,17 @@ export class AreaComponent {
       return data.map((a) => {
         const { route, user_id, ...ascentRest } = a;
         const cragData = route?.crag;
+        const cragArea = (
+          cragData as { area?: { slug?: string; name?: string } } | null
+        )?.area;
         const mappedRoute = route
-          ? { ...route, crag_slug: cragData?.slug, crag_name: cragData?.name }
+          ? {
+              ...route,
+              crag_slug: cragData?.slug,
+              crag_name: cragData?.name,
+              area_slug: cragArea?.slug,
+              area_name: cragArea?.name,
+            }
           : undefined;
         return {
           ...ascentRest,

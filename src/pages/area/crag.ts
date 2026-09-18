@@ -115,7 +115,7 @@ const PAGE_SIZE = 20;
         @if (cragDetail(); as c) {
           <!-- Left Column: Info + Segmented Tabs -->
           <div
-            class="flex flex-col gap-4 w-full px-4 lg:px-0 lg:flex-1 min-w-0 lg:h-full lg:overflow-hidden"
+            class="flex flex-col gap-4 w-full px-4 lg:px-0 lg:flex-1 min-w-0 lg:h-full lg:min-h-0 lg:overflow-y-auto"
           >
             <ng-template #cragSwitcher>
               <tui-data-list>
@@ -143,66 +143,39 @@ const PAGE_SIZE = 20;
               />
             </div>
 
-            <div class="flex flex-col md:flex-row md:justify-between gap-4">
-              <div class="flex flex-col gap-3 grow">
-                @let lang = languageService.selectedLanguage();
-                @let desc = lang === 'es' ? c.description_es : c.description_en;
-                @let warn = lang === 'es' ? c.warning_es : c.warning_en;
+            @let lang = languageService.selectedLanguage();
+            @let desc = lang === 'es' ? c.description_es : c.description_en;
+            @let warn = lang === 'es' ? c.warning_es : c.warning_en;
 
-                @if (desc) {
-                  <p class="text-lg">{{ desc }}</p>
+            @if (desc) {
+              <p class="text-lg">{{ desc }}</p>
+            }
+
+            <div class="flex flex-wrap justify-between items-center gap-2">
+              <div class="flex gap-2 items-center">
+                @if (c.latitude && c.longitude) {
+                  <app-ubicacion-dropdown
+                    [latitude]="c.latitude"
+                    [longitude]="c.longitude"
+                    (viewOnMap)="viewOnMap(c.latitude, c.longitude)"
+                  />
+                  <app-meteo-button
+                    [latitude]="c.latitude"
+                    [longitude]="c.longitude"
+                  />
                 }
-
-                <div class="flex flex-wrap items-center gap-3 justify-between">
-                  <div class="flex gap-2 items-center">
-                    @if (c.latitude && c.longitude) {
-                      <app-ubicacion-dropdown
-                        [latitude]="c.latitude"
-                        [longitude]="c.longitude"
-                        (viewOnMap)="viewOnMap(c.latitude, c.longitude)"
-                      />
-                      <app-meteo-button
-                        [latitude]="c.latitude"
-                        [longitude]="c.longitude"
-                      />
-                    }
-                    @if (c.parkings.length) {
-                      <app-parking-button [crag]="c" />
-                    }
-                    @if (c.approach) {
-                      <div class="flex w-fit items-center gap-1 opacity-70">
-                        <tui-icon icon="@tui.footprints" />
-                        <span class="text-lg font-medium whitespace-nowrap">
-                          {{ c.approach }}
-                          min.
-                        </span>
-                      </div>
-                    }
-                  </div>
-                </div>
-
-                @if (warn) {
-                  <div tuiNotification appearance="warning">
-                    {{ warn }}
+                @if (c.parkings.length) {
+                  <app-parking-button [crag]="c" />
+                }
+                @if (c.approach) {
+                  <div class="flex w-fit items-center gap-1 opacity-70">
+                    <tui-icon icon="@tui.footprints" />
+                    <span class="text-lg font-medium whitespace-nowrap">
+                      {{ c.approach }}
+                      min.
+                    </span>
                   </div>
                 }
-
-                <div
-                  class="flex flex-row flex-wrap justify-between items-center gap-2"
-                >
-                  @defer (on viewport; hydrate on viewport) {
-                    <app-chart-routes-by-grade
-                      class="md:hidden! self-end"
-                      [grades]="c.grades"
-                    />
-                  } @placeholder {
-                    <div
-                      class="h-20 md:hidden! flex items-center justify-center"
-                    >
-                      <tui-loader size="s" />
-                    </div>
-                  }
-                </div>
               </div>
               @defer (on viewport; hydrate on viewport) {
                 <app-chart-routes-by-grade
@@ -216,12 +189,29 @@ const PAGE_SIZE = 20;
               }
             </div>
 
-            @if (mobileTabs().length > 1) {
+            @defer (on viewport; hydrate on viewport) {
+              <app-chart-routes-by-grade
+                class="md:hidden! self-end"
+                [grades]="c.grades"
+              />
+            } @placeholder {
+              <div class="h-20 md:hidden! flex items-center justify-center">
+                <tui-loader size="s" />
+              </div>
+            }
+
+            @if (warn) {
+              <div tuiNotification appearance="warning">
+                {{ warn }}
+              </div>
+            }
+
+            @if (segmentedTabs().length > 1) {
               <tui-segmented
                 [activeItemIndex]="activeTabIndex()"
                 (activeItemIndexChange)="activeTabIndex.set($event)"
               >
-                @for (tabIdx of mobileTabs(); track tabIdx) {
+                @for (tabIdx of segmentedTabs(); track tabIdx) {
                   <button type="button">
                     @if (tabIdx === 0) {
                       {{ routesCount() }}
@@ -230,6 +220,7 @@ const PAGE_SIZE = 20;
                       {{ toposCount() }}
                       {{ 'topos' | translate | lowercase }}
                     } @else {
+                      {{ ascentsCount() }}
                       {{ 'ascents' | translate | lowercase }}
                     }
                   </button>
@@ -238,7 +229,7 @@ const PAGE_SIZE = 20;
             }
 
             <div class="mt-2 lg:flex-1 lg:min-h-0 lg:overflow-hidden">
-              @let currentTab = mobileTabs()[activeTabIndex()];
+              @let currentTab = segmentedTabs()[activeTabIndex()];
               @if (loadedTabs().has(0)) {
                 <div
                   [hidden]="currentTab !== 0"
@@ -277,6 +268,8 @@ const PAGE_SIZE = 20;
                     [isLoading]="ascentsLoading()"
                     [hasMore]="hasMoreAscents()"
                     [showRoute]="true"
+                    [showCrag]="false"
+                    [showArea]="false"
                     (loadMore)="loadMoreAscents()"
                   />
                 </div>
@@ -296,6 +289,8 @@ const PAGE_SIZE = 20;
                     [isLoading]="ascentsLoading()"
                     [hasMore]="hasMoreAscents()"
                     [showRoute]="true"
+                    [showCrag]="false"
+                    [showArea]="false"
                     (loadMore)="loadMoreAscents()"
                   />
                 </div>
@@ -359,7 +354,7 @@ export class CragComponent {
           *,
           route:routes!inner(
             *,
-            crag:crags!inner(id, slug, name)
+            crag:crags!inner(id, slug, name, area:areas(slug, name))
           )
         `,
         )
@@ -389,8 +384,17 @@ export class CragComponent {
       return data.map((a) => {
         const { route, user_id, ...ascentRest } = a;
         const cragData = route?.crag;
+        const cragArea = (
+          cragData as { area?: { slug?: string; name?: string } } | null
+        )?.area;
         const mappedRoute = route
-          ? { ...route, crag_slug: cragData?.slug, crag_name: cragData?.name }
+          ? {
+              ...route,
+              crag_slug: cragData?.slug,
+              crag_name: cragData?.name,
+              area_slug: cragArea?.slug,
+              area_name: cragArea?.name,
+            }
           : undefined;
         return {
           ...ascentRest,
@@ -414,25 +418,36 @@ export class CragComponent {
     return items.length === PAGE_SIZE;
   });
 
+  protected readonly ascentsCountResource = resource({
+    params: () => {
+      const crag = this.outdoorData.cragDetail();
+      return crag?.id ?? null;
+    },
+    loader: async ({ params: cragId }) => {
+      if (!cragId || !this.isBrowser) return 0;
+      await this.supabase.whenReady();
+      const { data: routes } = await this.supabase.client
+        .from('routes')
+        .select('id')
+        .eq('crag_id', cragId);
+      if (!routes?.length) return 0;
+      const { count } = await this.supabase.client
+        .from('route_ascents')
+        .select('*', { count: 'exact', head: true })
+        .in(
+          'route_id',
+          routes.map((r) => r.id),
+        );
+      return count ?? 0;
+    },
+  });
+
+  protected readonly ascentsCount = computed(
+    () => this.ascentsCountResource.value() ?? 0,
+  );
+
   readonly showToposTab = computed(() => {
-    const c = this.cragDetail();
-    if (!c) return false;
-
-    const canEditAsAdmin = this.authState.canEditAsAdmin();
-    const canEditAsAllowedEquipper =
-      this.authState.areaAdminPermissions()[c.area_id];
-
-    const isSecret = !c.is_public && (c.price === null || c.price === 0);
-    const hasAccess =
-      c.is_public || c.purchased || canEditAsAdmin || canEditAsAllowedEquipper;
-
-    if (isSecret && !hasAccess) {
-      return false;
-    }
-
-    return (
-      (c.topos?.length ?? 0) > 0 || canEditAsAdmin || canEditAsAllowedEquipper
-    );
+    return this.toposCount() > 0;
   });
 
   readonly visibleTabs = computed(() => {
@@ -442,9 +457,11 @@ export class CragComponent {
     return tabs;
   });
 
-  protected readonly mobileTabs = computed(() => {
+  protected readonly segmentedTabs = computed(() => {
     const tabs = [...this.visibleTabs()];
-    tabs.push(2);
+    if (this.layoutService.isMobile()) {
+      tabs.push(2);
+    }
     return tabs;
   });
 
@@ -562,7 +579,7 @@ export class CragComponent {
       untracked(() => {
         this.ascentsPage.set(0);
         this.accumulatedAscents.set([]);
-        const currentTab = this.mobileTabs()[this.activeTabIndex()] ?? 0;
+        const currentTab = this.segmentedTabs()[this.activeTabIndex()] ?? 0;
         this.loadedTabs.set(new Set([currentTab]));
       });
     });
@@ -580,7 +597,7 @@ export class CragComponent {
     });
 
     effect(() => {
-      const currentTab = this.mobileTabs()[this.activeTabIndex()];
+      const currentTab = this.segmentedTabs()[this.activeTabIndex()];
       if (currentTab !== undefined) {
         this.loadedTabs.update((set) => {
           if (set.has(currentTab)) return set;
@@ -624,7 +641,7 @@ export class CragComponent {
     });
 
     effect(() => {
-      const tabs = this.mobileTabs();
+      const tabs = this.segmentedTabs();
       if (this.activeTabIndex() >= tabs.length && tabs.length > 0) {
         this.activeTabIndex.set(0);
       }
@@ -637,9 +654,9 @@ export class CragComponent {
 
       const tab = params['tab'];
       if (tab === 'topos' && tabs.includes(1)) {
-        this.activeTabIndex.set(this.mobileTabs().indexOf(1));
+        this.activeTabIndex.set(this.segmentedTabs().indexOf(1));
       } else if (tab === 'routes' && tabs.includes(0)) {
-        this.activeTabIndex.set(this.mobileTabs().indexOf(0));
+        this.activeTabIndex.set(this.segmentedTabs().indexOf(0));
       }
     });
 

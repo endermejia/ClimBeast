@@ -271,25 +271,29 @@ import { AscentTypeComponent } from './ascent-type';
                 >
                   {{ ascent.route.name }}
                 </a>
-                <span class="mx-1.5 opacity-70 text-sm">•</span>
-                <span class="text-sm opacity-70">
-                  <a
-                    class="hover:underline cursor-pointer"
-                    [routerLink]="[
-                      '/area',
-                      ascent.route.area_slug,
-                      ascent.route.crag_slug || 'general',
-                    ]"
-                  >
-                    {{ ascent.route.crag_name }}
-                  </a>
-                  <a
-                    class="hover:underline cursor-pointer ml-1"
-                    [routerLink]="['/area', ascent.route.area_slug]"
-                  >
-                    ({{ ascent.route.area_name }})
-                  </a>
-                </span>
+                @if (showCrag() && ascent.route.crag_name) {
+                  <span class="mx-1.5 opacity-70 text-sm">•</span>
+                  <span class="text-sm opacity-70">
+                    <a
+                      class="hover:underline cursor-pointer"
+                      [routerLink]="[
+                        '/area',
+                        ascent.route.area_slug,
+                        ascent.route.crag_slug || 'general',
+                      ]"
+                    >
+                      {{ ascent.route.crag_name }}
+                    </a>
+                    @if (showArea() && ascent.route.area_name) {
+                      <a
+                        class="hover:underline cursor-pointer ml-1"
+                        [routerLink]="['/area', ascent.route.area_slug]"
+                      >
+                        ({{ ascent.route.area_name }})
+                      </a>
+                    }
+                  </span>
+                }
               }
               <ng-template #routeHintTemplate>
                 <app-route-info-hint
@@ -421,6 +425,8 @@ export class AscentCardComponent {
   data = input.required<RouteAscentWithExtras>();
   showUser = input(true);
   showRoute = input(true);
+  showCrag = input(true);
+  showArea = input(true);
   showPhoto = input(true);
   showComment = input(true);
   isFollowed = input(false);
