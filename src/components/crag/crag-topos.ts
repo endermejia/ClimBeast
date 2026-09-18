@@ -1,4 +1,3 @@
-import { LowerCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,17 +7,13 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { TuiButton, TuiIcon } from '@taiga-ui/core';
-import { TuiAvatar } from '@taiga-ui/kit';
+import { TuiIcon } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AuthStateService } from '../../services/auth-state.service';
-import { ToposService } from '../../services/topos.service';
 
 import { CragDetail } from '../../models';
-
-import { IconSrcPipe } from '../../pipes';
 
 import { PaywallComponent } from '../paywall/paywall';
 
@@ -29,44 +24,12 @@ import { EmptyStateComponent } from '../ui/empty-state';
   selector: 'app-crag-topos',
   imports: [
     EmptyStateComponent,
-    IconSrcPipe,
-    LowerCasePipe,
     PaywallComponent,
     TopoCardComponent,
     TranslatePipe,
-    TuiAvatar,
-    TuiButton,
     TuiIcon,
   ],
   template: `
-    @let toposCount = topos().length;
-    <div class="flex items-center justify-between gap-2 mb-4">
-      <div class="flex items-center gap-2">
-        <span
-          [tuiAvatar]="'topo' | iconSrc"
-          tuiThumbnail
-          size="l"
-          class="self-center"
-          [attr.aria-label]="'topo' | translate"
-        ></span>
-        <h2 class="text-2xl font-semibold">
-          {{ toposCount }}
-          {{ (toposCount === 1 ? 'topo' : 'topos') | translate | lowercase }}
-        </h2>
-      </div>
-      @if (canAreaAdmin()) {
-        <button
-          tuiButton
-          appearance="textfield"
-          size="s"
-          type="button"
-          (click.zoneless)="openCreateTopo()"
-          [iconStart]="'@tui.plus'"
-        >
-          {{ 'new' | translate }}
-        </button>
-      }
-    </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       @if (
         crag()?.is_public ||
@@ -120,7 +83,6 @@ export class CragToposComponent {
   cragSlug = input.required<string>();
 
   protected readonly authState = inject(AuthStateService);
-  protected readonly toposService = inject(ToposService);
   protected readonly router = inject(Router);
 
   readonly canEditAsAdmin = this.authState.canEditAsAdmin;
@@ -135,10 +97,4 @@ export class CragToposComponent {
     if (!c) return [];
     return c.topos;
   });
-
-  openCreateTopo(): void {
-    const c = this.crag();
-    if (!c) return;
-    this.toposService.openTopoForm({ cragId: c.id });
-  }
 }

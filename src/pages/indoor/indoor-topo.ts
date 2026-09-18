@@ -333,7 +333,6 @@ export class IndoorTopoComponent extends TopoPageBase {
   protected readonly columns = computed(() => {
     const hasMoves = this.hasMovesData();
     return [
-      'index',
       'grade',
       'name',
       ...(hasMoves ? ['moves'] : []),

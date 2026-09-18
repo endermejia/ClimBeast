@@ -60,10 +60,12 @@ import { ChartRoutesByGradeComponent } from '../../components/charts/chart-route
 import { CragCardComponent } from '../../components/crag/crag-card';
 import { GradeComponent } from '../../components/ui/avatar-grade';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
+import { MeteoButtonComponent } from '../../components/ui/meteo-button';
 import {
   SectionHeaderAction,
   SectionHeaderComponent,
 } from '../../components/ui/section-header';
+import { UbicacionDropdownComponent } from '../../components/ui/ubicacion-dropdown';
 import { UserInfoHintComponent } from '../../components/ui/user-info-hint';
 
 import {
@@ -114,6 +116,8 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiLoader,
     TuiScrollbar,
     TuiTextfield,
+    UbicacionDropdownComponent,
+    MeteoButtonComponent,
     UserInfoHintComponent,
   ],
   template: `
@@ -138,16 +142,19 @@ import { IS_BROWSER } from '../../app/is-browser';
 
           <div class="mb-4 flex flex-wrap justify-between items-center gap-2">
             <div class="flex gap-2">
-              <button
-                tuiButton
-                appearance="flat"
-                size="m"
-                type="button"
-                (click.zoneless)="viewOnMap()"
-                [iconStart]="'@tui.map-pin'"
-              >
-                {{ 'viewOnMap' | translate }}
-              </button>
+              @if (areaCenter(); as center) {
+                <app-ubicacion-dropdown
+                  [latitude]="center.latitude"
+                  [longitude]="center.longitude"
+                  (viewOnMap)="viewOnMap()"
+                />
+                <app-meteo-button
+                  [latitude]="center.latitude"
+                  [longitude]="center.longitude"
+                />
+              } @else {
+                <app-ubicacion-dropdown (viewOnMap)="viewOnMap()" />
+              }
 
               @if (hasTopos()) {
                 @let details = areaDetail();
@@ -749,6 +756,28 @@ export class AreaComponent {
 
   protected readonly foundUsers = computed(
     () => this.foundUsersResource.value() ?? [],
+  );
+
+  protected readonly areaCenterResource = resource({
+    params: () => this.outdoorData.selectedArea()?.id,
+    loader: async ({ params: areaId }) => {
+      if (!areaId) return null;
+      await this.supabase.whenReady();
+      const { data } = await this.supabase.client
+        .from('crags')
+        .select('latitude, longitude')
+        .eq('area_id', areaId)
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null);
+      if (!data?.length) return null;
+      const avgLat = data.reduce((s, c) => s + c.latitude!, 0) / data.length;
+      const avgLng = data.reduce((s, c) => s + c.longitude!, 0) / data.length;
+      return { latitude: avgLat, longitude: avgLng };
+    },
+  });
+
+  protected readonly areaCenter = computed(() =>
+    this.areaCenterResource.value(),
   );
 
   protected readonly stringifyUser = (u: UserProfileBasicDto) => u.name || '';

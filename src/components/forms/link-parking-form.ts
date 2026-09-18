@@ -56,7 +56,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiTitle,
   ],
   template: `
-    <form class="grid gap-4" (submit.zoneless)="onSubmit($event)">
+    <form class="grid gap-4 w-full" (submit.zoneless)="onSubmit($event)">
       <tui-textfield
         multi
         tuiChevron

@@ -51,13 +51,11 @@ import { DropdownButtonComponent } from '../ui/dropdown-button';
         } @else {
           @if (showFilterDropdown()) {
             <app-dropdown-button
-              appearance="flat-grayscale"
               size="xl"
+              [label]="filterLabels()[feedFilter()] | translate"
               [content]="feedFilterDropdown()"
               [(open)]="dropdownOpenModel"
-            >
-              {{ filterLabels()[feedFilter()] | translate }}
-            </app-dropdown-button>
+            />
           }
           <tui-badged-content [style.--tui-radius.%]="50">
             @if (hasActiveFilters()) {

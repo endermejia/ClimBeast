@@ -107,6 +107,7 @@ import type { TopoRouteRow } from './topo.types';
                       [sorter]="col | tableSorter"
                       [style.min-width.px]="isMobile() ? null : COL_MIN_PX[col]"
                       [style.max-width.px]="isMobile() ? null : COL_MIN_PX[col]"
+                      [class.sticky-col-right]="col === 'actions'"
                       class="text-center"
                     >
                       <div
@@ -175,6 +176,7 @@ import type { TopoRouteRow } from './topo.types';
                       <td
                         *tuiCell="col"
                         tuiTd
+                        [class.sticky-col-right]="col === 'actions'"
                         class="overflow-hidden text-center"
                       >
                         @switch (col) {

@@ -147,13 +147,12 @@ export interface SectionHeaderAction {
       >
         @if (titleDropdown(); as template) {
           <app-dropdown-button
-            appearance="flat"
             size="2xl"
+            [label]="title()"
             [content]="template"
+            [count]="itemCount()"
             [(open)]="dropdownOpen"
-          >
-            {{ title() }}
-          </app-dropdown-button>
+          />
         } @else {
           {{ title() }}
         }
@@ -171,6 +170,7 @@ export class SectionHeaderComponent {
 
   title = input.required<string>();
   titleDropdown = input<TemplateRef<Record<string, unknown>> | null>(null);
+  itemCount = input(1);
   liked = input(false);
   showLike = input(true);
   lastUpdated = input<Date | null>(null);

@@ -347,7 +347,7 @@ import { ROUTE_TABLE_SORTERS } from '../../utils';
                                 @if (toposCount > 0) {
                                   <div tuiGroup [collapsed]="true">
                                     @for (t of item.topos; track t.id) {
-                                      <button
+                                      <a
                                         tuiButton
                                         appearance="secondary"
                                         class="min-w-fit!"
@@ -355,7 +355,7 @@ import { ROUTE_TABLE_SORTERS } from '../../utils';
                                         [routerLink]="t.link"
                                       >
                                         {{ t.name }}
-                                      </button>
+                                      </a>
                                     }
                                     @if (canAddTopo) {
                                       <button

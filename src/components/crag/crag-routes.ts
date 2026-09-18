@@ -1,4 +1,3 @@
-import { LowerCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -18,11 +17,7 @@ import {
   TuiLoader,
   TuiInput,
 } from '@taiga-ui/core';
-import {
-  TuiAvatar,
-  TuiBadgedContent,
-  TuiBadgeNotification,
-} from '@taiga-ui/kit';
+import { TuiBadgedContent, TuiBadgeNotification } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -61,11 +56,9 @@ import { EmptyStateComponent } from '../ui/empty-state';
     FormsModule,
     GradeComponent,
     IconSrcPipe,
-    LowerCasePipe,
     OutdoorRoutesTableComponent,
     TranslatePipe,
     TuiAppearance,
-    TuiAvatar,
     TuiBadgedContent,
     TuiBadgeNotification,
     TuiButton,
@@ -75,46 +68,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
     TuiLoader,
   ],
   template: `
-    <div class="flex items-center justify-between gap-2 mb-4">
-      <div class="flex items-center w-full sm:w-auto gap-2">
-        <span
-          tuiAvatar="@tui.route"
-          tuiThumbnail
-          size="l"
-          class="self-center"
-          [attr.aria-label]="'routes' | translate"
-        ></span>
-        <h2 class="text-2xl font-semibold">
-          {{ routesCount() }}
-          {{ 'routes' | translate | lowercase }}
-        </h2>
-      </div>
-      <div class="flex gap-2 flex-wrap sm:flex-nowrap justify-end">
-        @if (canEditAsAdmin() || canAreaAdmin()) {
-          <button
-            tuiButton
-            appearance="textfield"
-            size="s"
-            type="button"
-            (click.zoneless)="routesService.openUnifyRoutes()"
-            [iconStart]="'@tui.blend'"
-          >
-            {{ 'unify' | translate }}
-          </button>
-        }
-        <button
-          tuiButton
-          appearance="textfield"
-          size="s"
-          type="button"
-          (click.zoneless)="openCreateRoute()"
-          [iconStart]="'@tui.plus'"
-        >
-          {{ 'new' | translate }}
-        </button>
-      </div>
-    </div>
-
     <div class="mb-4 flex items-end gap-2">
       <tui-textfield class="grow block" tuiTextfieldSize="l">
         <label tuiLabel for="routes-search">{{

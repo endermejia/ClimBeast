@@ -24,13 +24,14 @@ import { ToastService } from '../../services/toast.service';
 
 import { CragDetail, ParkingDto } from '../../models';
 
-import { handleErrorToast, mapLocationUrl } from '../../utils';
+import { handleErrorToast } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
 import { ParkingCardComponent } from '../location/parking-card';
 
 import { EmptyStateComponent } from '../ui/empty-state';
+import { UbicacionDropdownComponent } from '../ui/ubicacion-dropdown';
 
 @Component({
   selector: 'app-crag-parkings',
@@ -40,6 +41,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
     TranslatePipe,
     TuiAvatar,
     TuiButton,
+    UbicacionDropdownComponent,
   ],
   template: `
     <div class="flex items-center justify-between gap-2 mb-4">
@@ -55,30 +57,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
           {{ 'parkings' | translate }}
         </h2>
       </div>
-      @if (canAreaAdmin()) {
-        <div class="flex gap-2 flex-wrap sm:flex-nowrap justify-end">
-          <button
-            tuiButton
-            appearance="textfield"
-            size="s"
-            type="button"
-            (click.zoneless)="openLinkParking()"
-            [iconStart]="'@tui.link'"
-          >
-            {{ 'link' | translate }}
-          </button>
-          <button
-            tuiButton
-            appearance="textfield"
-            size="s"
-            type="button"
-            (click.zoneless)="openCreateParking()"
-            [iconStart]="'@tui.plus'"
-          >
-            {{ 'new' | translate }}
-          </button>
-        </div>
-      }
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       @for (p of crag()?.parkings; track p.id) {
@@ -112,36 +90,11 @@ import { EmptyStateComponent } from '../ui/empty-state';
 
           <ng-container actions>
             @if (p.latitude && p.longitude) {
-              <button
-                tuiButton
-                appearance="secondary"
-                size="s"
-                type="button"
-                class="rounded-full!"
-                (click.zoneless)="viewOnMap(p.latitude, p.longitude)"
-                [iconStart]="'@tui.map-pin'"
-              >
-                {{ 'viewOnMap' | translate }}
-              </button>
-              <button
-                appearance="secondary"
-                size="s"
-                tuiButton
-                type="button"
-                class="rounded-full!"
-                [iconStart]="'/image/google-maps.svg'"
-                class="[--tui-icon-size:1.25rem] rounded-full!"
-                (click.zoneless)="
-                  openExternal(
-                    mapLocationUrl({
-                      latitude: p.latitude,
-                      longitude: p.longitude,
-                    })
-                  )
-                "
-              >
-                Google Maps
-              </button>
+              <app-ubicacion-dropdown
+                [latitude]="p.latitude"
+                [longitude]="p.longitude"
+                (viewOnMap)="viewOnMap(p.latitude, p.longitude)"
+              />
             }
           </ng-container>
         </app-parking-card>
@@ -168,36 +121,12 @@ export class CragParkingsComponent {
   private readonly isBrowser = inject(IS_BROWSER);
   protected readonly router = inject(Router);
 
-  protected readonly mapLocationUrl = mapLocationUrl;
-
   readonly canEditAsAdmin = this.authState.canEditAsAdmin;
   readonly canAreaAdmin = computed(() => {
     const c = this.crag();
     if (!c) return false;
     return this.authState.areaAdminPermissions()[c.area_id];
   });
-
-  openCreateParking(): void {
-    const c = this.crag();
-    if (!c) return;
-    this.parkingsService.openParkingForm({
-      cragId: c.id,
-      defaultLocation:
-        c.latitude && c.longitude
-          ? { lat: c.latitude, lng: c.longitude }
-          : undefined,
-    });
-  }
-
-  openLinkParking(): void {
-    const c = this.crag();
-    if (!c) return;
-    const existingParkingIds = c.parkings.map((p) => p.id);
-    this.parkingsService.openLinkParkingForm({
-      cragId: c.id,
-      existingParkingIds,
-    });
-  }
 
   openEditParking(parking: ParkingDto): void {
     this.parkingsService.openParkingForm({
@@ -266,11 +195,5 @@ export class CragParkingsComponent {
       north_east_longitude: maxLng,
     });
     void this.router.navigateByUrl('/explore');
-  }
-
-  protected openExternal(url: string): void {
-    if (this.isBrowser) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
   }
 }

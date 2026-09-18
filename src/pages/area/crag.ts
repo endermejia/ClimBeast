@@ -1,3 +1,4 @@
+import { LowerCasePipe } from '@angular/common';
 import {
   Component,
   computed,
@@ -9,20 +10,18 @@ import {
   untracked,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Router, ActivatedRoute } from '@angular/router';
-
-import { TuiDialogService } from '@taiga-ui/core';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import {
-  TuiButton,
   TuiDataList,
+  TuiDialogService,
   TuiDropdown,
   TuiIcon,
   TuiLoader,
   TuiNotification,
   TuiScrollbar,
 } from '@taiga-ui/core';
-import { TUI_CONFIRM, TuiTabs, type TuiConfirmData } from '@taiga-ui/kit';
+import { TUI_CONFIRM, TuiSegmented, type TuiConfirmData } from '@taiga-ui/kit';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -34,29 +33,34 @@ import { CragsService } from '../../services/crags.service';
 import { LanguageService } from '../../services/language.service';
 import { MapDataService } from '../../services/map-data.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
+import { ParkingsService } from '../../services/parkings.service';
+import { RoutesService } from '../../services/routes.service';
 import { SeoService } from '../../services/seo.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
+import { ToposService } from '../../services/topos.service';
 import { VisitedCragsService } from '../../services/visited-crags.service';
 
 import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
 
-import { CragParkingsComponent } from '../../components/crag/crag-parkings';
 import { CragRoutesComponent } from '../../components/crag/crag-routes';
 import { CragToposComponent } from '../../components/crag/crag-topos';
+import { MeteoButtonComponent } from '../../components/ui/meteo-button';
+import { ParkingButtonComponent } from '../../components/ui/parking-button';
 import {
   SectionHeaderAction,
   SectionHeaderComponent,
 } from '../../components/ui/section-header';
-import { WeatherForecastComponent } from '../../components/ui/weather-forecast';
+import { UbicacionDropdownComponent } from '../../components/ui/ubicacion-dropdown';
 
 import {
   AmountByEveryGrade,
+  ClimbingKinds,
   type CragDetail,
   VERTICAL_LIFE_GRADES,
 } from '../../models';
 
-import { handleErrorToast, mapLocationUrl } from '../../utils';
+import { handleErrorToast, slugify } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -64,21 +68,21 @@ import { IS_BROWSER } from '../../app/is-browser';
   selector: 'app-crag',
   imports: [
     ChartRoutesByGradeComponent,
-    CragParkingsComponent,
     CragRoutesComponent,
     CragToposComponent,
+    LowerCasePipe,
+    MeteoButtonComponent,
+    ParkingButtonComponent,
     SectionHeaderComponent,
     TranslatePipe,
-    TuiButton,
     TuiDataList,
     TuiDropdown,
     TuiIcon,
     TuiLoader,
     TuiNotification,
     TuiScrollbar,
-
-    TuiTabs,
-    WeatherForecastComponent,
+    TuiSegmented,
+    UbicacionDropdownComponent,
   ],
   template: `
     <tui-scrollbar class="flex grow">
@@ -107,6 +111,7 @@ import { IS_BROWSER } from '../../app/is-browser';
               [title]="c.name"
               [liked]="c.liked"
               [titleDropdown]="cragSwitcher"
+              [itemCount]="sortedCrags().length"
               [actions]="headerActions()"
               (toggleLike)="onToggleLike()"
             />
@@ -122,15 +127,33 @@ import { IS_BROWSER } from '../../app/is-browser';
                 <p class="text-lg">{{ desc }}</p>
               }
 
-              @if (c.approach) {
-                <div class="flex w-fit items-center gap-1 opacity-70">
-                  <tui-icon icon="@tui.footprints" />
-                  <span class="text-lg font-medium whitespace-nowrap">
-                    {{ c.approach }}
-                    min.
-                  </span>
+              <div class="flex flex-wrap items-center gap-3 justify-between">
+                <div class="flex gap-2 items-center">
+                  @if (c.latitude && c.longitude) {
+                    <app-ubicacion-dropdown
+                      [latitude]="c.latitude"
+                      [longitude]="c.longitude"
+                      (viewOnMap)="viewOnMap(c.latitude, c.longitude)"
+                    />
+                    <app-meteo-button
+                      [latitude]="c.latitude"
+                      [longitude]="c.longitude"
+                    />
+                  }
+                  @if (c.parkings.length) {
+                    <app-parking-button [crag]="c" />
+                  }
+                  @if (c.approach) {
+                    <div class="flex w-fit items-center gap-1 opacity-70">
+                      <tui-icon icon="@tui.footprints" />
+                      <span class="text-lg font-medium whitespace-nowrap">
+                        {{ c.approach }}
+                        min.
+                      </span>
+                    </div>
+                  }
                 </div>
-              }
+              </div>
 
               @if (warn) {
                 <div tuiNotification appearance="warning">
@@ -141,39 +164,6 @@ import { IS_BROWSER } from '../../app/is-browser';
               <div
                 class="flex flex-row flex-wrap justify-between items-center gap-2"
               >
-                @if (c.latitude && c.longitude) {
-                  <div class="flex flex-col md:flex-row gap-2 items-start">
-                    <button
-                      tuiButton
-                      appearance="flat"
-                      size="m"
-                      type="button"
-                      (click.zoneless)="viewOnMap(c.latitude, c.longitude)"
-                      [iconStart]="'@tui.map-pin'"
-                    >
-                      {{ 'viewOnMap' | translate }}
-                    </button>
-                    <button
-                      appearance="flat"
-                      size="m"
-                      tuiButton
-                      type="button"
-                      [iconStart]="'/image/google-maps.svg'"
-                      class="[--tui-icon-size:1.25rem]"
-                      (click.zoneless)="
-                        openExternal(
-                          mapLocationUrl({
-                            latitude: c.latitude,
-                            longitude: c.longitude,
-                          })
-                        )
-                      "
-                      [attr.aria-label]="'openGoogleMaps' | translate"
-                    >
-                      {{ 'openGoogleMaps' | translate }}
-                    </button>
-                  </div>
-                }
                 @defer (on viewport; hydrate on viewport) {
                   <app-chart-routes-by-grade
                     class="md:hidden! self-end"
@@ -199,26 +189,21 @@ import { IS_BROWSER } from '../../app/is-browser';
           </div>
 
           @if (visibleTabs().length > 1) {
-            <tui-tabs
+            <tui-segmented
               [activeItemIndex]="activeTabIndex()"
               (activeItemIndexChange)="activeTabIndex.set($event)"
               class="mt-6"
             >
               @for (tabIdx of visibleTabs(); track tabIdx) {
-                <button tuiTab class="relative">
-                  {{
-                    (tabIdx === 0
-                      ? 'routes'
-                      : tabIdx === 1
-                        ? 'topos'
-                        : tabIdx === 2
-                          ? 'parkings'
-                          : 'weather.title'
-                    ) | translate
-                  }}
+                <button type="button">
+                  @if (tabIdx === 0) {
+                    {{ routesCount() }} {{ 'routes' | translate | lowercase }}
+                  } @else {
+                    {{ toposCount() }} {{ 'topos' | translate | lowercase }}
+                  }
                 </button>
               }
-            </tui-tabs>
+            </tui-segmented>
           }
 
           <div class="mt-6">
@@ -249,36 +234,6 @@ import { IS_BROWSER } from '../../app/is-browser';
                 }
               </div>
             }
-            @if (loadedTabs().has(2)) {
-              <div
-                [hidden]="currentTab !== 2"
-                [class.hidden]="currentTab !== 2"
-              >
-                @defer (on viewport; hydrate on viewport) {
-                  <app-crag-parkings [crag]="c" />
-                } @placeholder {
-                  <div class="flex items-center justify-center py-16 min-h-32">
-                    <tui-loader size="l" />
-                  </div>
-                }
-              </div>
-            }
-            @if (loadedTabs().has(3)) {
-              <div
-                [hidden]="currentTab !== 3"
-                [class.hidden]="currentTab !== 3"
-              >
-                @defer (on viewport; hydrate on viewport) {
-                  <app-weather-forecast
-                    [coords]="{ lat: c.latitude, lng: c.longitude }"
-                  />
-                } @placeholder {
-                  <div class="flex items-center justify-center py-16 min-h-32">
-                    <tui-loader size="l" />
-                  </div>
-                }
-              </div>
-            }
           </div>
         } @else {
           <div class="flex items-center justify-center w-full min-h-[50vh]">
@@ -296,6 +251,9 @@ export class CragComponent {
   protected readonly languageService = inject(LanguageService);
   protected readonly cragRoutesData = inject(CragRoutesDataService);
   protected readonly mapData = inject(MapDataService);
+  protected readonly parkingsService = inject(ParkingsService);
+  private readonly routesService = inject(RoutesService);
+  private readonly toposService = inject(ToposService);
   protected readonly activeTabIndex = signal(0);
   protected readonly loadedTabs = signal<Set<number>>(new Set([0]));
   protected readonly supabase = inject(SupabaseService);
@@ -310,8 +268,6 @@ export class CragComponent {
   private readonly route = inject(ActivatedRoute);
 
   protected readonly queryParams = toSignal(this.route.queryParams);
-
-  protected readonly mapLocationUrl = mapLocationUrl;
 
   readonly showToposTab = computed(() => {
     const c = this.cragDetail();
@@ -333,27 +289,11 @@ export class CragComponent {
       (c.topos?.length ?? 0) > 0 || canEditAsAdmin || canEditAsAllowedEquipper
     );
   });
-  readonly showParkingsTab = computed(() => {
-    const canEditAsAdmin = this.authState.canEditAsAdmin();
-    const canEditAsAllowedEquipper =
-      this.authState.areaAdminPermissions()[this.cragDetail()?.area_id ?? -1];
-    return (
-      (this.cragDetail()?.parkings?.length ?? 0) > 0 ||
-      canEditAsAdmin ||
-      canEditAsAllowedEquipper
-    );
-  });
-
-  readonly showWeatherTab = computed(() => {
-    const c = this.cragDetail();
-    return !!(c?.latitude && c?.longitude);
-  });
 
   readonly visibleTabs = computed(() => {
-    const tabs = [0]; // Routes tab is always visible
+    const tabs: number[] = [];
+    if ((this.routesCount() ?? 0) > 0) tabs.push(0);
     if (this.showToposTab()) tabs.push(1);
-    if (this.showParkingsTab()) tabs.push(2);
-    if (this.showWeatherTab()) tabs.push(3);
     return tabs;
   });
 
@@ -373,14 +313,48 @@ export class CragComponent {
         appearance: 'neutral',
         action: () => this.openEditCrag(),
       });
-      if (isAdmin || canAreaAdmin) {
-        actions.push({
-          label: 'delete',
-          icon: '@tui.trash',
-          appearance: 'negative',
-          action: () => this.deleteCrag(),
-        });
-      }
+    }
+
+    if (canAreaAdmin) {
+      actions.push({
+        label: 'routes.newTitle',
+        icon: '@tui.plus',
+        appearance: 'neutral',
+        action: () => this.openCreateRoute(),
+      });
+      actions.push({
+        label: 'routes.unifyTitle',
+        icon: '@tui.blend',
+        appearance: 'neutral',
+        action: () => this.routesService.openUnifyRoutes(),
+      });
+      actions.push({
+        label: 'topos.newTitle',
+        icon: '@tui.plus',
+        appearance: 'neutral',
+        action: () => this.openCreateTopo(),
+      });
+      actions.push({
+        label: 'admin.parkings.new',
+        icon: '@tui.square-parking',
+        appearance: 'neutral',
+        action: () => this.openCreateParking(),
+      });
+      actions.push({
+        label: 'admin.parkings.link',
+        icon: '@tui.link',
+        appearance: 'neutral',
+        action: () => this.openLinkParking(),
+      });
+    }
+
+    if (canEdit && (isAdmin || canAreaAdmin)) {
+      actions.push({
+        label: 'delete',
+        icon: '@tui.trash',
+        appearance: 'negative',
+        action: () => this.deleteCrag(),
+      });
     }
 
     return actions;
@@ -424,6 +398,10 @@ export class CragComponent {
           (a, b) => (a ?? 0) + (b ?? 0),
           0,
         );
+  });
+
+  protected readonly toposCount = computed(() => {
+    return this.cragDetail()?.topos?.length ?? 0;
   });
 
   constructor() {
@@ -498,10 +476,6 @@ export class CragComponent {
         this.activeTabIndex.set(tabs.indexOf(1));
       } else if (tab === 'routes' && tabs.includes(0)) {
         this.activeTabIndex.set(tabs.indexOf(0));
-      } else if (tab === 'parkings' && tabs.includes(2)) {
-        this.activeTabIndex.set(tabs.indexOf(2));
-      } else if (tab === 'weather' && tabs.includes(3)) {
-        this.activeTabIndex.set(tabs.indexOf(3));
       }
     });
 
@@ -618,9 +592,49 @@ export class CragComponent {
     });
   }
 
-  protected openExternal(url: string): void {
-    if (this.isBrowser) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
+  openCreateParking(): void {
+    const c = this.cragDetail();
+    if (!c) return;
+    this.parkingsService.openParkingForm({
+      cragId: c.id,
+      defaultLocation:
+        c.latitude && c.longitude
+          ? { lat: c.latitude, lng: c.longitude }
+          : undefined,
+    });
+  }
+
+  openLinkParking(): void {
+    const c = this.cragDetail();
+    if (!c) return;
+    const existingParkingIds = (c.parkings ?? []).map((p) => p.id);
+    this.parkingsService.openLinkParkingForm({
+      cragId: c.id,
+      existingParkingIds,
+    });
+  }
+
+  openCreateRoute(prefillName?: string): void {
+    const c = this.cragDetail();
+    if (!c) return;
+    this.routesService.openRouteForm({
+      cragId: c.id,
+      routeData: prefillName
+        ? {
+            id: 0,
+            crag_id: c.id,
+            name: prefillName,
+            slug: slugify(prefillName),
+            grade: 0,
+            climbing_kind: ClimbingKinds.SPORT,
+          }
+        : undefined,
+    });
+  }
+
+  openCreateTopo(): void {
+    const c = this.cragDetail();
+    if (!c) return;
+    this.toposService.openTopoForm({ cragId: c.id });
   }
 }

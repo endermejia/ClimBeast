@@ -145,8 +145,6 @@ import { Themes } from '../../models';
         {{ 'config' | translate }}
       </button>
 
-      <div class="h-px bg-(--tui-border-normal) my-1 mx-2"></div>
-
       <!-- Theme Selection -->
       <div
         class="flex items-center justify-between gap-4 px-3 py-2 w-full hover:bg-(--tui-background-neutral-hover) rounded-lg transition-colors"

@@ -68,7 +68,7 @@ interface MinimalParking {
     TuiNumberFormat,
   ],
   template: `
-    <form class="grid gap-4" (submit.zoneless)="onSubmit($event)">
+    <form class="grid gap-4 w-full" (submit.zoneless)="onSubmit($event)">
       <tui-textfield [tuiTextfieldCleaner]="false">
         <label tuiLabel for="parking-name">{{ 'name' | translate }}</label>
         <input
