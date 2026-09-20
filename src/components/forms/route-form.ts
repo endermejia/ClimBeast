@@ -120,7 +120,8 @@ interface RouteFormModel {
         <input
           tuiComboBox
           id="area"
-          [ngModel]="model().area"
+          [formField]="routeForm.area"
+          [invalid]="routeForm.area().invalid() && routeForm.area().touched()"
           (ngModelChange)="onAreaChange($event)"
           name="area"
           autocomplete="off"
@@ -131,6 +132,9 @@ interface RouteFormModel {
           [items]="areaOptions.value() || [] | tuiFilterByInput"
         />
       </tui-textfield>
+      @if (routeForm.area().invalid() && routeForm.area().touched()) {
+        <tui-error [error]="'errors.required' | translate" />
+      }
 
       @if (cragOptions.value()?.length || model().crag) {
         <tui-textfield
@@ -145,7 +149,8 @@ interface RouteFormModel {
           <input
             tuiComboBox
             id="crag"
-            [ngModel]="model().crag"
+            [formField]="routeForm.crag"
+            [invalid]="routeForm.crag().invalid() && routeForm.crag().touched()"
             (ngModelChange)="onCragChange($event)"
             name="crag"
             autocomplete="off"
@@ -156,6 +161,9 @@ interface RouteFormModel {
             [items]="cragOptions.value() || [] | tuiFilterByInput"
           />
         </tui-textfield>
+        @if (routeForm.crag().invalid() && routeForm.crag().touched()) {
+          <tui-error [error]="'errors.required' | translate" />
+        }
       }
 
       <tui-textfield [tuiTextfieldCleaner]="false">
@@ -164,9 +172,13 @@ interface RouteFormModel {
           tuiInput
           id="name"
           [formField]="routeForm.name"
+          [invalid]="routeForm.name().invalid() && routeForm.name().touched()"
           autocomplete="off"
         />
       </tui-textfield>
+      @if (routeForm.name().invalid() && routeForm.name().touched()) {
+        <tui-error [error]="'errors.required' | translate" />
+      }
 
       @if (authState.isAdmin()) {
         <tui-textfield [tuiTextfieldCleaner]="false">
@@ -316,7 +328,7 @@ interface RouteFormModel {
           {{ 'cancel' | translate }}
         </button>
         <button
-          [disabled]="routeForm.name().invalid() || !model().crag"
+          [disabled]="routeForm.invalid()"
           tuiButton
           appearance="primary"
           type="submit"
