@@ -66,7 +66,9 @@ import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
 import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
 import { CragCardComponent } from '../../components/crag/crag-card';
 import { ParkingCardComponent } from '../../components/location/parking-card';
+import { PaywallComponent } from '../../components/paywall/paywall';
 import { OutdoorRoutesTableComponent } from '../../components/route/outdoor-routes-table';
+import { TopoCardComponent } from '../../components/topo/topo-card';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { MeteoButtonComponent } from '../../components/ui/meteo-button';
 import {
@@ -109,9 +111,11 @@ const PAGE_SIZE = 20;
     FormsModule,
     LowerCasePipe,
     OutdoorRoutesTableComponent,
+    PaywallComponent,
     ReactiveFormsModule,
     RouterLink,
     SectionHeaderComponent,
+    TopoCardComponent,
     TranslatePipe,
     TuiAppearance,
     TuiAvatar,
@@ -395,6 +399,9 @@ const PAGE_SIZE = 20;
                               | translate
                               | lowercase
                           }}
+                        } @else if (tabIdx === 2) {
+                          {{ areaToposCount() }}
+                          {{ 'topos' | translate | lowercase }}
                         } @else {
                           {{ ascentsCount() }}
                           {{ 'ascents' | translate | lowercase }}
@@ -488,6 +495,63 @@ const PAGE_SIZE = 20;
                   <div
                     [hidden]="currentTab !== 2"
                     [class.hidden]="currentTab !== 2"
+                  >
+                    @let details = areaDetail();
+                    @let hasAccess =
+                      canEditAsAdmin ||
+                      canAreaAdmin ||
+                      details?.is_public ||
+                      details?.purchased;
+
+                    @if (hasAccess) {
+                      <div class="grid gap-2 grid-cols-1 xl:grid-cols-2">
+                        @for (t of outdoorData.areaTopos(); track t.id) {
+                          <app-topo-card
+                            [topo]="t"
+                            (selected)="navigateToTopo(t)"
+                          />
+                        } @empty {
+                          <app-empty-state
+                            class="col-span-full"
+                            icon="@tui.image"
+                          />
+                        }
+                      </div>
+                    } @else {
+                      @let isSecret =
+                        details &&
+                        !details.is_public &&
+                        (details.price === null || details.price === 0);
+                      @if (!isSecret) {
+                        <app-paywall
+                          [areaId]="area.id"
+                          [price]="details?.price || 0"
+                          [areaName]="area.name"
+                          [toposCount]="area.topos_count || 0"
+                        />
+                      } @else {
+                        <div
+                          class="flex flex-col items-center justify-center p-8 text-center gap-2"
+                        >
+                          <tui-icon
+                            icon="@tui.lock"
+                            class="text-4xl opacity-50"
+                          />
+                          <p class="text-sm font-semibold opacity-70">
+                            {{ 'topos.restricted' | translate }}
+                          </p>
+                          <p class="text-xs opacity-50">
+                            {{ 'topos.restrictedMessage' | translate }}
+                          </p>
+                        </div>
+                      }
+                    }
+                  </div>
+                }
+                @if (loadedTabs().has(3)) {
+                  <div
+                    [hidden]="currentTab !== 3"
+                    [class.hidden]="currentTab !== 3"
                   >
                     <app-ascents-feed
                       [ascents]="accumulatedAscents()"
@@ -880,8 +944,9 @@ export class AreaComponent {
   protected readonly segmentedTabs = computed(() => {
     const tabs: number[] = [0];
     if (this.cragsCount() > 0) tabs.push(1);
+    if (this.hasTopos()) tabs.push(2);
     if (this.layoutService.isNotDesktop()) {
-      tabs.push(2);
+      tabs.push(3);
     }
     return tabs;
   });
@@ -1353,6 +1418,19 @@ export class AreaComponent {
     });
   }
 
+  navigateToTopo(topo: { id: number | string; crag_slug: string }): void {
+    const area = this.outdoorData.selectedArea();
+    if (!area) return;
+
+    void this.router.navigate([
+      '/area',
+      area.slug,
+      topo.crag_slug,
+      'topo',
+      topo.id,
+    ]);
+  }
+
   viewFirstTopo(): void {
     const topos = this.outdoorData.areaTopos();
     if (!topos || topos.length === 0) return;
@@ -1360,13 +1438,7 @@ export class AreaComponent {
     if (!area) return;
 
     const firstTopo = topos[0];
-    void this.router.navigate([
-      '/area',
-      area.slug,
-      firstTopo.crag_slug,
-      'topo',
-      firstTopo.id,
-    ]);
+    this.navigateToTopo(firstTopo);
   }
 
   openAreaParkings(): void {
