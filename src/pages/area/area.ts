@@ -271,7 +271,7 @@ const PAGE_SIZE = 20;
                   [areaPrice]="areaDetail()?.price || 0"
                   [isPurchased]="!!areaDetail()?.purchased"
                   [toposCount]="area.topos_count || 0"
-                  class="mb-6 block"
+                  class="mb-6 block lg:hidden"
                 />
 
                 @let admins = areaAdmins();
@@ -506,6 +506,17 @@ const PAGE_SIZE = 20;
           <div class="flex flex-col w-full lg:h-full min-w-0 lg:min-h-0">
             <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
               <div class="w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6">
+                @if (outdoorData.selectedArea(); as area) {
+                  <app-area-revenue-panel
+                    [areaId]="area.id"
+                    [areaName]="area.name"
+                    [isPaywalled]="!isPublic()"
+                    [areaPrice]="areaDetail()?.price || 0"
+                    [isPurchased]="!!areaDetail()?.purchased"
+                    [toposCount]="area.topos_count || 0"
+                    class="mb-6 block"
+                  />
+                }
                 <app-ascents-feed
                   [ascents]="accumulatedAscents()"
                   [isLoading]="ascentsLoading()"
