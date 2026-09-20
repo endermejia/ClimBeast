@@ -8,8 +8,6 @@ import {
   InputSignal,
   resource,
   signal,
-  TemplateRef,
-  ViewChild,
   untracked,
   WritableSignal,
 } from '@angular/core';
@@ -65,12 +63,12 @@ import { AreaRevenuePanelComponent } from '../../components/area/area-revenue-pa
 import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
 import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
 import { CragCardComponent } from '../../components/crag/crag-card';
-import { ParkingCardComponent } from '../../components/location/parking-card';
 import { PaywallComponent } from '../../components/paywall/paywall';
 import { OutdoorRoutesTableComponent } from '../../components/route/outdoor-routes-table';
 import { TopoCardComponent } from '../../components/topo/topo-card';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { MeteoButtonComponent } from '../../components/ui/meteo-button';
+import { ParkingButtonComponent } from '../../components/ui/parking-button';
 import {
   SectionHeaderAction,
   SectionHeaderComponent,
@@ -136,7 +134,7 @@ const PAGE_SIZE = 20;
     TuiTextfield,
     UbicacionDropdownComponent,
     MeteoButtonComponent,
-    ParkingCardComponent,
+    ParkingButtonComponent,
     UserInfoHintComponent,
   ],
   styles: `
@@ -184,8 +182,8 @@ const PAGE_SIZE = 20;
                   </app-section-header>
                 </div>
 
-                <div class="mb-4 flex flex-wrap items-center gap-2">
-                  <div class="flex gap-2 flex-wrap">
+                <div class="mb-4 flex items-center justify-between gap-2">
+                  <div class="flex gap-2 flex-wrap min-w-0">
                     @if (areaCenter(); as center) {
                       <app-ubicacion-dropdown
                         [latitude]="center.latitude"
@@ -196,20 +194,13 @@ const PAGE_SIZE = 20;
                         [latitude]="center.latitude"
                         [longitude]="center.longitude"
                       />
-                      @if (totalParkingCapacity() > 0) {
-                        <button
-                          tuiButton
-                          appearance="flat-grayscale"
-                          size="m"
-                          type="button"
-                          iconStart="@tui.square-parking"
-                          (click.zoneless)="openAreaParkings()"
-                        >
-                          {{ totalParkingCapacity() }}
-                          {{ 'capacityShort' | translate }}
-                        </button>
+                      @if (areaParkings().length) {
+                        <app-parking-button [parkings]="areaParkings()" />
                       }
                     } @else {
+                      @if (areaParkings().length) {
+                        <app-parking-button [parkings]="areaParkings()" />
+                      }
                       <app-ubicacion-dropdown (viewOnMap)="viewOnMap()" />
                     }
 
@@ -593,22 +584,6 @@ const PAGE_SIZE = 20;
         </div>
       </section>
     </tui-scrollbar>
-    <ng-template #parkingsDialogTpl>
-      <div class="flex items-center gap-2 mb-4">
-        <h2 class="text-2xl font-semibold">
-          {{ 'parkings' | translate }}
-        </h2>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        @for (p of areaParkings(); track p.id) {
-          <app-parking-card [parking]="p" />
-        } @empty {
-          <div class="col-span-full text-center opacity-60 text-sm py-8">
-            {{ 'parkings.empty' | translate }}
-          </div>
-        }
-      </div>
-    </ng-template>
   `,
   host: { class: 'flex flex-col w-full h-full min-h-0' },
 })
@@ -1114,13 +1089,6 @@ export class AreaComponent {
     () => this.areaParkingsResource.value() ?? [],
   );
 
-  protected readonly totalParkingCapacity = computed(() =>
-    this.areaParkings().reduce((sum, p) => sum + (p.size ?? 0), 0),
-  );
-
-  @ViewChild('parkingsDialogTpl')
-  private readonly parkingsDialogTpl!: TemplateRef<unknown>;
-
   protected readonly stringifyUser = (u: UserProfileBasicDto) => u.name || '';
 
   constructor() {
@@ -1439,13 +1407,6 @@ export class AreaComponent {
 
     const firstTopo = topos[0];
     this.navigateToTopo(firstTopo);
-  }
-
-  openAreaParkings(): void {
-    void firstValueFrom(
-      this.dialogs.open(this.parkingsDialogTpl, { size: 'l' }),
-      { defaultValue: undefined },
-    );
   }
 
   buyTopo(): void {

@@ -155,7 +155,7 @@ interface MinimalArea {
         <tui-error [error]="'errors.required' | translate" />
       }
 
-      @if (isEdit() && authState.isAdmin()) {
+      @if (isEdit() && canEditAdminSettings()) {
         <tui-textfield class="block">
           <label tuiLabel for="area-slug">{{ 'slug' | translate }}</label>
           <input
@@ -335,7 +335,7 @@ interface MinimalArea {
         <button
           [disabled]="
             areaForm.name().invalid() ||
-            (isEdit() && authState.isAdmin() && areaForm.slug().invalid())
+            (isEdit() && canEditAdminSettings() && areaForm.slug().invalid())
           "
           tuiButton
           appearance="primary"
@@ -388,7 +388,7 @@ export class AreaFormComponent {
 
   readonly canEditAdminSettings: Signal<boolean> = computed(() => {
     const isAdmin = this.authState.isAdmin();
-    const areaId = this.editingId;
+    const areaId = this.effectiveAreaData()?.id;
     const isAreaAdmin = areaId
       ? !!this.authState.areaAdminPermissions()[areaId]
       : false;
@@ -430,7 +430,7 @@ export class AreaFormComponent {
   areaForm = form(this.model, (path) => {
     required(path.name);
     required(path.slug, {
-      when: () => this.isEdit() && this.authState.isAdmin(),
+      when: () => this.isEdit() && this.canEditAdminSettings(),
     });
   });
 
