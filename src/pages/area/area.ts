@@ -180,8 +180,8 @@ const PAGE_SIZE = 20;
                   </app-section-header>
                 </div>
 
-                <div class="mb-4 flex flex-wrap items-center gap-2">
-                  <div class="flex gap-2 flex-wrap">
+                <div class="mb-4 flex items-center justify-between gap-2">
+                  <div class="flex gap-2 flex-wrap min-w-0">
                     @if (areaCenter(); as center) {
                       <app-ubicacion-dropdown
                         [latitude]="center.latitude"

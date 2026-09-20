@@ -155,8 +155,8 @@ const PAGE_SIZE = 20;
                   <p class="text-lg">{{ desc }}</p>
                 }
 
-                <div class="flex flex-wrap items-center gap-2">
-                  <div class="flex gap-2 items-center flex-wrap">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex gap-2 items-center flex-wrap min-w-0">
                     @if (c.latitude && c.longitude) {
                       <app-ubicacion-dropdown
                         [latitude]="c.latitude"
