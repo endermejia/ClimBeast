@@ -59,7 +59,7 @@ import { UbicacionDropdownComponent } from '../ui/ubicacion-dropdown';
       </div>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      @for (p of crag()?.parkings; track p.id) {
+      @for (p of parkings(); track p.id) {
         <app-parking-card [parking]="p">
           <ng-container titleActions>
             @if (canEditAsAdmin() || canAreaAdmin()) {
@@ -74,17 +74,19 @@ import { UbicacionDropdownComponent } from '../ui/ubicacion-dropdown';
               >
                 {{ 'edit' | translate }}
               </button>
-              <button
-                size="s"
-                appearance="negative"
-                iconStart="@tui.unlink"
-                tuiIconButton
-                type="button"
-                class="rounded-full!"
-                (click.zoneless)="removeParking(p)"
-              >
-                {{ 'remove' | translate }}
-              </button>
+              @if (crag()) {
+                <button
+                  size="s"
+                  appearance="negative"
+                  iconStart="@tui.unlink"
+                  tuiIconButton
+                  type="button"
+                  class="rounded-full!"
+                  (click.zoneless)="removeParking(p)"
+                >
+                  {{ 'remove' | translate }}
+                </button>
+              }
             }
           </ng-container>
 
@@ -108,7 +110,8 @@ import { UbicacionDropdownComponent } from '../ui/ubicacion-dropdown';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CragParkingsComponent {
-  crag = input.required<CragDetail | null>();
+  crag = input<CragDetail | null>(null);
+  parkingsInput = input<ParkingDto[] | null>(null, { alias: 'parkings' });
 
   protected readonly outdoorData = inject(OutdoorDataService);
   protected readonly authState = inject(AuthStateService);
@@ -121,11 +124,21 @@ export class CragParkingsComponent {
   private readonly isBrowser = inject(IS_BROWSER);
   protected readonly router = inject(Router);
 
+  protected readonly parkings = computed(
+    () => this.parkingsInput() ?? this.crag()?.parkings ?? [],
+  );
+
   readonly canEditAsAdmin = this.authState.canEditAsAdmin;
   readonly canAreaAdmin = computed(() => {
     const c = this.crag();
-    if (!c) return false;
-    return this.authState.areaAdminPermissions()[c.area_id];
+    if (c) {
+      return this.authState.areaAdminPermissions()[c.area_id];
+    }
+    const area = this.outdoorData.selectedArea();
+    if (area) {
+      return this.authState.areaAdminPermissions()[area.id];
+    }
+    return false;
   });
 
   openEditParking(parking: ParkingDto): void {
