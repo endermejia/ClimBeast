@@ -21,6 +21,7 @@ import { firstValueFrom } from 'rxjs';
 import { AuthStateService } from '../../services/auth-state.service';
 import { LayoutService } from '../../services/layout.service';
 
+import { PaywallComponent } from '../../components/paywall/paywall';
 import { TopoRoutesTableComponent } from '../../components/topo/topo-routes-table';
 import { TopoViewerComponent } from '../../components/topo/topo-viewer';
 import type { TopoRouteRow } from '../../components/topo/topo.types';
@@ -38,6 +39,7 @@ import { TopoPageBase } from './topo-page-base';
 @Component({
   selector: 'app-outdoor-topo',
   imports: [
+    PaywallComponent,
     ShadeInfoPipe,
     SectionHeaderComponent,
     TopoViewerComponent,
@@ -125,29 +127,40 @@ import { TopoPageBase } from './topo-page-base';
             canAreaAdmin ||
             isCreator;
 
-          @if (
-            !hasAccess &&
-            !isPublic &&
-            (t.crag?.area?.price === null || t.crag?.area?.price === 0)
-          ) {
-            <div
-              class="flex flex-col items-center justify-center grow gap-4 p-8 text-center h-[50vh] w-full"
-            >
-              <tui-icon icon="@tui.lock" class="text-6xl opacity-50" />
-              <h2 class="text-2xl font-bold">
-                {{ 'topos.restricted' | translate }}
-              </h2>
-              <p class="max-w-md opacity-70">
-                {{ 'topos.restrictedMessage' | translate }}
-              </p>
-              <button
-                tuiButton
-                appearance="secondary"
-                (click)="router.navigate(['/area', t.crag?.area?.slug])"
+          @if (!hasAccess) {
+            @let isSecret =
+              !isPublic &&
+              (t.crag?.area?.price === null || t.crag?.area?.price === 0);
+            @if (!isSecret) {
+              <div
+                class="flex flex-col items-center justify-center grow p-4 sm:p-8 w-full max-w-lg mx-auto"
               >
-                {{ 'back' | translate }}
-              </button>
-            </div>
+                <app-paywall
+                  [areaId]="t.crag?.area?.id || 0"
+                  [price]="t.crag?.area?.price || 0"
+                  [areaName]="t.crag?.area?.name || ''"
+                />
+              </div>
+            } @else {
+              <div
+                class="flex flex-col items-center justify-center grow gap-4 p-8 text-center h-[50vh] w-full"
+              >
+                <tui-icon icon="@tui.lock" class="text-6xl opacity-50" />
+                <h2 class="text-2xl font-bold">
+                  {{ 'topos.restricted' | translate }}
+                </h2>
+                <p class="max-w-md opacity-70">
+                  {{ 'topos.restrictedMessage' | translate }}
+                </p>
+                <button
+                  tuiButton
+                  appearance="secondary"
+                  (click)="router.navigate(['/area', t.crag?.area?.slug])"
+                >
+                  {{ 'back' | translate }}
+                </button>
+              </div>
+            }
           } @else {
             <div
               class="grid grid-cols-1 grid-rows-[minmax(0,3fr)_minmax(0,2fr)] lg:grid-cols-3 lg:grid-rows-1 w-full flex-1 min-h-0 gap-0 lg:gap-4 overflow-hidden"
@@ -213,8 +226,6 @@ export class OutdoorTopoComponent extends TopoPageBase {
       const t = this.topo();
       if (!t?.photo) return null;
       const area = t.crag?.area;
-      const isSecret =
-        area && !area.is_public && (area.price === null || area.price === 0);
       const isPublic = area?.is_public;
       const purchased = area?.purchased;
       const isCreator =
@@ -226,7 +237,7 @@ export class OutdoorTopoComponent extends TopoPageBase {
         : false;
       const hasAccess =
         isPublic || purchased || canEditAsAdmin || canAreaAdmin || isCreator;
-      if (isSecret && !hasAccess) return null;
+      if (!hasAccess) return null;
       return { path: t.photo, version: this.outdoorData.topoPhotoVersion() };
     },
     loader: async ({ params }) => {
