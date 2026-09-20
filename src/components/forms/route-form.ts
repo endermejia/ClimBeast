@@ -120,7 +120,7 @@ interface RouteFormModel {
         <input
           tuiComboBox
           id="area"
-          [formField]="routeForm.area"
+          [ngModel]="model().area"
           [invalid]="routeForm.area().invalid() && routeForm.area().touched()"
           (ngModelChange)="onAreaChange($event)"
           name="area"
@@ -149,7 +149,7 @@ interface RouteFormModel {
           <input
             tuiComboBox
             id="crag"
-            [formField]="routeForm.crag"
+            [ngModel]="model().crag"
             [invalid]="routeForm.crag().invalid() && routeForm.crag().touched()"
             (ngModelChange)="onCragChange($event)"
             name="crag"
@@ -172,7 +172,6 @@ interface RouteFormModel {
           tuiInput
           id="name"
           [formField]="routeForm.name"
-          [invalid]="routeForm.name().invalid() && routeForm.name().touched()"
           autocomplete="off"
         />
       </tui-textfield>
@@ -328,7 +327,11 @@ interface RouteFormModel {
           {{ 'cancel' | translate }}
         </button>
         <button
-          [disabled]="routeForm.invalid()"
+          [disabled]="
+            routeForm.name().invalid() ||
+            routeForm.area().invalid() ||
+            routeForm.crag().invalid()
+          "
           tuiButton
           appearance="primary"
           type="submit"
