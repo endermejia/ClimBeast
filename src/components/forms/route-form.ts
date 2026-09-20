@@ -113,6 +113,7 @@ interface RouteFormModel {
         [tuiTextfieldCleaner]="false"
         [stringify]="areaStringify"
         [identityMatcher]="areaIdentityMatcher"
+        [class.tui-invalid]="routeForm.area().invalid() && routeForm.area().touched()"
       >
         <label tuiLabel for="area">
           {{ 'area' | translate }}
@@ -120,9 +121,7 @@ interface RouteFormModel {
         <input
           tuiComboBox
           id="area"
-          [ngModel]="model().area"
-          [invalid]="routeForm.area().invalid() && routeForm.area().touched()"
-          (ngModelChange)="onAreaChange($event)"
+          [formField]="routeForm.area"
           name="area"
           autocomplete="off"
         />
@@ -142,6 +141,7 @@ interface RouteFormModel {
           [tuiTextfieldCleaner]="false"
           [stringify]="cragStringify"
           [identityMatcher]="cragIdentityMatcher"
+          [class.tui-invalid]="routeForm.crag().invalid() && routeForm.crag().touched()"
         >
           <label tuiLabel for="crag">
             {{ 'crag' | translate }}
@@ -149,9 +149,7 @@ interface RouteFormModel {
           <input
             tuiComboBox
             id="crag"
-            [ngModel]="model().crag"
-            [invalid]="routeForm.crag().invalid() && routeForm.crag().touched()"
-            (ngModelChange)="onCragChange($event)"
+            [formField]="routeForm.crag"
             name="crag"
             autocomplete="off"
           />
@@ -166,7 +164,10 @@ interface RouteFormModel {
         }
       }
 
-      <tui-textfield [tuiTextfieldCleaner]="false">
+      <tui-textfield
+        [tuiTextfieldCleaner]="false"
+        [class.tui-invalid]="routeForm.name().invalid() && routeForm.name().touched()"
+      >
         <label tuiLabel for="name">{{ 'routes.name' | translate }}</label>
         <input
           tuiInput
@@ -669,7 +670,18 @@ export class RouteFormComponent {
       }
     });
 
-    // 3. Auto-slug generation
+    // 3. Reset crag if selected area changes
+    effect(() => {
+      const area = this.model().area;
+      const crag = untracked(() => this.model().crag);
+      if (crag && crag.area_id !== area?.id) {
+        untracked(() => {
+          this.model.update((m) => ({ ...m, crag: null }));
+        });
+      }
+    });
+
+    // 4. Auto-slug generation
     effect(() => {
       const uniqueSlug = this.autoSlugResource.value();
       if (!uniqueSlug) return;
