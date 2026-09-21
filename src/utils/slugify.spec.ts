@@ -77,6 +77,15 @@ describe('matchesQuery', () => {
 
   it('should match empty query', () => {
     expect(matchesQuery('anything', '')).toBe(true);
+    expect(matchesQuery('anything', null)).toBe(true);
+    expect(matchesQuery('anything', undefined)).toBe(true);
+    expect(matchesQuery('anything', '   ')).toBe(true);
+  });
+
+  it('should return false for null/undefined source when query is present', () => {
+    expect(matchesQuery(null, 'guara')).toBe(false);
+    expect(matchesQuery(undefined, 'guara')).toBe(false);
+    expect(matchesQuery('', 'guara')).toBe(false);
   });
 
   it('should ignore accents and casing (e.g. Raúl matches raul and RAUL)', () => {
@@ -86,5 +95,17 @@ describe('matchesQuery', () => {
     expect(matchesQuery('Raúl Rodríguez', 'RODRÍGUEZ')).toBe(true);
     expect(matchesQuery('Raúl Rodríguez', 'raul rod')).toBe(true);
     expect(matchesQuery('Raúl Rodríguez', 'juan')).toBe(false);
+  });
+
+  it('should handle repeated queries consistently using memoized cache', () => {
+    const query = 'Sierra Guara';
+    const items = [
+      'Sierra de Guara',
+      'Sierra Nevada',
+      'Mascarat Guara',
+      'Guara Sierra',
+    ];
+    const results = items.map((item) => matchesQuery(item, query));
+    expect(results).toEqual([true, false, false, true]);
   });
 });
