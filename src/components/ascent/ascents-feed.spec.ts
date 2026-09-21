@@ -112,6 +112,8 @@ describe('AscentsFeedComponent', () => {
           useValue: {
             followUser: vi.fn(),
             unfollowUser: vi.fn(),
+            followedIds: signal(new Set<string>()),
+            ensureFollowedIdsLoaded: vi.fn(),
           },
         },
         { provide: TuiDialogService, useValue: { open: vi.fn() } },
@@ -146,31 +148,5 @@ describe('AscentsFeedComponent', () => {
     expect(rowBreak).not.toBeNull();
     expect(rowBreak?.classList.contains('hidden')).toBe(true);
     expect(rowBreak?.classList.contains('md:block')).toBe(false);
-  });
-
-  it('should update isFollowed on ascent cards when followedIds changes', () => {
-    fixture.componentRef.setInput('ascents', mockAscents);
-    fixture.componentRef.setInput('followedIds', new Set(['user-1']));
-    fixture.detectChanges();
-
-    expect(fixture.componentInstance['processedItems']()[0].isFollowed).toBe(
-      true,
-    );
-    expect(fixture.componentInstance['processedItems']()[1].isFollowed).toBe(
-      false,
-    );
-
-    // Update followedIds to include user-2 as well
-    fixture.componentRef.setInput('followedIds', new Set(['user-1', 'user-2']));
-    fixture.detectChanges();
-
-    // Verify computed re-evaluates with new followedIds
-    expect(fixture.componentInstance['followedIds']().has('user-2')).toBe(true);
-    expect(fixture.componentInstance['processedItems']()[0].isFollowed).toBe(
-      true,
-    );
-    expect(fixture.componentInstance['processedItems']()[1].isFollowed).toBe(
-      true,
-    );
   });
 });

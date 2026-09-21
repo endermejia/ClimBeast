@@ -33,11 +33,21 @@ import { LocalStorage } from '../../services/local-storage';
 import { MessagingService } from '../../services/messaging.service';
 import { ScrollService } from '../../services/scroll.service';
 import { SupabaseService } from '../../services/supabase.service';
-import { VisitedCragsService } from '../../services/visited-crags.service';
+import {
+  VisitedCragsService,
+  VisitedCrag,
+} from '../../services/visited-crags.service';
+import {
+  VisitedIndoorCentersService,
+  VisitedIndoorCenter,
+} from '../../services/visited-indoor-centers.service';
 
 import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
 
-import { HomeCragsRowComponent } from '../../components/dashboard/home-crags-row';
+import {
+  HomeCragsRowComponent,
+  UnifiedActiveItem,
+} from '../../components/dashboard/home-crags-row';
 
 import { HomeFilterBarComponent } from '../../components/dashboard/home-filter-bar';
 import { HomeNewsGridComponent } from '../../components/dashboard/home-news-grid';
@@ -64,6 +74,7 @@ import {
 
 import {
   ActiveCrag,
+  ActiveIndoorCenter,
   AscentWithRouteJoin,
   FeedItem,
   HomeFeedFilter,
@@ -138,8 +149,11 @@ import { IS_BROWSER } from '../../app/is-browser';
             @if (feedFilter() !== HomeFeedFilters.NEWS) {
               <app-home-crags-row
                 [followsLoaded]="followsLoaded()"
-                [isLoading]="activeCragsResource.isLoading()"
-                [crags]="activeCrags()"
+                [isLoading]="
+                  activeCragsResource.isLoading() ||
+                  activeIndoorCentersResource.isLoading()
+                "
+                [items]="activeItems()"
               />
             }
           </div>
@@ -160,11 +174,8 @@ import { IS_BROWSER } from '../../app/is-browser';
                 [ascents]="ascents()"
                 [isLoading]="isLoading()"
                 [hasMore]="hasMore()"
-                [followedIds]="followedIds()"
                 [columns]="2"
                 (loadMore)="loadMore()"
-                (follow)="onFollow($event)"
-                (unfollow)="onUnfollow($event)"
               />
             }
           </main>
@@ -216,6 +227,9 @@ export class HomeComponent {
   private readonly storage = inject(LocalStorage);
   private readonly translate = inject(TranslateService);
   private readonly visitedCragsService = inject(VisitedCragsService);
+  private readonly visitedIndoorCentersService = inject(
+    VisitedIndoorCentersService,
+  );
 
   private readonly STORAGE_KEY = 'home_feed_filter';
 
@@ -240,7 +254,7 @@ export class HomeComponent {
       active = [];
     }
 
-    const merged = [...visited];
+    const merged: (VisitedCrag | ActiveCrag)[] = [...visited];
     const visitedIds = new Set(visited.map((c) => c.id));
 
     for (const c of active) {
@@ -250,6 +264,56 @@ export class HomeComponent {
     }
 
     return merged;
+  });
+
+  protected readonly activeIndoorCentersResource = resource({
+    loader: () => this.fetchActiveIndoorCenters(),
+  });
+
+  protected readonly activeIndoorCenters = computed(() => {
+    const visited = this.visitedIndoorCentersService.visitedCenters();
+    let active: ActiveIndoorCenter[] = [];
+    try {
+      if (this.activeIndoorCentersResource.hasValue()) {
+        active = this.activeIndoorCentersResource.value() ?? [];
+      }
+    } catch {
+      active = [];
+    }
+
+    const merged: (VisitedIndoorCenter | ActiveIndoorCenter)[] = [...visited];
+    const visitedIds = new Set(visited.map((c) => c.id));
+
+    for (const c of active) {
+      if (!visitedIds.has(c.id)) {
+        merged.push(c);
+      }
+    }
+
+    return merged;
+  });
+
+  protected readonly activeItems = computed<UnifiedActiveItem[]>(() => {
+    const crags = this.activeCrags();
+    const centers = this.activeIndoorCenters();
+
+    const allItems: UnifiedActiveItem[] = [
+      ...crags.map((c) => ({
+        name: c.name,
+        link: ['/area', c.area_slug, c.slug] as string[],
+        visitedAt: 'visitedAt' in c ? (c.visitedAt ?? 0) : 0,
+      })),
+      ...centers.map((c) => ({
+        name: c.name,
+        link: ['/indoor', c.slug] as string[],
+        visitedAt: 'visitedAt' in c ? (c.visitedAt ?? 0) : 0,
+      })),
+    ];
+
+    // Sort by visitedAt descending (most recent first)
+    allItems.sort((a, b) => b.visitedAt - a.visitedAt);
+
+    return allItems;
   });
 
   protected readonly feedFilter = signal<HomeFeedFilter>(
@@ -561,6 +625,63 @@ export class HomeComponent {
       if (cached) {
         try {
           return JSON.parse(cached) as ActiveCrag[];
+        } catch {
+          console.error('[Home] Cache parse error');
+        }
+      }
+      return [];
+    }
+  }
+
+  private async fetchActiveIndoorCenters(): Promise<ActiveIndoorCenter[]> {
+    if (!this.isBrowser) return [];
+
+    const cacheKey = CACHE_KEYS.activeIndoorCenters;
+
+    try {
+      await this.supabase.whenReady();
+      const { data, error } = await this.supabase.client
+        .from('indoor_ascents')
+        .select(
+          `
+          route:indoor_routes(
+            center:indoor_centers(
+              id, name, slug
+            )
+          )
+        `,
+        )
+        .order('date', { ascending: false })
+        .limit(30);
+
+      if (error) throw error;
+
+      const centersMap = new Map<string, ActiveIndoorCenter>();
+
+      (data ?? []).forEach((d: Record<string, unknown>) => {
+        const route = d['route'] as Record<string, unknown> | null;
+        const center = route?.['center'] as Record<string, unknown> | null;
+        if (center && !centersMap.has(center['id'] as string)) {
+          centersMap.set(center['id'] as string, {
+            id: center['id'] as string,
+            name: center['name'] as string,
+            slug: center['slug'] as string,
+          });
+        }
+      });
+
+      const result = Array.from(centersMap.values()).slice(0, 8);
+      this.storage.setItem(cacheKey, JSON.stringify(result));
+      return result;
+    } catch (e: unknown) {
+      console.warn(
+        '[Home] fetchActiveIndoorCenters error/offline, trying cache',
+        e,
+      );
+      const cached = this.storage.getItem(cacheKey);
+      if (cached) {
+        try {
+          return JSON.parse(cached) as ActiveIndoorCenter[];
         } catch {
           console.error('[Home] Cache parse error');
         }
@@ -934,22 +1055,6 @@ export class HomeComponent {
       }
       return [];
     }
-  }
-
-  onFollow(userId: string) {
-    this.followedIds.update((s) => {
-      const next = new Set(s);
-      next.add(userId);
-      return next;
-    });
-  }
-
-  onUnfollow(userId: string) {
-    this.followedIds.update((s) => {
-      const next = new Set(s);
-      next.delete(userId);
-      return next;
-    });
   }
 
   loadMore() {

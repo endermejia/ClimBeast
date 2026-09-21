@@ -18,8 +18,20 @@ export class FollowsService {
 
   readonly followChange = signal<number>(0);
 
+  private readonly _followedIds = signal<Set<string>>(new Set());
+  readonly followedIds = this._followedIds.asReadonly();
+
+  private _followedIdsLoaded = false;
+
   private notifyChange() {
     this.followChange.update((v) => v + 1);
+  }
+
+  async ensureFollowedIdsLoaded(): Promise<void> {
+    if (this._followedIdsLoaded) return;
+    const ids = await this.getFollowedIds();
+    this._followedIds.set(new Set(ids));
+    this._followedIdsLoaded = true;
   }
 
   private async getAllIds(
@@ -80,6 +92,11 @@ export class FollowsService {
       return false;
     }
 
+    this._followedIds.update((ids) => {
+      const next = new Set(ids);
+      next.add(followedUserId);
+      return next;
+    });
     this.notifyChange();
     this.toast.success('messages.toasts.userFollowed');
     return true;
@@ -103,6 +120,11 @@ export class FollowsService {
       return false;
     }
 
+    this._followedIds.update((ids) => {
+      const next = new Set(ids);
+      next.delete(followedUserId);
+      return next;
+    });
     this.notifyChange();
     this.toast.showWithUndo('messages.toasts.userUnfollowed', () => {
       void this.follow(followedUserId);

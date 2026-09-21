@@ -53,6 +53,7 @@ import { LayoutService } from '../../services/layout.service';
 import { MapDataService } from '../../services/map-data.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
+import { VisitedIndoorCentersService } from '../../services/visited-indoor-centers.service';
 
 import { AscentCardComponent } from '../../components/ascent/ascent-card';
 import { IndoorToposComponent } from '../../components/indoor/indoor-topos';
@@ -542,6 +543,7 @@ export class IndoorCenterComponent {
   private readonly translate = inject(TranslateService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly isBrowser = inject(IS_BROWSER);
+  private readonly visitedCentersService = inject(VisitedIndoorCentersService);
 
   protected readonly activeTabIndex = signal(0);
   protected readonly loadedTabs = signal<Set<number>>(new Set([0]));
@@ -895,6 +897,17 @@ export class IndoorCenterComponent {
     effect(() => {
       const c = this.center();
       this.breadcrumbsService.selectedIndoorCenter.set(c);
+    });
+
+    effect(() => {
+      const c = this.center();
+      if (c) {
+        this.visitedCentersService.addVisitedCenter({
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+        });
+      }
     });
 
     effect(() => {

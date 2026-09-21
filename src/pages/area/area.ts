@@ -48,9 +48,9 @@ import { AreasService } from '../../services/areas.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { CacheService } from '../../services/cache.service';
 import { CragsService } from '../../services/crags.service';
+import { EightAnuService } from '../../services/eight-anu.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
-import { FollowsService } from '../../services/follows.service';
 import { LayoutService } from '../../services/layout.service';
 import { MapDataService } from '../../services/map-data.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
@@ -67,6 +67,7 @@ import { CragCardComponent } from '../../components/crag/crag-card';
 import { PaywallComponent } from '../../components/paywall/paywall';
 import { OutdoorRoutesTableComponent } from '../../components/route/outdoor-routes-table';
 import { TopoCardComponent } from '../../components/topo/topo-card';
+import { GradeComponent } from '../../components/ui/avatar-grade';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { MeteoButtonComponent } from '../../components/ui/meteo-button';
 import { ParkingButtonComponent } from '../../components/ui/parking-button';
@@ -80,6 +81,7 @@ import { UserInfoHintComponent } from '../../components/ui/user-info-hint';
 import {
   AreaDetail,
   AscentTypes,
+  ClimbingKind,
   ClimbingKinds,
   type FeedItem,
   isGradeRangeOverlap,
@@ -87,12 +89,19 @@ import {
   ORDERED_GRADE_VALUES,
   type ParkingDto,
   type RouteItem,
+  type SearchRouteItem,
   type UserProfileBasicDto,
 } from '../../models';
 
 import { CACHE_KEYS } from '../../constants';
-import { AvatarUrlPipe } from '../../pipes';
-import { handleErrorToast, matchesQuery } from '../../utils';
+import { AvatarUrlPipe, IconSrcPipe, InitialsPipe } from '../../pipes';
+import {
+  filterRoutes,
+  gradeToVerticalLife,
+  handleErrorToast,
+  matchesQuery,
+  slugify,
+} from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -107,7 +116,10 @@ const PAGE_SIZE = 20;
     ChartRoutesByGradeComponent,
     CragCardComponent,
     EmptyStateComponent,
+    GradeComponent,
     FormsModule,
+    IconSrcPipe,
+    InitialsPipe,
     LowerCasePipe,
     OutdoorRoutesTableComponent,
     PaywallComponent,
@@ -169,7 +181,7 @@ const PAGE_SIZE = 20;
               @let canEditAsAdmin = authState.canEditAsAdmin();
               @if (outdoorData.selectedArea(); as area) {
                 @let canAreaAdmin = authState.areaAdminPermissions()[area.id];
-                <div class="mb-4">
+                <div>
                   <app-section-header
                     class="w-full"
                     [title]="area.name"
@@ -183,7 +195,7 @@ const PAGE_SIZE = 20;
                   </app-section-header>
                 </div>
 
-                <div class="mb-4 flex items-center justify-between gap-2">
+                <div class="flex items-center justify-between gap-2">
                   <div class="flex gap-2 flex-wrap min-w-0">
                     @if (areaCenter(); as center) {
                       <app-ubicacion-dropdown
@@ -276,12 +288,12 @@ const PAGE_SIZE = 20;
                   [areaPrice]="areaDetail()?.price || 0"
                   [isPurchased]="!!areaDetail()?.purchased"
                   [toposCount]="area.topos_count || 0"
-                  class="mb-6 block lg:hidden"
+                  class="block lg:hidden"
                 />
 
                 @let admins = areaAdmins();
                 @if (admins.length > 0 || canEditAsAdmin) {
-                  <div class="flex flex-col gap-3 mb-6">
+                  <div class="flex flex-col gap-3">
                     <span
                       class="text-xs uppercase opacity-60 font-semibold tracking-wider"
                     >
@@ -290,9 +302,7 @@ const PAGE_SIZE = 20;
                     <div class="flex flex-wrap gap-4 items-center">
                       @for (admin of admins; track admin.user_id) {
                         <div
-                          class="flex items-center gap-2 bg-(--tui-background-neutral-1) py-1 pr-3 rounded-full border border-(--tui-border-normal) group transition-all hover:bg-(--tui-background-neutral-1-hover) no-underline text-inherit"
-                          [class.pl-1]="admin.user.avatar"
-                          [class.pl-3]="!admin.user.avatar"
+                          class="flex items-center gap-2 bg-(--tui-background-neutral-1) py-1 px-1 pr-3 rounded-full border border-(--tui-border-normal) group transition-all hover:bg-(--tui-background-neutral-1-hover) no-underline text-inherit"
                         >
                           <a
                             [routerLink]="['/profile', admin.user_id]"
@@ -306,6 +316,10 @@ const PAGE_SIZE = 20;
                                   [src]="admin.user.avatar | avatarUrl"
                                   [alt]="admin.user.name"
                                 />
+                              </span>
+                            } @else {
+                              <span tuiAvatar size="s">
+                                {{ admin.user.name | initials }}
                               </span>
                             }
                             <span class="text-sm font-medium">{{
@@ -335,7 +349,7 @@ const PAGE_SIZE = 20;
                       }
 
                       @if (canEditAsAdmin) {
-                        <div class="w-64">
+                        <div class="w-44">
                           <tui-textfield
                             appearance="floating"
                             size="s"
@@ -372,36 +386,33 @@ const PAGE_SIZE = 20;
                   </div>
                 }
 
-                <!-- Segmented: Routes / Crags / Ascents -->
-                @if (segmentedTabs().length > 1) {
-                  <tui-segmented
-                    [activeItemIndex]="activeTabIndex()"
-                    (activeItemIndexChange)="activeTabIndex.set($event)"
-                    class="mb-4"
-                  >
-                    @for (tabIdx of segmentedTabs(); track tabIdx) {
-                      <button type="button">
-                        @if (tabIdx === 0) {
-                          {{ allRoutes().length }}
-                          {{ 'routes' | translate | lowercase }}
-                        } @else if (tabIdx === 1) {
-                          {{ cragsCount() }}
-                          {{
-                            (cragsCount() === 1 ? 'crag' : 'crags')
-                              | translate
-                              | lowercase
-                          }}
-                        } @else if (tabIdx === 2) {
-                          {{ areaToposCount() }}
-                          {{ 'topos' | translate | lowercase }}
-                        } @else {
-                          {{ ascentsCount() }}
-                          {{ 'ascents' | translate | lowercase }}
-                        }
-                      </button>
-                    }
-                  </tui-segmented>
-                }
+                <!-- Segmented: Routes / Crags / Topos / Ascents -->
+                <tui-segmented
+                  [activeItemIndex]="activeTabIndex()"
+                  (activeItemIndexChange)="activeTabIndex.set($event)"
+                >
+                  @for (tabIdx of segmentedTabs(); track tabIdx) {
+                    <button type="button">
+                      @if (tabIdx === 0) {
+                        {{ allRoutes().length }}
+                        {{ 'routes' | translate | lowercase }}
+                      } @else if (tabIdx === 1) {
+                        {{ cragsCount() }}
+                        {{
+                          (cragsCount() === 1 ? 'crag' : 'crags')
+                            | translate
+                            | lowercase
+                        }}
+                      } @else if (tabIdx === 2) {
+                        {{ areaToposCount() }}
+                        {{ 'topos' | translate | lowercase }}
+                      } @else {
+                        {{ ascentsCount() }}
+                        {{ 'ascents' | translate | lowercase }}
+                      }
+                    </button>
+                  }
+                </tui-segmented>
 
                 @let currentTab = segmentedTabs()[activeTabIndex()];
                 @if (loadedTabs().has(0)) {
@@ -409,17 +420,169 @@ const PAGE_SIZE = 20;
                     [hidden]="currentTab !== 0"
                     [class.hidden]="currentTab !== 0"
                   >
-                    <!-- Routes Table -->
-                    @if (allRoutes().length > 0) {
-                      <app-outdoor-routes-table
-                        [data]="allRoutes()"
-                        [showLocation]="true"
-                        [showRowColors]="true"
-                        [hiddenColumns]="['topo']"
-                      />
-                    } @else {
-                      <app-empty-state class="mt-8" icon="@tui.route" />
-                    }
+                    <div class="flex flex-col gap-4">
+                      <!-- Search + Filters for Routes -->
+                      @if (canCreateAreaRoute()) {
+                        <div class="flex justify-end">
+                          <button
+                            tuiButton
+                            appearance="textfield"
+                            size="s"
+                            iconStart="@tui.plus"
+                            (click.zoneless)="openCreateRoute()"
+                          >
+                            {{ 'new' | translate }}
+                          </button>
+                        </div>
+                      }
+                      <div
+                        class="sticky top-0 z-10 flex items-end gap-2 bg-(--tui-background-base)"
+                      >
+                        <tui-textfield
+                          appearance="floating"
+                          class="grow block"
+                          tuiTextfieldSize="l"
+                        >
+                          <label tuiLabel for="routes-search">{{
+                            'searchPlaceholder' | translate
+                          }}</label>
+                          <input
+                            tuiInput
+                            #routesSearch
+                            id="routes-search"
+                            autocomplete="off"
+                            [value]="routeQuery()"
+                            (input.zoneless)="
+                              routeQuery.set(routesSearch.value)
+                            "
+                          />
+                        </tui-textfield>
+                        <tui-badged-content class="rounded-2xl">
+                          @if (hasActiveRouteFilters()) {
+                            <tui-badge-notification
+                              tuiAppearance="accent"
+                              size="s"
+                              tuiSlot="top"
+                            />
+                          }
+                          <button
+                            tuiButton
+                            appearance="textfield"
+                            size="l"
+                            type="button"
+                            iconStart="@tui.sliders-horizontal"
+                            [attr.aria-label]="'filters' | translate"
+                            (click.zoneless)="openRouteFilters()"
+                          ></button>
+                        </tui-badged-content>
+                      </div>
+
+                      @let routesList = filteredAreaRoutes();
+                      @let isSearchingAnu = areaEightAnuResource.isLoading();
+                      @let anuResults = mappedAreaAnuResults();
+
+                      @if (routesList.length > 0) {
+                        <app-outdoor-routes-table
+                          [data]="routesList"
+                          [showLocation]="routeQuery().trim().length >= 2"
+                          [showRowColors]="true"
+                          [hiddenColumns]="['topo']"
+                        />
+                      }
+
+                      @if (
+                        routeQuery().length >= 2 && routesList.length === 0
+                      ) {
+                        @if (isSearchingAnu) {
+                          <div class="flex items-center justify-center p-8">
+                            <tui-loader size="m" />
+                          </div>
+                        } @else {
+                          @if (anuResults.length > 0) {
+                            <div class="flex flex-col gap-3">
+                              <div class="flex items-center gap-2 opacity-70">
+                                <tui-icon [icon]="'8anu' | iconSrc" />
+                                <span class="font-medium">
+                                  {{ 'eightAnuResults' | translate }}
+                                </span>
+                              </div>
+                              @for (
+                                item of anuResults.slice(0, 3);
+                                track item.zlaggableId
+                              ) {
+                                <div
+                                  tuiAppearance="flat"
+                                  class="p-4 rounded-3xl flex items-center justify-between gap-4"
+                                >
+                                  <div class="flex flex-col gap-1 min-w-0">
+                                    <div class="flex items-center gap-2">
+                                      <app-grade
+                                        [grade]="item._grade"
+                                        [kind]="areaRouteCragKind()"
+                                      />
+                                      <span class="font-bold truncate">
+                                        {{ item.zlaggableName }}
+                                      </span>
+                                    </div>
+                                    <span class="text-xs opacity-60 truncate">
+                                      {{ item.cragName }} ·
+                                      {{ item.sectorName }}
+                                    </span>
+                                  </div>
+                                  <button
+                                    tuiButton
+                                    appearance="textfield"
+                                    size="s"
+                                    type="button"
+                                    iconStart="@tui.download"
+                                    (click.zoneless)="importAreaRoute(item)"
+                                  >
+                                    {{ 'import' | translate }}
+                                  </button>
+                                </div>
+                              }
+                            </div>
+                          }
+
+                          <div
+                            tuiAppearance="flat"
+                            class="flex flex-col items-center justify-center p-8 gap-4 rounded-3xl"
+                          >
+                            @if (anuResults.length === 0) {
+                              <tui-icon
+                                icon="@tui.search-x"
+                                class="text-4xl opacity-50"
+                              />
+                              <span class="text-sm opacity-60 text-center">
+                                {{ 'crags.8anuNotFound' | translate }}
+                              </span>
+                            } @else {
+                              <span class="text-sm opacity-60 text-center">
+                                {{ 'crags.createLocalInstead' | translate }}
+                              </span>
+                            }
+                            @if (canEditAsAdmin || canAreaAdmin) {
+                              <button
+                                tuiButton
+                                appearance="primary"
+                                size="m"
+                                type="button"
+                                iconStart="@tui.plus"
+                                (click.zoneless)="
+                                  openCreateAreaRoute(routeQuery())
+                                "
+                              >
+                                {{ 'crags.createRouteAction' | translate }}
+                              </button>
+                            }
+                          </div>
+                        }
+                      }
+
+                      @if (routesList.length === 0 && routeQuery().length < 2) {
+                        <app-empty-state icon="@tui.route" />
+                      }
+                    </div>
                   </div>
                 }
                 @if (loadedTabs().has(1)) {
@@ -427,59 +590,74 @@ const PAGE_SIZE = 20;
                     [hidden]="currentTab !== 1"
                     [class.hidden]="currentTab !== 1"
                   >
-                    <!-- Search + Filters for Crags -->
-                    <div
-                      class="sticky top-0 z-10 py-4 flex items-end gap-2 bg-(--tui-background-base)"
-                    >
-                      <tui-textfield
-                        appearance="floating"
-                        class="grow block"
-                        tuiTextfieldSize="l"
-                      >
-                        <label tuiLabel for="crags-search">{{
-                          'searchPlaceholder' | translate
-                        }}</label>
-                        <input
-                          tuiInput
-                          #cragsSearch
-                          id="crags-search"
-                          autocomplete="off"
-                          [value]="query()"
-                          (input.zoneless)="onQuery(cragsSearch.value)"
-                        />
-                      </tui-textfield>
-                      <tui-badged-content class="rounded-2xl">
-                        @if (hasActiveFilters()) {
-                          <tui-badge-notification
-                            tuiAppearance="accent"
+                    <div class="flex flex-col gap-4">
+                      <!-- Search + Filters for Crags -->
+                      @if (canCreateAreaRoute()) {
+                        <div class="flex justify-end">
+                          <button
+                            tuiButton
+                            appearance="textfield"
                             size="s"
-                            tuiSlot="top"
+                            iconStart="@tui.plus"
+                            (click.zoneless)="openCreateCrag()"
+                          >
+                            {{ 'new' | translate }}
+                          </button>
+                        </div>
+                      }
+                      <div
+                        class="sticky top-0 z-10 flex items-end gap-2 bg-(--tui-background-base)"
+                      >
+                        <tui-textfield
+                          appearance="floating"
+                          class="grow block"
+                          tuiTextfieldSize="l"
+                        >
+                          <label tuiLabel for="crags-search">{{
+                            'searchPlaceholder' | translate
+                          }}</label>
+                          <input
+                            tuiInput
+                            #cragsSearch
+                            id="crags-search"
+                            autocomplete="off"
+                            [value]="query()"
+                            (input.zoneless)="onQuery(cragsSearch.value)"
+                          />
+                        </tui-textfield>
+                        <tui-badged-content class="rounded-2xl">
+                          @if (hasActiveFilters()) {
+                            <tui-badge-notification
+                              tuiAppearance="accent"
+                              size="s"
+                              tuiSlot="top"
+                            />
+                          }
+                          <button
+                            tuiButton
+                            appearance="textfield"
+                            size="l"
+                            type="button"
+                            iconStart="@tui.sliders-horizontal"
+                            [attr.aria-label]="'filters' | translate"
+                            (click.zoneless)="openFilters()"
+                          ></button>
+                        </tui-badged-content>
+                      </div>
+
+                      <div class="grid gap-2 grid-cols-1 xl:grid-cols-2">
+                        @for (crag of crags(); track crag.slug) {
+                          <app-crag-card
+                            [crag]="{ ...crag, area_slug: areaSlug() }"
+                            [showAreaName]="false"
+                          />
+                        } @empty {
+                          <app-empty-state
+                            class="col-span-full"
+                            icon="@tui.layout-grid"
                           />
                         }
-                        <button
-                          tuiButton
-                          appearance="textfield"
-                          size="l"
-                          type="button"
-                          iconStart="@tui.sliders-horizontal"
-                          [attr.aria-label]="'filters' | translate"
-                          (click.zoneless)="openFilters()"
-                        ></button>
-                      </tui-badged-content>
-                    </div>
-
-                    <div class="grid gap-2 grid-cols-1 xl:grid-cols-2">
-                      @for (crag of crags(); track crag.slug) {
-                        <app-crag-card
-                          [crag]="{ ...crag, area_slug: areaSlug() }"
-                          [showAreaName]="false"
-                        />
-                      } @empty {
-                        <app-empty-state
-                          class="col-span-full"
-                          icon="@tui.layout-grid"
-                        />
-                      }
+                      </div>
                     </div>
                   </div>
                 }
@@ -545,17 +723,20 @@ const PAGE_SIZE = 20;
                     [hidden]="currentTab !== 3"
                     [class.hidden]="currentTab !== 3"
                   >
-                    <app-ascents-feed
-                      [ascents]="accumulatedAscents()"
-                      [isLoading]="ascentsLoading()"
-                      [hasMore]="hasMoreAscents()"
-                      [showRoute]="true"
-                      [showArea]="false"
-                      [followedIds]="followedIds()"
-                      (loadMore)="loadMoreAscents()"
-                      (follow)="onFollow($event)"
-                      (unfollow)="onUnfollow($event)"
-                    />
+                    @if (
+                      accumulatedAscents().length === 0 && !ascentsLoading()
+                    ) {
+                      <app-empty-state icon="@tui.route" />
+                    } @else {
+                      <app-ascents-feed
+                        [ascents]="accumulatedAscents()"
+                        [isLoading]="ascentsLoading()"
+                        [hasMore]="hasMoreAscents()"
+                        [showRoute]="true"
+                        [showArea]="false"
+                        (loadMore)="loadMoreAscents()"
+                      />
+                    }
                   </div>
                 }
               } @else {
@@ -591,10 +772,7 @@ const PAGE_SIZE = 20;
                   [hasMore]="hasMoreAscents()"
                   [showRoute]="true"
                   [showArea]="false"
-                  [followedIds]="followedIds()"
                   (loadMore)="loadMoreAscents()"
-                  (follow)="onFollow($event)"
-                  (unfollow)="onUnfollow($event)"
                 />
               </div>
             </tui-scrollbar>
@@ -625,7 +803,7 @@ export class AreaComponent {
   private readonly seo = inject(SeoService);
   protected readonly userProfiles = inject(UserProfilesService);
   private readonly cache = inject(CacheService);
-  private readonly followsService = inject(FollowsService);
+  private readonly eightAnuService = inject(EightAnuService);
 
   areaSlug: InputSignal<string> = input.required<string>();
   readonly query: WritableSignal<string> = signal('');
@@ -639,11 +817,15 @@ export class AreaComponent {
 
   protected readonly activeTabIndex = signal(0);
   protected readonly loadedTabs = signal<Set<number>>(new Set([0]));
+  protected readonly hasAnyCrags = signal(false);
+
+  protected readonly routeQuery = signal('');
+  protected readonly areaRouteCragKind = signal<ClimbingKind>(
+    ClimbingKinds.SPORT,
+  );
 
   private readonly ascentsPage = signal(0);
   protected readonly accumulatedAscents = signal<FeedItem[]>([]);
-  protected readonly followedIds = signal<Set<string>>(new Set());
-
   protected readonly ascentsResource = resource({
     params: () => {
       const area = this.outdoorData.selectedArea();
@@ -760,6 +942,11 @@ export class AreaComponent {
 
   protected readonly canEditArea = computed(() => this.authState.canEditArea());
 
+  protected readonly canCreateAreaRoute = computed(() => {
+    const area = this.outdoorData.selectedArea();
+    return !!area;
+  });
+
   protected readonly isPublic = computed(
     () => this.areaDetail()?.is_public ?? true,
   );
@@ -790,22 +977,10 @@ export class AreaComponent {
         action: () => this.openEditArea(),
       });
       actions.push({
-        label: 'sectors.newTitle',
-        icon: '@tui.plus',
-        appearance: 'neutral',
-        action: () => this.openCreateCrag(),
-      });
-      actions.push({
         label: 'sectors.unifyTitle',
         icon: '@tui.blend',
         appearance: 'neutral',
         action: () => this.cragsService.openUnifyCrags(),
-      });
-      actions.push({
-        label: 'routes.newTitle',
-        icon: '@tui.plus',
-        appearance: 'neutral',
-        action: () => this.openCreateRoute(),
       });
       if (isAdmin) {
         actions.push({
@@ -911,6 +1086,57 @@ export class AreaComponent {
     () => this.allRoutesResource.value() ?? [],
   );
 
+  protected readonly hasActiveRouteFilters = computed(() => {
+    const [lo, hi] = this.selectedGradeRange();
+    const gradeActive = !(lo === 0 && hi === ORDERED_GRADE_VALUES.length - 1);
+    return gradeActive || this.selectedCategories().length > 0;
+  });
+
+  protected readonly filteredAreaRoutes = computed(() => {
+    const query = this.routeQuery();
+    const gradeRange = this.selectedGradeRange();
+    const categories = this.selectedCategories();
+    const allList = this.allRoutes();
+
+    return filterRoutes(allList, { query, gradeRange, categories });
+  });
+
+  protected readonly areaEightAnuResource = resource({
+    params: () => {
+      const q = this.routeQuery().trim();
+      const allMatchesCount = this.filteredAreaRoutes().length;
+      const area = this.outdoorData.selectedArea();
+
+      if (q.length >= 2 && area && allMatchesCount === 0) {
+        return { q, areaSlug: area.slug };
+      }
+      return null;
+    },
+    loader: async ({ params }): Promise<SearchRouteItem[]> => {
+      if (!params) return [];
+      const results = await this.eightAnuService.searchRoutes(params.q);
+
+      const existingSlugs = new Set(
+        this.allRoutes().flatMap((r) => r.eight_anu_route_slugs || []),
+      );
+      const existingLocalSlugs = new Set(this.allRoutes().map((r) => r.slug));
+
+      return results.filter((item) => {
+        const itemSlug = slugify(item.zlaggableName);
+        return (
+          !existingLocalSlugs.has(itemSlug) && !existingSlugs.has(itemSlug)
+        );
+      });
+    },
+  });
+
+  protected readonly mappedAreaAnuResults = computed(() => {
+    return (this.areaEightAnuResource.value() || []).map((item) => ({
+      ...item,
+      _grade: gradeToVerticalLife(item.difficulty),
+    }));
+  });
+
   protected readonly ascentsCountResource = resource({
     params: () => this.outdoorData.selectedArea()?.id,
     loader: async ({ params: areaId }) => {
@@ -937,8 +1163,7 @@ export class AreaComponent {
   );
 
   protected readonly segmentedTabs = computed(() => {
-    const tabs: number[] = [0];
-    if (this.cragsCount() > 0) tabs.push(1);
+    const tabs: number[] = [0, 1];
     if (this.hasTopos()) tabs.push(2);
     if (this.layoutService.isNotDesktop()) {
       tabs.push(3);
@@ -999,7 +1224,9 @@ export class AreaComponent {
   protected readonly crags = computed(() => this.filteredCrags());
   protected readonly cragsCount = computed(() => this.filteredCrags().length);
   protected readonly areaToposCount = computed(() =>
-    this.crags().reduce((acc, c) => acc + (c.topos_count || 0), 0),
+    this.outdoorData
+      .cragsList()
+      .reduce((acc, c) => acc + (c.topos_count || 0), 0),
   );
 
   protected readonly areaAdminsResource = resource({
@@ -1112,7 +1339,12 @@ export class AreaComponent {
   protected readonly stringifyUser = (u: UserProfileBasicDto) => u.name || '';
 
   constructor() {
-    this.loadFollowedIds();
+    effect(() => {
+      const crags = this.outdoorData.cragsList();
+      untracked(() => {
+        this.hasAnyCrags.set(crags.length > 0);
+      });
+    });
 
     effect(() => {
       const slug = this.areaSlug();
@@ -1185,39 +1417,86 @@ export class AreaComponent {
     this.ascentsPage.update((p) => p + 1);
   }
 
-  private async loadFollowedIds(): Promise<void> {
-    if (!this.isBrowser) return;
-    try {
-      await this.supabase.whenReady();
-      const ids = await this.followsService.getFollowedIds();
-      this.followedIds.set(new Set(ids));
-    } catch {
-      // silent
-    }
-  }
-
-  onFollow(userId: string): void {
-    this.followedIds.update((s) => {
-      const next = new Set(s);
-      next.add(userId);
-      return next;
-    });
-  }
-
-  onUnfollow(userId: string): void {
-    this.followedIds.update((s) => {
-      const next = new Set(s);
-      next.delete(userId);
-      return next;
-    });
-  }
-
   onQuery(v: string) {
     this.query.set(v);
   }
 
   openFilters(): void {
     this.filtersService.openFilters();
+  }
+
+  protected openRouteFilters(): void {
+    this.filtersService.openFilters({ showShade: false });
+  }
+
+  protected async importAreaRoute(item: SearchRouteItem): Promise<void> {
+    try {
+      const routeSlug = slugify(item.zlaggableName);
+
+      const existingLocal = this.allRoutes().find((r) => r.slug === routeSlug);
+      if (existingLocal) {
+        return;
+      }
+
+      const existingAnuSlugs = new Set(
+        this.allRoutes().flatMap((r) => r.eight_anu_route_slugs || []),
+      );
+      if (existingAnuSlugs.has(routeSlug)) {
+        return;
+      }
+
+      const area = this.outdoorData.selectedArea();
+      if (!area) return;
+
+      const allCrags = this.crags();
+      const firstCrag = allCrags.length > 0 ? allCrags[0] : null;
+      const cragId = firstCrag?.id;
+
+      if (!cragId) {
+        this.toast.error('routes.noCrag');
+        return;
+      }
+
+      const grade = gradeToVerticalLife(item.difficulty);
+
+      await this.routesService.openRouteForm({
+        cragId,
+        routeData: {
+          id: 0,
+          crag_id: cragId,
+          name: item.zlaggableName,
+          slug: '',
+          grade,
+          climbing_kind: ClimbingKinds.SPORT,
+          height: null,
+          eight_anu_route_slugs: [routeSlug],
+        },
+      });
+    } catch (e) {
+      handleErrorToast(e, this.toast);
+    }
+  }
+
+  protected async openCreateAreaRoute(searchQuery?: string): Promise<void> {
+    const area = this.outdoorData.selectedArea();
+    if (!area) return;
+
+    const allCrags = this.crags();
+    const firstCrag = allCrags.length > 0 ? allCrags[0] : null;
+
+    await this.routesService.openRouteForm({
+      cragId: firstCrag?.id,
+      routeData: searchQuery
+        ? {
+            id: 0,
+            crag_id: firstCrag?.id,
+            name: searchQuery,
+            slug: slugify(searchQuery),
+            grade: 0,
+            climbing_kind: ClimbingKinds.SPORT,
+          }
+        : undefined,
+    });
   }
 
   onToggleLike(): void {

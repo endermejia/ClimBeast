@@ -13,7 +13,7 @@ import { TuiAvatar, TuiSkeleton, TUI_COUNTRIES } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { AvatarUrlPipe } from '../../pipes';
+import { AvatarUrlPipe, InitialsPipe } from '../../pipes';
 
 @Component({
   selector: 'app-user-info',
@@ -21,6 +21,7 @@ import { AvatarUrlPipe } from '../../pipes';
   imports: [
     AvatarUrlPipe,
     CommonModule,
+    InitialsPipe,
     LowerCasePipe,
     TranslatePipe,
     TuiAvatar,
@@ -52,6 +53,8 @@ import { AvatarUrlPipe } from '../../pipes';
               [alt]="name() || ''"
               class="w-full h-full object-cover rounded-full!"
             />
+          } @else if (name()) {
+            {{ name() | initials }}
           } @else {
             <tui-icon [icon]="defaultIcon()" />
           }

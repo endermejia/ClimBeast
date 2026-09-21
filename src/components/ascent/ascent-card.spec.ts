@@ -120,7 +120,12 @@ describe('AscentCardComponent', () => {
         { provide: AscentsService, useValue: mockAscentsService },
         {
           provide: FollowsService,
-          useValue: { follow: vi.fn(), unfollow: vi.fn() },
+          useValue: {
+            follow: vi.fn(),
+            unfollow: vi.fn(),
+            followedIds: signal(new Set<string>()),
+            ensureFollowedIdsLoaded: vi.fn(),
+          },
         },
         {
           provide: TuiDialogService,
@@ -308,12 +313,6 @@ describe('AscentCardComponent', () => {
       fixture.detectChanges();
       await fixture.whenStable();
       expect(fixture.nativeElement.textContent).not.toContain('Great climb!');
-    });
-
-    it('isFollowed defaults to false', () => {
-      const fixture = TestBed.createComponent(AscentCardComponent);
-      fixture.componentRef.setInput('data', createMockAscent());
-      expect(fixture.componentInstance.isFollowed()).toBe(false);
     });
   });
 });

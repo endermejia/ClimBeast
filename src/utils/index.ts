@@ -19,6 +19,7 @@ export * from './pagination.utils';
 export * from './rem-to-px';
 export * from './resource-helpers';
 export * from './react-to-observable';
+export * from './route-filters';
 export * from './route-mapper';
 export * from './routes.utils';
 export * from './slugify';

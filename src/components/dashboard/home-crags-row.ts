@@ -7,7 +7,11 @@ import { TuiSkeleton } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { ActiveCrag } from '../../models/supabase-query.types';
+export interface UnifiedActiveItem {
+  name: string;
+  link: string[];
+  visitedAt: number;
+}
 
 @Component({
   selector: 'app-home-crags-row',
@@ -35,21 +39,21 @@ import { ActiveCrag } from '../../models/supabase-query.types';
           }
         </div>
       </div>
-    } @else if (crags(); as activeCrags) {
-      @if (activeCrags.length > 0) {
+    } @else if (items(); as list) {
+      @if (list.length > 0) {
         <div class="flex flex-col gap-2 pb-3">
           <span class="text-xs font-bold opacity-60 uppercase px-1">
-            {{ 'crags' | translate }}
+            {{ 'home.sectorsAndGyms' | translate }}
           </span>
           <div class="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar">
-            @for (c of activeCrags; track c.id) {
+            @for (item of list; track item.link.join('/')) {
               <a
-                [routerLink]="['/area', c.area_slug, c.slug]"
+                [routerLink]="item.link"
                 tuiAppearance="textfield"
                 class="flex-none p-3 rounded-2xl"
               >
                 <span class="whitespace-nowrap font-bold text-sm">{{
-                  c.name
+                  item.name
                 }}</span>
               </a>
             }
@@ -63,5 +67,5 @@ import { ActiveCrag } from '../../models/supabase-query.types';
 export class HomeCragsRowComponent {
   followsLoaded = input<boolean>(true);
   isLoading = input<boolean>(false);
-  crags = input<ActiveCrag[] | null>(null);
+  items = input<UnifiedActiveItem[] | null>(null);
 }

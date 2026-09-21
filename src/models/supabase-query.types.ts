@@ -49,6 +49,13 @@ export interface ActiveCrag {
   area_slug: string;
 }
 
+/** Processed active indoor center for home feed */
+export interface ActiveIndoorCenter {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 // ---- Indoor Ascent Queries ----
 
 /** Raw indoor ascent with joined route/center */

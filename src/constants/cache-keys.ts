@@ -39,6 +39,7 @@ export const CACHE_KEYS = {
     `cached_home_feed_${filter}_${page}_v1`,
   followedIds: 'cached_followed_ids_v1',
   activeCrags: 'cached_active_crags_v1',
+  activeIndoorCenters: 'cached_active_indoor_centers_v1',
 
   // Indoor Centers
   indoorCenters: 'cached_indoor_centers_v1',

@@ -6,7 +6,6 @@ import {
   forwardRef,
   inject,
   input,
-  output,
   resource,
   signal,
 } from '@angular/core';
@@ -37,7 +36,7 @@ import { SupabaseService } from '../../services/supabase.service';
 
 import { ClimbingKind, RouteAscentWithExtras } from '../../models';
 
-import { AscentDatePipe, AvatarUrlPipe } from '../../pipes';
+import { AscentDatePipe, AvatarUrlPipe, InitialsPipe } from '../../pipes';
 import { getEmbedUrl, openPhotoViewer } from '../../utils';
 
 import { GradeComponent } from '../ui/avatar-grade';
@@ -64,6 +63,7 @@ import { AscentTypeComponent } from './ascent-type';
     CustomCarouselComponent,
     FormsModule,
     GradeComponent,
+    InitialsPipe,
     ReactiveFormsModule,
     RouteInfoHintComponent,
     RouterLink,
@@ -109,7 +109,7 @@ import { AscentTypeComponent } from './ascent-type';
                     [alt]="ascent.user.name || ''"
                   />
                 } @else {
-                  <tui-icon icon="@tui.user" />
+                  {{ ascent.user?.name | initials }}
                 }
               </span>
             </span>
@@ -426,6 +426,12 @@ export class AscentCardComponent {
   private readonly translate = inject(TranslateService);
   private readonly dialogs = inject(TuiDialogService);
 
+  constructor() {
+    if ('ensureFollowedIdsLoaded' in this.followsService) {
+      void this.followsService['ensureFollowedIdsLoaded']();
+    }
+  }
+
   data = input.required<RouteAscentWithExtras>();
   showUser = input(true);
   showRoute = input(true);
@@ -434,14 +440,15 @@ export class AscentCardComponent {
   showPhoto = input(true);
   showComment = input(true);
   showLikesAndComments = input(true);
-  isFollowed = input(false);
   priority = input(false);
   highlightOwn = input(false);
 
-  followEvent = output<string>();
-  unfollowEvent = output<string>();
-
   protected readonly loading = signal(false);
+
+  protected readonly isFollowed = computed(() => {
+    const userId = this.data().user_id;
+    return this.followsService.followedIds().has(userId);
+  });
 
   protected index = signal(0);
 
@@ -552,10 +559,7 @@ export class AscentCardComponent {
     if (this.loading()) return;
     this.loading.set(true);
     try {
-      const success = await this.followsService.follow(userId);
-      if (success) {
-        this.followEvent.emit(userId);
-      }
+      await this.followsService.follow(userId);
     } finally {
       this.loading.set(false);
     }
@@ -584,10 +588,7 @@ export class AscentCardComponent {
     if (confirmed) {
       this.loading.set(true);
       try {
-        const success = await this.followsService.unfollow(userId);
-        if (success) {
-          this.unfollowEvent.emit(userId);
-        }
+        await this.followsService.unfollow(userId);
       } finally {
         this.loading.set(false);
       }

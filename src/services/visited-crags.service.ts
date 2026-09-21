@@ -7,6 +7,7 @@ export interface VisitedCrag {
   name: string;
   slug: string;
   area_slug: string;
+  visitedAt?: number;
 }
 
 @Injectable({
@@ -36,7 +37,10 @@ export class VisitedCragsService {
     const current = this.loadVisitedCrags();
     // Remove if already exists to move it to the front
     const filtered = current.filter((c) => c.id !== crag.id);
-    const updated = [crag, ...filtered].slice(0, this.MAX_CRAGS);
+    const updated = [{ ...crag, visitedAt: Date.now() }, ...filtered].slice(
+      0,
+      this.MAX_CRAGS,
+    );
 
     this.storage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
     this._visitedCrags.set(updated);

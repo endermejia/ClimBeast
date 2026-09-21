@@ -76,7 +76,7 @@ import {
 } from '../../models';
 
 import { CACHE_KEYS } from '../../constants';
-import { AvatarUrlPipe } from '../../pipes';
+import { AvatarUrlPipe, InitialsPipe } from '../../pipes';
 import {
   COMMON_IMAGE_EDITOR_CONFIG,
   createNewPhoto,
@@ -100,6 +100,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     CommonModule,
     FormField,
     FormsModule,
+    InitialsPipe,
     RouterLink,
     TranslatePipe,
     TuiAppearance,
@@ -710,9 +711,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                     <div class="flex flex-wrap gap-2.5 items-center">
                       @for (admin of currentAdmins; track admin.user_id) {
                         <div
-                          class="flex items-center gap-2 bg-(--tui-background-neutral-1) py-1 pr-2 rounded-full border border-(--tui-border-normal) group"
-                          [class.pl-1]="admin.user.avatar"
-                          [class.pl-3]="!admin.user.avatar"
+                          class="flex items-center gap-2 bg-(--tui-background-neutral-1) py-1 px-1 pr-2 rounded-full border border-(--tui-border-normal) group"
                         >
                           <a
                             [routerLink]="['/profile', admin.user_id]"
@@ -724,6 +723,10 @@ import { IS_BROWSER } from '../../app/is-browser';
                                   [src]="admin.user.avatar | avatarUrl"
                                   [alt]="admin.user.name"
                                 />
+                              </span>
+                            } @else {
+                              <span tuiAvatar size="s">
+                                {{ admin.user.name | initials }}
                               </span>
                             }
                             <span class="text-sm font-medium">
@@ -799,7 +802,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                                     alt="avatar"
                                   />
                                 } @else {
-                                  <tui-icon icon="@tui.user" />
+                                  {{ req.user.name | initials }}
                                 }
                               </span>
                               <div class="flex flex-col min-w-0">
@@ -911,9 +914,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                       <div class="flex flex-wrap gap-2.5 items-center">
                         @for (rs of currentRoutesetters; track rs.user_id) {
                           <div
-                            class="flex items-center gap-2 bg-(--tui-background-neutral-1) py-1 pr-2 rounded-full border border-(--tui-border-normal) group"
-                            [class.pl-1]="rs.user.avatar"
-                            [class.pl-3]="!rs.user.avatar"
+                            class="flex items-center gap-2 bg-(--tui-background-neutral-1) py-1 px-1 pr-2 rounded-full border border-(--tui-border-normal) group"
                           >
                             <a
                               [routerLink]="['/profile', rs.user_id]"
@@ -925,6 +926,10 @@ import { IS_BROWSER } from '../../app/is-browser';
                                     [src]="rs.user.avatar | avatarUrl"
                                     [alt]="rs.user.name"
                                   />
+                                </span>
+                              } @else {
+                                <span tuiAvatar size="s">
+                                  {{ rs.user.name | initials }}
                                 </span>
                               }
                               <span class="text-sm font-medium">

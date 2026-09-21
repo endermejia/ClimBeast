@@ -62,7 +62,6 @@ import { UserInfoComponent } from './user-info';
         [country]="$any(profile?.country)"
         [age]="userAge()"
         [startingClimbingYear]="profile?.starting_climbing_year"
-        [bio]="profile?.bio"
         [compact]="true"
         [avatarSize]="'l'"
         [avatarClickable]="true"
@@ -70,6 +69,13 @@ import { UserInfoComponent } from './user-info';
         (avatarClick)="enlargeAvatar(profile?.avatar || fallbackAvatar())"
         (nameClick)="navigateToProfile()"
       />
+
+      <!-- Bio (full width, below image/name, above follows) -->
+      @if (profile?.bio) {
+        <p class="text-sm opacity-80 py-1.5 w-full">
+          {{ profile.bio }}
+        </p>
+      }
 
       <!-- Followers/Following/Equipped Routes -->
       <div class="flex items-center gap-3 text-xs py-1.5">

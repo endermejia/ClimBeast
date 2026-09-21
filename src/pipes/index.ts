@@ -2,6 +2,7 @@ export * from './any-to-schedule.pipe';
 export * from './ascent-date.pipe';
 export * from './ascent-info.pipe';
 export * from './avatar-url.pipe';
+export * from './initials.pipe';
 export * from './context-index.pipe';
 export * from './grade-label.pipe';
 export * from './icon-src.pipe';

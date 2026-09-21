@@ -28,7 +28,6 @@ export interface ProcessedFeedItem {
   showRowBreak: boolean;
   showGradeHeader: boolean;
   gradeLabel?: string;
-  isFollowed: boolean;
 }
 
 @Component({
@@ -84,11 +83,8 @@ export interface ProcessedFeedItem {
               [showRoute]="showRoute()"
               [showCrag]="showCrag()"
               [showArea]="showArea()"
-              [isFollowed]="processed.isFollowed"
               [priority]="true"
               [highlightOwn]="highlightOwn()"
-              (followEvent)="follow.emit($event)"
-              (unfollowEvent)="unfollow.emit($event)"
             />
           } @else {
             @defer (on viewport) {
@@ -98,11 +94,8 @@ export interface ProcessedFeedItem {
                 [showRoute]="showRoute()"
                 [showCrag]="showCrag()"
                 [showArea]="showArea()"
-                [isFollowed]="processed.isFollowed"
                 [priority]="false"
                 [highlightOwn]="highlightOwn()"
-                (followEvent)="follow.emit($event)"
-                (unfollowEvent)="unfollow.emit($event)"
               />
             } @placeholder {
               <app-ascent-card-skeleton
@@ -150,18 +143,14 @@ export class AscentsFeedComponent {
   showRoute = input(true);
   showCrag = input(true);
   showArea = input(true);
-  followedIds = input<Set<string>>(new Set());
   columns = input<number>(1);
   highlightOwn = input(false);
 
   loadMore = output<void>();
-  follow = output<string>();
-  unfollow = output<string>();
 
   protected readonly processedItems = computed<ProcessedFeedItem[]>(() => {
     const list = this.ascents();
     const groupByGrade = this.groupByGrade();
-    const followed = this.followedIds();
 
     return list.map((item, index) => {
       const trackKey =
@@ -171,12 +160,9 @@ export class AscentsFeedComponent {
 
       let showRowBreak = false;
       let showGradeHeader = false;
-      let isFollowed = false;
       let gradeLabel = '';
 
       if (item.kind === 'ascent') {
-        isFollowed = followed.has(item.user_id);
-
         if (groupByGrade) {
           const grade = item.grade ?? item.route?.grade;
           if (grade !== null && grade !== undefined) {
@@ -215,7 +201,6 @@ export class AscentsFeedComponent {
         showRowBreak,
         showGradeHeader,
         gradeLabel,
-        isFollowed,
       };
     });
   });

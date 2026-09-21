@@ -217,6 +217,7 @@ export interface IndoorRouteFormData {
         [tuiTextfieldCleaner]="true"
         [stringify]="equipperStringify"
         [identityMatcher]="equipperIdentityMatcher"
+        size="s"
       >
         <label tuiLabel for="equippers">
           {{ 'equippers' | translate }}

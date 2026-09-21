@@ -36,7 +36,6 @@ import { firstValueFrom } from 'rxjs';
 import { AscentsService } from '../../services/ascents.service';
 import { AuthStateService } from '../../services/auth-state.service';
 
-import { FollowsService } from '../../services/follows.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { ProfileDataService } from '../../services/profile-data.service';
 import { RoutesService } from '../../services/routes.service';
@@ -340,11 +339,8 @@ import { IS_BROWSER } from '../../app/is-browser';
               [isLoading]="isLoading()"
               [hasMore]="hasMore()"
               [showRoute]="false"
-              [followedIds]="followedIds()"
               [highlightOwn]="true"
               (loadMore)="loadMore()"
-              (follow)="onFollow($event)"
-              (unfollow)="onUnfollow($event)"
             />
           </div>
         } @else {
@@ -365,7 +361,6 @@ export class OutdoorRouteComponent {
   private readonly location = inject(Location);
   protected readonly routesService = inject(RoutesService);
   protected readonly ascentsService = inject(AscentsService);
-  private readonly followsService = inject(FollowsService);
   protected readonly router = inject(Router);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
@@ -406,8 +401,6 @@ export class OutdoorRouteComponent {
 
   protected readonly accumulatedAscents = signal<FeedItem[]>([]);
   protected readonly isLoading = signal(true);
-  protected readonly followedIds = signal<Set<string>>(new Set());
-
   protected readonly hasMore = computed(() => {
     return this.accumulatedAscents().length < this.totalAscents();
   });
@@ -419,22 +412,6 @@ export class OutdoorRouteComponent {
     }
   }
 
-  onFollow(userId: string) {
-    this.followedIds.update((s) => {
-      const next = new Set(s);
-      next.add(userId);
-      return next;
-    });
-  }
-
-  onUnfollow(userId: string) {
-    this.followedIds.update((s) => {
-      const next = new Set(s);
-      next.delete(userId);
-      return next;
-    });
-  }
-
   protected readonly equippersNames = computed(() =>
     this.equippers()
       .map((e) => e.name)
@@ -442,15 +419,6 @@ export class OutdoorRouteComponent {
   );
 
   constructor() {
-    effect(() => {
-      this.followsService.followChange();
-      if (this.isBrowser) {
-        void this.followsService
-          .getFollowedIds()
-          .then((ids) => this.followedIds.set(new Set(ids)));
-      }
-    });
-
     effect(() => {
       const aSlug = this.areaSlug();
       const cSlug = this.cragSlug();

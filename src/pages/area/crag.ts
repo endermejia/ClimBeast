@@ -31,7 +31,6 @@ import { firstValueFrom } from 'rxjs';
 import { AuthStateService } from '../../services/auth-state.service';
 import { CragRoutesDataService } from '../../services/crag-routes-data.service';
 import { CragsService } from '../../services/crags.service';
-import { FollowsService } from '../../services/follows.service';
 import { LanguageService } from '../../services/language.service';
 import { LayoutService } from '../../services/layout.service';
 import { MapDataService } from '../../services/map-data.service';
@@ -137,7 +136,7 @@ const PAGE_SIZE = 20;
                   </tui-data-list>
                 </ng-template>
 
-                <div class="mb-2">
+                <div>
                   <app-section-header
                     [title]="c.name"
                     [liked]="c.liked"
@@ -222,7 +221,7 @@ const PAGE_SIZE = 20;
                   </tui-segmented>
                 }
 
-                <div class="mt-2 lg:flex-1 lg:min-h-0 lg:overflow-hidden">
+                <div class="lg:flex-1 lg:min-h-0">
                   @let currentTab = segmentedTabs()[activeTabIndex()];
                   @if (loadedTabs().has(0)) {
                     <div
@@ -264,10 +263,7 @@ const PAGE_SIZE = 20;
                         [showRoute]="true"
                         [showCrag]="false"
                         [showArea]="false"
-                        [followedIds]="followedIds()"
                         (loadMore)="loadMoreAscents()"
-                        (follow)="onFollow($event)"
-                        (unfollow)="onUnfollow($event)"
                       />
                     </div>
                   }
@@ -290,10 +286,7 @@ const PAGE_SIZE = 20;
                     [showRoute]="true"
                     [showCrag]="false"
                     [showArea]="false"
-                    [followedIds]="followedIds()"
                     (loadMore)="loadMoreAscents()"
-                    (follow)="onFollow($event)"
-                    (unfollow)="onUnfollow($event)"
                   />
                 </div>
               </tui-scrollbar>
@@ -331,14 +324,10 @@ export class CragComponent {
   private readonly visitedCragsService = inject(VisitedCragsService);
   private readonly seo = inject(SeoService);
   private readonly route = inject(ActivatedRoute);
-  private readonly followsService = inject(FollowsService);
-
   protected readonly queryParams = toSignal(this.route.queryParams);
 
   private readonly ascentsPage = signal(0);
   protected readonly accumulatedAscents = signal<FeedItem[]>([]);
-  protected readonly followedIds = signal<Set<string>>(new Set());
-
   protected readonly ascentsResource = resource({
     params: () => {
       const crag = this.outdoorData.cragDetail();
@@ -455,8 +444,7 @@ export class CragComponent {
   });
 
   readonly visibleTabs = computed(() => {
-    const tabs: number[] = [];
-    if ((this.routesCount() ?? 0) > 0) tabs.push(0);
+    const tabs: number[] = [0];
     if (this.showToposTab()) tabs.push(1);
     return tabs;
   });
@@ -488,12 +476,6 @@ export class CragComponent {
     }
 
     if (canAreaAdmin) {
-      actions.push({
-        label: 'routes.newTitle',
-        icon: '@tui.plus',
-        appearance: 'neutral',
-        action: () => this.openCreateRoute(),
-      });
       actions.push({
         label: 'routes.unifyTitle',
         icon: '@tui.blend',
@@ -576,8 +558,6 @@ export class CragComponent {
   });
 
   constructor() {
-    this.loadFollowedIds();
-
     effect(() => {
       const aSlug = this.areaSlug();
       const cSlug = this.cragSlug();
@@ -684,33 +664,6 @@ export class CragComponent {
     if (this.ascentsResource.isLoading()) return;
     if (!this.hasMoreAscents()) return;
     this.ascentsPage.update((p) => p + 1);
-  }
-
-  private async loadFollowedIds(): Promise<void> {
-    if (!this.isBrowser) return;
-    try {
-      await this.supabase.whenReady();
-      const ids = await this.followsService.getFollowedIds();
-      this.followedIds.set(new Set(ids));
-    } catch {
-      // silent
-    }
-  }
-
-  onFollow(userId: string): void {
-    this.followedIds.update((s) => {
-      const next = new Set(s);
-      next.add(userId);
-      return next;
-    });
-  }
-
-  onUnfollow(userId: string): void {
-    this.followedIds.update((s) => {
-      const next = new Set(s);
-      next.delete(userId);
-      return next;
-    });
   }
 
   async viewOnMap(lat: number, lng: number): Promise<void> {

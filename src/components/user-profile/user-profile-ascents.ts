@@ -16,9 +16,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { AscentsService } from '../../services/ascents.service';
 import { FilterStateService } from '../../services/filter-state.service';
-import { FollowsService } from '../../services/follows.service';
 import { ProfileDataService } from '../../services/profile-data.service';
-import { SupabaseService } from '../../services/supabase.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
 
 import {
@@ -33,8 +31,6 @@ import {
   reactToObservable,
   safeResourceValue,
 } from '../../utils';
-
-import { IS_BROWSER } from '../../app/is-browser';
 
 import { AscentsFeedComponent } from '../ascent/ascents-feed';
 
@@ -77,12 +73,9 @@ import { UserProfileFiltersComponent } from './user-profile-filters';
               "
               [hasMore]="hasMore()"
               [showUser]="false"
-              [followedIds]="followedIds()"
               [columns]="1"
               [groupByGrade]="profileData.ascentsSort() === 'grade'"
               (loadMore)="loadMore()"
-              (follow)="onFollow($event)"
-              (unfollow)="onUnfollow($event)"
             />
           </div>
         </tui-scrollbar>
@@ -118,10 +111,7 @@ export class UserProfileAscentsComponent {
   private readonly ascentsService = inject(AscentsService);
   protected readonly profileData = inject(ProfileDataService);
   protected readonly filterState = inject(FilterStateService);
-  protected readonly supabase = inject(SupabaseService);
-  protected readonly followsService = inject(FollowsService);
   protected readonly userProfilesService = inject(UserProfilesService);
-  private readonly isBrowser = inject(IS_BROWSER);
 
   protected readonly selectedGradeRange =
     this.filterState.profileAscentsGradeRange;
@@ -142,8 +132,6 @@ export class UserProfileAscentsComponent {
 
   protected readonly accumulatedAscents = signal<FeedItem[]>([]);
   protected readonly isLoading = signal(true);
-  protected readonly followedIds = signal<Set<string>>(new Set());
-
   readonly ascentsResource = this.profileData.userAscentsResource;
   readonly totalAscents = computed(
     () =>
@@ -162,15 +150,6 @@ export class UserProfileAscentsComponent {
   });
 
   constructor() {
-    effect(() => {
-      this.followsService.followChange();
-      if (this.isBrowser) {
-        void this.followsService
-          .getFollowedIds()
-          .then((ids) => this.followedIds.set(new Set(ids)));
-      }
-    });
-
     reactToObservable(this.ascentsService.ascentDeleted, (id) => {
       this.accumulatedAscents.update((items) =>
         items.filter((item) => String(item.id) !== String(id)),
@@ -240,22 +219,6 @@ export class UserProfileAscentsComponent {
       this.isLoading.set(true);
       this.profileData.ascentsPage.update((p) => p + 1);
     }
-  }
-
-  onFollow(userId: string) {
-    this.followedIds.update((s) => {
-      const next = new Set(s);
-      next.add(userId);
-      return next;
-    });
-  }
-
-  onUnfollow(userId: string) {
-    this.followedIds.update((s) => {
-      const next = new Set(s);
-      next.delete(userId);
-      return next;
-    });
   }
 
   protected openImport8aDialog(): void {
