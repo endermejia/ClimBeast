@@ -156,7 +156,7 @@ interface AreaFundSummary {
       </div>
 
       <!-- Filter chips for Area Type -->
-      <div class="flex items-center gap-2 overflow-x-auto pb-2 mb-4">
+      <div class="flex items-center gap-2 pb-2 mb-4">
         @for (type of areaTypeFilters; track type) {
           <button
             tuiButton
