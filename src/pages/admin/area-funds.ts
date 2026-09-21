@@ -45,11 +45,18 @@ interface AreaFundSummary {
   name: string;
   slug: string;
   areaType: AreaType;
+  areaTypeAppearance: string;
   totalNet: number;
   totalGross: number;
   donationsCount: number;
   lastDonationDate: string | null;
 }
+
+const AREA_TYPE_APPEARANCE_MAP: Record<AreaType, string> = {
+  public: 'neutral',
+  private: 'warning',
+  paywalled: 'accent',
+};
 
 @Component({
   selector: 'app-admin-area-funds',
@@ -194,7 +201,7 @@ interface AreaFundSummary {
                       <span
                         tuiBadge
                         size="s"
-                        [appearance]="getAreaTypeAppearance(item.areaType)"
+                        [appearance]="item.areaTypeAppearance"
                       >
                         {{
                           'admin.areaFunds.areaTypes.' + item.areaType
@@ -351,6 +358,7 @@ export class AdminAreaFundsComponent {
           name: a.name,
           slug: a.slug,
           areaType,
+          areaTypeAppearance: AREA_TYPE_APPEARANCE_MAP[areaType],
           totalNet: stats ? stats.net : 0,
           totalGross: stats ? stats.gross : 0,
           donationsCount: stats ? stats.count : 0,
@@ -410,18 +418,5 @@ export class AdminAreaFundsComponent {
 
   protected onSegmentChange(index: number): void {
     this.onlyWithDonations.set(index === 1);
-  }
-
-  protected getAreaTypeAppearance(type: AreaType): string {
-    switch (type) {
-      case 'public':
-        return 'neutral';
-      case 'private':
-        return 'warning';
-      case 'paywalled':
-        return 'accent';
-      default:
-        return 'neutral';
-    }
   }
 }
