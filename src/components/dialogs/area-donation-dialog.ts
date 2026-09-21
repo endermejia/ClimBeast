@@ -83,10 +83,10 @@ export interface AreaDonationDialogData {
           @if (canUnlockTopos()) {
             @if (unlocksTopos()) {
               <div
-                class="flex items-center gap-3 p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-950 dark:text-emerald-200 transition-all duration-300"
+                class="flex items-center gap-3 p-3.5 rounded-2xl bg-(--tui-background-positive-neutral) border border-(--tui-status-positive) text-(--tui-text-primary) transition-all duration-300"
               >
                 <div
-                  class="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shrink-0 text-lg"
+                  class="flex items-center justify-center w-8 h-8 rounded-xl bg-(--tui-status-positive-pale) text-(--tui-status-positive) shrink-0 text-lg"
                 >
                   <tui-icon icon="@tui.circle-check" />
                 </div>
@@ -193,26 +193,14 @@ export interface AreaDonationDialogData {
             <div class="grid grid-cols-4 gap-2.5">
               @for (preset of presets(); track preset) {
                 <button
+                  tuiButton
                   type="button"
-                  class="py-3 px-2 rounded-2xl font-black text-base border-2 transition-all cursor-pointer flex items-center justify-center"
-                  [class.border-(--tui-border-focus)]="
-                    selectedAmount() === preset
-                  "
-                  [class.bg-(--tui-background-accent-1)]="
-                    selectedAmount() === preset
-                  "
-                  [class.text-(--tui-background-base)]="
-                    selectedAmount() === preset
-                  "
-                  [class.border-(--tui-border-normal)]="
-                    selectedAmount() !== preset
-                  "
-                  [class.bg-(--tui-background-neutral-1)]="
-                    selectedAmount() !== preset
-                  "
+                  [appearance]="selectedAmount() === preset ? 'accent' : 'flat'"
+                  size="m"
+                  class="font-black text-base"
                   (click)="selectPreset(preset)"
                 >
-                  <span>{{ preset }}€</span>
+                  {{ preset }}€
                 </button>
               }
             </div>

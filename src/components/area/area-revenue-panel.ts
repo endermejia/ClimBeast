@@ -6,6 +6,7 @@ import {
   inject,
   input,
   resource,
+  signal,
   TemplateRef,
   viewChild,
 } from '@angular/core';
@@ -15,12 +16,10 @@ import {
   TuiButton,
   TuiDialogContext,
   TuiDialogService,
-  TuiHint,
   TuiIcon,
   TuiScrollbar,
 } from '@taiga-ui/core';
-import { TuiAvatar, TuiBadge, TuiProgress, TuiSkeleton } from '@taiga-ui/kit';
-import { TuiCard, TuiHeader } from '@taiga-ui/layout';
+import { TuiAvatar, TuiBadge, TuiSkeleton } from '@taiga-ui/kit';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
@@ -47,276 +46,216 @@ import { EmptyStateComponent } from '../ui/empty-state';
     TuiAvatar,
     TuiBadge,
     TuiButton,
-    TuiCard,
-    TuiHeader,
-    TuiHint,
     TuiIcon,
-    TuiProgress,
     TuiScrollbar,
     TuiSkeleton,
   ],
-  styles: `
-    :host {
-      display: block;
-      margin-bottom: 1.5rem;
-    }
-
-    .label-wrapper {
-      inline-size: 100%;
-      text-shadow: 0 0 0.25rem #000;
-      color: var(--tui-text-primary-on-accent-1);
-    }
-  `,
   template: `
-    <section
-      tuiCardLarge="compact"
-      appearance="outline"
-      class="select-none transition-shadow hover:shadow-xs"
-    >
-      <!-- Cabecera principal -->
-      <header
-        tuiHeader="body-m"
-        class="flex-col sm:flex-row gap-3 items-start sm:items-center justify-between pb-1"
+    <div class="flex flex-col w-full select-none">
+      <!-- 1. Sección Principal: Donaciones para el área + Bote de equipamiento y mantenimiento -->
+      <div
+        class="p-4 sm:p-5 border border-(--tui-border-normal) bg-(--tui-background-base) flex flex-col gap-4 rounded-2xl"
+        [class.rounded-b-none]="showDetailsOnMobile() || canManageArea()"
       >
-        <div class="w-full sm:w-auto sm:flex-1">
-          <h2
-            class="flex items-center gap-2 m-0 text-base sm:text-lg font-bold"
-          >
-            <tui-icon icon="@tui.coins" class="text-amber-500 shrink-0" />
-            <span class="break-words">{{
-              'areaRevenue.title' | translate
-            }}</span>
-          </h2>
-          <p
-            tuiSubtitle
-            class="m-0 text-xs text-(--tui-text-secondary) break-words mt-0.5"
-          >
-            {{ 'areaRevenue.subtitle' | translate }}
-          </p>
-        </div>
-
-        <!-- Acciones para administradores en la cabecera (debajo en pantallas pequeñas, a la derecha en sm+) -->
-        @if (canManageArea()) {
-          <aside
-            tuiAccessories
-            class="w-full sm:w-auto flex items-center justify-start sm:justify-end gap-2 shrink-0 pt-1 sm:pt-0"
-          >
-            <button
-              appearance="secondary"
-              size="s"
-              tuiButton
-              type="button"
-              iconStart="@tui.hammer"
-              [disabled]="(balance()?.availableBalance ?? 0) <= 0"
-              (click)="openMaterialRequestDialog()"
+        <header class="flex items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <h2
+              class="flex items-center gap-2 m-0 text-base sm:text-lg font-bold"
             >
-              {{ 'areaRevenue.request' | translate }}
-            </button>
-            <button
-              appearance="action"
-              size="s"
-              tuiButton
-              type="button"
-              iconStart="@tui.history"
-              (click)="openHistoryDialog()"
-            >
-              {{ 'areaRevenue.history' | translate }}
-            </button>
-          </aside>
-        }
-      </header>
-
-      <div class="flex flex-col gap-4 sm:gap-5 pt-3">
-        <!-- 1. Bloque superior asimétrico -->
-        <div
-          class="grid grid-cols-1 xl:grid-cols-12 gap-3 sm:gap-4 items-stretch w-full"
-        >
-          <!-- Tarjeta destacada Saldo Actual (Izquierda) -->
-          <div
-            class="xl:col-span-7 2xl:col-span-8 flex flex-col justify-between p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 gap-4"
-          >
-            <div class="flex items-start justify-between gap-2">
-              <div class="flex items-center gap-3.5 sm:gap-4 min-w-0">
-                <div
-                  class="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0 text-2xl sm:text-3xl"
-                >
-                  <tui-icon icon="@tui.coins" />
-                </div>
-                <div class="flex flex-col min-w-0">
-                  <span
-                    class="text-xs sm:text-sm font-semibold text-(--tui-text-secondary)"
-                  >
-                    {{ 'areaRevenue.currentPotBalance' | translate }}
-                  </span>
-                  @if (balanceResource.isLoading()) {
-                    <span
-                      [tuiSkeleton]="true"
-                      class="w-32 h-8 sm:h-10 rounded mt-1"
-                    ></span>
-                  } @else {
-                    <span
-                      class="text-2xl sm:text-4xl font-black text-(--tui-text-primary) tabular-nums tracking-tight"
-                    >
-                      {{ balance()?.availableBalance || 0 | number: '1.2-2' }} €
-                    </span>
-                  }
-                </div>
-              </div>
-            </div>
-
-            <!-- Botón de contribución integrado directamente bajo el saldo principal (responsive) -->
-            <button
-              tuiButton
-              type="button"
-              class="w-full rounded-xl !whitespace-normal !h-auto min-h-11 py-2.5 px-3 text-xs sm:text-sm md:text-base font-bold text-white shadow-sm transition-transform active:scale-[0.99] flex items-center justify-center text-center leading-snug cursor-pointer"
-              style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);"
-              (click)="openDonationDialog()"
-            >
-              {{ 'areaRevenue.contributeButton' | translate }}
-            </button>
-          </div>
-
-          <!-- Columna derecha: tarjetas métricas apiladas -->
-          <div
-            class="xl:col-span-5 2xl:col-span-4 flex flex-col justify-between gap-2.5 sm:gap-3"
-          >
-            <!-- 1. Total recaudado -->
-            <div
-              class="flex items-center justify-between gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex-1 cursor-pointer transition-all hover:brightness-95 dark:hover:brightness-110 active:scale-[0.99]"
-              (click)="openDonationsHistoryDialog()"
-              (keydown.enter)="openDonationsHistoryDialog()"
-              tabindex="0"
-              role="button"
-            >
-              <div class="flex items-center gap-3 min-w-0">
-                <div
-                  class="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shrink-0"
-                >
-                  <tui-icon icon="@tui.heart" />
-                </div>
-                <div class="flex flex-col min-w-0">
-                  <span
-                    class="text-[11px] sm:text-xs font-medium text-(--tui-text-secondary) truncate"
-                  >
-                    {{ 'areaRevenue.totalRaised' | translate }}
-                  </span>
-                  @if (balanceResource.isLoading()) {
-                    <span
-                      [tuiSkeleton]="true"
-                      class="w-16 h-5 rounded mt-0.5"
-                    ></span>
-                  } @else {
-                    <span
-                      class="text-sm sm:text-base font-bold text-emerald-700 dark:text-emerald-300 tabular-nums"
-                    >
-                      +{{ totalRaised() | number: '1.2-2' }} €
-                    </span>
-                  }
-                </div>
-              </div>
-
-              <button
-                appearance="action"
-                size="xs"
-                tuiIconButton
-                type="button"
-                iconStart="@tui.history"
-                [attr.aria-label]="'areaRevenue.recentDonations' | translate"
-                (click)="$event.stopPropagation(); openDonationsHistoryDialog()"
-              >
-                {{ 'areaRevenue.history' | translate }}
-              </button>
-            </div>
-
-            <!-- 2. Material suministrado -->
-            <div
-              class="flex items-center justify-between gap-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex-1 cursor-pointer transition-all hover:brightness-95 dark:hover:brightness-110 active:scale-[0.99]"
-              (click)="openMaterialHistoryDialog()"
-              (keydown.enter)="openMaterialHistoryDialog()"
-              tabindex="0"
-              role="button"
-            >
-              <div class="flex items-center gap-3 min-w-0">
-                <div
-                  class="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-blue-500/20 text-blue-600 dark:text-blue-400 shrink-0"
-                >
-                  <tui-icon icon="@tui.hammer" />
-                </div>
-                <div class="flex flex-col min-w-0">
-                  <span
-                    class="text-[11px] sm:text-xs font-medium text-(--tui-text-secondary) truncate"
-                  >
-                    {{ 'areaRevenue.material' | translate }}
-                  </span>
-                  @if (balanceResource.isLoading()) {
-                    <span
-                      [tuiSkeleton]="true"
-                      class="w-16 h-5 rounded mt-0.5"
-                    ></span>
-                  } @else {
-                    <span
-                      class="text-sm sm:text-base font-bold text-blue-700 dark:text-blue-300 tabular-nums"
-                    >
-                      -
-                      {{ balance()?.totalWithdrawn || 0 | number: '1.2-2' }} €
-                    </span>
-                  }
-                </div>
-              </div>
-
-              <button
-                appearance="action"
-                size="xs"
-                tuiIconButton
-                type="button"
-                iconStart="@tui.history"
-                [attr.aria-label]="'areaRevenue.deliveredEquipment' | translate"
-                (click)="$event.stopPropagation(); openMaterialHistoryDialog()"
-              >
-                {{ 'areaRevenue.history' | translate }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 2. Barra de progreso de meta -->
-        <div class="flex flex-col gap-2 pt-1 select-none">
-          <div
-            class="flex items-center justify-between text-xs sm:text-sm font-medium gap-2"
-          >
-            <div class="flex items-center gap-1.5 flex-wrap min-w-0">
-              <span class="text-(--tui-text-primary) font-semibold truncate">
-                {{
-                  'areaRevenue.nextGoal' | translate: { target: goal().target }
-                }}
-              </span>
               <tui-icon
-                tuiAppearance="action-grayscale"
-                icon="@tui.info"
-                [tuiHint]="'areaRevenue.goalSupplyInfo' | translate"
+                icon="@tui.heart-handshake"
+                class="text-(--tui-status-positive) shrink-0"
               />
-            </div>
-            <span
-              class="text-(--tui-text-primary) font-bold tabular-nums shrink-0"
+              <span class="break-words">{{
+                'areaRevenue.title' | translate
+              }}</span>
+            </h2>
+            <p
+              class="m-0 text-xs text-(--tui-text-secondary) break-words mt-0.5"
             >
-              {{ goal().current | number: '1.0-0' }} € /
-              {{ goal().target | number: '1.0-0' }} €
-            </span>
+              {{ 'areaRevenue.subtitle' | translate }}
+            </p>
           </div>
 
-          <label tuiProgressLabel class="label-wrapper">
-            {{ goal().percentage }}%
-            <progress
-              color="var(--tui-status-positive)"
-              [max]="goal().target"
-              size="l"
-              tuiProgressBar
-              [value]="goal().current"
-            ></progress>
-          </label>
+          <!-- Botón Info para togglear detalles -->
+          <button
+            appearance="action-grayscale"
+            size="s"
+            tuiIconButton
+            type="button"
+            iconStart="@tui.info"
+            class="shrink-0"
+            [attr.aria-label]="'areaRevenue.viewDetails' | translate"
+            (click)="showDetailsOnMobile.set(!showDetailsOnMobile())"
+          ></button>
+        </header>
+
+        <!-- Bloque Saldo Actual -->
+        <div class="flex items-center gap-3.5 sm:gap-4 min-w-0 pt-1">
+          <div
+            class="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-(--tui-status-warning-pale) text-(--tui-status-warning) shrink-0 text-2xl sm:text-3xl"
+          >
+            <tui-icon icon="@tui.coins" />
+          </div>
+          <div class="flex flex-col min-w-0">
+            <span
+              class="text-xs sm:text-sm font-semibold text-(--tui-text-secondary)"
+            >
+              {{ 'areaRevenue.currentPotBalance' | translate }}
+            </span>
+            @if (balanceResource.isLoading()) {
+              <span
+                [tuiSkeleton]="true"
+                class="w-32 h-8 sm:h-9 rounded mt-1"
+              ></span>
+            } @else {
+              <span
+                class="text-2xl sm:text-3xl font-black text-(--tui-text-primary) tabular-nums tracking-tight"
+              >
+                {{ balance()?.availableBalance || 0 | number: '1.2-2' }} €
+              </span>
+            }
+          </div>
+        </div>
+
+        <!-- Botón de contribución con icono de mano y corazón -->
+        <button
+          tuiButton
+          type="button"
+          iconStart="@tui.hand-heart"
+          class="w-full rounded-xl !whitespace-normal !h-auto min-h-11 py-2.5 px-3 text-xs sm:text-sm md:text-base font-bold text-white shadow-xs transition-transform active:scale-[0.99] flex items-center justify-center text-center leading-snug cursor-pointer"
+          style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);"
+          (click)="openDonationDialog()"
+        >
+          {{ 'areaRevenue.contributeButton' | translate }}
+        </button>
+      </div>
+
+      <!-- Contenedor secundario: Total Recaudado y Material Suministrado (Debajo) -->
+      <div class="flex flex-col" [class.hidden]="!showDetailsOnMobile()">
+        <!-- 2. Total recaudado -->
+        <div
+          class="flex items-center justify-between gap-3 p-3 sm:p-4 border border-t-0 border-(--tui-border-normal) bg-(--tui-background-base) transition-colors hover:bg-(--tui-background-neutral-1) cursor-pointer"
+          (click)="openDonationsHistoryDialog()"
+          (keydown.enter)="openDonationsHistoryDialog()"
+          tabindex="0"
+          role="button"
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <div
+              class="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-(--tui-status-positive-pale) text-(--tui-status-positive) shrink-0"
+            >
+              <tui-icon icon="@tui.heart" />
+            </div>
+            <div class="flex flex-col min-w-0">
+              <span
+                class="text-[11px] sm:text-xs font-medium text-(--tui-text-secondary) truncate"
+              >
+                {{ 'areaRevenue.totalRaised' | translate }}
+              </span>
+              @if (balanceResource.isLoading()) {
+                <span
+                  [tuiSkeleton]="true"
+                  class="w-16 h-5 rounded mt-0.5"
+                ></span>
+              } @else {
+                <span
+                  class="text-sm sm:text-base font-bold text-(--tui-status-positive) tabular-nums"
+                >
+                  +{{ totalRaised() | number: '1.2-2' }} €
+                </span>
+              }
+            </div>
+          </div>
+
+          <button
+            appearance="action-grayscale"
+            size="xs"
+            tuiIconButton
+            type="button"
+            iconStart="@tui.history"
+            [attr.aria-label]="'areaRevenue.recentDonations' | translate"
+            (click)="$event.stopPropagation(); openDonationsHistoryDialog()"
+          ></button>
+        </div>
+
+        <!-- 3. Material suministrado -->
+        <div
+          class="flex items-center justify-between gap-3 p-3 sm:p-4 border border-t-0 border-(--tui-border-normal) bg-(--tui-background-base) transition-colors hover:bg-(--tui-background-neutral-1) cursor-pointer"
+          [class.rounded-b-2xl]="!canManageArea()"
+          (click)="openMaterialHistoryDialog()"
+          (keydown.enter)="openMaterialHistoryDialog()"
+          tabindex="0"
+          role="button"
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <div
+              class="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-(--tui-status-info-pale) text-(--tui-status-info) shrink-0"
+            >
+              <tui-icon icon="@tui.hammer" />
+            </div>
+            <div class="flex flex-col min-w-0">
+              <span
+                class="text-[11px] sm:text-xs font-medium text-(--tui-text-secondary) truncate"
+              >
+                {{ 'areaRevenue.material' | translate }}
+              </span>
+              @if (balanceResource.isLoading()) {
+                <span
+                  [tuiSkeleton]="true"
+                  class="w-16 h-5 rounded mt-0.5"
+                ></span>
+              } @else {
+                <span
+                  class="text-sm sm:text-base font-bold text-(--tui-status-info) tabular-nums"
+                >
+                  - {{ balance()?.totalWithdrawn || 0 | number: '1.2-2' }} €
+                </span>
+              }
+            </div>
+          </div>
+
+          <button
+            appearance="action-grayscale"
+            size="xs"
+            tuiIconButton
+            type="button"
+            iconStart="@tui.history"
+            [attr.aria-label]="'areaRevenue.deliveredEquipment' | translate"
+            (click)="$event.stopPropagation(); openMaterialHistoryDialog()"
+          ></button>
         </div>
       </div>
-    </section>
+
+      <!-- 4. Acciones de administración al final de todo de la sección -->
+      @if (canManageArea()) {
+        <div
+          class="p-3 sm:p-4 border border-t-0 border-(--tui-border-normal) bg-(--tui-background-base) flex items-center justify-end gap-2 rounded-b-2xl"
+        >
+          <button
+            appearance="secondary"
+            size="s"
+            tuiButton
+            type="button"
+            iconStart="@tui.hammer"
+            [disabled]="(balance()?.availableBalance ?? 0) <= 0"
+            (click)="openMaterialRequestDialog()"
+          >
+            {{ 'areaRevenue.request' | translate }}
+          </button>
+          <button
+            appearance="action-grayscale"
+            size="s"
+            tuiButton
+            type="button"
+            iconStart="@tui.history"
+            (click)="openHistoryDialog()"
+          >
+            {{ 'areaRevenue.history' | translate }}
+          </button>
+        </div>
+      }
+    </div>
 
     <!-- Dialog: Historial de donaciones -->
     <ng-template #donationsDialog let-observer>
@@ -420,7 +359,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
             appearance="secondary"
             size="s"
             tuiBadge
-            class="font-bold tabular-nums !text-blue-600 dark:!text-blue-400"
+            class="font-bold tabular-nums !text-(--tui-status-info)"
           >
             -{{ balance()?.totalWithdrawn || 0 | number: '1.2-2' }} €
           </span>
@@ -479,7 +418,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                       appearance="secondary"
                       size="s"
                       tuiBadge
-                      class="shrink-0 font-bold tabular-nums !text-blue-600 dark:!text-blue-400"
+                      class="shrink-0 font-bold tabular-nums !text-(--tui-status-info)"
                     >
                       -{{ m.totalAmount | number: '1.2-2' }} €
                     </span>
@@ -518,7 +457,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
       </div>
     </ng-template>
   `,
-  host: { class: 'block mb-6' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AreaRevenuePanelComponent {
@@ -528,6 +466,8 @@ export class AreaRevenuePanelComponent {
   readonly areaPrice = input<number>(0);
   readonly isPurchased = input<boolean>(false);
   readonly toposCount = input<number>(0);
+
+  readonly showDetailsOnMobile = signal(false);
 
   private readonly donationsDialog =
     viewChild<TemplateRef<TuiDialogContext<void>>>('donationsDialog');
@@ -582,24 +522,6 @@ export class AreaRevenuePanelComponent {
 
   readonly donationsList = computed(() => this.timeline()?.donations ?? []);
   readonly withdrawalsList = computed(() => this.timeline()?.withdrawals ?? []);
-
-  readonly goal = computed(() => {
-    const current = this.balance()?.availableBalance ?? 0;
-    const step = 300;
-    const target = Math.max(
-      step,
-      Math.ceil((current > 0 ? current : 1) / step) * step,
-    );
-    const percentage = Math.min(
-      100,
-      Math.max(0, Math.round((current / target) * 100)),
-    );
-    return {
-      current,
-      target,
-      percentage,
-    };
-  });
 
   openDonationDialog(): void {
     this.donationsService.openDonationDialog(this.areaId(), this.areaName(), {
