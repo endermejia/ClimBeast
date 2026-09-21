@@ -12,6 +12,7 @@ import { RouterLink } from '@angular/router';
 
 import {
   TuiAppearance,
+  TuiButton,
   TuiIcon,
   TuiInput,
   TuiLabel,
@@ -36,10 +37,14 @@ import { matchesQuery } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
+export type AreaType = 'public' | 'private' | 'paywalled';
+export type AreaTypeFilter = 'all' | AreaType;
+
 interface AreaFundSummary {
   areaId: number;
   name: string;
   slug: string;
+  areaType: AreaType;
   totalNet: number;
   totalGross: number;
   donationsCount: number;
@@ -59,6 +64,7 @@ interface AreaFundSummary {
     TuiBadge,
     TuiBadgedContent,
     TuiBadgeNotification,
+    TuiButton,
     TuiIcon,
     TuiInput,
     TuiLabel,
@@ -116,7 +122,7 @@ interface AreaFundSummary {
       </p>
 
       <!-- Search & Filters -->
-      <div class="mb-4 flex flex-wrap items-center gap-3">
+      <div class="mb-3 flex flex-wrap items-center gap-3">
         <tui-textfield
           class="grow block bg-(--tui-background-base)"
           tuiTextfieldSize="m"
@@ -149,6 +155,22 @@ interface AreaFundSummary {
         </tui-segmented>
       </div>
 
+      <!-- Filter chips for Area Type -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-2 mb-4">
+        @for (type of areaTypeFilters; track type) {
+          <button
+            tuiButton
+            type="button"
+            size="s"
+            class="shrink-0"
+            [appearance]="selectedAreaType() === type ? 'primary' : 'secondary'"
+            (click)="selectedAreaType.set(type)"
+          >
+            {{ 'admin.areaFunds.areaTypes.' + type | translate }}
+          </button>
+        }
+      </div>
+
       <!-- List -->
       <tui-scrollbar class="flex grow">
         @if (dataResource.isLoading()) {
@@ -165,9 +187,21 @@ interface AreaFundSummary {
               >
                 <div class="flex items-start justify-between gap-2">
                   <div class="min-w-0">
-                    <h2 class="font-bold text-base truncate m-0">
-                      {{ item.name }}
-                    </h2>
+                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                      <h2 class="font-bold text-base truncate m-0">
+                        {{ item.name }}
+                      </h2>
+                      <span
+                        tuiBadge
+                        size="s"
+                        [appearance]="getAreaTypeAppearance(item.areaType)"
+                      >
+                        {{
+                          'admin.areaFunds.areaTypes.' + item.areaType
+                            | translate
+                        }}
+                      </span>
+                    </div>
                     <span class="text-xs text-(--tui-text-tertiary)">
                       ID: {{ item.areaId }}
                     </span>
@@ -235,6 +269,14 @@ export class AdminAreaFundsComponent {
 
   readonly query: WritableSignal<string> = signal('');
   readonly onlyWithDonations: WritableSignal<boolean> = signal(false);
+  readonly selectedAreaType: WritableSignal<AreaTypeFilter> = signal('all');
+
+  readonly areaTypeFilters: AreaTypeFilter[] = [
+    'all',
+    'public',
+    'private',
+    'paywalled',
+  ];
 
   readonly dataResource = resource({
     loader: async () => {
@@ -245,15 +287,26 @@ export class AdminAreaFundsComponent {
       const [areasRes, donationsRes] = await Promise.all([
         this.supabase.client
           .from('areas')
-          .select('id, name, slug')
+          .select('id, name, slug, is_public, price')
           .order('name'),
         this.supabase.client
           .from('area_donations')
           .select('area_id, net_amount, gross_amount, created_at'),
       ]);
 
-      const areas = areasRes.data || [];
-      const donations = donationsRes.data || [];
+      const areas = (areasRes.data || []) as Array<{
+        id: number;
+        name: string;
+        slug: string;
+        is_public: boolean | null;
+        price: number | null;
+      }>;
+      const donations = (donationsRes.data || []) as Array<{
+        area_id: number;
+        net_amount: number | null;
+        gross_amount: number | null;
+        created_at: string;
+      }>;
 
       const statsMap = new Map<
         number,
@@ -282,10 +335,22 @@ export class AdminAreaFundsComponent {
 
       const summaries: AreaFundSummary[] = areas.map((a) => {
         const stats = statsMap.get(Number(a.id));
+        const isPublic = a.is_public ?? true;
+        const price = a.price;
+        let areaType: AreaType = 'public';
+        if (!isPublic) {
+          if (price !== null && price > 0) {
+            areaType = 'paywalled';
+          } else {
+            areaType = 'private';
+          }
+        }
+
         return {
           areaId: Number(a.id),
           name: a.name,
           slug: a.slug,
+          areaType,
           totalNet: stats ? stats.net : 0,
           totalGross: stats ? stats.gross : 0,
           donationsCount: stats ? stats.count : 0,
@@ -294,7 +359,7 @@ export class AdminAreaFundsComponent {
       });
 
       // Sort by totalNet desc, then by name
-      summaries.sort((a, b) => {
+      summaries.sort((a: AreaFundSummary, b: AreaFundSummary) => {
         if (b.totalNet !== a.totalNet) return b.totalNet - a.totalNet;
         return a.name.localeCompare(b.name);
       });
@@ -306,25 +371,36 @@ export class AdminAreaFundsComponent {
   readonly allSummaries = computed(() => this.dataResource.value() ?? []);
 
   readonly totalCollected = computed(() => {
-    return this.allSummaries().reduce((acc, curr) => acc + curr.totalNet, 0);
+    return this.allSummaries().reduce(
+      (acc: number, curr: AreaFundSummary) => acc + curr.totalNet,
+      0,
+    );
   });
 
   readonly areasWithFundsCount = computed(() => {
-    return this.allSummaries().filter((s) => s.donationsCount > 0).length;
+    return this.allSummaries().filter(
+      (s: AreaFundSummary) => s.donationsCount > 0,
+    ).length;
   });
 
   readonly filtered = computed(() => {
     const q = this.query().trim();
     const onlyWith = this.onlyWithDonations();
+    const areaType = this.selectedAreaType();
     let list = this.allSummaries();
 
     if (onlyWith) {
-      list = list.filter((s) => s.donationsCount > 0);
+      list = list.filter((s: AreaFundSummary) => s.donationsCount > 0);
+    }
+
+    if (areaType !== 'all') {
+      list = list.filter((s: AreaFundSummary) => s.areaType === areaType);
     }
 
     if (!q) return list;
     return list.filter(
-      (s) => matchesQuery(s.name, q) || matchesQuery(s.slug, q),
+      (s: AreaFundSummary) =>
+        matchesQuery(s.name, q) || matchesQuery(s.slug, q),
     );
   });
 
@@ -334,5 +410,18 @@ export class AdminAreaFundsComponent {
 
   protected onSegmentChange(index: number): void {
     this.onlyWithDonations.set(index === 1);
+  }
+
+  protected getAreaTypeAppearance(type: AreaType): string {
+    switch (type) {
+      case 'public':
+        return 'neutral';
+      case 'private':
+        return 'warning';
+      case 'paywalled':
+        return 'accent';
+      default:
+        return 'neutral';
+    }
   }
 }
