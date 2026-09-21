@@ -396,6 +396,7 @@ import { TourHintComponent } from './tour-hint';
           <app-menu-options-button
             appearance="flat-grayscale"
             [showNavigationOptions]="true"
+            [showAdminOptions]="false"
             [showLogout]="false"
             [loading]="loading()"
             direction="top"

@@ -83,7 +83,7 @@ import { Themes } from '../../models';
         authState.isAreaAdmin() ||
         authState.isIndoorAdmin() ||
         authState.isIndoorRoutesetter();
-      @if (hasAdminRoles) {
+      @if (showAdminOptions() && hasAdminRoles) {
         @if (authState.isAdmin()) {
           <!-- Administration -->
           <button
@@ -190,6 +190,7 @@ export class MenuOptionsDropdownComponent {
   showNavigationOptions = input<boolean>(false);
   showProfile = input<boolean>(false);
   showLogout = input<boolean>(true);
+  showAdminOptions = input<boolean>(true);
 
   readonly closeDropdown = output<void>();
 
