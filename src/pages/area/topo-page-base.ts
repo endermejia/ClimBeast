@@ -209,10 +209,16 @@ export abstract class TopoPageBase {
         topo.id,
       ]);
     } else {
+      const cragSlug =
+        'crag_slug' in topo && topo.crag_slug
+          ? topo.crag_slug
+          : 'crag' in topo && topo.crag?.slug
+            ? topo.crag.slug
+            : this.cragSlug()!;
       void this.router.navigate([
         '/area',
         this.areaSlug()!,
-        this.cragSlug()!,
+        cragSlug,
         'topo',
         topo.id,
       ]);

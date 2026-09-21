@@ -50,26 +50,22 @@ import { EmptyStateComponent } from '../ui/empty-state';
     TuiScrollbar,
     TuiSkeleton,
   ],
-  styles: `
-    :host {
-      display: block;
-      margin-bottom: 1.5rem;
-    }
-  `,
   template: `
     <div class="flex flex-col w-full select-none">
       <!-- 1. Sección Principal: Donaciones para el área + Bote de equipamiento y mantenimiento -->
       <div
-        class="p-4 sm:p-5 border border-(--tui-border-normal) bg-(--tui-background-base) flex flex-col gap-4 rounded-t-2xl"
-        [class.rounded-b-2xl]="!showDetailsOnMobile() && !canManageArea()"
-        [class.sm:rounded-b-none]="true"
+        class="p-4 sm:p-5 border border-(--tui-border-normal) bg-(--tui-background-base) flex flex-col gap-4 rounded-2xl"
+        [class.rounded-b-none]="showDetailsOnMobile() || canManageArea()"
       >
         <header class="flex items-start justify-between gap-3">
           <div class="min-w-0 flex-1">
             <h2
               class="flex items-center gap-2 m-0 text-base sm:text-lg font-bold"
             >
-              <tui-icon icon="@tui.coins" class="text-amber-500 shrink-0" />
+              <tui-icon
+                icon="@tui.heart-handshake"
+                class="text-(--tui-status-positive) shrink-0"
+              />
               <span class="break-words">{{
                 'areaRevenue.title' | translate
               }}</span>
@@ -81,14 +77,14 @@ import { EmptyStateComponent } from '../ui/empty-state';
             </p>
           </div>
 
-          <!-- Botón Info en móvil para togglear detalles -->
+          <!-- Botón Info para togglear detalles -->
           <button
             appearance="action-grayscale"
             size="s"
             tuiIconButton
             type="button"
             iconStart="@tui.info"
-            class="sm:hidden shrink-0"
+            class="shrink-0"
             [attr.aria-label]="'areaRevenue.viewDetails' | translate"
             (click)="showDetailsOnMobile.set(!showDetailsOnMobile())"
           ></button>
@@ -97,7 +93,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
         <!-- Bloque Saldo Actual -->
         <div class="flex items-center gap-3.5 sm:gap-4 min-w-0 pt-1">
           <div
-            class="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0 text-2xl sm:text-3xl"
+            class="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-(--tui-status-warning-pale) text-(--tui-status-warning) shrink-0 text-2xl sm:text-3xl"
           >
             <tui-icon icon="@tui.coins" />
           </div>
@@ -136,11 +132,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
       </div>
 
       <!-- Contenedor secundario: Total Recaudado y Material Suministrado (Debajo) -->
-      <div
-        class="flex flex-col"
-        [class.hidden]="!showDetailsOnMobile()"
-        [class.sm:flex]="true"
-      >
+      <div class="flex flex-col" [class.hidden]="!showDetailsOnMobile()">
         <!-- 2. Total recaudado -->
         <div
           class="flex items-center justify-between gap-3 p-3 sm:p-4 border border-t-0 border-(--tui-border-normal) bg-(--tui-background-base) transition-colors hover:bg-(--tui-background-neutral-1) cursor-pointer"
@@ -151,7 +143,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
         >
           <div class="flex items-center gap-3 min-w-0">
             <div
-              class="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0"
+              class="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-(--tui-status-positive-pale) text-(--tui-status-positive) shrink-0"
             >
               <tui-icon icon="@tui.heart" />
             </div>
@@ -168,7 +160,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                 ></span>
               } @else {
                 <span
-                  class="text-sm sm:text-base font-bold text-emerald-700 dark:text-emerald-300 tabular-nums"
+                  class="text-sm sm:text-base font-bold text-(--tui-status-positive) tabular-nums"
                 >
                   +{{ totalRaised() | number: '1.2-2' }} €
                 </span>
@@ -198,7 +190,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
         >
           <div class="flex items-center gap-3 min-w-0">
             <div
-              class="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0"
+              class="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-(--tui-status-info-pale) text-(--tui-status-info) shrink-0"
             >
               <tui-icon icon="@tui.hammer" />
             </div>
@@ -215,7 +207,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                 ></span>
               } @else {
                 <span
-                  class="text-sm sm:text-base font-bold text-blue-700 dark:text-blue-300 tabular-nums"
+                  class="text-sm sm:text-base font-bold text-(--tui-status-info) tabular-nums"
                 >
                   - {{ balance()?.totalWithdrawn || 0 | number: '1.2-2' }} €
                 </span>
@@ -367,7 +359,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
             appearance="secondary"
             size="s"
             tuiBadge
-            class="font-bold tabular-nums !text-blue-600 dark:!text-blue-400"
+            class="font-bold tabular-nums !text-(--tui-status-info)"
           >
             -{{ balance()?.totalWithdrawn || 0 | number: '1.2-2' }} €
           </span>
@@ -426,7 +418,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                       appearance="secondary"
                       size="s"
                       tuiBadge
-                      class="shrink-0 font-bold tabular-nums !text-blue-600 dark:!text-blue-400"
+                      class="shrink-0 font-bold tabular-nums !text-(--tui-status-info)"
                     >
                       -{{ m.totalAmount | number: '1.2-2' }} €
                     </span>
@@ -465,7 +457,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
       </div>
     </ng-template>
   `,
-  host: { class: 'block mb-6' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AreaRevenuePanelComponent {
