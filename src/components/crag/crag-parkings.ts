@@ -59,7 +59,7 @@ import { UbicacionDropdownComponent } from '../ui/ubicacion-dropdown';
       </div>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      @for (p of parkings(); track p.id) {
+      @for (p of resolvedParkings(); track p.id) {
         <app-parking-card [parking]="p">
           <ng-container titleActions>
             @if (canEditAsAdmin() || canAreaAdmin()) {
@@ -111,7 +111,7 @@ import { UbicacionDropdownComponent } from '../ui/ubicacion-dropdown';
 })
 export class CragParkingsComponent {
   crag = input<CragDetail | null>(null);
-  parkingsInput = input<ParkingDto[] | null>(null, { alias: 'parkings' });
+  parkings = input<ParkingDto[] | null>(null);
 
   protected readonly outdoorData = inject(OutdoorDataService);
   protected readonly authState = inject(AuthStateService);
@@ -124,8 +124,8 @@ export class CragParkingsComponent {
   private readonly isBrowser = inject(IS_BROWSER);
   protected readonly router = inject(Router);
 
-  protected readonly parkings = computed(
-    () => this.parkingsInput() ?? this.crag()?.parkings ?? [],
+  protected readonly resolvedParkings = computed(
+    () => this.parkings() ?? this.crag()?.parkings ?? [],
   );
 
   readonly canEditAsAdmin = this.authState.canEditAsAdmin;

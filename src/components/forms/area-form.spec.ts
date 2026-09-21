@@ -6,6 +6,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { IS_BROWSER } from '../../app/is-browser';
+
 import { AreasService } from '../../services/areas.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { SlugService } from '../../services/slug.service';

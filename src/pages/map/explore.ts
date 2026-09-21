@@ -158,7 +158,9 @@ import { IS_BROWSER } from '../../app/is-browser';
         }
 
         @let hasSelection =
-          !!mapData.selectedMapCragItem() || !!mapData.selectedMapParkingItem();
+          !!mapData.selectedMapCragItem() ||
+          !!mapData.selectedMapParkingItem() ||
+          !!mapData.selectedMapIndoorItem();
 
         @let isExploreAreasTourStep =
           tourService.isActive() &&
@@ -255,6 +257,8 @@ import { IS_BROWSER } from '../../app/is-browser';
             [mapIndoorItems]="mapIndoorItems()"
             [selectedMapCragItem]="mapData.selectedMapCragItem()"
             (selectedMapCragItemChange)="selectMapCragItem($event)"
+            [selectedMapIndoorItem]="mapData.selectedMapIndoorItem()"
+            (selectedMapIndoorItemChange)="selectMapIndoorItem($event)"
             [mapParkingItems]="mapData.parkingsMapResource.value() || []"
             [selectedMapParkingItem]="mapData.selectedMapParkingItem()"
             (selectedMapParkingItemChange)="selectMapParkingItem($event)"
@@ -327,6 +331,17 @@ import { IS_BROWSER } from '../../app/is-browser';
               </ng-container>
             </app-parking-card>
           </div>
+        } @else if (mapData.selectedMapIndoorItem(); as ic) {
+          <!-- Selected indoor center information section -->
+          <div
+            class="absolute w-full max-w-120 mx-auto z-50 pointer-events-none left-0 right-0 bottom-0 px-4 pb-4"
+          >
+            <app-indoor-center-card
+              [item]="ic"
+              appearance="floating"
+              class="pointer-events-auto"
+            />
+          </div>
         }
 
         <!-- BottomSheet (Mobile) -->
@@ -337,7 +352,9 @@ import { IS_BROWSER } from '../../app/is-browser';
           mapData.areasMapResource.isLoading();
 
         @if (
-          !mapData.selectedMapCragItem() && !mapData.selectedMapParkingItem()
+          !mapData.selectedMapCragItem() &&
+          !mapData.selectedMapParkingItem() &&
+          !mapData.selectedMapIndoorItem()
         ) {
           @if (loading) {
             <div
@@ -393,54 +410,8 @@ import { IS_BROWSER } from '../../app/is-browser';
 
       <ng-template #listContent>
         @let indoorCenters = mapIndoorItems();
-        @if (indoorCenters.length) {
-          <h3
-            tuiHeader
-            id="indoor-centers-title"
-            class="justify-center sm:pt-4"
-          >
-            <div class="flex flex-row align-items-center justify-center gap-2">
-              <span
-                tuiAvatar="@tui.dumbbell"
-                tuiThumbnail
-                size="l"
-                class="self-center"
-                [attr.aria-label]="'indoor.title' | translate"
-              ></span>
-              <span tuiTitle class="justify-center">
-                {{ indoorCenters.length }}
-                {{
-                  (indoorCenters.length === 1
-                    ? 'indoor.singular'
-                    : 'indoor.title'
-                  )
-                    | translate
-                    | lowercase
-                }}
-              </span>
-            </div>
-          </h3>
-          <section class="w-full max-w-5xl mx-auto sm:px-4 py-4 pb-10">
-            <div class="flex flex-col gap-2">
-              @for (c of indoorCenters; track c.id) {
-                @defer (on viewport) {
-                  <app-indoor-center-card [item]="c" />
-                } @placeholder {
-                  <div
-                    class="h-44 rounded-3xl border border-(--tui-border-normal) bg-(--tui-background-neutral-1) opacity-50 animate-pulse"
-                  ></div>
-                }
-              }
-            </div>
-          </section>
-        }
         @if (areas.length) {
-          <h3
-            tuiHeader
-            id="areas-title"
-            class="justify-center"
-            [class.sm:pt-4]="!indoorCenters.length"
-          >
+          <h3 tuiHeader id="areas-title" class="justify-center sm:pt-4">
             <div class="flex flex-row align-items-center justify-center gap-2">
               <span
                 [tuiAvatar]="'zone' | iconSrc"
@@ -497,6 +468,43 @@ import { IS_BROWSER } from '../../app/is-browser';
               @for (c of crags; track c.id) {
                 @defer (on viewport) {
                   <app-crag-card [crag]="c" />
+                } @placeholder {
+                  <div
+                    class="h-44 rounded-3xl border border-(--tui-border-normal) bg-(--tui-background-neutral-1) opacity-50 animate-pulse"
+                  ></div>
+                }
+              }
+            </div>
+          </section>
+        }
+        @if (indoorCenters.length) {
+          <h3 tuiHeader id="indoor-centers-title" class="justify-center">
+            <div class="flex flex-row align-items-center justify-center gap-2">
+              <span
+                tuiAvatar="@tui.dumbbell"
+                tuiThumbnail
+                size="l"
+                class="self-center"
+                [attr.aria-label]="'indoor.title' | translate"
+              ></span>
+              <span tuiTitle class="justify-center">
+                {{ indoorCenters.length }}
+                {{
+                  (indoorCenters.length === 1
+                    ? 'indoor.singular'
+                    : 'indoor.title'
+                  )
+                    | translate
+                    | lowercase
+                }}
+              </span>
+            </div>
+          </h3>
+          <section class="w-full max-w-5xl mx-auto sm:px-4 py-4 pb-10">
+            <div class="flex flex-col gap-2">
+              @for (c of indoorCenters; track c.id) {
+                @defer (on viewport) {
+                  <app-indoor-center-card [item]="c" />
                 } @placeholder {
                   <div
                     class="h-44 rounded-3xl border border-(--tui-border-normal) bg-(--tui-background-neutral-1) opacity-50 animate-pulse"
@@ -693,7 +701,8 @@ export class ExploreComponent {
     return (
       (areasCount > 0 || cragsCount > 0 || indoorCount > 0) &&
       !this.mapData.selectedMapCragItem() &&
-      !this.mapData.selectedMapParkingItem()
+      !this.mapData.selectedMapParkingItem() &&
+      !this.mapData.selectedMapIndoorItem()
     );
   });
 
@@ -790,11 +799,13 @@ export class ExploreComponent {
 
     const hadSelectedMapItem =
       !!this.mapData.selectedMapCragItem() ||
-      !!this.mapData.selectedMapParkingItem();
+      !!this.mapData.selectedMapParkingItem() ||
+      !!this.mapData.selectedMapIndoorItem();
 
     if (hadSelectedMapItem && mode !== 'open') {
       this.mapData.selectedMapCragItem.set(null);
       this.mapData.selectedMapParkingItem.set(null);
+      this.mapData.selectedMapIndoorItem.set(null);
     }
 
     const el = this.sheetRef()?.nativeElement;
@@ -856,6 +867,7 @@ export class ExploreComponent {
   protected selectMapCragItem(mapCragItem: MapCragItem | null): void {
     if (!mapCragItem) return;
     this.mapData.selectedMapParkingItem.set(null);
+    this.mapData.selectedMapIndoorItem.set(null);
     this.mapData.selectedMapCragItem.set(mapCragItem);
     if (this.layoutService.isMobile()) {
       this.setBottomSheet('open');
@@ -865,7 +877,18 @@ export class ExploreComponent {
   protected selectMapParkingItem(parkingItem: ParkingDto | null): void {
     if (!parkingItem) return;
     this.mapData.selectedMapCragItem.set(null);
+    this.mapData.selectedMapIndoorItem.set(null);
     this.mapData.selectedMapParkingItem.set(parkingItem);
+    if (this.layoutService.isMobile()) {
+      this.setBottomSheet('open');
+    }
+  }
+
+  protected selectMapIndoorItem(indoorItem: MapIndoorCenterItem | null): void {
+    if (!indoorItem) return;
+    this.mapData.selectedMapCragItem.set(null);
+    this.mapData.selectedMapParkingItem.set(null);
+    this.mapData.selectedMapIndoorItem.set(indoorItem);
     if (this.layoutService.isMobile()) {
       this.setBottomSheet('open');
     }
@@ -880,6 +903,7 @@ export class ExploreComponent {
   protected closeAll(): void {
     this.mapData.selectedMapCragItem.set(null);
     this.mapData.selectedMapParkingItem.set(null);
+    this.mapData.selectedMapIndoorItem.set(null);
     this.setBottomSheet('close');
   }
 

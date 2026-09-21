@@ -19,6 +19,7 @@ import { MapDataService } from './map-data.service';
 export interface MapBuilderCallbacks {
   onSelectedCragChange: (mapCragItem: MapCragItem | null) => void;
   onSelectedParkingChange: (parking: ParkingDto | null) => void;
+  onSelectedIndoorChange: (indoor: MapIndoorCenterItem | null) => void;
   onMapClick: (lat: number, lng: number) => void;
   onInteractionStart: () => void;
   onViewportChange: (v: MapBounds) => void;
@@ -693,8 +694,7 @@ export class MapBuilder {
             if (it.apiItem) {
               cb.onSelectedCragChange(it.apiItem);
             } else if (it.indoorItem) {
-              // Redirect to indoor center page
-              window.open(`/indoor/${it.indoorItem.slug}`, '_self');
+              cb.onSelectedIndoorChange(it.indoorItem);
             }
           };
 
@@ -833,11 +833,11 @@ export class MapBuilder {
       marker.on('click', (e: LeafletEvent) => {
         e.originalEvent?.preventDefault?.();
         (e.originalEvent as Event | undefined)?.stopPropagation?.();
-        window.open(`/indoor/${mapIndoorItem.slug}`, '_self');
+        cb.onSelectedIndoorChange(mapIndoorItem);
       });
 
       this.attachMarkerKeyboardSelection(marker, () => {
-        window.open(`/indoor/${mapIndoorItem.slug}`, '_self');
+        cb.onSelectedIndoorChange(mapIndoorItem);
       });
     }
   }

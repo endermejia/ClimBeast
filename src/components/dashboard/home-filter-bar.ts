@@ -54,6 +54,7 @@ import { DropdownButtonComponent } from '../ui/dropdown-button';
               size="xl"
               [label]="filterLabels()[feedFilter()] | translate"
               [content]="feedFilterDropdown()"
+              [count]="filterCount()"
               [(open)]="dropdownOpenModel"
             />
           }
@@ -147,6 +148,7 @@ export class HomeFilterBarComponent {
   feedFilterDropdown = input.required<TemplateRef<Record<string, unknown>>>();
   feedFilter = input.required<HomeFeedFilter>();
   filterLabels = input.required<Record<HomeFeedFilter, string>>();
+  filterCount = input<number>(1);
   dropdownOpen = input<boolean>(false);
   dropdownOpenChange = output<boolean>();
   hasActiveFilters = input<boolean>(false);

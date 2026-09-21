@@ -41,6 +41,8 @@ export class MapDataService {
 
   selectedMapCragItem: WritableSignal<MapCragItem | null> = signal(null);
   selectedMapParkingItem: WritableSignal<ParkingDto | null> = signal(null);
+  selectedMapIndoorItem: WritableSignal<MapIndoorCenterItem | null> =
+    signal(null);
 
   /** Resource for fetching map items based on bounds. */
   readonly mapResource = resource({

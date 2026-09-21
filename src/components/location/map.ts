@@ -126,6 +126,11 @@ export class MapComponent {
   public selectedMapParkingItemChange: OutputEmitterRef<ParkingDto | null> =
     output<ParkingDto | null>();
 
+  public selectedMapIndoorItem: InputSignal<MapIndoorCenterItem | null> =
+    input<MapIndoorCenterItem | null>(null);
+  public selectedMapIndoorItemChange: OutputEmitterRef<MapIndoorCenterItem | null> =
+    output<MapIndoorCenterItem | null>();
+
   public selection: InputSignal<{ lat: number; lng: number } | null> = input<{
     lat: number;
     lng: number;
@@ -146,6 +151,8 @@ export class MapComponent {
     onSelectedCragChange: (crag) => this.selectedMapCragItemChange.emit(crag),
     onSelectedParkingChange: (parking) =>
       this.selectedMapParkingItemChange.emit(parking),
+    onSelectedIndoorChange: (indoor) =>
+      this.selectedMapIndoorItemChange.emit(indoor),
     onMapClick: (lat, lng) => this.mapClick.emit({ lat, lng }),
     onInteractionStart: () => this.interactionStart.emit(),
     onViewportChange: (v: Partial<MapBounds>) => {

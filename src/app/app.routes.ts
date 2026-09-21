@@ -62,7 +62,7 @@ export const routes: Routes = [
     path: 'explore',
     canMatch: [authGuard],
     loadComponent: () =>
-      import('../pages/area/explore').then((m) => m.ExploreComponent),
+      import('../pages/map/explore').then((m) => m.ExploreComponent),
   },
   {
     path: 'profile/config',
@@ -89,7 +89,7 @@ export const routes: Routes = [
     path: 'equipper/:id',
     canMatch: [authGuard],
     loadComponent: () =>
-      import('../pages/area/equipper').then((m) => m.EquipperComponent),
+      import('../pages/user/equipper').then((m) => m.EquipperComponent),
   },
   {
     path: 'area',

@@ -31,6 +31,8 @@ import { AuthStateService } from '../../services/auth-state.service';
 
 import type { AreaBalanceSummary, AreaPublicTimeline } from '../../models';
 
+import { CountUpDirective } from '../../directives/count-up.directive';
+
 import { EmptyStateComponent } from '../ui/empty-state';
 
 @Component({
@@ -38,6 +40,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
   standalone: true,
   imports: [
     CommonModule,
+    CountUpDirective,
     DatePipe,
     DecimalPipe,
     EmptyStateComponent,
@@ -153,18 +156,13 @@ import { EmptyStateComponent } from '../ui/empty-state';
               >
                 {{ 'areaRevenue.totalRaised' | translate }}
               </span>
-              @if (balanceResource.isLoading()) {
-                <span
-                  [tuiSkeleton]="true"
-                  class="w-16 h-5 rounded mt-0.5"
-                ></span>
-              } @else {
-                <span
-                  class="text-sm sm:text-base font-bold text-(--tui-status-positive) tabular-nums"
-                >
-                  +{{ totalRaised() | number: '1.2-2' }} €
-                </span>
-              }
+              <span
+                class="text-sm sm:text-base font-bold text-(--tui-status-positive) tabular-nums"
+                [appCountUp]="totalRaised()"
+                #totalRaisedAnim="appCountUp"
+              >
+                +{{ totalRaisedAnim.currentValue() | number: '1.2-2' }} €
+              </span>
             </div>
           </div>
 

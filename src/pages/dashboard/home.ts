@@ -124,6 +124,7 @@ import { IS_BROWSER } from '../../app/is-browser';
               [feedFilterDropdown]="feedFilterDropdown"
               [feedFilter]="feedFilter()"
               [filterLabels]="filterLabels"
+              [filterCount]="filterOptions().length"
               [(dropdownOpen)]="dropdownOpen"
               [hasActiveFilters]="hasActiveFilters()"
               [isAdmin]="authState.isAdmin()"

@@ -35,7 +35,7 @@ import { CragDetail, ParkingDto } from '../../models';
       </button>
     }
     <ng-template #dialogTpl>
-      <app-crag-parkings [crag]="crag()" [parkings]="parkingsInput()" />
+      <app-crag-parkings [crag]="crag()" [parkings]="parkings()" />
     </ng-template>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,12 +44,12 @@ export class ParkingButtonComponent {
   private readonly dialogs = inject(TuiDialogService);
 
   crag = input<CragDetail | null>(null);
-  parkingsInput = input<ParkingDto[] | null>(null, { alias: 'parkings' });
+  parkings = input<ParkingDto[] | null>(null);
 
   @ViewChild('dialogTpl') private readonly dialogTpl!: TemplateRef<unknown>;
 
   protected readonly totalCapacity = computed(() => {
-    const parkings = this.parkingsInput() ?? this.crag()?.parkings ?? [];
+    const parkings = this.parkings() ?? this.crag()?.parkings ?? [];
     return parkings.reduce((sum, p) => sum + (p.size ?? 0), 0);
   });
 

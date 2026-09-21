@@ -36,7 +36,7 @@ import {
   TuiBadgedContent,
   TuiBadgeNotification,
   TuiConfirmData,
-  TuiTabs,
+  TuiSegmented,
 } from '@taiga-ui/kit';
 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -49,6 +49,7 @@ import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 import { IndoorService } from '../../services/indoor.service';
+import { LayoutService } from '../../services/layout.service';
 import { MapDataService } from '../../services/map-data.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -105,7 +106,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiLoader,
     TuiNotification,
     TuiScrollbar,
-    TuiTabs,
+    TuiSegmented,
     TuiTextfield,
     RouterLink,
     SectionHeaderComponent,
@@ -117,316 +118,386 @@ import { IS_BROWSER } from '../../app/is-browser';
     EmptyStateComponent,
     AscentCardComponent,
   ],
+  styles: `
+    @media (min-width: 1024px) {
+      :host > tui-scrollbar {
+        overflow: hidden !important;
+      }
+      :host > tui-scrollbar ::ng-deep > .t-content {
+        block-size: 100% !important;
+        height: 100% !important;
+        overflow: hidden !important;
+      }
+      :host > tui-scrollbar ::ng-deep > tui-scroll-controls {
+        display: none !important;
+      }
+    }
+  `,
   template: `
-    <tui-scrollbar class="flex grow">
+    <tui-scrollbar class="w-full h-full min-h-0 min-w-0">
       <section
-        class="w-full max-w-[1600px] mx-auto p-4 flex flex-col min-h-full"
+        class="w-full max-w-[1600px] mx-auto py-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden pb-6 lg:pb-2"
       >
         @if (center(); as c) {
-          <div class="mb-6">
-            <app-section-header
-              [title]="c.name"
-              [showLike]="false"
-              [actions]="headerActions()"
-            >
-              <span
-                titleInfo
-                class="flex items-center gap-1 text-sm font-normal text-(--tui-text-secondary) mt-1.5 select-none"
-              >
-                <tui-icon icon="@tui.map-pin" />
-                <span>{{ c.city }}</span>
-              </span>
-            </app-section-header>
-          </div>
-
-          <div class="flex flex-col md:flex-row gap-6">
-            <div class="flex flex-col gap-4 grow">
-              <!-- Gallery/Avatar -->
+          <!-- Left Column -->
+          <div
+            class="flex flex-col w-full lg:flex-1 min-w-0 lg:h-full lg:min-h-0 lg:overflow-hidden"
+          >
+            <tui-scrollbar class="w-full h-full min-h-0">
               <div
-                class="relative rounded-3xl overflow-hidden aspect-video bg-(--tui-background-neutral-1)"
+                class="flex flex-col gap-4 w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6"
               >
-                @if (carouselItems().length > 0) {
-                  <app-custom-carousel
-                    [items]="carouselItems()"
-                    [(index)]="galleryIndex"
-                    [objectCover]="true"
-                    class="h-full w-full"
-                  />
-                } @else {
-                  <div class="flex items-center justify-center h-full">
-                    <span
-                      [tuiAvatar]="
-                        supabase.getPublicUrl('indoor-centers', c.avatar_url)
-                      "
-                      size="xxl"
-                      class="rounded-3xl"
-                    ></span>
-                  </div>
-                }
-              </div>
-
-              <div class="flex flex-col gap-2">
-                @if (c.warning) {
-                  <div
-                    tuiNotification
-                    appearance="warning"
-                    class="rounded-2xl mb-2"
+                <div class="mb-2">
+                  <app-section-header
+                    [title]="c.name"
+                    [showLike]="false"
+                    [actions]="headerActions()"
                   >
-                    {{ c.warning }}
-                  </div>
-                }
-                <p class="text-lg">{{ c.description }}</p>
-
-                @if (c.latitude && c.longitude) {
-                  <div class="flex flex-row flex-wrap gap-2 mt-2">
-                    <button
-                      tuiButton
-                      appearance="flat"
-                      size="m"
-                      type="button"
-                      (click.zoneless)="viewOnMap(c.latitude, c.longitude)"
-                      [iconStart]="'@tui.map-pin'"
+                    <span
+                      titleInfo
+                      class="flex items-center gap-1 text-sm font-normal text-(--tui-text-secondary) mt-1.5 select-none"
                     >
-                      {{ 'viewOnMap' | translate }}
-                    </button>
-                    <button
-                      appearance="flat"
-                      size="m"
-                      tuiButton
-                      type="button"
-                      [iconStart]="'/image/google-maps.svg'"
-                      class="[--tui-icon-size:1.25rem]"
-                      (click.zoneless)="
-                        openExternal(
-                          mapLocationUrl({
-                            latitude: c.latitude,
-                            longitude: c.longitude,
-                          })
-                        )
-                      "
-                      [attr.aria-label]="'openGoogleMaps' | translate"
-                    >
-                      {{ 'openGoogleMaps' | translate }}
-                    </button>
+                      <tui-icon icon="@tui.map-pin" />
+                      <span>{{ c.city }}</span>
+                    </span>
+                  </app-section-header>
+                </div>
+
+                <!-- Gallery/Avatar + Schedule (side by side at xl+) -->
+                <div class="flex flex-col xl:flex-row gap-4">
+                  <div
+                    class="relative rounded-3xl overflow-hidden aspect-video xl:aspect-auto xl:flex-1 bg-(--tui-background-neutral-1)"
+                  >
+                    @if (carouselItems().length > 0) {
+                      <app-custom-carousel
+                        [items]="carouselItems()"
+                        [(index)]="galleryIndex"
+                        [objectCover]="true"
+                        class="h-full w-full"
+                      />
+                    } @else {
+                      <div class="flex items-center justify-center h-full">
+                        <span
+                          [tuiAvatar]="
+                            supabase.getPublicUrl(
+                              'indoor-centers',
+                              c.avatar_url
+                            )
+                          "
+                          size="xxl"
+                          class="rounded-3xl"
+                        ></span>
+                      </div>
+                    }
                   </div>
-                }
-              </div>
-            </div>
 
-            <!-- Sidebar: Schedule & Vouchers -->
-            <div class="flex flex-col gap-6 md:w-80 shrink-0">
-              <div
-                tuiAppearance="flat-grayscale"
-                class="p-4 rounded-3xl flex flex-col gap-4"
-              >
-                <h3 class="font-bold flex items-center gap-2">
-                  <tui-icon icon="@tui.clock" />
-                  {{ 'indoor.schedule' | translate }}
-                </h3>
+                  <!-- Schedule -->
+                  <div
+                    tuiAppearance="flat-grayscale"
+                    class="p-4 rounded-3xl flex flex-col gap-4 xl:w-72 shrink-0"
+                  >
+                    <h3 class="font-bold flex items-center gap-2">
+                      <tui-icon icon="@tui.clock" />
+                      {{ 'indoor.schedule' | translate }}
+                    </h3>
 
-                @let schedule = c.schedule | anyToSchedule;
-                <div class="flex flex-col gap-1 text-sm">
-                  @for (
-                    day of [
-                      'monday',
-                      'tuesday',
-                      'wednesday',
-                      'thursday',
-                      'friday',
-                      'saturday',
-                      'sunday',
-                    ];
-                    track day
-                  ) {
+                    @let schedule = c.schedule | anyToSchedule;
+                    <div class="flex flex-col gap-1 text-sm">
+                      @for (
+                        day of [
+                          'monday',
+                          'tuesday',
+                          'wednesday',
+                          'thursday',
+                          'friday',
+                          'saturday',
+                          'sunday',
+                        ];
+                        track day
+                      ) {
+                        <div
+                          class="flex justify-between p-1 px-2.5 rounded-lg transition-all"
+                          [class.bg-(--tui-background-accent-1)]="
+                            day === currentDay
+                          "
+                          [class.text-(--tui-text-primary-on-accent-1)]="
+                            day === currentDay
+                          "
+                          [class.font-bold]="day === currentDay"
+                        >
+                          <span class="capitalize">{{ day | translate }}</span>
+                          @let s = schedule.normal[day];
+                          <span>{{
+                            s?.closed
+                              ? ('indoor.closed' | translate)
+                              : s?.open && s?.close
+                                ? s.open +
+                                  ' - ' +
+                                  s.close +
+                                  (s.open2 && s.close2
+                                    ? ' / ' + s.open2 + ' - ' + s.close2
+                                    : '')
+                                : '-'
+                          }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                  @if (c.warning) {
                     <div
-                      class="flex justify-between p-1 px-2.5 rounded-lg transition-all"
-                      [class.bg-(--tui-background-accent-1)]="
-                        day === currentDay
-                      "
-                      [class.text-(--tui-text-primary-on-accent-1)]="
-                        day === currentDay
-                      "
-                      [class.font-bold]="day === currentDay"
+                      tuiNotification
+                      appearance="warning"
+                      class="rounded-2xl mb-2"
                     >
-                      <span class="capitalize">{{ day | translate }}</span>
-                      @let s = schedule.normal[day];
-                      <span>{{
-                        s?.closed
-                          ? ('indoor.closed' | translate)
-                          : s?.open && s?.close
-                            ? s.open +
-                              ' - ' +
-                              s.close +
-                              (s.open2 && s.close2
-                                ? ' / ' + s.open2 + ' - ' + s.close2
-                                : '')
-                            : '-'
-                      }}</span>
+                      {{ c.warning }}
+                    </div>
+                  }
+                  <p class="text-lg">{{ c.description }}</p>
+
+                  @if (c.latitude && c.longitude) {
+                    <div class="flex flex-row flex-wrap gap-2 mt-2">
+                      <button
+                        tuiButton
+                        appearance="flat"
+                        size="m"
+                        type="button"
+                        (click.zoneless)="viewOnMap(c.latitude, c.longitude)"
+                        [iconStart]="'@tui.map-pin'"
+                      >
+                        {{ 'viewOnMap' | translate }}
+                      </button>
+                      <button
+                        appearance="flat"
+                        size="m"
+                        tuiButton
+                        type="button"
+                        [iconStart]="'/image/google-maps.svg'"
+                        class="[--tui-icon-size:1.25rem]"
+                        (click.zoneless)="
+                          openExternal(
+                            mapLocationUrl({
+                              latitude: c.latitude,
+                              longitude: c.longitude,
+                            })
+                          )
+                        "
+                        [attr.aria-label]="'openGoogleMaps' | translate"
+                      >
+                        {{ 'openGoogleMaps' | translate }}
+                      </button>
+                    </div>
+                  }
+                </div>
+
+                @if (segmentedTabs().length > 1) {
+                  <tui-segmented
+                    [activeItemIndex]="activeTabIndex()"
+                    (activeItemIndexChange)="activeTabIndex.set($event)"
+                  >
+                    @for (tabIdx of segmentedTabs(); track tabIdx) {
+                      <button type="button">
+                        @if (tabIdx === 0) {
+                          {{ 'indoor.topos' | translate }}
+                        } @else if (tabIdx === 1) {
+                          {{ 'indoor.routes' | translate }}
+                        } @else if (tabIdx === 2) {
+                          {{ 'indoor.ascents' | translate }}
+                        } @else {
+                          {{ 'indoor.vouchers' | translate }}
+                        }
+                      </button>
+                    }
+                  </tui-segmented>
+                }
+
+                <div class="mt-2 lg:flex-1 lg:min-h-0 lg:overflow-hidden">
+                  @let currentTab = segmentedTabs()[activeTabIndex()];
+                  @if (loadedTabs().has(0)) {
+                    <div
+                      [hidden]="currentTab !== 0"
+                      [class.hidden]="currentTab !== 0"
+                    >
+                      <app-indoor-topos
+                        [centerId]="c.id"
+                        [centerSlug]="c.slug"
+                        [center]="c"
+                      />
+                    </div>
+                  }
+                  @if (loadedTabs().has(1)) {
+                    <div
+                      [hidden]="currentTab !== 1"
+                      [class.hidden]="currentTab !== 1"
+                    >
+                      <div class="flex flex-col gap-4">
+                        <div class="flex items-center justify-between px-3">
+                          <label class="flex items-center gap-2 cursor-pointer">
+                            <input
+                              tuiCheckbox
+                              type="checkbox"
+                              [ngModel]="showLegacyRoutes()"
+                              (ngModelChange)="showLegacyRoutes.set($event)"
+                              autocomplete="off"
+                            />
+                            <span class="text-xs opacity-75 select-none">{{
+                              'indoor.showLegacyRoutes' | translate
+                            }}</span>
+                          </label>
+
+                          @if (totalRoutes() > 0) {
+                            <div
+                              class="flex items-center gap-2 text-xs font-semibold opacity-70"
+                            >
+                              @if (allCompleted()) {
+                                {{ 'indoor.allCompleted' | translate }}
+                              } @else {
+                                {{
+                                  'indoor.partialCompleted'
+                                    | translate
+                                      : {
+                                          completed:
+                                            totalRoutes() - pendingRoutes(),
+                                          total: totalRoutes(),
+                                        }
+                                }}
+                              }
+                            </div>
+                          }
+
+                          @if (canCreateRoute()) {
+                            <button
+                              tuiButton
+                              appearance="textfield"
+                              size="s"
+                              iconStart="@tui.plus"
+                              (click.zoneless)="createRoute()"
+                            >
+                              {{ 'new' | translate }}
+                            </button>
+                          }
+                        </div>
+
+                        <div class="flex items-end gap-2">
+                          <tui-textfield
+                            class="grow block"
+                            tuiTextfieldSize="l"
+                          >
+                            <label tuiLabel for="indoor-route-search">{{
+                              'searchPlaceholder' | translate
+                            }}</label>
+                            <input
+                              tuiInput
+                              #indoorRouteSearch
+                              id="indoor-route-search"
+                              autocomplete="off"
+                              [value]="routeQuery()"
+                              (input.zoneless)="
+                                routeQuery.set(indoorRouteSearch.value)
+                              "
+                            />
+                          </tui-textfield>
+                          <tui-badged-content>
+                            @if (hasActiveRouteFilters()) {
+                              <tui-badge-notification
+                                tuiAppearance="accent"
+                                size="s"
+                                tuiSlot="top"
+                              />
+                            }
+                            <button
+                              tuiButton
+                              appearance="textfield"
+                              size="l"
+                              type="button"
+                              iconStart="@tui.sliders-horizontal"
+                              [attr.aria-label]="'filters' | translate"
+                              (click.zoneless)="openRouteFilters()"
+                            ></button>
+                          </tui-badged-content>
+                        </div>
+
+                        <app-indoor-routes-table
+                          [data]="filteredCenterRoutes()"
+                          [centerId]="c.id"
+                          [centerSlug]="c.slug"
+                          [availableTopos]="toposResource.value() || []"
+                        />
+                      </div>
+                    </div>
+                  }
+                  @if (loadedTabs().has(2)) {
+                    <div
+                      [hidden]="currentTab !== 2"
+                      [class.hidden]="currentTab !== 2"
+                    >
+                      @let ascents = mappedAscents();
+                      @if (centerAscentsResource.isLoading()) {
+                        <div class="flex items-center justify-center p-8">
+                          <tui-loader size="m" />
+                        </div>
+                      } @else {
+                        <div
+                          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+                        >
+                          @for (ascent of ascents; track ascent.id) {
+                            <app-ascent-card
+                              [data]="ascent"
+                              [showRoute]="true"
+                              [showUser]="true"
+                            />
+                          } @empty {
+                            <div class="col-span-full">
+                              <app-empty-state />
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                  @if (loadedTabs().has(3)) {
+                    <div
+                      [hidden]="currentTab !== 3"
+                      [class.hidden]="currentTab !== 3"
+                    >
+                      <app-indoor-vouchers [centerId]="c.id" />
                     </div>
                   }
                 </div>
               </div>
-            </div>
+            </tui-scrollbar>
           </div>
 
-          <div class="overflow-x-auto no-scrollbar mt-6">
-            <tui-tabs [(activeItemIndex)]="activeTabIndex">
-              <button tuiTab>{{ 'indoor.topos' | translate }}</button>
-              <button tuiTab>{{ 'indoor.routes' | translate }}</button>
-              <button tuiTab>{{ 'indoor.ascents' | translate }}</button>
-              @if (hasVouchers()) {
-                <button tuiTab>{{ 'indoor.vouchers' | translate }}</button>
-              }
-            </tui-tabs>
-          </div>
-
-          <div class="mt-6">
-            @if (loadedTabs().has(0)) {
-              <div
-                [hidden]="activeTabIndex() !== 0"
-                [class.hidden]="activeTabIndex() !== 0"
-              >
-                <app-indoor-topos
-                  [centerId]="c.id"
-                  [centerSlug]="c.slug"
-                  [center]="c"
-                />
-              </div>
-            }
-            @if (loadedTabs().has(1)) {
-              <div
-                [hidden]="activeTabIndex() !== 1"
-                [class.hidden]="activeTabIndex() !== 1"
-              >
-                <div class="flex flex-col gap-4">
-                  <div class="flex items-center justify-between px-3">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                      <input
-                        tuiCheckbox
-                        type="checkbox"
-                        [ngModel]="showLegacyRoutes()"
-                        (ngModelChange)="showLegacyRoutes.set($event)"
-                        autocomplete="off"
-                      />
-                      <span class="text-xs opacity-75 select-none">{{
-                        'indoor.showLegacyRoutes' | translate
-                      }}</span>
-                    </label>
-
-                    @if (totalRoutes() > 0) {
-                      <div
-                        class="flex items-center gap-2 text-xs font-semibold opacity-70"
-                      >
-                        @if (allCompleted()) {
-                          {{ 'indoor.allCompleted' | translate }}
-                        } @else {
-                          {{
-                            'indoor.partialCompleted'
-                              | translate
-                                : {
-                                    completed: totalRoutes() - pendingRoutes(),
-                                    total: totalRoutes(),
-                                  }
-                          }}
-                        }
-                      </div>
-                    }
-
-                    @if (canCreateRoute()) {
-                      <button
-                        tuiButton
-                        appearance="textfield"
-                        size="s"
-                        iconStart="@tui.plus"
-                        (click.zoneless)="createRoute()"
-                      >
-                        {{ 'new' | translate }}
-                      </button>
-                    }
-                  </div>
-
-                  <div class="flex items-end gap-2">
-                    <tui-textfield class="grow block" tuiTextfieldSize="l">
-                      <label tuiLabel for="indoor-route-search">{{
-                        'searchPlaceholder' | translate
-                      }}</label>
-                      <input
-                        tuiInput
-                        #indoorRouteSearch
-                        id="indoor-route-search"
-                        autocomplete="off"
-                        [value]="routeQuery()"
-                        (input.zoneless)="
-                          routeQuery.set(indoorRouteSearch.value)
-                        "
-                      />
-                    </tui-textfield>
-                    <tui-badged-content>
-                      @if (hasActiveRouteFilters()) {
-                        <tui-badge-notification
-                          tuiAppearance="accent"
-                          size="s"
-                          tuiSlot="top"
+          <!-- Right Column: Ascents Sidebar (desktop only) -->
+          <div
+            class="hidden lg:flex lg:w-[420px] xl:w-[460px] 2xl:w-[500px] shrink-0 min-w-0 lg:h-full flex-col"
+          >
+            <div class="flex flex-col w-full lg:h-full min-w-0 lg:min-h-0">
+              <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
+                <div class="w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6">
+                  @let ascents = mappedAscents();
+                  @if (centerAscentsResource.isLoading()) {
+                    <div class="flex items-center justify-center p-8">
+                      <tui-loader size="m" />
+                    </div>
+                  } @else {
+                    <div class="flex flex-col gap-4">
+                      @for (ascent of ascents; track ascent.id) {
+                        <app-ascent-card
+                          [data]="ascent"
+                          [showRoute]="true"
+                          [showUser]="true"
                         />
-                      }
-                      <button
-                        tuiButton
-                        appearance="textfield"
-                        size="l"
-                        type="button"
-                        iconStart="@tui.sliders-horizontal"
-                        [attr.aria-label]="'filters' | translate"
-                        (click.zoneless)="openRouteFilters()"
-                      ></button>
-                    </tui-badged-content>
-                  </div>
-
-                  <app-indoor-routes-table
-                    [data]="filteredCenterRoutes()"
-                    [centerId]="c.id"
-                    [centerSlug]="c.slug"
-                    [availableTopos]="toposResource.value() || []"
-                  />
-                </div>
-              </div>
-            }
-            @if (loadedTabs().has(2)) {
-              <div
-                [hidden]="activeTabIndex() !== 2"
-                [class.hidden]="activeTabIndex() !== 2"
-              >
-                @let ascents = mappedAscents();
-                @if (centerAscentsResource.isLoading()) {
-                  <div class="flex items-center justify-center p-8">
-                    <tui-loader size="m" />
-                  </div>
-                } @else {
-                  <div
-                    class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-                  >
-                    @for (ascent of ascents; track ascent.id) {
-                      <app-ascent-card
-                        [data]="ascent"
-                        [showRoute]="true"
-                        [showUser]="true"
-                      />
-                    } @empty {
-                      <div class="col-span-full">
+                      } @empty {
                         <app-empty-state />
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            }
-            @if (loadedTabs().has(3)) {
-              <div
-                [hidden]="activeTabIndex() !== 3"
-                [class.hidden]="activeTabIndex() !== 3"
-              >
-                <app-indoor-vouchers [centerId]="c.id" />
-              </div>
-            }
+                      }
+                    </div>
+                  }
+                </div>
+              </tui-scrollbar>
+            </div>
           </div>
         } @else if (centerResource.isLoading()) {
           <div class="flex items-center justify-center w-full min-h-[50vh]">
@@ -446,7 +517,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     </tui-scrollbar>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'flex grow min-h-0' },
+  host: { class: 'flex flex-col w-full h-full min-h-0' },
 })
 export class IndoorCenterComponent {
   protected readonly mappedAscents = computed(
@@ -461,6 +532,7 @@ export class IndoorCenterComponent {
   protected readonly breadcrumbsService = inject(BreadcrumbsService);
   protected readonly filterState = inject(FilterStateService);
   protected readonly filtersService = inject(FiltersService);
+  protected readonly layoutService = inject(LayoutService);
   protected readonly mapData = inject(MapDataService);
   protected readonly indoorCentersData = inject(IndoorCentersDataService);
   protected readonly indoor = inject(IndoorService);
@@ -861,7 +933,25 @@ export class IndoorCenterComponent {
         return next;
       });
     });
+
+    effect(() => {
+      const tabs = this.segmentedTabs();
+      if (this.activeTabIndex() >= tabs.length && tabs.length > 0) {
+        this.activeTabIndex.set(0);
+      }
+    });
   }
+
+  protected readonly segmentedTabs = computed(() => {
+    const tabs: number[] = [0, 1];
+    if (this.hasVouchers()) {
+      tabs.push(3);
+    }
+    if (this.layoutService.isNotDesktop()) {
+      tabs.push(2);
+    }
+    return tabs;
+  });
 
   protected readonly mapLocationUrl = mapLocationUrl;
 

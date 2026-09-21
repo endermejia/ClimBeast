@@ -1,4 +1,4 @@
-import {
+﻿import {
   CdkDrag,
   CdkDragDrop,
   CdkDragHandle,
@@ -59,12 +59,10 @@ import {
 import {
   GradeLabelPipe,
   TopoHasPathPipe,
-  TopoIsRouteVisiblePipe,
   TopoIsTraversePipe,
   TopoPointStateBadgePipe,
   TopoPointStateColorPipe,
   TopoPointStateLabelPipe,
-  TopoRouteVisibilityStatePipe,
 } from '../../pipes';
 
 import {
@@ -110,12 +108,10 @@ export interface TopoPathEditorConfig {
     CdkDragPlaceholder,
     CdkDropList,
     TopoHasPathPipe,
-    TopoIsRouteVisiblePipe,
     TopoIsTraversePipe,
     TopoPointStateBadgePipe,
     TopoPointStateColorPipe,
     TopoPointStateLabelPipe,
-    TopoRouteVisibilityStatePipe,
     TranslateModule,
     TuiButton,
     TuiIcon,
@@ -154,23 +150,7 @@ export interface TopoPathEditorConfig {
                     {{ 'topos.editor.sort' | translate }}
                   </button>
                 }
-                @if (topoRoutes.length > 0) {
-                  <button
-                    tuiIconButton
-                    appearance="flat"
-                    size="s"
-                    class="rounded-full!"
-                    [iconStart]="
-                      areAllRoutesVisible() ? '@tui.eye' : '@tui.eye-off'
-                    "
-                    (click)="toggleAllRoutesVisibility()"
-                  >
-                    {{
-                      (areAllRoutesVisible() ? 'hideAll' : 'showAll')
-                        | translate
-                    }}
-                  </button>
-                }
+
                 @if (context.data.isIndoor && context.data.centerId) {
                   <button
                     tuiButton
@@ -237,48 +217,6 @@ export interface TopoPathEditorConfig {
                     />
 
                     <div class="flex items-center gap-1">
-                      @let visState =
-                        tr.route_id
-                          | topoRouteVisibilityState
-                            : hiddenRouteIds()
-                            : topoRoutes.length;
-                      <button
-                        tuiIconButton
-                        size="s"
-                        class="rounded-full! shrink-0"
-                        [appearance]="
-                          visState === 'solo'
-                            ? 'accent'
-                            : visState === 'hidden'
-                              ? 'flat-grayscale'
-                              : 'flat'
-                        "
-                        [iconStart]="
-                          visState === 'hidden'
-                            ? '@tui.eye-off'
-                            : visState === 'solo'
-                              ? '@tui.scan-eye'
-                              : '@tui.eye'
-                        "
-                        [title]="
-                          (visState === 'visible'
-                            ? 'showOnly'
-                            : visState === 'solo'
-                              ? 'hide'
-                              : 'show'
-                          ) | translate
-                        "
-                        (click)="toggleRouteVisibility(tr.route_id, $event)"
-                      >
-                        {{
-                          (visState === 'visible'
-                            ? 'showOnly'
-                            : visState === 'solo'
-                              ? 'hide'
-                              : 'show'
-                          ) | translate
-                        }}
-                      </button>
                       <button
                         tuiIconButton
                         appearance="flat"
@@ -290,8 +228,8 @@ export interface TopoPathEditorConfig {
                       >
                         {{ 'edit' | translate }}
                       </button>
-                      @if (hasPath) {
-                        <div class="route-action-slot">
+                      <div class="route-action-slot">
+                        @if (hasPath) {
                           @if (selectedRoute()?.route_id === tr.route_id) {
                             <button
                               tuiIconButton
@@ -307,8 +245,10 @@ export interface TopoPathEditorConfig {
                           } @else {
                             <tui-icon icon="@tui.check" class="path-check" />
                           }
-                        </div>
-                      }
+                        } @else {
+                          <tui-icon icon="@tui.x" class="path-no-check" />
+                        }
+                      </div>
                     </div>
                     <div
                       *cdkDragPlaceholder
@@ -507,459 +447,187 @@ export interface TopoPathEditorConfig {
               preserveAspectRatio="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              @for (entry of pathsEntries(); track entry[0]) {
+              @for (entry of visiblePathsEntries(); track entry[0]) {
                 @let routeId = entry[0];
                 @let pathData = entry[1];
                 @let isSelected = selectedRoute()?.route_id == routeId;
-                @let isVisible = routeId | topoIsRouteVisible: hiddenRouteIds();
-                @if (isSelected || isVisible) {
-                  @let style =
-                    routeStyleMap()[routeId] || {
-                      stroke: '#22c55e',
-                      opacity: 0.8,
-                      isDashed: true,
-                    };
-                  @let strokeWidthFactor =
-                    routeStrokeWidthMap()[routeId] ?? lineWidth() / 1000;
-                  <g
-                    class="path-group"
-                    (click)="
-                      selectRoute(pathData._ref || { route_id: routeId });
-                      $event.stopPropagation()
-                    "
-                    (touchstart)="
-                      selectRoute(pathData._ref || { route_id: routeId });
-                      $event.stopPropagation()
-                    "
-                  >
-                    @if (pathData.type === 'circle') {
-                      @let strokeW = strokeWidthFactor * width();
-                      @let circleR = strokeW * 3.5;
-                      @let isTraverse = pathData.isTraverse;
-                      @for (pt of pathData.points; track $index) {
-                        @let ptColor =
-                          pt.state | topoPointStateColor: style.stroke;
-                        @let badge = pt.state | topoPointStateBadge;
-                        <!-- Hit area circle -->
-                        <circle
-                          [attr.cx]="pt.x * width()"
-                          [attr.cy]="pt.y * height()"
-                          [attr.r]="circleR + strokeW * 2"
-                          fill="transparent"
-                        />
-                        <!-- Shadow circle -->
-                        <circle
-                          [attr.cx]="pt.x * width()"
-                          [attr.cy]="pt.y * height()"
-                          [attr.r]="circleR"
-                          fill="none"
-                          stroke="white"
-                          [style.opacity]="style.isDashed ? 1 : 0.7"
-                          [attr.stroke-width]="
-                            strokeW + (style.isDashed ? 2.5 : 1.5)
-                          "
-                          [attr.stroke-dasharray]="
-                            style.isDashed
-                              ? width() * 0.008 + ' ' + width() * 0.008
-                              : 'none'
-                          "
-                        />
-                        <!-- Main circle -->
-                        <circle
-                          [attr.cx]="pt.x * width()"
-                          [attr.cy]="pt.y * height()"
-                          [attr.r]="circleR"
-                          fill="rgba(0,0,0,0.05)"
-                          [attr.stroke]="style.stroke"
-                          [style.color]="style.stroke"
-                          [style.opacity]="style.opacity"
-                          [attr.stroke-width]="strokeW"
-                          [attr.stroke-dasharray]="
-                            style.isDashed
-                              ? width() * 0.008 + ' ' + width() * 0.008
-                              : 'none'
-                          "
-                          [class.selected-circle-pulse]="isSelected"
-                        />
-                        @if (isTraverse) {
-                          <text
-                            [attr.x]="pt.x * width()"
-                            [attr.y]="pt.y * height() + circleR * 0.35"
-                            text-anchor="middle"
-                            fill="white"
-                            font-weight="bold"
-                            [attr.font-size]="circleR * 0.85"
-                            style="pointer-events: none; user-select: none; text-shadow: 0 0 3px rgba(0,0,0,0.9)"
-                          >
-                            {{ $index + 1 }}
-                          </text>
-                        }
-                        @if (badge) {
-                          @let label = pt.state | topoPointStateLabel;
-                          @let pillW =
-                            strokeW *
-                            (pt.state === 'match'
-                              ? 5.8
-                              : pt.state === 'start'
-                                ? 5.5
-                                : pt.state === 'foot'
-                                  ? 5.0
-                                  : 4.2);
-                          @let pillH = strokeW * 2.1;
-                          @let pillY = pt.y * height() + circleR + pillH * 0.45;
-                          <g
-                            class="pointer-events-none"
-                            style="user-select: none"
-                          >
-                            <rect
-                              [attr.x]="pt.x * width() - pillW / 2"
-                              [attr.y]="pillY - pillH / 2"
-                              [attr.width]="pillW"
-                              [attr.height]="pillH"
-                              [attr.rx]="pillH / 2"
-                              [attr.fill]="ptColor"
-                              stroke="white"
-                              stroke-width="0.75"
-                            />
-                            <text
-                              [attr.x]="pt.x * width()"
-                              [attr.y]="pillY + pillH * 0.32"
-                              text-anchor="middle"
-                              fill="white"
-                              font-weight="bold"
-                              [attr.font-size]="strokeW * 1.5"
-                              font-family="sans-serif"
-                              style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                            >
-                              {{ label }}
-                            </text>
-                          </g>
-                        }
-                      }
-                    } @else {
-                      @let isTraverse = pathData.isTraverse;
-                      <!-- Hit area -->
-                      <polyline
-                        [attr.points]="pointsStringMap()[routeId]"
-                        fill="none"
-                        stroke="transparent"
-                        [attr.stroke-width]="strokeWidthFactor * width() * 5"
-                        stroke-linejoin="round"
-                        stroke-linecap="round"
-                      />
-                      <!-- Shadow -->
-                      <polyline
-                        [attr.points]="pointsStringMap()[routeId]"
-                        fill="none"
-                        stroke="white"
-                        [style.opacity]="style.isDashed ? 1 : 0.7"
-                        [attr.stroke-width]="
-                          strokeWidthFactor * width() +
-                          (style.isDashed ? 2.5 : 1.5)
-                        "
-                        [attr.stroke-dasharray]="
-                          style.isDashed
-                            ? width() * 0.01 + ' ' + width() * 0.01
-                            : 'none'
-                        "
-                        stroke-linejoin="round"
-                        stroke-linecap="round"
-                      />
-                      <!-- Main line -->
-                      <polyline
-                        [attr.points]="pointsStringMap()[routeId]"
-                        fill="none"
-                        [attr.stroke]="style.stroke"
-                        [style.color]="style.stroke"
-                        [style.opacity]="style.opacity"
-                        [attr.stroke-width]="strokeWidthFactor * width()"
-                        [attr.stroke-dasharray]="
-                          style.isDashed
-                            ? width() * 0.01 + ' ' + width() * 0.01
-                            : 'none'
-                        "
-                        stroke-linejoin="round"
-                        stroke-linecap="round"
-                      />
-
-                      @if (!isSelected) {
-                        @if (isTraverse) {
-                          @for (pt of pathData.points; track $index) {
-                            @let strokeW = strokeWidthFactor * width();
-                            @let ptColor =
-                              pt.state | topoPointStateColor: style.stroke;
-                            @let badge = pt.state | topoPointStateBadge;
-                            @let ptR = strokeW * 1.8;
-                            <circle
-                              [attr.cx]="pt.x * width()"
-                              [attr.cy]="pt.y * height()"
-                              [attr.r]="ptR"
-                              [attr.fill]="style.stroke"
-                              stroke="white"
-                              stroke-width="1"
-                            />
-                            <text
-                              [attr.x]="pt.x * width()"
-                              [attr.y]="pt.y * height() + ptR * 0.35"
-                              text-anchor="middle"
-                              fill="white"
-                              font-weight="bold"
-                              [attr.font-size]="ptR * 0.85"
-                              style="pointer-events: none; user-select: none; text-shadow: 0 0 3px rgba(0,0,0,0.9)"
-                            >
-                              {{ $index + 1 }}
-                            </text>
-                            @if (badge) {
-                              @let label = pt.state | topoPointStateLabel;
-                              @let pillW =
-                                strokeW *
-                                (pt.state === 'match'
-                                  ? 5.8
-                                  : pt.state === 'start'
-                                    ? 5.5
-                                    : pt.state === 'foot'
-                                      ? 5.0
-                                      : 4.2);
-                              @let pillH = strokeW * 2.1;
-                              @let pillY = pt.y * height() + ptR + pillH * 0.45;
-                              <g
-                                class="pointer-events-none"
-                                style="user-select: none"
-                              >
-                                <rect
-                                  [attr.x]="pt.x * width() - pillW / 2"
-                                  [attr.y]="pillY - pillH / 2"
-                                  [attr.width]="pillW"
-                                  [attr.height]="pillH"
-                                  [attr.rx]="pillH / 2"
-                                  [attr.fill]="ptColor"
-                                  stroke="white"
-                                  stroke-width="0.75"
-                                />
-                                <text
-                                  [attr.x]="pt.x * width()"
-                                  [attr.y]="pillY + pillH * 0.32"
-                                  text-anchor="middle"
-                                  fill="white"
-                                  font-weight="bold"
-                                  [attr.font-size]="strokeW * 1.5"
-                                  font-family="sans-serif"
-                                  style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                                >
-                                  {{ label }}
-                                </text>
-                              </g>
-                            }
-                          }
-                        } @else {
-                          <!-- Intermediate state points for polylines -->
-                          @for (pt of pathData.points; track $index) {
-                            @if (
-                              $index > 0 &&
-                              $index < pathData.points.length - 1 &&
-                              pt.state &&
-                              pt.state !== 'neutral'
-                            ) {
-                              @let strokeW = strokeWidthFactor * width();
-                              @let ptColor =
-                                pt.state | topoPointStateColor: style.stroke;
-                              @let label = pt.state | topoPointStateLabel;
-                              @let ptR = strokeW * 1.4;
-                              @let pillW =
-                                strokeW *
-                                (pt.state === 'match'
-                                  ? 5.8
-                                  : pt.state === 'start'
-                                    ? 5.5
-                                    : pt.state === 'foot'
-                                      ? 5.0
-                                      : 4.2);
-                              @let pillH = strokeW * 2.1;
-                              @let pillY = pt.y * height() + ptR + pillH * 0.45;
-                              <circle
-                                [attr.cx]="pt.x * width()"
-                                [attr.cy]="pt.y * height()"
-                                [attr.r]="ptR"
-                                fill="white"
-                                [attr.stroke]="style.stroke"
-                                stroke-width="1.5"
-                              />
-                              <g
-                                class="pointer-events-none"
-                                style="user-select: none"
-                              >
-                                <rect
-                                  [attr.x]="pt.x * width() - pillW / 2"
-                                  [attr.y]="pillY - pillH / 2"
-                                  [attr.width]="pillW"
-                                  [attr.height]="pillH"
-                                  [attr.rx]="pillH / 2"
-                                  [attr.fill]="ptColor"
-                                  stroke="white"
-                                  stroke-width="0.75"
-                                />
-                                <text
-                                  [attr.x]="pt.x * width()"
-                                  [attr.y]="pillY + pillH * 0.32"
-                                  text-anchor="middle"
-                                  fill="white"
-                                  font-weight="bold"
-                                  [attr.font-size]="strokeW * 1.5"
-                                  font-family="sans-serif"
-                                  style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                                >
-                                  {{ label }}
-                                </text>
-                              </g>
-                            }
-                          }
-
-                          <!-- End dot -->
-                          @if (
-                            pathData.points[pathData.points.length - 1];
-                            as last
-                          ) {
-                            @let strokeW = strokeWidthFactor * width();
-                            @let isTop = last.state === 'top';
-                            @let endR = strokeW * (isTop ? 1.6 : 1.2);
-                            <circle
-                              [attr.cx]="last.x * width()"
-                              [attr.cy]="last.y * height()"
-                              [attr.r]="endR"
-                              [attr.fill]="isTop ? '#EF4444' : 'white'"
-                              [style.opacity]="style.opacity"
-                              [attr.stroke]="isTop ? 'white' : 'black'"
-                              [attr.stroke-width]="isTop ? 1 : 0.5"
-                            />
-                            @if (isTop) {
-                              @let pillW = strokeW * 4.2;
-                              @let pillH = strokeW * 2.1;
-                              @let pillY =
-                                last.y * height() - endR - pillH * 0.45;
-                              <g
-                                class="pointer-events-none"
-                                style="user-select: none"
-                              >
-                                <rect
-                                  [attr.x]="last.x * width() - pillW / 2"
-                                  [attr.y]="pillY - pillH / 2"
-                                  [attr.width]="pillW"
-                                  [attr.height]="pillH"
-                                  [attr.rx]="pillH / 2"
-                                  fill="#EF4444"
-                                  stroke="white"
-                                  stroke-width="0.75"
-                                />
-                                <text
-                                  [attr.x]="last.x * width()"
-                                  [attr.y]="pillY + pillH * 0.32"
-                                  text-anchor="middle"
-                                  fill="white"
-                                  font-weight="bold"
-                                  [attr.font-size]="strokeW * 1.5"
-                                  font-family="sans-serif"
-                                  style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                                >
-                                  TOP
-                                </text>
-                              </g>
-                            }
-                          }
-                        }
-                      }
-                    }
-
-                    <!-- Traverse route grade pill at start point -->
-                    @if (pathData.isTraverse && pathData.points.length > 0) {
-                      @if (pathData.points[0]; as first) {
-                        @let strokeW = strokeWidthFactor * width();
-                        @let gradeStr = pathData._ref.route.grade | gradeLabel;
-                        @if (gradeStr) {
-                          <g
-                            class="pointer-events-none"
-                            style="user-select: none"
-                          >
-                            <rect
-                              [attr.x]="first.x * width() - strokeW * 2.2"
-                              [attr.y]="first.y * height() - strokeW * 3.8"
-                              [attr.width]="strokeW * 4.4"
-                              [attr.height]="strokeW * 1.8"
-                              [attr.rx]="strokeW * 0.9"
-                              [attr.fill]="style.stroke"
-                              stroke="white"
-                              stroke-width="1"
-                            />
-                            <text
-                              [attr.x]="first.x * width()"
-                              [attr.y]="first.y * height() - strokeW * 2.5"
-                              text-anchor="middle"
-                              fill="white"
-                              style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                              [attr.font-size]="strokeW * 1.3"
-                              font-weight="bold"
-                              font-family="sans-serif"
-                            >
-                              {{ gradeStr }}
-                            </text>
-                          </g>
-                        }
-                      }
-                    }
-                  </g>
-
-                  <!-- Control points (selected only) -->
-                  @if (isSelected) {
+                @let style =
+                  routeStyleMap()[routeId] || {
+                    stroke: '#22c55e',
+                    opacity: 0.8,
+                    isDashed: true,
+                  };
+                @let strokeWidthFactor =
+                  routeStrokeWidthMap()[routeId] ?? lineWidth() / 1000;
+                <g
+                  class="path-group"
+                  (click)="
+                    selectRoute(pathData._ref || { route_id: routeId });
+                    $event.stopPropagation()
+                  "
+                  (touchstart)="
+                    selectRoute(pathData._ref || { route_id: routeId });
+                    $event.stopPropagation()
+                  "
+                >
+                  @if (pathData.type === 'circle') {
                     @let strokeW = strokeWidthFactor * width();
+                    @let circleR = strokeW * 3.5;
                     @let isTraverse = pathData.isTraverse;
                     @for (pt of pathData.points; track $index) {
                       @let ptColor =
                         pt.state | topoPointStateColor: style.stroke;
                       @let badge = pt.state | topoPointStateBadge;
-                      <g
-                        class="control-point"
-                        (mousedown)="startDragging($event, routeId, $index)"
-                        (touchstart)="
-                          startDraggingTouch($event, routeId, $index)
+                      <!-- Hit area circle -->
+                      <circle
+                        [attr.cx]="pt.x * width()"
+                        [attr.cy]="pt.y * height()"
+                        [attr.r]="circleR + strokeW * 2"
+                        fill="transparent"
+                      />
+                      <!-- Shadow circle -->
+                      <circle
+                        [attr.cx]="pt.x * width()"
+                        [attr.cy]="pt.y * height()"
+                        [attr.r]="circleR"
+                        fill="none"
+                        stroke="white"
+                        [style.opacity]="style.isDashed ? 1 : 0.7"
+                        [attr.stroke-width]="
+                          strokeW + (style.isDashed ? 2.5 : 1.5)
                         "
-                        (contextmenu)="removePoint($event, routeId, $index)"
-                        (dblclick)="cyclePointState($event, routeId, $index)"
-                      >
-                        @if (pathData.type === 'circle') {
-                          @let circleR = strokeW * 3.5;
-                          <!-- Circle mode control hit area -->
-                          <circle
-                            [attr.cx]="pt.x * width()"
-                            [attr.cy]="pt.y * height()"
-                            [attr.r]="circleR"
-                            fill="transparent"
+                        [attr.stroke-dasharray]="
+                          style.isDashed
+                            ? width() * 0.008 + ' ' + width() * 0.008
+                            : 'none'
+                        "
+                      />
+                      <!-- Main circle -->
+                      <circle
+                        [attr.cx]="pt.x * width()"
+                        [attr.cy]="pt.y * height()"
+                        [attr.r]="circleR"
+                        fill="rgba(0,0,0,0.05)"
+                        [attr.stroke]="style.stroke"
+                        [style.color]="style.stroke"
+                        [style.opacity]="style.opacity"
+                        [attr.stroke-width]="strokeW"
+                        [attr.stroke-dasharray]="
+                          style.isDashed
+                            ? width() * 0.008 + ' ' + width() * 0.008
+                            : 'none'
+                        "
+                        [class.selected-circle-pulse]="isSelected"
+                      />
+                      @if (isTraverse) {
+                        <text
+                          [attr.x]="pt.x * width()"
+                          [attr.y]="pt.y * height() + circleR * 0.35"
+                          text-anchor="middle"
+                          fill="white"
+                          font-weight="bold"
+                          [attr.font-size]="circleR * 0.85"
+                          style="pointer-events: none; user-select: none; text-shadow: 0 0 3px rgba(0,0,0,0.9)"
+                        >
+                          {{ $index + 1 }}
+                        </text>
+                      }
+                      @if (badge) {
+                        @let label = pt.state | topoPointStateLabel;
+                        @let pillW =
+                          strokeW *
+                          (pt.state === 'match'
+                            ? 5.8
+                            : pt.state === 'start'
+                              ? 5.5
+                              : pt.state === 'foot'
+                                ? 5.0
+                                : 4.2);
+                        @let pillH = strokeW * 2.1;
+                        @let pillY = pt.y * height() + circleR + pillH * 0.45;
+                        <g
+                          class="pointer-events-none"
+                          style="user-select: none"
+                        >
+                          <rect
+                            [attr.x]="pt.x * width() - pillW / 2"
+                            [attr.y]="pillY - pillH / 2"
+                            [attr.width]="pillW"
+                            [attr.height]="pillH"
+                            [attr.rx]="pillH / 2"
+                            [attr.fill]="ptColor"
+                            stroke="white"
+                            stroke-width="0.75"
                           />
-                          @if (!isTraverse) {
-                            <circle
-                              [attr.cx]="pt.x * width()"
-                              [attr.cy]="pt.y * height()"
-                              [attr.r]="strokeW * 1.5"
-                              fill="rgba(0,0,0,0.4)"
-                            />
-                            <circle
-                              [attr.cx]="pt.x * width()"
-                              [attr.cy]="pt.y * height()"
-                              [attr.r]="strokeW * 0.9"
-                              [attr.fill]="style.stroke"
-                              stroke="white"
-                              stroke-width="1"
-                            />
-                          }
-                        } @else {
-                          <!-- Polyline mode control points -->
-                          @let ptR = isTraverse ? strokeW * 1.8 : strokeW * 0.9;
-                          @let haloR =
-                            isTraverse ? ptR + strokeW * 0.5 : strokeW * 1.5;
-                          <circle
-                            [attr.cx]="pt.x * width()"
-                            [attr.cy]="pt.y * height()"
-                            [attr.r]="haloR"
-                            fill="rgba(0,0,0,0.4)"
-                          />
+                          <text
+                            [attr.x]="pt.x * width()"
+                            [attr.y]="pillY + pillH * 0.32"
+                            text-anchor="middle"
+                            fill="white"
+                            font-weight="bold"
+                            [attr.font-size]="strokeW * 1.5"
+                            font-family="sans-serif"
+                            style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
+                          >
+                            {{ label }}
+                          </text>
+                        </g>
+                      }
+                    }
+                  } @else {
+                    @let isTraverse = pathData.isTraverse;
+                    <!-- Hit area -->
+                    <polyline
+                      [attr.points]="pointsStringMap()[routeId]"
+                      fill="none"
+                      stroke="transparent"
+                      [attr.stroke-width]="strokeWidthFactor * width() * 5"
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                    />
+                    <!-- Shadow -->
+                    <polyline
+                      [attr.points]="pointsStringMap()[routeId]"
+                      fill="none"
+                      stroke="white"
+                      [style.opacity]="style.isDashed ? 1 : 0.7"
+                      [attr.stroke-width]="
+                        strokeWidthFactor * width() +
+                        (style.isDashed ? 2.5 : 1.5)
+                      "
+                      [attr.stroke-dasharray]="
+                        style.isDashed
+                          ? width() * 0.01 + ' ' + width() * 0.01
+                          : 'none'
+                      "
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                    />
+                    <!-- Main line -->
+                    <polyline
+                      [attr.points]="pointsStringMap()[routeId]"
+                      fill="none"
+                      [attr.stroke]="style.stroke"
+                      [style.color]="style.stroke"
+                      [style.opacity]="style.opacity"
+                      [attr.stroke-width]="strokeWidthFactor * width()"
+                      [attr.stroke-dasharray]="
+                        style.isDashed
+                          ? width() * 0.01 + ' ' + width() * 0.01
+                          : 'none'
+                      "
+                      stroke-linejoin="round"
+                      stroke-linecap="round"
+                    />
+
+                    @if (!isSelected) {
+                      @if (isTraverse) {
+                        @for (pt of pathData.points; track $index) {
+                          @let strokeW = strokeWidthFactor * width();
+                          @let ptColor =
+                            pt.state | topoPointStateColor: style.stroke;
+                          @let badge = pt.state | topoPointStateBadge;
+                          @let ptR = strokeW * 1.8;
                           <circle
                             [attr.cx]="pt.x * width()"
                             [attr.cy]="pt.y * height()"
@@ -968,19 +636,17 @@ export interface TopoPathEditorConfig {
                             stroke="white"
                             stroke-width="1"
                           />
-                          @if (isTraverse) {
-                            <text
-                              [attr.x]="pt.x * width()"
-                              [attr.y]="pt.y * height() + ptR * 0.35"
-                              text-anchor="middle"
-                              fill="white"
-                              font-weight="bold"
-                              [attr.font-size]="ptR * 0.85"
-                              style="pointer-events: none; user-select: none; text-shadow: 0 0 3px rgba(0,0,0,0.9)"
-                            >
-                              {{ $index + 1 }}
-                            </text>
-                          }
+                          <text
+                            [attr.x]="pt.x * width()"
+                            [attr.y]="pt.y * height() + ptR * 0.35"
+                            text-anchor="middle"
+                            fill="white"
+                            font-weight="bold"
+                            [attr.font-size]="ptR * 0.85"
+                            style="pointer-events: none; user-select: none; text-shadow: 0 0 3px rgba(0,0,0,0.9)"
+                          >
+                            {{ $index + 1 }}
+                          </text>
                           @if (badge) {
                             @let label = pt.state | topoPointStateLabel;
                             @let pillW =
@@ -1023,8 +689,276 @@ export interface TopoPathEditorConfig {
                             </g>
                           }
                         }
-                      </g>
+                      } @else {
+                        <!-- Intermediate state points for polylines -->
+                        @for (pt of pathData.points; track $index) {
+                          @if (
+                            $index > 0 &&
+                            $index < pathData.points.length - 1 &&
+                            pt.state &&
+                            pt.state !== 'neutral'
+                          ) {
+                            @let strokeW = strokeWidthFactor * width();
+                            @let ptColor =
+                              pt.state | topoPointStateColor: style.stroke;
+                            @let label = pt.state | topoPointStateLabel;
+                            @let ptR = strokeW * 1.4;
+                            @let pillW =
+                              strokeW *
+                              (pt.state === 'match'
+                                ? 5.8
+                                : pt.state === 'start'
+                                  ? 5.5
+                                  : pt.state === 'foot'
+                                    ? 5.0
+                                    : 4.2);
+                            @let pillH = strokeW * 2.1;
+                            @let pillY = pt.y * height() + ptR + pillH * 0.45;
+                            <circle
+                              [attr.cx]="pt.x * width()"
+                              [attr.cy]="pt.y * height()"
+                              [attr.r]="ptR"
+                              fill="white"
+                              [attr.stroke]="style.stroke"
+                              stroke-width="1.5"
+                            />
+                            <g
+                              class="pointer-events-none"
+                              style="user-select: none"
+                            >
+                              <rect
+                                [attr.x]="pt.x * width() - pillW / 2"
+                                [attr.y]="pillY - pillH / 2"
+                                [attr.width]="pillW"
+                                [attr.height]="pillH"
+                                [attr.rx]="pillH / 2"
+                                [attr.fill]="ptColor"
+                                stroke="white"
+                                stroke-width="0.75"
+                              />
+                              <text
+                                [attr.x]="pt.x * width()"
+                                [attr.y]="pillY + pillH * 0.32"
+                                text-anchor="middle"
+                                fill="white"
+                                font-weight="bold"
+                                [attr.font-size]="strokeW * 1.5"
+                                font-family="sans-serif"
+                                style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
+                              >
+                                {{ label }}
+                              </text>
+                            </g>
+                          }
+                        }
+
+                        <!-- End dot -->
+                        @if (
+                          pathData.points[pathData.points.length - 1];
+                          as last
+                        ) {
+                          @let strokeW = strokeWidthFactor * width();
+                          @let isTop = last.state === 'top';
+                          @let endR = strokeW * (isTop ? 1.6 : 1.2);
+                          <circle
+                            [attr.cx]="last.x * width()"
+                            [attr.cy]="last.y * height()"
+                            [attr.r]="endR"
+                            [attr.fill]="isTop ? '#EF4444' : 'white'"
+                            [style.opacity]="style.opacity"
+                            [attr.stroke]="isTop ? 'white' : 'black'"
+                            [attr.stroke-width]="isTop ? 1 : 0.5"
+                          />
+                          @if (isTop) {
+                            @let pillW = strokeW * 4.2;
+                            @let pillH = strokeW * 2.1;
+                            @let pillY =
+                              last.y * height() - endR - pillH * 0.45;
+                            <g
+                              class="pointer-events-none"
+                              style="user-select: none"
+                            >
+                              <rect
+                                [attr.x]="last.x * width() - pillW / 2"
+                                [attr.y]="pillY - pillH / 2"
+                                [attr.width]="pillW"
+                                [attr.height]="pillH"
+                                [attr.rx]="pillH / 2"
+                                fill="#EF4444"
+                                stroke="white"
+                                stroke-width="0.75"
+                              />
+                              <text
+                                [attr.x]="last.x * width()"
+                                [attr.y]="pillY + pillH * 0.32"
+                                text-anchor="middle"
+                                fill="white"
+                                font-weight="bold"
+                                [attr.font-size]="strokeW * 1.5"
+                                font-family="sans-serif"
+                                style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
+                              >
+                                TOP
+                              </text>
+                            </g>
+                          }
+                        }
+                      }
                     }
+                  }
+
+                  <!-- Traverse route grade pill at start point -->
+                  @if (pathData.isTraverse && pathData.points.length > 0) {
+                    @if (pathData.points[0]; as first) {
+                      @let strokeW = strokeWidthFactor * width();
+                      @let gradeStr = pathData._ref.route.grade | gradeLabel;
+                      @if (gradeStr) {
+                        <g
+                          class="pointer-events-none"
+                          style="user-select: none"
+                        >
+                          <rect
+                            [attr.x]="first.x * width() - strokeW * 2.2"
+                            [attr.y]="first.y * height() - strokeW * 3.8"
+                            [attr.width]="strokeW * 4.4"
+                            [attr.height]="strokeW * 1.8"
+                            [attr.rx]="strokeW * 0.9"
+                            [attr.fill]="style.stroke"
+                            stroke="white"
+                            stroke-width="1"
+                          />
+                          <text
+                            [attr.x]="first.x * width()"
+                            [attr.y]="first.y * height() - strokeW * 2.5"
+                            text-anchor="middle"
+                            fill="white"
+                            style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
+                            [attr.font-size]="strokeW * 1.3"
+                            font-weight="bold"
+                            font-family="sans-serif"
+                          >
+                            {{ gradeStr }}
+                          </text>
+                        </g>
+                      }
+                    }
+                  }
+                </g>
+
+                <!-- Control points (selected only) -->
+                @if (isSelected) {
+                  @let strokeW = strokeWidthFactor * width();
+                  @let isTraverse = pathData.isTraverse;
+                  @for (pt of pathData.points; track $index) {
+                    @let ptColor = pt.state | topoPointStateColor: style.stroke;
+                    @let badge = pt.state | topoPointStateBadge;
+                    <g
+                      class="control-point"
+                      (mousedown)="startDragging($event, routeId, $index)"
+                      (touchstart)="startDraggingTouch($event, routeId, $index)"
+                      (contextmenu)="removePoint($event, routeId, $index)"
+                      (dblclick)="cyclePointState($event, routeId, $index)"
+                    >
+                      @if (pathData.type === 'circle') {
+                        @let circleR = strokeW * 3.5;
+                        <!-- Circle mode control hit area -->
+                        <circle
+                          [attr.cx]="pt.x * width()"
+                          [attr.cy]="pt.y * height()"
+                          [attr.r]="circleR"
+                          fill="transparent"
+                        />
+                        @if (!isTraverse) {
+                          <circle
+                            [attr.cx]="pt.x * width()"
+                            [attr.cy]="pt.y * height()"
+                            [attr.r]="strokeW * 1.5"
+                            fill="rgba(0,0,0,0.4)"
+                          />
+                          <circle
+                            [attr.cx]="pt.x * width()"
+                            [attr.cy]="pt.y * height()"
+                            [attr.r]="strokeW * 0.9"
+                            [attr.fill]="style.stroke"
+                            stroke="white"
+                            stroke-width="1"
+                          />
+                        }
+                      } @else {
+                        <!-- Polyline mode control points -->
+                        @let ptR = isTraverse ? strokeW * 1.8 : strokeW * 0.9;
+                        @let haloR =
+                          isTraverse ? ptR + strokeW * 0.5 : strokeW * 1.5;
+                        <circle
+                          [attr.cx]="pt.x * width()"
+                          [attr.cy]="pt.y * height()"
+                          [attr.r]="haloR"
+                          fill="rgba(0,0,0,0.4)"
+                        />
+                        <circle
+                          [attr.cx]="pt.x * width()"
+                          [attr.cy]="pt.y * height()"
+                          [attr.r]="ptR"
+                          [attr.fill]="style.stroke"
+                          stroke="white"
+                          stroke-width="1"
+                        />
+                        @if (isTraverse) {
+                          <text
+                            [attr.x]="pt.x * width()"
+                            [attr.y]="pt.y * height() + ptR * 0.35"
+                            text-anchor="middle"
+                            fill="white"
+                            font-weight="bold"
+                            [attr.font-size]="ptR * 0.85"
+                            style="pointer-events: none; user-select: none; text-shadow: 0 0 3px rgba(0,0,0,0.9)"
+                          >
+                            {{ $index + 1 }}
+                          </text>
+                        }
+                        @if (badge) {
+                          @let label = pt.state | topoPointStateLabel;
+                          @let pillW =
+                            strokeW *
+                            (pt.state === 'match'
+                              ? 5.8
+                              : pt.state === 'start'
+                                ? 5.5
+                                : pt.state === 'foot'
+                                  ? 5.0
+                                  : 4.2);
+                          @let pillH = strokeW * 2.1;
+                          @let pillY = pt.y * height() + ptR + pillH * 0.45;
+                          <g
+                            class="pointer-events-none"
+                            style="user-select: none"
+                          >
+                            <rect
+                              [attr.x]="pt.x * width() - pillW / 2"
+                              [attr.y]="pillY - pillH / 2"
+                              [attr.width]="pillW"
+                              [attr.height]="pillH"
+                              [attr.rx]="pillH / 2"
+                              [attr.fill]="ptColor"
+                              stroke="white"
+                              stroke-width="0.75"
+                            />
+                            <text
+                              [attr.x]="pt.x * width()"
+                              [attr.y]="pillY + pillH * 0.32"
+                              text-anchor="middle"
+                              fill="white"
+                              font-weight="bold"
+                              [attr.font-size]="strokeW * 1.5"
+                              font-family="sans-serif"
+                              style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
+                            >
+                              {{ label }}
+                            </text>
+                          </g>
+                        }
+                      }
+                    </g>
                   }
                 }
               }
@@ -1281,6 +1215,13 @@ export interface TopoPathEditorConfig {
       filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.1));
     }
 
+    .path-no-check {
+      color: var(--tui-text-negative);
+      font-size: 1rem;
+      flex-shrink: 0;
+      opacity: 0.7;
+    }
+
     .tips {
       padding: 0.5rem 1.25rem 1rem;
       display: flex;
@@ -1502,10 +1443,6 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     this.sidebarOpen.update((v) => !v);
   }
   topoRoutes: TopoRouteWithRoute[] = [];
-  hiddenRouteIds = signal<Set<string | number>>(new Set());
-  areAllRoutesVisible = computed<boolean>(() => {
-    return this.hiddenRouteIds().size === 0;
-  });
   newIndoorRoutes: IndoorRouteDto[] = [];
   pathsMap = new Map<
     string | number,
@@ -1621,6 +1558,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   protected readonly routeStyleMap = computed(() => {
     this.pathsVersion();
     const selected = this.selectedRoute();
+    const hasSelection = selected !== null;
     const map: Record<
       string,
       ReturnType<typeof getRouteStyleProperties> | undefined
@@ -1632,6 +1570,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         false,
         entry._ref?.route?.grade,
         entry._ref?.route?.color || entry.color || entry._ref?.path?.color,
+        hasSelection,
       );
     }
     return map;
@@ -1640,6 +1579,23 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   protected readonly pathsEntries = computed(() => {
     this.pathsVersion();
     return Array.from(this.pathsMap.entries());
+  });
+
+  protected readonly visibleRouteIds = computed(() => {
+    const isIndoor = this.context.data.isIndoor;
+    const selected = this.selectedRoute();
+    if (isIndoor && selected) {
+      return new Set<string | number>([selected.route_id]);
+    }
+    return null;
+  });
+
+  protected readonly visiblePathsEntries = computed(() => {
+    this.pathsVersion();
+    const visibleIds = this.visibleRouteIds();
+    const entries = Array.from(this.pathsMap.entries());
+    if (!visibleIds) return entries;
+    return entries.filter(([routeId]) => visibleIds.has(routeId));
   });
 
   protected readonly pointsStringMap = computed(() => {
@@ -1689,12 +1645,6 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         });
       }
     });
-
-    if (this.context.data.isIndoor) {
-      this.hiddenRouteIds.set(
-        new Set(this.topoRoutes.map((tr) => tr.route_id)),
-      );
-    }
   }
 
   ngAfterViewInit(): void {
@@ -1811,85 +1761,6 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     );
   }
 
-  private preSoloHiddenRouteIds: Set<string | number> | null = null;
-
-  toggleRouteVisibility(routeId: string | number, event?: Event): void {
-    if (event) event.stopPropagation();
-    const isAlt = !!(event && (event as MouseEvent).altKey);
-    const totalCount = this.topoRoutes.length;
-    this.hiddenRouteIds.update((set) => {
-      const isHidden = set.has(routeId);
-      const isSolo = totalCount > 1 && !isHidden && set.size >= totalCount - 1;
-
-      if (isAlt) {
-        if (isSolo) {
-          const saved = this.preSoloHiddenRouteIds ?? new Set();
-          this.preSoloHiddenRouteIds = null;
-          return new Set([...saved].filter((id) => id !== routeId));
-        }
-        if (!this.preSoloHiddenRouteIds) {
-          this.preSoloHiddenRouteIds = new Set(set);
-        }
-        const allOtherIds = this.topoRoutes
-          .filter((r) => r.route_id !== routeId)
-          .map((r) => r.route_id);
-        const matching = this.topoRoutes.find((r) => r.route_id === routeId);
-        if (matching) this.selectedRoute.set(matching);
-        return new Set(allOtherIds);
-      }
-
-      if (totalCount <= 1) {
-        const next = new Set(set);
-        if (isHidden) {
-          next.delete(routeId);
-        } else {
-          next.add(routeId);
-        }
-        return next;
-      }
-
-      // Cyclical order: ver (visible) -> focus (solo) -> ocultar (hidden) -> ver (visible)
-      if (isSolo) {
-        // focus -> ocultar: restore pre-solo routes, hide this route
-        const saved = this.preSoloHiddenRouteIds ?? new Set();
-        this.preSoloHiddenRouteIds = null;
-        if (this.selectedRoute()?.route_id === routeId) {
-          this.selectedRoute.set(null);
-        }
-        const next = new Set(saved);
-        next.add(routeId);
-        return next;
-      } else if (isHidden) {
-        // ocultar -> ver: unhide this route
-        this.preSoloHiddenRouteIds = null;
-        const next = new Set(set);
-        next.delete(routeId);
-        return next;
-      } else {
-        // ver -> focus: hide all other routes
-        if (!this.preSoloHiddenRouteIds) {
-          this.preSoloHiddenRouteIds = new Set(set);
-        }
-        const allOtherIds = this.topoRoutes
-          .filter((r) => r.route_id !== routeId)
-          .map((r) => r.route_id);
-        const matching = this.topoRoutes.find((r) => r.route_id === routeId);
-        if (matching) this.selectedRoute.set(matching);
-        return new Set(allOtherIds);
-      }
-    });
-  }
-
-  toggleAllRoutesVisibility(): void {
-    this.preSoloHiddenRouteIds = null;
-    if (this.areAllRoutesVisible()) {
-      const allIds = this.topoRoutes.map((tr) => tr.route_id);
-      this.hiddenRouteIds.set(new Set(allIds));
-    } else {
-      this.hiddenRouteIds.set(new Set());
-    }
-  }
-
   async createNewIndoorRoute(): Promise<void> {
     const centerId = this.context.data.centerId;
     if (!centerId) return;
@@ -1920,11 +1791,6 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       });
       this.pathsVersion.update((v) => v + 1);
       this.selectRoute(newTopoRoute, true);
-      this.hiddenRouteIds.update((set) => {
-        const next = new Set(set);
-        next.delete(newRoute.id);
-        return next;
-      });
       this.cdr.markForCheck();
     }
   }
@@ -2046,26 +1912,11 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         this.selectedRoute.set(null);
       } else {
         this.selectedRoute.set(tr);
-        if (this.hiddenRouteIds().has(tr.route_id)) {
-          this.hiddenRouteIds.update((set) => {
-            const next = new Set(set);
-            next.delete(tr.route_id);
-            return next;
-          });
-        }
-        // Center the view on the newly selected route
         this.centerOnRoute(tr);
       }
     } else {
       if (!selected) {
         this.selectedRoute.set(tr);
-        if (this.hiddenRouteIds().has(tr.route_id)) {
-          this.hiddenRouteIds.update((set) => {
-            const next = new Set(set);
-            next.delete(tr.route_id);
-            return next;
-          });
-        }
         this.centerOnRoute(tr);
       }
     }

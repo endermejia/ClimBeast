@@ -42,7 +42,7 @@ export interface IndoorCenterCardItem {
   ],
   template: `
     @let data = item();
-    <app-card appearance="outline">
+    <app-card [appearance]="appearance()">
       <ng-container title>
         <a
           tuiLink
@@ -105,4 +105,5 @@ export class IndoorCenterCardComponent {
   protected readonly supabase = inject(SupabaseService);
 
   item = input.required<IndoorCenterCardItem>();
+  appearance = input<string>('outline');
 }

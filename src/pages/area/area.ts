@@ -50,6 +50,7 @@ import { CacheService } from '../../services/cache.service';
 import { CragsService } from '../../services/crags.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
+import { FollowsService } from '../../services/follows.service';
 import { LayoutService } from '../../services/layout.service';
 import { MapDataService } from '../../services/map-data.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
@@ -550,7 +551,10 @@ const PAGE_SIZE = 20;
                       [hasMore]="hasMoreAscents()"
                       [showRoute]="true"
                       [showArea]="false"
+                      [followedIds]="followedIds()"
                       (loadMore)="loadMoreAscents()"
+                      (follow)="onFollow($event)"
+                      (unfollow)="onUnfollow($event)"
                     />
                   </div>
                 }
@@ -587,7 +591,10 @@ const PAGE_SIZE = 20;
                   [hasMore]="hasMoreAscents()"
                   [showRoute]="true"
                   [showArea]="false"
+                  [followedIds]="followedIds()"
                   (loadMore)="loadMoreAscents()"
+                  (follow)="onFollow($event)"
+                  (unfollow)="onUnfollow($event)"
                 />
               </div>
             </tui-scrollbar>
@@ -618,6 +625,7 @@ export class AreaComponent {
   private readonly seo = inject(SeoService);
   protected readonly userProfiles = inject(UserProfilesService);
   private readonly cache = inject(CacheService);
+  private readonly followsService = inject(FollowsService);
 
   areaSlug: InputSignal<string> = input.required<string>();
   readonly query: WritableSignal<string> = signal('');
@@ -634,6 +642,7 @@ export class AreaComponent {
 
   private readonly ascentsPage = signal(0);
   protected readonly accumulatedAscents = signal<FeedItem[]>([]);
+  protected readonly followedIds = signal<Set<string>>(new Set());
 
   protected readonly ascentsResource = resource({
     params: () => {
@@ -1103,6 +1112,8 @@ export class AreaComponent {
   protected readonly stringifyUser = (u: UserProfileBasicDto) => u.name || '';
 
   constructor() {
+    this.loadFollowedIds();
+
     effect(() => {
       const slug = this.areaSlug();
       this.outdoorData.selectArea(slug);
@@ -1172,6 +1183,33 @@ export class AreaComponent {
     if (this.ascentsResource.isLoading()) return;
     if (!this.hasMoreAscents()) return;
     this.ascentsPage.update((p) => p + 1);
+  }
+
+  private async loadFollowedIds(): Promise<void> {
+    if (!this.isBrowser) return;
+    try {
+      await this.supabase.whenReady();
+      const ids = await this.followsService.getFollowedIds();
+      this.followedIds.set(new Set(ids));
+    } catch {
+      // silent
+    }
+  }
+
+  onFollow(userId: string): void {
+    this.followedIds.update((s) => {
+      const next = new Set(s);
+      next.add(userId);
+      return next;
+    });
+  }
+
+  onUnfollow(userId: string): void {
+    this.followedIds.update((s) => {
+      const next = new Set(s);
+      next.delete(userId);
+      return next;
+    });
   }
 
   onQuery(v: string) {
