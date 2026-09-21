@@ -96,31 +96,35 @@ import { AscentTypeComponent } from './ascent-type';
         class="flex flex-wrap justify-between items-center gap-x-2 gap-y-0"
       >
         @if (showUser()) {
-          <a
-            [routerLink]="['/profile', ascent.user_id]"
+          <div
+            class="flex items-center gap-3"
             [tuiHint]="userHintTemplate"
             (contextmenu.zoneless)="$event.preventDefault()"
-            class="flex items-center gap-3 no-underline text-inherit cursor-pointer group/user select-none"
           >
-            <span tuiAvatar size="s">
-              @if (ascent.user?.avatar; as avatar) {
-                <img
-                  [src]="avatar | avatarUrl"
-                  [alt]="ascent.user.name || ''"
-                />
-              } @else {
-                <tui-icon icon="@tui.user" />
-              }
+            <span class="flex items-center cursor-pointer select-none">
+              <span tuiAvatar size="s">
+                @if (ascent.user?.avatar; as avatar) {
+                  <img
+                    [src]="avatar | avatarUrl"
+                    [alt]="ascent.user.name || ''"
+                  />
+                } @else {
+                  <tui-icon icon="@tui.user" />
+                }
+              </span>
             </span>
-            <div class="flex flex-col">
+            <a
+              [routerLink]="['/profile', ascent.user_id]"
+              class="flex flex-col no-underline text-inherit cursor-pointer group/user select-none"
+            >
               <span class="font-bold text-sm group-hover/user:underline">
                 {{ ascent.user?.name || 'User' }}
               </span>
               <span class="text-xs">
                 {{ ascent.date | ascentDate }}
               </span>
-            </div>
-          </a>
+            </a>
+          </div>
           <ng-template #userHintTemplate>
             <app-user-info-hint
               [userId]="ascent.user_id"
@@ -377,7 +381,7 @@ import { AscentTypeComponent } from './ascent-type';
         </div>
       }
 
-      @if (!isIndoor()) {
+      @if (showLikesAndComments() && !isIndoor()) {
         <footer class="flex flex-col gap-1 mt-2">
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
             <app-ascent-likes
@@ -429,6 +433,7 @@ export class AscentCardComponent {
   showArea = input(true);
   showPhoto = input(true);
   showComment = input(true);
+  showLikesAndComments = input(true);
   isFollowed = input(false);
   priority = input(false);
   highlightOwn = input(false);

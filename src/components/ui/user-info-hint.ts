@@ -10,6 +10,8 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 
+import { TuiDialogService } from '@taiga-ui/core';
+
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AscentsService } from '../../services/ascents.service';
@@ -27,6 +29,7 @@ import {
   calculatePeriodScore,
   getMaxGrade,
   mapAscentRouteToExtras,
+  openPhotoViewer,
 } from '../../utils';
 
 import { AscentCardComponent } from '../ascent/ascent-card';
@@ -62,7 +65,9 @@ import { UserInfoComponent } from './user-info';
         [bio]="profile?.bio"
         [compact]="true"
         [avatarSize]="'l'"
+        [avatarClickable]="true"
         [nameClickable]="true"
+        (avatarClick)="enlargeAvatar(profile?.avatar || fallbackAvatar())"
         (nameClick)="navigateToProfile()"
       />
 
@@ -116,6 +121,7 @@ import { UserInfoComponent } from './user-info';
             [showUser]="false"
             [showPhoto]="false"
             [showComment]="false"
+            [showLikesAndComments]="false"
           />
         </div>
       }
@@ -131,6 +137,7 @@ export class UserInfoHintComponent {
   private readonly ascentsService = inject(AscentsService);
   private readonly followsService = inject(FollowsService);
   private readonly router = inject(Router);
+  private readonly dialogs = inject(TuiDialogService);
 
   protected readonly userProfileResource = resource({
     params: () => this.userId(),
@@ -283,6 +290,16 @@ export class UserInfoHintComponent {
     if (id) {
       setTimeout(() => {
         void this.router.navigate(['/profile', id]);
+      });
+    }
+  }
+
+  protected enlargeAvatar(avatar: string | null | undefined): void {
+    if (!avatar) return;
+    const photoUrl = this.supabase.buildAvatarUrl(avatar);
+    if (photoUrl) {
+      setTimeout(() => {
+        void openPhotoViewer(this.dialogs, photoUrl);
       });
     }
   }
