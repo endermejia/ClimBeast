@@ -67,6 +67,7 @@ import { TopoPageBase } from './topo-page-base';
               [title]="t.name"
               [showLike]="false"
               [titleDropdown]="topoDropdown"
+              [itemCount]="sortedAreaTopos().length"
               [actions]="headerActions()"
             >
               <ng-container titleInfo>
