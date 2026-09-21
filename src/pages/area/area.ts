@@ -80,7 +80,6 @@ import { UserInfoHintComponent } from '../../components/ui/user-info-hint';
 
 import {
   AreaDetail,
-  AscentTypes,
   ClimbingKind,
   ClimbingKinds,
   type FeedItem,
