@@ -99,7 +99,9 @@ import {
   filterRoutes,
   gradeToVerticalLife,
   handleErrorToast,
+  mapRouteToExtras,
   matchesQuery,
+  RawRouteData,
   slugify,
 } from '../../utils';
 
@@ -486,7 +488,6 @@ const PAGE_SIZE = 20;
                           [data]="routesList"
                           [showLocation]="true"
                           [showRowColors]="true"
-                          [hiddenColumns]="['topo']"
                         />
                       }
 
@@ -1014,12 +1015,13 @@ export class AreaComponent {
     loader: async ({ params: areaId }) => {
       if (!areaId || !this.isBrowser) return [];
       await this.supabase.whenReady();
+      const userId = this.supabase.authUser()?.id;
       const { data, error } = await this.supabase.client
         .from('routes')
         .select(
           `*,
-          liked:route_likes(id),
-          project:route_projects(id),
+          liked:route_likes(id, user_id),
+          project:route_projects(id, user_id),
           ascents:route_ascents(rate, type),
           own_ascent:route_ascents(*),
           topo_routes(topo:topos(id, name, slug)),
@@ -1037,48 +1039,30 @@ export class AreaComponent {
       if (!data) return [];
 
       return data.map((r) => {
-        const {
-          crag,
-          liked,
-          project,
-          own_ascent,
-          ascents,
-          route_equippers,
-          topo_routes,
-          ...rest
-        } = r;
-        const cragArea = (
-          crag as { area?: { slug?: string; name?: string } } | null
-        )?.area;
-        const rates =
-          ascents
-            ?.map((a) => a.rate)
-            .filter((rate): rate is number => rate != null) ?? [];
-        const rating =
-          rates.length > 0
-            ? rates.reduce((a, b) => a + b, 0) / rates.length
-            : 0;
-        const ascent_count =
-          ascents?.filter((a) => a.type !== AscentTypes.ATTEMPT).length ?? 0;
-        return {
-          ...rest,
-          equippers: (route_equippers ?? [])
-            .map((re) => re.equipper)
-            .filter(Boolean),
-          topos: (topo_routes ?? []).map((tr) => tr.topo).filter(Boolean),
-          rating,
-          ascent_count,
-          liked: (liked?.length ?? 0) > 0,
-          project: (project?.length ?? 0) > 0,
-          own_ascent: own_ascent?.[0] ?? null,
-          crag_id: crag?.id ?? r.crag_id,
-          area_id: crag?.area_id ?? undefined,
-          crag_slug: crag?.slug ?? undefined,
-          crag_name: crag?.name ?? undefined,
-          area_slug: cragArea?.slug ?? undefined,
-          area_name: cragArea?.name ?? undefined,
-        } as RouteItem;
-      });
+        const userOwnAscents = userId
+          ? (r.own_ascent ?? []).filter((a) => a.user_id === userId)
+          : [];
+        const userLiked = userId
+          ? (r.liked ?? []).filter((l) => l.user_id === userId)
+          : [];
+        const userProject = userId
+          ? (r.project ?? []).filter((p) => p.user_id === userId)
+          : [];
+
+        return mapRouteToExtras(
+          {
+            ...r,
+            own_ascent: userOwnAscents,
+            liked: userLiked,
+            project: userProject,
+          } as RawRouteData,
+          {
+            areaIdSource: 'crag.area_id',
+            includeEquippers: true,
+            includeTopos: true,
+          },
+        );
+      }) as RouteItem[];
     },
   });
 
