@@ -484,7 +484,7 @@ const PAGE_SIZE = 20;
                       @if (routesList.length > 0) {
                         <app-outdoor-routes-table
                           [data]="routesList"
-                          [showLocation]="routeQuery().trim().length >= 2"
+                          [showLocation]="true"
                           [showRowColors]="true"
                           [hiddenColumns]="['topo']"
                         />
