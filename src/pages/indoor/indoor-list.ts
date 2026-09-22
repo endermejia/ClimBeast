@@ -23,6 +23,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { AuthStateService } from '../../services/auth-state.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 import { IndoorService } from '../../services/indoor.service';
+import { LayoutService } from '../../services/layout.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 
 import { IndoorCenterCardComponent } from '../../components/indoor/indoor-center-card';
@@ -52,7 +53,7 @@ import { matchesQuery } from '../../utils';
       <tui-scrollbar class="flex grow">
         <section class="w-full max-w-[1600px] mx-auto p-4 pb-32">
           <header class="flex items-center justify-between gap-2">
-            <tui-segmented size="l">
+            <tui-segmented [size]="layoutService.isMobile() ? 's' : 'l'">
               <a
                 routerLink="/area"
                 routerLinkActive="active"
@@ -163,6 +164,7 @@ import { matchesQuery } from '../../utils';
   host: { class: 'flex grow min-h-0' },
 })
 export class IndoorListComponent {
+  protected readonly layoutService = inject(LayoutService);
   protected readonly authState = inject(AuthStateService);
   protected readonly indoor = inject(IndoorService);
   protected readonly indoorCentersData = inject(IndoorCentersDataService);
