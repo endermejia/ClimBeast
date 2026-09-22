@@ -301,19 +301,19 @@ export class AdminAreaFundsComponent {
           .select('area_id, net_amount, gross_amount, created_at'),
       ]);
 
-      const areas = (areasRes.data || []) as Array<{
+      const areas = (areasRes.data || []) as {
         id: number;
         name: string;
         slug: string;
         is_public: boolean | null;
         price: number | null;
-      }>;
-      const donations = (donationsRes.data || []) as Array<{
+      }[];
+      const donations = (donationsRes.data || []) as {
         area_id: number;
         net_amount: number | null;
         gross_amount: number | null;
         created_at: string;
-      }>;
+      }[];
 
       const statsMap = new Map<
         number,

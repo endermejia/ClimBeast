@@ -19,6 +19,12 @@ export function slugify(input: string | undefined | null): string {
   v = v.replace(/^-+|-+$/g, '');
   return v;
 }
+// Sector (crag) slug used across the 8a.nu import flow. Mirrors the import
+// payload rule: empty/whitespace-only sector names become "General"/"general",
+// so keys built during the preview step and during the actual import agree.
+export function sectorSlug(name: string | undefined | null): string {
+  return slugify((name ?? '').trim() || 'General') || 'general';
+}
 // Strict normalization for duplicate detection: only strips diacritics and lowercases.
 // Does NOT replace hyphens, dots or other separators, so "V.T." and "V T" stay distinct.
 export function normalizeNameStrict(input: string | undefined | null): string {

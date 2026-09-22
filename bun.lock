@@ -32,22 +32,22 @@
         "@ngx-translate/core": "^16.0.4",
         "@ngx-translate/http-loader": "^16.0.1",
         "@supabase/supabase-js": "^2.78.0",
-        "@taiga-ui/addon-charts": "^5.14.0",
-        "@taiga-ui/addon-commerce": "^5.14.0",
-        "@taiga-ui/addon-doc": "^5.14.0",
-        "@taiga-ui/addon-mobile": "^5.14.0",
-        "@taiga-ui/addon-table": "^5.14.0",
-        "@taiga-ui/cdk": "^5.14.0",
-        "@taiga-ui/core": "^5.14.0",
-        "@taiga-ui/design-tokens": "^0.293.0",
+        "@taiga-ui/addon-charts": "^5.25.0",
+        "@taiga-ui/addon-commerce": "^5.25.0",
+        "@taiga-ui/addon-doc": "^5.25.0",
+        "@taiga-ui/addon-mobile": "^5.25.0",
+        "@taiga-ui/addon-table": "^5.25.0",
+        "@taiga-ui/cdk": "^5.25.0",
+        "@taiga-ui/core": "^5.25.0",
+        "@taiga-ui/design-tokens": "^0.320.0",
         "@taiga-ui/event-plugins": "^5.0.0",
-        "@taiga-ui/font-watcher": "^0.5.0",
-        "@taiga-ui/i18n": "^5.14.0",
-        "@taiga-ui/icons": "^5.14.0",
-        "@taiga-ui/kit": "^5.14.0",
-        "@taiga-ui/layout": "^5.14.0",
+        "@taiga-ui/font-watcher": "^0.6.0",
+        "@taiga-ui/i18n": "^5.25.0",
+        "@taiga-ui/icons": "^5.25.0",
+        "@taiga-ui/kit": "^5.25.0",
+        "@taiga-ui/layout": "^5.25.0",
         "@taiga-ui/polymorpheus": "^5.0.0",
-        "@taiga-ui/styles": "^5.14.0",
+        "@taiga-ui/styles": "^5.25.0",
         "@tailwindcss/postcss": "^4.1.13",
         "@tailwindcss/vite": "^4.1.13",
         "@typescript-eslint/eslint-plugin": "^8.39.0",
@@ -640,39 +640,39 @@
 
     "@supabase/supabase-js": ["@supabase/supabase-js@2.111.0", "", { "dependencies": { "@supabase/auth-js": "2.111.0", "@supabase/functions-js": "2.111.0", "@supabase/postgrest-js": "2.111.0", "@supabase/realtime-js": "2.111.0", "@supabase/storage-js": "2.111.0" } }, "sha512-9q0/AULthQnWeiDh1vGyjoJZbSY04bu6qHcWit70pqEYn5Kv/dkCPY62Ja1123jEnJbB9Vd2pjY7Kvk/lK3peA=="],
 
-    "@taiga-ui/addon-charts": ["@taiga-ui/addon-charts@5.17.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@ng-web-apis/common": "^5.3.0", "@taiga-ui/cdk": "5.17.0", "@taiga-ui/core": "5.17.0", "@taiga-ui/polymorpheus": "^5.0.1" } }, "sha512-81B3wW1VkGfAch+zspnNpSl5iFfreYJ0yJSKf7T8oIAiHiV1SQGKmwi9WmAB1l8SYJm39zKO34x+iHfSwSNQSg=="],
+    "@taiga-ui/addon-charts": ["@taiga-ui/addon-charts@5.25.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@ng-web-apis/common": "^5.3.0", "@taiga-ui/cdk": "5.25.0", "@taiga-ui/core": "5.25.0", "@taiga-ui/polymorpheus": "^5.0.1" } }, "sha512-JRCLFtoeDbpBDr64CW1nb7+pTnmO/8yt0LMqRW2/tI6mT2REfKuBHfByijadmll09eZWIxxz66G5Lq+5l3XC2Q=="],
 
-    "@taiga-ui/addon-commerce": ["@taiga-ui/addon-commerce@5.17.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@angular/forms": ">=19.0.0", "@maskito/angular": "^5.3.1", "@maskito/core": "^5.3.1", "@maskito/kit": "^5.3.1", "@ng-web-apis/common": "^5.3.0", "@taiga-ui/cdk": "5.17.0", "@taiga-ui/core": "5.17.0", "@taiga-ui/i18n": "5.17.0", "@taiga-ui/kit": "5.17.0", "@taiga-ui/polymorpheus": "^5.0.1", "rxjs": ">=7.0.0" } }, "sha512-m9bjMt0XE9+9jkk7a/AoNyU4Dxj5VRt4Ewc3UZwUnIeRzM1n+Z8g1hxFI/ILmK0/49LkJIoAQeaI8Qi84c65pw=="],
+    "@taiga-ui/addon-commerce": ["@taiga-ui/addon-commerce@5.25.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@angular/forms": ">=19.0.0", "@maskito/angular": "^5.3.1", "@maskito/core": "^5.3.1", "@maskito/kit": "^5.3.1", "@ng-web-apis/common": "^5.3.0", "@taiga-ui/cdk": "5.25.0", "@taiga-ui/core": "5.25.0", "@taiga-ui/i18n": "5.25.0", "@taiga-ui/kit": "5.25.0", "@taiga-ui/polymorpheus": "^5.0.1", "rxjs": ">=7.0.0" } }, "sha512-o7fmg55C/KEF9BrdHqyAyJB2VQ4M8ClDgy6pOIWHAvkdEJZyztv8EY8nCAEcxYR1ISP/q3shazhFBV+x6v/cbQ=="],
 
-    "@taiga-ui/addon-doc": ["@taiga-ui/addon-doc@5.17.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/cdk": ">=19.0.0", "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@angular/forms": ">=19.0.0", "@angular/router": ">=19.0.0", "@ng-web-apis/common": "^5.3.0", "@ng-web-apis/platform": "^5.3.0", "@taiga-ui/cdk": "5.17.0", "@taiga-ui/core": "5.17.0", "@taiga-ui/kit": "5.17.0", "@taiga-ui/legacy": "5.17.0", "@taiga-ui/polymorpheus": "^5.0.1", "@types/markdown-it": "^14.1.2", "markdown-it": "^14.2.0", "ngx-highlightjs": "^14.0.1" } }, "sha512-cTcZboPD7frejqFlaHlySl3iG2QGyX7ya9wS0WMbAIz6XAqj/m819lNjEMwheqTtSChWG3MJTsrXN2L1mjMFHg=="],
+    "@taiga-ui/addon-doc": ["@taiga-ui/addon-doc@5.25.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/cdk": ">=19.0.0", "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@angular/forms": ">=19.0.0", "@angular/router": ">=19.0.0", "@ng-web-apis/common": "^5.3.0", "@ng-web-apis/platform": "^5.3.0", "@taiga-ui/cdk": "5.25.0", "@taiga-ui/core": "5.25.0", "@taiga-ui/kit": "5.25.0", "@taiga-ui/legacy": "5.25.0", "@taiga-ui/polymorpheus": "^5.0.1", "@types/markdown-it": "^14.1.2", "markdown-it": "^14.3.0", "ngx-highlightjs": "^14.0.1" } }, "sha512-Oekpd+O3O9FPyYzV+/LJ8L9JmgNwLUtmhs1p3sErD7i1Rt36ID60vtwvPHSc9nRs0ZOMIUrD4tYgxCj48iGyrg=="],
 
-    "@taiga-ui/addon-mobile": ["@taiga-ui/addon-mobile@5.17.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/cdk": ">=19.0.0", "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@ng-web-apis/common": "^5.3.0", "@ng-web-apis/platform": "^5.3.0", "@taiga-ui/cdk": "5.17.0", "@taiga-ui/core": "5.17.0", "@taiga-ui/kit": "5.17.0", "@taiga-ui/layout": "5.17.0", "@taiga-ui/polymorpheus": "^5.0.1", "rxjs": ">=7.0.0" } }, "sha512-KjvAowTMz6Z5bbhnZcIIqe8OREByBIDTCc1pltDa8W9PLG4TgvMhz7dfcX10IRt9FXPZaBktyhvD6Nx1RhpIwg=="],
+    "@taiga-ui/addon-mobile": ["@taiga-ui/addon-mobile@5.25.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/cdk": ">=19.0.0", "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@ng-web-apis/common": "^5.3.0", "@ng-web-apis/platform": "^5.3.0", "@ng-web-apis/resize-observer": "^5.3.0", "@taiga-ui/cdk": "5.25.0", "@taiga-ui/core": "5.25.0", "@taiga-ui/kit": "5.25.0", "@taiga-ui/layout": "5.25.0", "@taiga-ui/polymorpheus": "^5.0.1", "rxjs": ">=7.0.0" } }, "sha512-TjaVoFQpd0d5n2IrCl0YuGrvS79rEsfxVzaB/sqXldVF881q8Pmh3DKNFeOLyNC2lTCrFf605tM41MRBDCSmWQ=="],
 
-    "@taiga-ui/addon-table": ["@taiga-ui/addon-table@5.17.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@ng-web-apis/intersection-observer": "^5.3.0", "@taiga-ui/cdk": "5.17.0", "@taiga-ui/core": "5.17.0", "@taiga-ui/i18n": "5.17.0", "@taiga-ui/kit": "5.17.0", "@taiga-ui/polymorpheus": "^5.0.1", "rxjs": ">=7.0.0" } }, "sha512-pz6lZ92jR8eLg1u3qTz24oPlvtdrqW/TIlPGXvq9qd7sONeo7yaJOdNL3+oW15KAts+I+1pSLPHD2QyaTtZhVg=="],
+    "@taiga-ui/addon-table": ["@taiga-ui/addon-table@5.25.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@ng-web-apis/intersection-observer": "^5.3.0", "@taiga-ui/cdk": "5.25.0", "@taiga-ui/core": "5.25.0", "@taiga-ui/i18n": "5.25.0", "@taiga-ui/kit": "5.25.0", "@taiga-ui/polymorpheus": "^5.0.1", "rxjs": ">=7.0.0" } }, "sha512-xWqjgxE2Q7AdNzq7nZfFiVGDcUQ3E66s7G2SLVHYr5x4IvD4caj4yBvaE912SiuPbdt/DgwAeUIFjuRSxGyfIA=="],
 
-    "@taiga-ui/cdk": ["@taiga-ui/cdk@5.17.0", "", { "dependencies": { "tslib": "2.8.1" }, "optionalDependencies": { "@angular-devkit/core": ">=19.0.0", "@angular-devkit/schematics": ">=19.0.0", "@schematics/angular": ">=19.0.0", "ng-morph": "^5.0.1", "parse5": "^7.3.0" }, "peerDependencies": { "@angular/cdk": ">=19.0.0", "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@angular/forms": ">=19.0.0", "@ng-web-apis/common": "^5.3.0", "@ng-web-apis/mutation-observer": "^5.3.0", "@ng-web-apis/platform": "^5.3.0", "@ng-web-apis/resize-observer": "^5.3.0", "@ng-web-apis/screen-orientation": "^5.3.0", "@taiga-ui/event-plugins": "^5.0.0", "@taiga-ui/font-watcher": "~0.6.0", "@taiga-ui/polymorpheus": "^5.0.1", "rxjs": ">=7.0.0" } }, "sha512-NX3hxyvPp3y07W41TxUHESRPaMOVwZxyMs6stuyam5TaacG2TY5ktAZ6/shu5I45O9s+aUu7tPzitFYn8dIPoQ=="],
+    "@taiga-ui/cdk": ["@taiga-ui/cdk@5.25.0", "", { "dependencies": { "tslib": "2.8.1" }, "optionalDependencies": { "@angular-devkit/core": ">=19.0.0", "@angular-devkit/schematics": ">=19.0.0", "@schematics/angular": ">=19.0.0", "ng-morph": "^5.0.1", "parse5": "^7.3.0" }, "peerDependencies": { "@angular/cdk": ">=19.0.0", "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@angular/forms": ">=19.0.0", "@ng-web-apis/common": "^5.3.0", "@ng-web-apis/mutation-observer": "^5.3.0", "@ng-web-apis/platform": "^5.3.0", "@ng-web-apis/resize-observer": "^5.3.0", "@ng-web-apis/screen-orientation": "^5.3.0", "@taiga-ui/event-plugins": "^5.0.0", "@taiga-ui/font-watcher": "~0.6.0", "@taiga-ui/polymorpheus": "^5.0.1", "rxjs": ">=7.0.0" } }, "sha512-DBLXQwuM6B4NzpVAsC8dDevXwS/k0VFaquNOjO5alNlX+yps5z/TEjiDrs4WTU48qgOc8/n30W6Q4qm8JVJ7Wg=="],
 
-    "@taiga-ui/core": ["@taiga-ui/core@5.17.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@angular/forms": ">=19.0.0", "@angular/platform-browser": ">=19.0.0", "@angular/router": ">=19.0.0", "@ng-web-apis/common": "^5.3.0", "@ng-web-apis/intersection-observer": "^5.3.0", "@ng-web-apis/mutation-observer": "^5.3.0", "@ng-web-apis/platform": "^5.3.0", "@taiga-ui/cdk": "5.17.0", "@taiga-ui/event-plugins": "^5.0.0", "@taiga-ui/i18n": "5.17.0", "@taiga-ui/polymorpheus": "^5.0.1", "@taiga-ui/styles": "5.17.0", "rxjs": ">=7.0.0" } }, "sha512-Fpy9/M0ZbtqjDE6qYYOp1hQJy/qE4MZn+J2MW3ZeoKPvKO3r9cdX8UlpC2YKeqEztvrOU2YQIpHlPQgbUATqCg=="],
+    "@taiga-ui/core": ["@taiga-ui/core@5.25.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@angular/forms": ">=19.0.0", "@angular/platform-browser": ">=19.0.0", "@angular/router": ">=19.0.0", "@ng-web-apis/common": "^5.3.0", "@ng-web-apis/intersection-observer": "^5.3.0", "@ng-web-apis/mutation-observer": "^5.3.0", "@ng-web-apis/platform": "^5.3.0", "@taiga-ui/cdk": "5.25.0", "@taiga-ui/event-plugins": "^5.0.0", "@taiga-ui/i18n": "5.25.0", "@taiga-ui/polymorpheus": "^5.0.1", "@taiga-ui/styles": "5.25.0", "rxjs": ">=7.0.0" } }, "sha512-cHs03mwRNBbNAfqUBu2iZTblPjIuRRTQtpI932NZyTcjLH7aUYgR5QgsKZkdTF9qUMGTkJstbspxfd1lWKebEw=="],
 
-    "@taiga-ui/design-tokens": ["@taiga-ui/design-tokens@0.293.0", "", { "dependencies": { "tslib": "^2.3.0" } }, "sha512-LjegoQoURzPibOru8+uBSHD1klfVAYeHXr4gpdLJEXeoh/CWHS+T52kYKbG3Ip1w+HFg4vLgbApSYB7Zprwscw=="],
+    "@taiga-ui/design-tokens": ["@taiga-ui/design-tokens@0.320.0", "", { "dependencies": { "tslib": "^2.3.0" } }, "sha512-6iq4w0Dg7U6TNbSPTZsVjlvkjDnDHIJCtqppq9RaNGdNNMdXjxgGEEfs1HqlwrWUa7k6oEbm72v7MyJul4oRdg=="],
 
     "@taiga-ui/event-plugins": ["@taiga-ui/event-plugins@5.0.0", "", { "dependencies": { "tslib": "^2.3.0" }, "peerDependencies": { "@angular/core": ">=16.0.0", "@angular/platform-browser": ">=16.0.0", "rxjs": ">=7.0.0" } }, "sha512-8AxIUn/lX4kwuDlIFmhElgBNtGDgQVC9/F+3O2A29IcMSt9693KRi8qKwToe9p3UuUsT9nnj5YeE11BtJMG0wA=="],
 
-    "@taiga-ui/font-watcher": ["@taiga-ui/font-watcher@0.5.0", "", {}, "sha512-9QBUh3XT6KOS+pKVy4ggr0CxgiZtbDYlterUNcfXw8cswkIkiUl5VGDQdvmta60iPHqOrOd/Z/7aAUom35vX/g=="],
+    "@taiga-ui/font-watcher": ["@taiga-ui/font-watcher@0.6.0", "", {}, "sha512-TqDKkzFJhTLEcvlEQkQoUnD+kVZaCh0MRq2I1AFY8/XKTuVa+/P+Il/m2uC4xVg3v04X17160gcTLRaQMUV0Uw=="],
 
-    "@taiga-ui/i18n": ["@taiga-ui/i18n@5.17.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/core": ">=19.0.0", "@ng-web-apis/common": "^5.3.0", "rxjs": ">=7.0.0" } }, "sha512-mTyJ0i76hc5YUfic/OE+5k17TCYDcUPsFLyTGjte9nQxKTDwNgYq2FJb2WUQ0v8PK3lD3dH6sMmBy8mIAf3IZA=="],
+    "@taiga-ui/i18n": ["@taiga-ui/i18n@5.25.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/core": ">=19.0.0", "@ng-web-apis/common": "^5.3.0", "rxjs": ">=7.0.0" } }, "sha512-teFIosUFsywwgHRpKOpFh2ktVnKc75/J3PsY2wmrd5aELjcG6Z/loufd365FrbqWf57i0duNeIBLn4mIYd8lnQ=="],
 
-    "@taiga-ui/icons": ["@taiga-ui/icons@5.17.0", "", { "dependencies": { "tslib": "^2.3.0" } }, "sha512-BfgxHz5XddYPfxuTFmiHRz/3ytMbT9N+Rf9tfhDGQWEDUtI3Gr4JCjsjfY2gUwMVxwDaYG2T4oM8bUfSZBenUQ=="],
+    "@taiga-ui/icons": ["@taiga-ui/icons@5.25.0", "", { "dependencies": { "tslib": "^2.3.0" } }, "sha512-MCTv0RDq1ZjSM2dpBtJqVeVCra2ouVG5+0m/9gGqhBFF4uDeEtPa/8Q1ispbl+XJpeMPSYPmXhymnG1eqcEPww=="],
 
-    "@taiga-ui/kit": ["@taiga-ui/kit@5.17.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@angular/forms": ">=19.0.0", "@angular/router": ">=19.0.0", "@maskito/angular": "^5.3.1", "@maskito/core": "^5.3.1", "@maskito/kit": "^5.3.1", "@maskito/phone": "^5.3.1", "@ng-web-apis/common": "^5.3.0", "@ng-web-apis/intersection-observer": "^5.3.0", "@ng-web-apis/mutation-observer": "^5.3.0", "@ng-web-apis/platform": "^5.3.0", "@ng-web-apis/resize-observer": "^5.3.0", "@taiga-ui/cdk": "5.17.0", "@taiga-ui/core": "5.17.0", "@taiga-ui/i18n": "5.17.0", "@taiga-ui/polymorpheus": "^5.0.1", "@taiga-ui/styles": "5.17.0", "rxjs": ">=7.0.0" } }, "sha512-ultG1tSTXG07+yJBigZZSd1j7J+U8WJfNo4TYS2B1I0LBHW+uHKKdANMdajrBWAeohVq8qSnqjd6T29kcbEbmQ=="],
+    "@taiga-ui/kit": ["@taiga-ui/kit@5.25.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@angular/forms": ">=19.0.0", "@angular/router": ">=19.0.0", "@maskito/angular": "^5.3.1", "@maskito/core": "^5.3.1", "@maskito/kit": "^5.3.1", "@maskito/phone": "^5.3.1", "@ng-web-apis/common": "^5.3.0", "@ng-web-apis/intersection-observer": "^5.3.0", "@ng-web-apis/mutation-observer": "^5.3.0", "@ng-web-apis/platform": "^5.3.0", "@ng-web-apis/resize-observer": "^5.3.0", "@taiga-ui/cdk": "5.25.0", "@taiga-ui/core": "5.25.0", "@taiga-ui/i18n": "5.25.0", "@taiga-ui/polymorpheus": "^5.0.1", "@taiga-ui/styles": "5.25.0", "rxjs": ">=7.0.0" } }, "sha512-NRqVhlsb/6bOpiGcIS0qgtvKjAG5sDutWIKOgJePcse3XxZFPahwJvP1cV9Hg3vqoFep2vQkYnAQKj351uTYSw=="],
 
-    "@taiga-ui/layout": ["@taiga-ui/layout@5.17.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@taiga-ui/cdk": "5.17.0", "@taiga-ui/core": "5.17.0", "@taiga-ui/kit": "5.17.0", "@taiga-ui/polymorpheus": "^5.0.1", "rxjs": ">=7.0.0" } }, "sha512-Pbqzzyp8gDTpQ7m9IJzjx0b/7OegIaFsyMAHlW1+1xwPeDxR3K4Jc/pTEUeRaJU4huz0UTvMl//vz8aYa0M3aQ=="],
+    "@taiga-ui/layout": ["@taiga-ui/layout@5.25.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/common": ">=19.0.0", "@angular/core": ">=19.0.0", "@taiga-ui/cdk": "5.25.0", "@taiga-ui/core": "5.25.0", "@taiga-ui/kit": "5.25.0", "@taiga-ui/polymorpheus": "^5.0.1", "rxjs": ">=7.0.0" } }, "sha512-NYTtJ1j7zJJVCvyX9lJi1cRHxukblEH73CJrMlJX0LmiEQwzdtjS4dUEMenmbCUQ5YfvM4IFWwQGATPXng3dGQ=="],
 
     "@taiga-ui/legacy": ["@taiga-ui/legacy@5.17.0", "", { "dependencies": { "tslib": ">=2.8.1" }, "peerDependencies": { "@angular/core": ">=19.0.0", "@taiga-ui/addon-mobile": "5.17.0", "@taiga-ui/cdk": "5.17.0", "@taiga-ui/core": "5.17.0", "@taiga-ui/polymorpheus": "^5.0.1" } }, "sha512-SkLjgvPEKG77Trs4NOqBAYTxIYTYrUeGkA08S1OomtmfKnPkxrdY9NfogvdqxxyaaLtkZ6RnYUHjwCc0uiK1GQ=="],
 
     "@taiga-ui/polymorpheus": ["@taiga-ui/polymorpheus@5.0.1", "", { "dependencies": { "tslib": "^2.8.1" }, "peerDependencies": { "@angular/core": ">=19.0.0", "@angular/platform-browser": ">=19.0.0" } }, "sha512-OpPuPjkfwZDZmLIBrjWRpSCSCjqIS8y2/ntACe8ySe17Fz8zTAj6gXP5TKqsrfla0mzWpN1A6Hz8YR6jDhV8qw=="],
 
-    "@taiga-ui/styles": ["@taiga-ui/styles@5.17.0", "", { "peerDependencies": { "@taiga-ui/design-tokens": "~0.310.0" } }, "sha512-FRbN2X7TGkjA/R6C5aK1c8ZeV3yBB+MmyEkZrJyn+NRk5e10yC87E7oDgx80ATiJoosYUsJOnDv2TU4TVhPJhA=="],
+    "@taiga-ui/styles": ["@taiga-ui/styles@5.25.0", "", { "peerDependencies": { "@taiga-ui/design-tokens": "~0.320.0" } }, "sha512-TPAIR4W4sKHBDrs0HadICxNEOQ8EspDYI9pgv6f8XDikZ1sUe+Om6YOJiPaDJeyrIo7bckSvyzPlyYWMKhRy7g=="],
 
     "@tailwindcss/node": ["@tailwindcss/node@4.3.3", "", { "dependencies": { "@jridgewell/remapping": "^2.3.5", "enhanced-resolve": "^5.24.1", "jiti": "^2.7.0", "lightningcss": "1.32.0", "magic-string": "^0.30.21", "source-map-js": "^1.2.1", "tailwindcss": "4.3.3" } }, "sha512-/T8IKEsf9VTU6tLjgC7+sv2mOPtQxzE2jMw7u4Tt40Tx+QSZxpzh95/H6cMKoja9XuW7iMdLJYBB0o9G1CaAgg=="],
 

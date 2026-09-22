@@ -240,6 +240,17 @@ tui-dialog {
   contain: inline-size;
 }
 
+/*
+ * Taiga UI 5.25 añadió `min-inline-size: fit-content` a `tui-scrollbar > .t-content`.
+ * Esto infla el wrapper del contenido hasta el ancho min-content de los hijos
+ * anchos (tablas, grids), desbordando el layout en lugar de contenerlo en 100%.
+ * Restauramos el comportamiento previo (5.14), donde el mínimo era `auto`
+ * (= min(100%, min-content)) y el ancho se contenía en el scrollbar.
+ */
+tui-scrollbar > .t-content {
+  min-inline-size: auto !important;
+}
+
 /* Merchandising Dialogs - Remove internal scrolling */
 tui-dialog:has(app-merchandise-item-dialog),
 tui-dialog:has(app-merchandise-pack-dialog) {

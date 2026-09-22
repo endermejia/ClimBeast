@@ -44,7 +44,7 @@ import { ToastService } from '../../services/toast.service';
 
 import { EightAnuAscent, Json } from '../../models';
 
-import { slugify } from '../../utils';
+import { slugify, sectorSlug } from '../../utils';
 import { reactToObservable } from '../../utils';
 
 import {
@@ -104,10 +104,8 @@ import { Import8aStepUploadComponent } from './import-8a-step-upload';
               [newAreasCount]="newAreasCount()"
               [newCragsCount]="newCragsCount()"
               [selectedMap]="selectedMap()"
-              [importing]="importing()"
               (toggleSelect)="toggleSelect($event.index, $event.checked)"
               (toggleAll)="toggleAll($event)"
-              (import)="onImport()"
             />
           }
         </section>
@@ -131,6 +129,16 @@ import { Import8aStepUploadComponent } from './import-8a-step-upload';
               (click)="onStep(1)"
             >
               {{ 'next' | translate }}
+            </button>
+          }
+          @if (index === 1) {
+            <button
+              tuiButton
+              type="button"
+              [disabled]="importing() || ascents().length === 0"
+              (click)="onImport()"
+            >
+              {{ 'import' | translate }}
             </button>
           }
         </footer>
@@ -174,7 +182,7 @@ export class Import8aComponent {
 
       return this.ascents().map((a): ResolvedAscentItem => {
         const areaSlug = slugify(a.location_name);
-        const cragSlug = slugify(a.sector_name);
+        const cragSlug = sectorSlug(a.sector_name);
         const isNewArea = !existingAreas.has(areaSlug);
         const isNewCrag =
           isNewArea || !existingCrags.has(`${areaSlug}|${cragSlug}`);
@@ -193,42 +201,30 @@ export class Import8aComponent {
 
   protected readonly newAreasCount = computed(() => {
     const selected = this.selectedIndices();
-    const ascents = this.ascents();
-    const existingAreas = this.existingAreaSlugsSet();
-    const uniqueSelectedNewAreas = new Set<string>();
+    const uniqueNewAreas = new Set<string>();
 
-    ascents.forEach((a, i) => {
-      if (selected.has(i)) {
-        const areaSlug = slugify(a.location_name);
-        if (!existingAreas.has(areaSlug)) {
-          uniqueSelectedNewAreas.add(areaSlug);
-        }
+    this.ascentsWithResolved().forEach((a, i) => {
+      if (selected.has(i) && a._isNewArea) {
+        uniqueNewAreas.add(slugify(a.location_name));
       }
     });
 
-    return uniqueSelectedNewAreas.size;
+    return uniqueNewAreas.size;
   });
 
   protected readonly newCragsCount = computed(() => {
     const selected = this.selectedIndices();
-    const ascents = this.ascents();
-    const existingAreas = this.existingAreaSlugsSet();
-    const existingCrags = this.existingCragKeysSet();
-    const uniqueSelectedNewCrags = new Set<string>();
+    const uniqueNewCrags = new Set<string>();
 
-    ascents.forEach((a, i) => {
-      if (selected.has(i)) {
-        const areaSlug = slugify(a.location_name);
-        const cragKey = `${areaSlug}|${slugify(a.sector_name)}`;
-        const isNewArea = !existingAreas.has(areaSlug);
-        const isNewCrag = isNewArea || !existingCrags.has(cragKey);
-        if (isNewCrag) {
-          uniqueSelectedNewCrags.add(cragKey);
-        }
+    this.ascentsWithResolved().forEach((a, i) => {
+      if (selected.has(i) && a._isNewCrag) {
+        uniqueNewCrags.add(
+          `${slugify(a.location_name)}|${sectorSlug(a.sector_name)}`,
+        );
       }
     });
 
-    return uniqueSelectedNewCrags.size;
+    return uniqueNewCrags.size;
   });
 
   protected readonly selectedMap = computed(() => {

@@ -8,12 +8,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import {
-  TuiButton,
-  TuiCheckbox,
-  TuiIcon,
-  TuiNotification,
-} from '@taiga-ui/core';
+import { TuiCheckbox, TuiIcon, TuiNotification } from '@taiga-ui/core';
 import { TuiAvatar, TuiSkeleton } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
 
@@ -39,7 +34,6 @@ export type ResolvedAscentItem = EightAnuAscent & {
     GradeComponent,
     TranslatePipe,
     TuiAvatar,
-    TuiButton,
     TuiCheckbox,
     TuiHeader,
     TuiIcon,
@@ -176,17 +170,6 @@ export type ResolvedAscentItem = EightAnuAscent & {
           }
         }
       </div>
-
-      <div class="mt-4 flex gap-2">
-        <button
-          tuiButton
-          type="button"
-          [disabled]="importing() || ascentsCount() === 0"
-          (click)="import.emit()"
-        >
-          {{ 'import' | translate }}
-        </button>
-      </div>
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -203,9 +186,7 @@ export class Import8aStepConfirmComponent {
   readonly newAreasCount = input.required<number>();
   readonly newCragsCount = input.required<number>();
   readonly selectedMap = input.required<Record<number, boolean>>();
-  readonly importing = input<boolean>(false);
 
   readonly toggleSelect = output<{ index: number; checked: boolean }>();
   readonly toggleAll = output<boolean>();
-  readonly import = output<void>();
 }

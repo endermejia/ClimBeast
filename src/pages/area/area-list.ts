@@ -25,7 +25,6 @@ import {
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AreasService } from '../../services/areas.service';
-import { AuthStateService } from '../../services/auth-state.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
@@ -66,7 +65,9 @@ import { matchesQuery } from '../../utils';
   template: `
     <div class="relative flex grow min-h-0">
       <tui-scrollbar class="flex grow">
-        <section class="w-full max-w-[1600px] mx-auto p-4 pb-32">
+        <section
+          class="w-full max-w-[1600px] mx-auto p-4 pb-32 flex flex-col gap-4"
+        >
           <header class="flex items-center justify-between gap-2">
             <tui-segmented [size]="layoutService.isMobile() ? 's' : 'l'">
               <a
@@ -94,18 +95,6 @@ import { matchesQuery } from '../../utils';
             </tui-segmented>
 
             <div class="flex gap-2 flex-wrap sm:flex-nowrap justify-end">
-              @if (authState.canEditAsAdmin()) {
-                <button
-                  tuiButton
-                  appearance="textfield"
-                  size="s"
-                  type="button"
-                  (click.zoneless)="areasService.openUnifyAreas()"
-                  [iconStart]="'@tui.blend'"
-                >
-                  {{ 'unify' | translate }}
-                </button>
-              }
               <button
                 tuiButton
                 appearance="textfield"
@@ -120,7 +109,7 @@ import { matchesQuery } from '../../utils';
           </header>
 
           <div
-            class="sticky top-0 z-10 py-4 flex items-end gap-2 bg-(--tui-background-base)"
+            class="sticky top-0 z-10 flex items-end gap-2 bg-(--tui-background-base)"
           >
             <tui-textfield
               appearance="floating"
@@ -205,7 +194,6 @@ import { matchesQuery } from '../../utils';
 })
 export class AreaListComponent {
   protected readonly layoutService = inject(LayoutService);
-  protected readonly authState = inject(AuthStateService);
   protected readonly router = inject(Router);
   protected readonly areasService = inject(AreasService);
   protected readonly filtersService = inject(FiltersService);
