@@ -65,7 +65,9 @@ import { matchesQuery } from '../../utils';
   template: `
     <div class="relative flex grow min-h-0">
       <tui-scrollbar class="flex grow">
-        <section class="w-full max-w-[1600px] mx-auto p-4 pb-32">
+        <section
+          class="w-full max-w-[1600px] mx-auto p-4 pb-32 flex flex-col gap-4"
+        >
           <header class="flex items-center justify-between gap-2">
             <tui-segmented size="l">
               <a
@@ -119,7 +121,7 @@ import { matchesQuery } from '../../utils';
           </header>
 
           <div
-            class="sticky top-0 z-10 py-4 flex items-end gap-2 bg-(--tui-background-base)"
+            class="sticky top-0 z-10 flex items-end gap-2 bg-(--tui-background-base)"
           >
             <tui-textfield
               appearance="floating"
