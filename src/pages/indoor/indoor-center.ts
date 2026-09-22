@@ -68,6 +68,7 @@ import {
   SectionHeaderAction,
   SectionHeaderComponent,
 } from '../../components/ui/section-header';
+import { UbicacionDropdownComponent } from '../../components/ui/ubicacion-dropdown';
 
 import {
   ClimbingKinds,
@@ -81,7 +82,7 @@ import {
 } from '../../models';
 
 import { AnyToSchedulePipe } from '../../pipes';
-import { handleErrorToast, mapLocationUrl, matchesQuery } from '../../utils';
+import { handleErrorToast, matchesQuery } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -118,6 +119,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     CustomCarouselComponent,
     EmptyStateComponent,
     AscentCardComponent,
+    UbicacionDropdownComponent,
   ],
   styles: `
     @media (min-width: 1024px) {
@@ -165,9 +167,9 @@ import { IS_BROWSER } from '../../app/is-browser';
                 </div>
 
                 <!-- Gallery/Avatar + Schedule (side by side at xl+) -->
-                <div class="flex flex-col xl:flex-row gap-4">
+                <div class="flex flex-col xl:flex-row xl:flex-wrap gap-4">
                   <div
-                    class="relative rounded-3xl overflow-hidden aspect-video xl:aspect-auto xl:flex-1 bg-(--tui-background-neutral-1)"
+                    class="relative rounded-3xl overflow-hidden aspect-video xl:aspect-auto xl:flex-1 xl:order-1 bg-(--tui-background-neutral-1)"
                   >
                     @if (carouselItems().length > 0) {
                       <app-custom-carousel
@@ -192,105 +194,94 @@ import { IS_BROWSER } from '../../app/is-browser';
                     }
                   </div>
 
-                  <!-- Schedule -->
+                  <!-- Description (below the image on mobile, below the row on xl+) -->
                   <div
-                    tuiAppearance="flat-grayscale"
-                    class="p-4 rounded-3xl flex flex-col gap-4 xl:w-72 shrink-0"
+                    class="flex flex-col gap-2 min-w-0 xl:order-3 xl:basis-full"
                   >
-                    <h3 class="font-bold flex items-center gap-2">
-                      <tui-icon icon="@tui.clock" />
-                      {{ 'indoor.schedule' | translate }}
-                    </h3>
-
-                    @let schedule = c.schedule | anyToSchedule;
-                    <div class="flex flex-col gap-1 text-sm">
-                      @for (
-                        day of [
-                          'monday',
-                          'tuesday',
-                          'wednesday',
-                          'thursday',
-                          'friday',
-                          'saturday',
-                          'sunday',
-                        ];
-                        track day
-                      ) {
-                        <div
-                          class="flex justify-between p-1 px-2.5 rounded-lg transition-all"
-                          [class.bg-(--tui-background-accent-1)]="
-                            day === currentDay
-                          "
-                          [class.text-(--tui-text-primary-on-accent-1)]="
-                            day === currentDay
-                          "
-                          [class.font-bold]="day === currentDay"
-                        >
-                          <span class="capitalize">{{ day | translate }}</span>
-                          @let s = schedule.normal[day];
-                          <span>{{
-                            s?.closed
-                              ? ('indoor.closed' | translate)
-                              : s?.open && s?.close
-                                ? s.open +
-                                  ' - ' +
-                                  s.close +
-                                  (s.open2 && s.close2
-                                    ? ' / ' + s.open2 + ' - ' + s.close2
-                                    : '')
-                                : '-'
-                          }}</span>
-                        </div>
-                      }
-                    </div>
+                    @if (c.warning) {
+                      <div
+                        tuiNotification
+                        appearance="warning"
+                        class="rounded-2xl mb-2"
+                      >
+                        {{ c.warning }}
+                      </div>
+                    }
+                    <p class="text-base sm:text-lg break-words">
+                      {{ c.description }}
+                    </p>
                   </div>
-                </div>
 
-                <div class="flex flex-col gap-2">
-                  @if (c.warning) {
+                  <!-- Schedule + Location -->
+                  <div
+                    class="flex flex-col gap-4 xl:w-80 2xl:w-96 shrink-0 xl:order-2"
+                  >
                     <div
-                      tuiNotification
-                      appearance="warning"
-                      class="rounded-2xl mb-2"
+                      tuiAppearance="flat-grayscale"
+                      class="p-4 rounded-3xl flex flex-col gap-4"
                     >
-                      {{ c.warning }}
-                    </div>
-                  }
-                  <p class="text-lg">{{ c.description }}</p>
+                      <h3 class="font-bold flex items-center gap-2">
+                        <tui-icon icon="@tui.clock" />
+                        {{ 'indoor.schedule' | translate }}
+                      </h3>
 
-                  @if (c.latitude && c.longitude) {
-                    <div class="flex flex-row flex-wrap gap-2 mt-2">
-                      <button
-                        tuiButton
-                        appearance="flat"
-                        size="m"
-                        type="button"
-                        (click.zoneless)="viewOnMap(c.latitude, c.longitude)"
-                        [iconStart]="'@tui.map-pin'"
-                      >
-                        {{ 'viewOnMap' | translate }}
-                      </button>
-                      <button
-                        appearance="flat"
-                        size="m"
-                        tuiButton
-                        type="button"
-                        [iconStart]="'/image/google-maps.svg'"
-                        class="[--tui-icon-size:1.25rem]"
-                        (click.zoneless)="
-                          openExternal(
-                            mapLocationUrl({
-                              latitude: c.latitude,
-                              longitude: c.longitude,
-                            })
-                          )
-                        "
-                        [attr.aria-label]="'openGoogleMaps' | translate"
-                      >
-                        {{ 'openGoogleMaps' | translate }}
-                      </button>
+                      @let schedule = c.schedule | anyToSchedule;
+                      <div class="flex flex-col gap-1 text-sm">
+                        @for (
+                          day of [
+                            'monday',
+                            'tuesday',
+                            'wednesday',
+                            'thursday',
+                            'friday',
+                            'saturday',
+                            'sunday',
+                          ];
+                          track day
+                        ) {
+                          <div
+                            class="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 p-1 px-2.5 rounded-lg transition-all"
+                            [class.bg-(--tui-background-accent-1)]="
+                              day === currentDay
+                            "
+                            [class.text-(--tui-text-primary-on-accent-1)]="
+                              day === currentDay
+                            "
+                            [class.font-bold]="day === currentDay"
+                          >
+                            <span class="capitalize whitespace-nowrap shrink-0">
+                              {{ day | translate }}
+                            </span>
+                            @let s = schedule.normal[day];
+                            <span
+                              class="ml-auto whitespace-nowrap text-right"
+                              >{{
+                                s?.closed
+                                  ? ('indoor.closed' | translate)
+                                  : s?.open && s?.close
+                                    ? s.open +
+                                      ' - ' +
+                                      s.close +
+                                      (s.open2 && s.close2
+                                        ? ' / ' + s.open2 + ' - ' + s.close2
+                                        : '')
+                                    : '-'
+                              }}</span
+                            >
+                          </div>
+                        }
+                      </div>
                     </div>
-                  }
+
+                    @if (c.latitude && c.longitude) {
+                      <app-ubicacion-dropdown
+                        class="self-start"
+                        [latitude]="c.latitude"
+                        [longitude]="c.longitude"
+                        (viewOnMap)="viewOnMap(c.latitude, c.longitude)"
+                      />
+                    }
+                  </div>
                 </div>
 
                 @if (segmentedTabs().length > 1) {
@@ -975,8 +966,6 @@ export class IndoorCenterComponent {
     return tabs;
   });
 
-  protected readonly mapLocationUrl = mapLocationUrl;
-
   async viewOnMap(lat: number, lng: number): Promise<void> {
     this.filterState.areaListShowIndoor.set(true);
     this.mapData.mapBounds.set({
@@ -986,11 +975,6 @@ export class IndoorCenterComponent {
       north_east_longitude: lng + 0.005,
     });
     void this.router.navigateByUrl('/explore');
-  }
-
-  openExternal(url?: string): void {
-    if (!url) return;
-    window.open(url, '_blank');
   }
 
   async deleteCenter(): Promise<void> {
