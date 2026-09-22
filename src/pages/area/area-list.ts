@@ -7,18 +7,19 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 import {
   TuiAppearance,
   TuiButton,
+  TuiIcon,
   TuiInput,
   TuiScrollbar,
 } from '@taiga-ui/core';
 import {
-  TuiAvatar,
   TuiBadgedContent,
   TuiBadgeNotification,
+  TuiSegmented,
 } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
@@ -27,6 +28,7 @@ import { AreasService } from '../../services/areas.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
+import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 
 import { AreaCardComponent } from '../../components/area/area-card';
@@ -39,7 +41,6 @@ import {
   ORDERED_GRADE_VALUES,
 } from '../../models';
 
-import { IconSrcPipe } from '../../pipes';
 import { matchesQuery } from '../../utils';
 
 @Component({
@@ -48,37 +49,48 @@ import { matchesQuery } from '../../utils';
     AreaCardComponent,
     AreaCardSkeletonComponent,
     EmptyStateComponent,
-    IconSrcPipe,
     LowerCasePipe,
     RouterLink,
+    RouterLinkActive,
     TranslatePipe,
     TuiAppearance,
-    TuiAvatar,
     TuiBadgedContent,
     TuiBadgeNotification,
     TuiButton,
+    TuiIcon,
     TuiInput,
     TuiScrollbar,
+    TuiSegmented,
   ],
   template: `
     <div class="relative flex grow min-h-0">
       <tui-scrollbar class="flex grow">
         <section class="w-full max-w-[1600px] mx-auto p-4 pb-32">
           <header class="flex items-center justify-between gap-2">
-            @let areasCount = filtered().length;
-            <h1 class="text-2xl font-bold w-full sm:w-auto">
-              <span
-                [tuiAvatar]="'zone' | iconSrc"
-                tuiThumbnail
-                size="l"
-                class="self-center"
-                [attr.aria-label]="'area' | translate"
-              ></span>
-              {{ areasCount }}
-              {{
-                (areasCount === 1 ? 'area' : 'areas') | translate | lowercase
-              }}
-            </h1>
+            <tui-segmented size="l">
+              <a
+                routerLink="/area"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
+              >
+                <tui-icon icon="@tui.map-pinned" />
+                {{ filtered().length }}
+                {{
+                  (filtered().length === 1 ? 'area' : 'areas')
+                    | translate
+                    | lowercase
+                }}
+              </a>
+              <a
+                routerLink="/indoor"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
+              >
+                <tui-icon icon="@tui.dumbbell" />
+                {{ indoorCount() }}
+                {{ 'indoor.title' | translate | lowercase }}
+              </a>
+            </tui-segmented>
 
             <div class="flex gap-2 flex-wrap sm:flex-nowrap justify-end">
               @if (authState.canEditAsAdmin()) {
@@ -196,6 +208,7 @@ export class AreaListComponent {
   protected readonly areasService = inject(AreasService);
   protected readonly filtersService = inject(FiltersService);
   protected readonly outdoorData = inject(OutdoorDataService);
+  protected readonly indoorCentersData = inject(IndoorCentersDataService);
   private readonly filterState = inject(FilterStateService);
 
   readonly loading = computed(
@@ -205,6 +218,9 @@ export class AreaListComponent {
       this.outdoorData.areasListResource.value() === undefined,
   );
   readonly areas = computed(() => this.outdoorData.areasList());
+  readonly indoorCount = computed(
+    () => this.indoorCentersData.indoorCentersList().length,
+  );
 
   readonly query: WritableSignal<string> = signal('');
   readonly selectedGradeRange = this.filterState.areaListGradeRange;
