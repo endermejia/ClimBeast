@@ -13,6 +13,7 @@ import { AnyToSchedulePipe } from './any-to-schedule.pipe';
 import { AscentDatePipe } from './ascent-date.pipe';
 import { AvatarUrlPipe } from './avatar-url.pipe';
 import { IconSrcPipe } from './icon-src.pipe';
+import { IncludesIdPipe } from './includes-id.pipe';
 import { MentionLinkPipe } from './mention-link.pipe';
 import { SanitizeHtmlPipe } from './sanitize-html.pipe';
 import { ShadeInfoPipe } from './shade-info.pipe';
@@ -25,6 +26,36 @@ import {
   TopoPointStateColorPipe,
   TopoPointStateLabelPipe,
 } from './topo-path.pipe';
+
+describe('IncludesIdPipe', () => {
+  const pipe = new IncludesIdPipe();
+
+  it('returns false when items array or id is null or undefined', () => {
+    expect(pipe.transform(null, 1)).toBe(false);
+    expect(pipe.transform([], null)).toBe(false);
+    expect(pipe.transform(undefined, undefined)).toBe(false);
+  });
+
+  it('matches primitive values in array', () => {
+    expect(pipe.transform([1, 2, 3], 2)).toBe(true);
+    expect(pipe.transform(['a', 'b'], 'c')).toBe(false);
+  });
+
+  it('matches object items containing id property', () => {
+    const items = [{ id: 10, name: 'Topo 1' }, { id: 20, name: 'Topo 2' }];
+    expect(pipe.transform(items, 10)).toBe(true);
+    expect(pipe.transform(items, 99)).toBe(false);
+  });
+
+  it('returns memoized result for identical input references', () => {
+    const items = [{ id: 'a' }, { id: 'b' }];
+    const firstResult = pipe.transform(items, 'a');
+    expect(firstResult).toBe(true);
+
+    const secondResult = pipe.transform(items, 'a');
+    expect(secondResult).toBe(true);
+  });
+});
 
 describe('ShadeInfoPipe', () => {
   const pipe = new ShadeInfoPipe();
