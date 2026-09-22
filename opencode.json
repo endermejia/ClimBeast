@@ -1,0 +1,10 @@
+{
+  "mcp": {
+    "servers": {
+      "taiga-ui": {
+        "type": "local",
+        "command": ["npx", "-y", "@taiga-family/taiga-ui-mcp"]
+      }
+    }
+  }
+}
