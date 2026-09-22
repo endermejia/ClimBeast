@@ -25,7 +25,6 @@ import {
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AreasService } from '../../services/areas.service';
-import { AuthStateService } from '../../services/auth-state.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
@@ -95,18 +94,6 @@ import { matchesQuery } from '../../utils';
             </tui-segmented>
 
             <div class="flex gap-2 flex-wrap sm:flex-nowrap justify-end">
-              @if (authState.canEditAsAdmin()) {
-                <button
-                  tuiButton
-                  appearance="textfield"
-                  size="s"
-                  type="button"
-                  (click.zoneless)="areasService.openUnifyAreas()"
-                  [iconStart]="'@tui.blend'"
-                >
-                  {{ 'unify' | translate }}
-                </button>
-              }
               <button
                 tuiButton
                 appearance="textfield"
@@ -205,7 +192,6 @@ import { matchesQuery } from '../../utils';
   host: { class: 'flex grow min-h-0' },
 })
 export class AreaListComponent {
-  protected readonly authState = inject(AuthStateService);
   protected readonly router = inject(Router);
   protected readonly areasService = inject(AreasService);
   protected readonly filtersService = inject(FiltersService);
