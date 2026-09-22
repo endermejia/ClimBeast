@@ -177,40 +177,27 @@ import { IS_BROWSER } from '../../app/is-browser';
           [style.transform]="'translate(-50%, -' + _sheetScrollTop() + 'px)'"
         >
           <div class="flex gap-2">
-            @if (shouldShowOutdoor()) {
-              <button
-                tuiButton
-                size="m"
-                appearance="primary-grayscale"
-                iconStart="@tui.mountain"
-                routerLink="/area"
-                class="relative"
-                [tuiDropdown]="tourHint"
-                [tuiDropdownManual]="isExploreAreasTourStep"
-                tuiDropdownDirection="top"
-                (click)="onOutdoorClick()"
-              >
-                @if (isExploreAreasTourStep) {
-                  <span
-                    class="absolute bottom-2 left-2 pointer-events-none z-10 size-0"
-                  >
-                    <tui-pulse />
-                  </span>
-                }
-                {{ 'outdoor.button' | translate }}
-              </button>
-            }
-            @if (shouldShowIndoor()) {
-              <button
-                tuiButton
-                size="m"
-                appearance="primary-grayscale"
-                iconStart="@tui.dumbbell"
-                routerLink="/indoor"
-              >
-                {{ 'indoor.button' | translate }}
-              </button>
-            }
+            <button
+              tuiButton
+              size="m"
+              appearance="primary-grayscale"
+              iconStart="@tui.list"
+              [routerLink]="listLink()"
+              class="relative"
+              [tuiDropdown]="tourHint"
+              [tuiDropdownManual]="isExploreAreasTourStep"
+              tuiDropdownDirection="top"
+              (click)="onOutdoorClick()"
+            >
+              @if (isExploreAreasTourStep) {
+                <span
+                  class="absolute bottom-2 left-2 pointer-events-none z-10 size-0"
+                >
+                  <tui-pulse />
+                </span>
+              }
+              {{ 'explore.viewList' | translate }}
+            </button>
           </div>
         </div>
 
@@ -221,29 +208,16 @@ import { IS_BROWSER } from '../../app/is-browser';
           [style.visibility]="hasSelection ? 'visible' : 'hidden'"
         >
           <div class="flex gap-2">
-            @if (shouldShowOutdoor()) {
-              <button
-                tuiButton
-                size="m"
-                appearance="primary-grayscale"
-                iconStart="@tui.mountain"
-                routerLink="/area"
-                (click)="onOutdoorClick()"
-              >
-                {{ 'outdoor.button' | translate }}
-              </button>
-            }
-            @if (shouldShowIndoor()) {
-              <button
-                tuiButton
-                size="m"
-                appearance="primary-grayscale"
-                iconStart="@tui.dumbbell"
-                routerLink="/indoor"
-              >
-                {{ 'indoor.button' | translate }}
-              </button>
-            }
+            <button
+              tuiButton
+              size="m"
+              appearance="primary-grayscale"
+              iconStart="@tui.list"
+              [routerLink]="listLink()"
+              (click)="onOutdoorClick()"
+            >
+              {{ 'explore.viewList' | translate }}
+            </button>
           </div>
         </div>
 
@@ -575,6 +549,13 @@ export class ExploreComponent {
   protected readonly shouldShowIndoor = computed(() => true);
 
   protected readonly shouldShowOutdoor = computed(() => true);
+
+  protected readonly listLink = computed(() => {
+    const indoor = this.filterState.areaListShowIndoor();
+    const outdoor = this.filterState.areaListShowOutdoor();
+    if (indoor && !outdoor) return '/indoor';
+    return '/area';
+  });
 
   protected mapCragItems: Signal<MapCragItem[]> = computed(() => {
     if (!this.shouldShowOutdoor()) return [];

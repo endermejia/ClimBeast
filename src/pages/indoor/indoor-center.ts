@@ -297,6 +297,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                   <tui-segmented
                     [activeItemIndex]="activeTabIndex()"
                     (activeItemIndexChange)="activeTabIndex.set($event)"
+                    class="w-full"
                   >
                     @for (tabIdx of segmentedTabs(); track tabIdx) {
                       <button type="button">
@@ -314,7 +315,9 @@ import { IS_BROWSER } from '../../app/is-browser';
                   </tui-segmented>
                 }
 
-                <div class="mt-2 lg:flex-1 lg:min-h-0 lg:overflow-hidden">
+                <div
+                  class="mt-2 lg:flex-1 lg:min-h-0 lg:overflow-hidden min-w-0"
+                >
                   @let currentTab = segmentedTabs()[activeTabIndex()];
                   @if (loadedTabs().has(0)) {
                     <div
@@ -451,7 +454,10 @@ import { IS_BROWSER } from '../../app/is-browser';
                             />
                           } @empty {
                             <div class="col-span-full">
-                              <app-empty-state />
+                              <app-empty-state
+                                icon="@tui.search-x"
+                                message="indoor.noAscents"
+                              />
                             </div>
                           }
                         </div>
@@ -492,7 +498,10 @@ import { IS_BROWSER } from '../../app/is-browser';
                           [showUser]="true"
                         />
                       } @empty {
-                        <app-empty-state />
+                        <app-empty-state
+                          icon="@tui.search-x"
+                          message="indoor.noAscents"
+                        />
                       }
                     </div>
                   }

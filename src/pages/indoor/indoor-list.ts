@@ -5,26 +5,25 @@ import {
   computed,
   inject,
   signal,
+  WritableSignal,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 import {
   TuiAppearance,
   TuiButton,
-  TuiLoader,
-  TuiScrollbar,
+  TuiIcon,
   TuiInput,
-  TuiTextfield,
-  TuiLabel,
+  TuiScrollbar,
 } from '@taiga-ui/core';
-
-import { TuiAvatar } from '@taiga-ui/kit';
+import { TuiSegmented } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AuthStateService } from '../../services/auth-state.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 import { IndoorService } from '../../services/indoor.service';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 
 import { IndoorCenterCardComponent } from '../../components/indoor/indoor-center-card';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
@@ -38,34 +37,45 @@ import { matchesQuery } from '../../utils';
     IndoorCenterCardComponent,
     EmptyStateComponent,
     LowerCasePipe,
+    RouterLink,
+    RouterLinkActive,
     TranslatePipe,
     TuiAppearance,
-    TuiAvatar,
     TuiButton,
+    TuiIcon,
     TuiInput,
-    TuiLoader,
     TuiScrollbar,
-    FormsModule,
-    TuiTextfield,
-    TuiLabel,
+    TuiSegmented,
   ],
   template: `
     <div class="relative flex grow min-h-0">
       <tui-scrollbar class="flex grow">
         <section class="w-full max-w-[1600px] mx-auto p-4 pb-32">
           <header class="flex items-center justify-between gap-2">
-            @let count = filtered().length;
-            <h1 class="text-2xl font-bold w-full sm:w-auto">
-              <span
-                tuiAvatar="@tui.dumbbell"
-                tuiThumbnail
-                size="l"
-                class="self-center"
-                [attr.aria-label]="'indoor.title' | translate"
-              ></span>
-              {{ count }}
-              {{ 'indoor.title' | translate | lowercase }}
-            </h1>
+            <tui-segmented size="l">
+              <a
+                routerLink="/area"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
+              >
+                <tui-icon icon="@tui.map-pinned" />
+                {{ areasCount() }}
+                {{
+                  (areasCount() === 1 ? 'area' : 'areas')
+                    | translate
+                    | lowercase
+                }}
+              </a>
+              <a
+                routerLink="/indoor"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
+              >
+                <tui-icon icon="@tui.dumbbell" />
+                {{ filtered().length }}
+                {{ 'indoor.title' | translate | lowercase }}
+              </a>
+            </tui-segmented>
 
             <div class="flex gap-2 flex-wrap sm:flex-nowrap justify-end">
               @if (authState.isAdmin()) {
@@ -74,6 +84,7 @@ import { matchesQuery } from '../../utils';
                   appearance="textfield"
                   size="s"
                   type="button"
+                  iconStart="@tui.plus"
                   (click.zoneless)="indoor.openIndoorCenterForm()"
                 >
                   {{ 'new' | translate }}
@@ -87,17 +98,16 @@ import { matchesQuery } from '../../utils';
           >
             <tui-textfield
               appearance="floating"
-              tuiTextfieldSize="l"
               class="grow block"
+              tuiTextfieldSize="l"
             >
-              <label tuiLabel for="indoor-search">{{
-                'searchPlaceholder' | translate
-              }}</label>
+              <label tuiLabel for="indoor-search">
+                {{ 'searchPlaceholder' | translate }}
+              </label>
               <input
                 tuiInput
                 #indoorSearch
                 id="indoor-search"
-                type="text"
                 autocomplete="off"
                 [value]="query()"
                 (input.zoneless)="query.set(indoorSearch.value)"
@@ -105,26 +115,48 @@ import { matchesQuery } from '../../utils';
             </tui-textfield>
           </div>
 
-          @if (indoorCentersData.indoorCentersResource.isLoading()) {
-            <tui-loader size="xxl" class="mt-20" />
+          <!-- Indoor list -->
+          @if (!loading()) {
+            <div
+              class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            >
+              @for (item of filtered(); track item.id) {
+                <app-indoor-center-card [item]="item" />
+              } @empty {
+                <div class="col-span-full">
+                  <app-empty-state icon="@tui.dumbbell" />
+                </div>
+              }
+            </div>
           } @else {
-            @if (count > 0) {
-              <div
-                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 mt-6"
-              >
-                @for (item of filtered(); track item.id) {
-                  <app-indoor-center-card [item]="item" />
-                }
-              </div>
-            } @else {
-              <app-empty-state
-                class="mt-12"
-                [title]="'noResults' | translate"
-              />
-            }
+            <div
+              class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            >
+              @for (i of [1, 2, 3, 4]; track i) {
+                <div
+                  tuiAppearance="flat-grayscale"
+                  class="rounded-3xl h-72 animate-pulse bg-(--tui-background-neutral-1)"
+                ></div>
+              }
+            </div>
           }
         </section>
       </tui-scrollbar>
+
+      <div
+        class="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-none w-full flex justify-center z-20"
+      >
+        <button
+          tuiButton
+          size="m"
+          appearance="primary-grayscale"
+          iconStart="@tui.map"
+          routerLink="/explore"
+          class="pointer-events-auto shadow-xl"
+        >
+          {{ 'map' | translate }}
+        </button>
+      </div>
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -134,8 +166,18 @@ export class IndoorListComponent {
   protected readonly authState = inject(AuthStateService);
   protected readonly indoor = inject(IndoorService);
   protected readonly indoorCentersData = inject(IndoorCentersDataService);
+  protected readonly outdoorData = inject(OutdoorDataService);
+  protected readonly router = inject(Router);
 
-  protected readonly query = signal('');
+  protected readonly areasCount = computed(
+    () => this.outdoorData.areasList().length,
+  );
+
+  protected readonly loading = computed(() =>
+    this.indoorCentersData.indoorCentersResource.isLoading(),
+  );
+
+  protected readonly query: WritableSignal<string> = signal('');
 
   protected readonly filtered = computed(() => {
     const list = this.indoorCentersData.indoorCentersList();
