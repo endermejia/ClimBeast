@@ -498,6 +498,7 @@
   "filterByDate": "Filtrar por fecha",
   "filterRoutes": "Filtrar vías",
   "filters": "Filtros",
+  "filters.indoorOutdoor.all": "Todo",
   "filters.shade.afternoon": "Sombra tarde",
   "filters.shade.allDay": "Sombra siempre",
   "filters.shade.changeAt": "cambia a las",

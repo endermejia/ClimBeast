@@ -13,6 +13,7 @@ import {
   TuiButton,
   TuiDataList,
   TuiDialogService,
+  TuiDropdownOptionsDirective,
   TuiInput,
   TuiTextfield,
 } from '@taiga-ui/core';
@@ -52,6 +53,7 @@ import { FilterDialog, FilterDialogComponent } from '../dialogs/filter-dialog';
     TuiButton,
     TuiDataList,
     TuiDataListWrapper,
+    TuiDropdownOptionsDirective,
     TuiInput,
     TuiSelect,
     TuiTextfield,
@@ -64,7 +66,8 @@ import { FilterDialog, FilterDialogComponent } from '../dialogs/filter-dialog';
       <!-- Indoor/Outdoor + Date Filter + Filters Button -->
       <div class="flex items-center gap-2 w-full min-w-0">
         <tui-textfield
-          class="grow min-w-0 font-bold"
+          class="basis-28 sm:basis-32 grow-0 shrink-0 min-w-0 font-bold"
+          [tuiDropdownLimitWidth]="'min'"
           [tuiTextfieldCleaner]="false"
           [stringify]="ioValueContent"
           [tuiTextfieldSize]="textFieldSize()"
@@ -84,6 +87,7 @@ import { FilterDialog, FilterDialogComponent } from '../dialogs/filter-dialog';
 
         <tui-textfield
           class="grow min-w-0 font-bold"
+          [tuiDropdownLimitWidth]="'min'"
           [tuiTextfieldCleaner]="false"
           [stringify]="dateValueContent"
           [tuiTextfieldSize]="textFieldSize()"
@@ -149,11 +153,7 @@ export class UserProfileFiltersComponent {
 
   protected readonly ioValueContent = (option: string): string => {
     if (option === 'both')
-      return (
-        this.translate.instant('outdoor.button') +
-        ' / ' +
-        this.translate.instant('indoor.button')
-      );
+      return this.translate.instant('filters.indoorOutdoor.all');
     if (option === 'outdoor') return this.translate.instant('outdoor.button');
     if (option === 'indoor') return this.translate.instant('indoor.button');
     return option;

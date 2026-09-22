@@ -498,6 +498,7 @@
   "filterByDate": "Filtratu dataren arabera",
   "filterRoutes": "Filtrar vías",
   "filters": "Filtroak",
+  "filters.indoorOutdoor.all": "Denak",
   "filters.shade.afternoon": "Arratsaldean itzala",
   "filters.shade.allDay": "Egun osoan itzala",
   "filters.shade.changeAt": "ordu honetan aldatzen da:",
