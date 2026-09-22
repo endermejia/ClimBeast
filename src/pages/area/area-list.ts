@@ -29,6 +29,7 @@ import { AuthStateService } from '../../services/auth-state.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
+import { LayoutService } from '../../services/layout.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 
 import { AreaCardComponent } from '../../components/area/area-card';
@@ -67,7 +68,7 @@ import { matchesQuery } from '../../utils';
       <tui-scrollbar class="flex grow">
         <section class="w-full max-w-[1600px] mx-auto p-4 pb-32">
           <header class="flex items-center justify-between gap-2">
-            <tui-segmented size="l">
+            <tui-segmented [size]="layoutService.isMobile() ? 's' : 'l'">
               <a
                 routerLink="/area"
                 routerLinkActive="active"
@@ -203,6 +204,7 @@ import { matchesQuery } from '../../utils';
   host: { class: 'flex grow min-h-0' },
 })
 export class AreaListComponent {
+  protected readonly layoutService = inject(LayoutService);
   protected readonly authState = inject(AuthStateService);
   protected readonly router = inject(Router);
   protected readonly areasService = inject(AreasService);
