@@ -59,6 +59,7 @@ import { SeoService } from '../../services/seo.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
+import { VisitedAreasService } from '../../services/visited-areas.service';
 
 import { AreaRevenuePanelComponent } from '../../components/area/area-revenue-panel';
 import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
@@ -804,6 +805,7 @@ export class AreaComponent {
   protected readonly userProfiles = inject(UserProfilesService);
   private readonly cache = inject(CacheService);
   private readonly eightAnuService = inject(EightAnuService);
+  private readonly visitedAreasService = inject(VisitedAreasService);
 
   areaSlug: InputSignal<string> = input.required<string>();
   readonly query: WritableSignal<string> = signal('');
@@ -1391,6 +1393,17 @@ export class AreaComponent {
         description: `${area.name} – ${cragsCount} ${this.translate.instant('crags').toLowerCase()}. ${description}`,
         canonicalUrl: `https://climbeast.com/area/${slug}`,
       });
+    });
+
+    effect(() => {
+      const area = this.outdoorData.selectedArea();
+      if (area) {
+        this.visitedAreasService.addVisitedArea({
+          id: area.id,
+          name: area.name,
+          slug: area.slug,
+        });
+      }
     });
   }
 

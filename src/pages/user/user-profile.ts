@@ -48,6 +48,7 @@ import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { MenuOptionsButtonComponent } from '../../components/ui/menu-options-button';
 import { UserInfoComponent } from '../../components/ui/user-info';
 import { UserProfileAscentsComponent } from '../../components/user-profile/user-profile-ascents';
+import { UserProfileFiltersComponent } from '../../components/user-profile/user-profile-filters';
 import { UserProfileStatisticsComponent } from '../../components/user-profile/user-profile-statistics';
 
 import { openPhotoViewer, safeResourceValue } from '../../utils';
@@ -73,6 +74,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiSkeleton,
     UserInfoComponent,
     UserProfileAscentsComponent,
+    UserProfileFiltersComponent,
     UserProfileStatisticsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -96,7 +98,7 @@ import { IS_BROWSER } from '../../app/is-browser';
       <section
         class="w-full max-w-[1600px] mx-auto py-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden pb-6 lg:pb-2"
       >
-        <!-- Left Column: User Info + Statistics -->
+        <!-- Left Column: User Info + Filters (mobile) + Statistics -->
         <div
           class="flex flex-col gap-6 w-full px-4 lg:px-0 lg:flex-1 min-w-0 lg:h-full lg:overflow-hidden overflow-x-hidden"
         >
@@ -320,6 +322,9 @@ import { IS_BROWSER } from '../../app/is-browser';
           </app-user-info>
 
           @if (isOwnProfile() || !profile()?.private || isFollowing()) {
+            <!-- Filters: visible on mobile only -->
+            <app-user-profile-filters class="lg:hidden" />
+
             <!-- Statistics: fills remaining height in left column on desktop -->
             <div
               class="w-full flex-1 min-w-0 min-h-0 flex flex-col lg:overflow-hidden"
@@ -336,11 +341,14 @@ import { IS_BROWSER } from '../../app/is-browser';
           }
         </div>
 
-        <!-- Right Column: Ascents (Takes full height from the top in desktop) -->
+        <!-- Right Column: Filters (desktop) + Ascents -->
         @if (isOwnProfile() || !profile()?.private || isFollowing()) {
           <div
             class="w-full lg:w-[420px] xl:w-[460px] 2xl:w-[500px] shrink-0 min-w-0 lg:h-full flex flex-col"
           >
+            <div class="hidden lg:block">
+              <app-user-profile-filters />
+            </div>
             <app-user-profile-ascents
               [userId]="profile()?.id || id() || ''"
               [isOwnProfile]="isOwnProfile()"

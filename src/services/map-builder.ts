@@ -222,22 +222,10 @@ export class MapBuilder {
     // Disable cluster spawn animation after the first render to avoid flicker on pans
     this.animateClustersOnNextBuild = false;
 
-    // Determine if we should attempt geolocation: only on mobile devices
-    const isMobileClient = (() => {
-      if (!this.isBrowser() || typeof navigator === 'undefined') return false;
-      const ua = (navigator.userAgent || '').toLowerCase();
-      return /iphone|ipad|ipod|android|mobile/.test(ua);
-    })();
-
     // Only attempt geolocation when no viewport was restored
     if (!viewportRestored && this.map) {
       try {
-        const hasCachedUserLocation =
-          !!this.localStorage.getItem('lw_user_location');
-
-        if (hasCachedUserLocation || isMobileClient) {
-          await this.goToCurrentLocation();
-        } else if (mapCragItems && mapCragItems.length && this.map && this.L) {
+        if (mapCragItems && mapCragItems.length && this.map && this.L) {
           // Fallback: fit bounds to show all crags
           const latLngs: [number, number][] = mapCragItems.map(
             (mapItem: MapCragItem) => [mapItem.latitude, mapItem.longitude],
@@ -249,7 +237,7 @@ export class MapBuilder {
           });
         }
       } catch {
-        // Fallback to showing all crags if geolocation fails
+        // Fallback to showing all crags if fitBounds fails
         if (mapCragItems && mapCragItems.length && this.map && this.L) {
           const latLngs: [number, number][] = mapCragItems.map(
             (mapItem: MapCragItem) => [mapItem.latitude, mapItem.longitude],
@@ -282,13 +270,20 @@ export class MapBuilder {
       const sw = b.getSouthWest();
       const ne = b.getNorthEast();
       const zoom = this.map.getZoom();
-      cb.onViewportChange({
+      const viewport: MapBounds = {
         south_west_latitude: sw.lat,
         south_west_longitude: sw.lng,
         north_east_latitude: ne.lat,
         north_east_longitude: ne.lng,
         zoom,
-      });
+      };
+      cb.onViewportChange(viewport);
+      // Persist to localStorage so the position survives page refreshes
+      try {
+        this.localStorage.setItem('map_bounds_v1', JSON.stringify(viewport));
+      } catch {
+        // Silent fail
+      }
     };
 
     map.on('moveend', async () => {
@@ -856,7 +851,7 @@ export class MapBuilder {
         backgroundColorClass = 'lw-marker--secondary';
         break;
       case 'indoor':
-        backgroundColorClass = 'lw-marker--glass';
+        backgroundColorClass = 'lw-marker--positive';
         break;
     }
     // The rest of the code remains the same

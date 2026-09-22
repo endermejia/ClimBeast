@@ -51,7 +51,9 @@ import { EquipperRequestDto } from '../../models';
   ],
   template: `
     <tui-scrollbar class="flex grow">
-      <section class="w-full max-w-[1600px] mx-auto p-4 grid gap-4">
+      <section
+        class="w-full max-w-[1600px] mx-auto py-4 sm:px-6 lg:px-8  grid gap-4"
+      >
         @let equipper = equipperService.equipperDetailResource.value();
         @let loading = equipperService.equipperDetailResource.isLoading();
         @if (loading) {

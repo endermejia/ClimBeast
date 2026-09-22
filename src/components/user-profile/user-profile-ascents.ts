@@ -36,7 +36,7 @@ import { AscentsFeedComponent } from '../ascent/ascents-feed';
 
 import { EmptyStateComponent } from '../ui/empty-state';
 
-import { UserProfileFiltersComponent } from './user-profile-filters';
+import { UserProfileAscentsFiltersComponent } from './user-profile-ascents-filters';
 
 @Component({
   selector: 'app-user-profile-ascents',
@@ -48,19 +48,18 @@ import { UserProfileFiltersComponent } from './user-profile-filters';
     TranslatePipe,
     TuiButton,
     TuiScrollbar,
-    UserProfileFiltersComponent,
+    UserProfileAscentsFiltersComponent,
   ],
   template: `
     @if (
+      isLoading() ||
       profileData.userTotalAscentsCountResource.isLoading() ||
       hasAscents() ||
       profileData.ascentsQuery() ||
       hasActiveFilters()
     ) {
       <div class="flex flex-col w-full lg:h-full min-w-0 lg:min-h-0">
-        @if (!profileData.userTotalAscentsCountResource.isLoading()) {
-          <app-user-profile-filters />
-        }
+        <app-user-profile-ascents-filters />
 
         <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
           <div class="w-full min-w-0 px-4 sm:px-0 pb-6">

@@ -254,7 +254,9 @@ import { IS_BROWSER } from '../../app/is-browser';
                                   ].icon
                                 "
                               />
-                              {{ 'ascentTypes.' + r.own_ascent.type | translate }}
+                              {{
+                                'ascentTypes.' + r.own_ascent.type | translate
+                              }}
                             </span>
 
                             <!-- Hover State -->
@@ -321,7 +323,10 @@ import { IS_BROWSER } from '../../app/is-browser';
                         <span
                           class="text-xs uppercase opacity-60 font-semibold tracking-wider mb-2"
                         >
-                          {{ (r.topos.length === 1 ? 'topo' : 'topos') | translate }}
+                          {{
+                            (r.topos.length === 1 ? 'topo' : 'topos')
+                              | translate
+                          }}
                         </span>
                         <div class="flex flex-wrap gap-2 justify-center">
                           @for (t of r.topos; track t.id) {

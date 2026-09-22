@@ -3,11 +3,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  effect,
   inject,
   linkedSignal,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import {
@@ -16,7 +14,6 @@ import {
   TuiDataList,
   TuiDialogService,
   TuiInput,
-  TuiLabel,
   TuiTextfield,
 } from '@taiga-ui/core';
 import {
@@ -29,9 +26,10 @@ import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import { debounceTime, firstValueFrom, Subject } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 
 import { FilterStateService } from '../../services/filter-state.service';
+import { LayoutService } from '../../services/layout.service';
 import { ProfileDataService } from '../../services/profile-data.service';
 
 import { ORDERED_GRADE_VALUES } from '../../models';
@@ -55,22 +53,40 @@ import { FilterDialog, FilterDialogComponent } from '../dialogs/filter-dialog';
     TuiDataList,
     TuiDataListWrapper,
     TuiInput,
-    TuiLabel,
     TuiSelect,
     TuiTextfield,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
-      class="flex flex-col gap-2 mb-4 shrink-0 w-full min-w-0 px-4 lg:px-1 pt-2"
+      class="flex flex-col gap-2 mb-4 shrink-0 w-full min-w-0 px-0 lg:px-1 pt-2"
     >
-      <!-- Primary Date Filter + Modal Filters Button -->
+      <!-- Indoor/Outdoor + Date Filter + Filters Button -->
       <div class="flex items-center gap-2 w-full min-w-0">
         <tui-textfield
           class="grow min-w-0 font-bold"
           [tuiTextfieldCleaner]="false"
+          [stringify]="ioValueContent"
+          [tuiTextfieldSize]="textFieldSize()"
+        >
+          <input
+            tuiSelect
+            id="io-filter"
+            class="font-bold!"
+            [ngModel]="ioFilterValue()"
+            (ngModelChange)="onIoFilterChange($event)"
+            autocomplete="off"
+          />
+          <tui-data-list *tuiDropdown>
+            <tui-data-list-wrapper new [items]="ioOptions" />
+          </tui-data-list>
+        </tui-textfield>
+
+        <tui-textfield
+          class="grow min-w-0 font-bold"
+          [tuiTextfieldCleaner]="false"
           [stringify]="dateValueContent"
-          tuiTextfieldSize="l"
+          [tuiTextfieldSize]="textFieldSize()"
         >
           <input
             tuiSelect
@@ -96,7 +112,7 @@ import { FilterDialog, FilterDialogComponent } from '../dialogs/filter-dialog';
           <button
             tuiButton
             appearance="textfield"
-            size="l"
+            [size]="textFieldSize()"
             type="button"
             iconStart="@tui.sliders-horizontal"
             [attr.aria-label]="'filters' | translate"
@@ -104,62 +120,69 @@ import { FilterDialog, FilterDialogComponent } from '../dialogs/filter-dialog';
           ></button>
         </tui-badged-content>
       </div>
-
-      <!-- Search Query + Sort By -->
-      <div class="flex flex-wrap items-center gap-2 w-full min-w-0">
-        <tui-textfield
-          class="grow min-w-0 basis-44"
-          [tuiTextfieldCleaner]="true"
-          tuiTextfieldSize="l"
-        >
-          <label tuiLabel for="route-search">{{
-            'searchPlaceholder' | translate
-          }}</label>
-          <input
-            tuiInput
-            #routeSearch
-            id="route-search"
-            autocomplete="off"
-            [value]="query()"
-            (input.zoneless)="onQuery(routeSearch.value)"
-          />
-        </tui-textfield>
-
-        <tui-textfield
-          class="grow min-w-0 basis-32 sm:basis-36"
-          [tuiTextfieldCleaner]="false"
-          [stringify]="sortValueContent"
-          tuiTextfieldSize="l"
-        >
-          <label tuiLabel for="sort-filter">
-            {{ 'sortBy' | translate }}
-          </label>
-          <input
-            tuiSelect
-            id="sort-filter"
-            [ngModel]="sortFilterValue()"
-            (ngModelChange)="sortFilterValue.set($event)"
-            autocomplete="off"
-          />
-          <tui-data-list *tuiDropdown>
-            <tui-data-list-wrapper [items]="['grade', 'date']" />
-          </tui-data-list>
-        </tui-textfield>
-      </div>
     </div>
   `,
 })
 export class UserProfileFiltersComponent {
   protected readonly profileData = inject(ProfileDataService);
   protected readonly filterState = inject(FilterStateService);
+  protected readonly layout = inject(LayoutService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
 
-  private readonly querySubject = new Subject<string>();
-  protected readonly query = toSignal(
-    this.querySubject.pipe(debounceTime(400)),
-    { initialValue: '' },
+  protected readonly textFieldSize = computed(() =>
+    this.layout.isMobile() ? 'm' : 'l',
   );
+
+  protected readonly showIndoor = this.filterState.profileAscentsShowIndoor;
+  protected readonly showOutdoor = this.filterState.profileAscentsShowOutdoor;
+
+  protected readonly ioOptions = ['outdoor', 'indoor', 'both'] as const;
+
+  protected readonly ioFilterValue = computed(() => {
+    const indoor = this.showIndoor();
+    const outdoor = this.showOutdoor();
+    if (indoor && outdoor) return 'both';
+    if (indoor) return 'indoor';
+    return 'outdoor';
+  });
+
+  protected readonly ioValueContent = (option: string): string => {
+    if (option === 'both')
+      return (
+        this.translate.instant('outdoor.button') +
+        ' / ' +
+        this.translate.instant('indoor.button')
+      );
+    if (option === 'outdoor') return this.translate.instant('outdoor.button');
+    if (option === 'indoor') return this.translate.instant('indoor.button');
+    return option;
+  };
+
+  onIoFilterChange(value: string) {
+    if (value === 'both') {
+      this.filterState.profileAscentsShowOutdoor.set(true);
+      this.filterState.profileAscentsShowIndoor.set(true);
+    } else if (value === 'indoor') {
+      this.filterState.profileAscentsShowOutdoor.set(false);
+      this.filterState.profileAscentsShowIndoor.set(true);
+    } else {
+      this.filterState.profileAscentsShowOutdoor.set(true);
+      this.filterState.profileAscentsShowIndoor.set(false);
+    }
+  }
+
+  protected readonly selectedGradeRange =
+    this.filterState.profileAscentsGradeRange;
+  protected readonly selectedCategories =
+    this.filterState.profileAscentsCategories;
+
+  protected readonly hasActiveFilters = computed(() => {
+    const [lo, hi] = this.selectedGradeRange();
+    const gradeActive = !(lo === 0 && hi === ORDERED_GRADE_VALUES.length - 1);
+    const categoriesActive = this.selectedCategories().length > 0;
+    return gradeActive || categoriesActive;
+  });
 
   protected readonly sortFilterValue = linkedSignal<'grade' | 'date'>(() =>
     this.profileData.ascentsSort(),
@@ -171,23 +194,6 @@ export class UserProfileFiltersComponent {
     return getAscentDateFilterOptions(
       this.profileData.effectiveStartingClimbingYear(),
     );
-  });
-
-  protected readonly selectedGradeRange =
-    this.filterState.profileAscentsGradeRange;
-  protected readonly selectedCategories =
-    this.filterState.profileAscentsCategories;
-  protected readonly showIndoor = this.filterState.profileAscentsShowIndoor;
-  protected readonly showOutdoor = this.filterState.profileAscentsShowOutdoor;
-
-  protected readonly hasActiveFilters = computed(() => {
-    const [lo, hi] = this.selectedGradeRange();
-    const gradeActive = !(lo === 0 && hi === ORDERED_GRADE_VALUES.length - 1);
-    const categoriesActive = this.selectedCategories().length > 0;
-    const indoor = this.showIndoor();
-    const outdoor = this.showOutdoor();
-    const indoorOutdoorActive = (indoor || outdoor) && !(indoor && outdoor);
-    return gradeActive || categoriesActive || indoorOutdoorActive;
   });
 
   protected readonly sortValueContent = (option: 'grade' | 'date'): string => {
@@ -206,21 +212,6 @@ export class UserProfileFiltersComponent {
     return option;
   };
 
-  constructor() {
-    effect(() => {
-      const query = this.query();
-      const sort = this.sortFilterValue();
-
-      this.profileData.ascentsPage.set(0);
-      this.profileData.ascentsQuery.set(query || null);
-      this.profileData.ascentsSort.set(sort as 'grade' | 'date');
-    });
-  }
-
-  onQuery(v: string) {
-    this.querySubject.next(v);
-  }
-
   protected openFilters(): void {
     const data: FilterDialog = {
       categories: this.filterState.profileAscentsCategories(),
@@ -228,9 +219,7 @@ export class UserProfileFiltersComponent {
       showCategories: true,
       showGradeRange: true,
       showShade: false,
-      showIndoorOutdoor: true,
-      indoor: this.filterState.profileAscentsShowIndoor(),
-      outdoor: this.filterState.profileAscentsShowOutdoor(),
+      showIndoorOutdoor: false,
     };
 
     void firstValueFrom(
@@ -249,12 +238,6 @@ export class UserProfileFiltersComponent {
       this.filterState.profileAscentsCategories.set(result.categories ?? []);
       if (result.gradeRange) {
         this.filterState.profileAscentsGradeRange.set(result.gradeRange);
-      }
-      if (result.indoor !== undefined) {
-        this.filterState.profileAscentsShowIndoor.set(result.indoor);
-      }
-      if (result.outdoor !== undefined) {
-        this.filterState.profileAscentsShowOutdoor.set(result.outdoor);
       }
     });
   }

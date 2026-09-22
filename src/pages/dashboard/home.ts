@@ -34,6 +34,10 @@ import { MessagingService } from '../../services/messaging.service';
 import { ScrollService } from '../../services/scroll.service';
 import { SupabaseService } from '../../services/supabase.service';
 import {
+  VisitedAreasService,
+  VisitedArea,
+} from '../../services/visited-areas.service';
+import {
   VisitedCragsService,
   VisitedCrag,
 } from '../../services/visited-crags.service';
@@ -73,6 +77,7 @@ import {
 } from '../../components/dialogs/filter-dialog';
 
 import {
+  ActiveArea,
   ActiveCrag,
   ActiveIndoorCenter,
   AscentWithRouteJoin,
@@ -151,7 +156,8 @@ import { IS_BROWSER } from '../../app/is-browser';
                 [followsLoaded]="followsLoaded()"
                 [isLoading]="
                   activeCragsResource.isLoading() ||
-                  activeIndoorCentersResource.isLoading()
+                  activeIndoorCentersResource.isLoading() ||
+                  activeAreasResource.isLoading()
                 "
                 [items]="activeItems()"
               />
@@ -230,6 +236,7 @@ export class HomeComponent {
   private readonly visitedIndoorCentersService = inject(
     VisitedIndoorCentersService,
   );
+  private readonly visitedAreasService = inject(VisitedAreasService);
 
   private readonly STORAGE_KEY = 'home_feed_filter';
 
@@ -293,9 +300,37 @@ export class HomeComponent {
     return merged;
   });
 
+  protected readonly activeAreasResource = resource({
+    loader: () => this.fetchActiveAreas(),
+  });
+
+  protected readonly activeAreas = computed(() => {
+    const visited = this.visitedAreasService.visitedAreas();
+    let active: ActiveArea[] = [];
+    try {
+      if (this.activeAreasResource.hasValue()) {
+        active = this.activeAreasResource.value() ?? [];
+      }
+    } catch {
+      active = [];
+    }
+
+    const merged: (VisitedArea | ActiveArea)[] = [...visited];
+    const visitedIds = new Set(visited.map((a) => a.id));
+
+    for (const a of active) {
+      if (!visitedIds.has(a.id)) {
+        merged.push(a);
+      }
+    }
+
+    return merged;
+  });
+
   protected readonly activeItems = computed<UnifiedActiveItem[]>(() => {
     const crags = this.activeCrags();
     const centers = this.activeIndoorCenters();
+    const areas = this.activeAreas();
 
     const allItems: UnifiedActiveItem[] = [
       ...crags.map((c) => ({
@@ -307,6 +342,11 @@ export class HomeComponent {
         name: c.name,
         link: ['/indoor', c.slug] as string[],
         visitedAt: 'visitedAt' in c ? (c.visitedAt ?? 0) : 0,
+      })),
+      ...areas.map((a) => ({
+        name: a.name,
+        link: ['/area', a.slug] as string[],
+        visitedAt: 'visitedAt' in a ? (a.visitedAt ?? 0) : 0,
       })),
     ];
 
@@ -368,10 +408,8 @@ export class HomeComponent {
     const [lo, hi] = this.filterState.feedGradeRange();
     const gradeActive = !(lo === 0 && hi === ORDERED_GRADE_VALUES.length - 1);
     const categoriesActive = this.filterState.feedCategories().length > 0;
-    const indoor = this.filterState.feedShowIndoor();
-    const outdoor = this.filterState.feedShowOutdoor();
-    const indoorOutdoorActive = (indoor || outdoor) && !(indoor && outdoor);
-    return gradeActive || categoriesActive || indoorOutdoorActive;
+    const indoorAscents = this.filterState.feedShowIndoorAscents();
+    return gradeActive || categoriesActive || indoorAscents;
   });
 
   constructor() {
@@ -435,8 +473,7 @@ export class HomeComponent {
       const filter = this.feedFilter();
       this.filterState.feedCategories();
       this.filterState.feedGradeRange();
-      this.filterState.feedShowIndoor();
-      this.filterState.feedShowOutdoor();
+      this.filterState.feedShowIndoorAscents();
 
       if (filter === HomeFeedFilters.FAVORITE_AREAS) {
         this.favoritesData.likedAreaIds();
@@ -477,11 +514,10 @@ export class HomeComponent {
   private async fetchNextPage() {
     const version = this.fetchVersion();
     const filter = this.feedFilter();
-    const showIndoor = this.filterState.feedShowIndoor();
-    const showOutdoor = this.filterState.feedShowOutdoor();
+    const showIndoorAscents = this.filterState.feedShowIndoorAscents();
 
-    const shouldFetchOutdoor = (!showIndoor && !showOutdoor) || showOutdoor;
-    const shouldFetchIndoor = (!showIndoor && !showOutdoor) || showIndoor;
+    const shouldFetchOutdoor = this.outdoorHasMore;
+    const shouldFetchIndoor = showIndoorAscents && this.indoorHasMore;
 
     const willFetchOutdoor = shouldFetchOutdoor && this.outdoorHasMore;
     const willFetchIndoor = shouldFetchIndoor && this.indoorHasMore;
@@ -682,6 +718,68 @@ export class HomeComponent {
       if (cached) {
         try {
           return JSON.parse(cached) as ActiveIndoorCenter[];
+        } catch {
+          console.error('[Home] Cache parse error');
+        }
+      }
+      return [];
+    }
+  }
+
+  private async fetchActiveAreas(): Promise<ActiveArea[]> {
+    if (!this.isBrowser) return [];
+
+    const cacheKey = CACHE_KEYS.activeAreas;
+
+    try {
+      await this.supabase.whenReady();
+      const { data, error } = await this.supabase.client
+        .from('route_ascents')
+        .select(
+          `
+          route:routes!inner(
+            crag:crags(
+              area:areas(
+                id, name, slug
+              )
+            )
+          )
+        `,
+        )
+        .order('date', { ascending: false })
+        .limit(30);
+
+      if (error) throw error;
+
+      const areasMap = new Map<number, ActiveArea>();
+      const typedData = data as AscentWithRouteJoin[] | null;
+
+      typedData?.forEach((d) => {
+        const route = d.route;
+        const rawCrag = route?.crag;
+        const c = Array.isArray(rawCrag) ? rawCrag[0] : rawCrag;
+        if (c) {
+          const rawArea = c.area;
+          const area = Array.isArray(rawArea) ? rawArea[0] : rawArea;
+          if (area && !areasMap.has(area.id)) {
+            areasMap.set(area.id, {
+              id: area.id,
+              name: area.name,
+              slug: area.slug,
+            });
+          }
+        }
+      });
+
+      const result = Array.from(areasMap.values()).slice(0, 8);
+      this.storage.setItem(cacheKey, JSON.stringify(result));
+      return result;
+    } catch (e: unknown) {
+      console.warn('[Home] fetchActiveAreas error/offline, trying cache', e);
+      const cached = this.storage.getItem(cacheKey);
+      if (cached) {
+        try {
+          return JSON.parse(cached) as ActiveArea[];
         } catch {
           console.error('[Home] Cache parse error');
         }
@@ -1071,9 +1169,9 @@ export class HomeComponent {
       showCategories: true,
       showGradeRange: true,
       showShade: false,
-      showIndoorOutdoor: true,
-      indoor: this.filterState.feedShowIndoor(),
-      outdoor: this.filterState.feedShowOutdoor(),
+      showIndoorOutdoor: false,
+      showIndoorAscents: true,
+      showIndoorAscentsValue: this.filterState.feedShowIndoorAscents(),
     };
 
     const result = await firstValueFrom(
@@ -1094,11 +1192,8 @@ export class HomeComponent {
     if (result.gradeRange) {
       this.filterState.feedGradeRange.set(result.gradeRange);
     }
-    if (result.indoor !== undefined) {
-      this.filterState.feedShowIndoor.set(result.indoor);
-    }
-    if (result.outdoor !== undefined) {
-      this.filterState.feedShowOutdoor.set(result.outdoor);
+    if (result.showIndoorAscentsValue !== undefined) {
+      this.filterState.feedShowIndoorAscents.set(result.showIndoorAscentsValue);
     }
   }
 

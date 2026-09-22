@@ -177,17 +177,6 @@ import { IS_BROWSER } from '../../app/is-browser';
           [style.transform]="'translate(-50%, -' + _sheetScrollTop() + 'px)'"
         >
           <div class="flex gap-2">
-            @if (shouldShowIndoor()) {
-              <button
-                tuiButton
-                size="m"
-                appearance="primary-grayscale"
-                iconStart="@tui.dumbbell"
-                routerLink="/indoor"
-              >
-                {{ 'indoor.button' | translate }}
-              </button>
-            }
             @if (shouldShowOutdoor()) {
               <button
                 tuiButton
@@ -211,16 +200,6 @@ import { IS_BROWSER } from '../../app/is-browser';
                 {{ 'outdoor.button' | translate }}
               </button>
             }
-          </div>
-        </div>
-
-        <!-- Top version (With selection) -->
-        <div
-          class="absolute left-1/2 top-4 z-60 sm:z-100 pointer-events-auto transition-opacity duration-300 ease-in-out -translate-x-1/2"
-          [style.opacity]="hasSelection ? 1 : 0"
-          [style.visibility]="hasSelection ? 'visible' : 'hidden'"
-        >
-          <div class="flex gap-2">
             @if (shouldShowIndoor()) {
               <button
                 tuiButton
@@ -232,6 +211,16 @@ import { IS_BROWSER } from '../../app/is-browser';
                 {{ 'indoor.button' | translate }}
               </button>
             }
+          </div>
+        </div>
+
+        <!-- Top version (With selection) -->
+        <div
+          class="absolute left-1/2 top-4 z-60 sm:z-100 pointer-events-auto transition-opacity duration-300 ease-in-out -translate-x-1/2"
+          [style.opacity]="hasSelection ? 1 : 0"
+          [style.visibility]="hasSelection ? 'visible' : 'hidden'"
+        >
+          <div class="flex gap-2">
             @if (shouldShowOutdoor()) {
               <button
                 tuiButton
@@ -242,6 +231,17 @@ import { IS_BROWSER } from '../../app/is-browser';
                 (click)="onOutdoorClick()"
               >
                 {{ 'outdoor.button' | translate }}
+              </button>
+            }
+            @if (shouldShowIndoor()) {
+              <button
+                tuiButton
+                size="m"
+                appearance="primary-grayscale"
+                iconStart="@tui.dumbbell"
+                routerLink="/indoor"
+              >
+                {{ 'indoor.button' | translate }}
               </button>
             }
           </div>
@@ -572,17 +572,9 @@ export class ExploreComponent {
   protected readonly _sheetScrollTop: WritableSignal<number> = signal(0);
   private _sheetClosing = false;
 
-  protected readonly shouldShowIndoor = computed(() => {
-    const indoor = this.filterState.areaListShowIndoor();
-    const outdoor = this.filterState.areaListShowOutdoor();
-    return (!indoor && !outdoor) || indoor;
-  });
+  protected readonly shouldShowIndoor = computed(() => true);
 
-  protected readonly shouldShowOutdoor = computed(() => {
-    const indoor = this.filterState.areaListShowIndoor();
-    const outdoor = this.filterState.areaListShowOutdoor();
-    return (!indoor && !outdoor) || outdoor;
-  });
+  protected readonly shouldShowOutdoor = computed(() => true);
 
   protected mapCragItems: Signal<MapCragItem[]> = computed(() => {
     if (!this.shouldShowOutdoor()) return [];
@@ -723,7 +715,9 @@ export class ExploreComponent {
       gradeActive ||
       this.filterState.areaListCategories().length > 0 ||
       this.filterState.areaListShade().length > 0 ||
-      this.filterState.areaListToposOnly()
+      this.filterState.areaListToposOnly() ||
+      this.filterState.areaListShowIndoor() ||
+      this.filterState.areaListShowOutdoor()
     );
   });
 

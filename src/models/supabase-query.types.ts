@@ -56,6 +56,13 @@ export interface ActiveIndoorCenter {
   slug: string;
 }
 
+/** Processed active area for home feed */
+export interface ActiveArea {
+  id: number;
+  name: string;
+  slug: string;
+}
+
 // ---- Indoor Ascent Queries ----
 
 /** Raw indoor ascent with joined route/center */

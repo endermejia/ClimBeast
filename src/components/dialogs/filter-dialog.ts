@@ -16,6 +16,7 @@ import {
   ReactiveFormsModule,
 } from '@angular/forms';
 
+import { type TuiBooleanHandler } from '@taiga-ui/cdk';
 import { TuiButton, TuiLink, TuiKeySteps, TuiCheckbox } from '@taiga-ui/core';
 import { type TuiDialogContext } from '@taiga-ui/core';
 import { TuiFilter, TuiRange } from '@taiga-ui/kit';
@@ -52,6 +53,7 @@ export interface FilterDialog {
   showGradeRange?: boolean;
   showIndoorOutdoor?: boolean;
   showIndoorAscents?: boolean;
+  showIndoorAscentsValue?: boolean;
   showToposOnly?: boolean;
 }
 
@@ -77,6 +79,7 @@ export interface FilterDialog {
             formControlName="indoorOutdoor"
             size="l"
             [items]="indoorOutdoorItems()"
+            [disabledItemHandler]="ioDisabledHandler"
           />
         </section>
       }
@@ -245,10 +248,17 @@ export class FilterDialogComponent {
   readonly indoorOutdoorItems: Signal<string[]> = computed(() => {
     this._i18nTick();
     return [
-      this.translate.instant('indoor.button'),
       this.translate.instant('outdoor.button'),
+      this.translate.instant('indoor.button'),
     ];
   });
+
+  protected readonly ioDisabledHandler: TuiBooleanHandler<string> = (
+    item: string,
+  ) => {
+    const selected = this.form.controls.indoorOutdoor.value ?? [];
+    return selected.length === 1 && selected[0] === item;
+  };
 
   // Reactive form for types (and shade placeholder)
   protected readonly form = new FormGroup({
@@ -325,8 +335,8 @@ export class FilterDialogComponent {
         const sanitized = this.sanitizeRange(d.gradeRange as [number, number]);
         this.form.patchValue({ gradeRange: sanitized });
       }
-      if (d.showIndoorAscents !== undefined) {
-        this.form.patchValue({ showIndoorAscents: d.showIndoorAscents });
+      if (d.showIndoorAscentsValue !== undefined) {
+        this.form.patchValue({ showIndoorAscents: d.showIndoorAscentsValue });
       }
       if (
         d.toposOnly !== undefined &&
@@ -338,8 +348,12 @@ export class FilterDialogComponent {
       if (d.showIndoorOutdoor) {
         const ioNow = this.indoorOutdoorItems();
         const selectedIO: string[] = [];
-        if (d.indoor === true) selectedIO.push(ioNow[0]);
-        if (d.outdoor === true) selectedIO.push(ioNow[1]);
+        if (d.outdoor === true) selectedIO.push(ioNow[0]);
+        if (d.indoor === true) selectedIO.push(ioNow[1]);
+        // Default to both selected when neither is explicitly set
+        if (selectedIO.length === 0) {
+          selectedIO.push(ioNow[0], ioNow[1]);
+        }
         this.form.patchValue({ indoorOutdoor: selectedIO });
       }
     }
@@ -455,8 +469,8 @@ export class FilterDialogComponent {
 
     const selectedIO = this.form.value.indoorOutdoor ?? [];
     const ioNow = this.indoorOutdoorItems();
-    const indoor = selectedIO.includes(ioNow[0]);
-    const outdoor = selectedIO.includes(ioNow[1]);
+    const outdoor = selectedIO.includes(ioNow[0]);
+    const indoor = selectedIO.includes(ioNow[1]);
 
     const rawGradeRange = this.sanitizeRange(
       (this.form.value.gradeRange as [number, number]) ?? [
@@ -482,18 +496,20 @@ export class FilterDialogComponent {
       showShade: this.context.data?.showShade,
       showGradeRange: this.context.data?.showGradeRange,
       showIndoorOutdoor: this.context.data?.showIndoorOutdoor,
-      showIndoorAscents: this.form.value.showIndoorAscents ?? false,
+      showIndoorAscents: this.context.data?.showIndoorAscents,
+      showIndoorAscentsValue: this.form.value.showIndoorAscents ?? false,
       showToposOnly: this.context.data?.showToposOnly,
     };
     this.context.completeWith(payload);
   }
 
   protected clear(): void {
+    const ioNow = this.indoorOutdoorItems();
     this.form.reset({
       filters: [],
       shade: [],
       gradeRange: [this.minIndex, this.maxIndex],
-      indoorOutdoor: [],
+      indoorOutdoor: this.showIndoorOutdoor ? [ioNow[0], ioNow[1]] : [],
       showIndoorAscents: false,
       toposOnly: false,
     });
@@ -508,7 +524,8 @@ export class FilterDialogComponent {
       showShade: this.context.data?.showShade,
       showGradeRange: this.context.data?.showGradeRange,
       showIndoorOutdoor: this.context.data?.showIndoorOutdoor,
-      showIndoorAscents: false,
+      showIndoorAscents: this.context.data?.showIndoorAscents,
+      showIndoorAscentsValue: false,
       showToposOnly: this.context.data?.showToposOnly,
     });
   }

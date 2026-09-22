@@ -40,6 +40,7 @@ export class FilterStateService {
   private readonly feedShowIndoorKey = 'feed_show_indoor_v1';
   private readonly feedShowIndoorLegacyKey = 'feed_show_indoor_ascents_v1';
   private readonly feedShowOutdoorKey = 'feed_show_outdoor_v1';
+  private readonly feedShowIndoorAscentsKey = 'feed_show_indoor_ascents_v2';
 
   feedGradeRange: WritableSignal<[number, number]> = signal([
     0,
@@ -48,6 +49,7 @@ export class FilterStateService {
   feedCategories: WritableSignal<number[]> = signal([]);
   feedShowIndoor: WritableSignal<boolean> = signal(false);
   feedShowOutdoor: WritableSignal<boolean> = signal(false);
+  feedShowIndoorAscents: WritableSignal<boolean> = signal(false);
 
   // ---- User Profile Ascents (Feed) Filters ----
   private readonly profileAscentsGradeRangeKey =
@@ -155,6 +157,12 @@ export class FilterStateService {
       this.localStorage.setItem(
         this.feedShowOutdoorKey,
         String(this.feedShowOutdoor()),
+      );
+    });
+    effect(() => {
+      this.localStorage.setItem(
+        this.feedShowIndoorAscentsKey,
+        String(this.feedShowIndoorAscents()),
       );
     });
 
@@ -299,6 +307,13 @@ export class FilterStateService {
       const rawFeedOutdoor = this.localStorage.getItem(this.feedShowOutdoorKey);
       if (rawFeedOutdoor !== null) {
         this.feedShowOutdoor.set(rawFeedOutdoor === 'true');
+      }
+
+      const rawFeedIndoorAscents = this.localStorage.getItem(
+        this.feedShowIndoorAscentsKey,
+      );
+      if (rawFeedIndoorAscents !== null) {
+        this.feedShowIndoorAscents.set(rawFeedIndoorAscents === 'true');
       }
 
       // Indoor routes
