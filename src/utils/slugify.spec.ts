@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 import {
   slugify,
+  sectorSlug,
   normalizeNameStrict,
   normalizeName,
   matchesQuery,
@@ -43,6 +44,27 @@ describe('slugify', () => {
 
   it('should trim whitespace', () => {
     expect(slugify('  hello  ')).toBe('hello');
+  });
+});
+
+describe('sectorSlug', () => {
+  it('slugifies the sector name', () => {
+    expect(sectorSlug('Los Becerriles')).toBe('los-becerriles');
+  });
+
+  it('falls back to "general" for empty or whitespace-only names', () => {
+    expect(sectorSlug('')).toBe('general');
+    expect(sectorSlug('   ')).toBe('general');
+    expect(sectorSlug(null)).toBe('general');
+    expect(sectorSlug(undefined)).toBe('general');
+  });
+
+  it('trims before slugifying', () => {
+    expect(sectorSlug('  El Muro  ')).toBe('el-muro');
+  });
+
+  it('falls back to "general" when nothing alphanumeric remains', () => {
+    expect(sectorSlug('---')).toBe('general');
   });
 });
 

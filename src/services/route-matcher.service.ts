@@ -13,7 +13,15 @@ import {
   LABEL_TO_VERTICAL_LIFE,
 } from '../models';
 
-import { slugify } from '../utils';
+import {
+  collectCsvMatchInputs,
+  DbAreaRecord,
+  DbCragRecord,
+  matchExistingAreas,
+  matchExistingCrags,
+  sectorSlug,
+  slugify,
+} from '../utils';
 
 import { EightAnuService } from './eight-anu.service';
 
@@ -102,55 +110,76 @@ export class RouteMatcherService {
       return { existingAreaSlugs, existingCragKeys };
     }
 
-    const allAreaSlugsInCSV = [
-      ...new Set(ascents.map((a) => slugify(a.location_name))),
-    ];
-    const allSectorSlugsInCSV = [
-      ...new Set(ascents.map((a) => slugify(a.sector_name))),
-    ];
+    const { csvAreas, csvCrags } = collectCsvMatchInputs(ascents);
 
-    if (allAreaSlugsInCSV.length > 0) {
-      const { data: existingAreas } = await this.supabase.client
-        .from('areas')
-        .select('slug, eight_anu_crag_slugs')
-        .in('slug', allAreaSlugsInCSV);
+    const dbAreas = await this.fetchAllAreas();
+    const { dbAreaIdBySlug, existingAreaSlugs: matchedAreaSlugs } =
+      matchExistingAreas(csvAreas, dbAreas);
 
-      if (existingAreas) {
-        for (const area of existingAreas) {
-          existingAreaSlugs.add(area.slug);
-          if (area.eight_anu_crag_slugs) {
-            for (const s of area.eight_anu_crag_slugs) {
-              existingAreaSlugs.add(s);
-            }
-          }
-        }
-      }
+    for (const slug of matchedAreaSlugs) {
+      existingAreaSlugs.add(slug);
     }
 
-    if (allSectorSlugsInCSV.length > 0) {
-      const { data: existingCrags } = await this.supabase.client
-        .from('crags')
-        .select('slug, eight_anu_sector_slugs, area_id, areas!inner(slug)')
-        .in('slug', allSectorSlugsInCSV);
+    const areaIds = [...new Set(dbAreaIdBySlug.values())];
+    if (areaIds.length === 0) {
+      return { existingAreaSlugs, existingCragKeys };
+    }
 
-      if (existingCrags) {
-        for (const crag of existingCrags) {
-          const areaSlug = Array.isArray(crag.areas)
-            ? crag.areas[0]?.slug
-            : crag.areas?.slug;
-          if (areaSlug) {
-            existingCragKeys.add(`${areaSlug}|${crag.slug}`);
-            if (crag.eight_anu_sector_slugs) {
-              for (const s of crag.eight_anu_sector_slugs) {
-                existingCragKeys.add(`${areaSlug}|${s}`);
-              }
-            }
-          }
-        }
-      }
+    const dbCrags = await this.fetchCragsByAreaIds(areaIds);
+    for (const key of matchExistingCrags(csvCrags, dbAreaIdBySlug, dbCrags)) {
+      existingCragKeys.add(key);
     }
 
     return { existingAreaSlugs, existingCragKeys };
+  }
+
+  private async fetchAllAreas(): Promise<DbAreaRecord[]> {
+    const rows: DbAreaRecord[] = [];
+    const PAGE = 1000;
+
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await this.supabase.client
+        .from('areas')
+        .select('id, slug, name, eight_anu_crag_slugs')
+        .order('id', { ascending: true })
+        .range(from, from + PAGE - 1);
+
+      if (error) {
+        console.error('[8a Import] Error fetching areas:', error);
+        break;
+      }
+
+      rows.push(...(data ?? []));
+      if (!data || data.length < PAGE) break;
+    }
+
+    return rows;
+  }
+
+  private async fetchCragsByAreaIds(
+    areaIds: number[],
+  ): Promise<DbCragRecord[]> {
+    const rows: DbCragRecord[] = [];
+    const PAGE = 1000;
+
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await this.supabase.client
+        .from('crags')
+        .select('id, area_id, slug, name, eight_anu_sector_slugs')
+        .in('area_id', areaIds)
+        .order('id', { ascending: true })
+        .range(from, from + PAGE - 1);
+
+      if (error) {
+        console.error('[8a Import] Error fetching crags:', error);
+        break;
+      }
+
+      rows.push(...(data ?? []));
+      if (!data || data.length < PAGE) break;
+    }
+
+    return rows;
   }
 
   async resolveCsvAscentsWith8aData(
@@ -172,7 +201,7 @@ export class RouteMatcherService {
         { area: string; crag: string; name: string }
       >();
       for (const a of ascents) {
-        const key = `${slugify(a.location_name)}|${slugify(a.sector_name)}|${slugify(a.name)}`;
+        const key = `${slugify(a.location_name)}|${sectorSlug(a.sector_name)}|${slugify(a.name)}`;
         if (!uniqueItems.has(key)) {
           uniqueItems.set(key, {
             area: a.location_name,
@@ -240,7 +269,7 @@ export class RouteMatcherService {
             );
 
             for (const item of matchingItems) {
-              const key = `${slugify(item.area)}|${slugify(item.crag)}|${slugify(item.name)}`;
+              const key = `${slugify(item.area)}|${sectorSlug(item.crag)}|${slugify(item.name)}`;
               resolvedSlugsMap.set(key, {
                 slug: r.slug,
                 eightAnuSlugs: r.eight_anu_route_slugs || [],
@@ -254,7 +283,7 @@ export class RouteMatcherService {
       }
 
       const unresolvedItems = itemsToResolve.filter((item) => {
-        const key = `${slugify(item.area)}|${slugify(item.crag)}|${slugify(item.name)}`;
+        const key = `${slugify(item.area)}|${sectorSlug(item.crag)}|${slugify(item.name)}`;
         return !resolvedSlugsMap.has(key);
       });
 
@@ -262,7 +291,7 @@ export class RouteMatcherService {
         const csvSlugByKey = new Map<string, string>();
         for (const a of ascents) {
           if (a.route_8a_slug) {
-            const key = `${slugify(a.location_name)}|${slugify(a.sector_name)}|${slugify(a.name)}`;
+            const key = `${slugify(a.location_name)}|${sectorSlug(a.sector_name)}|${slugify(a.name)}`;
             csvSlugByKey.set(key, a.route_8a_slug);
           }
         }
@@ -271,7 +300,7 @@ export class RouteMatcherService {
         const itemsNeedingApi: typeof unresolvedItems = [];
 
         for (const item of unresolvedItems) {
-          const key = `${slugify(item.area)}|${slugify(item.crag)}|${slugify(item.name)}`;
+          const key = `${slugify(item.area)}|${sectorSlug(item.crag)}|${slugify(item.name)}`;
           const csvSlug = csvSlugByKey.get(key);
           if (csvSlug) {
             slugByKey.set(key, csvSlug);
@@ -285,7 +314,7 @@ export class RouteMatcherService {
           const apiBatch = itemsNeedingApi.slice(i, i + API_CONCURRENCY);
           await Promise.all(
             apiBatch.map(async (item) => {
-              const key = `${slugify(item.area)}|${slugify(item.crag)}|${slugify(item.name)}`;
+              const key = `${slugify(item.area)}|${sectorSlug(item.crag)}|${slugify(item.name)}`;
               try {
                 const result = await this.eightAnuService.searchRoute(
                   item.area,
@@ -377,7 +406,7 @@ export class RouteMatcherService {
     const uniqueSectorsToFetch = [
       ...new Map(
         ascents.map((a) => [
-          `${slugify(a.location_name)}|${slugify(a.sector_name)}`,
+          `${slugify(a.location_name)}|${sectorSlug(a.sector_name)}`,
           {
             locationName: a.location_name,
             sectorName: a.sector_name,
@@ -414,7 +443,7 @@ export class RouteMatcherService {
     }
 
     const allSectorSlugsInCSV = [
-      ...new Set(ascents.map((a) => slugify(a.sector_name))),
+      ...new Set(ascents.map((a) => sectorSlug(a.sector_name))),
     ];
     const { data: existingCrags } = await this.supabase.client
       .from('crags')
@@ -494,7 +523,7 @@ export class RouteMatcherService {
             const area8aSlug =
               areaToSlug.get(s.locationName) || slugify(s.locationName);
             const areaSlug = slugify(s.locationName);
-            const sectorSlug = slugify(s.sectorName);
+            const cragSlug = sectorSlug(s.sectorName);
 
             const searchResult = await this.eightAnuService.searchRoute(
               s.locationName,
@@ -506,7 +535,7 @@ export class RouteMatcherService {
               const realSectorSlug = searchResult.sectorSlug;
               const realAreaSlug = searchResult.cragSlug || area8aSlug;
 
-              sectorToCragSlug.set(`${areaSlug}|${sectorSlug}`, realSectorSlug);
+              sectorToCragSlug.set(`${areaSlug}|${cragSlug}`, realSectorSlug);
 
               const category =
                 s.climbingKind === ClimbingKinds.BOULDER
@@ -530,7 +559,7 @@ export class RouteMatcherService {
               );
 
               if (sectorRoutes.length > 0) {
-                sectorTo8aRoutes.set(`${areaSlug}|${sectorSlug}`, {
+                sectorTo8aRoutes.set(`${areaSlug}|${cragSlug}`, {
                   routes: sectorRoutes,
                   climbingKind: s.climbingKind,
                 });
@@ -554,13 +583,13 @@ export class RouteMatcherService {
       const areaSlug = slugify(a.location_name);
       const area8aSlug = areaToSlug.get(a.location_name) || areaSlug;
       const cleanSectorName = a.sector_name?.trim() || 'General';
-      const sectorSlug = slugify(cleanSectorName) || 'general';
+      const cragSlug = sectorSlug(cleanSectorName);
       const crag8aSlug =
-        sectorToCragSlug.get(`${areaSlug}|${sectorSlug}`) || sectorSlug;
+        sectorToCragSlug.get(`${areaSlug}|${cragSlug}`) || cragSlug;
 
       const coords = areaToCoords.get(a.location_name);
 
-      const csvKey = `${areaSlug}|${sectorSlug}|${slugify(a.name)}`;
+      const csvKey = `${areaSlug}|${cragSlug}|${slugify(a.name)}`;
       const resolved = resolvedSlugsMap.get(csvKey);
 
       const route_8a_slug =
@@ -584,7 +613,7 @@ export class RouteMatcherService {
         area_slug: areaSlug,
         area_8a_slug: area8aSlug,
         crag_name: cleanSectorName,
-        crag_slug: sectorSlug,
+        crag_slug: cragSlug,
         crag_8a_slug: crag8aSlug,
         country_code: a.country_code,
         lat: coords?.latitude ?? null,
@@ -626,7 +655,7 @@ export class RouteMatcherService {
 
     for (const ascent of ascents) {
       const keysToCheck: (string | null)[] = [];
-      const csvKey = `${slugify(ascent.location_name)}|${slugify(ascent.sector_name)}|${slugify(ascent.name)}`;
+      const csvKey = `${slugify(ascent.location_name)}|${sectorSlug(ascent.sector_name)}|${slugify(ascent.name)}`;
       const resolved = resolvedSlugsMap.get(csvKey);
 
       if (resolved?.slug) {

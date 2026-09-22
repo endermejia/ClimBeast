@@ -4,6 +4,7 @@ export * from './auth.utils';
 export * from './crag-mappers';
 export * from './connect-realtime-channel';
 export * from './drawing.utils';
+export * from './eight-anu-match';
 export * from './feed-filters';
 export * from './grade-chart';
 export * from './handle-error';
