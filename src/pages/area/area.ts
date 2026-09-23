@@ -69,10 +69,10 @@ import { PaywallComponent } from '../../components/paywall/paywall';
 import { OutdoorRoutesTableComponent } from '../../components/route/outdoor-routes-table';
 import { TopoCardComponent } from '../../components/topo/topo-card';
 import { GradeComponent } from '../../components/ui/avatar-grade';
-import { AppCardComponent } from '../../components/ui/card';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { MeteoButtonComponent } from '../../components/ui/meteo-button';
 import { ParkingButtonComponent } from '../../components/ui/parking-button';
+import { PlaceCardComponent } from '../../components/ui/place-card';
 import {
   SectionHeaderAction,
   SectionHeaderComponent,
@@ -113,7 +113,6 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-area',
   imports: [
-    AppCardComponent,
     AscentsFeedComponent,
     AreaRevenuePanelComponent,
     AvatarUrlPipe,
@@ -126,6 +125,7 @@ const PAGE_SIZE = 20;
     LowerCasePipe,
     OutdoorRoutesTableComponent,
     PaywallComponent,
+    PlaceCardComponent,
     ReactiveFormsModule,
     RouterLink,
     SectionHeaderComponent,
@@ -649,7 +649,7 @@ const PAGE_SIZE = 20;
 
                       <div class="grid gap-2 grid-cols-1 xl:grid-cols-2">
                         @for (crag of crags(); track crag.slug) {
-                          <app-card
+                          <app-place-card
                             kind="crag"
                             [item]="{ ...crag, area_slug: areaSlug() }"
                             [showAreaName]="false"

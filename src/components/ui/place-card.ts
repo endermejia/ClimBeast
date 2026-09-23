@@ -12,7 +12,7 @@ import { TuiCardLarge, TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { AmountByEveryGrade, normalizeRoutesByGrade } from '../../models';
+import { AmountByEveryGrade } from '../../models';
 
 import { ChartRoutesByGradeComponent } from '../charts/chart-routes-by-grade';
 
@@ -31,11 +31,10 @@ export interface PlaceCardItem {
   area_slug?: string;
   approach?: number;
   city?: string | null;
-  country?: string | null;
 }
 
 @Component({
-  selector: 'app-card',
+  selector: 'app-place-card',
   imports: [
     ChartRoutesByGradeComponent,
     LowerCasePipe,
@@ -110,40 +109,22 @@ export interface PlaceCardItem {
       </header>
 
       <section class="grow flex flex-col justify-center py-2">
-        <div class="grid grid-cols-[1fr_auto] gap-4 items-stretch">
+        <div class="grid grid-cols-[1fr_auto] gap-2 sm:gap-4 items-stretch">
           <div class="flex flex-col justify-center min-w-0">
             @if (place(); as p) {
               <div class="flex flex-col gap-1">
-                @if (p.kind === 'indoor' && p.data.country) {
-                  <div class="text-xs opacity-60">
-                    {{ p.data.country }}
-                  </div>
-                }
-
-                <a
-                  tuiLink
-                  [routerLink]="titleLink()"
-                  [queryParams]="{ tab: 'routes' }"
-                  class="flex items-center gap-2 text-xl! text-(--tui-text-primary)! whitespace-normal!"
-                >
-                  <tui-icon icon="@tui.route" [style.font-size.rem]="1.25" />
-                  <span>
-                    {{ routesCount() }} {{ 'routes' | translate | lowercase }}
-                  </span>
-                </a>
-
                 @if (p.kind === 'area') {
                   <a
                     tuiLink
                     [routerLink]="titleLink()"
                     [queryParams]="{ tab: 'crags' }"
-                    class="flex items-center gap-2 text-xl! text-(--tui-text-primary)! whitespace-normal!"
+                    class="flex items-center gap-1.5 sm:gap-2 text-base! sm:text-xl! text-(--tui-text-primary)! whitespace-nowrap!"
                   >
                     <tui-icon
                       icon="@tui.layout-grid"
-                      [style.font-size.rem]="1.25"
+                      class="text-base sm:text-xl shrink-0"
                     />
-                    <span>
+                    <span class="truncate">
                       {{ p.data.crags_count ?? 0 }}
                       {{
                         ((p.data.crags_count ?? 0) === 1 ? 'crag' : 'crags')
@@ -159,13 +140,13 @@ export interface PlaceCardItem {
                     tuiLink
                     [routerLink]="titleLink()"
                     [queryParams]="{ tab: 'topos' }"
-                    class="flex items-center gap-2 text-xl! text-(--tui-text-primary)! whitespace-normal!"
+                    class="flex items-center gap-1.5 sm:gap-2 text-base! sm:text-xl! text-(--tui-text-primary)! whitespace-nowrap!"
                   >
                     <div
-                      class="w-5 h-5 bg-current"
-                      [style.mask]="'url(image/topo.svg) center/contain no-repeat'"
+                      class="shrink-0 bg-current"
+                      style="width: 1.35em; height: 1.35em; mask: url(image/topo.svg) center/contain no-repeat; -webkit-mask: url(image/topo.svg) center/contain no-repeat"
                     ></div>
-                    <span>
+                    <span class="truncate">
                       {{ toposCount() }} {{ 'topos' | translate | lowercase }}
                     </span>
                   </a>
@@ -211,7 +192,11 @@ export interface PlaceCardItem {
           </div>
           <div class="flex items-center shrink-0">
             @if (place(); as p) {
-              <app-chart-routes-by-grade [grades]="p.data.grades ?? {}" />
+              <app-chart-routes-by-grade
+                [grades]="p.data.grades ?? {}"
+                [routesLink]="titleLink()"
+                [queryParams]="{ tab: 'routes' }"
+              />
             } @else {
               <ng-content select="[extra]" />
             }
@@ -229,7 +214,7 @@ export interface PlaceCardItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
 })
-export class AppCardComponent {
+export class PlaceCardComponent {
   appearance = input<string>('outline');
   liked = input<boolean>(false);
   hasFooter = input<boolean>(false);
@@ -274,16 +259,6 @@ export class AppCardComponent {
     '/area',
     this.item()?.area_slug ?? '',
   ]);
-
-  protected readonly routesCount = computed(() => {
-    const data = this.item();
-    if (!data) return 0;
-    if (data.routes_count != null) return data.routes_count;
-    return Object.values(normalizeRoutesByGrade(data.grades ?? {})).reduce(
-      (sum, amount) => sum + amount,
-      0,
-    );
-  });
 
   protected readonly toposCount = computed(() => {
     const data = this.item();

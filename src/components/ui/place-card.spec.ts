@@ -7,24 +7,24 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
-import { AppCardComponent, PlaceCardItem } from './card';
+import { PlaceCardComponent, PlaceCardItem } from './place-card';
 
 @Component({
   template: `
-    <app-card appearance="floating">
+    <app-place-card appearance="floating">
       <span title>Shell title</span>
       <div content>Shell content</div>
       <div extra>Shell extra</div>
-    </app-card>
+    </app-place-card>
   `,
-  imports: [AppCardComponent],
+  imports: [PlaceCardComponent],
 })
 class ShellHostComponent {}
 
-describe('AppCardComponent', () => {
-  let fixture: ComponentFixture<AppCardComponent>;
-  let component: AppCardComponent;
-  let componentRef: ComponentRef<AppCardComponent>;
+describe('PlaceCardComponent', () => {
+  let fixture: ComponentFixture<PlaceCardComponent>;
+  let component: PlaceCardComponent;
+  let componentRef: ComponentRef<PlaceCardComponent>;
 
   const mockArea: Partial<PlaceCardItem> = {
     name: 'El Chorro',
@@ -43,14 +43,13 @@ describe('AppCardComponent', () => {
     routes_count: 24,
     topos_count: 2,
     approach: 15,
-    grades: { 16: 5, 18: 10 },
+    grades: { 16: 14, 18: 10 },
   };
 
   const mockIndoor: Partial<PlaceCardItem> = {
     name: 'Boulder Bloc',
     slug: 'boulder-bloc',
     city: 'Madrid',
-    country: 'Spain',
     routes_count: 40,
     topos: [{ id: 1, name: 'Topo 1', slug: 'topo-1' }],
     grades: { 16: 40 },
@@ -64,18 +63,18 @@ describe('AppCardComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [
-        AppCardComponent,
+        PlaceCardComponent,
         ShellHostComponent,
         TranslateModule.forRoot(),
       ],
       providers: [
         provideRouter([]),
         { provide: PLATFORM_ID, useValue: 'browser' },
-        { provide: IS_BROWSER, useValue: false },
+        { provide: IS_BROWSER, useValue: true },
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(AppCardComponent);
+    fixture = TestBed.createComponent(PlaceCardComponent);
     component = fixture.componentInstance;
     componentRef = fixture.componentRef;
     componentRef.setInput('kind', 'area');
@@ -128,12 +127,12 @@ describe('AppCardComponent', () => {
       expect(component.appearance()).toBe('flat');
     });
 
-    it('should render area stats with routes count from grades', () => {
+    it('should render area stats with routes count from grades in chart', () => {
       componentRef.setInput('item', mockArea);
       fixture.detectChanges();
 
       const text = fixture.nativeElement.textContent as string;
-      expect(text).toContain('15'); // sum of grades (routes across sectors)
+      expect(text).toContain('15'); // sum of grades (routes across sectors in chart)
       expect(text).toContain('12');
       expect(text).toContain('3');
     });
@@ -148,7 +147,7 @@ describe('AppCardComponent', () => {
       expect(hrefs).toContain('/area/el-chorro?tab=topos');
     });
 
-    it('should render icons for routes, crags and topos in area mode', () => {
+    it('should render icons for crags and topos in area mode', () => {
       componentRef.setInput('item', mockArea);
       fixture.detectChanges();
 
@@ -156,7 +155,6 @@ describe('AppCardComponent', () => {
         fixture.nativeElement.querySelectorAll('tui-icon'),
       ) as HTMLElement[];
       const iconNames = icons.map((i) => i.getAttribute('icon'));
-      expect(iconNames).toContain('@tui.route');
       expect(iconNames).toContain('@tui.layout-grid');
       expect(fixture.nativeElement.querySelector('.bg-current')).toBeTruthy(); // topo mask icon
     });
@@ -192,7 +190,7 @@ describe('AppCardComponent', () => {
       fixture.detectChanges();
 
       const text = fixture.nativeElement.textContent as string;
-      expect(text).toContain('24'); // routes_count
+      expect(text).toContain('24'); // routes_count in chart
       expect(text).toContain('15 min.');
       expect(text).toContain('(El Chorro)'); // area next to the name, in parentheses
     });
@@ -252,7 +250,6 @@ describe('AppCardComponent', () => {
       const text = fixture.nativeElement.textContent as string;
       expect(text).toContain('40');
       expect(text).toContain('(Madrid)');
-      expect(text).toContain('Spain');
 
       const hrefs = linksOf(fixture);
       expect(hrefs).toContain('/indoor/boulder-bloc?tab=routes');
@@ -286,7 +283,7 @@ describe('AppCardComponent', () => {
       fixture.detectChanges();
 
       const text = fixture.nativeElement.textContent as string;
-      expect(text).toContain('15'); // 7 + 8
+      expect(text).toContain('15'); // 7 + 8 in chart
     });
   });
 });

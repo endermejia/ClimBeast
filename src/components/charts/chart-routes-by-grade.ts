@@ -10,6 +10,7 @@ import {
   Signal,
   WritableSignal,
 } from '@angular/core';
+import { Params, RouterLink } from '@angular/router';
 
 import { TuiRingChart } from '@taiga-ui/addon-charts';
 import { TuiSkeleton } from '@taiga-ui/kit';
@@ -28,7 +29,13 @@ import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-chart-routes-by-grade',
-  imports: [LowerCasePipe, TranslatePipe, TuiRingChart, TuiSkeleton],
+  imports: [
+    LowerCasePipe,
+    RouterLink,
+    TranslatePipe,
+    TuiRingChart,
+    TuiSkeleton,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   styles: [
@@ -53,28 +60,60 @@ import { IS_BROWSER } from '../../app/is-browser';
   template: `
     @let c = chart();
     @if (isBrowser && c.total > 0) {
-      <tui-ring-chart
-        [tuiSkeleton]="tuiSkeleton()"
-        [value]="c.values"
-        [activeItemIndex]="activeItemIndex()"
-        (activeItemIndexChange)="onActiveItemIndexChange($event)"
-      >
-        @if (c.hasActive) {
-          <span>
-            {{ c.activeBandTotal }}
-            {{ 'routes' | translate | lowercase }}
-          </span>
-          <div [innerHtml]="c.breakdownText"></div>
+      <div class="relative inline-flex items-center justify-center">
+        <tui-ring-chart
+          [tuiSkeleton]="tuiSkeleton()"
+          [value]="c.values"
+          [activeItemIndex]="activeItemIndex()"
+          (activeItemIndexChange)="onActiveItemIndexChange($event)"
+        />
+
+        @if (routesLink(); as link) {
+          <a
+            [routerLink]="link"
+            [queryParams]="queryParams()"
+            class="absolute inset-6 rounded-full flex flex-col items-center justify-center text-center no-underline cursor-pointer group select-none z-10 text-xs text-(--tui-text-secondary)"
+          >
+            @if (c.hasActive) {
+              <span class="group-hover:underline">
+                {{ c.activeBandTotal }}
+                {{ 'routes' | translate | lowercase }}
+              </span>
+              <div [innerHtml]="c.breakdownText"></div>
+            } @else {
+              <span
+                class="text-xl font-semibold text-(--tui-text-primary) group-hover:underline"
+              >
+                {{ c.total }}
+                {{ 'routes' | translate | lowercase }}
+              </span>
+              @if (c.gradeRange; as gradeRange) {
+                <div class="text-sm">{{ gradeRange }}</div>
+              }
+            }
+          </a>
         } @else {
-          <span class="text-xl font-semibold">
-            {{ c.total }}
-            {{ 'routes' | translate | lowercase }}
-          </span>
-          @if (c.gradeRange; as gradeRange) {
-            <div class="text-sm">{{ gradeRange }}</div>
-          }
+          <div
+            class="absolute inset-6 rounded-full flex flex-col items-center justify-center text-center select-none pointer-events-none z-10 text-xs text-(--tui-text-secondary)"
+          >
+            @if (c.hasActive) {
+              <span>
+                {{ c.activeBandTotal }}
+                {{ 'routes' | translate | lowercase }}
+              </span>
+              <div [innerHtml]="c.breakdownText"></div>
+            } @else {
+              <span class="text-xl font-semibold text-(--tui-text-primary)">
+                {{ c.total }}
+                {{ 'routes' | translate | lowercase }}
+              </span>
+              @if (c.gradeRange; as gradeRange) {
+                <div class="text-sm">{{ gradeRange }}</div>
+              }
+            }
+          </div>
         }
-      </tui-ring-chart>
+      </div>
     }
   `,
 })
@@ -84,6 +123,8 @@ export class ChartRoutesByGradeComponent {
   grades: InputSignal<AmountByEveryGrade> =
     input.required<AmountByEveryGrade>();
   tuiSkeleton: InputSignal<boolean> = input(false);
+  routesLink = input<string | (string | number)[] | null>(null);
+  queryParams = input<Params | null>(null);
   activeItemIndex: WritableSignal<number> = signal<number>(-1);
 
   // Normalize input (AmountByEveryVerticalLifeGrade) into a label-based record for charting

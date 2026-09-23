@@ -16,13 +16,7 @@ import {
   RouterLinkActive,
 } from '@angular/router';
 
-import {
-  TuiAppearance,
-  TuiButton,
-  TuiIcon,
-  TuiInput,
-  TuiScrollbar,
-} from '@taiga-ui/core';
+import { TuiButton, TuiIcon, TuiInput, TuiScrollbar } from '@taiga-ui/core';
 import { TuiSegmented } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
@@ -33,8 +27,9 @@ import { IndoorService } from '../../services/indoor.service';
 import { LayoutService } from '../../services/layout.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 
-import { AppCardComponent } from '../../components/ui/card';
+import { AreaCardSkeletonComponent } from '../../components/area/area-card-skeleton';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
+import { PlaceCardComponent } from '../../components/ui/place-card';
 
 import { matchesQuery } from '../../utils';
 
@@ -42,13 +37,13 @@ import { matchesQuery } from '../../utils';
   selector: 'app-indoor-list',
   standalone: true,
   imports: [
-    AppCardComponent,
+    AreaCardSkeletonComponent,
     EmptyStateComponent,
     LowerCasePipe,
+    PlaceCardComponent,
     RouterLink,
     RouterLinkActive,
     TranslatePipe,
-    TuiAppearance,
     TuiButton,
     TuiIcon,
     TuiInput,
@@ -131,7 +126,7 @@ import { matchesQuery } from '../../utils';
               class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
               @for (item of filtered(); track item.id) {
-                <app-card kind="indoor" [item]="item" />
+                <app-place-card kind="indoor" [item]="item" />
               } @empty {
                 <div class="col-span-full">
                   <app-empty-state icon="@tui.dumbbell" />
@@ -142,11 +137,8 @@ import { matchesQuery } from '../../utils';
             <div
               class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
-              @for (i of [1, 2, 3, 4]; track i) {
-                <div
-                  tuiAppearance="flat-grayscale"
-                  class="rounded-3xl h-72 animate-pulse bg-(--tui-background-neutral-1)"
-                ></div>
+              @for (i of skeletons; track i) {
+                <app-area-card-skeleton />
               }
             </div>
           }
@@ -173,6 +165,7 @@ import { matchesQuery } from '../../utils';
   host: { class: 'flex grow min-h-0' },
 })
 export class IndoorListComponent {
+  protected readonly skeletons = Array.from({ length: 16 }, (_, i) => i);
   protected readonly layoutService = inject(LayoutService);
   protected readonly authState = inject(AuthStateService);
   protected readonly indoor = inject(IndoorService);

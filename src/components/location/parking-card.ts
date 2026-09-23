@@ -10,16 +10,16 @@ import { TuiCopy } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { ParkingDto } from '../../models';
+import { PlaceCardComponent } from '../ui/place-card';
 
-import { AppCardComponent } from '../ui/card';
+import { ParkingDto } from '../../models';
 
 @Component({
   selector: 'app-parking-card',
-  imports: [AppCardComponent, TranslatePipe, TuiButton, TuiCopy, TuiIcon],
+  imports: [PlaceCardComponent, TranslatePipe, TuiButton, TuiCopy, TuiIcon],
   template: `
     @let item = parking();
-    <app-card [appearance]="appearance()">
+    <app-place-card [appearance]="appearance()">
       <ng-container title>
         <span
           class="font-bold! block text-2xl! text-(--tui-text-primary)! whitespace-normal!"
@@ -72,7 +72,7 @@ import { AppCardComponent } from '../ui/card';
           <ng-content select="[actions]" />
         </div>
       </div>
-    </app-card>
+    </app-place-card>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -17,7 +17,7 @@ import { SeoService } from '../../services/seo.service';
 
 import { AscentTypeComponent } from '../../components/ascent/ascent-type';
 import { GradeComponent } from '../../components/ui/avatar-grade';
-import { AppCardComponent } from '../../components/ui/card';
+import { PlaceCardComponent } from '../../components/ui/place-card';
 
 import {
   ClimbingKinds,
@@ -28,10 +28,10 @@ import {
 @Component({
   selector: 'app-landing',
   imports: [
-    AppCardComponent,
     AscentTypeComponent,
     GradeComponent,
     NgOptimizedImage,
+    PlaceCardComponent,
     RouterLink,
     TranslatePipe,
     TuiAvatar,
@@ -372,7 +372,7 @@ import {
             </div>
           </div>
           <div class="w-full lg:w-96 shrink-0 shadow-lg rounded-3xl">
-            <app-card kind="crag" [item]="mockCrag()" />
+            <app-place-card kind="crag" [item]="mockCrag()" />
           </div>
         </section>
       </main>

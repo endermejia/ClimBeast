@@ -106,18 +106,13 @@ import { EmptyStateComponent } from '../ui/empty-state';
             >
               {{ 'areaRevenue.currentPotBalance' | translate }}
             </span>
-            @if (balanceResource.isLoading()) {
-              <span
-                [tuiSkeleton]="true"
-                class="w-32 h-8 sm:h-9 rounded mt-1"
-              ></span>
-            } @else {
-              <span
-                class="text-2xl sm:text-3xl font-black text-(--tui-text-primary) tabular-nums tracking-tight"
-              >
-                {{ balance()?.availableBalance || 0 | number: '1.2-2' }} €
-              </span>
-            }
+            <span
+              class="text-2xl sm:text-3xl font-black text-(--tui-text-primary) tabular-nums tracking-tight"
+              [appCountUp]="balance()?.availableBalance || 0"
+              #availableBalanceAnim="appCountUp"
+            >
+              {{ availableBalanceAnim.currentValue() | number: '1.2-2' }} €
+            </span>
           </div>
         </div>
 

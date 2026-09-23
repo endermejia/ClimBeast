@@ -45,8 +45,8 @@ import { TourStep } from '../../services/tour.service';
 
 import { MapComponent } from '../../components/location/map';
 import { ParkingCardComponent } from '../../components/location/parking-card';
-import { AppCardComponent } from '../../components/ui/card';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
+import { PlaceCardComponent } from '../../components/ui/place-card';
 import { TourHintComponent } from '../../components/ui/tour-hint';
 
 import {
@@ -70,13 +70,13 @@ import { IS_BROWSER } from '../../app/is-browser';
 @Component({
   selector: 'app-explore',
   imports: [
-    AppCardComponent,
     EmptyStateComponent,
     IconSrcPipe,
     LowerCasePipe,
     MapComponent,
     NgTemplateOutlet,
     ParkingCardComponent,
+    PlaceCardComponent,
     RouterLink,
     TourHintComponent,
     TranslatePipe,
@@ -243,7 +243,7 @@ import { IS_BROWSER } from '../../app/is-browser';
           <div
             class="absolute w-full max-w-120 mx-auto z-50 pointer-events-none left-0 right-0 bottom-0 px-4 pb-4"
           >
-            <app-card
+            <app-place-card
               kind="crag"
               [item]="c"
               appearance="floating"
@@ -306,7 +306,7 @@ import { IS_BROWSER } from '../../app/is-browser';
           <div
             class="absolute w-full max-w-120 mx-auto z-50 pointer-events-none left-0 right-0 bottom-0 px-4 pb-4"
           >
-            <app-card
+            <app-place-card
               kind="indoor"
               [item]="ic"
               appearance="floating"
@@ -404,7 +404,7 @@ import { IS_BROWSER } from '../../app/is-browser';
             <div class="flex flex-col gap-2">
               @for (a of areas; track a.slug) {
                 @defer (on viewport) {
-                  <app-card kind="area" [item]="a" />
+                  <app-place-card kind="area" [item]="a" />
                 } @placeholder {
                   <div
                     class="h-36 rounded-3xl border border-(--tui-border-normal) bg-(--tui-background-neutral-1) opacity-50 animate-pulse"
@@ -438,7 +438,7 @@ import { IS_BROWSER } from '../../app/is-browser';
             <div class="flex flex-col gap-2">
               @for (c of crags; track c.id) {
                 @defer (on viewport) {
-                  <app-card kind="crag" [item]="c" />
+                  <app-place-card kind="crag" [item]="c" />
                 } @placeholder {
                   <div
                     class="h-44 rounded-3xl border border-(--tui-border-normal) bg-(--tui-background-neutral-1) opacity-50 animate-pulse"
@@ -475,7 +475,7 @@ import { IS_BROWSER } from '../../app/is-browser';
             <div class="flex flex-col gap-2">
               @for (c of indoorCenters; track c.id) {
                 @defer (on viewport) {
-                  <app-card kind="indoor" [item]="c" />
+                  <app-place-card kind="indoor" [item]="c" />
                 } @placeholder {
                   <div
                     class="h-44 rounded-3xl border border-(--tui-border-normal) bg-(--tui-background-neutral-1) opacity-50 animate-pulse"

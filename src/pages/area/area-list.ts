@@ -32,8 +32,8 @@ import { LayoutService } from '../../services/layout.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 
 import { AreaCardSkeletonComponent } from '../../components/area/area-card-skeleton';
-import { AppCardComponent } from '../../components/ui/card';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
+import { PlaceCardComponent } from '../../components/ui/place-card';
 
 import {
   ClimbingKinds,
@@ -46,10 +46,10 @@ import { matchesQuery } from '../../utils';
 @Component({
   selector: 'app-area-list',
   imports: [
-    AppCardComponent,
     AreaCardSkeletonComponent,
     EmptyStateComponent,
     LowerCasePipe,
+    PlaceCardComponent,
     RouterLink,
     RouterLinkActive,
     TranslatePipe,
@@ -154,7 +154,7 @@ import { matchesQuery } from '../../utils';
               class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
               @for (a of filtered(); track a.id) {
-                <app-card kind="area" [item]="a" />
+                <app-place-card kind="area" [item]="a" />
               } @empty {
                 <div class="col-span-full">
                   <app-empty-state icon="@tui.map" />
@@ -165,7 +165,7 @@ import { matchesQuery } from '../../utils';
             <div
               class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
-              @for (i of [1, 2, 3, 4]; track i) {
+              @for (i of skeletons; track i) {
                 <app-area-card-skeleton />
               }
             </div>
@@ -193,6 +193,7 @@ import { matchesQuery } from '../../utils';
   host: { class: 'flex grow min-h-0' },
 })
 export class AreaListComponent {
+  protected readonly skeletons = Array.from({ length: 16 }, (_, i) => i);
   protected readonly layoutService = inject(LayoutService);
   protected readonly router = inject(Router);
   protected readonly areasService = inject(AreasService);

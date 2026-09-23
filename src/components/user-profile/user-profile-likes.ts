@@ -19,8 +19,8 @@ import { SupabaseService } from '../../services/supabase.service';
 
 import { AreaCardSkeletonComponent } from '../area/area-card-skeleton';
 import { OutdoorRoutesTableComponent } from '../route/outdoor-routes-table';
-import { AppCardComponent } from '../ui/card';
 import { EmptyStateComponent } from '../ui/empty-state';
+import { PlaceCardComponent } from '../ui/place-card';
 
 import { AreaListItem, CragListItem, RouteWithExtras } from '../../models';
 
@@ -28,11 +28,11 @@ import { AreaListItem, CragListItem, RouteWithExtras } from '../../models';
   selector: 'app-user-profile-likes',
   standalone: true,
   imports: [
-    AppCardComponent,
     AreaCardSkeletonComponent,
     CommonModule,
     EmptyStateComponent,
     OutdoorRoutesTableComponent,
+    PlaceCardComponent,
     TranslatePipe,
     TuiIcon,
     TuiSkeleton,
@@ -52,7 +52,7 @@ import { AreaListItem, CragListItem, RouteWithExtras } from '../../models';
             }
           } @else {
             @for (area of likedAreas(); track area.id) {
-              <app-card kind="area" [item]="area" />
+              <app-place-card kind="area" [item]="area" />
             } @empty {
               <div class="col-span-full opacity-50">
                 <app-empty-state icon="@tui.heart" />
@@ -75,7 +75,7 @@ import { AreaListItem, CragListItem, RouteWithExtras } from '../../models';
             }
           } @else {
             @for (crag of likedCrags(); track crag.id) {
-              <app-card kind="crag" [item]="crag" />
+              <app-place-card kind="crag" [item]="crag" />
             } @empty {
               <div class="col-span-full opacity-50">
                 <app-empty-state icon="@tui.heart" />
