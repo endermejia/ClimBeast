@@ -11,8 +11,9 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import {
   TuiAppearance,
@@ -82,7 +83,11 @@ import {
 } from '../../models';
 
 import { AnyToSchedulePipe } from '../../pipes';
-import { handleErrorToast, matchesQuery } from '../../utils';
+import {
+  handleErrorToast,
+  inputValueOrUndefined,
+  matchesQuery,
+} from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -448,7 +453,8 @@ import { IS_BROWSER } from '../../app/is-browser';
                           } @empty {
                             <div class="col-span-full">
                               <app-empty-state
-                                icon="@tui.search-x"
+                                icon="/image/indoor-brush.svg"
+                                iconSize="8rem"
                                 message="indoor.noAscents"
                               />
                             </div>
@@ -492,7 +498,8 @@ import { IS_BROWSER } from '../../app/is-browser';
                         />
                       } @empty {
                         <app-empty-state
-                          icon="@tui.search-x"
+                          icon="/image/indoor-brush.svg"
+                          iconSize="8rem"
                           message="indoor.noAscents"
                         />
                       }
@@ -502,18 +509,20 @@ import { IS_BROWSER } from '../../app/is-browser';
               </tui-scrollbar>
             </div>
           </div>
-        } @else if (centerResource.isLoading()) {
-          <div class="flex items-center justify-center w-full min-h-[50vh]">
-            <tui-loader size="xxl" />
-          </div>
-        } @else {
-          <div class="text-center p-20">
+        } @else if (centerNotFound()) {
+          <div
+            class="w-full min-h-[50vh] flex flex-col items-center justify-center gap-3 text-center"
+          >
             <h2 class="text-2xl font-bold">
               {{ 'notFound.title' | translate }}
             </h2>
-            <a tuiButton appearance="flat" class="mt-4" routerLink="/home">{{
+            <a tuiButton appearance="flat" routerLink="/home">{{
               'notFound.goHome' | translate
             }}</a>
+          </div>
+        } @else {
+          <div class="w-full min-h-[50vh] flex items-center justify-center">
+            <tui-loader size="xxl" />
           </div>
         }
       </section>
@@ -541,6 +550,8 @@ export class IndoorCenterComponent {
   protected readonly indoor = inject(IndoorService);
   protected readonly supabase = inject(SupabaseService);
   protected readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  protected readonly queryParams = toSignal(this.route.queryParams);
   private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
   private readonly dialogs = inject(TuiDialogService);
@@ -560,12 +571,40 @@ export class IndoorCenterComponent {
     }));
   });
 
-  protected readonly center = computed<IndoorCenterDto | null>(
-    () => this.centerResource.value() ?? null,
-  );
+  protected readonly center = computed<IndoorCenterDto | null>(() => {
+    // `value()` lanza ResourceValueError si la consulta ha fallado
+    if (this.centerResource.status() === 'error') {
+      return null;
+    }
+    return this.centerResource.value() ?? null;
+  });
 
-  protected readonly centerResource = resource<IndoorCenterDto | null, string>({
-    params: () => this.slug(),
+  /** Solo mostramos «no encontrado» cuando la consulta ya ha terminado. */
+  protected readonly centerNotFound = computed(() => {
+    // En SSR no hay navegador: `getCenterBySlug` devuelve null y el servidor
+    // escribiría «No encontrado» en el HTML (es lo que se ve nada más entrar).
+    // El servidor pinta el spinner para que case con el primer estado del
+    // cliente; la carga real la hace el navegador.
+    if (!this.isBrowser) {
+      return false;
+    }
+    const status = this.centerResource.status();
+    if (status === 'error') {
+      return true;
+    }
+    // idle / loading / reloading sin valor previo → seguimos cargando
+    if (!this.centerResource.hasValue()) {
+      return false;
+    }
+    return !this.center();
+  });
+
+  protected readonly centerResource = resource<
+    IndoorCenterDto | null,
+    string | undefined
+  >({
+    // Si el router aún no ha enlazado `slug` devolvemos undefined → `idle`
+    params: () => inputValueOrUndefined(() => this.slug()),
     loader: ({ params: slug }) => this.indoor.getCenterBySlug(slug),
   });
 
@@ -944,7 +983,9 @@ export class IndoorCenterComponent {
     });
 
     effect(() => {
-      this.slug();
+      const slug = inputValueOrUndefined(() => this.slug());
+      // Mientras el router no enlace la input no reseteamos las pestañas
+      if (!slug) return;
       untracked(() => {
         const currentTab = this.segmentedTabs()[this.activeTabIndex()] ?? 0;
         this.loadedTabs.set(new Set([currentTab]));
@@ -967,6 +1008,33 @@ export class IndoorCenterComponent {
       const tabs = this.segmentedTabs();
       if (this.activeTabIndex() >= tabs.length && tabs.length > 0) {
         this.activeTabIndex.set(0);
+      }
+    });
+
+    // Diagnóstico: secuencia de estados que decide spinner vs «no encontrado»
+    effect(() => {
+      console.log('[IndoorCenter]', {
+        status: this.centerResource.status(),
+        noEncontrado: this.centerNotFound(),
+        slug: inputValueOrUndefined(() => this.slug()),
+        error: this.centerResource.error() ?? null,
+      });
+    });
+
+    effect(() => {
+      const params = this.queryParams();
+      const tabs = this.segmentedTabs();
+      if (!params || !tabs.length) return;
+
+      const tab = params['tab'];
+      if (tab === 'routes' && tabs.includes(1)) {
+        this.activeTabIndex.set(tabs.indexOf(1));
+      } else if (tab === 'topos' && tabs.includes(0)) {
+        this.activeTabIndex.set(tabs.indexOf(0));
+      } else if (tab === 'vouchers' && tabs.includes(3)) {
+        this.activeTabIndex.set(tabs.indexOf(3));
+      } else if (tab === 'ascents' && tabs.includes(2)) {
+        this.activeTabIndex.set(tabs.indexOf(2));
       }
     });
   }

@@ -27,7 +27,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { AuthStateService } from '../../services/auth-state.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 
-import { IndoorCenterCardComponent } from '../../components/indoor/indoor-center-card';
+import { AppCardComponent } from '../../components/ui/card';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 
 import { matchesQuery } from '../../utils';
@@ -36,8 +36,8 @@ import { matchesQuery } from '../../utils';
   selector: 'app-my-indoor-centers',
   standalone: true,
   imports: [
+    AppCardComponent,
     EmptyStateComponent,
-    IndoorCenterCardComponent,
     TranslatePipe,
     TuiAppearance,
     TuiAvatar,
@@ -107,7 +107,7 @@ import { matchesQuery } from '../../utils';
         @if (!loading()) {
           <div class="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             @for (center of filtered(); track center.id) {
-              <app-indoor-center-card [item]="center" />
+              <app-card kind="indoor" [item]="center" />
             } @empty {
               <div class="col-span-full">
                 <app-empty-state

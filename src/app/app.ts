@@ -1,12 +1,13 @@
 import { DOCUMENT } from '@angular/common';
 import {
   Component,
+  computed,
   afterNextRender,
   effect,
   inject,
   OnDestroy,
 } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 
@@ -14,14 +15,13 @@ import { TuiRoot } from '@taiga-ui/core';
 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
-import { combineLatest, filter, map, merge, startWith } from 'rxjs';
+import { filter, map, merge, startWith } from 'rxjs';
 
 import { CartService } from '../services/cart.service';
 import { LocalStorage } from '../services/local-storage';
 import { NotificationService } from '../services/notification.service';
 import { RealtimeService } from '../services/realtime.service';
 import { SeoService } from '../services/seo.service';
-import { SupabaseService } from '../services/supabase.service';
 import { ThemeService } from '../services/theme.service';
 
 import { CartOverlayComponent } from '../components/cart-overlay/cart-overlay';
@@ -90,28 +90,30 @@ export class AppComponent implements OnDestroy {
 
   private readonly gdprKey = 'lw_gdpr_accepted';
 
-  protected readonly supabase = inject(SupabaseService);
-
-  protected readonly showNavbar = toSignal(
-    combineLatest([
-      this.router.events.pipe(
-        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-        map((e) => e.urlAfterRedirects),
-      ),
-      toObservable(this.supabase.session),
-    ]).pipe(
-      map(([url, session]) => {
-        const path = url.split('?')[0].split('#')[0];
-        return (
-          !!session &&
-          !['/login', '/signup', '/info', '/reset-password'].some((p) =>
-            path.startsWith(p),
-          )
-        );
-      }),
+  /**
+   * Ruta actual sin query/hash. El valor inicial sale de la URL de forma
+   * síncrona (misma ruta en el servidor y en el cliente) para no esperar a
+   * `NavigationEnd`, que llega cuando terminan los guards (con llamada a red).
+   */
+  private readonly currentPath = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map((e) => e.urlAfterRedirects),
     ),
-    { initialValue: false },
+    { initialValue: this.doc?.location?.pathname ?? '/' },
   );
+
+  /**
+   * Se decide solo por la ruta (sin esperar a la sesión) para que el navbar
+   * venga ya en el HTML del servidor y en el primer render: así no desplaza el
+   * contenido al aparecer.
+   */
+  protected readonly showNavbar = computed(() => {
+    const path = this.currentPath().split('?')[0].split('#')[0];
+    return !['/login', '/signup', '/info', '/reset-password'].some((p) =>
+      path.startsWith(p),
+    );
+  });
 
   private readonly langChange = toSignal(
     merge(

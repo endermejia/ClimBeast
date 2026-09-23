@@ -26,7 +26,7 @@ import { IndoorService } from '../../services/indoor.service';
 import { LayoutService } from '../../services/layout.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 
-import { IndoorCenterCardComponent } from '../../components/indoor/indoor-center-card';
+import { AppCardComponent } from '../../components/ui/card';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 
 import { matchesQuery } from '../../utils';
@@ -35,7 +35,7 @@ import { matchesQuery } from '../../utils';
   selector: 'app-indoor-list',
   standalone: true,
   imports: [
-    IndoorCenterCardComponent,
+    AppCardComponent,
     EmptyStateComponent,
     LowerCasePipe,
     RouterLink,
@@ -124,7 +124,7 @@ import { matchesQuery } from '../../utils';
               class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
               @for (item of filtered(); track item.id) {
-                <app-indoor-center-card [item]="item" />
+                <app-card kind="indoor" [item]="item" />
               } @empty {
                 <div class="col-span-full">
                   <app-empty-state icon="@tui.dumbbell" />

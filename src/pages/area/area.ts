@@ -11,9 +11,10 @@ import {
   untracked,
   WritableSignal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import {
   TuiAppearance,
@@ -64,11 +65,11 @@ import { VisitedAreasService } from '../../services/visited-areas.service';
 import { AreaRevenuePanelComponent } from '../../components/area/area-revenue-panel';
 import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
 import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
-import { CragCardComponent } from '../../components/crag/crag-card';
 import { PaywallComponent } from '../../components/paywall/paywall';
 import { OutdoorRoutesTableComponent } from '../../components/route/outdoor-routes-table';
 import { TopoCardComponent } from '../../components/topo/topo-card';
 import { GradeComponent } from '../../components/ui/avatar-grade';
+import { AppCardComponent } from '../../components/ui/card';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { MeteoButtonComponent } from '../../components/ui/meteo-button';
 import { ParkingButtonComponent } from '../../components/ui/parking-button';
@@ -112,11 +113,11 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-area',
   imports: [
+    AppCardComponent,
     AscentsFeedComponent,
     AreaRevenuePanelComponent,
     AvatarUrlPipe,
     ChartRoutesByGradeComponent,
-    CragCardComponent,
     EmptyStateComponent,
     GradeComponent,
     FormsModule,
@@ -648,8 +649,9 @@ const PAGE_SIZE = 20;
 
                       <div class="grid gap-2 grid-cols-1 xl:grid-cols-2">
                         @for (crag of crags(); track crag.slug) {
-                          <app-crag-card
-                            [crag]="{ ...crag, area_slug: areaSlug() }"
+                          <app-card
+                            kind="crag"
+                            [item]="{ ...crag, area_slug: areaSlug() }"
                             [showAreaName]="false"
                           />
                         } @empty {
@@ -791,6 +793,8 @@ export class AreaComponent {
   protected readonly layoutService = inject(LayoutService);
   protected readonly mapData = inject(MapDataService);
   protected readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  protected readonly queryParams = toSignal(this.route.queryParams);
   private readonly routesService = inject(RoutesService);
   protected readonly toast = inject(ToastService);
   protected readonly isBrowser = inject(IS_BROWSER);
@@ -1370,6 +1374,23 @@ export class AreaComponent {
       const tabs = this.segmentedTabs();
       if (this.activeTabIndex() >= tabs.length && tabs.length > 0) {
         this.activeTabIndex.set(0);
+      }
+    });
+
+    effect(() => {
+      const params = this.queryParams();
+      const tabs = this.segmentedTabs();
+      if (!params || !tabs.length) return;
+
+      const tab = params['tab'];
+      if (tab === 'crags' && tabs.includes(1)) {
+        this.activeTabIndex.set(tabs.indexOf(1));
+      } else if (tab === 'topos' && tabs.includes(2)) {
+        this.activeTabIndex.set(tabs.indexOf(2));
+      } else if (tab === 'routes' && tabs.includes(0)) {
+        this.activeTabIndex.set(tabs.indexOf(0));
+      } else if (tab === 'ascents' && tabs.includes(3)) {
+        this.activeTabIndex.set(tabs.indexOf(3));
       }
     });
 

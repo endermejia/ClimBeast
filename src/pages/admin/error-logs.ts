@@ -324,10 +324,7 @@ import { matchesQuery } from '../../utils';
             <tui-loader size="xxl" />
           </div>
         } @else if (!filteredLogs().length) {
-          <app-empty-state
-            title="admin.errorLogs.emptyTitle"
-            description="admin.errorLogs.emptyDescription"
-          />
+          <app-empty-state message="empty" />
         } @else {
           <div class="flex flex-col gap-3">
             @for (log of filteredLogs(); track log.id) {

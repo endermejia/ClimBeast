@@ -36,6 +36,11 @@ describe('EmptyStateComponent', () => {
     expect(fixture.componentInstance.icon()).toBe('@tui.package-open');
   });
 
+  it('should have default icon size (60px)', () => {
+    const fixture = TestBed.createComponent(EmptyStateComponent);
+    expect(fixture.componentInstance.iconSize()).toBe('3.75rem');
+  });
+
   it('should accept custom inputs via setInput', () => {
     const fixture = TestBed.createComponent(EmptyStateComponent);
     fixture.componentRef.setInput('message', 'custom.msg');

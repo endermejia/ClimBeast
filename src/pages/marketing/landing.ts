@@ -16,8 +16,8 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { SeoService } from '../../services/seo.service';
 
 import { AscentTypeComponent } from '../../components/ascent/ascent-type';
-import { CragCardComponent } from '../../components/crag/crag-card';
 import { GradeComponent } from '../../components/ui/avatar-grade';
+import { AppCardComponent } from '../../components/ui/card';
 
 import {
   ClimbingKinds,
@@ -28,8 +28,8 @@ import {
 @Component({
   selector: 'app-landing',
   imports: [
+    AppCardComponent,
     AscentTypeComponent,
-    CragCardComponent,
     GradeComponent,
     NgOptimizedImage,
     RouterLink,
@@ -372,7 +372,7 @@ import {
             </div>
           </div>
           <div class="w-full lg:w-96 shrink-0 shadow-lg rounded-3xl">
-            <app-crag-card [crag]="mockCrag()" />
+            <app-card kind="crag" [item]="mockCrag()" />
           </div>
         </section>
       </main>

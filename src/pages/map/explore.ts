@@ -43,12 +43,9 @@ import { ParkingsService } from '../../services/parkings.service';
 import { TourService } from '../../services/tour.service';
 import { TourStep } from '../../services/tour.service';
 
-import { AreaCardComponent } from '../../components/area/area-card';
-
-import { CragCardComponent } from '../../components/crag/crag-card';
-import { IndoorCenterCardComponent } from '../../components/indoor/indoor-center-card';
 import { MapComponent } from '../../components/location/map';
 import { ParkingCardComponent } from '../../components/location/parking-card';
+import { AppCardComponent } from '../../components/ui/card';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { TourHintComponent } from '../../components/ui/tour-hint';
 
@@ -73,8 +70,7 @@ import { IS_BROWSER } from '../../app/is-browser';
 @Component({
   selector: 'app-explore',
   imports: [
-    AreaCardComponent,
-    CragCardComponent,
+    AppCardComponent,
     EmptyStateComponent,
     IconSrcPipe,
     LowerCasePipe,
@@ -96,7 +92,6 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiPulse,
     TuiScrollbar,
     TuiTitle,
-    IndoorCenterCardComponent,
   ],
   template: ` @let isMobile = layoutService.isMobile();
     <div class="h-full w-full flex min-h-0">
@@ -248,8 +243,9 @@ import { IS_BROWSER } from '../../app/is-browser';
           <div
             class="absolute w-full max-w-120 mx-auto z-50 pointer-events-none left-0 right-0 bottom-0 px-4 pb-4"
           >
-            <app-crag-card
-              [crag]="c"
+            <app-card
+              kind="crag"
+              [item]="c"
               appearance="floating"
               class="pointer-events-auto"
             />
@@ -310,7 +306,8 @@ import { IS_BROWSER } from '../../app/is-browser';
           <div
             class="absolute w-full max-w-120 mx-auto z-50 pointer-events-none left-0 right-0 bottom-0 px-4 pb-4"
           >
-            <app-indoor-center-card
+            <app-card
+              kind="indoor"
               [item]="ic"
               appearance="floating"
               class="pointer-events-auto"
@@ -407,7 +404,7 @@ import { IS_BROWSER } from '../../app/is-browser';
             <div class="flex flex-col gap-2">
               @for (a of areas; track a.slug) {
                 @defer (on viewport) {
-                  <app-area-card [area]="a" />
+                  <app-card kind="area" [item]="a" />
                 } @placeholder {
                   <div
                     class="h-36 rounded-3xl border border-(--tui-border-normal) bg-(--tui-background-neutral-1) opacity-50 animate-pulse"
@@ -441,7 +438,7 @@ import { IS_BROWSER } from '../../app/is-browser';
             <div class="flex flex-col gap-2">
               @for (c of crags; track c.id) {
                 @defer (on viewport) {
-                  <app-crag-card [crag]="c" />
+                  <app-card kind="crag" [item]="c" />
                 } @placeholder {
                   <div
                     class="h-44 rounded-3xl border border-(--tui-border-normal) bg-(--tui-background-neutral-1) opacity-50 animate-pulse"
@@ -478,7 +475,7 @@ import { IS_BROWSER } from '../../app/is-browser';
             <div class="flex flex-col gap-2">
               @for (c of indoorCenters; track c.id) {
                 @defer (on viewport) {
-                  <app-indoor-center-card [item]="c" />
+                  <app-card kind="indoor" [item]="c" />
                 } @placeholder {
                   <div
                     class="h-44 rounded-3xl border border-(--tui-border-normal) bg-(--tui-background-neutral-1) opacity-50 animate-pulse"

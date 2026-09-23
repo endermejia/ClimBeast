@@ -11,7 +11,7 @@ import { TranslatePipe } from '@ngx-translate/core';
     <div
       class="flex flex-col items-center justify-center gap-4 opacity-50 py-10 text-center"
     >
-      <tui-icon [icon]="icon()" class="text-6xl" />
+      <tui-icon [icon]="icon()" [style.fontSize]="iconSize()" />
       <p class="text-xl font-medium text-center m-0">
         {{ message() | translate }}
       </p>
@@ -22,4 +22,10 @@ import { TranslatePipe } from '@ngx-translate/core';
 export class EmptyStateComponent {
   message = input<string>('empty');
   icon = input<string>('@tui.package-open');
+  /**
+   * Tamaño del icono. `tui-icon` mide 1em, así que su font-size es su caja:
+   * 3.75rem (60px) es lo habitual para `@tui.*`, pero los SVG ilustrativos
+   * necesitan más (8rem = 128px).
+   */
+  iconSize = input<string>('3.75rem');
 }

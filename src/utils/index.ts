@@ -10,6 +10,7 @@ export * from './grade-chart';
 export * from './handle-error';
 export * from './image-gallery.utils';
 export * from './image-thumbnail';
+export * from './input.utils';
 export * from './logger';
 export * from './map-location-url';
 export * from './mentions.utils';

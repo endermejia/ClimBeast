@@ -31,8 +31,8 @@ import { IndoorCentersDataService } from '../../services/indoor-centers-data.ser
 import { LayoutService } from '../../services/layout.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 
-import { AreaCardComponent } from '../../components/area/area-card';
 import { AreaCardSkeletonComponent } from '../../components/area/area-card-skeleton';
+import { AppCardComponent } from '../../components/ui/card';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 
 import {
@@ -46,7 +46,7 @@ import { matchesQuery } from '../../utils';
 @Component({
   selector: 'app-area-list',
   imports: [
-    AreaCardComponent,
+    AppCardComponent,
     AreaCardSkeletonComponent,
     EmptyStateComponent,
     LowerCasePipe,
@@ -154,7 +154,7 @@ import { matchesQuery } from '../../utils';
               class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
               @for (a of filtered(); track a.id) {
-                <app-area-card [area]="a" />
+                <app-card kind="area" [item]="a" />
               } @empty {
                 <div class="col-span-full">
                   <app-empty-state icon="@tui.map" />
