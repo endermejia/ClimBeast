@@ -3,11 +3,18 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   signal,
   WritableSignal,
 } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import {
+  ActivatedRoute,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+} from '@angular/router';
 
 import {
   TuiAppearance,
@@ -172,6 +179,8 @@ export class IndoorListComponent {
   protected readonly indoorCentersData = inject(IndoorCentersDataService);
   protected readonly outdoorData = inject(OutdoorDataService);
   protected readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly queryParams = toSignal(this.route.queryParams);
 
   protected readonly areasCount = computed(
     () => this.outdoorData.areasList().length,
@@ -182,6 +191,16 @@ export class IndoorListComponent {
   );
 
   protected readonly query: WritableSignal<string> = signal('');
+
+  constructor() {
+    effect(() => {
+      const params = this.queryParams();
+      const qVal = params?.['q'] ?? params?.['city'] ?? params?.['search'];
+      if (qVal) {
+        this.query.set(qVal);
+      }
+    });
+  }
 
   protected readonly filtered = computed(() => {
     const list = this.indoorCentersData.indoorCentersList();

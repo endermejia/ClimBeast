@@ -75,6 +75,17 @@ export interface PlaceCardItem {
                   ({{ p.data.area_name }})
                 </a>
               }
+              @if (p.kind === 'indoor' && p.data.city) {
+                <a
+                  tuiLink
+                  appearance="action-grayscale"
+                  [routerLink]="['/indoor']"
+                  [queryParams]="{ q: p.data.city }"
+                  class="font-bold! text-base! text-(--tui-text-secondary)! whitespace-normal!"
+                >
+                  ({{ p.data.city }})
+                </a>
+              }
             </span>
           } @else {
             <ng-content select="[title]" />
@@ -103,10 +114,9 @@ export interface PlaceCardItem {
           <div class="flex flex-col justify-center min-w-0">
             @if (place(); as p) {
               <div class="flex flex-col gap-1">
-                @if (p.kind === 'indoor' && (p.data.city || p.data.country)) {
+                @if (p.kind === 'indoor' && p.data.country) {
                   <div class="text-xs opacity-60">
-                    {{ p.data.city
-                    }}{{ p.data.country ? ', ' + p.data.country : '' }}
+                    {{ p.data.country }}
                   </div>
                 }
 

@@ -244,18 +244,20 @@ describe('AppCardComponent', () => {
       expect(fixture.nativeElement.querySelector('.bg-current')).toBeNull();
     });
 
-    it('should render indoor stats and link routes/topos tabs', () => {
+    it('should render indoor stats and link routes/topos tabs and city search', () => {
       componentRef.setInput('kind', 'indoor');
       componentRef.setInput('item', mockIndoor);
       fixture.detectChanges();
 
       const text = fixture.nativeElement.textContent as string;
       expect(text).toContain('40');
-      expect(text).toContain('Madrid, Spain');
+      expect(text).toContain('(Madrid)');
+      expect(text).toContain('Spain');
 
       const hrefs = linksOf(fixture);
       expect(hrefs).toContain('/indoor/boulder-bloc?tab=routes');
       expect(hrefs).toContain('/indoor/boulder-bloc?tab=topos');
+      expect(hrefs).toContain('/indoor?q=Madrid');
     });
 
     it('should hide the topos stat when the indoor center has no topos', () => {
