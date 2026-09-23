@@ -606,7 +606,7 @@
   "indoor.remaining_sessions": "{{count}} saio geratzen dira",
   "indoor.removeAdminConfirm": "Ziur al zaude \"{{name}}\" zentro honetako administratzaileetatik kendu nahi duzula?",
   "indoor.removeAdminTitle": "Administratzailea kendu",
-  "indoor.routes": "Indoor bideak",
+  "indoor.routes": "Bideak",
   "indoor.sales": "Salmentak",
   "indoor.schedule": "Ordutegiak",
   "indoor.sessions": "Saioak",

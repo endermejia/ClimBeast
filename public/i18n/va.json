@@ -606,7 +606,7 @@
   "indoor.remaining_sessions": "{{count}} sessions restants",
   "indoor.removeAdminConfirm": "Segur que vols eliminar a \"{{name}}\" dels administradors d'aquest centre?",
   "indoor.removeAdminTitle": "Eliminar administrador",
-  "indoor.routes": "Vies indoor",
+  "indoor.routes": "Vies",
   "indoor.sales": "Vendes",
   "indoor.schedule": "Horaris",
   "indoor.sessions": "Sessions",

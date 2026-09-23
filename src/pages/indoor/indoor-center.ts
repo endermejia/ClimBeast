@@ -169,7 +169,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                 <!-- Gallery/Avatar + Schedule (side by side at xl+) -->
                 <div class="flex flex-col xl:flex-row xl:flex-wrap gap-4">
                   <div
-                    class="relative rounded-3xl overflow-hidden aspect-video xl:aspect-auto xl:flex-1 xl:order-1 bg-(--tui-background-neutral-1)"
+                    class="relative rounded-3xl overflow-hidden aspect-video xl:flex-1 xl:self-start xl:order-1 bg-(--tui-background-neutral-1)"
                   >
                     @if (carouselItems().length > 0) {
                       <app-custom-carousel
@@ -293,22 +293,24 @@ import { IS_BROWSER } from '../../app/is-browser';
                     @for (tabIdx of segmentedTabs(); track tabIdx) {
                       <button type="button">
                         @if (tabIdx === 0) {
-                          {{ 'indoor.topos' | translate }}
+                          {{ toposCount() }}
+                          {{ 'indoor.topos' | translate | lowercase }}
                         } @else if (tabIdx === 1) {
-                          {{ 'indoor.routes' | translate }}
+                          {{ totalRoutes() }}
+                          {{ 'indoor.routes' | translate | lowercase }}
                         } @else if (tabIdx === 2) {
-                          {{ 'indoor.ascents' | translate }}
+                          {{ ascentsCount() }}
+                          {{ 'indoor.ascents' | translate | lowercase }}
                         } @else {
-                          {{ 'indoor.vouchers' | translate }}
+                          {{ vouchersCount() }}
+                          {{ 'indoor.vouchers' | translate | lowercase }}
                         }
                       </button>
                     }
                   </tui-segmented>
                 }
 
-                <div
-                  class="mt-2 lg:flex-1 lg:min-h-0 lg:overflow-hidden min-w-0"
-                >
+                <div class="mt-2 lg:flex-1 lg:min-h-0 min-w-0">
                   @let currentTab = segmentedTabs()[activeTabIndex()];
                   @if (loadedTabs().has(0)) {
                     <div
@@ -714,6 +716,16 @@ export class IndoorCenterComponent {
     return total > 0 && this.pendingRoutes() === 0;
   });
 
+  protected readonly toposCount = computed(
+    () => this.toposResource.value()?.length ?? 0,
+  );
+
+  protected readonly vouchersCount = computed(
+    () => this.vouchersResource.value()?.length ?? 0,
+  );
+
+  protected readonly ascentsCount = computed(() => this.mappedAscents().length);
+
   protected readonly centerAscentsResource = resource({
     params: () => ({
       id: this.center()?.id,
@@ -925,7 +937,8 @@ export class IndoorCenterComponent {
 
     effect(() => {
       const has = this.hasVouchers();
-      if (!has && this.activeTabIndex() === 3) {
+      const currentTab = this.segmentedTabs()[this.activeTabIndex()];
+      if (!has && currentTab === 3) {
         this.activeTabIndex.set(0);
       }
     });
@@ -933,18 +946,21 @@ export class IndoorCenterComponent {
     effect(() => {
       this.slug();
       untracked(() => {
-        this.loadedTabs.set(new Set([this.activeTabIndex()]));
+        const currentTab = this.segmentedTabs()[this.activeTabIndex()] ?? 0;
+        this.loadedTabs.set(new Set([currentTab]));
       });
     });
 
     effect(() => {
-      const idx = this.activeTabIndex();
-      this.loadedTabs.update((set) => {
-        if (set.has(idx)) return set;
-        const next = new Set(set);
-        next.add(idx);
-        return next;
-      });
+      const currentTab = this.segmentedTabs()[this.activeTabIndex()];
+      if (currentTab !== undefined) {
+        this.loadedTabs.update((set) => {
+          if (set.has(currentTab)) return set;
+          const next = new Set(set);
+          next.add(currentTab);
+          return next;
+        });
+      }
     });
 
     effect(() => {

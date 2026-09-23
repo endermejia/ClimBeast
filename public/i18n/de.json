@@ -606,7 +606,7 @@
   "indoor.remaining_sessions": "{{count}} verbleibende Sitzungen",
   "indoor.removeAdminConfirm": "Bist du sicher, dass du \"{{name}}\" aus den Administratoren dieser Halle entfernen möchtest?",
   "indoor.removeAdminTitle": "Administrator entfernen",
-  "indoor.routes": "Indoor-Routen",
+  "indoor.routes": "Routen",
   "indoor.sales": "Verkäufe",
   "indoor.schedule": "Zeitplan",
   "indoor.sessions": "Sitzungen",

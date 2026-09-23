@@ -606,7 +606,7 @@
   "indoor.remaining_sessions": "{{count}} sessioni rimanenti",
   "indoor.removeAdminConfirm": "Sei sicuro di voler rimuovere \"{{name}}\" dagli amministratori di questa palestra?",
   "indoor.removeAdminTitle": "Rimuovi amministratore",
-  "indoor.routes": "Vie indoor",
+  "indoor.routes": "Vie",
   "indoor.sales": "Vendite",
   "indoor.schedule": "Orari",
   "indoor.sessions": "Sessioni",

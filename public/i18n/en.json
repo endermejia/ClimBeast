@@ -606,7 +606,7 @@
   "indoor.remaining_sessions": "{{count}} sessions left",
   "indoor.removeAdminConfirm": "Are you sure you want to remove \"{{name}}\" from the administrators of this center?",
   "indoor.removeAdminTitle": "Remove administrator",
-  "indoor.routes": "Indoor routes",
+  "indoor.routes": "Routes",
   "indoor.sales": "Sales",
   "indoor.schedule": "Schedule",
   "indoor.sessions": "Sessions",
