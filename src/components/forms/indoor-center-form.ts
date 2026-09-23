@@ -2006,14 +2006,16 @@ export class IndoorCenterFormComponent {
           }
         }
 
+        this.cache.remove(CACHE_KEYS.indoorCenters);
+        this.cache.remove(CACHE_KEYS.activeIndoorCenters);
+        this.indoorCentersData.indoorCentersResource.reload();
+
         this.toast.success(
           this.translate.instant('merchandising.items.saveSuccess'),
         );
 
         if (this._dialogCtx) {
           this._dialogCtx.completeWith(true);
-        } else {
-          this.indoorCentersData.indoorCentersResource.reload();
         }
       } catch (e) {
         const error = e as Error;

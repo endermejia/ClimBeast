@@ -16,6 +16,7 @@ const POSTGRES_ERROR_MAP: Record<string, string> = {
   '42501': 'errors.insufficientPrivilege',
   '42P01': 'errors.database.undefinedTable',
   '42703': 'errors.database.undefinedColumn',
+  P0001: 'errors.insufficientPrivilege',
 };
 
 const POSTGREST_ERROR_MAP: Record<string, string> = {
@@ -54,6 +55,7 @@ function resolveErrorKey(error: unknown): string {
     'status' in error
       ? Number((error as { status: unknown }).status)
       : undefined;
+  if (status === 401 || status === 403) return 'errors.insufficientPrivilege';
   if (status === 429) return 'errors.rateLimit';
   if (status && status >= 500) return 'errors.server';
 
@@ -61,6 +63,9 @@ function resolveErrorKey(error: unknown): string {
     'message' in error ? String((error as { message: unknown }).message) : '';
   if (isNetworkError(error) || /fetch|network|timeout/i.test(msg)) {
     return 'errors.network';
+  }
+  if (/permission|privilege|not authorized|unauthorized/i.test(msg)) {
+    return 'errors.insufficientPrivilege';
   }
 
   return 'errors.unexpected';

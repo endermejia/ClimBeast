@@ -1,6 +1,14 @@
-import { Pipe, PipeTransform } from '@angular/core';
+import { inject, Pipe, PipeTransform } from '@angular/core';
 
-import { PointState, TopoPoint } from '../models';
+import { AuthStateService } from '../services/auth-state.service';
+
+import {
+  IndoorCenterDto,
+  IndoorRouteDto,
+  PointState,
+  TopoPoint,
+  TopoRouteWithRoute,
+} from '../models';
 
 import {
   getPointStateBadge as getPointStateBadgeUtil,
@@ -154,5 +162,84 @@ export class TopoRouteVisibilityStatePipe implements PipeTransform {
     }
 
     return 'visible';
+  }
+}
+
+@Pipe({
+  name: 'topoCanEditRoute',
+  standalone: true,
+  pure: true,
+})
+export class TopoCanEditRoutePipe implements PipeTransform {
+  private readonly authState = inject(AuthStateService);
+
+  transform(
+    tr: TopoRouteWithRoute,
+    isIndoor?: boolean,
+    center?: IndoorCenterDto | null,
+    centerId?: string | null,
+  ): boolean {
+    if (!isIndoor) {
+      return true;
+    }
+    if (center) {
+      return this.authState.canEditIndoorRoute(
+        center,
+        tr.route as unknown as IndoorRouteDto,
+      );
+    }
+    const cId = centerId || (tr.route as unknown as IndoorRouteDto)?.center_id;
+    if (this.authState.isAdmin()) return true;
+    if (cId) {
+      const idStr = String(cId);
+      if (
+        this.authState.adminIndoorCenters().includes(idStr) ||
+        this.authState.routesetterIndoorCenters().includes(idStr)
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+@Pipe({
+  name: 'topoCanEditLine',
+  standalone: true,
+  pure: true,
+})
+export class TopoCanEditLinePipe implements PipeTransform {
+  private readonly authState = inject(AuthStateService);
+
+  transform(
+    tr: TopoRouteWithRoute,
+    isIndoor?: boolean,
+    center?: IndoorCenterDto | null,
+    centerId?: string | null,
+  ): boolean {
+    if (!isIndoor) {
+      return true;
+    }
+    if (!tr.path) {
+      if (center) {
+        return this.authState.canCreateIndoorLine(center);
+      }
+      return true;
+    }
+    if (center) {
+      return this.authState.canEditIndoorLine(center, tr);
+    }
+    const cId = centerId || (tr.route as unknown as IndoorRouteDto)?.center_id;
+    if (this.authState.isAdmin()) return true;
+    if (cId) {
+      const idStr = String(cId);
+      if (
+        this.authState.adminIndoorCenters().includes(idStr) ||
+        this.authState.routesetterIndoorCenters().includes(idStr)
+      ) {
+        return true;
+      }
+    }
+    return false;
   }
 }

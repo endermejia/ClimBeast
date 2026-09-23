@@ -1,4 +1,4 @@
-﻿import {
+import {
   CdkDrag,
   CdkDragDrop,
   CdkDragHandle,
@@ -37,6 +37,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
+import { AuthStateService } from '../../services/auth-state.service';
 import { IndoorDataService } from '../../services/indoor-data.service';
 import { IndoorService } from '../../services/indoor.service';
 import { LayoutService } from '../../services/layout.service';
@@ -47,6 +48,7 @@ import { ToposService } from '../../services/topos.service';
 
 import {
   ClimbingKind,
+  IndoorCenterDto,
   IndoorRouteDto,
   RouteBasicWithOwnData,
   TopoPath,
@@ -58,6 +60,8 @@ import {
 
 import {
   GradeLabelPipe,
+  TopoCanEditLinePipe,
+  TopoCanEditRoutePipe,
   TopoHasPathPipe,
   TopoIsTraversePipe,
   TopoPointStateBadgePipe,
@@ -73,6 +77,7 @@ import {
   getPointsString as getPointsStringUtil,
   getRouteStrokeWidth,
   getRouteStyleProperties,
+  handleErrorToast,
   handleWheelZoom,
   removePoint,
   setupEditorMousePan,
@@ -92,6 +97,7 @@ export interface TopoPathEditorConfig {
   standalone?: boolean;
   isIndoor?: boolean;
   centerId?: string;
+  center?: IndoorCenterDto;
 }
 
 @Component({
@@ -107,6 +113,8 @@ export interface TopoPathEditorConfig {
     CdkDragHandle,
     CdkDragPlaceholder,
     CdkDropList,
+    TopoCanEditLinePipe,
+    TopoCanEditRoutePipe,
     TopoHasPathPipe,
     TopoIsTraversePipe,
     TopoPointStateBadgePipe,
@@ -151,7 +159,7 @@ export interface TopoPathEditorConfig {
                   </button>
                 }
 
-                @if (context.data.isIndoor && context.data.centerId) {
+                @if (canCreateRoute()) {
                   <button
                     tuiButton
                     appearance="flat"
@@ -169,6 +177,7 @@ export interface TopoPathEditorConfig {
               <div
                 class="route-list"
                 cdkDropList
+                [cdkDropListDisabled]="!canReorderRoutes()"
                 (cdkDropListDropped)="dropRoute($event)"
               >
                 @for (tr of topoRoutes; track $index; let idx = $index) {
@@ -187,12 +196,14 @@ export interface TopoPathEditorConfig {
                     (click.zoneless)="selectRoute(tr, true)"
                     (keydown.enter.zoneless)="selectRoute(tr, true)"
                   >
-                    <tui-icon
-                      icon="@tui.grip-vertical"
-                      class="drag-handle opacity-30 shrink-0 cursor-grab active:cursor-grabbing"
-                      cdkDragHandle
-                      (click)="$event.stopPropagation()"
-                    />
+                    @if (canReorderRoutes()) {
+                      <tui-icon
+                        icon="@tui.grip-vertical"
+                        class="drag-handle opacity-30 shrink-0 cursor-grab active:cursor-grabbing"
+                        cdkDragHandle
+                        (click)="$event.stopPropagation()"
+                      />
+                    }
                     @if (!context.data.isIndoor) {
                       <div class="route-num">{{ idx + 1 }}</div>
                     }
@@ -217,20 +228,35 @@ export interface TopoPathEditorConfig {
                     />
 
                     <div class="flex items-center gap-1">
-                      <button
-                        tuiIconButton
-                        appearance="flat"
-                        size="s"
-                        iconStart="@tui.pencil"
-                        class="rounded-full! opacity-60 hover:opacity-100"
-                        [title]="'edit' | translate"
-                        (click)="editRoute(tr, $event)"
-                      >
-                        {{ 'edit' | translate }}
-                      </button>
+                      @if (
+                        tr
+                          | topoCanEditRoute
+                            : context.data.isIndoor
+                            : context.data.center
+                            : context.data.centerId
+                      ) {
+                        <button
+                          tuiIconButton
+                          appearance="flat"
+                          size="s"
+                          iconStart="@tui.pencil"
+                          class="rounded-full! opacity-60 hover:opacity-100"
+                          [title]="'edit' | translate"
+                          (click)="editRoute(tr, $event)"
+                        >
+                          {{ 'edit' | translate }}
+                        </button>
+                      }
                       <div class="route-action-slot">
                         @if (hasPath) {
-                          @if (selectedRoute()?.route_id === tr.route_id) {
+                          @if (
+                            selectedRoute()?.route_id === tr.route_id &&
+                            (tr
+                              | topoCanEditLine
+                                : context.data.isIndoor
+                                : context.data.center
+                                : context.data.centerId)
+                          ) {
                             <button
                               tuiIconButton
                               appearance="flat"
@@ -1411,6 +1437,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     injectContext<
       TuiDialogContext<TopoPathEditorResult | boolean, TopoPathEditorConfig>
     >();
+  private readonly authState = inject(AuthStateService);
   private readonly topos = inject(ToposService);
   private readonly indoor = inject(IndoorService);
   private readonly indoorData = inject(IndoorDataService);
@@ -1421,6 +1448,42 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
   private readonly cdr = inject(ChangeDetectorRef);
+
+  protected readonly canCreateRoute = computed<boolean>(() => {
+    if (!this.context.data.isIndoor || !this.context.data.centerId) {
+      return false;
+    }
+    const center = this.context.data.center;
+    if (center) {
+      return this.authState.canCreateIndoorRoute(center);
+    }
+    const centerId = String(this.context.data.centerId);
+    return (
+      this.authState.isAdmin() ||
+      this.authState.adminIndoorCenters().includes(centerId) ||
+      this.authState.routesetterIndoorCenters().includes(centerId)
+    );
+  });
+
+  protected readonly canReorderRoutes = computed<boolean>(() => {
+    if (!this.context.data.isIndoor) {
+      return true;
+    }
+    const center = this.context.data.center;
+    if (center) {
+      return this.authState.canEditIndoorTopo(center);
+    }
+    const centerId = this.context.data.centerId;
+    if (this.authState.isAdmin()) return true;
+    if (centerId) {
+      const idStr = String(centerId);
+      return (
+        this.authState.adminIndoorCenters().includes(idStr) ||
+        this.authState.routesetterIndoorCenters().includes(idStr)
+      );
+    }
+    return false;
+  });
 
   protected readonly deletePointTipKey = computed(() =>
     this.layoutService.isMobile()
@@ -1627,6 +1690,18 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       `translate(${this.translateX()}px, ${this.translateY()}px) scale(${this.scale()})`,
   );
 
+  routesReordered = false;
+  private readonly initialPathsSerialized = new Map<string, string>();
+
+  private serializePath(p: TopoPath | null | undefined): string {
+    if (!p || !p.points || p.points.length === 0) return '';
+    return JSON.stringify({
+      pts: p.points.map((pt) => ({ x: pt.x, y: pt.y, s: pt.state })),
+      type: p.type || 'line',
+      t: !!p.isTraverse,
+    });
+  }
+
   constructor() {
     this.topoRoutes = [...this.context.data.topoRoutes];
     // Initialize paths from existing data
@@ -1643,6 +1718,12 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
           isTraverse: tr.path.isTraverse || false,
           _ref: tr,
         });
+        this.initialPathsSerialized.set(
+          String(tr.route_id),
+          this.serializePath(tr.path),
+        );
+      } else {
+        this.initialPathsSerialized.set(String(tr.route_id), '');
       }
     });
   }
@@ -1738,6 +1819,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       this.topoRoutes = [...this.topoRoutes].sort(
         (a, b) => a.number - b.number,
       );
+      this.routesReordered = true;
 
       this.toast.success('messages.toasts.routeUpdated');
       this.cdr.markForCheck();
@@ -1801,6 +1883,21 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     }
 
     if (this.context.data.isIndoor) {
+      const center = this.context.data.center;
+      const canEdit = center
+        ? this.authState.canEditIndoorRoute(
+            center,
+            tr.route as unknown as IndoorRouteDto,
+          )
+        : this.authState.canEditIndoorInCenter(
+            this.context.data.centerId ||
+              (tr.route as unknown as IndoorRouteDto)?.center_id,
+          );
+      if (!canEdit) {
+        this.toast.error('errors.insufficientPrivilege');
+        return;
+      }
+
       const centerId =
         this.context.data.centerId ||
         (tr.route as unknown as IndoorRouteDto)?.center_id;
@@ -2008,6 +2105,18 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     event.stopPropagation();
     event.preventDefault();
     const parsedRouteId = isNaN(Number(routeId)) ? routeId : Number(routeId);
+
+    if (this.context.data.isIndoor) {
+      const route = this.topoRoutes.find((r) => r.route_id === parsedRouteId);
+      if (route?.path) {
+        const center = this.context.data.center;
+        const canEdit = center
+          ? this.authState.canEditIndoorLine(center, route)
+          : this.authState.canEditIndoorInCenter(this.context.data.centerId);
+        if (!canEdit) return;
+      }
+    }
+
     const pathData = this.pathsMap.get(parsedRouteId);
     if (!pathData || !pathData.points[index]) return;
 
@@ -2022,6 +2131,17 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   private addPoint(event: MouseEvent): void {
     const route = this.selectedRoute();
     if (!route) return;
+
+    if (this.context.data.isIndoor && route.path) {
+      const center = this.context.data.center;
+      const canEdit = center
+        ? this.authState.canEditIndoorLine(center, route)
+        : this.authState.canEditIndoorInCenter(this.context.data.centerId);
+      if (!canEdit) {
+        this.toast.error('errors.insufficientPrivilege');
+        return;
+      }
+    }
 
     const defaultType = this.context.data.isIndoor ? 'circle' : 'line';
     addPointToPath(
@@ -2041,6 +2161,18 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     index: number,
   ): void {
     const parsedRouteId = isNaN(Number(routeId)) ? routeId : Number(routeId);
+
+    if (this.context.data.isIndoor) {
+      const route = this.topoRoutes.find((r) => r.route_id === parsedRouteId);
+      if (route?.path) {
+        const center = this.context.data.center;
+        const canEdit = center
+          ? this.authState.canEditIndoorLine(center, route)
+          : this.authState.canEditIndoorInCenter(this.context.data.centerId);
+        if (!canEdit) return;
+      }
+    }
+
     this.draggingPoint = { routeId: parsedRouteId, index };
 
     startDragPointMouse(
@@ -2130,16 +2262,37 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       tr.number = i + 1;
     });
     this.topoRoutes = [...this.topoRoutes];
+    this.routesReordered = true;
     this.cdr.markForCheck();
   }
 
   removePoint(event: Event, routeId: string | number, index: number): void {
+    if (this.context.data.isIndoor) {
+      const route = this.topoRoutes.find((r) => r.route_id === routeId);
+      if (route?.path) {
+        const center = this.context.data.center;
+        const canEdit = center
+          ? this.authState.canEditIndoorLine(center, route)
+          : this.authState.canEditIndoorInCenter(this.context.data.centerId);
+        if (!canEdit) return;
+      }
+    }
     removePoint(event, routeId, index, this.pathsMap);
     this.pathsVersion.update((v) => v + 1);
     this.cdr.markForCheck();
   }
 
   async removePath(tr: TopoRouteWithRoute): Promise<void> {
+    if (this.context.data.isIndoor && tr.path) {
+      const center = this.context.data.center;
+      const canEdit = center
+        ? this.authState.canEditIndoorLine(center, tr)
+        : this.authState.canEditIndoorInCenter(this.context.data.centerId);
+      if (!canEdit) {
+        this.toast.error('errors.insufficientPrivilege');
+        return;
+      }
+    }
     const confirmed = await firstValueFrom(
       this.dialogs.open<boolean>(TUI_CONFIRM, {
         label: this.translate.instant('delete'),
@@ -2204,27 +2357,45 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         const pathsMap = new Map(
           pathsToUpdate.map((p) => [String(p.routeId), p.path]),
         );
-        const upsertPromises = this.topoRoutes.map((tr, idx) => {
-          const path = pathsMap.get(String(tr.route_id)) || null;
-          return this.supabase.client.from('indoor_topo_routes').upsert({
-            topo_id: String(topoId),
-            route_id: String(tr.route_id),
-            number: idx,
-            path: path ? topoPathToJson(path) : null,
-            user_creator_id: this.supabase.authUserId(),
-          });
-        });
-        const upsertResults = await Promise.all(upsertPromises);
-        const upsertErr = upsertResults.find((r) => r.error)?.error;
-        if (upsertErr) throw upsertErr;
+        const newRouteIdSet = new Set(
+          this.newIndoorRoutes.map((r) => String(r.id)),
+        );
 
-        const routeIds = this.topoRoutes.map((tr) => String(tr.route_id));
-        if (routeIds.length > 0) {
-          const { error: updateErr } = await this.supabase.client
-            .from('indoor_routes')
-            .update({ topo_id: String(topoId) })
-            .in('id', routeIds);
-          if (updateErr) throw updateErr;
+        // Only upsert routes that were actually modified, newly created, or if routes were reordered
+        const routesToUpsert = this.topoRoutes.filter((tr) => {
+          if (this.routesReordered) return true;
+          if (newRouteIdSet.has(String(tr.route_id))) return true;
+
+          const path = pathsMap.get(String(tr.route_id));
+          const currentSerialized = this.serializePath(
+            path && path.points && path.points.length > 0 ? path : null,
+          );
+          const initialSerialized =
+            this.initialPathsSerialized.get(String(tr.route_id)) ?? '';
+          return currentSerialized !== initialSerialized;
+        });
+
+        if (routesToUpsert.length > 0) {
+          const upsertPromises = routesToUpsert.map((tr) => {
+            const rawPath = pathsMap.get(String(tr.route_id));
+            const path =
+              rawPath && rawPath.points && rawPath.points.length > 0
+                ? rawPath
+                : null;
+            const idx = this.topoRoutes.findIndex(
+              (r) => String(r.route_id) === String(tr.route_id),
+            );
+            return this.supabase.client.from('indoor_topo_routes').upsert({
+              topo_id: String(topoId),
+              route_id: String(tr.route_id),
+              number: idx >= 0 ? idx : (tr.number ?? 0),
+              path: path ? topoPathToJson(path) : null,
+              user_creator_id: this.supabase.authUserId(),
+            });
+          });
+          const upsertResults = await Promise.all(upsertPromises);
+          const upsertErr = upsertResults.find((r) => r.error)?.error;
+          if (upsertErr) throw upsertErr;
         }
 
         this.newIndoorRoutes = [];
@@ -2245,7 +2416,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       this.context.completeWith(true);
     } catch (error) {
       console.error('Error saving paths:', error);
-      this.toast.error('messages.errors.savingPaths');
+      handleErrorToast(error, this.toast);
     } finally {
       this.loading.set(false);
     }

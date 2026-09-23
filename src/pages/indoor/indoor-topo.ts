@@ -541,6 +541,7 @@ export class IndoorTopoComponent extends TopoPageBase {
       number: tr.number ?? i,
       route: tr.route,
       path: tr.path,
+      user_creator_id: tr.user_creator_id,
     }));
 
     const result = await this.toposService.openTopoPathEditor({
@@ -551,6 +552,7 @@ export class IndoorTopoComponent extends TopoPageBase {
       standalone: true,
       isIndoor: true,
       centerId: topo.center_id ? String(topo.center_id) : undefined,
+      center: topo.indoor_center ?? undefined,
     });
 
     if (result) {
