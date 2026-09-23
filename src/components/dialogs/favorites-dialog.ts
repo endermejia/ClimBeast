@@ -14,13 +14,18 @@ export interface FavoritesDialogData {
   standalone: true,
   imports: [TuiScrollbar, UserProfileLikesComponent],
   template: `
-    <tui-scrollbar class="w-full h-[80dvh] min-h-[400px] max-h-[850px]">
-      <div class="w-full min-w-0 pr-2">
-        <app-user-profile-likes [userId]="context.data.userId" />
-      </div>
-    </tui-scrollbar>
+    <div
+      class="flex flex-col grow max-h-[70dvh] min-h-0 w-full overflow-hidden"
+    >
+      <tui-scrollbar class="grow min-h-0 overflow-x-hidden!">
+        <div class="w-full min-w-0 pr-2">
+          <app-user-profile-likes [userId]="context.data.userId" />
+        </div>
+      </tui-scrollbar>
+    </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'flex flex-col max-h-[70dvh] min-h-0 w-full overflow-hidden' },
 })
 export class FavoritesDialogComponent {
   protected readonly context =

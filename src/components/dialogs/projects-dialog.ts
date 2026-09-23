@@ -16,28 +16,37 @@ export interface ProjectsDialogData {
   imports: [TuiScrollbar, UserProfileProjectsComponent],
   styles: `
     @media (min-width: 1024px) {
-      :host > tui-scrollbar {
+      :host .projects-dialog-scroll {
         overflow: hidden !important;
       }
-      :host > tui-scrollbar ::ng-deep > .t-content {
+      :host .projects-dialog-scroll ::ng-deep > .t-content {
         block-size: 100% !important;
         height: 100% !important;
         overflow: hidden !important;
       }
-      :host > tui-scrollbar ::ng-deep > tui-scroll-controls {
+      :host .projects-dialog-scroll ::ng-deep > tui-scroll-controls {
         display: none !important;
       }
     }
   `,
   template: `
-    <tui-scrollbar class="w-full h-[80dvh] min-h-[500px] max-h-[850px]">
-      <app-user-profile-projects
-        [userId]="context.data.userId"
-        [startingYear]="context.data.startingYear"
-      />
-    </tui-scrollbar>
+    <div
+      class="flex flex-col grow lg:h-[70dvh] max-h-[70dvh] min-h-0 w-full overflow-hidden"
+    >
+      <tui-scrollbar
+        class="projects-dialog-scroll w-full grow lg:h-[70dvh] max-h-[70dvh] min-h-0 overflow-x-hidden!"
+      >
+        <div class="w-full h-full min-w-0 pr-1">
+          <app-user-profile-projects
+            [userId]="context.data.userId"
+            [startingYear]="context.data.startingYear"
+          />
+        </div>
+      </tui-scrollbar>
+    </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'flex flex-col max-h-[70dvh] min-h-0 w-full overflow-hidden' },
 })
 export class ProjectsDialogComponent {
   protected readonly context =
