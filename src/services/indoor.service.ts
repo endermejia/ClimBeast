@@ -28,7 +28,7 @@ import {
   IndoorTopoQueryRow,
   IndoorTopoRouteWithRoute,
   IndoorVoucherDto,
-  IndoorVoucherPurchaseDto,
+  IndoorVoucherPurchaseWithVoucher,
   RouteAscentWithExtras,
 } from '../models';
 import type { TopoPath } from '../models/topo.model';
@@ -183,7 +183,7 @@ export class IndoorService {
   async getUserActiveVouchers(
     userId: string,
     centerId: string,
-  ): Promise<IndoorVoucherPurchaseDto[]> {
+  ): Promise<IndoorVoucherPurchaseWithVoucher[]> {
     const { data, error } = await this.supabase.client
       .from('indoor_voucher_purchases')
       .select('*, voucher:indoor_vouchers(*)')

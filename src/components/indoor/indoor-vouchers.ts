@@ -23,7 +23,10 @@ import { TranslateModule } from '@ngx-translate/core';
 import { AuthStateService } from '../../services/auth-state.service';
 import { IndoorService } from '../../services/indoor.service';
 
-import { IndoorVoucherDto, IndoorVoucherPurchaseDto } from '../../models';
+import {
+  IndoorVoucherDto,
+  IndoorVoucherPurchaseWithVoucher,
+} from '../../models';
 
 @Component({
   selector: 'app-indoor-vouchers',
@@ -48,6 +51,8 @@ import { IndoorVoucherDto, IndoorVoucherPurchaseDto } from '../../models';
           </h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             @for (p of activeVouchers(); track p.id) {
+              @let voucherName = p.voucher?.name ?? '';
+              @let isSubscription = p.voucher?.kind === 'subscription';
               <div
                 class="p-5 rounded-[28px] flex flex-col justify-between relative overflow-hidden max-w-sm w-full mx-auto min-h-[145px]"
                 tuiAppearance="accent"
@@ -55,7 +60,7 @@ import { IndoorVoucherDto, IndoorVoucherPurchaseDto } from '../../models';
                 <div class="flex justify-between items-start z-10 w-full">
                   <div class="flex flex-col text-left">
                     <span class="font-bold text-[17px] leading-tight">{{
-                      getVoucherName(p)
+                      voucherName
                     }}</span>
                     <span class="text-xs text-white/80 mt-1">
                       {{ 'expires' | translate }}:
@@ -86,11 +91,7 @@ import { IndoorVoucherDto, IndoorVoucherPurchaseDto } from '../../models';
                   class="absolute -bottom-2 -right-2 pointer-events-none z-0 overflow-visible"
                 >
                   <tui-icon
-                    [icon]="
-                      getVoucherKind(p) === 'subscription'
-                        ? '@tui.id-card'
-                        : '@tui.ticket'
-                    "
+                    [icon]="isSubscription ? '@tui.id-card' : '@tui.ticket'"
                     class="text-white/12 rotate-[-15deg] block"
                     [style.fontSize.px]="120"
                   />
@@ -176,9 +177,9 @@ export class IndoorVouchersComponent {
   protected readonly authState = inject(AuthStateService);
   protected readonly indoor = inject(IndoorService);
 
-  protected readonly activeVouchers = computed<IndoorVoucherPurchaseDto[]>(
-    () => this.activeVouchersResource.value() || [],
-  );
+  protected readonly activeVouchers = computed<
+    IndoorVoucherPurchaseWithVoucher[]
+  >(() => this.activeVouchersResource.value() || []);
   protected readonly availableVouchers = computed<IndoorVoucherDto[]>(
     () => this.availableVouchersResource.value() || [],
   );
@@ -192,7 +193,7 @@ export class IndoorVouchersComponent {
   });
 
   protected readonly activeVouchersResource = resource<
-    IndoorVoucherPurchaseDto[],
+    IndoorVoucherPurchaseWithVoucher[],
     { userId: string | undefined; centerId: string }
   >({
     params: () => ({
@@ -201,25 +202,11 @@ export class IndoorVouchersComponent {
     }),
     loader: ({
       params: { userId, centerId },
-    }): Promise<IndoorVoucherPurchaseDto[]> => {
+    }): Promise<IndoorVoucherPurchaseWithVoucher[]> => {
       if (!userId) return Promise.resolve([]);
       return this.indoor.getUserActiveVouchers(userId, centerId);
     },
   });
-
-  protected getVoucherName(purchase: IndoorVoucherPurchaseDto): string {
-    const p = purchase as IndoorVoucherPurchaseDto & {
-      voucher?: { name: string };
-    };
-    return p.voucher?.name || '';
-  }
-
-  protected getVoucherKind(purchase: IndoorVoucherPurchaseDto): string {
-    const p = purchase as IndoorVoucherPurchaseDto & {
-      voucher?: { kind: string };
-    };
-    return p.voucher?.kind || 'pass';
-  }
 
   async onCheckIn(purchaseId: string) {
     try {

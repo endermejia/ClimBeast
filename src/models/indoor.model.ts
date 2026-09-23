@@ -127,6 +127,11 @@ export type IndoorVoucherPurchaseInsertDto =
 export type IndoorVoucherPurchaseUpdateDto =
   TableUpdate<'indoor_voucher_purchases'>;
 
+/** Voucher purchase row with the embedded voucher from `indoor_vouchers` */
+export interface IndoorVoucherPurchaseWithVoucher extends IndoorVoucherPurchaseDto {
+  voucher?: IndoorVoucherDto | null;
+}
+
 export type IndoorVoucherUsageDto = TableRow<'indoor_voucher_usage'>;
 export type IndoorVoucherUsageInsertDto = TableInsert<'indoor_voucher_usage'>;
 export type IndoorVoucherUsageUpdateDto = TableUpdate<'indoor_voucher_usage'>;
