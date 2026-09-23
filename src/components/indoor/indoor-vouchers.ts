@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  Pipe,
+  PipeTransform,
   inject,
   input,
   resource,
@@ -25,6 +27,44 @@ import { IndoorService } from '../../services/indoor.service';
 
 import { IndoorVoucherDto, IndoorVoucherPurchaseDto } from '../../models';
 
+/**
+ * Pure Pipe to extract voucher name from an active voucher purchase.
+ * Refactored from template method execution according to Angular Decision Matrix
+ * (parameterized template-loop value from @for iteration).
+ */
+@Pipe({
+  name: 'voucherName',
+  standalone: true,
+  pure: true,
+})
+export class VoucherNamePipe implements PipeTransform {
+  transform(purchase: IndoorVoucherPurchaseDto): string {
+    const p = purchase as IndoorVoucherPurchaseDto & {
+      voucher?: { name: string };
+    };
+    return p.voucher?.name || '';
+  }
+}
+
+/**
+ * Pure Pipe to extract voucher kind from an active voucher purchase.
+ * Refactored from template method execution according to Angular Decision Matrix
+ * (parameterized template-loop value from @for iteration).
+ */
+@Pipe({
+  name: 'voucherKind',
+  standalone: true,
+  pure: true,
+})
+export class VoucherKindPipe implements PipeTransform {
+  transform(purchase: IndoorVoucherPurchaseDto): string {
+    const p = purchase as IndoorVoucherPurchaseDto & {
+      voucher?: { kind: string };
+    };
+    return p.voucher?.kind || 'pass';
+  }
+}
+
 @Component({
   selector: 'app-indoor-vouchers',
   standalone: true,
@@ -37,6 +77,8 @@ import { IndoorVoucherDto, IndoorVoucherPurchaseDto } from '../../models';
     TuiLoader,
     TuiAmountPipe,
     TuiNumberFormat,
+    VoucherNamePipe,
+    VoucherKindPipe,
   ],
   template: `
     <div class="flex flex-col gap-6">
@@ -55,7 +97,7 @@ import { IndoorVoucherDto, IndoorVoucherPurchaseDto } from '../../models';
                 <div class="flex justify-between items-start z-10 w-full">
                   <div class="flex flex-col text-left">
                     <span class="font-bold text-[17px] leading-tight">{{
-                      getVoucherName(p)
+                      p | voucherName
                     }}</span>
                     <span class="text-xs text-white/80 mt-1">
                       {{ 'expires' | translate }}:
@@ -87,7 +129,7 @@ import { IndoorVoucherDto, IndoorVoucherPurchaseDto } from '../../models';
                 >
                   <tui-icon
                     [icon]="
-                      getVoucherKind(p) === 'subscription'
+                      (p | voucherKind) === 'subscription'
                         ? '@tui.id-card'
                         : '@tui.ticket'
                     "
@@ -206,20 +248,6 @@ export class IndoorVouchersComponent {
       return this.indoor.getUserActiveVouchers(userId, centerId);
     },
   });
-
-  protected getVoucherName(purchase: IndoorVoucherPurchaseDto): string {
-    const p = purchase as IndoorVoucherPurchaseDto & {
-      voucher?: { name: string };
-    };
-    return p.voucher?.name || '';
-  }
-
-  protected getVoucherKind(purchase: IndoorVoucherPurchaseDto): string {
-    const p = purchase as IndoorVoucherPurchaseDto & {
-      voucher?: { kind: string };
-    };
-    return p.voucher?.kind || 'pass';
-  }
 
   async onCheckIn(purchaseId: string) {
     try {
