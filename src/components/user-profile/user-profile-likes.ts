@@ -7,11 +7,9 @@ import {
   input,
   resource,
 } from '@angular/core';
-import { Router } from '@angular/router';
 
-import { TuiAppearance, TuiIcon, TuiTitle } from '@taiga-ui/core';
+import { TuiIcon } from '@taiga-ui/core';
 import { TuiSkeleton } from '@taiga-ui/kit';
-import { TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -19,25 +17,25 @@ import { FavoritesDataService } from '../../services/favorites-data.service';
 import { FavoritesService } from '../../services/favorites.service';
 import { SupabaseService } from '../../services/supabase.service';
 
-import { AreaListItem, CragListItem, RouteWithExtras } from '../../models';
-
+import { AreaCardSkeletonComponent } from '../area/area-card-skeleton';
 import { OutdoorRoutesTableComponent } from '../route/outdoor-routes-table';
-
+import { AppCardComponent } from '../ui/card';
 import { EmptyStateComponent } from '../ui/empty-state';
+
+import { AreaListItem, CragListItem, RouteWithExtras } from '../../models';
 
 @Component({
   selector: 'app-user-profile-likes',
   standalone: true,
   imports: [
+    AppCardComponent,
+    AreaCardSkeletonComponent,
     CommonModule,
     EmptyStateComponent,
     OutdoorRoutesTableComponent,
     TranslatePipe,
-    TuiAppearance,
-    TuiHeader,
     TuiIcon,
     TuiSkeleton,
-    TuiTitle,
   ],
   template: `
     <div class="flex flex-col gap-8">
@@ -47,43 +45,14 @@ import { EmptyStateComponent } from '../ui/empty-state';
           <tui-icon icon="@tui.map-pin" />
           {{ 'likedAreas' | translate }}
         </h3>
-        <div class="grid gap-6 grid-cols-1 xl:grid-cols-2">
+        <div class="grid gap-4 grid-cols-1 xl:grid-cols-2">
           @if (isLoading() && !likedAreas().length) {
             @for (_ of [1, 2, 3, 4]; track $index) {
-              <div
-                class="p-6 rounded-3xl flex flex-col gap-4"
-                tuiAppearance="outline"
-              >
-                <div [tuiSkeleton]="true" class="w-2/3 h-6 rounded-3xl"></div>
-                <div
-                  [tuiSkeleton]="true"
-                  class="w-1/3 h-5 rounded-3xl opacity-60"
-                ></div>
-              </div>
+              <app-area-card-skeleton />
             }
           } @else {
             @for (area of likedAreas(); track area.id) {
-              <button
-                class="p-6 rounded-3xl text-left"
-                [tuiAppearance]="area.liked ? 'outline-destructive' : 'outline'"
-                (click.zoneless)="router.navigate(['/area', area.slug])"
-              >
-                <div class="flex flex-col min-w-0 grow">
-                  <header tuiHeader>
-                    <h2 tuiTitle>{{ area.name }}</h2>
-                  </header>
-                  <section class="flex items-center justify-between gap-2">
-                    <div class="text-xl">
-                      {{ area.crags_count }}
-                      {{
-                        (area.crags_count === 1 ? 'crag' : 'crags')
-                          | translate
-                          | lowercase
-                      }}
-                    </div>
-                  </section>
-                </div>
-              </button>
+              <app-card kind="area" [item]="area" />
             } @empty {
               <div class="col-span-full opacity-50">
                 <app-empty-state icon="@tui.heart" />
@@ -96,53 +65,17 @@ import { EmptyStateComponent } from '../ui/empty-state';
       <!-- Liked Crags -->
       <section class="grid gap-2">
         <h3 class="font-bold text-lg flex items-center gap-2">
-          <tui-icon icon="@tui.mountain" />
+          <tui-icon icon="@tui.layout-grid" />
           {{ 'likedCrags' | translate }}
         </h3>
-        <div class="grid gap-6 grid-cols-1 xl:grid-cols-2">
+        <div class="grid gap-4 grid-cols-1 xl:grid-cols-2">
           @if (isLoading() && !likedCrags().length) {
             @for (_ of [1, 2, 3, 4]; track $index) {
-              <div
-                class="p-6 rounded-3xl flex flex-col gap-4"
-                tuiAppearance="outline"
-              >
-                <div [tuiSkeleton]="true" class="w-2/3 h-6 rounded-3xl"></div>
-                <div
-                  [tuiSkeleton]="true"
-                  class="w-1/3 h-5 rounded-3xl opacity-60"
-                ></div>
-              </div>
+              <app-area-card-skeleton />
             }
           } @else {
             @for (crag of likedCrags(); track crag.id) {
-              <button
-                class="p-6 rounded-3xl text-left"
-                [tuiAppearance]="crag.liked ? 'outline-destructive' : 'outline'"
-                (click.zoneless)="
-                  router.navigate(['/area', crag.area_slug, crag.slug])
-                "
-              >
-                <div class="flex flex-col min-w-0 grow">
-                  <header tuiHeader>
-                    <h2 tuiTitle>{{ crag.name }}</h2>
-                  </header>
-                  <section class="flex items-center justify-between gap-2">
-                    <div class="flex flex-col items-start">
-                      <div class="text-xl">
-                        {{ crag.topos_count }}
-                        {{
-                          (crag.topos_count === 1 ? 'topo' : 'topos')
-                            | translate
-                            | lowercase
-                        }}
-                      </div>
-                      <div class="text-sm opacity-70">
-                        {{ crag.area_name }}
-                      </div>
-                    </div>
-                  </section>
-                </div>
-              </button>
+              <app-card kind="crag" [item]="crag" />
             } @empty {
               <div class="col-span-full opacity-50">
                 <app-empty-state icon="@tui.heart" />
@@ -160,11 +93,10 @@ import { EmptyStateComponent } from '../ui/empty-state';
         </h3>
         <div class="min-w-0">
           @if (isLoading() && !likedRoutes().length) {
-            <div class="grid gap-6 grid-cols-1 xl:grid-cols-2">
+            <div class="grid gap-4 grid-cols-1 xl:grid-cols-2">
               @for (_ of [1, 2, 3, 4]; track $index) {
                 <div
-                  class="p-6 rounded-3xl flex flex-col gap-4"
-                  tuiAppearance="outline"
+                  class="p-6 rounded-3xl flex flex-col gap-4 border border-(--tui-border-normal)"
                 >
                   <div [tuiSkeleton]="true" class="w-1/2 h-6 rounded-3xl"></div>
                   <div
@@ -201,7 +133,6 @@ export class UserProfileLikesComponent {
   private readonly favorites = inject(FavoritesService);
   protected readonly favoritesData = inject(FavoritesDataService);
   protected readonly supabase = inject(SupabaseService);
-  protected readonly router = inject(Router);
 
   protected readonly isOwnProfile = computed(() => {
     const currentId = this.supabase.authUserId();
