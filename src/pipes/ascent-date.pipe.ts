@@ -2,9 +2,26 @@ import { inject, Pipe, PipeTransform } from '@angular/core';
 
 import { LanguageService } from '../services/language.service';
 
+/** Cache for Intl.DateTimeFormat instances to avoid expensive repeated instantiation in template rendering loops */
+const dateTimeFormattersCache = new Map<string, Intl.DateTimeFormat>();
+
+function getDateTimeFormatter(
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+  const key = `${locale}:${JSON.stringify(options)}`;
+  let formatter = dateTimeFormattersCache.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, options);
+    dateTimeFormattersCache.set(key, formatter);
+  }
+  return formatter;
+}
+
 @Pipe({
   name: 'ascentDate',
   standalone: true,
+  pure: true,
 })
 export class AscentDatePipe implements PipeTransform {
   private readonly languageService = inject(LanguageService);
@@ -24,23 +41,24 @@ export class AscentDatePipe implements PipeTransform {
 
     if (year === currentYear) {
       try {
-        const formatted = new Intl.DateTimeFormat(locale, {
+        const formatter = getDateTimeFormatter(locale, {
           weekday: 'long',
           day: 'numeric',
           month: 'long',
-        }).format(date);
-        return formatted.replace(',', '');
+        });
+        return formatter.format(date).replace(',', '');
       } catch {
         // Fallback
       }
     }
 
     try {
-      return new Intl.DateTimeFormat(locale, {
+      const formatter = getDateTimeFormatter(locale, {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
-      }).format(date);
+      });
+      return formatter.format(date);
     } catch {
       return dateStr;
     }
