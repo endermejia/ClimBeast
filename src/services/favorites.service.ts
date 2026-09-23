@@ -112,6 +112,8 @@ export class FavoritesService {
         project:route_projects(id),
         ascents:route_ascents(rate, type),
         own_ascent:route_ascents(*),
+        topo_routes(topo:topos(id, name, slug)),
+        route_equippers(equipper:equippers(*)),
         crag:crags(
           slug,
           name,
@@ -139,8 +141,8 @@ export class FavoritesService {
     return routes.map((r) =>
       mapRouteToExtras(r as RawRouteData, {
         areaIdSource: 'crag.area.id',
-        includeEquippers: false,
-        includeTopos: false,
+        includeEquippers: true,
+        includeTopos: true,
       }),
     );
   }

@@ -12,6 +12,7 @@ import {
   ClimbingKind,
   ClimbingKinds,
   CragDto,
+  EquipperDto,
   PaginatedAscents,
   RouteAscentDto,
   RouteAscentWithExtras,
@@ -66,6 +67,7 @@ export class ProfileDataService {
               liked:route_likes(id),
               project:route_projects(id),
               own_ascent:route_ascents(*),
+              route_equippers(equipper:equippers(*)),
               crag:crags(
                 slug,
                 name,
@@ -98,6 +100,7 @@ export class ProfileDataService {
                   project: { id: number }[];
                   ascents: { rate: number | null; type: AscentType }[];
                   own_ascent: RouteAscentDto[];
+                  route_equippers: { equipper: EquipperDto }[];
                   crag:
                     | (CragDto & {
                         area: { slug: string; name: string } | null;
@@ -109,6 +112,7 @@ export class ProfileDataService {
 
             return mapRouteToExtras(r as RawRouteData, {
               areaIdSource: 'crag.area.id',
+              includeEquippers: true,
               includeTopos: false,
             }) as RouteWithExtras;
           })
