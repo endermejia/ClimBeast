@@ -106,13 +106,17 @@ export class SupabaseAuthService {
     } catch {
       val = undefined;
     }
-    if (val !== undefined) return val;
+    // Valor fresco no nulo → úselo. Un `null` transitorio (recurso cargado
+    // aún sin sesión o a medio recargar) no debe tapar la caché: los guards
+    // y la UI lo leerían como "sin perfil" y dispararían una petición de red.
+    if (val) return val;
     const userId = this.authUserId();
     if (!userId) return null;
-    return this.cache.get<UserProfileDto | null>(
+    const cached = this.cache.get<UserProfileDto | null>(
       CACHE_KEYS.userProfile(userId),
       null,
     );
+    return cached ?? null;
   });
 
   readonly adminAreasResource = resource({

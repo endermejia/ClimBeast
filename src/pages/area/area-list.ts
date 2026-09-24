@@ -245,10 +245,7 @@ export class AreaListComponent {
   private readonly filterState = inject(FilterStateService);
 
   readonly loading = computed(
-    () =>
-      this.areasService.loading() ||
-      this.outdoorData.areasListResource.isLoading() ||
-      this.outdoorData.areasListResource.value() === undefined,
+    () => this.areasService.loading() || this.outdoorData.areasListLoading(),
   );
   readonly areas = computed(() => this.outdoorData.areasList());
   readonly indoorCount = computed(

@@ -125,6 +125,11 @@ export class OutdoorDataService {
 
   readonly areasListResource = this.cachedAreas.resource;
   readonly areasList: Signal<AreaListItem[]> = this.cachedAreas.signal;
+  /**
+   * Solo `true` en la primera carga real (cargando y sin valor en recurso ni
+   * en caché): las visitas calientes pintan la lista cacheada al instante.
+   */
+  readonly areasListLoading: Signal<boolean> = this.cachedAreas.showSkeleton;
 
   readonly selectedArea: Signal<AreaListItem | null> = computed(() => {
     const slug = this.selectedAreaSlug();

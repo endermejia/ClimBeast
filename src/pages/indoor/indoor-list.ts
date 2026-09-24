@@ -263,7 +263,7 @@ export class IndoorListComponent {
   );
 
   protected readonly loading = computed(() =>
-    this.indoorCentersData.indoorCentersResource.isLoading(),
+    this.indoorCentersData.indoorCentersLoading(),
   );
 
   protected readonly query: WritableSignal<string> = signal('');
