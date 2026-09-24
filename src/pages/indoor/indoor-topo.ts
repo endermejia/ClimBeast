@@ -32,6 +32,7 @@ import { FilterStateService } from '../../services/filter-state.service';
 import { IndoorDataService } from '../../services/indoor-data.service';
 import { IndoorService } from '../../services/indoor.service';
 import { LayoutService } from '../../services/layout.service';
+import { TopoImageCacheService } from '../../services/topo-image-cache.service';
 
 import { TopoRoutesTableComponent } from '../../components/topo/topo-routes-table';
 import { TopoViewerComponent } from '../../components/topo/topo-viewer';
@@ -266,6 +267,7 @@ export class IndoorTopoComponent extends TopoPageBase {
   protected override readonly indoorData = inject(IndoorDataService);
   protected readonly layoutService = inject(LayoutService);
   protected readonly indoorService = inject(IndoorService);
+  protected readonly topoImageCache = inject(TopoImageCacheService);
 
   override isIndoor = computed(() => true);
 
@@ -277,7 +279,9 @@ export class IndoorTopoComponent extends TopoPageBase {
     },
     loader: async ({ params }) => {
       if (!params) return null;
-      return this.supabase.getPublicUrl('indoor-assets', params.path);
+      const url = this.supabase.getPublicUrl('indoor-assets', params.path);
+      // Bytes cacheados: la imagen ya vista se muestra sin red (offline).
+      return this.topoImageCache.resolve(url);
     },
   });
 
@@ -579,7 +583,10 @@ export class IndoorTopoComponent extends TopoPageBase {
         start_date: null,
       } as IndoorTopoDto)
       .then((success: boolean) => {
-        if (success) this.indoorData.topoDetailResource.reload();
+        if (!success) return;
+        // La foto pudo cambiar en el mismo path: descartar la copia guardada.
+        void this.topoImageCache.invalidate(topo.photo);
+        this.indoorData.topoDetailResource.reload();
       });
   }
 

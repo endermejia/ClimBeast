@@ -20,6 +20,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { AuthStateService } from '../../services/auth-state.service';
 import { LayoutService } from '../../services/layout.service';
+import { TopoImageCacheService } from '../../services/topo-image-cache.service';
 
 import { PaywallComponent } from '../../components/paywall/paywall';
 import { TopoRoutesTableComponent } from '../../components/topo/topo-routes-table';
@@ -215,6 +216,7 @@ import { TopoPageBase } from './topo-page-base';
 export class OutdoorTopoComponent extends TopoPageBase {
   protected readonly authState = inject(AuthStateService);
   protected readonly layoutService = inject(LayoutService);
+  protected readonly topoImageCache = inject(TopoImageCacheService);
 
   override isIndoor = computed(() => false);
 
@@ -243,7 +245,14 @@ export class OutdoorTopoComponent extends TopoPageBase {
     },
     loader: async ({ params }) => {
       if (!params) return null;
-      return this.supabase.getTopoSignedUrl(params.path, params.version);
+      const url = await this.supabase.getTopoSignedUrl(
+        params.path,
+        params.version,
+      );
+      // Bytes cacheados: la imagen ya vista se muestra sin red (offline).
+      // La versión (?v=) de la URL cambia al subir una foto nueva, por lo que
+      // la copia antigua se descarta sola con el límite de entradas.
+      return this.topoImageCache.resolve(url);
     },
   });
 
