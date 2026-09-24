@@ -29,7 +29,10 @@ import { filter, map } from 'rxjs';
 import { AppNotificationsService } from '../../services/app-notifications.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { CartService } from '../../services/cart.service';
-import { ExploreTabService } from '../../services/explore-tab.service';
+import {
+  ExploreTabService,
+  isExploreContext,
+} from '../../services/explore-tab.service';
 import { LayoutService } from '../../services/layout.service';
 import { MessagingService } from '../../services/messaging.service';
 import { ScrollService } from '../../services/scroll.service';
@@ -461,19 +464,13 @@ export class NavbarComponent {
   );
 
   /**
-   * El botón "Explorar" engloba los dos listados del segmented: áreas e
-   * indoor (incluidas sus subrutas), sea cual sea el destino actual del
-   * enlace dinámico.
+   * El botón "Explorar" engloba el mapa (/explore) y los dos listados del
+   * segmented (áreas e indoor, incluidas sus subrutas), sea cual sea el
+   * destino actual del enlace dinámico.
    */
-  protected readonly isExploreActive = computed(() => {
-    const path = this.currentPath().split('?')[0];
-    return (
-      path === '/area' ||
-      path.startsWith('/area/') ||
-      path === '/indoor' ||
-      path.startsWith('/indoor/')
-    );
-  });
+  protected readonly isExploreActive = computed(() =>
+    isExploreContext(this.currentPath().split('?')[0]),
+  );
 
   protected scrollToTop(event: MouseEvent): void {
     if (this.router.url === '/home') {

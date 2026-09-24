@@ -43,6 +43,7 @@ import { CachedTranslateLoader } from '../services/cached-translate-loader';
 import { errorInterceptor } from '../services/error.interceptor';
 import { LanguageService } from '../services/language.service';
 import { provideSupabaseConfig } from '../services/supabase.service';
+import { SwipeNavigationService } from '../services/swipe-navigation.service';
 import { ThemeService } from '../services/theme.service';
 
 import {
@@ -71,7 +72,14 @@ export const appConfig: ApplicationConfig = {
       routes,
       withComponentInputBinding(),
       withPreloading(SelectivePreloadingStrategy),
-      withViewTransitions({ skipInitialTransition: true }),
+      withViewTransitions({
+        skipInitialTransition: true,
+        // El swipe necesita `data-nav-dir` mientras viva la transición (el
+        // CSS que anima los snapshots es en vivo); al crearla, el servicio
+        // ata la limpieza a `transition.finished`.
+        onViewTransitionCreated: ({ transition }) =>
+          inject(SwipeNavigationService).onViewTransitionCreated(transition),
+      }),
     ),
     provideHttpClient(withInterceptors([errorInterceptor])),
     provideClientHydration(

@@ -45,6 +45,7 @@ import {
     <!-- Normal view -->
     <div
       class="relative w-full h-full bg-(--tui-background-neutral-1) md:rounded-xl md:border md:border-(--tui-border-normal) overflow-hidden cursor-grab active:cursor-grabbing touch-none"
+      data-swipe-block
       #scrollContainer
       (wheel.zoneless)="zoomPan.onWheel($event)"
       (touchstart.zoneless)="zoomPan.onTouchStart($event)"
@@ -104,6 +105,7 @@ import {
       <div
         #fullscreenContainer
         class="fixed inset-0 z-1000 flex items-center justify-center overflow-hidden touch-none bg-black/80 backdrop-blur-xl cursor-grab active:cursor-grabbing"
+        data-swipe-block
         tabindex="0"
         (keydown.enter)="toggleFullscreen(false)"
         (click)="toggleFullscreen(false)"

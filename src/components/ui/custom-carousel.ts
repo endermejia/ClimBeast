@@ -24,6 +24,7 @@ export interface CarouselItem {
   template: `
     <div
       class="relative w-full h-full overflow-hidden group rounded-inherit touch-pan-y"
+      data-swipe-block
       (mouseenter)="isHovered.set(true)"
       (mouseleave)="isHovered.set(false)"
       (touchstart)="onTouchStart($event)"

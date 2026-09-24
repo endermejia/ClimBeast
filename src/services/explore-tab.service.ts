@@ -27,7 +27,7 @@ function isDetailPath(path: string): boolean {
 }
 
 /** Rutas que ya forman parte del contexto "explorar" (listados y mapa). */
-function isExploreContext(path: string): boolean {
+export function isExploreContext(path: string): boolean {
   return (
     path === '/explore' ||
     path === '/area' ||

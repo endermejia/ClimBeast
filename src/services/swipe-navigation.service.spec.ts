@@ -6,6 +6,8 @@ import type { TuiSwipeEvent } from '@taiga-ui/cdk';
 
 import { describe, it, expect, beforeEach } from 'vitest';
 
+import { MockLocalStorage } from '../testing/mock-local-storage';
+import { LocalStorage } from './local-storage';
 import { SwipeNavigationService } from './swipe-navigation.service';
 
 @Component({ template: '', standalone: true })
@@ -34,9 +36,13 @@ describe('SwipeNavigationService', () => {
         provideRouter([
           { path: 'home', component: BlankComponent },
           { path: 'area', component: BlankComponent },
+          { path: 'area/:slug', component: BlankComponent },
+          { path: 'indoor', component: BlankComponent },
+          { path: 'explore', component: BlankComponent },
           { path: 'profile', component: BlankComponent },
           { path: 'other', component: BlankComponent },
         ]),
+        { provide: LocalStorage, useClass: MockLocalStorage },
       ],
     });
     service = TestBed.inject(SwipeNavigationService);
@@ -88,6 +94,42 @@ describe('SwipeNavigationService', () => {
     expect(document.documentElement.getAttribute('data-nav-dir')).toBeNull();
   });
 
+  it('navega desde el mapa de explorar (/explore)', async () => {
+    await router.navigate(['/explore']);
+    await service.onSwipe(swipeEvent('left'));
+
+    expect(currentRoute()).toBe('/profile');
+    expect(document.documentElement.getAttribute('data-nav-dir')).toBe('next');
+  });
+
+  it('navega desde el listado de indoor', async () => {
+    await router.navigate(['/indoor']);
+    await service.onSwipe(swipeEvent('right'));
+
+    expect(currentRoute()).toBe('/home');
+    expect(document.documentElement.getAttribute('data-nav-dir')).toBe('prev');
+  });
+
+  it('navega desde una pantalla de detalle de explorar', async () => {
+    await router.navigate(['/area/mi-area']);
+    await service.onSwipe(swipeEvent('left'));
+
+    expect(currentRoute()).toBe('/profile');
+    expect(document.documentElement.getAttribute('data-nav-dir')).toBe('next');
+  });
+
+  it('al pasar a explorar retoma la última ruta de detalle visitada', async () => {
+    await router.navigate(['/area/el-chorro']);
+    TestBed.flushEffects();
+    await router.navigate(['/home']);
+    TestBed.flushEffects();
+
+    await service.onSwipe(swipeEvent('left'));
+
+    expect(currentRoute()).toBe('/area/el-chorro');
+    expect(document.documentElement.getAttribute('data-nav-dir')).toBe('next');
+  });
+
   it('ignora los swipes que empiezan en un scroll horizontal', async () => {
     const host = document.createElement('div');
     host.setAttribute('data-swipe-host', '');
@@ -101,6 +143,25 @@ describe('SwipeNavigationService', () => {
     // jsdom no hace layout: forzamos las medidas del contenedor.
     Object.defineProperty(scroller, 'scrollWidth', { value: 400 });
     Object.defineProperty(scroller, 'clientWidth', { value: 100 });
+
+    await router.navigate(['/home']);
+    await service.onSwipe(swipeEvent('left', child));
+
+    expect(currentRoute()).toBe('/home');
+    expect(document.documentElement.getAttribute('data-nav-dir')).toBeNull();
+
+    host.remove();
+  });
+
+  it('ignora los swipes que empiezan en una superficie bloqueada', async () => {
+    const host = document.createElement('div');
+    host.setAttribute('data-swipe-host', '');
+    const blocked = document.createElement('div');
+    blocked.setAttribute('data-swipe-block', '');
+    const child = document.createElement('span');
+    blocked.appendChild(child);
+    host.appendChild(blocked);
+    document.body.appendChild(host);
 
     await router.navigate(['/home']);
     await service.onSwipe(swipeEvent('left', child));

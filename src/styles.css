@@ -652,15 +652,20 @@ app-undo-toast {
 /*
  * `SwipeNavigationService` marca `data-nav-dir` en <html> justo antes de
  * navegar con un gesto (next: izquierda, prev: derecha). Solo mientras está
- * marcado, <main> se captura como "page" y se desliza, mientras la navbar y
- * la bottom-bar (imagen "root") se quedan estáticas por encima.
+ * marcado, el anfitrión del swipe (`[data-swipe-host]`, el <main> del shell)
+ * se captura como "page" y se desliza, mientras la navbar y la bottom-bar
+ * (imagen "root") se quedan estáticas por encima.
+ *
+ * El selector es `[data-swipe-host]` y no `main` a propósito: la home
+ * renderiza un <main> anidado dentro del anfitrión y un view-transition-name
+ * duplicado aborta la transición completa ("Snapshot capture failed").
  *
  * La misma duración y easing en imagen vieja y nueva hace que encajen sin
  * huecos durante todo el desplazamiento. Sin `data-nav-dir` (navegaciones
  * normales, cambio de tema) nada de esto aplica.
  */
 @media (prefers-reduced-motion: no-preference) {
-  html[data-nav-dir] main {
+  html[data-nav-dir] [data-swipe-host] {
     view-transition-name: page;
   }
 
