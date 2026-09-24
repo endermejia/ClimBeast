@@ -8,15 +8,7 @@ import {
   OnDestroy,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import {
-  NavigationCancel,
-  NavigationEnd,
-  NavigationError,
-  NavigationSkipped,
-  NavigationStart,
-  Router,
-  RouterOutlet,
-} from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 
 import { TuiSwipe } from '@taiga-ui/cdk';
@@ -58,15 +50,6 @@ import { IS_BROWSER } from './is-browser';
   template: `
     <tui-root [attr.tuiTheme]="isDark() ? 'dark' : 'light'">
       <app-offline-banner />
-      @if (navPending()) {
-        <!-- Barra de progreso: un arranque lento o sin conexión nunca se
-             percibe como pantalla en blanco. -->
-        <div
-          class="fixed inset-x-0 top-0 z-9999 h-1 animate-pulse bg-sky-500"
-          role="progressbar"
-          aria-label="Loading"
-        ></div>
-      }
       <div
         class="fixed inset-0 w-full h-full overflow-hidden flex flex-col-reverse md:flex-row"
       >
@@ -129,37 +112,6 @@ export class AppComponent implements OnDestroy {
       map((e) => e.urlAfterRedirects),
     ),
     { initialValue: this.doc?.location?.pathname ?? '/' },
-  );
-
-  /**
-   * `true` mientras el Router está navegando (guards, carga de chunks...).
-   * Se muestra una barra de progreso para que esperas largas sin conexión
-   * nunca se perciban como pantalla en blanco.
-   */
-  protected readonly navPending = toSignal(
-    merge(
-      this.router.events.pipe(
-        filter((e): e is NavigationStart => e instanceof NavigationStart),
-        map(() => true),
-      ),
-      this.router.events.pipe(
-        filter(
-          (
-            e,
-          ): e is
-            | NavigationEnd
-            | NavigationCancel
-            | NavigationError
-            | NavigationSkipped =>
-            e instanceof NavigationEnd ||
-            e instanceof NavigationCancel ||
-            e instanceof NavigationError ||
-            e instanceof NavigationSkipped,
-        ),
-        map(() => false),
-      ),
-    ),
-    { initialValue: this.router.getCurrentNavigation() !== null },
   );
 
   /**
