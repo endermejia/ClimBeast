@@ -35,7 +35,7 @@ Deno.serve(async (req: Request) => {
   if (ALLOWED_ORIGINS.includes(origin)) {
     corsHeaders['Access-Control-Allow-Origin'] = origin;
     corsHeaders['Access-Control-Allow-Headers'] =
-      'authorization, x-client-info, apikey, content-type, ascent-id, ngsw-bypass';
+      'authorization, x-client-info, apikey, content-type, ascent-id, is-indoor, ngsw-bypass';
     corsHeaders['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
   }
 
@@ -112,16 +112,32 @@ Deno.serve(async (req: Request) => {
     }
 
     // ─────────────────────────────
+    // Check indoor vs outdoor
+    // ─────────────────────────────
+    const isIndoorHeader =
+      req.headers.get('is-indoor') === 'true' ||
+      req.headers.get('Is-Indoor') === 'true';
+    const isUUID =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        ascentId,
+      );
+    const isIndoor = isIndoorHeader || isUUID;
+    const tableName = isIndoor ? 'indoor_ascents' : 'route_ascents';
+
+    // ─────────────────────────────
     // Get ascent → user_id check
     // ─────────────────────────────
     const { data: ascent, error: ascentErr } = await supabaseAdminClient
-      .from('route_ascents')
+      .from(tableName)
       .select('user_id')
       .eq('id', ascentId)
       .single();
 
     if (ascentErr || !ascent) {
-      console.error('[upload-route-ascent-photo] ascent not found', ascentErr);
+      console.error(
+        `[upload-route-ascent-photo] ascent not found in ${tableName}`,
+        ascentErr,
+      );
       return new Response(JSON.stringify({ error: 'Ascent not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -179,7 +195,7 @@ Deno.serve(async (req: Request) => {
     const path = uploadData?.path || fileName;
 
     const { error: dbErr } = await supabaseAdminClient
-      .from('route_ascents')
+      .from(tableName)
       .update({ photo_path: path })
       .eq('id', ascentId);
 

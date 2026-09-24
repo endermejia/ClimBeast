@@ -959,19 +959,16 @@ export class IndoorService {
     this.toast.success('messages.toasts.ascentUpdated');
   }
 
-  async uploadAscentPhoto(userId: string, file: File): Promise<string | null> {
-    await this.supabase.whenReady();
-    const ext = file.name.split('.').pop();
-    const fileName = `ascents/${userId}_${Date.now()}.${ext}`;
-    const { error } = await this.supabase.client.storage
-      .from('indoor-assets')
-      .upload(fileName, file);
+  async uploadPhoto(ascentId: string, file: File): Promise<void> {
+    await this.ascentsService.uploadPhoto(ascentId, file, true);
+    this.reloadCenterRoutes();
+    this.equipperService.equipperIndoorRoutesResource.reload();
+  }
 
-    if (error) {
-      console.error('[IndoorService] error uploading photo:', error);
-      throw error;
-    }
-    return fileName;
+  async deletePhoto(ascentId: string): Promise<void> {
+    await this.ascentsService.deletePhoto(ascentId, true);
+    this.reloadCenterRoutes();
+    this.equipperService.equipperIndoorRoutesResource.reload();
   }
 
   async deleteRouteAscent(ascentId: string): Promise<void> {

@@ -516,7 +516,11 @@ export class AscentsService {
     });
   }
 
-  async uploadPhoto(ascentId: number, file: File): Promise<void> {
+  async uploadPhoto(
+    ascentId: number | string,
+    file: File,
+    isIndoor = false,
+  ): Promise<void> {
     if (!this.isBrowser) return;
 
     const toBase64 = (f: File) =>
@@ -530,6 +534,13 @@ export class AscentsService {
     try {
       const base64 = await toBase64(file);
       await this.supabase.whenReady();
+      const headers: Record<string, string> = {
+        'ascent-id': ascentId.toString(),
+        'ngsw-bypass': 'true',
+      };
+      if (isIndoor || typeof ascentId === 'string') {
+        headers['is-indoor'] = 'true';
+      }
       const { error } = await this.supabase.client.functions.invoke(
         'upload-route-ascent-photo',
         {
@@ -538,10 +549,7 @@ export class AscentsService {
             content_type: file.type,
             base64,
           },
-          headers: {
-            'ascent-id': ascentId.toString(),
-            'ngsw-bypass': 'true',
-          },
+          headers,
         },
       );
 
@@ -556,17 +564,25 @@ export class AscentsService {
     }
   }
 
-  async deletePhoto(ascentId: number): Promise<void> {
+  async deletePhoto(
+    ascentId: number | string,
+    isIndoor = false,
+  ): Promise<void> {
     if (!this.isBrowser) return;
     await this.supabase.whenReady();
+
+    const headers: Record<string, string> = {
+      'ascent-id': ascentId.toString(),
+      'ngsw-bypass': 'true',
+    };
+    if (isIndoor || typeof ascentId === 'string') {
+      headers['is-indoor'] = 'true';
+    }
 
     const { error } = await this.supabase.client.functions.invoke(
       'delete-route-ascent-photo',
       {
-        headers: {
-          'ascent-id': ascentId.toString(),
-          'ngsw-bypass': 'true',
-        },
+        headers,
       },
     );
 
@@ -575,6 +591,7 @@ export class AscentsService {
       throw error;
     }
 
+    this.toast.success('messages.toasts.photoDeleted');
     this.refreshResources(ascentId);
     this.ascentUpdated$.next({ id: ascentId });
   }
@@ -1217,10 +1234,10 @@ export class AscentsService {
   }
 
   refreshResources(
-    ascentId?: number,
+    ascentId?: number | string,
     changes?: Partial<RouteAscentWithExtras>,
   ): void {
-    if (ascentId && changes) {
+    if (typeof ascentId === 'number' && changes) {
       if (
         changes.user_liked !== undefined &&
         changes.likes_count !== undefined

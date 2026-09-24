@@ -141,10 +141,9 @@ export class SupabaseStorageService {
     await whenReady();
     const activeClient = this.getClient(client);
 
-    const bucket =
-      path.startsWith('ascents/') || path.startsWith('centers/')
-        ? 'indoor-assets'
-        : 'route-ascent-photos';
+    const bucket = path.startsWith('centers/')
+      ? 'indoor-assets'
+      : 'route-ascent-photos';
     const { data, error } = await activeClient.storage
       .from(bucket)
       .createSignedUrl(path, 3600, options); // 1 hour

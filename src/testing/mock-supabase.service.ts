@@ -157,6 +157,14 @@ export class MockSupabaseService {
     rpc: vi.fn((_fn?: string, _params?: unknown) =>
       Promise.resolve({ data: null, error: null }),
     ),
+    functions: {
+      invoke: vi.fn((_name?: string, _options?: unknown) =>
+        Promise.resolve<{ data: unknown; error: unknown }>({
+          data: null,
+          error: null,
+        }),
+      ),
+    },
   };
 
   setSession(session: Session | null): void {

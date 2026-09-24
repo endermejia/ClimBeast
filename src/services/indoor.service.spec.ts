@@ -80,6 +80,8 @@ describe('IndoorService - Admin Requests', () => {
             refreshResources: vi.fn(),
             notifyAscentDeleted: vi.fn(),
             notifyAscentCreated: vi.fn(),
+            uploadPhoto: vi.fn().mockResolvedValue(undefined),
+            deletePhoto: vi.fn().mockResolvedValue(undefined),
           },
         },
         {
@@ -524,6 +526,50 @@ describe('IndoorService - Admin Requests', () => {
         'messages.toasts.favoriteRemoved',
         expect.any(Function),
       );
+    });
+  });
+
+  describe('uploadPhoto and deletePhoto', () => {
+    it('calls ascentsService.uploadPhoto with isIndoor=true and reloads resources', async () => {
+      const ascentsService = TestBed.inject(AscentsService);
+      const equipperService = TestBed.inject(EquipperService);
+      const indoorCentersData = TestBed.inject(IndoorCentersDataService);
+      const dummyFile = new File(['dummy'], 'photo.jpg', {
+        type: 'image/jpeg',
+      });
+
+      await service.uploadPhoto('ascent-uuid-1', dummyFile);
+
+      expect(ascentsService.uploadPhoto).toHaveBeenCalledWith(
+        'ascent-uuid-1',
+        dummyFile,
+        true,
+      );
+      expect(
+        equipperService.equipperIndoorRoutesResource.reload,
+      ).toHaveBeenCalled();
+      expect(
+        indoorCentersData.indoorRoutesReloadTick.update,
+      ).toHaveBeenCalled();
+    });
+
+    it('calls ascentsService.deletePhoto with isIndoor=true and reloads resources', async () => {
+      const ascentsService = TestBed.inject(AscentsService);
+      const equipperService = TestBed.inject(EquipperService);
+      const indoorCentersData = TestBed.inject(IndoorCentersDataService);
+
+      await service.deletePhoto('ascent-uuid-1');
+
+      expect(ascentsService.deletePhoto).toHaveBeenCalledWith(
+        'ascent-uuid-1',
+        true,
+      );
+      expect(
+        equipperService.equipperIndoorRoutesResource.reload,
+      ).toHaveBeenCalled();
+      expect(
+        indoorCentersData.indoorRoutesReloadTick.update,
+      ).toHaveBeenCalled();
     });
   });
 });

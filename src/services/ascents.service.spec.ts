@@ -395,4 +395,103 @@ describe('AscentsService', () => {
       expect(insertMock).toHaveBeenCalledWith(mockAscent);
     });
   });
+
+  describe('uploadPhoto', () => {
+    it('calls upload-route-ascent-photo edge function for outdoor ascent', async () => {
+      const invokeSpy = vi
+        .spyOn(mockSupabase.client.functions, 'invoke')
+        .mockResolvedValue({ data: { path: 'user-1/10.jpg' }, error: null });
+
+      const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
+      await service.uploadPhoto(10, file);
+
+      expect(invokeSpy).toHaveBeenCalledWith(
+        'upload-route-ascent-photo',
+        expect.objectContaining({
+          body: expect.objectContaining({
+            file_name: 'test.jpg',
+            content_type: 'image/jpeg',
+          }),
+          headers: expect.objectContaining({
+            'ascent-id': '10',
+            'ngsw-bypass': 'true',
+          }),
+        }),
+      );
+      const callOptions = invokeSpy.mock.calls[0][1] as
+        { headers?: Record<string, string> } | undefined;
+      expect(callOptions?.headers?.['is-indoor']).toBeUndefined();
+      expect(mockToast.success).toHaveBeenCalledWith(
+        'messages.toasts.ascentUpdated',
+      );
+    });
+
+    it('passes is-indoor header for indoor ascent', async () => {
+      const invokeSpy = vi
+        .spyOn(mockSupabase.client.functions, 'invoke')
+        .mockResolvedValue({ data: { path: 'user-1/uuid.jpg' }, error: null });
+
+      const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
+      await service.uploadPhoto('uuid-1234', file, true);
+
+      expect(invokeSpy).toHaveBeenCalledWith(
+        'upload-route-ascent-photo',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'ascent-id': 'uuid-1234',
+            'is-indoor': 'true',
+            'ngsw-bypass': 'true',
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('deletePhoto', () => {
+    it('calls delete-route-ascent-photo edge function for outdoor ascent', async () => {
+      const invokeSpy = vi
+        .spyOn(mockSupabase.client.functions, 'invoke')
+        .mockResolvedValue({ data: { success: true }, error: null });
+
+      await service.deletePhoto(10);
+
+      expect(invokeSpy).toHaveBeenCalledWith(
+        'delete-route-ascent-photo',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'ascent-id': '10',
+            'ngsw-bypass': 'true',
+          }),
+        }),
+      );
+      const callOptions = invokeSpy.mock.calls[0][1] as
+        { headers?: Record<string, string> } | undefined;
+      expect(callOptions?.headers?.['is-indoor']).toBeUndefined();
+      expect(mockToast.success).toHaveBeenCalledWith(
+        'messages.toasts.photoDeleted',
+      );
+    });
+
+    it('passes is-indoor header for indoor ascent delete', async () => {
+      const invokeSpy = vi
+        .spyOn(mockSupabase.client.functions, 'invoke')
+        .mockResolvedValue({ data: { success: true }, error: null });
+
+      await service.deletePhoto('uuid-1234', true);
+
+      expect(invokeSpy).toHaveBeenCalledWith(
+        'delete-route-ascent-photo',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'ascent-id': 'uuid-1234',
+            'is-indoor': 'true',
+            'ngsw-bypass': 'true',
+          }),
+        }),
+      );
+      expect(mockToast.success).toHaveBeenCalledWith(
+        'messages.toasts.photoDeleted',
+      );
+    });
+  });
 });

@@ -1128,18 +1128,7 @@ export default class AscentFormComponent {
           // Handle photo upload if a new file was selected
           const photoFile = photoControl;
           if (savedAscentId && photoFile) {
-            const uploadedPath = await this.indoorService.uploadAscentPhoto(
-              user_id,
-              photoFile,
-            );
-            if (uploadedPath) {
-              await this.indoorService.updateRouteAscent(
-                String(savedAscentId),
-                {
-                  photo_path: uploadedPath,
-                },
-              );
-            }
+            await this.indoorService.uploadPhoto(savedAscentId, photoFile);
           } else if (savedAscentId && this.isExistingPhotoDeleted()) {
             await this.indoorService.updateRouteAscent(savedAscentId, {
               photo_path: null,
@@ -1258,9 +1247,7 @@ export default class AscentFormComponent {
     if (confirmed) {
       try {
         if (this.isIndoor()) {
-          await this.indoorService.updateRouteAscent(String(data.id), {
-            photo_path: null,
-          });
+          await this.indoorService.deletePhoto(String(data.id));
         } else {
           await this.ascents.deletePhoto(Number(data.id));
         }
