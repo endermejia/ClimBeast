@@ -37,12 +37,19 @@ import { debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs';
 
 import { AreasService } from '../../services/areas.service';
 import { CragsService } from '../../services/crags.service';
+import { LocalStorage } from '../../services/local-storage';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { RoutesService } from '../../services/routes.service';
 import { SearchService } from '../../services/search.service';
 import { TourService, TourStep } from '../../services/tour.service';
+import { VisitedAreasService } from '../../services/visited-areas.service';
+import { VisitedCragsService } from '../../services/visited-crags.service';
+import { VisitedIndoorCentersService } from '../../services/visited-indoor-centers.service';
 
 import {
+  ActiveArea,
+  ActiveCrag,
+  ActiveIndoorCenter,
   SearchAreaItem,
   SearchCragItem,
   SearchData,
@@ -50,6 +57,7 @@ import {
   SearchRouteItem,
 } from '../../models';
 
+import { CACHE_KEYS } from '../../constants';
 import { gradeToNumber } from '../../utils';
 
 import { GradeComponent } from './avatar-grade';
@@ -152,7 +160,92 @@ import { TourHintComponent } from './tour-hint';
             [placeholder]="'searchPlaceholder' | translate"
           />
           <ng-template #searchContent>
-            @if (results() !== null) {
+            <ng-template #itemTemplate let-item>
+              <div class="flex items-center w-full gap-3">
+                @if (item.grade !== undefined) {
+                  <app-grade
+                    [grade]="item.grade"
+                    [kind]="item.climbing_kind"
+                    class="shrink-0"
+                  />
+                }
+                @if (
+                  item.type === 'user' ||
+                  item.type === 'indoor' ||
+                  item.type === 'equipper'
+                ) {
+                  <span tuiAvatar size="xs" class="shrink-0">
+                    @if (item.icon && !item.icon.startsWith('@tui.')) {
+                      <img [src]="item.icon" [alt]="item.title" />
+                    } @else {
+                      <tui-icon
+                        [icon]="
+                          item.icon ||
+                          (item.type === 'user'
+                            ? '@tui.user'
+                            : item.type === 'equipper'
+                              ? '@tui.hammer'
+                              : '@tui.map-pin')
+                        "
+                      />
+                    }
+                  </span>
+                } @else if (item.icon && item.grade === undefined) {
+                  <tui-icon [icon]="item.icon" class="shrink-0" />
+                }
+                <span tuiTitle class="min-w-0 flex-1 truncate">
+                  {{ item.title }}
+                  @if (item.subtitle) {
+                    <span tuiSubtitle>{{ item.subtitle }}</span>
+                  }
+                </span>
+              </div>
+            </ng-template>
+
+            <!-- Sin búsqueda activa: últimos buscados + populares -->
+            @if (!searchValue().trim() && hasSuggestions()) {
+              <div
+                class="flex flex-col bg-(--tui-background-base) rounded-xl overflow-hidden w-[calc(100vw-1rem)] md:w-auto md:min-w-200 max-h-[80vh] relative"
+              >
+                <tui-scrollbar class="flex-1 min-h-0">
+                  <tui-data-list size="s">
+                    @if (recentSuggestions().length > 0) {
+                      <tui-opt-group [label]="'search.recent' | translate">
+                        @for (item of recentSuggestions(); track item.href) {
+                          <a
+                            tuiOption
+                            [routerLink]="item.href"
+                            (click)="onSuggestionClick()"
+                          >
+                            <ng-container
+                              [ngTemplateOutlet]="itemTemplate"
+                              [ngTemplateOutletContext]="{ $implicit: item }"
+                            ></ng-container>
+                          </a>
+                        }
+                      </tui-opt-group>
+                    }
+
+                    @if (popularSuggestions().length > 0) {
+                      <tui-opt-group [label]="'search.popular' | translate">
+                        @for (item of popularSuggestions(); track item.href) {
+                          <a
+                            tuiOption
+                            [routerLink]="item.href"
+                            (click)="onSuggestionClick()"
+                          >
+                            <ng-container
+                              [ngTemplateOutlet]="itemTemplate"
+                              [ngTemplateOutletContext]="{ $implicit: item }"
+                            ></ng-container>
+                          </a>
+                        }
+                      </tui-opt-group>
+                    }
+                  </tui-data-list>
+                </tui-scrollbar>
+              </div>
+            } @else if (results() !== null) {
               <div
                 class="flex flex-col h-full bg-(--tui-background-base) rounded-xl overflow-hidden w-[calc(100vw-1rem)] md:w-auto md:min-w-200 max-h-[80vh] relative"
               >
@@ -286,48 +379,6 @@ import { TourHintComponent } from './tour-hint';
                 </tui-scrollbar>
               </div>
             }
-
-            <ng-template #itemTemplate let-item>
-              <div class="flex items-center w-full gap-3">
-                @if (item.grade !== undefined) {
-                  <app-grade
-                    [grade]="item.grade"
-                    [kind]="item.climbing_kind"
-                    class="shrink-0"
-                  />
-                }
-                @if (
-                  item.type === 'user' ||
-                  item.type === 'indoor' ||
-                  item.type === 'equipper'
-                ) {
-                  <span tuiAvatar size="xs" class="shrink-0">
-                    @if (item.icon && !item.icon.startsWith('@tui.')) {
-                      <img [src]="item.icon" [alt]="item.title" />
-                    } @else {
-                      <tui-icon
-                        [icon]="
-                          item.icon ||
-                          (item.type === 'user'
-                            ? '@tui.user'
-                            : item.type === 'equipper'
-                              ? '@tui.hammer'
-                              : '@tui.map-pin')
-                        "
-                      />
-                    }
-                  </span>
-                } @else if (item.icon && item.grade === undefined) {
-                  <tui-icon [icon]="item.icon" class="shrink-0" />
-                }
-                <span tuiTitle class="min-w-0 flex-1 truncate">
-                  {{ item.title }}
-                  @if (item.subtitle) {
-                    <span tuiSubtitle>{{ item.subtitle }}</span>
-                  }
-                </span>
-              </div>
-            </ng-template>
           </ng-template>
         </tui-textfield>
       </div>
@@ -345,6 +396,10 @@ export class SearchDropdownComponent {
   private readonly areasService = inject(AreasService);
   private readonly cragsService = inject(CragsService);
   private readonly routesService = inject(RoutesService);
+  private readonly storage = inject(LocalStorage);
+  private readonly visitedAreas = inject(VisitedAreasService);
+  private readonly visitedCrags = inject(VisitedCragsService);
+  private readonly visitedIndoorCenters = inject(VisitedIndoorCentersService);
 
   readonly searchValue = signal('');
   readonly searchOpen = signal(false);
@@ -415,6 +470,117 @@ export class SearchDropdownComponent {
       0,
     ),
   );
+
+  /**
+   * Últimos buscados: sitios ya visitados (áreas, sectores y rocódromos)
+   * persistidos en localStorage por los servicios `Visited*`, ordenados por
+   * fecha de visita y limitados a 3.
+   */
+  protected readonly recentSuggestions = computed<SearchItem[]>(() => {
+    const items = [
+      ...this.visitedAreas.visitedAreas().map((area) => ({
+        visitedAt: area.visitedAt ?? 0,
+        item: {
+          title: area.name,
+          href: `/area/${area.slug}`,
+          icon: '@tui.map-pin',
+        },
+      })),
+      ...this.visitedCrags.visitedCrags().map((crag) => ({
+        visitedAt: crag.visitedAt ?? 0,
+        item: {
+          title: crag.name,
+          href: `/area/${crag.area_slug}/${crag.slug}`,
+          icon: '@tui.mountain',
+        },
+      })),
+      ...this.visitedIndoorCenters.visitedCenters().map((center) => ({
+        visitedAt: center.visitedAt ?? 0,
+        item: {
+          title: center.name,
+          href: `/indoor/${center.slug}`,
+          icon: '@tui.dumbbell',
+        },
+      })),
+    ];
+
+    return items
+      .sort((a, b) => b.visitedAt - a.visitedAt)
+      .slice(0, 3)
+      .map(({ item }) => item);
+  });
+
+  /**
+   * Populares: sitios más activos del home (los de los últimos ascensos),
+   * cacheados en localStorage por la home. La caché se relee al abrir el
+   * dropdown para no quedarse con el valor vacío de antes de cargar la home.
+   * Mezcla área + sector + rocódromo y evita repetir los "recientes".
+   */
+  protected readonly popularSuggestions = computed<SearchItem[]>(() => {
+    if (!this.searchOpen()) return [];
+
+    const recent = new Set(this.recentSuggestions().map(({ href }) => href));
+    const groups: SearchItem[][] = [
+      this.readCache<ActiveArea>(CACHE_KEYS.activeAreas).map((area) => ({
+        title: area.name,
+        href: `/area/${area.slug}`,
+        icon: '@tui.map-pin',
+      })),
+      this.readCache<ActiveCrag>(CACHE_KEYS.activeCrags).map((crag) => ({
+        title: crag.name,
+        href: `/area/${crag.area_slug}/${crag.slug}`,
+        icon: '@tui.mountain',
+      })),
+      this.readCache<ActiveIndoorCenter>(CACHE_KEYS.activeIndoorCenters).map(
+        (center) => ({
+          title: center.name,
+          href: `/indoor/${center.slug}`,
+          icon: '@tui.dumbbell',
+        }),
+      ),
+    ];
+
+    const seen = new Set<string>(recent);
+    const result: SearchItem[] = [];
+
+    for (
+      let index = 0;
+      result.length < 3 && groups.some((group) => index < group.length);
+      index++
+    ) {
+      for (const group of groups) {
+        const item = group[index];
+        if (item && !seen.has(item.href) && result.length < 3) {
+          seen.add(item.href);
+          result.push(item);
+        }
+      }
+    }
+
+    return result;
+  });
+
+  protected readonly hasSuggestions = computed(
+    () =>
+      this.recentSuggestions().length > 0 ||
+      this.popularSuggestions().length > 0,
+  );
+
+  protected onSuggestionClick(): void {
+    this.searchOpen.set(false);
+    this.searchValue.set('');
+  }
+
+  private readCache<T>(key: string): T[] {
+    const raw = this.storage.getItem(key);
+    if (!raw) return [];
+
+    try {
+      return JSON.parse(raw) as T[];
+    } catch {
+      return [];
+    }
+  }
 
   protected onTourNext(): void {
     this.searchOpen.set(false);

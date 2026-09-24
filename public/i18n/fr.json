@@ -1115,6 +1115,8 @@
   "saturday": "Samedi",
   "save": "Enregistrer",
   "search": "Rechercher",
+  "search.popular": "Populaires",
+  "search.recent": "Récents",
   "searchPlaceholder": "Rechercher...",
   "searchUser": "Chercher un utilisateur",
   "sectors.unifyTitle": "Unifier les secteurs",
