@@ -1,5 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 
+import { STORAGE_KEYS } from '../constants';
+
 import { LocalStorage } from './local-storage';
 
 export interface VisitedIndoorCenter {
@@ -14,7 +16,7 @@ export interface VisitedIndoorCenter {
 })
 export class VisitedIndoorCentersService {
   private readonly storage = inject(LocalStorage);
-  private readonly STORAGE_KEY = 'visited_indoor_centers';
+  private readonly STORAGE_KEY = STORAGE_KEYS.visitedIndoorCenters;
   private readonly MAX_CENTERS = 10;
 
   private readonly _visitedCenters = signal<VisitedIndoorCenter[]>(

@@ -7,9 +7,10 @@ export enum TourStep {
   WELCOME = 0,
   HOME = 1,
   EXPLORE = 2,
-  EXPLORE_AREAS = 3,
-  SEARCH = 4,
-  PROFILE = 5,
+  EXPLORE_MAP = 3,
+  EXPLORE_LIST = 4,
+  SEARCH = 5,
+  PROFILE = 6,
   OFF = -1,
 }
 
@@ -60,11 +61,23 @@ export class TourService {
         await this.router.navigate(['/home']);
         break;
       case TourStep.EXPLORE:
-      case TourStep.EXPLORE_AREAS:
+        await this.router.navigate(['/area']);
+        break;
+      case TourStep.EXPLORE_MAP:
+        if (
+          !this.router.url.startsWith('/area') &&
+          !this.router.url.startsWith('/indoor')
+        ) {
+          await this.router.navigate(['/area']);
+        }
+        break;
+      case TourStep.EXPLORE_LIST:
         await this.router.navigate(['/explore']);
         break;
       case TourStep.SEARCH:
-        // Already shown in navbar
+        if (this.router.url.startsWith('/explore')) {
+          await this.router.navigate(['/area']);
+        }
         break;
       case TourStep.PROFILE:
         await this.router.navigate(['/profile']);

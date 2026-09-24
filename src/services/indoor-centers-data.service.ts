@@ -29,37 +29,52 @@ export class IndoorCentersDataService {
     params: () => ({
       isBrowser: this.isBrowser,
       reloadTick: this.indoorRoutesReloadTick(),
+      userId: this.supabase.authUserId(),
     }),
-    loader: async ({ params: { isBrowser } }) => {
+    loader: async ({ params: { isBrowser, userId } }) => {
       if (!isBrowser) {
         return [] as MapIndoorCenterItem[];
       }
       try {
         await this.supabase.whenReady();
-        const { data, error } = await this.supabase.client
+        let query = this.supabase.client
           .from('indoor_centers')
           .select(
-            '*, topos:indoor_topos(id, name), routes:indoor_routes(grade)',
+            '*, topos:indoor_topos(id, name), routes:indoor_routes(grade), liked:indoor_center_likes(id)',
           )
           .order('name');
 
+        if (userId) {
+          query = query.eq('liked.user_id', userId);
+        }
+
+        const { data, error } = await query;
+
         if (error) throw error;
 
-        return (data || []).map((c: MapIndoorCenterRaw) => {
-          const grades: AmountByEveryGrade = {};
-          (c.routes || []).forEach((r: MapIndoorRouteRaw) => {
-            const g = r.grade;
-            if (g != null && g >= 0) {
-              grades[g as VERTICAL_LIFE_GRADES] =
-                (grades[g as VERTICAL_LIFE_GRADES] ?? 0) + 1;
-            }
+        return (data || [])
+          .map((c: MapIndoorCenterRaw & { liked?: { id: string }[] }) => {
+            const grades: AmountByEveryGrade = {};
+            (c.routes || []).forEach((r: MapIndoorRouteRaw) => {
+              const g = r.grade;
+              if (g != null && g >= 0) {
+                grades[g as VERTICAL_LIFE_GRADES] =
+                  (grades[g as VERTICAL_LIFE_GRADES] ?? 0) + 1;
+              }
+            });
+            const liked = (c.liked?.length ?? 0) > 0;
+            return {
+              ...c,
+              routes_count: c.routes?.length || 0,
+              grades,
+              liked,
+            } as MapIndoorCenterItem;
+          })
+          .sort((a, b) => {
+            if (a.liked && !b.liked) return -1;
+            if (!a.liked && b.liked) return 1;
+            return a.name.localeCompare(b.name);
           });
-          return {
-            ...c,
-            routes_count: c.routes?.length || 0,
-            grades,
-          } as MapIndoorCenterItem;
-        });
       } catch {
         return [];
       }

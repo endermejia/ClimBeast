@@ -1,5 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 
+import { STORAGE_KEYS } from '../constants';
+
 import { IS_BROWSER } from '../app/is-browser';
 import { LocalStorage } from './local-storage';
 import { SupabaseService } from './supabase.service';
@@ -39,7 +41,7 @@ export class ErrorLogService {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly localStorage = inject(LocalStorage);
   private readonly supabase = inject(SupabaseService);
-  private readonly storageKey = 'app_error_logs_v3';
+  private readonly storageKey = STORAGE_KEYS.errorLogs;
 
   readonly logs = signal<AppErrorLog[]>([]);
 

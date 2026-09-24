@@ -647,3 +647,82 @@ app-undo-toast {
     max-width: min(1400px, calc(100vw - 4rem)) !important;
   }
 }
+
+/* ---- Swipe route transition (View Transitions API) ---- */
+/*
+ * `SwipeNavigationService` marca `data-nav-dir` en <html> justo antes de
+ * navegar con un gesto (next: izquierda, prev: derecha). Solo mientras está
+ * marcado, <main> se captura como "page" y se desliza, mientras la navbar y
+ * la bottom-bar (imagen "root") se quedan estáticas por encima.
+ *
+ * La misma duración y easing en imagen vieja y nueva hace que encajen sin
+ * huecos durante todo el desplazamiento. Sin `data-nav-dir` (navegaciones
+ * normales, cambio de tema) nada de esto aplica.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-nav-dir] main {
+    view-transition-name: page;
+  }
+
+  html[data-nav-dir]::view-transition-old(root),
+  html[data-nav-dir]::view-transition-new(root) {
+    z-index: 10;
+  }
+
+  html[data-nav-dir]::view-transition-group(page) {
+    z-index: 5;
+    animation: none;
+  }
+
+  html[data-nav-dir="next"]::view-transition-old(page) {
+    animation: route-slide-out 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+
+  html[data-nav-dir="next"]::view-transition-new(page) {
+    animation: route-slide-in 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+
+  html[data-nav-dir="prev"]::view-transition-old(page) {
+    animation: route-slide-out-reverse 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+
+  html[data-nav-dir="prev"]::view-transition-new(page) {
+    animation: route-slide-in-reverse 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+}
+
+@keyframes route-slide-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes route-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes route-slide-out-reverse {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes route-slide-in-reverse {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

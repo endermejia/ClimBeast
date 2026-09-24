@@ -36,6 +36,8 @@ import { EmptyStateComponent } from '../ui/empty-state';
 
 import type { IndoorCenterDto, IndoorTopoListItem } from '../../models';
 
+import { STORAGE_KEYS } from '../../constants';
+
 @Component({
   selector: 'app-indoor-topos',
   standalone: true,
@@ -129,7 +131,7 @@ export class IndoorToposComponent {
       try {
         return (
           typeof window !== 'undefined' &&
-          localStorage.getItem('show_legacy_topos') === 'true'
+          localStorage.getItem(STORAGE_KEYS.showLegacyTopos) === 'true'
         );
       } catch {
         return false;
@@ -142,7 +144,7 @@ export class IndoorToposComponent {
       try {
         if (typeof window !== 'undefined') {
           localStorage.setItem(
-            'show_legacy_topos',
+            STORAGE_KEYS.showLegacyTopos,
             String(this.showLegacyTopos()),
           );
         }

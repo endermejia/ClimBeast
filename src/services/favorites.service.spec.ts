@@ -174,4 +174,11 @@ describe('FavoritesService', () => {
       expect(result).toEqual([]);
     });
   });
+
+  describe('getLikedIndoorCenters', () => {
+    it('returns empty when no indoor center likes', async () => {
+      const result = await service.getLikedIndoorCenters(mockUserId);
+      expect(result).toEqual([]);
+    });
+  });
 });

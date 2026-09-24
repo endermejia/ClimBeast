@@ -7,6 +7,8 @@ import { TranslateModule } from '@ngx-translate/core';
 
 import { LocalStorage } from '../../services/local-storage';
 
+import { STORAGE_KEYS } from '../../constants';
+
 @Component({
   selector: 'app-gdpr-notification',
   standalone: true,
@@ -56,7 +58,7 @@ export class GdprNotificationComponent {
   private readonly context =
     inject<TuiDialogContext<boolean>>(POLYMORPHEUS_CONTEXT);
   private readonly storage = inject(LocalStorage);
-  private readonly gdprKey = 'lw_gdpr_accepted';
+  private readonly gdprKey = STORAGE_KEYS.gdprAccepted;
 
   protected readonly showFull = signal(false);
 

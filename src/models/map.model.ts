@@ -55,6 +55,7 @@ export interface MapIndoorCenterItem {
   grades?: AmountByEveryGrade;
   routes_count?: number;
   topos?: { id: string | number; name: string; slug: string }[];
+  liked?: boolean;
 }
 
 export type MapItem = MapCragItem | MapAreaItem | MapIndoorCenterItem;

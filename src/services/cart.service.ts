@@ -2,6 +2,8 @@ import { computed, effect, inject, Injectable, signal } from '@angular/core';
 
 import type { CartProduct } from '../models';
 
+import { STORAGE_KEYS } from '../constants';
+
 import { IS_BROWSER } from '../app/is-browser';
 
 import { SupabaseService } from './supabase.service';
@@ -42,7 +44,7 @@ export class CartService {
     ),
   );
 
-  private readonly CART_STORAGE_KEY = 'climbeast_cart';
+  private readonly CART_STORAGE_KEY = STORAGE_KEYS.cart;
   private _syncedUserId: string | null = null;
 
   constructor() {

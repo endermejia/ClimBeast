@@ -48,15 +48,14 @@ import {
 
 import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
 
-import {
-  HomeCragsRowComponent,
-  UnifiedActiveItem,
-} from '../../components/dashboard/home-crags-row';
-
 import { HomeFilterBarComponent } from '../../components/dashboard/home-filter-bar';
 import { HomeNewsGridComponent } from '../../components/dashboard/home-news-grid';
 
 import { HomeNewsSidebarComponent } from '../../components/dashboard/home-news-sidebar';
+import {
+  HomeRecentPlacesComponent,
+  UnifiedActiveItem,
+} from '../../components/dashboard/home-recent-places';
 
 function deduplicateFeedItems(items: FeedItem[]): FeedItem[] {
   const seen = new Set<string>();
@@ -94,7 +93,7 @@ import {
   UserProfileBasicDto,
 } from '../../models';
 
-import { CACHE_KEYS } from '../../constants';
+import { CACHE_KEYS, STORAGE_KEYS } from '../../constants';
 import { reactToObservable } from '../../utils';
 import {
   applyCategoryFilter,
@@ -111,10 +110,10 @@ import { IS_BROWSER } from '../../app/is-browser';
   imports: [
     AscentsFeedComponent,
     CommonModule,
-    HomeCragsRowComponent,
     HomeFilterBarComponent,
     HomeNewsGridComponent,
     HomeNewsSidebarComponent,
+    HomeRecentPlacesComponent,
     TranslatePipe,
     TuiDataList,
     TuiScrollbar,
@@ -152,7 +151,7 @@ import { IS_BROWSER } from '../../app/is-browser';
 
             <!-- Crags Row (when not in news mode) -->
             @if (feedFilter() !== HomeFeedFilters.NEWS) {
-              <app-home-crags-row
+              <app-home-recent-places
                 [followsLoaded]="followsLoaded()"
                 [isLoading]="
                   activeCragsResource.isLoading() ||
@@ -238,7 +237,7 @@ export class HomeComponent {
   );
   private readonly visitedAreasService = inject(VisitedAreasService);
 
-  private readonly STORAGE_KEY = 'home_feed_filter';
+  private readonly STORAGE_KEY = STORAGE_KEYS.homeFeedFilter;
 
   protected readonly scrollbar = viewChild(TuiScrollbar, { read: ElementRef });
 
@@ -332,21 +331,28 @@ export class HomeComponent {
     const centers = this.activeIndoorCenters();
     const areas = this.activeAreas();
 
+    const likedCragIds = new Set(this.favoritesData.likedCragIds());
+    const likedCenterIds = new Set(this.favoritesData.likedIndoorCenterIds());
+    const likedAreaIds = new Set(this.favoritesData.likedAreaIds());
+
     const allItems: UnifiedActiveItem[] = [
       ...crags.map((c) => ({
         name: c.name,
         link: ['/area', c.area_slug, c.slug] as string[],
         visitedAt: 'visitedAt' in c ? (c.visitedAt ?? 0) : 0,
+        liked: likedCragIds.has(c.id),
       })),
       ...centers.map((c) => ({
         name: c.name,
         link: ['/indoor', c.slug] as string[],
         visitedAt: 'visitedAt' in c ? (c.visitedAt ?? 0) : 0,
+        liked: likedCenterIds.has(c.id),
       })),
       ...areas.map((a) => ({
         name: a.name,
         link: ['/area', a.slug] as string[],
         visitedAt: 'visitedAt' in a ? (a.visitedAt ?? 0) : 0,
+        liked: likedAreaIds.has(a.id),
       })),
     ];
 

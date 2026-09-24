@@ -1,9 +1,11 @@
 import { ErrorHandler, inject, Injectable } from '@angular/core';
 
+import { STORAGE_KEYS } from '../constants';
+
 import { IS_BROWSER } from '../app/is-browser';
 import { ErrorLogService } from './error-log.service';
 
-const CHUNK_RELOAD_KEY = 'lw_chunk_reload_ts';
+const CHUNK_RELOAD_KEY = STORAGE_KEYS.chunkReloadTs;
 
 @Injectable()
 export class AppErrorHandler implements ErrorHandler {

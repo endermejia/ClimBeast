@@ -55,6 +55,8 @@ import {
   INDOOR_ROUTE_COLORS,
 } from '../../models';
 
+import { STORAGE_KEYS } from '../../constants';
+
 import { IS_BROWSER } from '../../app/is-browser';
 
 import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
@@ -436,7 +438,7 @@ export class IndoorRoutesComponent {
       try {
         return (
           typeof window !== 'undefined' &&
-          localStorage.getItem('show_legacy_routes') === 'true'
+          localStorage.getItem(STORAGE_KEYS.showLegacyRoutes) === 'true'
         );
       } catch {
         return false;
@@ -449,7 +451,7 @@ export class IndoorRoutesComponent {
       try {
         if (typeof window !== 'undefined') {
           localStorage.setItem(
-            'show_legacy_routes',
+            STORAGE_KEYS.showLegacyRoutes,
             String(this.showLegacyRoutes()),
           );
         }

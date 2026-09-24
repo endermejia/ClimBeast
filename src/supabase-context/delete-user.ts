@@ -145,6 +145,7 @@ Deno.serve(async (req: Request) => {
       { table: 'indoor_center_admins', column: 'user_id' },
       { table: 'indoor_center_routesetters', column: 'user_id' },
       { table: 'area_likes', column: 'user_id' },
+      { table: 'indoor_center_likes', column: 'user_id' },
       { table: 'crag_likes', column: 'user_id' },
       { table: 'route_likes', column: 'user_id' },
       { table: 'route_projects', column: 'user_id' },

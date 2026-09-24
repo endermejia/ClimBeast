@@ -22,7 +22,12 @@ import { OutdoorRoutesTableComponent } from '../route/outdoor-routes-table';
 import { EmptyStateComponent } from '../ui/empty-state';
 import { PlaceCardComponent } from '../ui/place-card';
 
-import { AreaListItem, CragListItem, RouteWithExtras } from '../../models';
+import {
+  AreaListItem,
+  CragListItem,
+  MapIndoorCenterItem,
+  RouteWithExtras,
+} from '../../models';
 
 @Component({
   selector: 'app-user-profile-likes',
@@ -76,6 +81,29 @@ import { AreaListItem, CragListItem, RouteWithExtras } from '../../models';
           } @else {
             @for (crag of likedCrags(); track crag.id) {
               <app-place-card kind="crag" [item]="crag" />
+            } @empty {
+              <div class="col-span-full opacity-50">
+                <app-empty-state icon="@tui.heart" />
+              </div>
+            }
+          }
+        </div>
+      </section>
+
+      <!-- Liked Indoor Centers -->
+      <section class="grid gap-2">
+        <h3 class="font-bold text-lg flex items-center gap-2">
+          <tui-icon icon="@tui.dumbbell" />
+          {{ 'likedIndoorCenters' | translate }}
+        </h3>
+        <div class="grid gap-4 grid-cols-1 xl:grid-cols-2">
+          @if (isLoading() && !likedIndoorCenters().length) {
+            @for (_ of [1, 2, 3, 4]; track $index) {
+              <app-area-card-skeleton />
+            }
+          } @else {
+            @for (center of likedIndoorCenters(); track center.id) {
+              <app-place-card kind="indoor" [item]="center" />
             } @empty {
               <div class="col-span-full opacity-50">
                 <app-empty-state icon="@tui.heart" />
@@ -157,11 +185,18 @@ export class UserProfileLikesComponent {
       : (this.likedAreasResource.value() ?? []),
   );
 
+  protected readonly likedIndoorCenters = computed<MapIndoorCenterItem[]>(() =>
+    this.isOwnProfile()
+      ? (this.favoritesData.likedIndoorCenters() as MapIndoorCenterItem[])
+      : (this.likedIndoorCentersResource.value() ?? []),
+  );
+
   protected readonly isLoading = computed(
     () =>
       this.likedRoutesResource.isLoading() ||
       this.likedCragsResource.isLoading() ||
-      this.likedAreasResource.isLoading(),
+      this.likedAreasResource.isLoading() ||
+      this.likedIndoorCentersResource.isLoading(),
   );
 
   protected readonly likedRoutesResource = resource({
@@ -182,6 +217,13 @@ export class UserProfileLikesComponent {
     params: () => this.userId(),
     loader: async ({ params: userId }) => {
       return this.favorites.getLikedAreas(userId);
+    },
+  });
+
+  protected readonly likedIndoorCentersResource = resource({
+    params: () => this.userId(),
+    loader: async ({ params: userId }) => {
+      return this.favorites.getLikedIndoorCenters(userId);
     },
   });
 }

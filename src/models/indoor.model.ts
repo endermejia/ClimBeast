@@ -67,6 +67,10 @@ export type IndoorCenterDto = TableRow<'indoor_centers'>;
 export type IndoorCenterInsertDto = TableInsert<'indoor_centers'>;
 export type IndoorCenterUpdateDto = TableUpdate<'indoor_centers'>;
 
+export type IndoorCenterLikeDto = TableRow<'indoor_center_likes'>;
+export type IndoorCenterLikeInsertDto = TableInsert<'indoor_center_likes'>;
+export type IndoorCenterLikeUpdateDto = TableUpdate<'indoor_center_likes'>;
+
 export type IndoorCenterAdminDto = TableRow<'indoor_center_admins'>;
 export type IndoorCenterAdminInsertDto = TableInsert<'indoor_center_admins'>;
 export type IndoorCenterAdminUpdateDto = TableUpdate<'indoor_center_admins'>;

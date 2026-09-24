@@ -24,6 +24,8 @@ import {
   VERTICAL_LIFE_GRADES,
 } from '../models';
 
+import { STORAGE_KEYS } from '../constants';
+
 import { IS_BROWSER } from '../app/is-browser';
 
 import { LocalStorage } from './local-storage';
@@ -37,7 +39,7 @@ export class MapDataService {
 
   readonly mapActive: WritableSignal<boolean> = signal(false);
   mapBounds: WritableSignal<MapBounds | null> = signal(null);
-  private readonly mapBoundsStorageKey = 'map_bounds_v1';
+  private readonly mapBoundsStorageKey = STORAGE_KEYS.mapBounds;
 
   selectedMapCragItem: WritableSignal<MapCragItem | null> = signal(null);
   selectedMapParkingItem: WritableSignal<ParkingDto | null> = signal(null);
@@ -134,52 +136,60 @@ export class MapDataService {
       });
 
       let indoorItems: MapIndoorCenterItem[] = [];
-      const { data: sbIndoor, error: indoorError } = await this.supabase.client
-        .from('indoor_centers')
-        .select(
-          `
+      let indoorQuery = this.supabase.client.from('indoor_centers').select(
+        `
               id, name, slug, latitude, longitude, city, country, avatar_url,
               routes:indoor_routes(grade, climbing_kind, legacy),
-              topos:indoor_topos(id, name)
+              topos:indoor_topos(id, name),
+              liked:indoor_center_likes(id)
             `,
-        )
+      );
+
+      if (userId) {
+        indoorQuery = indoorQuery.eq('liked.user_id', userId);
+      }
+
+      const { data: sbIndoor, error: indoorError } = await indoorQuery
         .gte('latitude', bounds.south_west_latitude)
         .lte('latitude', bounds.north_east_latitude)
         .gte('longitude', bounds.south_west_longitude)
         .lte('longitude', bounds.north_east_longitude);
 
       if (!indoorError && sbIndoor) {
-        indoorItems = sbIndoor.map((c: MapIndoorCenterRaw) => {
-          const grades: Record<number, number> = {};
-          let activeRoutesCount = 0;
-          (c.routes || []).forEach((r: MapIndoorRouteRaw) => {
-            if (!r.legacy) {
-              activeRoutesCount++;
-              if (r.grade != null) {
-                grades[r.grade] = (grades[r.grade] || 0) + 1;
+        indoorItems = sbIndoor.map(
+          (c: MapIndoorCenterRaw & { liked?: { id: string }[] }) => {
+            const grades: Record<number, number> = {};
+            let activeRoutesCount = 0;
+            (c.routes || []).forEach((r: MapIndoorRouteRaw) => {
+              if (!r.legacy) {
+                activeRoutesCount++;
+                if (r.grade != null) {
+                  grades[r.grade] = (grades[r.grade] || 0) + 1;
+                }
               }
-            }
-          });
+            });
 
-          return {
-            id: c.id,
-            name: c.name,
-            slug: c.slug,
-            latitude: Number(c.latitude) || 0,
-            longitude: Number(c.longitude) || 0,
-            city: c.city || '',
-            country: c.country || '',
-            avatar_url: c.avatar_url || '',
-            is_indoor: true,
-            grades,
-            routes_count: activeRoutesCount,
-            topos: (c.topos || []).map((t: MapIndoorTopoRaw) => ({
-              id: t.id,
-              name: t.name,
-              slug: t.id,
-            })),
-          } as MapIndoorCenterItem;
-        });
+            return {
+              id: c.id,
+              name: c.name,
+              slug: c.slug,
+              latitude: Number(c.latitude) || 0,
+              longitude: Number(c.longitude) || 0,
+              city: c.city || '',
+              country: c.country || '',
+              avatar_url: c.avatar_url || '',
+              is_indoor: true,
+              grades,
+              routes_count: activeRoutesCount,
+              topos: (c.topos || []).map((t: MapIndoorTopoRaw) => ({
+                id: t.id,
+                name: t.name,
+                slug: t.id,
+              })),
+              liked: (c.liked?.length ?? 0) > 0,
+            } as MapIndoorCenterItem;
+          },
+        );
       }
 
       const combinedItems: MapItem[] = [...supabaseCragItems, ...indoorItems];

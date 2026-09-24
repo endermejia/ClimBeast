@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TuiAppearance } from '@taiga-ui/core';
+import { TuiAppearance, TuiIcon } from '@taiga-ui/core';
 import { TuiSkeleton } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
@@ -11,16 +11,18 @@ export interface UnifiedActiveItem {
   name: string;
   link: string[];
   visitedAt: number;
+  liked?: boolean;
 }
 
 @Component({
-  selector: 'app-home-crags-row',
+  selector: 'app-home-recent-places',
   standalone: true,
   imports: [
     CommonModule,
     RouterLink,
     TranslatePipe,
     TuiAppearance,
+    TuiIcon,
     TuiSkeleton,
   ],
   template: `
@@ -50,8 +52,16 @@ export interface UnifiedActiveItem {
               <a
                 [routerLink]="item.link"
                 tuiAppearance="textfield"
-                class="flex-none p-3 rounded-2xl"
+                class="flex-none p-3 rounded-2xl flex items-center gap-1.5"
               >
+                @if (item.liked) {
+                  <tui-icon
+                    icon="@tui.heart"
+                    class="shrink-0"
+                    style="font-size: 1rem; color: var(--tui-background-accent-2)"
+                    [attr.aria-label]="'favorite' | translate"
+                  />
+                }
                 <span class="whitespace-nowrap font-bold text-sm">{{
                   item.name
                 }}</span>
@@ -64,7 +74,7 @@ export interface UnifiedActiveItem {
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class HomeCragsRowComponent {
+export class HomeRecentPlacesComponent {
   followsLoaded = input<boolean>(true);
   isLoading = input<boolean>(false);
   items = input<UnifiedActiveItem[] | null>(null);

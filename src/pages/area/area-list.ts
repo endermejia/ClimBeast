@@ -12,6 +12,7 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
   TuiAppearance,
   TuiButton,
+  TuiDropdown,
   TuiIcon,
   TuiInput,
   TuiScrollbar,
@@ -19,6 +20,7 @@ import {
 import {
   TuiBadgedContent,
   TuiBadgeNotification,
+  TuiPulse,
   TuiSegmented,
 } from '@taiga-ui/kit';
 
@@ -30,10 +32,12 @@ import { FiltersService } from '../../services/filters.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 import { LayoutService } from '../../services/layout.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
+import { TourService, TourStep } from '../../services/tour.service';
 
 import { AreaCardSkeletonComponent } from '../../components/area/area-card-skeleton';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { PlaceCardComponent } from '../../components/ui/place-card';
+import { TourHintComponent } from '../../components/ui/tour-hint';
 
 import {
   ClimbingKinds,
@@ -52,13 +56,16 @@ import { matchesQuery } from '../../utils';
     PlaceCardComponent,
     RouterLink,
     RouterLinkActive,
+    TourHintComponent,
     TranslatePipe,
     TuiAppearance,
     TuiBadgedContent,
     TuiBadgeNotification,
     TuiButton,
+    TuiDropdown,
     TuiIcon,
     TuiInput,
+    TuiPulse,
     TuiScrollbar,
     TuiSegmented,
   ],
@@ -173,6 +180,9 @@ import { matchesQuery } from '../../utils';
         </section>
       </tui-scrollbar>
 
+      @let isExploreMapTourStep =
+        tourService.isActive() && tourService.step() === TourStep.EXPLORE_MAP;
+
       <div
         class="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-none w-full flex justify-center z-20"
       >
@@ -182,11 +192,31 @@ import { matchesQuery } from '../../utils';
           appearance="primary-grayscale"
           iconStart="@tui.map"
           routerLink="/explore"
-          class="pointer-events-auto shadow-xl"
+          class="pointer-events-auto shadow-xl relative"
+          [tuiDropdown]="tourHint"
+          [tuiDropdownManual]="isExploreMapTourStep"
+          tuiDropdownDirection="top"
+          (click)="onMapClick()"
         >
+          @if (isExploreMapTourStep) {
+            <span
+              class="absolute bottom-2 left-2 pointer-events-none z-10 size-0"
+            >
+              <tui-pulse />
+            </span>
+          }
           {{ 'map' | translate }}
         </button>
       </div>
+
+      <ng-template #tourHint>
+        <app-tour-hint
+          class="w-72 max-w-[calc(100vw-2rem)] block"
+          [description]="'tour.explore.mapButtonDescription' | translate"
+          (next)="tourService.next()"
+          (skip)="tourService.finish()"
+        />
+      </ng-template>
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -196,6 +226,18 @@ export class AreaListComponent {
   protected readonly skeletons = Array.from({ length: 16 }, (_, i) => i);
   protected readonly layoutService = inject(LayoutService);
   protected readonly router = inject(Router);
+  protected readonly tourService = inject(TourService);
+  protected readonly TourStep = TourStep;
+
+  protected onMapClick(): void {
+    if (
+      this.tourService.isActive() &&
+      this.tourService.step() === TourStep.EXPLORE_MAP
+    ) {
+      void this.tourService.next();
+    }
+  }
+
   protected readonly areasService = inject(AreasService);
   protected readonly filtersService = inject(FiltersService);
   protected readonly outdoorData = inject(OutdoorDataService);

@@ -46,6 +46,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { AuthStateService } from '../../services/auth-state.service';
 import { BreadcrumbsService } from '../../services/breadcrumbs.service';
+import { FavoritesDataService } from '../../services/favorites-data.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
@@ -82,6 +83,7 @@ import {
   VERTICAL_LIFE_GRADES,
 } from '../../models';
 
+import { STORAGE_KEYS } from '../../constants';
 import { AnyToSchedulePipe } from '../../pipes';
 import {
   handleErrorToast,
@@ -158,7 +160,9 @@ import { IS_BROWSER } from '../../app/is-browser';
                 <div class="mb-2">
                   <app-section-header
                     [title]="c.name"
-                    [showLike]="false"
+                    [showLike]="true"
+                    [liked]="isLiked()"
+                    (toggleLike)="onToggleLike()"
                     [actions]="headerActions()"
                   >
                     <span
@@ -542,6 +546,7 @@ export class IndoorCenterComponent {
 
   protected readonly authState = inject(AuthStateService);
   protected readonly breadcrumbsService = inject(BreadcrumbsService);
+  protected readonly favoritesData = inject(FavoritesDataService);
   protected readonly filterState = inject(FilterStateService);
   protected readonly filtersService = inject(FiltersService);
   protected readonly layoutService = inject(LayoutService);
@@ -557,6 +562,18 @@ export class IndoorCenterComponent {
   private readonly dialogs = inject(TuiDialogService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly visitedCentersService = inject(VisitedIndoorCentersService);
+
+  protected readonly isLiked = computed(() => {
+    const centerId = this.center()?.id;
+    if (!centerId) return false;
+    return this.favoritesData.likedIndoorCenterIds().includes(centerId);
+  });
+
+  onToggleLike(): void {
+    const c = this.center();
+    if (!c) return;
+    void this.indoor.toggleIndoorCenterLike(c.id);
+  }
 
   protected readonly activeTabIndex = signal(0);
   protected readonly loadedTabs = signal<Set<number>>(new Set([0]));
@@ -626,7 +643,7 @@ export class IndoorCenterComponent {
 
   protected readonly showLegacyRoutes = signal<boolean>(
     typeof window !== 'undefined'
-      ? localStorage.getItem('show_legacy_routes') === 'true'
+      ? localStorage.getItem(STORAGE_KEYS.showLegacyRoutes) === 'true'
       : false,
   );
 
@@ -965,7 +982,7 @@ export class IndoorCenterComponent {
       try {
         if (typeof window !== 'undefined') {
           localStorage.setItem(
-            'show_legacy_routes',
+            STORAGE_KEYS.showLegacyRoutes,
             String(this.showLegacyRoutes()),
           );
         }
@@ -1009,16 +1026,6 @@ export class IndoorCenterComponent {
       if (this.activeTabIndex() >= tabs.length && tabs.length > 0) {
         this.activeTabIndex.set(0);
       }
-    });
-
-    // Diagnóstico: secuencia de estados que decide spinner vs «no encontrado»
-    effect(() => {
-      console.log('[IndoorCenter]', {
-        status: this.centerResource.status(),
-        noEncontrado: this.centerNotFound(),
-        slug: inputValueOrUndefined(() => this.slug()),
-        error: this.centerResource.error() ?? null,
-      });
     });
 
     effect(() => {

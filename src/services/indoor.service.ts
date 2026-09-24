@@ -43,8 +43,8 @@ import { AuthStateService } from './auth-state.service';
 import { CacheService } from './cache.service';
 
 import { EquipperService } from './equipper.service';
+import { FavoritesDataService } from './favorites-data.service';
 import { IndoorCentersDataService } from './indoor-centers-data.service';
-
 import { IndoorDataService } from './indoor-data.service';
 import { SupabaseService } from './supabase.service';
 import { ToastService } from './toast.service';
@@ -63,6 +63,7 @@ export class IndoorService {
   private readonly indoorCentersData = inject(IndoorCentersDataService);
   private readonly authState = inject(AuthStateService);
   private readonly indoorData = inject(IndoorDataService);
+  private readonly favoritesData = inject(FavoritesDataService);
   private readonly ascentsService = inject(AscentsService);
   private readonly equipperService = inject(EquipperService);
   private readonly cache = inject(CacheService);
@@ -72,6 +73,54 @@ export class IndoorService {
 
   private readonly isBrowser = inject(IS_BROWSER);
   loading = signal(false);
+
+  /** Toggle like for an indoor center using Supabase RPC toggle_indoor_center_like */
+  async toggleIndoorCenterLike(centerId: string): Promise<boolean | null> {
+    if (!this.isBrowser) return null;
+    await this.supabase.whenReady();
+    try {
+      if (!centerId) {
+        throw new Error(
+          `[IndoorService] toggleIndoorCenterLike invalid centerId: ${String(centerId)}`,
+        );
+      }
+      const params = { p_center_id: centerId } as const;
+      const { data, error } = await this.supabase.client.rpc(
+        'toggle_indoor_center_like',
+        params,
+      );
+      if (error) throw error;
+      const liked = data;
+      // Update global indoor centers list
+      this.indoorCentersData.indoorCentersResource.update((value) => {
+        if (!value) return value;
+        return value
+          .map((item) => (item.id === centerId ? { ...item, liked } : item))
+          .sort((a, b) => {
+            // First sort by liked status (liked items first)
+            if (a.liked && !b.liked) return -1;
+            if (!a.liked && b.liked) return 1;
+            // Then sort by name
+            return a.name.localeCompare(b.name);
+          });
+      });
+      if (!liked) {
+        this.favoritesData.likedIndoorCentersResource.update((curr) =>
+          (curr || []).filter((item) => item.id !== centerId),
+        );
+        this.toast.showWithUndo('messages.toasts.favoriteRemoved', () => {
+          void this.toggleIndoorCenterLike(centerId);
+        });
+      } else {
+        this.toast.success('messages.toasts.favoriteAdded');
+      }
+      this.favoritesData.likedIndoorCentersResource.reload();
+      return liked;
+    } catch (e) {
+      console.error('[IndoorService] toggleIndoorCenterLike error', e);
+      throw e;
+    }
+  }
 
   /** Signals to outdoor/indoor consumers that routes should be reloaded */
   reloadCenterRoutes(): void {

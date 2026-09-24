@@ -11,6 +11,7 @@ import {
 
 import { Theme, Themes } from '../models';
 
+import { STORAGE_KEYS } from '../constants';
 import { triggerThemeTransition } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
@@ -30,7 +31,7 @@ export class ThemeService {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly themeStorageKey = 'app_theme';
+  readonly themeStorageKey = STORAGE_KEYS.theme;
 
   private readonly systemPrefersDark = signal(
     this.isBrowser &&

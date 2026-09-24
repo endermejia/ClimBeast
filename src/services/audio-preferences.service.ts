@@ -1,5 +1,7 @@
 import { inject, Injectable, signal, WritableSignal } from '@angular/core';
 
+import { STORAGE_KEYS } from '../constants';
+
 import { LocalStorage } from './local-storage';
 import { SupabaseService } from './supabase.service';
 
@@ -15,8 +17,8 @@ export class AudioPreferencesService {
   readonly messageSoundEnabled: WritableSignal<boolean> = signal(true);
   readonly notificationSoundEnabled: WritableSignal<boolean> = signal(false);
 
-  private readonly MESSAGE_SOUND_KEY = 'message_sound_enabled_v1';
-  private readonly NOTIFICATION_SOUND_KEY = 'notification_sound_enabled_v1';
+  private readonly MESSAGE_SOUND_KEY = STORAGE_KEYS.messageSound;
+  private readonly NOTIFICATION_SOUND_KEY = STORAGE_KEYS.notificationSound;
 
   hydrate(): void {
     try {

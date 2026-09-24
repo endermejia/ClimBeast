@@ -157,17 +157,17 @@ import { IS_BROWSER } from '../../app/is-browser';
           !!mapData.selectedMapParkingItem() ||
           !!mapData.selectedMapIndoorItem();
 
-        @let isExploreAreasTourStep =
+        @let isExploreListTourStep =
           tourService.isActive() &&
-          tourService.step() === TourStep.EXPLORE_AREAS;
+          tourService.step() === TourStep.EXPLORE_LIST;
 
         <!-- Bottom version (No selection) -->
         <div
           class="absolute left-1/2 z-60 sm:z-100 pointer-events-auto transition-opacity duration-300 ease-in-out"
           [style.bottom]="buttonBottomOffset()"
-          [style.opacity]="!hasSelection || isExploreAreasTourStep ? 1 : 0"
+          [style.opacity]="!hasSelection || isExploreListTourStep ? 1 : 0"
           [style.visibility]="
-            !hasSelection || isExploreAreasTourStep ? 'visible' : 'hidden'
+            !hasSelection || isExploreListTourStep ? 'visible' : 'hidden'
           "
           [style.transform]="'translate(-50%, -' + _sheetScrollTop() + 'px)'"
         >
@@ -180,11 +180,11 @@ import { IS_BROWSER } from '../../app/is-browser';
               [routerLink]="listLink()"
               class="relative"
               [tuiDropdown]="tourHint"
-              [tuiDropdownManual]="isExploreAreasTourStep"
+              [tuiDropdownManual]="isExploreListTourStep"
               tuiDropdownDirection="top"
               (click)="onOutdoorClick()"
             >
-              @if (isExploreAreasTourStep) {
+              @if (isExploreListTourStep) {
                 <span
                   class="absolute bottom-2 left-2 pointer-events-none z-10 size-0"
                 >
@@ -503,8 +503,8 @@ export class ExploreComponent {
   protected readonly tourDescription = computed(() => {
     const step = this.tourService.step();
     switch (step) {
-      case TourStep.EXPLORE_AREAS:
-        return 'tour.explore.areasDescription';
+      case TourStep.EXPLORE_LIST:
+        return 'tour.explore.mapDescription';
       default:
         return 'tour.explore.description';
     }
@@ -513,7 +513,7 @@ export class ExploreComponent {
   protected onOutdoorClick(): void {
     if (
       this.tourService.isActive() &&
-      this.tourService.step() === TourStep.EXPLORE_AREAS
+      this.tourService.step() === TourStep.EXPLORE_LIST
     ) {
       void this.tourService.next();
     }

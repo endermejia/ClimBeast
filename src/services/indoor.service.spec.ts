@@ -12,6 +12,7 @@ import { AscentsService } from './ascents.service';
 import { AuthStateService } from './auth-state.service';
 import { CacheService } from './cache.service';
 import { EquipperService } from './equipper.service';
+import { FavoritesDataService } from './favorites-data.service';
 import { IndoorCentersDataService } from './indoor-centers-data.service';
 import { IndoorDataService } from './indoor-data.service';
 import { IndoorService } from './indoor.service';
@@ -87,7 +88,16 @@ describe('IndoorService - Admin Requests', () => {
         },
         {
           provide: IndoorCentersDataService,
-          useValue: { indoorRoutesReloadTick: { update: vi.fn() } },
+          useValue: {
+            indoorRoutesReloadTick: { update: vi.fn() },
+            indoorCentersResource: { update: vi.fn(), reload: vi.fn() },
+          },
+        },
+        {
+          provide: FavoritesDataService,
+          useValue: {
+            likedIndoorCentersResource: { reload: vi.fn(), update: vi.fn() },
+          },
         },
         {
           provide: IndoorDataService,
@@ -461,6 +471,58 @@ describe('IndoorService - Admin Requests', () => {
       expect(deleteCalled).toBe(true);
       expect(mockToast.success).toHaveBeenCalledWith(
         'admin.routesetterRequests.requestRejected',
+      );
+    });
+  });
+
+  describe('toggleIndoorCenterLike', () => {
+    it('returns null on server platform', async () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          IndoorService,
+          { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: IS_BROWSER, useValue: false },
+          { provide: SupabaseService, useValue: mockSupabase },
+          {
+            provide: AuthStateService,
+            useValue: { userProfile: vi.fn(() => ({ id: 'u-1' })) },
+          },
+          { provide: CacheService, useValue: { remove: vi.fn() } },
+          { provide: ToastService, useValue: mockToast },
+          { provide: TuiDialogService, useValue: { open: vi.fn() } },
+          { provide: TranslateService, useValue: MOCK_TRANSLATE },
+          { provide: TranslateStore, useValue: {} },
+        ],
+      });
+      const svc = TestBed.inject(IndoorService);
+      expect(await svc.toggleIndoorCenterLike('center-1')).toBeNull();
+    });
+
+    it('toggles like successfully via RPC on browser', async () => {
+      vi.spyOn(mockSupabase.client, 'rpc').mockResolvedValue({
+        data: true,
+        error: null,
+      } as never);
+
+      const result = await service.toggleIndoorCenterLike('center-1');
+      expect(result).toBe(true);
+      expect(mockToast.success).toHaveBeenCalledWith(
+        'messages.toasts.favoriteAdded',
+      );
+    });
+
+    it('unlikes successfully and shows undo toast on browser', async () => {
+      vi.spyOn(mockSupabase.client, 'rpc').mockResolvedValue({
+        data: false,
+        error: null,
+      } as never);
+
+      const result = await service.toggleIndoorCenterLike('center-1');
+      expect(result).toBe(false);
+      expect(mockToast.showWithUndo).toHaveBeenCalledWith(
+        'messages.toasts.favoriteRemoved',
+        expect.any(Function),
       );
     });
   });

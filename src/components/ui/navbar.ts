@@ -29,6 +29,7 @@ import { filter, map } from 'rxjs';
 import { AppNotificationsService } from '../../services/app-notifications.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { CartService } from '../../services/cart.service';
+import { ExploreTabService } from '../../services/explore-tab.service';
 import { LayoutService } from '../../services/layout.service';
 import { MessagingService } from '../../services/messaging.service';
 import { ScrollService } from '../../services/scroll.service';
@@ -144,15 +145,15 @@ import { TourHintComponent } from './tour-hint';
 
           <!-- Explore -->
           <a
-            #explore="routerLinkActive"
-            [routerLink]="layout.isOffline() ? null : '/explore'"
-            routerLinkActive
+            [routerLink]="layout.isOffline() ? null : exploreTab.link()"
+            [class.active]="isExploreActive()"
             tuiAppearance="flat-grayscale"
             [tuiSkeleton]="loading()"
             class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full relative group"
             [class.pointer-events-none]="layout.isOffline()"
             [class.opacity-50]="layout.isOffline()"
             [attr.aria-label]="'nav.explore' | translate"
+            (click)="onExploreClick()"
           >
             <div
               class="absolute inset-0 pointer-events-none"
@@ -173,9 +174,9 @@ import { TourHintComponent } from './tour-hint';
               </span>
             }
             <tui-icon
-              icon="@tui.map"
+              icon="@tui.compass"
               [style.color]="
-                explore.isActive
+                isExploreActive()
                   ? 'var(--tui-text-negative)'
                   : 'var(--tui-text-primary)'
               "
@@ -442,17 +443,37 @@ export class NavbarComponent {
     }
   });
   protected readonly layout = inject(LayoutService);
+  protected readonly exploreTab = inject(ExploreTabService);
 
   private readonly router = inject(Router);
   private readonly scrollService = inject(ScrollService);
 
-  protected readonly isProfileActive = toSignal(
+  private readonly currentPath = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      map((e) => e.urlAfterRedirects.startsWith('/profile')),
+      map((e) => e.urlAfterRedirects),
     ),
-    { initialValue: this.router.url.startsWith('/profile') },
+    { initialValue: this.router.url },
   );
+
+  protected readonly isProfileActive = computed(() =>
+    this.currentPath().startsWith('/profile'),
+  );
+
+  /**
+   * El botón "Explorar" engloba los dos listados del segmented: áreas e
+   * indoor (incluidas sus subrutas), sea cual sea el destino actual del
+   * enlace dinámico.
+   */
+  protected readonly isExploreActive = computed(() => {
+    const path = this.currentPath().split('?')[0];
+    return (
+      path === '/area' ||
+      path.startsWith('/area/') ||
+      path === '/indoor' ||
+      path.startsWith('/indoor/')
+    );
+  });
 
   protected scrollToTop(event: MouseEvent): void {
     if (this.router.url === '/home') {
@@ -463,6 +484,15 @@ export class NavbarComponent {
 
   protected onTourNext(): void {
     this.tourService.next();
+  }
+
+  protected onExploreClick(): void {
+    if (
+      this.tourService.isActive() &&
+      this.tourService.step() === TourStep.EXPLORE
+    ) {
+      void this.tourService.next();
+    }
   }
 
   protected openChat(): void {

@@ -1,13 +1,17 @@
 import { inject, Injectable } from '@angular/core';
 
 import {
+  AmountByEveryGrade,
   AreaListItem,
   AreaListRpcRow,
-  AmountByEveryGrade,
   CragListItem,
   CragListRpcRow,
+  MapIndoorCenterItem,
+  MapIndoorCenterRaw,
+  MapIndoorRouteRaw,
   RouteWithExtras,
   RouteWithJoins,
+  VERTICAL_LIFE_GRADES,
 } from '../models';
 
 import { mapRouteToExtras, RawRouteData } from '../utils/route-mapper';
@@ -145,5 +149,45 @@ export class FavoritesService {
         includeTopos: true,
       }),
     );
+  }
+
+  async getLikedIndoorCenters(userId: string): Promise<MapIndoorCenterItem[]> {
+    if (!this.isBrowser) return [];
+
+    const { data: centerLikes } = await this.supabase.client
+      .from('indoor_center_likes')
+      .select('center_id')
+      .eq('user_id', userId);
+
+    const centerIds = centerLikes?.map((c) => c.center_id) || [];
+    if (!centerIds.length) return [];
+
+    const { data, error } = await this.supabase.client
+      .from('indoor_centers')
+      .select('*, topos:indoor_topos(id, name), routes:indoor_routes(grade)')
+      .in('id', centerIds)
+      .order('name');
+
+    if (error) {
+      console.error('[FavoritesService] getLikedIndoorCenters error', error);
+      return [];
+    }
+
+    return (data || []).map((c: MapIndoorCenterRaw) => {
+      const grades: AmountByEveryGrade = {};
+      (c.routes || []).forEach((r: MapIndoorRouteRaw) => {
+        const g = r.grade;
+        if (g != null && g >= 0) {
+          grades[g as VERTICAL_LIFE_GRADES] =
+            (grades[g as VERTICAL_LIFE_GRADES] ?? 0) + 1;
+        }
+      });
+      return {
+        ...c,
+        routes_count: c.routes?.length || 0,
+        grades,
+        liked: true,
+      } as MapIndoorCenterItem;
+    });
   }
 }

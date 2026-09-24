@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   input,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -12,13 +13,16 @@ import { TuiCardLarge, TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { AmountByEveryGrade } from '../../models';
+import { FavoritesDataService } from '../../services/favorites-data.service';
 
 import { ChartRoutesByGradeComponent } from '../charts/chart-routes-by-grade';
+
+import { AmountByEveryGrade } from '../../models';
 
 export type PlaceCardKind = 'area' | 'crag' | 'indoor';
 
 export interface PlaceCardItem {
+  id?: string | number;
   name: string;
   slug: string;
   liked?: boolean;
@@ -238,9 +242,24 @@ export class PlaceCardComponent {
     return kind && data ? { kind, data } : null;
   });
 
-  protected readonly showLiked = computed(
-    () => this.liked() || !!this.item()?.liked,
-  );
+  private readonly favoritesData = inject(FavoritesDataService);
+
+  protected readonly showLiked = computed(() => {
+    if (this.liked() || this.item()?.liked) return true;
+    const kind = this.kind();
+    const id = this.item()?.id;
+    if (!kind || id == null) return false;
+    if (kind === 'indoor') {
+      return this.favoritesData.likedIndoorCenterIds().includes(String(id));
+    }
+    if (kind === 'area') {
+      return this.favoritesData.likedAreaIds().includes(Number(id));
+    }
+    if (kind === 'crag') {
+      return this.favoritesData.likedCragIds().includes(Number(id));
+    }
+    return false;
+  });
 
   protected readonly titleLink = computed<(string | number)[]>(() => {
     const data = this.item();

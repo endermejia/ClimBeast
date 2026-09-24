@@ -8,6 +8,8 @@ import {
 
 import { ORDERED_GRADE_VALUES } from '../models';
 
+import { STORAGE_KEYS } from '../constants';
+
 import { LocalStorage } from './local-storage';
 
 @Injectable({ providedIn: 'root' })
@@ -15,12 +17,12 @@ export class FilterStateService {
   private readonly localStorage = inject(LocalStorage);
 
   // ---- Area List Filters ----
-  private readonly areaListGradeRangeKey = 'area_list_grade_range_v1';
-  private readonly areaListCategoriesKey = 'area_list_categories_v1';
-  private readonly areaListShadeKey = 'area_list_shade_v1';
-  private readonly areaListShowIndoorKey = 'area_list_show_indoor_v1';
-  private readonly areaListShowOutdoorKey = 'area_list_show_outdoor_v1';
-  private readonly areaListToposOnlyKey = 'area_list_topos_only_v1';
+  private readonly areaListGradeRangeKey = STORAGE_KEYS.areaListGradeRange;
+  private readonly areaListCategoriesKey = STORAGE_KEYS.areaListCategories;
+  private readonly areaListShadeKey = STORAGE_KEYS.areaListShade;
+  private readonly areaListShowIndoorKey = STORAGE_KEYS.areaListShowIndoor;
+  private readonly areaListShowOutdoorKey = STORAGE_KEYS.areaListShowOutdoor;
+  private readonly areaListToposOnlyKey = STORAGE_KEYS.areaListToposOnly;
 
   areaListGradeRange: WritableSignal<[number, number]> = signal([
     0,
@@ -35,12 +37,13 @@ export class FilterStateService {
   areaListToposOnly: WritableSignal<boolean> = signal(false);
 
   // ---- Home Feed List Filters ----
-  private readonly feedGradeRangeKey = 'feed_grade_range_v1';
-  private readonly feedCategoriesKey = 'feed_categories_v1';
-  private readonly feedShowIndoorKey = 'feed_show_indoor_v1';
-  private readonly feedShowIndoorLegacyKey = 'feed_show_indoor_ascents_v1';
-  private readonly feedShowOutdoorKey = 'feed_show_outdoor_v1';
-  private readonly feedShowIndoorAscentsKey = 'feed_show_indoor_ascents_v2';
+  private readonly feedGradeRangeKey = STORAGE_KEYS.feedGradeRange;
+  private readonly feedCategoriesKey = STORAGE_KEYS.feedCategories;
+  private readonly feedShowIndoorKey = STORAGE_KEYS.feedShowIndoor;
+  private readonly feedShowIndoorLegacyKey = STORAGE_KEYS.feedShowIndoorLegacy;
+  private readonly feedShowOutdoorKey = STORAGE_KEYS.feedShowOutdoor;
+  private readonly feedShowIndoorAscentsKey =
+    STORAGE_KEYS.feedShowIndoorAscents;
 
   feedGradeRange: WritableSignal<[number, number]> = signal([
     0,
@@ -53,13 +56,13 @@ export class FilterStateService {
 
   // ---- User Profile Ascents (Feed) Filters ----
   private readonly profileAscentsGradeRangeKey =
-    'profile_ascents_grade_range_v1';
+    STORAGE_KEYS.profileAscentsGradeRange;
   private readonly profileAscentsCategoriesKey =
-    'profile_ascents_categories_v1';
+    STORAGE_KEYS.profileAscentsCategories;
   private readonly profileAscentsShowIndoorKey =
-    'profile_ascents_show_indoor_v1';
+    STORAGE_KEYS.profileAscentsShowIndoor;
   private readonly profileAscentsShowOutdoorKey =
-    'profile_ascents_show_outdoor_v1';
+    STORAGE_KEYS.profileAscentsShowOutdoor;
 
   profileAscentsGradeRange: WritableSignal<[number, number]> = signal([
     0,
@@ -70,9 +73,12 @@ export class FilterStateService {
   profileAscentsShowOutdoor: WritableSignal<boolean> = signal(false);
 
   // ---- Indoor Routes Filters ----
-  private readonly indoorRoutesGradeRangeKey = 'indoor_routes_grade_range_v1';
-  private readonly indoorRoutesCategoriesKey = 'indoor_routes_categories_v1';
-  private readonly indoorRoutesToposOnlyKey = 'indoor_routes_topos_only_v1';
+  private readonly indoorRoutesGradeRangeKey =
+    STORAGE_KEYS.indoorRoutesGradeRange;
+  private readonly indoorRoutesCategoriesKey =
+    STORAGE_KEYS.indoorRoutesCategories;
+  private readonly indoorRoutesToposOnlyKey =
+    STORAGE_KEYS.indoorRoutesToposOnly;
 
   indoorRoutesGradeRange: WritableSignal<[number, number]> = signal([
     0,
@@ -82,8 +88,8 @@ export class FilterStateService {
   indoorRoutesToposOnly: WritableSignal<boolean> = signal(false);
 
   // ---- Indoor Topo Filters ----
-  private readonly indoorTopoGradeRangeKey = 'indoor_topo_grade_range_v1';
-  private readonly indoorTopoMovesRangeKey = 'indoor_topo_moves_range_v1';
+  private readonly indoorTopoGradeRangeKey = STORAGE_KEYS.indoorTopoGradeRange;
+  private readonly indoorTopoMovesRangeKey = STORAGE_KEYS.indoorTopoMovesRange;
 
   indoorTopoGradeRange: WritableSignal<[number, number]> = signal([
     0,

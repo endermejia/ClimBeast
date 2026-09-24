@@ -1,6 +1,11 @@
 import { computed, inject, Injectable, Signal } from '@angular/core';
 
-import { AreaListItem, CragListItem, RouteWithExtras } from '../models';
+import {
+  AreaListItem,
+  CragListItem,
+  MapIndoorCenterItem,
+  RouteWithExtras,
+} from '../models';
 
 import { CACHE_KEYS } from '../constants';
 import { createCachedResource } from '../utils';
@@ -68,6 +73,32 @@ export class FavoritesDataService {
   readonly likedCragsResource = this.cachedLikedCrags.resource;
   readonly likedCrags: Signal<CragListItem[]> = this.cachedLikedCrags.signal;
   readonly likedCragIds = computed(() => this.likedCrags().map((c) => c.id));
+
+  // ---- Liked Indoor Centers ----
+  private readonly cachedLikedIndoorCenters = createCachedResource<
+    string | null,
+    MapIndoorCenterItem[]
+  >({
+    params: () => this.supabase.authUserId(),
+    isBrowser: this.isBrowser,
+    cacheKey: (userId) =>
+      userId ? CACHE_KEYS.likedIndoorCenters(userId) : null,
+    fetcher: async (userId) => {
+      if (!userId) return [];
+      await this.supabase.whenReady();
+      return this.favorites.getLikedIndoorCenters(userId);
+    },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'FavoritesDataService',
+  });
+
+  readonly likedIndoorCentersResource = this.cachedLikedIndoorCenters.resource;
+  readonly likedIndoorCenters: Signal<MapIndoorCenterItem[]> =
+    this.cachedLikedIndoorCenters.signal;
+  readonly likedIndoorCenterIds = computed(() =>
+    this.likedIndoorCenters().map((c) => c.id),
+  );
 
   // ---- Liked Routes ----
   private readonly cachedLikedRoutes = createCachedResource<

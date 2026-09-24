@@ -8,6 +8,8 @@ export const CACHE_KEYS = {
   // Likes/Favorites
   likedAreas: (userId: string) => `cached_liked_areas_${userId}_v2`,
   likedCrags: (userId: string) => `cached_liked_crags_${userId}_v2`,
+  likedIndoorCenters: (userId: string) =>
+    `cached_liked_indoor_centers_${userId}_v1`,
   likedRoutes: (userId: string) => `cached_liked_routes_${userId}_v2`,
 
   // Areas

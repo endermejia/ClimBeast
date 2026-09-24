@@ -24,6 +24,7 @@ import { CartService } from '../../services/cart.service';
 import { CheckoutService } from '../../services/checkout.service';
 import { SupabaseService } from '../../services/supabase.service';
 
+import { STORAGE_KEYS } from '../../constants';
 import { reactToObservable } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
@@ -327,7 +328,7 @@ export class CheckoutComponent {
     if (this.isBrowser) {
       void this.cart.refreshStock();
 
-      const savedInfo = localStorage.getItem('checkout_shipping_info');
+      const savedInfo = localStorage.getItem(STORAGE_KEYS.checkoutShippingInfo);
       if (savedInfo) {
         try {
           const parsed = JSON.parse(savedInfo);
@@ -344,7 +345,10 @@ export class CheckoutComponent {
       }
 
       reactToObservable(this.shippingForm.valueChanges, (val) => {
-        localStorage.setItem('checkout_shipping_info', JSON.stringify(val));
+        localStorage.setItem(
+          STORAGE_KEYS.checkoutShippingInfo,
+          JSON.stringify(val),
+        );
       });
     }
   }

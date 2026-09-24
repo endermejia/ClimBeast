@@ -11,6 +11,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 
+import { TuiSwipe } from '@taiga-ui/cdk';
 import { TuiRoot } from '@taiga-ui/core';
 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -22,12 +23,14 @@ import { LocalStorage } from '../services/local-storage';
 import { NotificationService } from '../services/notification.service';
 import { RealtimeService } from '../services/realtime.service';
 import { SeoService } from '../services/seo.service';
+import { SwipeNavigationService } from '../services/swipe-navigation.service';
 import { ThemeService } from '../services/theme.service';
 
 import { CartOverlayComponent } from '../components/cart-overlay/cart-overlay';
 import { NavbarComponent } from '../components/ui/navbar';
 import { OfflineBannerComponent } from '../components/ui/offline-banner';
 
+import { STORAGE_KEYS } from '../constants';
 import { reactToObservable } from '../utils';
 
 import { IS_BROWSER } from './is-browser';
@@ -41,6 +44,7 @@ import { IS_BROWSER } from './is-browser';
     RouterOutlet,
     TranslateModule,
     TuiRoot,
+    TuiSwipe,
   ],
   template: `
     <tui-root [attr.tuiTheme]="isDark() ? 'dark' : 'light'">
@@ -51,7 +55,11 @@ import { IS_BROWSER } from './is-browser';
         @if (showNavbar()) {
           <app-navbar />
         }
-        <main class="flex-1 min-h-0 relative flex flex-col overflow-y-auto">
+        <main
+          data-swipe-host
+          class="flex-1 min-h-0 relative flex flex-col overflow-y-auto"
+          (tuiSwipe)="swipeNav.onSwipe($event)"
+        >
           <router-outlet />
         </main>
       </div>
@@ -67,6 +75,7 @@ import { IS_BROWSER } from './is-browser';
 })
 export class AppComponent implements OnDestroy {
   protected readonly router = inject(Router);
+  protected readonly swipeNav = inject(SwipeNavigationService);
   private readonly themeService = inject(ThemeService);
   protected readonly cartService = inject(CartService);
   private swCheckInterval: ReturnType<typeof setInterval> | null = null;
@@ -88,7 +97,7 @@ export class AppComponent implements OnDestroy {
   private readonly seo = inject(SeoService);
   private readonly swUpdate = inject(SwUpdate);
 
-  private readonly gdprKey = 'lw_gdpr_accepted';
+  private readonly gdprKey = STORAGE_KEYS.gdprAccepted;
 
   /**
    * Ruta actual sin query/hash. El valor inicial sale de la URL de forma
@@ -132,9 +141,9 @@ export class AppComponent implements OnDestroy {
     afterNextRender(() => {
       if (
         this.isBrowser &&
-        this.storage.getItem('lw_update_applied') === 'true'
+        this.storage.getItem(STORAGE_KEYS.updateApplied) === 'true'
       ) {
-        this.storage.removeItem('lw_update_applied');
+        this.storage.removeItem(STORAGE_KEYS.updateApplied);
         this.notifications.success('updateApplied');
       }
     });
@@ -234,7 +243,7 @@ export class AppComponent implements OnDestroy {
           ),
         ),
         () => {
-          this.storage.setItem('lw_update_applied', 'true');
+          this.storage.setItem(STORAGE_KEYS.updateApplied, 'true');
           void this.swUpdate
             .activateUpdate()
             .then(() => {
@@ -248,7 +257,7 @@ export class AppComponent implements OnDestroy {
 
       // Handle unrecoverable state (corrupted cache)
       reactToObservable(this.swUpdate.unrecoverable, () => {
-        this.storage.setItem('lw_update_applied', 'true');
+        this.storage.setItem(STORAGE_KEYS.updateApplied, 'true');
         window.location.reload();
       });
     }

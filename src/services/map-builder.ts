@@ -11,6 +11,8 @@ import {
   ParkingDto,
 } from '../models';
 
+import { STORAGE_KEYS } from '../constants';
+
 import { IS_BROWSER } from '../app/is-browser';
 
 import { LocalStorage } from './local-storage';
@@ -140,7 +142,7 @@ export class MapBuilder {
 
       // If not in GlobalData, try LocalStorage
       if (!savedViewport || !this.areBoundsValid(savedViewport)) {
-        const raw = this.localStorage.getItem('map_bounds_v1');
+        const raw = this.localStorage.getItem(STORAGE_KEYS.mapBounds);
         if (raw) {
           try {
             const parsed = JSON.parse(raw) as MapBounds;
@@ -280,7 +282,10 @@ export class MapBuilder {
       cb.onViewportChange(viewport);
       // Persist to localStorage so the position survives page refreshes
       try {
-        this.localStorage.setItem('map_bounds_v1', JSON.stringify(viewport));
+        this.localStorage.setItem(
+          STORAGE_KEYS.mapBounds,
+          JSON.stringify(viewport),
+        );
       } catch {
         // Silent fail
       }
@@ -950,7 +955,10 @@ export class MapBuilder {
     const latLng: [number, number] = [latitude, longitude];
 
     // Save user location to localStorage for future sessions
-    this.localStorage.setItem('lw_user_location', JSON.stringify(latLng));
+    this.localStorage.setItem(
+      STORAGE_KEYS.userLocation,
+      JSON.stringify(latLng),
+    );
 
     const icon = new L.DivIcon({
       html: '<div class="lw-user-marker" aria-hidden="true"></div>',

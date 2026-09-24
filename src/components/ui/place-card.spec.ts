@@ -5,7 +5,10 @@ import { provideRouter } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { SupabaseService } from '../../services/supabase.service';
+
 import { IS_BROWSER } from '../../app/is-browser';
+import { MockSupabaseService } from '../../testing/mock-supabase.service';
 
 import { PlaceCardComponent, PlaceCardItem } from './place-card';
 
@@ -71,6 +74,7 @@ describe('PlaceCardComponent', () => {
         provideRouter([]),
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: IS_BROWSER, useValue: true },
+        { provide: SupabaseService, useClass: MockSupabaseService },
       ],
     }).compileComponents();
 
@@ -161,6 +165,16 @@ describe('PlaceCardComponent', () => {
 
     it('should show the liked heart when item is liked', () => {
       componentRef.setInput('item', mockArea);
+      fixture.detectChanges();
+
+      expect(
+        fixture.nativeElement.querySelector('[aria-label="favorite"]'),
+      ).toBeTruthy();
+    });
+
+    it('should show the liked heart for indoor center when liked', () => {
+      componentRef.setInput('kind', 'indoor');
+      componentRef.setInput('item', { ...mockIndoor, liked: true });
       fixture.detectChanges();
 
       expect(
