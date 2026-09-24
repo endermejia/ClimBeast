@@ -23,8 +23,12 @@ describe('ExploreTabService', () => {
       providers: [
         provideRouter([
           { path: 'home', component: BlankComponent },
+          { path: 'explore', component: BlankComponent },
           { path: 'area', component: BlankComponent },
+          { path: 'area/:areaSlug', component: BlankComponent },
+          { path: 'area/:areaSlug/:cragSlug', component: BlankComponent },
           { path: 'indoor', component: BlankComponent },
+          { path: 'indoor/:slug', component: BlankComponent },
           { path: 'profile', component: BlankComponent },
         ]),
         { provide: LocalStorage, useClass: MockLocalStorage },
@@ -80,5 +84,88 @@ describe('ExploreTabService', () => {
 
     expect(service.link()).toBe('/indoor');
     expect(storage.getItem(STORAGE_KEYS.exploreLastTab)).toBe('/indoor');
+  });
+
+  it('vuelve al detalle visitado solo la primera vez', async () => {
+    service = TestBed.inject(ExploreTabService);
+
+    await router.navigate(['/area', 'el-chorro']);
+    TestBed.flushEffects();
+
+    // Sobre el propio detalle el destino es el listado
+    expect(service.target()).toBe('/area');
+
+    await router.navigate(['/home']);
+    TestBed.flushEffects();
+    expect(service.target()).toBe('/area/el-chorro');
+
+    // Primera pulsación: retoma el detalle
+    await router.navigateByUrl(service.target());
+    TestBed.flushEffects();
+    expect(router.url).toBe('/area/el-chorro');
+    expect(service.target()).toBe('/area');
+
+    // Segunda pulsación: va al listado
+    await router.navigateByUrl(service.target());
+    TestBed.flushEffects();
+    expect(router.url).toBe('/area');
+
+    // Y desde entonces sigue yendo al listado
+    await router.navigate(['/home']);
+    TestBed.flushEffects();
+    expect(service.target()).toBe('/area');
+  });
+
+  it('recuerda el detalle de un crag y de un centro indoor', async () => {
+    service = TestBed.inject(ExploreTabService);
+
+    await router.navigate(['/area', 'el-chorro', 'la-nevera']);
+    TestBed.flushEffects();
+    await router.navigate(['/home']);
+    TestBed.flushEffects();
+    expect(service.target()).toBe('/area/el-chorro/la-nevera');
+
+    await router.navigate(['/indoor', 'sharma-climbing']);
+    TestBed.flushEffects();
+    await router.navigate(['/profile']);
+    TestBed.flushEffects();
+    expect(service.target()).toBe('/indoor/sharma-climbing');
+  });
+
+  it('la segunda pulsación va al último listado visitado', async () => {
+    service = TestBed.inject(ExploreTabService);
+
+    await router.navigate(['/indoor']);
+    TestBed.flushEffects();
+    await router.navigate(['/area', 'el-chorro']);
+    TestBed.flushEffects();
+    await router.navigate(['/home']);
+    TestBed.flushEffects();
+
+    // Primera pulsación: al detalle
+    expect(service.target()).toBe('/area/el-chorro');
+    await router.navigateByUrl(service.target());
+    TestBed.flushEffects();
+
+    // Segunda: al listado que fue el último en visitarse (indoor)
+    expect(service.target()).toBe('/indoor');
+    await router.navigateByUrl(service.target());
+    TestBed.flushEffects();
+    expect(router.url).toBe('/indoor');
+    expect(service.pendingDetail()).toBeNull();
+  });
+
+  it('volver a un listado olvida el detalle pendiente', async () => {
+    service = TestBed.inject(ExploreTabService);
+
+    await router.navigate(['/area', 'el-chorro']);
+    TestBed.flushEffects();
+    await router.navigate(['/indoor']);
+    TestBed.flushEffects();
+    await router.navigate(['/home']);
+    TestBed.flushEffects();
+
+    expect(service.pendingDetail()).toBeNull();
+    expect(service.target()).toBe('/indoor');
   });
 });

@@ -145,7 +145,7 @@ import { TourHintComponent } from './tour-hint';
 
           <!-- Explore -->
           <a
-            [routerLink]="layout.isOffline() ? null : exploreTab.link()"
+            [routerLink]="layout.isOffline() ? null : exploreTab.target()"
             [class.active]="isExploreActive()"
             tuiAppearance="flat-grayscale"
             [tuiSkeleton]="loading()"
