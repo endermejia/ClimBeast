@@ -83,9 +83,7 @@ export interface MaterialRequestDialogData {
           >
             {{ 'materialRequest.availablePot' | translate }}
           </span>
-          <span
-            class="text-base font-black text-(--tui-text-accent) tabular-nums"
-          >
+          <span class="text-base font-black tabular-nums">
             {{ context.data.availableBalance | number: '1.2-2' }}€
           </span>
         </div>

@@ -72,6 +72,16 @@ export class FilterStateService {
   profileAscentsShowIndoor: WritableSignal<boolean> = signal(false);
   profileAscentsShowOutdoor: WritableSignal<boolean> = signal(false);
 
+  // ---- Indoor Centers List Filters ----
+  private readonly indoorListGradeRangeKey = STORAGE_KEYS.indoorListGradeRange;
+  private readonly indoorListToposOnlyKey = STORAGE_KEYS.indoorListToposOnly;
+
+  indoorListGradeRange: WritableSignal<[number, number]> = signal([
+    0,
+    ORDERED_GRADE_VALUES.length - 1,
+  ]);
+  indoorListToposOnly: WritableSignal<boolean> = signal(false);
+
   // ---- Indoor Routes Filters ----
   private readonly indoorRoutesGradeRangeKey =
     STORAGE_KEYS.indoorRoutesGradeRange;
@@ -206,6 +216,20 @@ export class FilterStateService {
       );
     });
 
+    // Indoor centers list persistence
+    effect(() => {
+      this.localStorage.setItem(
+        this.indoorListGradeRangeKey,
+        JSON.stringify(this.indoorListGradeRange()),
+      );
+    });
+    effect(() => {
+      this.localStorage.setItem(
+        this.indoorListToposOnlyKey,
+        String(this.indoorListToposOnly()),
+      );
+    });
+
     // Indoor routes persistence
     effect(() => {
       this.localStorage.setItem(
@@ -320,6 +344,24 @@ export class FilterStateService {
       );
       if (rawFeedIndoorAscents !== null) {
         this.feedShowIndoorAscents.set(rawFeedIndoorAscents === 'true');
+      }
+
+      // Indoor centers list
+      const rawIndoorListGradeRange = this.localStorage.getItem(
+        this.indoorListGradeRangeKey,
+      );
+      if (rawIndoorListGradeRange) {
+        const parsed = JSON.parse(rawIndoorListGradeRange);
+        if (Array.isArray(parsed) && parsed.length === 2) {
+          this.indoorListGradeRange.set(parsed as [number, number]);
+        }
+      }
+
+      const rawIndoorListToposOnly = this.localStorage.getItem(
+        this.indoorListToposOnlyKey,
+      );
+      if (rawIndoorListToposOnly !== null) {
+        this.indoorListToposOnly.set(rawIndoorListToposOnly === 'true');
       }
 
       // Indoor routes

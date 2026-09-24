@@ -74,23 +74,36 @@ describe('HomeRecentPlacesComponent', () => {
     }
   });
 
-  it('should show favorite heart icon only for liked items', () => {
+  it('should underline only favorite items', () => {
     componentRef.setInput('followsLoaded', true);
     componentRef.setInput('isLoading', false);
     componentRef.setInput('items', mockItems);
     fixture.detectChanges();
 
-    const links = fixture.nativeElement.querySelectorAll('a');
-    expect(links.length).toBe(2);
+    const spans = fixture.nativeElement.querySelectorAll('a span');
+    expect(spans.length).toBe(2);
 
     // First item is liked
-    const firstLink = links[0];
-    const heartIcon = firstLink.querySelector('tui-icon[icon="@tui.heart"]');
-    expect(heartIcon).toBeTruthy();
-    expect(heartIcon?.getAttribute('aria-label')).toBe('favorite');
+    expect(spans[0].classList.contains('underline')).toBe(true);
+    expect(spans[0].classList.contains('underline-offset-2')).toBe(true);
 
     // Second item is not liked
-    const secondLink = links[1];
-    expect(secondLink.querySelector('tui-icon')).toBeNull();
+    expect(spans[1].classList.contains('underline')).toBe(false);
+    expect(spans[1].classList.contains('underline-offset-2')).toBe(false);
+  });
+
+  it('should not render heart icons nor inline colors', () => {
+    componentRef.setInput('followsLoaded', true);
+    componentRef.setInput('isLoading', false);
+    componentRef.setInput('items', mockItems);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('tui-icon')).toBeNull();
+
+    const spans = fixture.nativeElement.querySelectorAll('a span');
+    expect(spans.length).toBe(2);
+    for (const span of spans) {
+      expect(span.getAttribute('style')).toBeNull();
+    }
   });
 });

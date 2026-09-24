@@ -149,10 +149,7 @@ interface ReportReasonOption {
       <div
         class="flex items-start gap-2.5 p-3 rounded-xl bg-(--tui-background-neutral-1) text-xs text-(--tui-text-secondary)"
       >
-        <tui-icon
-          icon="@tui.shield-check"
-          class="shrink-0 mt-0.5 text-(--tui-text-accent)"
-        />
+        <tui-icon icon="@tui.shield-check" class="shrink-0 mt-0.5" />
         <span>{{ 'reportConfidentialNotice' | translate }}</span>
       </div>
 

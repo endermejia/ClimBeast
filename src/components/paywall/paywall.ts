@@ -38,7 +38,7 @@ import { AreaDonationsService } from '../../services/area-donations.service';
 
       <div class="relative flex flex-col items-center gap-2">
         <div
-          class="text-4xl sm:text-6xl font-black text-(--tui-text-accent) tracking-tighter tabular-nums"
+          class="text-4xl sm:text-6xl font-black tracking-tighter tabular-nums"
         >
           {{ price() | number: '1.2-2' }}€
         </div>

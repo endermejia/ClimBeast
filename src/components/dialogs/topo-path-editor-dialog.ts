@@ -1270,7 +1270,6 @@ export interface TopoPathEditorConfig {
       opacity: 0.8;
     }
     .tip-icon {
-      color: var(--tui-text-accent-1);
       font-size: 0.875rem;
     }
     .tip-icon--danger {
@@ -1318,7 +1317,6 @@ export interface TopoPathEditorConfig {
     .control-value {
       font-size: 0.875rem;
       font-weight: 800;
-      color: var(--tui-text-accent-1);
     }
 
     /* ── Mobile/tablet sidebar overlay (below xl) ── */

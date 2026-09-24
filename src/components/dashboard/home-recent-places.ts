@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TuiAppearance, TuiIcon } from '@taiga-ui/core';
+import { TuiAppearance } from '@taiga-ui/core';
 import { TuiSkeleton } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
@@ -22,7 +22,6 @@ export interface UnifiedActiveItem {
     RouterLink,
     TranslatePipe,
     TuiAppearance,
-    TuiIcon,
     TuiSkeleton,
   ],
   template: `
@@ -52,19 +51,14 @@ export interface UnifiedActiveItem {
               <a
                 [routerLink]="item.link"
                 tuiAppearance="textfield"
-                class="flex-none p-3 rounded-2xl flex items-center gap-1.5"
+                class="flex-none p-3 rounded-2xl"
               >
-                @if (item.liked) {
-                  <tui-icon
-                    icon="@tui.heart"
-                    class="shrink-0"
-                    style="font-size: 1rem; color: var(--tui-background-accent-2)"
-                    [attr.aria-label]="'favorite' | translate"
-                  />
-                }
-                <span class="whitespace-nowrap font-bold text-sm">{{
-                  item.name
-                }}</span>
+                <span
+                  class="whitespace-nowrap font-bold text-sm"
+                  [class.underline]="item.liked"
+                  [class.underline-offset-2]="item.liked"
+                  >{{ item.name }}</span
+                >
               </a>
             }
           </div>

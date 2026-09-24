@@ -17,17 +17,25 @@ import {
 } from '@angular/router';
 
 import {
+  TuiAppearance,
   TuiButton,
   TuiDropdown,
   TuiIcon,
   TuiInput,
   TuiScrollbar,
 } from '@taiga-ui/core';
-import { TuiPulse, TuiSegmented } from '@taiga-ui/kit';
+import {
+  TuiBadgedContent,
+  TuiBadgeNotification,
+  TuiPulse,
+  TuiSegmented,
+} from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AuthStateService } from '../../services/auth-state.service';
+import { FilterStateService } from '../../services/filter-state.service';
+import { FiltersService } from '../../services/filters.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 import { IndoorService } from '../../services/indoor.service';
 import { LayoutService } from '../../services/layout.service';
@@ -38,6 +46,12 @@ import { AreaCardSkeletonComponent } from '../../components/area/area-card-skele
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { PlaceCardComponent } from '../../components/ui/place-card';
 import { TourHintComponent } from '../../components/ui/tour-hint';
+
+import {
+  isGradeRangeOverlap,
+  normalizeRoutesByGrade,
+  ORDERED_GRADE_VALUES,
+} from '../../models';
 
 import { matchesQuery } from '../../utils';
 
@@ -53,6 +67,9 @@ import { matchesQuery } from '../../utils';
     RouterLinkActive,
     TourHintComponent,
     TranslatePipe,
+    TuiAppearance,
+    TuiBadgedContent,
+    TuiBadgeNotification,
     TuiButton,
     TuiDropdown,
     TuiIcon,
@@ -129,6 +146,24 @@ import { matchesQuery } from '../../utils';
                 (input.zoneless)="query.set(indoorSearch.value)"
               />
             </tui-textfield>
+            <tui-badged-content class="rounded-2xl">
+              @if (hasActiveFilters()) {
+                <tui-badge-notification
+                  tuiAppearance="accent"
+                  size="s"
+                  tuiSlot="top"
+                />
+              }
+              <button
+                tuiButton
+                appearance="textfield"
+                size="l"
+                type="button"
+                iconStart="@tui.sliders-horizontal"
+                [attr.aria-label]="'filters' | translate"
+                (click.zoneless)="openFilters()"
+              ></button>
+            </tui-badged-content>
           </div>
 
           <!-- Indoor list -->
@@ -214,10 +249,12 @@ export class IndoorListComponent {
   }
 
   protected readonly authState = inject(AuthStateService);
+  protected readonly filtersService = inject(FiltersService);
   protected readonly indoor = inject(IndoorService);
   protected readonly indoorCentersData = inject(IndoorCentersDataService);
   protected readonly outdoorData = inject(OutdoorDataService);
   protected readonly router = inject(Router);
+  private readonly filterState = inject(FilterStateService);
   private readonly route = inject(ActivatedRoute);
   private readonly queryParams = toSignal(this.route.queryParams);
 
@@ -241,14 +278,34 @@ export class IndoorListComponent {
     });
   }
 
+  protected readonly hasActiveFilters = computed(() => {
+    const [lo, hi] = this.filterState.indoorListGradeRange();
+    const gradeActive = !(lo === 0 && hi === ORDERED_GRADE_VALUES.length - 1);
+    return gradeActive || this.filterState.indoorListToposOnly();
+  });
+
   protected readonly filtered = computed(() => {
     const list = this.indoorCentersData.indoorCentersList();
     const q = this.query();
+    const [minIdx, maxIdx] = this.filterState.indoorListGradeRange();
+    const toposOnly = this.filterState.indoorListToposOnly();
 
-    if (!q) return list;
-
-    return list.filter((item) =>
-      matchesQuery(`${item.name} ${item.city || ''}`, q),
-    );
+    return list.filter((item) => {
+      if (q && !matchesQuery(`${item.name} ${item.city || ''}`, q)) {
+        return false;
+      }
+      if (toposOnly && (item.topos?.length ?? 0) === 0) {
+        return false;
+      }
+      return isGradeRangeOverlap(
+        normalizeRoutesByGrade(item.grades),
+        minIdx,
+        maxIdx,
+      );
+    });
   });
+
+  protected openFilters(): void {
+    this.filtersService.openIndoorListFilters();
+  }
 }

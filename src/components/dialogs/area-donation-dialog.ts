@@ -140,10 +140,7 @@ export interface AreaDonationDialogData {
             <div class="flex flex-col gap-2">
               <div class="flex items-center justify-between gap-3">
                 <div class="flex items-center gap-2 min-w-0">
-                  <tui-icon
-                    icon="/image/topo.svg"
-                    class="w-4 h-4 text-(--tui-text-accent) shrink-0"
-                  />
+                  <tui-icon icon="/image/topo.svg" class="w-4 h-4 shrink-0" />
                   <span
                     class="text-xs font-bold uppercase tracking-wider text-(--tui-text-primary) truncate"
                   >
@@ -155,7 +152,7 @@ export interface AreaDonationDialogData {
                   size="xs"
                   tuiButton
                   type="button"
-                  class="shrink-0 text-xs font-bold text-(--tui-text-accent) hover:underline cursor-pointer flex items-center gap-1"
+                  class="shrink-0 text-xs font-bold hover:underline cursor-pointer flex items-center gap-1"
                   (click)="showTopos.set(!showTopos())"
                 >
                   <span>{{

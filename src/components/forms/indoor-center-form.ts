@@ -769,10 +769,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                   @let pendingRequests = centerRoutesetterRequests();
                   <div class="flex flex-col gap-3">
                     <div class="flex items-center gap-2">
-                      <tui-icon
-                        icon="@tui.clock"
-                        class="text-xs text-(--tui-text-accent)"
-                      />
+                      <tui-icon icon="@tui.clock" class="text-xs" />
                       <span
                         class="text-xs uppercase font-semibold tracking-wider opacity-75"
                       >
@@ -973,10 +970,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                   class="flex flex-col gap-4 p-4 sm:p-5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
                 >
                   <div class="flex items-center gap-2">
-                    <tui-icon
-                      icon="@tui.route"
-                      class="text-xs text-(--tui-text-accent)"
-                    />
+                    <tui-icon icon="@tui.route" class="text-xs" />
                     <span
                       class="text-xs uppercase font-semibold tracking-wider opacity-75"
                     >
@@ -1085,10 +1079,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                   class="flex flex-col gap-4 p-4 sm:p-5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
                 >
                   <div class="flex items-center gap-2">
-                    <tui-icon
-                      icon="@tui.image"
-                      class="text-xs text-(--tui-text-accent)"
-                    />
+                    <tui-icon icon="@tui.image" class="text-xs" />
                     <span
                       class="text-xs uppercase font-semibold tracking-wider opacity-75"
                     >
@@ -1197,10 +1188,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                   class="flex flex-col gap-4 p-4 sm:p-5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
                 >
                   <div class="flex items-center gap-2">
-                    <tui-icon
-                      icon="@tui.spline"
-                      class="text-xs text-(--tui-text-accent)"
-                    />
+                    <tui-icon icon="@tui.spline" class="text-xs" />
                     <span
                       class="text-xs uppercase font-semibold tracking-wider opacity-75"
                     >

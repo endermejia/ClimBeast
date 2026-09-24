@@ -53,9 +53,7 @@ import type { MaterialCatalogItem } from '../../models';
               }}
             </span>
           </div>
-          <div
-            class="text-2xl font-black text-(--tui-text-accent) tabular-nums shrink-0"
-          >
+          <div class="text-2xl font-black tabular-nums shrink-0">
             {{ item.price | number: '1.2-2' }}€
           </div>
         </div>

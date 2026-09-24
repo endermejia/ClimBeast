@@ -56,6 +56,8 @@ export const STORAGE_KEYS = {
   profileAscentsCategories: 'profile_ascents_categories_v1',
   profileAscentsShowIndoor: 'profile_ascents_show_indoor_v1',
   profileAscentsShowOutdoor: 'profile_ascents_show_outdoor_v1',
+  indoorListGradeRange: 'indoor_list_grade_range_v1',
+  indoorListToposOnly: 'indoor_list_topos_only_v1',
   indoorRoutesGradeRange: 'indoor_routes_grade_range_v1',
   indoorRoutesCategories: 'indoor_routes_categories_v1',
   indoorRoutesToposOnly: 'indoor_routes_topos_only_v1',

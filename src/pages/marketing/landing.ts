@@ -147,10 +147,7 @@ import {
             class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-center"
           >
             <div class="flex flex-col items-center justify-center p-3">
-              <tui-icon
-                icon="@tui.users"
-                class="text-3xl text-(--tui-text-accent) mb-2"
-              />
+              <tui-icon icon="@tui.users" class="text-3xl mb-2" />
               <span class="text-lg font-bold text-(--tui-text-primary)">{{
                 'landing.stats.communityTitle' | translate
               }}</span>
@@ -355,18 +352,15 @@ import {
               class="flex flex-wrap items-center gap-4 text-sm font-medium text-(--tui-text-tertiary)"
             >
               <span class="flex items-center gap-2">
-                <tui-icon
-                  icon="@tui.map-pin"
-                  class="text-(--tui-text-accent)"
-                />
+                <tui-icon icon="@tui.map-pin" />
                 {{ 'landing.demo.areasFeature1' | translate }}
               </span>
               <span class="flex items-center gap-2">
-                <tui-icon icon="@tui.route" class="text-(--tui-text-accent)" />
+                <tui-icon icon="@tui.route" />
                 {{ 'landing.demo.areasFeature2' | translate }}
               </span>
               <span class="flex items-center gap-2">
-                <tui-icon icon="@tui.sun" class="text-(--tui-text-accent)" />
+                <tui-icon icon="@tui.sun" />
                 {{ 'landing.demo.areasFeature3' | translate }}
               </span>
             </div>

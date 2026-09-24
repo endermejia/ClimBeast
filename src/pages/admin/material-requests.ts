@@ -138,9 +138,7 @@ import { AvatarUrlPipe } from '../../pipes';
                   >
                     {{ 'materialRequests.status.' + req.status | translate }}
                   </span>
-                  <span
-                    class="text-lg font-black text-(--tui-text-accent) tabular-nums"
-                  >
+                  <span class="text-lg font-black tabular-nums">
                     {{ req.total_amount | number: '1.2-2' }}€
                   </span>
                 </div>

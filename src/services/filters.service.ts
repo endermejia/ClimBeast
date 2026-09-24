@@ -86,6 +86,48 @@ export class FiltersService {
     });
   }
 
+  openIndoorListFilters(): void {
+    const data: FilterDialog = {
+      categories: [],
+      gradeRange: this.filterState.indoorListGradeRange(),
+      toposOnly: this.filterState.indoorListToposOnly(),
+      showCategories: false,
+      showShade: false,
+      showGradeRange: true,
+      showIndoorOutdoor: false,
+      showToposOnly: true,
+    };
+
+    void firstValueFrom(
+      this.dialogs.open<FilterDialog>(
+        new PolymorpheusComponent(FilterDialogComponent),
+        {
+          label: this.translate.instant('filters'),
+          size: 'l',
+          data,
+          dismissible: false,
+        },
+      ),
+      { defaultValue: null },
+    ).then((result) => {
+      if (!result) return;
+
+      const [a, b] = result.gradeRange ?? [0, ORDERED_GRADE_VALUES.length - 1];
+
+      const lo = clamp(Math.round(a), 0, ORDERED_GRADE_VALUES.length - 1);
+      const hi = clamp(Math.round(b), 0, ORDERED_GRADE_VALUES.length - 1);
+
+      this.filterState.indoorListGradeRange.set([
+        Math.min(lo, hi),
+        Math.max(lo, hi),
+      ]);
+
+      if (result.toposOnly !== undefined) {
+        this.filterState.indoorListToposOnly.set(result.toposOnly);
+      }
+    });
+  }
+
   openIndoorRouteFilters(): void {
     const data: FilterDialog = {
       categories: this.filterState.indoorRoutesCategories(),

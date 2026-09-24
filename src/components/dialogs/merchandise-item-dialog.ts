@@ -68,9 +68,7 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
                 }}
               </span>
             }
-            <div
-              class="text-2xl font-black text-(--tui-text-accent) tabular-nums ml-auto"
-            >
+            <div class="text-2xl font-black tabular-nums ml-auto">
               {{ item.price | number: '1.2-2' }}€
             </div>
           </div>
