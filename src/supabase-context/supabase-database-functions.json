@@ -1,0 +1,345 @@
+[
+  {
+    "name": "accept_follow_request",
+    "arguments": "p_request_id bigint",
+    "return_type": "void",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "check_is_admin_update",
+    "arguments": "",
+    "return_type": "trigger",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "create_area_material_request",
+    "arguments": "p_area_id bigint, p_items jsonb, p_notes text",
+    "return_type": "bigint",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "create_chat_room",
+    "arguments": "other_user_id uuid",
+    "return_type": "uuid",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "enforce_indoor_route_update_permissions",
+    "arguments": "",
+    "return_type": "trigger",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "enforce_indoor_topo_update_permissions",
+    "arguments": "",
+    "return_type": "trigger",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "fn_notify_chat_push",
+    "arguments": "",
+    "return_type": "trigger",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "fn_notify_push",
+    "arguments": "",
+    "return_type": "trigger",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "get_admin_users",
+    "arguments": "",
+    "return_type": "TABLE(id uuid, name text, email character varying, avatar text, is_admin boolean)",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "get_area_balance",
+    "arguments": "p_area_id bigint",
+    "return_type": "jsonb",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "get_area_public_timeline",
+    "arguments": "p_area_id bigint",
+    "return_type": "json",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "get_areas_list",
+    "arguments": "",
+    "return_type": "TABLE(climbing_kind climbing_kind[], crags_count integer, topos_count integer, grades jsonb, id integer, liked boolean, name text, shade_afternoon boolean, shade_all_day boolean, shade_morning boolean, slug text, sun_all_day boolean, user_creator_id uuid, created_at timestamp with time zone)",
+    "security_definer": false,
+    "description": null
+  },
+  {
+    "name": "get_crags_list",
+    "arguments": "",
+    "return_type": "TABLE(climbing_kind climbing_kind[], topos_count bigint, topos jsonb, routes_count bigint, grades jsonb, id integer, liked boolean, name text, shade_afternoon boolean, shade_all_day boolean, shade_morning boolean, slug text, sun_all_day boolean, user_creator_id uuid, area_id integer, created_at timestamp with time zone, area_name text, area_slug text)",
+    "security_definer": false,
+    "description": null
+  },
+  {
+    "name": "get_indoor_center_permission",
+    "arguments": "p_center_id uuid, p_permission_key text",
+    "return_type": "text",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "get_indoor_centers_in_bounds",
+    "arguments": "min_lat double precision, min_lng double precision, max_lat double precision, max_lng double precision",
+    "return_type": "TABLE(id uuid, name text, slug text, location text)",
+    "security_definer": false,
+    "description": null
+  },
+  {
+    "name": "get_user_statistics",
+    "arguments": "p_user_id uuid",
+    "return_type": "SETOF user_ascent_stat_record",
+    "security_definer": false,
+    "description": null
+  },
+  {
+    "name": "handle_follow_request",
+    "arguments": "",
+    "return_type": "trigger",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "handle_new_user",
+    "arguments": "",
+    "return_type": "trigger",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "has_ascent_blocking",
+    "arguments": "user_a uuid, user_b uuid",
+    "return_type": "boolean",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "has_message_blocking",
+    "arguments": "user_a uuid, user_b uuid",
+    "return_type": "boolean",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "import_8a_ascents",
+    "arguments": "ascents jsonb",
+    "return_type": "import_8a_ascents_result",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "is_area_equipper",
+    "arguments": "p_area_id bigint, p_uid uuid",
+    "return_type": "boolean",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "is_area_equipper",
+    "arguments": "p_area_id bigint",
+    "return_type": "boolean",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "is_chat_participant",
+    "arguments": "room_id_param uuid",
+    "return_type": "boolean",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "is_crag_equipper",
+    "arguments": "p_crag_id bigint",
+    "return_type": "boolean",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "is_crag_equipper",
+    "arguments": "p_crag_id bigint, p_uid uuid",
+    "return_type": "boolean",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "is_indoor_center_admin",
+    "arguments": "p_center_id uuid",
+    "return_type": "boolean",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "is_indoor_center_routesetter",
+    "arguments": "p_center_id uuid",
+    "return_type": "boolean",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "is_profile_public",
+    "arguments": "p_user_id uuid",
+    "return_type": "boolean",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "is_room_blocked",
+    "arguments": "p_room_id uuid, p_user_id uuid",
+    "return_type": "boolean",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "is_user_admin",
+    "arguments": "p_uid uuid",
+    "return_type": "boolean",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "preserve_indoor_creator_id",
+    "arguments": "",
+    "return_type": "trigger",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "reject_follow_request",
+    "arguments": "p_request_id bigint",
+    "return_type": "void",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "rls_auto_enable",
+    "arguments": "",
+    "return_type": "event_trigger",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "search_items_fuzzy",
+    "arguments": "p_query text",
+    "return_type": "jsonb",
+    "security_definer": false,
+    "description": null
+  },
+  {
+    "name": "search_text",
+    "arguments": "r routes",
+    "return_type": "text",
+    "security_definer": false,
+    "description": null
+  },
+  {
+    "name": "toggle_area_like",
+    "arguments": "p_area_id bigint",
+    "return_type": "boolean",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "toggle_comment_like",
+    "arguments": "p_comment_id bigint",
+    "return_type": "boolean",
+    "security_definer": false,
+    "description": null
+  },
+  {
+    "name": "toggle_crag_like",
+    "arguments": "p_crag_id bigint",
+    "return_type": "boolean",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "toggle_indoor_center_like",
+    "arguments": "p_center_id uuid",
+    "return_type": "boolean",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "toggle_route_ascent_like",
+    "arguments": "p_route_ascent_id bigint",
+    "return_type": "boolean",
+    "security_definer": false,
+    "description": null
+  },
+  {
+    "name": "toggle_route_like",
+    "arguments": "p_route_id bigint",
+    "return_type": "boolean",
+    "security_definer": false,
+    "description": null
+  },
+  {
+    "name": "toggle_route_project",
+    "arguments": "p_route_id bigint",
+    "return_type": "boolean",
+    "security_definer": false,
+    "description": null
+  },
+  {
+    "name": "unify_areas",
+    "arguments": "p_target_area_id bigint, p_source_area_ids bigint[], p_new_name text",
+    "return_type": "void",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "unify_crags",
+    "arguments": "p_target_crag_id bigint, p_source_crag_ids bigint[], p_new_name text",
+    "return_type": "void",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "unify_routes",
+    "arguments": "p_target_route_id bigint, p_source_route_ids bigint[], p_new_name text",
+    "return_type": "void",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "update_merchandise_stock",
+    "arguments": "",
+    "return_type": "trigger",
+    "security_definer": false,
+    "description": null
+  },
+  {
+    "name": "update_route_grade_median",
+    "arguments": "",
+    "return_type": "trigger",
+    "security_definer": true,
+    "description": null
+  },
+  {
+    "name": "update_updated_at_column",
+    "arguments": "",
+    "return_type": "trigger",
+    "security_definer": false,
+    "description": null
+  }
+]

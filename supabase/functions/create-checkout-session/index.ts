@@ -119,7 +119,10 @@ serve(async (req: Request) => {
           throw new Error(`El producto "${data.name}" ya no está disponible.`);
         }
 
-        const requestedQty = item.quantity || 1;
+        const requestedQty = Math.max(
+          1,
+          Math.min(100, Math.floor(Number(item.quantity) || 1)),
+        );
 
         if (item.selectedSize) {
           const { data: stockData } = await supabaseAdmin

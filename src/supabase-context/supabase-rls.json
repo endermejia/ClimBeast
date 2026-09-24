@@ -91,16 +91,6 @@
   },
   {
     "schemaname": "public",
-    "tablename": "area_donations",
-    "policyname": "service_role_insert_donations",
-    "permissive": "PERMISSIVE",
-    "roles": "{authenticated}",
-    "cmd": "INSERT",
-    "qual": null,
-    "with_check": "(is_user_admin(auth.uid()) OR (auth.uid() = user_id) OR (user_id IS NULL))"
-  },
-  {
-    "schemaname": "public",
     "tablename": "area_likes",
     "policyname": "own_user_can_delete",
     "permissive": "PERMISSIVE",
@@ -851,6 +841,46 @@
   },
   {
     "schemaname": "public",
+    "tablename": "indoor_center_admin_requests",
+    "policyname": "admin_can_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(center_id))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_center_admin_requests",
+    "policyname": "auth_can_read",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_center_admin_requests",
+    "policyname": "own_can_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_center_admin_requests",
+    "policyname": "own_can_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "schemaname": "public",
     "tablename": "indoor_center_admins",
     "policyname": "Admins editable by center admins",
     "permissive": "PERMISSIVE",
@@ -868,6 +898,76 @@
     "cmd": "SELECT",
     "qual": "true",
     "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_center_likes",
+    "policyname": "own_user_can_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_center_likes",
+    "policyname": "own_user_can_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_center_likes",
+    "policyname": "own_user_can_read",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_center_routesetter_requests",
+    "policyname": "admin_can_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(center_id))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_center_routesetter_requests",
+    "policyname": "auth_can_read",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_center_routesetter_requests",
+    "policyname": "own_can_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_center_routesetter_requests",
+    "policyname": "own_can_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(auth.uid() = user_id)"
   },
   {
     "schemaname": "public",
@@ -934,20 +1034,10 @@
     "tablename": "indoor_route_equippers",
     "policyname": "Center admins and routesetters can manage indoor route equipper",
     "permissive": "PERMISSIVE",
-    "roles": "{public}",
-    "cmd": "ALL",
-    "qual": "(EXISTS ( SELECT 1\n   FROM indoor_routes r\n  WHERE ((r.id = indoor_route_equippers.route_id) AND (is_indoor_center_admin(r.center_id) OR is_indoor_center_routesetter(r.center_id) OR (EXISTS ( SELECT 1\n           FROM user_profiles\n          WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true))))))))",
-    "with_check": "(EXISTS ( SELECT 1\n   FROM indoor_routes r\n  WHERE ((r.id = indoor_route_equippers.route_id) AND (is_indoor_center_admin(r.center_id) OR is_indoor_center_routesetter(r.center_id) OR (EXISTS ( SELECT 1\n           FROM user_profiles\n          WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true))))))))"
-  },
-  {
-    "schemaname": "public",
-    "tablename": "indoor_routes",
-    "policyname": "Routes are editable by center admins or routesetters",
-    "permissive": "PERMISSIVE",
     "roles": "{authenticated}",
     "cmd": "ALL",
-    "qual": "(is_indoor_center_admin(center_id) OR is_indoor_center_routesetter(center_id) OR (EXISTS ( SELECT 1\n   FROM user_profiles\n  WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true)))))",
-    "with_check": null
+    "qual": "(EXISTS ( SELECT 1\n   FROM indoor_routes r\n  WHERE ((r.id = indoor_route_equippers.route_id) AND (is_indoor_center_admin(r.center_id) OR is_indoor_center_routesetter(r.center_id) OR is_user_admin(auth.uid()) OR ((r.user_creator_id IS NOT NULL) AND (r.user_creator_id = auth.uid())) OR (get_indoor_center_permission(r.center_id, 'can_create_routes'::text) = 'all'::text)))))",
+    "with_check": "(EXISTS ( SELECT 1\n   FROM indoor_routes r\n  WHERE ((r.id = indoor_route_equippers.route_id) AND (is_indoor_center_admin(r.center_id) OR is_indoor_center_routesetter(r.center_id) OR is_user_admin(auth.uid()) OR ((r.user_creator_id IS NOT NULL) AND (r.user_creator_id = auth.uid())) OR (get_indoor_center_permission(r.center_id, 'can_create_routes'::text) = 'all'::text)))))"
   },
   {
     "schemaname": "public",
@@ -957,6 +1047,36 @@
     "roles": "{public}",
     "cmd": "SELECT",
     "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_routes",
+    "policyname": "indoor_routes_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(center_id) OR is_indoor_center_routesetter(center_id) OR ((user_creator_id IS NOT NULL) AND (user_creator_id = auth.uid())))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_routes",
+    "policyname": "indoor_routes_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(center_id) OR is_indoor_center_routesetter(center_id) OR (get_indoor_center_permission(center_id, 'can_create_routes'::text) = 'all'::text))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_routes",
+    "policyname": "indoor_routes_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(center_id) OR is_indoor_center_routesetter(center_id) OR ((user_creator_id IS NOT NULL) AND (user_creator_id = auth.uid())) OR (get_indoor_center_permission(center_id, 'can_edit_routes'::text) = 'all'::text) OR (get_indoor_center_permission(center_id, 'can_archive_routes'::text) = 'all'::text))",
     "with_check": null
   },
   {
@@ -1002,16 +1122,6 @@
   {
     "schemaname": "public",
     "tablename": "indoor_topo_routes",
-    "policyname": "Indoor topo routes are editable by center admins or routesetter",
-    "permissive": "PERMISSIVE",
-    "roles": "{authenticated}",
-    "cmd": "ALL",
-    "qual": "(EXISTS ( SELECT 1\n   FROM indoor_topos t\n  WHERE ((t.id = indoor_topo_routes.topo_id) AND (is_indoor_center_admin(t.center_id) OR is_indoor_center_routesetter(t.center_id) OR (EXISTS ( SELECT 1\n           FROM user_profiles\n          WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true))))))))",
-    "with_check": null
-  },
-  {
-    "schemaname": "public",
-    "tablename": "indoor_topo_routes",
     "policyname": "Indoor topo routes are viewable by everyone",
     "permissive": "PERMISSIVE",
     "roles": "{public}",
@@ -1021,12 +1131,32 @@
   },
   {
     "schemaname": "public",
-    "tablename": "indoor_topos",
-    "policyname": "Topos are editable by center admins or routesetters",
+    "tablename": "indoor_topo_routes",
+    "policyname": "indoor_topo_routes_delete",
     "permissive": "PERMISSIVE",
     "roles": "{authenticated}",
-    "cmd": "ALL",
-    "qual": "(is_indoor_center_admin(center_id) OR is_indoor_center_routesetter(center_id) OR (EXISTS ( SELECT 1\n   FROM user_profiles\n  WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true)))))",
+    "cmd": "DELETE",
+    "qual": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR is_indoor_center_routesetter(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR ((user_creator_id IS NOT NULL) AND (user_creator_id = auth.uid())))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_topo_routes",
+    "policyname": "indoor_topo_routes_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR is_indoor_center_routesetter(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR (get_indoor_center_permission(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id)), 'can_create_lines'::text) = 'all'::text))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_topo_routes",
+    "policyname": "indoor_topo_routes_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR is_indoor_center_routesetter(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR ((user_creator_id IS NOT NULL) AND (user_creator_id = auth.uid())) OR (get_indoor_center_permission(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id)), 'can_edit_lines'::text) = 'all'::text) OR ((path IS NULL) AND (get_indoor_center_permission(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id)), 'can_create_lines'::text) = 'all'::text)))",
     "with_check": null
   },
   {
@@ -1037,6 +1167,36 @@
     "roles": "{public}",
     "cmd": "SELECT",
     "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_topos",
+    "policyname": "indoor_topos_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(center_id) OR is_indoor_center_routesetter(center_id) OR ((user_creator_id IS NOT NULL) AND (user_creator_id = auth.uid())))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_topos",
+    "policyname": "indoor_topos_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(center_id) OR is_indoor_center_routesetter(center_id) OR (get_indoor_center_permission(center_id, 'can_create_topos'::text) = 'all'::text))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "indoor_topos",
+    "policyname": "indoor_topos_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(center_id) OR is_indoor_center_routesetter(center_id) OR ((user_creator_id IS NOT NULL) AND (user_creator_id = auth.uid())) OR (get_indoor_center_permission(center_id, 'can_edit_topos'::text) = 'all'::text) OR (get_indoor_center_permission(center_id, 'can_archive_topos'::text) = 'all'::text))",
     "with_check": null
   },
   {
@@ -1938,5 +2098,55 @@
     "cmd": "ALL",
     "qual": "(( SELECT auth.uid() AS uid) = user_id)",
     "with_check": "(( SELECT auth.uid() AS uid) = user_id)"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "user_reports",
+    "policyname": "admin_can_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "is_user_admin(auth.uid())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "user_reports",
+    "policyname": "admin_can_read",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "is_user_admin(auth.uid())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "user_reports",
+    "policyname": "admin_can_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "is_user_admin(auth.uid())",
+    "with_check": "is_user_admin(auth.uid())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "user_reports",
+    "policyname": "own_can_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "((auth.uid() = reporter_id) AND ((status IS NULL) OR (status = 'pending'::text)))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "user_reports",
+    "policyname": "own_can_read",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(auth.uid() = reporter_id)",
+    "with_check": null
   }
 ]
