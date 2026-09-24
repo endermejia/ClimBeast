@@ -4,7 +4,6 @@ import {
   computed,
   inject,
   input,
-  resource,
   signal,
 } from '@angular/core';
 
@@ -13,6 +12,7 @@ import { TuiPoint, TuiScrollbar } from '@taiga-ui/core';
 import { TranslateService } from '@ngx-translate/core';
 
 import { AscentsService } from '../../services/ascents.service';
+import { CacheService } from '../../services/cache.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { LayoutService } from '../../services/layout.service';
 import { ProfileDataService } from '../../services/profile-data.service';
@@ -29,15 +29,18 @@ import {
   UserAscentStatRecord,
 } from '../../models';
 
+import { CACHE_KEYS } from '../../constants';
 import {
   calculateGradeDistribution,
   calculatePeriodScore,
   calculateTrendSource,
+  createCachedResource,
   filterAscentsByDate,
   getMaxGrade,
   getMaxGradeRoutes,
-  safeResourceValue,
 } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 import { UserProfileStatsPyramidComponent } from './statistics/grade-pyramid';
 
@@ -73,7 +76,7 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
               <app-user-profile-stats-pyramid
                 [(showAllGrades)]="showAllGrades"
                 [distribution]="gradeDistribution()"
-                [loading]="statsResource.isLoading()"
+                [loading]="showSkeleton()"
               />
             </div>
 
@@ -115,7 +118,9 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
 })
 export class UserProfileStatisticsComponent {
   private readonly ascentsService = inject(AscentsService);
+  private readonly cache = inject(CacheService);
   private readonly filterState = inject(FilterStateService);
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
   protected readonly profileData = inject(ProfileDataService);
   protected readonly layout = inject(LayoutService);
@@ -128,25 +133,32 @@ export class UserProfileStatisticsComponent {
   readonly showAllGrades = signal(false);
 
   // --- Data Loading ---
-  statsResource = resource({
+  private readonly cachedStats = createCachedResource<
+    { userId: string | undefined; dateFilter: string },
+    UserAscentStatRecord[]
+  >({
     params: () => ({
       userId: this.userId(),
       dateFilter: this.dateFilterValue(),
     }),
-    loader: async ({ params }) => {
-      if (!params.userId) return [];
-      try {
-        return await this.ascentsService.getUserStats(params.userId);
-      } catch {
-        return [];
-      }
+    isBrowser: this.isBrowser,
+    cacheKey: ({ userId, dateFilter }) =>
+      userId ? CACHE_KEYS.userStats(userId, dateFilter) : null,
+    fetcher: async ({ userId }) => {
+      if (!userId) return [];
+      return this.ascentsService.getUserStats(userId);
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'UserProfileStatistics',
   });
+
+  readonly statsResource = this.cachedStats.resource;
+  readonly showSkeleton = this.cachedStats.showSkeleton;
 
   // Create a filtered signal based on the control
   private rawStats = computed(() => {
-    const data =
-      safeResourceValue<UserAscentStatRecord[]>(this.statsResource, []) ?? [];
+    const data = this.cachedStats.signal();
     return data.filter((a) => a.ascent_type !== 'attempt');
   });
 

@@ -41,6 +41,12 @@ export class MapDataService {
   mapBounds: WritableSignal<MapBounds | null> = signal(null);
   private readonly mapBoundsStorageKey = STORAGE_KEYS.mapBounds;
 
+  /** Last successful map response, retained for stale-while-revalidate. */
+  private readonly lastMapResponse = signal<MapResponse>({
+    items: [],
+    counts: { locations: 0, map_collections: 0 },
+  });
+
   selectedMapCragItem: WritableSignal<MapCragItem | null> = signal(null);
   selectedMapParkingItem: WritableSignal<ParkingDto | null> = signal(null);
   selectedMapIndoorItem: WritableSignal<MapIndoorCenterItem | null> =
@@ -57,10 +63,9 @@ export class MapDataService {
         typeof window === 'undefined' ||
         !bounds
       ) {
-        return {
-          items: [],
-          counts: { locations: 0, map_collections: 0 },
-        } as MapResponse;
+        // Keep the previous data (stale-while-revalidate) instead of wiping
+        // the resource value when the map deactivates (e.g. leaving explore).
+        return this.lastMapResponse();
       }
 
       await this.supabase.whenReady();
@@ -194,13 +199,15 @@ export class MapDataService {
 
       const combinedItems: MapItem[] = [...supabaseCragItems, ...indoorItems];
 
-      return {
+      const result: MapResponse = {
         items: combinedItems,
         counts: {
           locations: combinedItems.length,
           map_collections: 0,
         },
-      } as MapResponse;
+      };
+      this.lastMapResponse.set(result);
+      return result;
     },
   });
 
@@ -377,6 +384,12 @@ export class MapDataService {
       }
     } catch {
       // Silent fail
+    }
+  }
+
+  constructor() {
+    if (this.isBrowser) {
+      this.hydrateMapBounds();
     }
   }
 }

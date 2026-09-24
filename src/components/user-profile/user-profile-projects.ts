@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   inject,
   input,
 } from '@angular/core';
@@ -40,7 +39,7 @@ import { UserProfileProjectsListComponent } from './projects/projects-list';
           <div class="w-full min-w-0 pr-2">
             <app-user-profile-projects-list
               [projects]="projects()"
-              [loading]="projectsResource.isLoading()"
+              [loading]="profileData.userProjectsLoading()"
             />
           </div>
         </tui-scrollbar>
@@ -57,6 +56,5 @@ export class UserProfileProjectsComponent {
   startingYear = input<number | null | undefined>();
 
   protected readonly profileData = inject(ProfileDataService);
-  readonly projectsResource = this.profileData.userProjectsResource;
-  readonly projects = computed(() => this.projectsResource.value() ?? []);
+  readonly projects = this.profileData.userProjects;
 }

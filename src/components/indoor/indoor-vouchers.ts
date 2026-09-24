@@ -21,12 +21,18 @@ import {
 import { TranslateModule } from '@ngx-translate/core';
 
 import { AuthStateService } from '../../services/auth-state.service';
+import { CacheService } from '../../services/cache.service';
 import { IndoorService } from '../../services/indoor.service';
 
 import {
   IndoorVoucherDto,
   IndoorVoucherPurchaseWithVoucher,
 } from '../../models';
+
+import { CACHE_KEYS } from '../../constants';
+import { createCachedResource } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-indoor-vouchers',
@@ -164,7 +170,7 @@ import {
             }
           </div>
         </div>
-      } @else if (availableVouchersResource.isLoading()) {
+      } @else if (availableVouchersLoading()) {
         <tui-loader />
       }
     </div>
@@ -175,22 +181,31 @@ export class IndoorVouchersComponent {
   centerId = input.required<string>();
 
   protected readonly authState = inject(AuthStateService);
+  private readonly cache = inject(CacheService);
   protected readonly indoor = inject(IndoorService);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   protected readonly activeVouchers = computed<
     IndoorVoucherPurchaseWithVoucher[]
   >(() => this.activeVouchersResource.value() || []);
-  protected readonly availableVouchers = computed<IndoorVoucherDto[]>(
-    () => this.availableVouchersResource.value() || [],
+  protected readonly availableVouchers = computed<IndoorVoucherDto[]>(() =>
+    this.availableVouchersCached.signal(),
   );
 
-  protected readonly availableVouchersResource = resource<
-    IndoorVoucherDto[],
-    string
+  private readonly availableVouchersCached = createCachedResource<
+    string,
+    IndoorVoucherDto[]
   >({
     params: () => this.centerId(),
-    loader: ({ params: id }) => this.indoor.getCenterVouchers(id),
+    isBrowser: this.isBrowser,
+    cacheKey: (id) => (id ? CACHE_KEYS.centerVouchers(id) : null),
+    fetcher: (id) => this.indoor.getCenterVouchers(id),
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'IndoorVouchers',
   });
+  protected readonly availableVouchersLoading =
+    this.availableVouchersCached.showSkeleton;
 
   protected readonly activeVouchersResource = resource<
     IndoorVoucherPurchaseWithVoucher[],

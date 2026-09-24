@@ -7,7 +7,6 @@ import {
   effect,
   inject,
   input,
-  resource,
   signal,
   untracked,
 } from '@angular/core';
@@ -46,6 +45,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { AuthStateService } from '../../services/auth-state.service';
 import { BreadcrumbsService } from '../../services/breadcrumbs.service';
+import { CacheService } from '../../services/cache.service';
 import { FavoritesDataService } from '../../services/favorites-data.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
@@ -75,17 +75,21 @@ import { UbicacionDropdownComponent } from '../../components/ui/ubicacion-dropdo
 import {
   ClimbingKinds,
   GRADE_NUMBER_TO_LABEL,
+  IndoorAscentWithExtras,
   IndoorCenterDto,
   IndoorRouteWithExtras,
+  IndoorTopoListItem,
+  IndoorVoucherDto,
   ORDERED_GRADE_VALUES,
   PROJECT_GRADE_LABEL,
   RouteAscentWithExtras,
   VERTICAL_LIFE_GRADES,
 } from '../../models';
 
-import { STORAGE_KEYS } from '../../constants';
+import { CACHE_KEYS, STORAGE_KEYS } from '../../constants';
 import { AnyToSchedulePipe } from '../../pipes';
 import {
+  createCachedResource,
   handleErrorToast,
   inputValueOrUndefined,
   matchesQuery,
@@ -429,7 +433,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                           [data]="filteredCenterRoutes()"
                           [centerId]="c.id"
                           [centerSlug]="c.slug"
-                          [availableTopos]="toposResource.value() || []"
+                          [availableTopos]="topos()"
                         />
                       </div>
                     </div>
@@ -440,7 +444,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                       [class.hidden]="currentTab !== 2"
                     >
                       @let ascents = mappedAscents();
-                      @if (centerAscentsResource.isLoading()) {
+                      @if (centerAscentsLoading()) {
                         <div class="flex items-center justify-center p-8">
                           <tui-loader size="m" />
                         </div>
@@ -488,7 +492,7 @@ import { IS_BROWSER } from '../../app/is-browser';
               <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
                 <div class="w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6">
                   @let ascents = mappedAscents();
-                  @if (centerAscentsResource.isLoading()) {
+                  @if (centerAscentsLoading()) {
                     <div class="flex items-center justify-center p-8">
                       <tui-loader size="m" />
                     </div>
@@ -537,15 +541,14 @@ import { IS_BROWSER } from '../../app/is-browser';
 })
 export class IndoorCenterComponent {
   protected readonly mappedAscents = computed(
-    () =>
-      (this.centerAscentsResource.value() ??
-        []) as unknown as RouteAscentWithExtras[],
+    () => this.centerAscents() as unknown as RouteAscentWithExtras[],
   );
 
   slug = input.required<string>();
 
   protected readonly authState = inject(AuthStateService);
   protected readonly breadcrumbsService = inject(BreadcrumbsService);
+  private readonly cache = inject(CacheService);
   protected readonly favoritesData = inject(FavoritesDataService);
   protected readonly filterState = inject(FilterStateService);
   protected readonly filtersService = inject(FiltersService);
@@ -588,13 +591,12 @@ export class IndoorCenterComponent {
     }));
   });
 
-  protected readonly center = computed<IndoorCenterDto | null>(() => {
-    // `value()` lanza ResourceValueError si la consulta ha fallado
-    if (this.centerResource.status() === 'error') {
-      return null;
-    }
-    return this.centerResource.value() ?? null;
-  });
+  protected readonly center = computed<IndoorCenterDto | null>(
+    // Valor cache-first: en visitas repetidas pinta desde la caché mientras
+    // el resource se revalida en segundo plano. Nunca lanza (el helper
+    // captura los errores) y devuelve la caché o `null` si no hay datos.
+    () => this.centerCached.signal(),
+  );
 
   /** Solo mostramos «no encontrado» cuando la consulta ya ha terminado. */
   protected readonly centerNotFound = computed(() => {
@@ -605,9 +607,19 @@ export class IndoorCenterComponent {
     if (!this.isBrowser) {
       return false;
     }
-    const status = this.centerResource.status();
-    if (status === 'error') {
+    // Mientras el router no enlace `slug` no hay consulta real: el helper
+    // devolvería `null` al instante (cacheKey nula) y eso se confundiría con
+    // «no encontrado», así que seguimos en el spinner.
+    const slug = inputValueOrUndefined(() => this.slug());
+    if (!slug) {
+      return false;
+    }
+    if (this.centerResource.status() === 'error') {
       return true;
+    }
+    // Primera visita en curso: ni resource ni caché tienen datos → cargando
+    if (this.centerLoading()) {
+      return false;
     }
     // idle / loading / reloading sin valor previo → seguimos cargando
     if (!this.centerResource.hasValue()) {
@@ -616,30 +628,61 @@ export class IndoorCenterComponent {
     return !this.center();
   });
 
-  protected readonly centerResource = resource<
-    IndoorCenterDto | null,
-    string | undefined
+  private readonly centerCached = createCachedResource<
+    string | undefined,
+    IndoorCenterDto | null
   >({
-    // Si el router aún no ha enlazado `slug` devolvemos undefined → `idle`
+    // Si el router aún no ha enlazado `slug` devolvemos undefined → cacheKey
+    // nula y no se consulta red (el helper devuelve `null` al instante)
     params: () => inputValueOrUndefined(() => this.slug()),
-    loader: ({ params: slug }) => this.indoor.getCenterBySlug(slug),
+    isBrowser: this.isBrowser,
+    cacheKey: (slug) => (slug ? CACHE_KEYS.centerDetail(slug) : null),
+    fetcher: async (slug) => {
+      if (!slug) return null;
+      return this.indoor.getCenterBySlug(slug);
+    },
+    cache: this.cache,
+    fallbackValue: null,
+    logTag: 'IndoorCenter',
   });
+  protected readonly centerResource = this.centerCached.resource;
+  protected readonly centerLoading = this.centerCached.showSkeleton;
 
-  protected readonly toposResource = resource({
+  private readonly toposCached = createCachedResource<
+    string | undefined,
+    IndoorTopoListItem[]
+  >({
     params: () => this.center()?.id,
-    loader: ({ params: id }) =>
-      id ? this.indoor.getCenterTopos(id) : Promise.resolve([]),
+    isBrowser: this.isBrowser,
+    cacheKey: (id) => (id ? CACHE_KEYS.centerTopos(id) : null),
+    fetcher: async (id) => {
+      if (!id) return [];
+      return this.indoor.getCenterTopos(id);
+    },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'IndoorCenter',
   });
+  protected readonly topos = this.toposCached.signal;
 
-  protected readonly vouchersResource = resource({
+  private readonly vouchersCached = createCachedResource<
+    string | undefined,
+    IndoorVoucherDto[]
+  >({
     params: () => this.center()?.id,
-    loader: ({ params: id }) =>
-      id ? this.indoor.getCenterVouchers(id) : Promise.resolve([]),
+    isBrowser: this.isBrowser,
+    cacheKey: (id) => (id ? CACHE_KEYS.centerVouchers(id) : null),
+    fetcher: async (id) => {
+      if (!id) return [];
+      return this.indoor.getCenterVouchers(id);
+    },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'IndoorCenter',
   });
+  protected readonly vouchers = this.vouchersCached.signal;
 
-  protected readonly hasVouchers = computed(
-    () => (this.vouchersResource.value()?.length ?? 0) > 0,
-  );
+  protected readonly hasVouchers = computed(() => this.vouchers().length > 0);
 
   protected readonly showLegacyRoutes = signal<boolean>(
     typeof window !== 'undefined'
@@ -647,21 +690,28 @@ export class IndoorCenterComponent {
       : false,
   );
 
-  protected readonly centerRoutesResource = resource({
+  private readonly centerRoutesCached = createCachedResource<
+    { id: string | undefined; showLegacy: boolean; reloadTick: number },
+    IndoorRouteWithExtras[]
+  >({
     params: () => ({
       id: this.center()?.id,
       showLegacy: this.showLegacyRoutes(),
       reloadTick: this.indoorCentersData.indoorRoutesReloadTick(),
     }),
-    loader: ({ params }) => {
-      if (!params.id) return Promise.resolve([]);
-      return this.indoor.getCenterRoutes(params.id, params.showLegacy);
+    isBrowser: this.isBrowser,
+    cacheKey: ({ id, showLegacy }) =>
+      id ? CACHE_KEYS.centerRoutes(id, showLegacy) : null,
+    fetcher: async ({ id, showLegacy }) => {
+      if (!id) return [];
+      return this.indoor.getCenterRoutes(id, showLegacy);
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'IndoorCenter',
   });
-
-  protected readonly centerRoutes = computed(
-    () => this.centerRoutesResource.value() ?? [],
-  );
+  protected readonly centerRoutesResource = this.centerRoutesCached.resource;
+  protected readonly centerRoutes = this.centerRoutesCached.signal;
 
   protected readonly routeQuery = signal('');
   protected readonly selectedGradeRange =
@@ -772,24 +822,33 @@ export class IndoorCenterComponent {
     return total > 0 && this.pendingRoutes() === 0;
   });
 
-  protected readonly toposCount = computed(
-    () => this.toposResource.value()?.length ?? 0,
-  );
+  protected readonly toposCount = computed(() => this.topos().length);
 
-  protected readonly vouchersCount = computed(
-    () => this.vouchersResource.value()?.length ?? 0,
-  );
+  protected readonly vouchersCount = computed(() => this.vouchers().length);
 
   protected readonly ascentsCount = computed(() => this.mappedAscents().length);
 
-  protected readonly centerAscentsResource = resource({
+  private readonly centerAscentsCached = createCachedResource<
+    { id: string | undefined; reloadTick: number },
+    IndoorAscentWithExtras[]
+  >({
     params: () => ({
       id: this.center()?.id,
       reloadTick: this.indoorCentersData.indoorRoutesReloadTick(),
     }),
-    loader: ({ params }) =>
-      params.id ? this.indoor.getCenterAscents(params.id) : Promise.resolve([]),
+    isBrowser: this.isBrowser,
+    cacheKey: ({ id }) => (id ? CACHE_KEYS.centerAscents(id) : null),
+    fetcher: async ({ id }) => {
+      if (!id) return [];
+      return this.indoor.getCenterAscents(id);
+    },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'IndoorCenter',
   });
+  protected readonly centerAscents = this.centerAscentsCached.signal;
+  protected readonly centerAscentsLoading =
+    this.centerAscentsCached.showSkeleton;
 
   protected readonly isAdmin = computed(() => {
     return this.authState.isAdmin();

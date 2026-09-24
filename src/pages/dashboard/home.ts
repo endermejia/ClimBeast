@@ -4,7 +4,6 @@ import {
   DestroyRef,
   ElementRef,
   inject,
-  resource,
   computed,
   signal,
   viewChild,
@@ -24,6 +23,7 @@ import { Subject, firstValueFrom } from 'rxjs';
 import { AppNotificationsService } from '../../services/app-notifications.service';
 import { AscentsService } from '../../services/ascents.service';
 import { AuthStateService } from '../../services/auth-state.service';
+import { CacheService } from '../../services/cache.service';
 import { CartService } from '../../services/cart.service';
 import { DesnivelService } from '../../services/desnivel.service';
 import { FavoritesDataService } from '../../services/favorites-data.service';
@@ -94,7 +94,7 @@ import {
 } from '../../models';
 
 import { CACHE_KEYS, STORAGE_KEYS } from '../../constants';
-import { reactToObservable } from '../../utils';
+import { createCachedResource, reactToObservable } from '../../utils';
 import {
   applyCategoryFilter,
   applyGradeFilter,
@@ -154,9 +154,9 @@ import { IS_BROWSER } from '../../app/is-browser';
               <app-home-recent-places
                 [followsLoaded]="followsLoaded()"
                 [isLoading]="
-                  activeCragsResource.isLoading() ||
-                  activeIndoorCentersResource.isLoading() ||
-                  activeAreasResource.isLoading()
+                  activeCragsResource.showSkeleton() ||
+                  activeIndoorCentersResource.showSkeleton() ||
+                  activeAreasResource.showSkeleton()
                 "
                 [items]="activeItems()"
               />
@@ -223,6 +223,7 @@ export class HomeComponent {
   protected readonly notificationsService = inject(AppNotificationsService);
   protected readonly messagingService = inject(MessagingService);
   protected readonly supabase = inject(SupabaseService);
+  private readonly cache = inject(CacheService);
   private readonly desnivelService = inject(DesnivelService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly followsService = inject(FollowsService);
@@ -245,20 +246,21 @@ export class HomeComponent {
   protected readonly followedIds = signal<Set<string>>(new Set());
   protected readonly followsLoaded = signal(false);
 
-  protected readonly activeCragsResource = resource({
-    loader: () => this.fetchActiveCrags(),
+  protected readonly activeCragsResource = createCachedResource<
+    void,
+    ActiveCrag[]
+  >({
+    isBrowser: this.isBrowser,
+    cacheKey: () => CACHE_KEYS.activeCrags,
+    fetcher: () => this.fetchActiveCrags(),
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'Home',
   });
 
   protected readonly activeCrags = computed(() => {
     const visited = this.visitedCragsService.visitedCrags();
-    let active: ActiveCrag[] = [];
-    try {
-      if (this.activeCragsResource.hasValue()) {
-        active = this.activeCragsResource.value() ?? [];
-      }
-    } catch {
-      active = [];
-    }
+    const active = this.activeCragsResource.signal();
 
     const merged: (VisitedCrag | ActiveCrag)[] = [...visited];
     const visitedIds = new Set(visited.map((c) => c.id));
@@ -272,20 +274,21 @@ export class HomeComponent {
     return merged;
   });
 
-  protected readonly activeIndoorCentersResource = resource({
-    loader: () => this.fetchActiveIndoorCenters(),
+  protected readonly activeIndoorCentersResource = createCachedResource<
+    void,
+    ActiveIndoorCenter[]
+  >({
+    isBrowser: this.isBrowser,
+    cacheKey: () => CACHE_KEYS.activeIndoorCenters,
+    fetcher: () => this.fetchActiveIndoorCenters(),
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'Home',
   });
 
   protected readonly activeIndoorCenters = computed(() => {
     const visited = this.visitedIndoorCentersService.visitedCenters();
-    let active: ActiveIndoorCenter[] = [];
-    try {
-      if (this.activeIndoorCentersResource.hasValue()) {
-        active = this.activeIndoorCentersResource.value() ?? [];
-      }
-    } catch {
-      active = [];
-    }
+    const active = this.activeIndoorCentersResource.signal();
 
     const merged: (VisitedIndoorCenter | ActiveIndoorCenter)[] = [...visited];
     const visitedIds = new Set(visited.map((c) => c.id));
@@ -299,20 +302,21 @@ export class HomeComponent {
     return merged;
   });
 
-  protected readonly activeAreasResource = resource({
-    loader: () => this.fetchActiveAreas(),
+  protected readonly activeAreasResource = createCachedResource<
+    void,
+    ActiveArea[]
+  >({
+    isBrowser: this.isBrowser,
+    cacheKey: () => CACHE_KEYS.activeAreas,
+    fetcher: () => this.fetchActiveAreas(),
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'Home',
   });
 
   protected readonly activeAreas = computed(() => {
     const visited = this.visitedAreasService.visitedAreas();
-    let active: ActiveArea[] = [];
-    try {
-      if (this.activeAreasResource.hasValue()) {
-        active = this.activeAreasResource.value() ?? [];
-      }
-    } catch {
-      active = [];
-    }
+    const active = this.activeAreasResource.signal();
 
     const merged: (VisitedArea | ActiveArea)[] = [...visited];
     const visitedIds = new Set(visited.map((a) => a.id));
@@ -419,6 +423,38 @@ export class HomeComponent {
   });
 
   constructor() {
+    if (this.isBrowser) {
+      // Stale-while-revalidate: paint immediately from cached data on revisit.
+      const seed = this.cache.get<FeedItem[] | undefined>(
+        CACHE_KEYS.homeFeed(this.feedFilter(), 0),
+        undefined,
+      );
+      if (seed && seed.length > 0) {
+        this.ascents.set(seed);
+        this.isLoading.set(false);
+        this.feedSeeded = true;
+      }
+
+      const seedFollowedIds = this.cache.get<string[] | undefined>(
+        CACHE_KEYS.followedIds,
+        undefined,
+      );
+      if (Array.isArray(seedFollowedIds)) {
+        this.followedIds.set(new Set(seedFollowedIds));
+        this.followsLoaded.set(true);
+      }
+
+      const seedNews = this.cache.get<NewsItem[] | undefined>(
+        CACHE_KEYS.homeNews,
+        undefined,
+      );
+      if (seedNews && seedNews.length > 0) {
+        this.newsItems.set(seedNews);
+        this.newsLoading.set(false);
+        this.newsSeeded = true;
+      }
+    }
+
     effect(() => {
       this.followsService.followChange();
       if (this.isBrowser) {
@@ -477,6 +513,7 @@ export class HomeComponent {
 
       // Track filter dependencies
       const filter = this.feedFilter();
+      this.followedIds();
       this.filterState.feedCategories();
       this.filterState.feedGradeRange();
       this.filterState.feedShowIndoorAscents();
@@ -491,7 +528,8 @@ export class HomeComponent {
 
       untracked(() => {
         this.fetchVersion.set(0);
-        this.resetFeed();
+        this.resetFeed(this.feedSeeded ? { preserve: true } : undefined);
+        this.feedSeeded = false;
       });
     });
 
@@ -504,16 +542,20 @@ export class HomeComponent {
   private indoorPage = 0;
   private outdoorHasMore = true;
   private indoorHasMore = true;
+  private feedSeeded = false;
 
-  private resetFeed() {
+  private resetFeed(opts?: { preserve?: boolean }) {
     this.fetchVersion.set(this.fetchVersion() + 1);
-    this.ascents.set([]);
+    const preserve = opts?.preserve === true && this.ascents().length > 0;
+    if (!preserve) {
+      this.ascents.set([]);
+      this.isLoading.set(true);
+    }
     this.outdoorPage = 0;
     this.indoorPage = 0;
     this.outdoorHasMore = true;
     this.indoorHasMore = true;
     this.hasMore.set(true);
-    this.isLoading.set(true);
     this.loadMore$.next();
   }
 
@@ -527,6 +569,10 @@ export class HomeComponent {
 
     const willFetchOutdoor = shouldFetchOutdoor && this.outdoorHasMore;
     const willFetchIndoor = shouldFetchIndoor && this.indoorHasMore;
+    const isPageZero =
+      willFetchOutdoor &&
+      this.outdoorPage === 0 &&
+      (!willFetchIndoor || this.indoorPage === 0);
 
     if (!willFetchOutdoor && !willFetchIndoor) {
       this.hasMore.set(false);
@@ -573,14 +619,25 @@ export class HomeComponent {
       (shouldFetchIndoor && this.indoorHasMore);
     this.hasMore.set(remainingMore);
 
-    this.ascents.update((current) => {
-      const merged = deduplicateFeedItems([...current, ...newAscents]);
-      return merged.sort((a, b) => {
-        const dateA = a.date ? new Date(a.date).getTime() : 0;
-        const dateB = b.date ? new Date(b.date).getTime() : 0;
-        return dateB - dateA;
+    if (isPageZero) {
+      // First page fetch: swap the seeded cache for fresh data.
+      this.ascents.set(
+        deduplicateFeedItems(newAscents).sort((a, b) => {
+          const dateA = a.date ? new Date(a.date).getTime() : 0;
+          const dateB = b.date ? new Date(b.date).getTime() : 0;
+          return dateB - dateA;
+        }),
+      );
+    } else {
+      this.ascents.update((current) => {
+        const merged = deduplicateFeedItems([...current, ...newAscents]);
+        return merged.sort((a, b) => {
+          const dateA = a.date ? new Date(a.date).getTime() : 0;
+          const dateB = b.date ? new Date(b.date).getTime() : 0;
+          return dateB - dateA;
+        });
       });
-    });
+    }
     this.isLoading.set(false);
   }
 
@@ -592,7 +649,12 @@ export class HomeComponent {
     try {
       await this.supabase.whenReady();
       const ids = await this.followsService.getFollowedIds();
-      this.followedIds.set(new Set(ids));
+      const currentIds = this.followedIds();
+      const unchanged =
+        currentIds.size === ids.length && ids.every((id) => currentIds.has(id));
+      if (!unchanged) {
+        this.followedIds.set(new Set(ids));
+      }
       this.storage.setItem(cacheKey, JSON.stringify(ids));
       if (ids.length === 0) {
         this.feedFilter.set(HomeFeedFilters.ALL);
@@ -619,183 +681,130 @@ export class HomeComponent {
   private async fetchActiveCrags(): Promise<ActiveCrag[]> {
     if (!this.isBrowser) return [];
 
-    const cacheKey = CACHE_KEYS.activeCrags;
-
-    try {
-      await this.supabase.whenReady();
-      const { data, error } = await this.supabase.client
-        .from('route_ascents')
-        .select(
-          `
-          route:routes!inner(
-            crag:crags(
-              id, name, slug, area:areas(slug)
-            )
+    await this.supabase.whenReady();
+    const { data, error } = await this.supabase.client
+      .from('route_ascents')
+      .select(
+        `
+        route:routes!inner(
+          crag:crags(
+            id, name, slug, area:areas(slug)
           )
-        `,
         )
-        .order('date', { ascending: false })
-        .limit(30);
+      `,
+      )
+      .order('date', { ascending: false })
+      .limit(30);
 
-      if (error) throw error;
+    if (error) throw error;
 
-      const cragsMap = new Map<number, ActiveCrag>();
-      const typedData = data as AscentWithRouteJoin[] | null;
+    const cragsMap = new Map<number, ActiveCrag>();
+    const typedData = data as AscentWithRouteJoin[] | null;
 
-      typedData?.forEach((d) => {
-        const route = d.route;
-        const rawCrag = route?.crag;
-        const c = Array.isArray(rawCrag) ? rawCrag[0] : rawCrag;
-        if (c && !cragsMap.has(c.id)) {
-          const rawArea = c.area;
-          const area = Array.isArray(rawArea) ? rawArea[0] : rawArea;
-          cragsMap.set(c.id, {
-            id: c.id,
-            name: c.name,
-            slug: c.slug,
-            area_slug: area?.slug ?? '',
-          });
-        }
-      });
-
-      const result = Array.from(cragsMap.values()).slice(0, 8);
-      this.storage.setItem(cacheKey, JSON.stringify(result));
-      return result;
-    } catch (e: unknown) {
-      console.warn('[Home] fetchActiveCrags error/offline, trying cache', e);
-      const cached = this.storage.getItem(cacheKey);
-      if (cached) {
-        try {
-          return JSON.parse(cached) as ActiveCrag[];
-        } catch {
-          console.error('[Home] Cache parse error');
-        }
+    typedData?.forEach((d) => {
+      const route = d.route;
+      const rawCrag = route?.crag;
+      const c = Array.isArray(rawCrag) ? rawCrag[0] : rawCrag;
+      if (c && !cragsMap.has(c.id)) {
+        const rawArea = c.area;
+        const area = Array.isArray(rawArea) ? rawArea[0] : rawArea;
+        cragsMap.set(c.id, {
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+          area_slug: area?.slug ?? '',
+        });
       }
-      return [];
-    }
+    });
+
+    return Array.from(cragsMap.values()).slice(0, 8);
   }
 
   private async fetchActiveIndoorCenters(): Promise<ActiveIndoorCenter[]> {
     if (!this.isBrowser) return [];
 
-    const cacheKey = CACHE_KEYS.activeIndoorCenters;
-
-    try {
-      await this.supabase.whenReady();
-      const { data, error } = await this.supabase.client
-        .from('indoor_ascents')
-        .select(
-          `
-          route:indoor_routes(
-            center:indoor_centers(
-              id, name, slug
-            )
+    await this.supabase.whenReady();
+    const { data, error } = await this.supabase.client
+      .from('indoor_ascents')
+      .select(
+        `
+        route:indoor_routes(
+          center:indoor_centers(
+            id, name, slug
           )
-        `,
         )
-        .order('date', { ascending: false })
-        .limit(30);
+      `,
+      )
+      .order('date', { ascending: false })
+      .limit(30);
 
-      if (error) throw error;
+    if (error) throw error;
 
-      const centersMap = new Map<string, ActiveIndoorCenter>();
+    const centersMap = new Map<string, ActiveIndoorCenter>();
 
-      (data ?? []).forEach((d: Record<string, unknown>) => {
-        const route = d['route'] as Record<string, unknown> | null;
-        const center = route?.['center'] as Record<string, unknown> | null;
-        if (center && !centersMap.has(center['id'] as string)) {
-          centersMap.set(center['id'] as string, {
-            id: center['id'] as string,
-            name: center['name'] as string,
-            slug: center['slug'] as string,
-          });
-        }
-      });
-
-      const result = Array.from(centersMap.values()).slice(0, 8);
-      this.storage.setItem(cacheKey, JSON.stringify(result));
-      return result;
-    } catch (e: unknown) {
-      console.warn(
-        '[Home] fetchActiveIndoorCenters error/offline, trying cache',
-        e,
-      );
-      const cached = this.storage.getItem(cacheKey);
-      if (cached) {
-        try {
-          return JSON.parse(cached) as ActiveIndoorCenter[];
-        } catch {
-          console.error('[Home] Cache parse error');
-        }
+    (data ?? []).forEach((d: Record<string, unknown>) => {
+      const route = d['route'] as Record<string, unknown> | null;
+      const center = route?.['center'] as Record<string, unknown> | null;
+      if (center && !centersMap.has(center['id'] as string)) {
+        centersMap.set(center['id'] as string, {
+          id: center['id'] as string,
+          name: center['name'] as string,
+          slug: center['slug'] as string,
+        });
       }
-      return [];
-    }
+    });
+
+    return Array.from(centersMap.values()).slice(0, 8);
   }
 
   private async fetchActiveAreas(): Promise<ActiveArea[]> {
     if (!this.isBrowser) return [];
 
-    const cacheKey = CACHE_KEYS.activeAreas;
-
-    try {
-      await this.supabase.whenReady();
-      const { data, error } = await this.supabase.client
-        .from('route_ascents')
-        .select(
-          `
-          route:routes!inner(
-            crag:crags(
-              area:areas(
-                id, name, slug
-              )
+    await this.supabase.whenReady();
+    const { data, error } = await this.supabase.client
+      .from('route_ascents')
+      .select(
+        `
+        route:routes!inner(
+          crag:crags(
+            area:areas(
+              id, name, slug
             )
           )
-        `,
         )
-        .order('date', { ascending: false })
-        .limit(30);
+      `,
+      )
+      .order('date', { ascending: false })
+      .limit(30);
 
-      if (error) throw error;
+    if (error) throw error;
 
-      const areasMap = new Map<number, ActiveArea>();
-      const typedData = data as AscentWithRouteJoin[] | null;
+    const areasMap = new Map<number, ActiveArea>();
+    const typedData = data as AscentWithRouteJoin[] | null;
 
-      typedData?.forEach((d) => {
-        const route = d.route;
-        const rawCrag = route?.crag;
-        const c = Array.isArray(rawCrag) ? rawCrag[0] : rawCrag;
-        if (c) {
-          const rawArea = c.area;
-          const area = Array.isArray(rawArea) ? rawArea[0] : rawArea;
-          if (area && !areasMap.has(area.id)) {
-            areasMap.set(area.id, {
-              id: area.id,
-              name: area.name,
-              slug: area.slug,
-            });
-          }
-        }
-      });
-
-      const result = Array.from(areasMap.values()).slice(0, 8);
-      this.storage.setItem(cacheKey, JSON.stringify(result));
-      return result;
-    } catch (e: unknown) {
-      console.warn('[Home] fetchActiveAreas error/offline, trying cache', e);
-      const cached = this.storage.getItem(cacheKey);
-      if (cached) {
-        try {
-          return JSON.parse(cached) as ActiveArea[];
-        } catch {
-          console.error('[Home] Cache parse error');
+    typedData?.forEach((d) => {
+      const route = d.route;
+      const rawCrag = route?.crag;
+      const c = Array.isArray(rawCrag) ? rawCrag[0] : rawCrag;
+      if (c) {
+        const rawArea = c.area;
+        const area = Array.isArray(rawArea) ? rawArea[0] : rawArea;
+        if (area && !areasMap.has(area.id)) {
+          areasMap.set(area.id, {
+            id: area.id,
+            name: area.name,
+            slug: area.slug,
+          });
         }
       }
-      return [];
-    }
+    });
+
+    return Array.from(areasMap.values()).slice(0, 8);
   }
 
   // Desnivel News (completely independent lifecycle & skeleton)
   private newsPage = 1;
+  private newsSeeded = false;
   protected readonly newsItems = signal<NewsItem[]>([]);
   protected readonly newsLoading = signal(true);
   protected readonly newsLoadingMore = signal(false);
@@ -813,19 +822,24 @@ export class HomeComponent {
       this.newsLoading.set(false);
       return;
     }
-    this.newsLoading.set(true);
+    if (!this.newsSeeded) {
+      this.newsLoading.set(true);
+    }
     this.newsPage = 1;
     this.newsHasMore.set(true);
     try {
       const posts = await this.desnivelService.getLatestPosts(12, 1);
       this.newsItems.set(posts);
+      this.cache.set(CACHE_KEYS.homeNews, posts);
       if (posts.length < 12) {
         this.newsHasMore.set(false);
       }
     } catch (e: unknown) {
       console.warn('[Home] loadNews error', e);
-      this.newsItems.set([]);
-      this.newsHasMore.set(false);
+      if (!this.newsSeeded) {
+        this.newsItems.set([]);
+        this.newsHasMore.set(false);
+      }
     } finally {
       this.newsLoading.set(false);
     }

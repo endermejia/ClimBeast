@@ -5,7 +5,6 @@ import {
   computed,
   inject,
   input,
-  resource,
 } from '@angular/core';
 
 import { TuiIcon } from '@taiga-ui/core';
@@ -13,6 +12,9 @@ import { TuiSkeleton } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { IS_BROWSER } from '../../app/is-browser';
+
+import { CacheService } from '../../services/cache.service';
 import { FavoritesDataService } from '../../services/favorites-data.service';
 import { FavoritesService } from '../../services/favorites.service';
 import { SupabaseService } from '../../services/supabase.service';
@@ -28,6 +30,9 @@ import {
   MapIndoorCenterItem,
   RouteWithExtras,
 } from '../../models';
+
+import { CACHE_KEYS } from '../../constants';
+import { createCachedResource } from '../../utils';
 
 @Component({
   selector: 'app-user-profile-likes',
@@ -158,7 +163,9 @@ import {
 export class UserProfileLikesComponent {
   userId = input.required<string>();
 
+  private readonly cache = inject(CacheService);
   private readonly favorites = inject(FavoritesService);
+  private readonly isBrowser = inject(IS_BROWSER);
   protected readonly favoritesData = inject(FavoritesDataService);
   protected readonly supabase = inject(SupabaseService);
 
@@ -170,60 +177,97 @@ export class UserProfileLikesComponent {
   protected readonly likedRoutes = computed<RouteWithExtras[]>(() =>
     this.isOwnProfile()
       ? (this.favoritesData.likedRoutes() as RouteWithExtras[])
-      : (this.likedRoutesResource.value() ?? []),
+      : this.cachedLikedRoutes.signal(),
   );
 
   protected readonly likedCrags = computed<CragListItem[]>(() =>
     this.isOwnProfile()
       ? (this.favoritesData.likedCrags() as CragListItem[])
-      : (this.likedCragsResource.value() ?? []),
+      : this.cachedLikedCrags.signal(),
   );
 
   protected readonly likedAreas = computed<AreaListItem[]>(() =>
     this.isOwnProfile()
       ? (this.favoritesData.likedAreas() as AreaListItem[])
-      : (this.likedAreasResource.value() ?? []),
+      : this.cachedLikedAreas.signal(),
   );
 
   protected readonly likedIndoorCenters = computed<MapIndoorCenterItem[]>(() =>
     this.isOwnProfile()
       ? (this.favoritesData.likedIndoorCenters() as MapIndoorCenterItem[])
-      : (this.likedIndoorCentersResource.value() ?? []),
+      : this.cachedLikedIndoorCenters.signal(),
   );
 
   protected readonly isLoading = computed(
     () =>
-      this.likedRoutesResource.isLoading() ||
-      this.likedCragsResource.isLoading() ||
-      this.likedAreasResource.isLoading() ||
-      this.likedIndoorCentersResource.isLoading(),
+      this.cachedLikedAreas.showSkeleton() ||
+      this.cachedLikedCrags.showSkeleton() ||
+      this.cachedLikedIndoorCenters.showSkeleton() ||
+      this.cachedLikedRoutes.showSkeleton(),
   );
 
-  protected readonly likedRoutesResource = resource({
+  private readonly cachedLikedRoutes = createCachedResource<
+    string,
+    RouteWithExtras[]
+  >({
     params: () => this.userId(),
-    loader: async ({ params: userId }) => {
+    isBrowser: this.isBrowser,
+    cacheKey: (userId) => (userId ? CACHE_KEYS.likedRoutes(userId) : null),
+    fetcher: async (userId) => {
+      if (!userId) return [];
       return this.favorites.getLikedRoutes(userId);
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'UserProfileLikes',
   });
 
-  protected readonly likedCragsResource = resource({
+  private readonly cachedLikedCrags = createCachedResource<
+    string,
+    CragListItem[]
+  >({
     params: () => this.userId(),
-    loader: async ({ params: userId }) => {
+    isBrowser: this.isBrowser,
+    cacheKey: (userId) => (userId ? CACHE_KEYS.likedCrags(userId) : null),
+    fetcher: async (userId) => {
+      if (!userId) return [];
       return this.favorites.getLikedCrags(userId);
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'UserProfileLikes',
   });
 
-  protected readonly likedAreasResource = resource({
+  private readonly cachedLikedAreas = createCachedResource<
+    string,
+    AreaListItem[]
+  >({
     params: () => this.userId(),
-    loader: async ({ params: userId }) => {
+    isBrowser: this.isBrowser,
+    cacheKey: (userId) => (userId ? CACHE_KEYS.likedAreas(userId) : null),
+    fetcher: async (userId) => {
+      if (!userId) return [];
       return this.favorites.getLikedAreas(userId);
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'UserProfileLikes',
   });
 
-  protected readonly likedIndoorCentersResource = resource({
+  private readonly cachedLikedIndoorCenters = createCachedResource<
+    string,
+    MapIndoorCenterItem[]
+  >({
     params: () => this.userId(),
-    loader: async ({ params: userId }) => {
+    isBrowser: this.isBrowser,
+    cacheKey: (userId) =>
+      userId ? CACHE_KEYS.likedIndoorCenters(userId) : null,
+    fetcher: async (userId) => {
+      if (!userId) return [];
       return this.favorites.getLikedIndoorCenters(userId);
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'UserProfileLikes',
   });
 }

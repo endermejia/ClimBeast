@@ -90,12 +90,25 @@ export interface CachedResourceConfig<P, T> extends WatchResourceErrorOptions {
 
 /**
  * Creates an Angular resource combined with CacheService fallback and error handling.
+ *
+ * Returns:
+ * - `resource`: the underlying `ResourceRef` (revalidates on every param change).
+ * - `signal`: stale-while-revalidate value — the resource value when it is
+ *   meaningful, otherwise the cached value for the current params (or the
+ *   fallback). Templates/computeds should consume this instead of
+ *   `resource.value()` so previously cached data renders immediately and is
+ *   swapped when the fresh value arrives.
+ * - `showSkeleton`: `true` ONLY on a first load — the resource is loading and
+ *   neither the resource nor the cache holds data yet. Use it (not
+ *   `resource.isLoading()`) to gate skeletons/spinners, so warm navigations
+ *   render cached data without a loading state.
  */
 export function createCachedResource<P, T>(
   config: CachedResourceConfig<P, T>,
 ): {
   resource: ResourceRef<T | undefined>;
   signal: Signal<T>;
+  showSkeleton: Signal<boolean>;
 } {
   const res = resource({
     params: () => ({
@@ -164,7 +177,26 @@ export function createCachedResource<P, T>(
     return val !== undefined ? val : config.fallbackValue;
   });
 
-  return { resource: res, signal: sig };
+  const showSkeleton = computed(() => {
+    if (!res.isLoading()) return false;
+    try {
+      if (res.hasValue()) {
+        const v = res.value();
+        if (v !== undefined && v !== config.fallbackValue) return false;
+      }
+    } catch {
+      // error state — treat as "no value" and fall through to the cache check
+    }
+    const p = config.params ? config.params() : (undefined as P);
+    const key = config.cacheKey(p);
+    if (!key) return true;
+    return (
+      config.cache.get<T | undefined>(key, undefined, config.ttlMs) ===
+      undefined
+    );
+  });
+
+  return { resource: res, signal: sig, showSkeleton };
 }
 
 /**

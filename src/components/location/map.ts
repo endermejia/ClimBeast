@@ -163,6 +163,7 @@ export class MapComponent {
         ...v,
       };
       this.mapData.mapBounds.set(viewport as MapBounds);
+      this.mapData.persistMapBounds();
     },
   };
 

@@ -130,8 +130,8 @@ export class UserProfileAscentsComponent {
   });
 
   protected readonly accumulatedAscents = signal<FeedItem[]>([]);
-  protected readonly isLoading = signal(true);
   readonly ascentsResource = this.profileData.userAscentsResource;
+  protected readonly isLoading = signal(!this.hasInitialAscentsValue());
   readonly totalAscents = computed(
     () =>
       safeResourceValue(this.ascentsResource, { items: [], total: 0 }).total ??
@@ -199,6 +199,7 @@ export class UserProfileAscentsComponent {
       }
     });
 
+    let firstRun = true;
     effect(() => {
       this.profileData.ascentsQuery();
       this.profileData.ascentsSort();
@@ -208,9 +209,27 @@ export class UserProfileAscentsComponent {
       this.showOutdoor();
       this.profileData.ascentsDateFilter();
 
+      if (firstRun) {
+        firstRun = false;
+        // Warm revisits (and initial mount) must not flip loading back on:
+        // retained value / cache should paint immediately and revalidate.
+        if (untracked(() => this.profileData.ascentsPage()) !== 0) {
+          this.profileData.ascentsPage.set(0);
+        }
+        return;
+      }
+
       this.isLoading.set(true);
       this.profileData.ascentsPage.set(0);
     });
+  }
+
+  private hasInitialAscentsValue(): boolean {
+    try {
+      return this.ascentsResource.hasValue();
+    } catch {
+      return false;
+    }
   }
 
   loadMore() {

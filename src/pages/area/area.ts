@@ -84,6 +84,7 @@ import {
   AreaDetail,
   ClimbingKind,
   ClimbingKinds,
+  type CragListItem,
   type FeedItem,
   isGradeRangeOverlap,
   normalizeRoutesByGrade,
@@ -97,6 +98,7 @@ import {
 import { CACHE_KEYS } from '../../constants';
 import { AvatarUrlPipe, IconSrcPipe, InitialsPipe } from '../../pipes';
 import {
+  createCachedResource,
   filterRoutes,
   gradeToVerticalLife,
   handleErrorToast,
@@ -239,7 +241,7 @@ const PAGE_SIZE = 20;
                         >
                           {{ 'topos' | translate }}
                         </button>
-                      } @else if (!areaDetailResource.isLoading()) {
+                      } @else if (!areaDetailLoading()) {
                         @let isSecret =
                           details &&
                           !details.is_public &&
@@ -832,16 +834,21 @@ export class AreaComponent {
 
   private readonly ascentsPage = signal(0);
   protected readonly accumulatedAscents = signal<FeedItem[]>([]);
-  protected readonly ascentsResource = resource({
+  private readonly cachedAscents = createCachedResource<
+    { areaId: number; page: number } | null,
+    FeedItem[]
+  >({
     params: () => {
       const area = this.outdoorData.selectedArea();
       if (!area) return null;
       return { areaId: area.id, page: this.ascentsPage() };
     },
-    loader: async ({ params }) => {
-      if (!params || !this.isBrowser) return [];
+    isBrowser: this.isBrowser,
+    cacheKey: (p) => (p ? CACHE_KEYS.areaAscents(p.areaId, p.page) : null),
+    fetcher: async (p) => {
+      if (!p || !this.isBrowser) return [];
       await this.supabase.whenReady();
-      const from = params.page * PAGE_SIZE;
+      const from = p.page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
       const { data, error } = await this.supabase.client
@@ -855,14 +862,14 @@ export class AreaComponent {
           )
         `,
         )
-        .eq('route.crag.area_id', params.areaId)
+        .eq('route.crag.area_id', p.areaId)
         .order('date', { ascending: false })
         .order('id', { ascending: false })
         .range(from, to);
 
       if (error) {
         console.error('[AreaComponent] Error fetching ascents:', error);
-        return [];
+        throw error;
       }
       if (!data || data.length === 0) return [];
 
@@ -902,17 +909,23 @@ export class AreaComponent {
         } as FeedItem;
       });
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'AreaComponent',
   });
+  protected readonly ascentsResource = this.cachedAscents.resource;
+  private readonly ascentsSignal = this.cachedAscents.signal;
 
   protected readonly ascentsLoading = computed(
-    () => this.ascentsResource.isLoading() && this.ascentsPage() === 0,
+    () =>
+      this.ascentsResource.isLoading() &&
+      this.ascentsPage() === 0 &&
+      this.accumulatedAscents().length === 0,
   );
 
   protected readonly hasMoreAscents = computed(() => {
     if (this.ascentsResource.isLoading()) return false;
-    const items = this.ascentsResource.value();
-    if (!items) return false;
-    return items.length === PAGE_SIZE;
+    return this.ascentsSignal().length === PAGE_SIZE;
   });
 
   readonly hasActiveFilters = computed(() => {
@@ -929,18 +942,29 @@ export class AreaComponent {
     return (this.outdoorData.selectedArea()?.topos_count ?? 0) > 0;
   });
 
-  protected readonly areaDetailResource = resource({
-    params: () => this.outdoorData.selectedArea()?.id,
-    loader: async ({ params: id }) => {
+  private readonly cachedAreaDetail = createCachedResource<
+    number | null,
+    AreaDetail | null
+  >({
+    params: () => this.outdoorData.selectedArea()?.id ?? null,
+    isBrowser: this.isBrowser,
+    cacheKey: (id) => (id ? CACHE_KEYS.areaDetail(id) : null),
+    fetcher: async (id) => {
       if (!id) return null;
-      const { data } = await this.areas.getById(id);
+      const { data, error } = await this.areas.getById(id);
+      if (error) {
+        console.error('[AreaComponent] Error fetching area detail:', error);
+        throw error;
+      }
       return data as AreaDetail | null;
     },
+    cache: this.cache,
+    fallbackValue: null,
+    logTag: 'AreaComponent',
   });
-
-  protected readonly areaDetail = computed(() =>
-    this.areaDetailResource.value(),
-  );
+  protected readonly areaDetailResource = this.cachedAreaDetail.resource;
+  protected readonly areaDetailLoading = this.cachedAreaDetail.showSkeleton;
+  protected readonly areaDetail = this.cachedAreaDetail.signal;
 
   protected readonly canEditAsAdmin = computed(() =>
     this.authState.canEditAsAdmin(),
@@ -1012,15 +1036,20 @@ export class AreaComponent {
     return actions;
   });
 
-  protected readonly allRoutesResource = resource({
+  private readonly cachedAllRoutes = createCachedResource<
+    { areaId: number; userId: string | null } | null,
+    RouteItem[]
+  >({
     params: () => {
       const area = this.outdoorData.selectedArea();
-      return area?.id ?? null;
+      if (!area) return null;
+      return { areaId: area.id, userId: this.supabase.authUserId() };
     },
-    loader: async ({ params: areaId }) => {
-      if (!areaId || !this.isBrowser) return [];
+    isBrowser: this.isBrowser,
+    cacheKey: (p) => (p ? CACHE_KEYS.areaRoutes(p.areaId, p.userId) : null),
+    fetcher: async (p) => {
+      if (!p || !this.isBrowser) return [];
       await this.supabase.whenReady();
-      const userId = this.supabase.authUser()?.id;
       const { data, error } = await this.supabase.client
         .from('routes')
         .select(
@@ -1034,15 +1063,16 @@ export class AreaComponent {
           crag:crags!inner(id, slug, name, area_id, area:areas(slug, name))
         `,
         )
-        .eq('crag.area_id', areaId)
+        .eq('crag.area_id', p.areaId)
         .order('grade', { ascending: true });
 
       if (error) {
         console.error('[AreaComponent] Error fetching routes:', error);
-        return [];
+        throw error;
       }
       if (!data) return [];
 
+      const userId = p.userId;
       return data.map((r) => {
         const userOwnAscents = userId
           ? (r.own_ascent ?? []).filter((a) => a.user_id === userId)
@@ -1051,7 +1081,7 @@ export class AreaComponent {
           ? (r.liked ?? []).filter((l) => l.user_id === userId)
           : [];
         const userProject = userId
-          ? (r.project ?? []).filter((p) => p.user_id === userId)
+          ? (r.project ?? []).filter((pr) => pr.user_id === userId)
           : [];
 
         return mapRouteToExtras(
@@ -1069,11 +1099,12 @@ export class AreaComponent {
         );
       }) as RouteItem[];
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'AreaComponent',
   });
-
-  protected readonly allRoutes = computed(
-    () => this.allRoutesResource.value() ?? [],
-  );
+  protected readonly allRoutesResource = this.cachedAllRoutes.resource;
+  protected readonly allRoutes = this.cachedAllRoutes.signal;
 
   protected readonly hasActiveRouteFilters = computed(() => {
     const [lo, hi] = this.selectedGradeRange();
@@ -1126,30 +1157,50 @@ export class AreaComponent {
     }));
   });
 
-  protected readonly ascentsCountResource = resource({
-    params: () => this.outdoorData.selectedArea()?.id,
-    loader: async ({ params: areaId }) => {
-      if (!areaId || !this.isBrowser) return 0;
+  private readonly cachedAscentsCount = createCachedResource<
+    number | null,
+    number
+  >({
+    params: () => this.outdoorData.selectedArea()?.id ?? null,
+    isBrowser: this.isBrowser,
+    cacheKey: (id) => (id ? CACHE_KEYS.areaAscentsCount(id) : null),
+    fetcher: async (id) => {
+      if (!id || !this.isBrowser) return 0;
       await this.supabase.whenReady();
-      const { data: routes } = await this.supabase.client
+      const { data: routes, error: routesError } = await this.supabase.client
         .from('routes')
         .select('id, crag:crags!inner(area_id)')
-        .eq('crag.area_id', areaId);
+        .eq('crag.area_id', id);
+      if (routesError) {
+        console.error(
+          '[AreaComponent] Error fetching routes for ascents count:',
+          routesError,
+        );
+        throw routesError;
+      }
       if (!routes?.length) return 0;
-      const { count } = await this.supabase.client
+      const { count, error: countError } = await this.supabase.client
         .from('route_ascents')
         .select('*', { count: 'exact', head: true })
         .in(
           'route_id',
           routes.map((r) => r.id),
         );
+      if (countError) {
+        console.error(
+          '[AreaComponent] Error fetching ascents count:',
+          countError,
+        );
+        throw countError;
+      }
       return count ?? 0;
     },
+    cache: this.cache,
+    fallbackValue: 0,
+    logTag: 'AreaComponent',
   });
-
-  protected readonly ascentsCount = computed(
-    () => this.ascentsCountResource.value() ?? 0,
-  );
+  protected readonly ascentsCountResource = this.cachedAscentsCount.resource;
+  protected readonly ascentsCount = this.cachedAscentsCount.signal;
 
   protected readonly segmentedTabs = computed(() => {
     const tabs: number[] = [0, 1];
@@ -1281,31 +1332,49 @@ export class AreaComponent {
     () => this.foundUsersResource.value() ?? [],
   );
 
-  protected readonly areaCenterResource = resource({
-    params: () => this.outdoorData.selectedArea()?.id,
-    loader: async ({ params: areaId }) => {
-      if (!areaId) return null;
+  private readonly cachedAreaCenter = createCachedResource<
+    number | null,
+    { latitude: number; longitude: number } | null
+  >({
+    params: () => this.outdoorData.selectedArea()?.id ?? null,
+    isBrowser: this.isBrowser,
+    cacheKey: (id) => (id ? CACHE_KEYS.areaCenter(id) : null),
+    fetcher: async (id) => {
+      if (!id) return null;
       await this.supabase.whenReady();
-      const { data } = await this.supabase.client
+      const { data, error } = await this.supabase.client
         .from('crags')
         .select('latitude, longitude')
-        .eq('area_id', areaId)
+        .eq('area_id', id)
         .not('latitude', 'is', null)
         .not('longitude', 'is', null);
+      if (error) {
+        console.error('[AreaComponent] Error fetching area center:', error);
+        throw error;
+      }
       if (!data?.length) return null;
       const avgLat = data.reduce((s, c) => s + c.latitude!, 0) / data.length;
       const avgLng = data.reduce((s, c) => s + c.longitude!, 0) / data.length;
       return { latitude: avgLat, longitude: avgLng };
     },
+    cache: this.cache,
+    fallbackValue: null,
+    logTag: 'AreaComponent',
   });
+  protected readonly areaCenterResource = this.cachedAreaCenter.resource;
+  protected readonly areaCenter = this.cachedAreaCenter.signal;
 
-  protected readonly areaCenter = computed(() =>
-    this.areaCenterResource.value(),
-  );
-
-  protected readonly areaParkingsResource = resource({
-    params: () => this.outdoorData.cragsList(),
-    loader: async ({ params: crags }) => {
+  private readonly cachedAreaParkings = createCachedResource<
+    { areaId: number | null; crags: CragListItem[] },
+    ParkingDto[]
+  >({
+    params: () => ({
+      areaId: this.outdoorData.selectedArea()?.id ?? null,
+      crags: this.outdoorData.cragsList(),
+    }),
+    isBrowser: this.isBrowser,
+    cacheKey: ({ areaId }) => (areaId ? CACHE_KEYS.areaParkings(areaId) : null),
+    fetcher: async ({ crags }) => {
       if (!crags?.length || !this.isBrowser) return [];
       await this.supabase.whenReady();
       const cragIds = crags.map((c) => c.id);
@@ -1313,17 +1382,22 @@ export class AreaComponent {
         .from('crag_parkings')
         .select('parking:parkings(*)')
         .in('crag_id', cragIds);
-      if (error || !data) return [];
+      if (error) {
+        console.error('[AreaComponent] Error fetching parkings:', error);
+        throw error;
+      }
+      if (!data) return [];
       const unique = [
         ...new Map(data.map((cp) => [cp.parking.id, cp.parking])).values(),
       ];
       return unique as ParkingDto[];
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'AreaComponent',
   });
-
-  protected readonly areaParkings = computed(
-    () => this.areaParkingsResource.value() ?? [],
-  );
+  protected readonly areaParkingsResource = this.cachedAreaParkings.resource;
+  protected readonly areaParkings = this.cachedAreaParkings.signal;
 
   protected readonly stringifyUser = (u: UserProfileBasicDto) => u.name || '';
 
@@ -1347,13 +1421,18 @@ export class AreaComponent {
     });
 
     effect(() => {
-      const newItems = this.ascentsResource.value();
-      if (!newItems) return;
+      const newItems = this.ascentsSignal();
       untracked(() => {
         if (this.ascentsPage() === 0) {
           this.accumulatedAscents.set(newItems);
-        } else {
-          this.accumulatedAscents.update((prev) => [...prev, ...newItems]);
+        } else if (newItems.length) {
+          this.accumulatedAscents.update((prev) => {
+            const existingIds = new Set(prev.map((a) => String(a.id)));
+            const fresh = newItems.filter(
+              (item) => !existingIds.has(String(item.id)),
+            );
+            return fresh.length ? [...prev, ...fresh] : prev;
+          });
         }
       });
     });

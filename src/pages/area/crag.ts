@@ -6,7 +6,6 @@ import {
   inject,
   input,
   InputSignal,
-  resource,
   signal,
   untracked,
 } from '@angular/core';
@@ -29,6 +28,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthStateService } from '../../services/auth-state.service';
+import { CacheService } from '../../services/cache.service';
 import { CragRoutesDataService } from '../../services/crag-routes-data.service';
 import { CragsService } from '../../services/crags.service';
 import { LanguageService } from '../../services/language.service';
@@ -65,7 +65,8 @@ import {
   VERTICAL_LIFE_GRADES,
 } from '../../models';
 
-import { handleErrorToast, slugify } from '../../utils';
+import { CACHE_KEYS } from '../../constants';
+import { createCachedResource, handleErrorToast, slugify } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -318,6 +319,7 @@ export class CragComponent {
   protected readonly router = inject(Router);
   protected readonly cragsService = inject(CragsService);
   protected readonly isBrowser = inject(IS_BROWSER);
+  private readonly cache = inject(CacheService);
   protected readonly toast = inject(ToastService);
   protected readonly translate = inject(TranslateService);
   protected readonly dialogs = inject(TuiDialogService);
@@ -328,16 +330,21 @@ export class CragComponent {
 
   private readonly ascentsPage = signal(0);
   protected readonly accumulatedAscents = signal<FeedItem[]>([]);
-  protected readonly ascentsResource = resource({
+  private readonly cachedAscents = createCachedResource<
+    { cragId: number; page: number } | null,
+    FeedItem[]
+  >({
     params: () => {
       const crag = this.outdoorData.cragDetail();
       if (!crag) return null;
       return { cragId: crag.id, page: this.ascentsPage() };
     },
-    loader: async ({ params }) => {
-      if (!params || !this.isBrowser) return [];
+    isBrowser: this.isBrowser,
+    cacheKey: (p) => (p ? CACHE_KEYS.cragAscents(p.cragId, p.page) : null),
+    fetcher: async (p) => {
+      if (!p || !this.isBrowser) return [];
       await this.supabase.whenReady();
-      const from = params.page * PAGE_SIZE;
+      const from = p.page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
       const { data, error } = await this.supabase.client
@@ -351,14 +358,14 @@ export class CragComponent {
           )
         `,
         )
-        .eq('route.crag.id', params.cragId)
+        .eq('route.crag.id', p.cragId)
         .order('date', { ascending: false })
         .order('id', { ascending: false })
         .range(from, to);
 
       if (error) {
         console.error('[CragComponent] Error fetching ascents:', error);
-        return [];
+        throw error;
       }
       if (!data || data.length === 0) return [];
 
@@ -398,46 +405,69 @@ export class CragComponent {
         } as FeedItem;
       });
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'CragComponent',
   });
+  protected readonly ascentsResource = this.cachedAscents.resource;
+  private readonly ascentsSignal = this.cachedAscents.signal;
 
   protected readonly ascentsLoading = computed(
-    () => this.ascentsResource.isLoading() && this.ascentsPage() === 0,
+    () =>
+      this.ascentsResource.isLoading() &&
+      this.ascentsPage() === 0 &&
+      this.accumulatedAscents().length === 0,
   );
 
   protected readonly hasMoreAscents = computed(() => {
     if (this.ascentsResource.isLoading()) return false;
-    const items = this.ascentsResource.value();
-    if (!items) return false;
-    return items.length === PAGE_SIZE;
+    return this.ascentsSignal().length === PAGE_SIZE;
   });
 
-  protected readonly ascentsCountResource = resource({
-    params: () => {
-      const crag = this.outdoorData.cragDetail();
-      return crag?.id ?? null;
-    },
-    loader: async ({ params: cragId }) => {
+  private readonly cachedAscentsCount = createCachedResource<
+    number | null,
+    number
+  >({
+    params: () => this.outdoorData.cragDetail()?.id ?? null,
+    isBrowser: this.isBrowser,
+    cacheKey: (cragId) => (cragId ? CACHE_KEYS.cragAscentsCount(cragId) : null),
+    fetcher: async (cragId) => {
       if (!cragId || !this.isBrowser) return 0;
       await this.supabase.whenReady();
-      const { data: routes } = await this.supabase.client
+      const { data: routes, error: routesError } = await this.supabase.client
         .from('routes')
         .select('id')
         .eq('crag_id', cragId);
+      if (routesError) {
+        console.error(
+          '[CragComponent] Error fetching routes for ascents count:',
+          routesError,
+        );
+        throw routesError;
+      }
       if (!routes?.length) return 0;
-      const { count } = await this.supabase.client
+      const { count, error: countError } = await this.supabase.client
         .from('route_ascents')
         .select('*', { count: 'exact', head: true })
         .in(
           'route_id',
           routes.map((r) => r.id),
         );
+      if (countError) {
+        console.error(
+          '[CragComponent] Error fetching ascents count:',
+          countError,
+        );
+        throw countError;
+      }
       return count ?? 0;
     },
+    cache: this.cache,
+    fallbackValue: 0,
+    logTag: 'CragComponent',
   });
-
-  protected readonly ascentsCount = computed(
-    () => this.ascentsCountResource.value() ?? 0,
-  );
+  protected readonly ascentsCountResource = this.cachedAscentsCount.resource;
+  protected readonly ascentsCount = this.cachedAscentsCount.signal;
 
   readonly showToposTab = computed(() => {
     return this.toposCount() > 0;
@@ -571,13 +601,18 @@ export class CragComponent {
     });
 
     effect(() => {
-      const newItems = this.ascentsResource.value();
-      if (!newItems) return;
+      const newItems = this.ascentsSignal();
       untracked(() => {
         if (this.ascentsPage() === 0) {
           this.accumulatedAscents.set(newItems);
-        } else {
-          this.accumulatedAscents.update((prev) => [...prev, ...newItems]);
+        } else if (newItems.length) {
+          this.accumulatedAscents.update((prev) => {
+            const existingIds = new Set(prev.map((a) => String(a.id)));
+            const fresh = newItems.filter(
+              (item) => !existingIds.has(String(item.id)),
+            );
+            return fresh.length ? [...prev, ...fresh] : prev;
+          });
         }
       });
     });

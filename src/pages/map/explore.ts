@@ -327,7 +327,12 @@ import { IS_BROWSER } from '../../app/is-browser';
           !mapData.selectedMapParkingItem() &&
           !mapData.selectedMapIndoorItem()
         ) {
-          @if (loading) {
+          @if (
+            loading &&
+            !crags.length &&
+            !areas.length &&
+            !mapIndoorItems().length
+          ) {
             <div
               class="absolute w-full h-full top-0 pointer-events-none z-50 flex items-center justify-center bg-(--tui-background-base)/30"
             >
@@ -661,13 +666,15 @@ export class ExploreComponent {
   });
 
   protected readonly hasBottomSheet = computed(() => {
-    const loading =
-      this.mapData.mapResource.isLoading() ||
-      this.mapData.areasMapResource.isLoading();
-    if (loading) return false;
     const cragsCount = this.mapCragItems().length;
     const areasCount = this.mapAreaItems().length;
     const indoorCount = this.mapIndoorItems().length;
+    const loading =
+      this.mapData.mapResource.isLoading() ||
+      this.mapData.areasMapResource.isLoading();
+    // Only block while loading when there is nothing to show yet (first load);
+    // with stale items present, keep the sheet available (stale-while-revalidate).
+    if (loading && !cragsCount && !areasCount && !indoorCount) return false;
     return (
       (areasCount > 0 || cragsCount > 0 || indoorCount > 0) &&
       !this.mapData.selectedMapCragItem() &&

@@ -31,6 +31,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { BlockingService } from '../../services/blocking.service';
+import { CacheService } from '../../services/cache.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { FollowRequestsService } from '../../services/follow-requests.service';
 import { FollowsService } from '../../services/follows.service';
@@ -51,7 +52,14 @@ import { UserProfileAscentsComponent } from '../../components/user-profile/user-
 import { UserProfileFiltersComponent } from '../../components/user-profile/user-profile-filters';
 import { UserProfileStatisticsComponent } from '../../components/user-profile/user-profile-statistics';
 
-import { openPhotoViewer, safeResourceValue } from '../../utils';
+import { UserProfileDto } from '../../models';
+
+import { CACHE_KEYS } from '../../constants';
+import {
+  createCachedResource,
+  openPhotoViewer,
+  safeResourceValue,
+} from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -371,6 +379,7 @@ export class UserProfileComponent {
   protected readonly router = inject(Router);
   protected readonly userProfilesService = inject(UserProfilesService);
   private readonly isBrowser = inject(IS_BROWSER);
+  private readonly cache = inject(CacheService);
   private readonly translate = inject(TranslateService);
   protected readonly followRequestsService = inject(FollowRequestsService);
   protected readonly followsService = inject(FollowsService);
@@ -401,34 +410,45 @@ export class UserProfileComponent {
   });
 
   // Currently viewed profile (if by id)
-  private readonly externalProfileResource = resource({
+  private readonly cachedExternalProfile = createCachedResource<
+    string | undefined,
+    UserProfileDto | null
+  >({
     params: () => this.id(),
-    loader: async ({ params: paramId }) => {
-      if (!paramId || !this.isBrowser) return null;
+    isBrowser: this.isBrowser,
+    cacheKey: (id) =>
+      id && id !== this.supabase.authUserId()
+        ? CACHE_KEYS.externalProfile(id)
+        : null,
+    fetcher: async (id) => {
+      if (!id) return null;
 
-      try {
-        await this.supabase.whenReady();
-        // If param is the same as the current user id, we use our own profile (computed below)
-        const currentId = this.supabase.authUserId();
-        if (currentId && paramId === currentId) return null;
+      await this.supabase.whenReady();
+      // If param is the same as the current user id, we use our own profile (computed below)
+      const currentId = this.supabase.authUserId();
+      if (currentId && id === currentId) return null;
 
-        const { data, error } = await this.supabase.client
-          .from('user_profiles')
-          .select('*')
-          .eq('id', paramId)
-          .maybeSingle();
+      const { data, error } = await this.supabase.client
+        .from('user_profiles')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
 
-        if (error) {
-          console.error('[UserProfile] fetch by id error', error);
-          return null;
-        }
-        return data;
-      } catch (err) {
-        console.error('[UserProfile] fetch by id exception', err);
-        return null;
+      if (error) {
+        throw error;
       }
+      return data;
     },
+    cache: this.cache,
+    fallbackValue: null,
+    logTag: 'UserProfile',
+    onError: (err) => console.error('[UserProfile] fetch by id error', err),
   });
+  private readonly externalProfileResource =
+    this.cachedExternalProfile.resource;
+  protected readonly externalProfile = this.cachedExternalProfile.signal;
+  protected readonly externalProfileShowSkeleton =
+    this.cachedExternalProfile.showSkeleton;
 
   readonly equipperResource = resource({
     params: () => this.profile()?.id,
@@ -480,13 +500,14 @@ export class UserProfileComponent {
       return ownProfile ?? null;
     }
 
-    return safeResourceValue(this.externalProfileResource, null);
+    return this.externalProfile();
   });
 
   readonly loading = computed(
     () =>
-      this.supabase.userProfileResource.isLoading() ||
-      this.externalProfileResource.isLoading(),
+      !this.profile() &&
+      (this.supabase.userProfileResource.isLoading() ||
+        this.externalProfileResource.isLoading()),
   );
 
   readonly profileCountry = computed(

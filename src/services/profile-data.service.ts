@@ -4,6 +4,7 @@ import {
   Injectable,
   resource,
   signal,
+  Signal,
   WritableSignal,
 } from '@angular/core';
 
@@ -23,6 +24,7 @@ import { ORDERED_GRADE_VALUES, LABEL_TO_VERTICAL_LIFE } from '../models';
 
 import { CACHE_KEYS } from '../constants/cache-keys';
 
+import { createCachedResource } from '../utils';
 import {
   mapRouteToExtras,
   mapAscentRouteToExtras,
@@ -52,16 +54,20 @@ export class ProfileDataService {
   readonly ascentsQuery = signal<string | null>(null);
   readonly ascentsSort = signal<'date' | 'grade'>('date');
 
-  readonly userProjectsResource = resource({
+  private readonly cachedUserProjects = createCachedResource<
+    string | null,
+    RouteWithExtras[]
+  >({
     params: () => this.profileUserId(),
-    loader: async ({ params: userId }): Promise<RouteWithExtras[]> => {
-      if (!userId || !this.isBrowser) return [];
-      try {
-        await this.supabase.whenReady();
-        const currentUserId = this.supabase.authUser()?.id;
+    isBrowser: this.isBrowser,
+    cacheKey: (userId) => (userId ? CACHE_KEYS.userProjects(userId) : null),
+    fetcher: async (userId): Promise<RouteWithExtras[]> => {
+      if (!userId) return [];
+      await this.supabase.whenReady();
+      const currentUserId = this.supabase.authUser()?.id;
 
-        let query = this.supabase.client.from('route_projects').select(
-          `
+      let query = this.supabase.client.from('route_projects').select(
+        `
             route:routes (
               *,
               liked:route_likes(id),
@@ -77,60 +83,56 @@ export class ProfileDataService {
               ascents:route_ascents(rate, type)
             )
           `,
-        );
+      );
 
-        if (currentUserId) {
-          query = query
-            .eq('route.own_ascent.user_id', currentUserId)
-            .eq('route.project.user_id', currentUserId)
-            .eq('route.liked.user_id', currentUserId);
-        }
-
-        const { data, error } = await query.eq('user_id', userId);
-
-        if (error) {
-          throw error;
-        }
-
-        return data
-          .map((item) => {
-            const r = item.route as
-              | (RouteDto & {
-                  liked: { id: number }[];
-                  project: { id: number }[];
-                  ascents: { rate: number | null; type: AscentType }[];
-                  own_ascent: RouteAscentDto[];
-                  route_equippers: { equipper: EquipperDto }[];
-                  crag:
-                    | (CragDto & {
-                        area: { slug: string; name: string } | null;
-                      })
-                    | null;
-                })
-              | null;
-            if (!r) return null;
-
-            return mapRouteToExtras(r as RawRouteData, {
-              areaIdSource: 'crag.area.id',
-              includeEquippers: true,
-              includeTopos: false,
-            }) as RouteWithExtras;
-          })
-          .filter((r): r is RouteWithExtras => !!r);
-      } catch {
-        return [];
+      if (currentUserId) {
+        query = query
+          .eq('route.own_ascent.user_id', currentUserId)
+          .eq('route.project.user_id', currentUserId)
+          .eq('route.liked.user_id', currentUserId);
       }
+
+      const { data, error } = await query.eq('user_id', userId);
+
+      if (error) {
+        throw error;
+      }
+
+      return data
+        .map((item) => {
+          const r = item.route as
+            | (RouteDto & {
+                liked: { id: number }[];
+                project: { id: number }[];
+                ascents: { rate: number | null; type: AscentType }[];
+                own_ascent: RouteAscentDto[];
+                route_equippers: { equipper: EquipperDto }[];
+                crag:
+                  | (CragDto & {
+                      area: { slug: string; name: string } | null;
+                    })
+                  | null;
+              })
+            | null;
+          if (!r) return null;
+
+          return mapRouteToExtras(r as RawRouteData, {
+            areaIdSource: 'crag.area.id',
+            includeEquippers: true,
+            includeTopos: false,
+          }) as RouteWithExtras;
+        })
+        .filter((r): r is RouteWithExtras => !!r);
     },
+    cache: this.cache,
+    fallbackValue: [],
+    logTag: 'ProfileDataService',
   });
 
-  readonly userProjects = computed(() => {
-    const val = this.userProjectsResource.value();
-    if (val !== undefined) return val as RouteWithExtras[];
-    return this.cache.get<RouteWithExtras[]>(
-      CACHE_KEYS.userProjects(this.supabase.authUserId() ?? ''),
-      [],
-    );
-  });
+  readonly userProjectsResource = this.cachedUserProjects.resource;
+  readonly userProjects: Signal<RouteWithExtras[]> =
+    this.cachedUserProjects.signal;
+  readonly userProjectsLoading = this.cachedUserProjects.showSkeleton;
 
   readonly firstAscentYearResource = resource({
     params: () => this.profileUserId(),
