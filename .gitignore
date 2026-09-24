@@ -44,6 +44,16 @@ Thumbs.db
 # Local Netlify folder
 .netlify
 
+# Android / Bubblewrap (compiled in CI; signing key must never be committed)
+/android/android.keystore
+/android/android-credentials.txt
+/android/local.properties
+/android/.gradle/
+/android/build/
+/android/app/build/
+/android/*.apk
+/android/*.aab
+
 # Local configurations and environment variables
 .env
 supabase/.env

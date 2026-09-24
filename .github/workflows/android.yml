@@ -1,0 +1,73 @@
+name: android
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Ensure Android SDK packages
+        # Bubblewrap validates $ANDROID_HOME by checking for bin/ or tools/.
+        # The runner ships cmdline-tools only, so symlink bin/ -> cmdline-tools/latest
+        # and pre-install exactly what bubblewrap's checkBuildTools() demands.
+        run: |
+          if [ ! -d "$ANDROID_HOME/bin" ] && [ ! -d "$ANDROID_HOME/tools" ]; then
+            sudo ln -s "$ANDROID_HOME/cmdline-tools/latest" "$ANDROID_HOME/bin"
+          fi
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "platforms;android-36" \
+            "build-tools;36.1.0"
+
+      - name: Configure Bubblewrap
+        # Pre-seed the config so the CLI never prompts for JDK/SDK installation.
+        run: |
+          mkdir -p "$HOME/.bubblewrap"
+          printf '{"jdkPath":"%s","androidSdkPath":"%s"}' "$JAVA_HOME" "$ANDROID_HOME" \
+            > "$HOME/.bubblewrap/config.json"
+
+      - name: Install Bubblewrap CLI
+        run: npm install -g @bubblewrap/cli@1.25.0
+
+      - name: Restore signing keystore
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KS_B64" ]; then
+            echo "Secret ANDROID_KEYSTORE_B64 is missing" >&2
+            exit 1
+          fi
+          printf '%s' "$KS_B64" | base64 -d > android.keystore
+
+      - name: Build APK and AAB
+        # Passwords come from env vars, which makes `bubblewrap build` fully
+        # non-interactive (it also skips the update prompt because the committed
+        # manifest-checksum.txt matches twa-manifest.json).
+        env:
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.BUBBLEWRAP_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.BUBBLEWRAP_KEY_PASSWORD }}
+        run: bubblewrap build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: climbeast-android
+          path: |
+            android/app-release-signed.apk
+            android/app-release-bundle.aab
+          if-no-files-found: error
