@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.climbeast.app",
+      "sha256_cert_fingerprints": [
+        "D3:B1:B8:17:0D:79:27:20:BE:E7:20:78:63:5B:E0:95:5A:A9:DD:76:49:8C:C3:AC:4B:2D:DA:85:51:3E:1A:29"
+      ]
+    }
+  }
+]
