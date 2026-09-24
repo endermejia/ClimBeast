@@ -41,6 +41,8 @@ export class SupabaseAuthService {
   /** Function getter to access client dynamically from caller */
   private clientGetter: (() => SupabaseClient<Database>) | null = null;
   private whenReadyGetter: (() => Promise<void>) | null = null;
+  /** Fallback a la sesión persistida cuando auth.getSession() devuelve null (offline). */
+  private sessionFallback: (() => Session | null) | null = null;
 
   setClientGetter(
     getter: () => SupabaseClient<Database>,
@@ -50,6 +52,10 @@ export class SupabaseAuthService {
     if (whenReady) {
       this.whenReadyGetter = whenReady;
     }
+  }
+
+  setSessionFallback(getter: () => Session | null): void {
+    this.sessionFallback = getter;
   }
 
   async getClient(): Promise<SupabaseClient<Database>> {
@@ -209,19 +215,24 @@ export class SupabaseAuthService {
     params: () => this.authUserId(),
     loader: async ({ params: userId }) => {
       if (!userId || !this.isBrowser) return [];
-      const client = await this.getClient();
-      const { data, error } = await client
-        .from('indoor_center_routesetters')
-        .select('center_id')
-        .eq('user_id', userId);
-      if (error) {
-        console.error(
-          '[SupabaseAuthService] routesetterIndoorCentersResource error',
-          error,
-        );
-        return [];
-      }
-      return data.map((d) => d.center_id).filter((id): id is string => !!id);
+      const cacheKey = CACHE_KEYS.routesetterIndoorCenters(userId);
+      return this.cache.fetchOrCache(
+        cacheKey,
+        async () => {
+          const client = await this.getClient();
+          const { data, error } = await client
+            .from('indoor_center_routesetters')
+            .select('center_id')
+            .eq('user_id', userId);
+          if (error) {
+            throw error;
+          }
+          return data
+            .map((d) => d.center_id)
+            .filter((id): id is string => !!id);
+        },
+        { fallbackValue: [] as string[], logTag: 'SupabaseAuthService' },
+      );
     },
   });
 
@@ -261,7 +272,13 @@ export class SupabaseAuthService {
     if (error) {
       console.warn('[SupabaseAuthService] getSession error', error);
     }
-    const sess = data?.session ?? null;
+    let sess = data?.session ?? null;
+    if (!sess && this.sessionFallback) {
+      // Sin conexión el refresh del token falla y getSession() devuelve null:
+      // se conserva la sesión persistida en modo solo lectura para no perder
+      // el acceso a los datos cacheados.
+      sess = this.sessionFallback();
+    }
     this._session.set(sess);
     return sess;
   }

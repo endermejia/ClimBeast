@@ -25,7 +25,16 @@ export async function waitForResource<T>(
   interval = 50,
 ): Promise<T | undefined> {
   for (let i = 0; i < maxAttempts; i++) {
-    const val = resource.value();
+    let val: T | undefined;
+    try {
+      val = resource.value();
+    } catch {
+      // Resource en estado de error: `value()` lanza ResourceValueError y no
+      // hay valor recuperable. No debe romper la navegación (dejaría la
+      // pantalla en blanco); se devuelve undefined para que el caller use su
+      // fallback.
+      return undefined;
+    }
     if (val !== undefined) {
       return val;
     }

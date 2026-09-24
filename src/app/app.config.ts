@@ -19,8 +19,12 @@ import {
   withHttpTransferCacheOptions,
 } from '@angular/platform-browser';
 import {
+  NavigationError,
   provideRouter,
+  RedirectCommand,
+  Router,
   withComponentInputBinding,
+  withNavigationErrorHandler,
   withPreloading,
   withViewTransitions,
 } from '@angular/router';
@@ -59,6 +63,35 @@ const httpLoaderFactory: (http: HttpClient) => CachedTranslateLoader = (
   http: HttpClient,
 ) => new CachedTranslateLoader(http, '/i18n/', '.json');
 
+// Contador anti-bucle para errores de navegación repetidos.
+let lastNavigationErrorAt = 0;
+let repeatedNavigationErrors = 0;
+
+/**
+ * Manejador global de errores de navegación (chunk no cacheado, guard que
+ * rechaza, error de lazy loading...). Sin él, una navegación fallida deja el
+ * router-outlet vacío = pantalla en blanco permanente: se redirige a una ruta
+ * pública segura, con protección anti-bucle. El handler se ejecuta dentro de
+ * `runInInjectionContext`, por lo que `inject()` está disponible.
+ */
+function handleNavigationError(
+  error: NavigationError,
+): RedirectCommand | undefined {
+  console.error('[Router] Navigation error:', error.error ?? error);
+  // El propio fallback no puede fallar en bucle.
+  if (error.url?.startsWith('/page-not-found')) {
+    return undefined;
+  }
+  const now = Date.now();
+  repeatedNavigationErrors =
+    now - lastNavigationErrorAt < 5000 ? repeatedNavigationErrors + 1 : 0;
+  lastNavigationErrorAt = now;
+  if (repeatedNavigationErrors >= 2) {
+    return undefined;
+  }
+  return new RedirectCommand(inject(Router).createUrlTree(['/page-not-found']));
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -71,6 +104,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(
       routes,
       withComponentInputBinding(),
+      withNavigationErrorHandler(handleNavigationError),
       withPreloading(SelectivePreloadingStrategy),
       withViewTransitions({
         skipInitialTransition: true,

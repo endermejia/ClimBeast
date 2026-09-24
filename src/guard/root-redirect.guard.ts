@@ -21,15 +21,21 @@ export const rootRedirectGuard: CanActivateFn = async (): Promise<
     return router.createUrlTree(['/info']);
   }
 
-  // Wait for client init (resolves from localStorage, no network call needed).
-  await supabase.whenReady();
-  const session = supabase.session();
+  // Un guard que lanza cancela la navegación y deja la pantalla en blanco.
+  try {
+    // Wait for client init (resolves from localStorage, no network call needed).
+    await supabase.whenReady();
+    const session = supabase.session();
 
-  if (session) {
-    // Authenticated user -> redirect to /home
-    return router.createUrlTree(['/home']);
-  } else {
-    // Non-authenticated user -> redirect to /info
+    if (session) {
+      // Authenticated user (o sesión conservada en modo offline) -> /home
+      return router.createUrlTree(['/home']);
+    }
+
+    // Non-authenticated user (online o sin conexión) -> /info
+    return router.createUrlTree(['/info']);
+  } catch (e) {
+    console.warn('[rootRedirectGuard] Unexpected error, going to /info', e);
     return router.createUrlTree(['/info']);
   }
 };

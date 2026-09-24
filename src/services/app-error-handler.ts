@@ -60,7 +60,11 @@ export class AppErrorHandler implements ErrorHandler {
         try {
           const now = Date.now();
           const last = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) || 0);
-          if (now - last > 15000) {
+          // Sin conexión el chunk no puede descargarse: recargar solo provoca
+          // un bucle de pantallas en blanco.
+          const canReload =
+            typeof navigator === 'undefined' || navigator.onLine;
+          if (now - last > 15000 && canReload) {
             sessionStorage.setItem(CHUNK_RELOAD_KEY, String(now));
             window.location.reload();
             return;

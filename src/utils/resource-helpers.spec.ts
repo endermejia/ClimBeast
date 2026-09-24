@@ -92,6 +92,17 @@ describe('resource-helpers', () => {
       const result = await waitForResource(mockResource, 10, 10);
       expect(result).toBe('loaded');
     });
+
+    it('returns undefined when resource is in error state (value() throws)', async () => {
+      const mockResource = {
+        value: () => {
+          throw new Error('ResourceValueError');
+        },
+      } as unknown as ResourceRef<unknown>;
+
+      const result = await waitForResource(mockResource, 3, 5);
+      expect(result).toBeUndefined();
+    });
   });
 
   describe('safeResourceValue', () => {

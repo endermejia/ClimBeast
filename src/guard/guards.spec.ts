@@ -44,6 +44,10 @@ describe('authGuard', () => {
             component: { template: '' } as any,
           },
           {
+            path: 'info',
+            component: { template: '' } as any,
+          },
+          {
             path: 'profile/config',
             canMatch: [authGuard],
             component: { template: '' } as any,
@@ -64,6 +68,31 @@ describe('authGuard', () => {
     const router = TestBed.inject(Router);
     await router.navigate(['protected']);
     expect(router.url).toBe('/login');
+  });
+
+  it('should redirect to /info when offline and no session', async () => {
+    mockSupabase.setSession(null);
+    mockSupabase.setOnline(false);
+    const router = TestBed.inject(Router);
+    await router.navigate(['protected']);
+    expect(router.url).toBe('/info');
+  });
+
+  it('should allow access with a restored offline session', async () => {
+    const session = createMockSession('user-1', 'different@example.com');
+    mockSupabase.setSession(session);
+    mockSupabase.setOnline(false);
+    mockSupabase.setUserProfile({
+      name: 'Complete User',
+      is_admin: false,
+    } as any);
+    (mockSupabase.userProfileResource as any)._setValue({
+      name: 'Complete User',
+      is_admin: false,
+    });
+    const router = TestBed.inject(Router);
+    await router.navigate(['protected']);
+    expect(router.url).toBe('/protected');
   });
 
   it('should allow access when session exists and profile name differs from email', async () => {
@@ -263,6 +292,10 @@ describe('adminGuard', () => {
             component: { template: '' } as any,
           },
           {
+            path: 'info',
+            component: { template: '' } as any,
+          },
+          {
             path: 'page-not-found',
             component: { template: '' } as any,
           },
@@ -282,6 +315,14 @@ describe('adminGuard', () => {
     const router = TestBed.inject(Router);
     await router.navigate(['admin']);
     expect(router.url).toBe('/login');
+  });
+
+  it('should redirect to /info when offline and no session', async () => {
+    mockSupabase.setSession(null);
+    mockSupabase.setOnline(false);
+    const router = TestBed.inject(Router);
+    await router.navigate(['admin']);
+    expect(router.url).toBe('/info');
   });
 
   it('should allow admin users', async () => {

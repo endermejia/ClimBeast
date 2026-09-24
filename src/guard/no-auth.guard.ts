@@ -14,12 +14,19 @@ export const noAuthGuard: CanMatchFn = async (): Promise<boolean | UrlTree> => {
     return true;
   }
 
-  await supabase.whenReady();
-  const session = supabase.session();
+  // Un guard que lanza cancela la navegación y deja la pantalla en blanco.
+  try {
+    await supabase.whenReady();
+    const session = supabase.session();
 
-  if (session) {
-    return router.createUrlTree(['/home']);
+    if (session) {
+      return router.createUrlTree(['/home']);
+    }
+
+    return true;
+  } catch (e) {
+    // /info es público: se muestra aunque falle la comprobación de sesión.
+    console.warn('[noAuthGuard] Unexpected error, allowing access', e);
+    return true;
   }
-
-  return true;
 };

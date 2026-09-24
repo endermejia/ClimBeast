@@ -8,7 +8,15 @@ import {
   OnDestroy,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import {
+  NavigationCancel,
+  NavigationEnd,
+  NavigationError,
+  NavigationSkipped,
+  NavigationStart,
+  Router,
+  RouterOutlet,
+} from '@angular/router';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 
 import { TuiSwipe } from '@taiga-ui/cdk';
@@ -21,6 +29,7 @@ import { filter, map, merge, startWith } from 'rxjs';
 import { CartService } from '../services/cart.service';
 import { LocalStorage } from '../services/local-storage';
 import { NotificationService } from '../services/notification.service';
+import { OfflineWarmupService } from '../services/offline-warmup.service';
 import { RealtimeService } from '../services/realtime.service';
 import { SeoService } from '../services/seo.service';
 import { SwipeNavigationService } from '../services/swipe-navigation.service';
@@ -49,6 +58,15 @@ import { IS_BROWSER } from './is-browser';
   template: `
     <tui-root [attr.tuiTheme]="isDark() ? 'dark' : 'light'">
       <app-offline-banner />
+      @if (navPending()) {
+        <!-- Barra de progreso: un arranque lento o sin conexión nunca se
+             percibe como pantalla en blanco. -->
+        <div
+          class="fixed inset-x-0 top-0 z-9999 h-1 animate-pulse bg-sky-500"
+          role="progressbar"
+          aria-label="Loading"
+        ></div>
+      }
       <div
         class="fixed inset-0 w-full h-full overflow-hidden flex flex-col-reverse md:flex-row"
       >
@@ -96,6 +114,7 @@ export class AppComponent implements OnDestroy {
   private readonly doc = inject(DOCUMENT);
   private readonly seo = inject(SeoService);
   private readonly swUpdate = inject(SwUpdate);
+  private readonly offlineWarmup = inject(OfflineWarmupService);
 
   private readonly gdprKey = STORAGE_KEYS.gdprAccepted;
 
@@ -110,6 +129,37 @@ export class AppComponent implements OnDestroy {
       map((e) => e.urlAfterRedirects),
     ),
     { initialValue: this.doc?.location?.pathname ?? '/' },
+  );
+
+  /**
+   * `true` mientras el Router está navegando (guards, carga de chunks...).
+   * Se muestra una barra de progreso para que esperas largas sin conexión
+   * nunca se perciban como pantalla en blanco.
+   */
+  protected readonly navPending = toSignal(
+    merge(
+      this.router.events.pipe(
+        filter((e): e is NavigationStart => e instanceof NavigationStart),
+        map(() => true),
+      ),
+      this.router.events.pipe(
+        filter(
+          (
+            e,
+          ): e is
+            | NavigationEnd
+            | NavigationCancel
+            | NavigationError
+            | NavigationSkipped =>
+            e instanceof NavigationEnd ||
+            e instanceof NavigationCancel ||
+            e instanceof NavigationError ||
+            e instanceof NavigationSkipped,
+        ),
+        map(() => false),
+      ),
+    ),
+    { initialValue: this.router.getCurrentNavigation() !== null },
   );
 
   /**
@@ -138,6 +188,12 @@ export class AppComponent implements OnDestroy {
       }
     });
 
+    // Precaché de datos (áreas, etc.) para uso offline: reacciona a la sesión
+    // y al estado de conexión (lee señales dentro de warmup()).
+    effect(() => {
+      this.offlineWarmup.warmup();
+    });
+
     afterNextRender(() => {
       if (
         this.isBrowser &&
@@ -156,7 +212,7 @@ export class AppComponent implements OnDestroy {
 
     if (this.isBrowser) {
       // Intercept rogue hardware key events (e.g. OnePlus alert slider / physical mute switches)
-      // which fire KEYCODE_F3 (133 / DOM 114) or KEYCODE_SEARCH (84 / DomKey: BrowserSearch / Find),
+      // which fire KEYCODE_F3 (133 / DOM 114) and KEYCODE_SEARCH (84 / DomKey: BrowserSearch / Find),
       // triggering the browser's Find-in-page modal
       this.suppressRogueSearch = (e: KeyboardEvent) => {
         const key = (e.key || '').toLowerCase();
@@ -171,15 +227,15 @@ export class AppComponent implements OnDestroy {
           /^f\d+$/.test(key) ||
           /^f\d+$/.test(code) ||
           (keyCode >= 112 && keyCode <= 123) ||
-          (keyCode >= 131 && keyCode <= 142);
+          (keyCode >= 121 && keyCode <= 132);
 
         const isSearchKey =
           key === 'find' ||
           code === 'find' ||
           key === 'search' ||
           code === 'search' ||
-          key === 'browsersearch' ||
-          code === 'browsersearch' ||
+          keyCode === 84 ||
+          keyCode === 170 ||
           ((keyCode === 84 || keyCode === 170) && key !== 't');
 
         if (isFKey || isSearchKey) {
@@ -255,8 +311,16 @@ export class AppComponent implements OnDestroy {
         },
       );
 
-      // Handle unrecoverable state (corrupted cache)
+      // Handle unrecoverable state (corrupted cache). Con throttle y solo con
+      // conexión: recargar sin red con la caché corrupta entra en bucle de
+      // pantallas en blanco.
       reactToObservable(this.swUpdate.unrecoverable, () => {
+        const now = Date.now();
+        const last = Number(
+          this.storage.getItem(STORAGE_KEYS.unrecoverableReloadTs) || 0,
+        );
+        if (now - last <= 15000 || !navigator.onLine) return;
+        this.storage.setItem(STORAGE_KEYS.unrecoverableReloadTs, String(now));
         this.storage.setItem(STORAGE_KEYS.updateApplied, 'true');
         window.location.reload();
       });

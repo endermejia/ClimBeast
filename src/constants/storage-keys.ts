@@ -11,6 +11,7 @@ export const STORAGE_KEYS = {
   gdprAccepted: 'lw_gdpr_accepted',
   updateApplied: 'lw_update_applied',
   chunkReloadTs: 'lw_chunk_reload_ts',
+  unrecoverableReloadTs: 'lw_unrecoverable_reload_ts',
   userLocation: 'lw_user_location',
   exploreLastTab: 'lw_explore_last_tab',
 

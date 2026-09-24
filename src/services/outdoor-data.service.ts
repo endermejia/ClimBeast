@@ -131,6 +131,14 @@ export class OutdoorDataService {
    */
   readonly areasListLoading: Signal<boolean> = this.cachedAreas.showSkeleton;
 
+  /**
+   * Fuerza la recarga de la lista de áreas. Lo usa OfflineWarmupService para
+   * precachearla en localStorage y que la PWA pueda mostrarse sin conexión.
+   */
+  reloadAreasList(): void {
+    this.cachedAreas.resource.reload();
+  }
+
   readonly selectedArea: Signal<AreaListItem | null> = computed(() => {
     const slug = this.selectedAreaSlug();
     if (!slug) return null;

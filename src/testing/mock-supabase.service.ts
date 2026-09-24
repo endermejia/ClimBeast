@@ -34,6 +34,7 @@ export class MockSupabaseService {
   private readonly _userProfile: WritableSignal<UserProfileDto | null> =
     signal(null);
 
+  readonly isOnline = signal(true);
   readonly session = computed(() => this._session());
   readonly authUser = computed(() => this._session()?.user ?? null);
   readonly authUserId = computed(() => this.authUser()?.id ?? null);
@@ -169,6 +170,10 @@ export class MockSupabaseService {
 
   setSession(session: Session | null): void {
     this._session.set(session);
+  }
+
+  setOnline(online: boolean): void {
+    this.isOnline.set(online);
   }
 
   setUserProfile(profile: UserProfileDto | null): void {
