@@ -39,10 +39,19 @@ export function normalizeNameStrict(input: string | undefined | null): string {
     .replace(/\s+/g, ' ');
 }
 
+const NORMALIZE_NAME_CACHE_LIMIT = 2000;
+const normalizeNameCache = new Map<string, string>();
+
 export function normalizeName(input: string | undefined | null): string {
   const value = (input ?? '').toString();
   if (!value) return '';
-  return value
+
+  const cached = normalizeNameCache.get(value);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const result = value
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/['’´`]/g, '')
@@ -50,6 +59,17 @@ export function normalizeName(input: string | undefined | null): string {
     .replace(/[^a-z0-9\s]/g, ' ')
     .trim()
     .replace(/\s+/g, ' ');
+
+  // Bounded cache eviction (FIFO) to prevent memory leaks during long sessions
+  if (normalizeNameCache.size >= NORMALIZE_NAME_CACHE_LIMIT) {
+    const firstKey = normalizeNameCache.keys().next().value;
+    if (firstKey !== undefined) {
+      normalizeNameCache.delete(firstKey);
+    }
+  }
+  normalizeNameCache.set(value, result);
+
+  return result;
 }
 
 // Memoization cache for query normalization and splitting during list filtering

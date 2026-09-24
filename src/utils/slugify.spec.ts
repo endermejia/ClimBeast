@@ -86,6 +86,21 @@ describe('normalizeName', () => {
   it('should collapse whitespace', () => {
     expect(normalizeName('hello   world')).toBe('hello world');
   });
+
+  it('should return identical cached result on repeated calls', () => {
+    const input = '   Sïurånä - Sector 1   ';
+    const firstCall = normalizeName(input);
+    const secondCall = normalizeName(input);
+    expect(firstCall).toBe('siurana sector 1');
+    expect(secondCall).toBe(firstCall);
+  });
+
+  it('should maintain consistency across large volume of distinct inputs', () => {
+    for (let i = 0; i < 2500; i++) {
+      const name = `Route Name ${i} - Crag ${i % 100}`;
+      expect(normalizeName(name)).toBe(`route name ${i} crag ${i % 100}`);
+    }
+  });
 });
 
 describe('matchesQuery', () => {
