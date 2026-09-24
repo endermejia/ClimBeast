@@ -54,6 +54,10 @@ jobs:
           fi
           printf '%s' "$KS_B64" | base64 -d > android.keystore
 
+      - name: Ensure gradlew is executable
+        # The wrapper is generated on Windows, where git records it as mode 644.
+        run: chmod +x gradlew
+
       - name: Build APK and AAB
         # Passwords come from env vars, which makes `bubblewrap build` fully
         # non-interactive (it also skips the update prompt because the committed
