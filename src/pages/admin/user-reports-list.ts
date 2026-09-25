@@ -219,7 +219,7 @@ interface StatusFilter {
                       <span
                         class="font-semibold text-xs text-red-600 dark:text-red-400"
                       >
-                        {{ getReasonLabel(report.reason) | translate }}
+                        {{ report.reasonLabel | translate }}
                       </span>
                       @if (report.details) {
                         <p
@@ -236,7 +236,7 @@ interface StatusFilter {
                     <span
                       tuiBadge
                       size="s"
-                      [appearance]="getStatusAppearance(report.status)"
+                      [appearance]="report.statusAppearance"
                     >
                       {{
                         'admin.userReports.statuses.' + report.status
@@ -345,18 +345,20 @@ export class AdminUserReportsListComponent {
     () => this.reports().filter((r) => r.status === 'pending').length,
   );
 
+  // Display properties (reasonLabel and statusAppearance) are pre-computed on report items
+  // inside this computed signal to avoid function executions in template bindings during change detection.
   protected readonly filteredReports = computed(() => {
     const st = this.selectedStatus();
     const all = this.reports();
-    if (st === 'all') return all;
-    return all.filter((r) => r.status === st);
+    const filtered = st === 'all' ? all : all.filter((r) => r.status === st);
+    return filtered.map((report) => ({
+      ...report,
+      reasonLabel: `reportReasons.${report.reason}.title`,
+      statusAppearance: this.getReportStatusAppearance(report.status),
+    }));
   });
 
-  protected getReasonLabel(reason: UserReportReason): string {
-    return `reportReasons.${reason}.title`;
-  }
-
-  protected getStatusAppearance(status: UserReportStatus): string {
+  private getReportStatusAppearance(status: UserReportStatus): string {
     switch (status) {
       case 'pending':
         return 'accent';
