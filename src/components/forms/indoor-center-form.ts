@@ -401,7 +401,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                         <div class="flex items-center gap-2 w-full sm:w-auto">
                           <tui-textfield
                             tuiTextfieldSize="s"
-                            class="flex-1 sm:w-32"
+                            class="flex-1 sm:w-32 h-8"
                           >
                             <input
                               tuiInput
@@ -416,7 +416,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                           <span class="text-xs opacity-60 shrink-0">-</span>
                           <tui-textfield
                             tuiTextfieldSize="s"
-                            class="flex-1 sm:w-32"
+                            class="flex-1 sm:w-32 h-8"
                           >
                             <input
                               tuiInput
@@ -447,7 +447,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                           <div class="flex items-center gap-2 w-full sm:w-auto">
                             <tui-textfield
                               tuiTextfieldSize="s"
-                              class="flex-1 sm:w-32"
+                              class="flex-1 sm:w-32 h-8"
                             >
                               <input
                                 tuiInput
@@ -462,7 +462,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                             <span class="text-xs opacity-60 shrink-0">-</span>
                             <tui-textfield
                               tuiTextfieldSize="s"
-                              class="flex-1 sm:w-32"
+                              class="flex-1 sm:w-32 h-8"
                             >
                               <input
                                 tuiInput
