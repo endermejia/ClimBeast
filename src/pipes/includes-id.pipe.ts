@@ -10,11 +10,16 @@ export class IncludesIdPipe implements PipeTransform {
     id: string | number | null | undefined,
   ): boolean {
     if (!items || id === null || id === undefined) return false;
-    return items.some((item) => {
+    // Use an indexed for loop instead of items.some() to avoid closure/callback allocations
+    // during template change detection evaluations.
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
       if (typeof item === 'object' && item !== null && 'id' in item) {
-        return item.id === id;
+        if (item.id === id) return true;
+      } else if (item === id) {
+        return true;
       }
-      return item === id;
-    });
+    }
+    return false;
   }
 }
