@@ -52,7 +52,7 @@ import { EquipperRequestDto } from '../../models';
   template: `
     <tui-scrollbar class="flex grow">
       <section
-        class="w-full max-w-[1600px] mx-auto py-4 sm:px-6 lg:px-8  grid gap-4"
+        class="w-full max-w-[1600px] mx-auto grid gap-6 px-4 py-4 pb-6 sm:px-6 lg:px-8 lg:pb-2"
       >
         @let equipper = equipperService.equipperDetailResource.value();
         @let loading = equipperService.equipperDetailResource.isLoading();
@@ -81,6 +81,9 @@ import { EquipperRequestDto } from '../../models';
             [city]="equipper.user_profile?.city"
             [bio]="equipper.user_profile?.bio"
             [age]="profileAge()"
+            [startingClimbingYear]="
+              equipper.user_profile?.starting_climbing_year
+            "
             [nameClickable]="!!equipper.user_id"
             [avatarClickable]="!!equipper.user_id"
             (nameClick)="navigateToUserProfile(equipper.user_id)"
@@ -98,6 +101,17 @@ import { EquipperRequestDto } from '../../models';
                 [attr.aria-label]="'equipperRequest.requestButton' | translate"
                 (click.zoneless)="openRequestDialog(equipper.id, equipper.name)"
               ></button>
+            } @else {
+              <!--
+                Reserves the space of the options button shown by user-profile,
+                so the name wraps and the header row keep the same size on both
+                pages (avoids the jump when navigating between them).
+              -->
+              <span
+                nameActions
+                aria-hidden="true"
+                class="w-[var(--tui-height-s)] h-[var(--tui-height-s)] shrink-0"
+              ></span>
             }
             @if (equipper.user_id) {
               <div extraInfo class="mt-2">
@@ -110,7 +124,7 @@ import { EquipperRequestDto } from '../../models';
         }
 
         <!-- Equipper Routes Table -->
-        <section class="mt-4">
+        <section>
           <h2 class="text-xl font-bold mb-4">
             {{ 'equipper.routes' | translate }} ({{
               equipperService.equipperRoutesResource.value()?.length || 0
@@ -125,7 +139,7 @@ import { EquipperRequestDto } from '../../models';
         @let indoorRoutes =
           equipperService.equipperIndoorRoutesResource.value() || [];
         @if (indoorRoutes.length > 0) {
-          <section class="mt-4">
+          <section>
             <h2 class="text-xl font-bold mb-4">
               {{ 'equipper.indoorRoutes' | translate }} ({{
                 indoorRoutes.length
