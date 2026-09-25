@@ -820,7 +820,7 @@ export class IndoorService {
     const { data, error } = await this.supabase.client
       .from('indoor_ascents')
       .select(
-        '*, route:indoor_routes(id, name, color, climbing_kind, grade, center:indoor_centers(id, name, slug)), user_profile:user_profiles(id, name, avatar)',
+        '*, route:indoor_routes(id, name, slug, color, climbing_kind, grade, center:indoor_centers(id, name, slug)), user_profile:user_profiles(id, name, avatar)',
       )
       .eq('route_id', routeId)
       .order('date', { ascending: false });
@@ -862,7 +862,7 @@ export class IndoorService {
     const { data, error } = await this.supabase.client
       .from('indoor_ascents')
       .select(
-        '*, route:indoor_routes(id, name, color, climbing_kind, grade, center:indoor_centers(id, name, slug)), user_profile:user_profiles(id, name, avatar)',
+        '*, route:indoor_routes(id, name, slug, color, climbing_kind, grade, center:indoor_centers(id, name, slug)), user_profile:user_profiles(id, name, avatar)',
       )
       .in('route_id', routeIds)
       .order('date', { ascending: false });
@@ -903,7 +903,7 @@ export class IndoorService {
       .from('indoor_ascents')
       .insert(payload)
       .select(
-        '*, route:indoor_routes(id, name, color, climbing_kind, grade, center:indoor_centers(id, name, slug)), user_profile:user_profiles(id, name, avatar)',
+        '*, route:indoor_routes(id, name, slug, color, climbing_kind, grade, center:indoor_centers(id, name, slug)), user_profile:user_profiles(id, name, avatar)',
       )
       .single();
 

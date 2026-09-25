@@ -183,7 +183,7 @@ export class AscentsService {
         `
         *,
         route:indoor_routes(
-          id, name, grade, climbing_kind,
+          id, name, slug, grade, climbing_kind,
           center:indoor_centers(id, name, slug)
         )
       `,
@@ -224,7 +224,7 @@ export class AscentsService {
           climbing_kind: iRoute['climbing_kind'],
           center_slug: iCenter?.['slug'],
           center_name: iCenter?.['name'],
-          slug: iRoute['name'],
+          slug: (iRoute['slug'] as string) || iRoute['name'],
           liked: false,
           project: false,
         } as unknown as RouteWithExtras)

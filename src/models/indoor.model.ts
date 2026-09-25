@@ -209,7 +209,13 @@ export interface IndoorRouteWithExtras extends IndoorRouteDto {
 export interface IndoorAscentWithExtras extends IndoorAscentDto {
   route?: Pick<
     IndoorRouteWithExtras,
-    'id' | 'name' | 'grade' | 'climbing_kind' | 'center_name' | 'center_slug'
+    | 'id'
+    | 'name'
+    | 'slug'
+    | 'grade'
+    | 'climbing_kind'
+    | 'center_name'
+    | 'center_slug'
   >;
   user_profile?: { id: string; name: string | null; avatar: string | null };
   user?: { id: string; name: string | null; avatar: string | null };
@@ -240,6 +246,7 @@ export interface IndoorAscentQueryRow extends IndoorAscentDto {
   route: {
     id: string;
     name: string;
+    slug: string;
     color: string | null;
     climbing_kind: string | null;
     grade: number | null;
