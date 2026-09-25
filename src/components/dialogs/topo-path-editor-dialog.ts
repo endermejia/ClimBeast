@@ -8,6 +8,7 @@ import {
 } from '@angular/cdk/drag-drop';
 import { CommonModule } from '@angular/common';
 import {
+  afterNextRender,
   AfterViewInit,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -16,12 +17,14 @@ import {
   DestroyRef,
   ElementRef,
   inject,
+  Injector,
   signal,
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import {
+  TuiAppearance,
   TuiButton,
   TuiDialogContext,
   TuiDialogService,
@@ -121,6 +124,7 @@ export interface TopoPathEditorConfig {
     TopoPointStateColorPipe,
     TopoPointStateLabelPipe,
     TranslateModule,
+    TuiAppearance,
     TuiButton,
     TuiIcon,
     TuiLoader,
@@ -174,7 +178,28 @@ export interface TopoPathEditorConfig {
               </div>
             </div>
             <tui-scrollbar class="sidebar-scroll">
+              <!-- Selection guidance: changes once a route is selected -->
               <div
+                class="mx-3 mt-1 flex items-center gap-2 rounded-xl bg-(--tui-background-neutral-2) px-3 py-2 text-xs leading-snug font-semibold text-(--tui-text-secondary)"
+                [tuiAppearance]="selectedRoute() ? 'accent' : 'none'"
+              >
+                <tui-icon
+                  [icon]="
+                    selectedRoute()
+                      ? '@tui.pen-tool'
+                      : '@tui.mouse-pointer-click'
+                  "
+                  class="shrink-0"
+                />
+                <span>{{
+                  (selectedRoute()
+                    ? 'topos.editor.hintDrawReady'
+                    : 'topos.editor.hintSelectRoute'
+                  ) | translate
+                }}</span>
+              </div>
+              <div
+                #routeList
                 class="route-list"
                 cdkDropList
                 [cdkDropListDisabled]="!canReorderRoutes()"
@@ -187,11 +212,17 @@ export interface TopoPathEditorConfig {
                     tr.route_id | topoIsTraverse: pathsMap : pathsVersion();
                   <div
                     cdkDrag
-                    class="route-item"
+                    class="route-item tui-interactive"
                     role="button"
                     tabindex="0"
+                    [attr.data-route-id]="tr.route_id"
                     [class.route-item--active]="
                       selectedRoute()?.route_id === tr.route_id
+                    "
+                    [tuiAppearance]="
+                      selectedRoute()?.route_id === tr.route_id
+                        ? 'accent'
+                        : 'none'
                     "
                     (click.zoneless)="selectRoute(tr, true)"
                     (keydown.enter.zoneless)="selectRoute(tr, true)"
@@ -221,6 +252,26 @@ export interface TopoPathEditorConfig {
                         </span>
                       }
                     </div>
+                    @if (
+                      selectedRoute()?.route_id === tr.route_id &&
+                      (tr
+                        | topoCanEditRoute
+                          : context.data.isIndoor
+                          : context.data.center
+                          : context.data.centerId)
+                    ) {
+                      <button
+                        tuiIconButton
+                        appearance="flat"
+                        size="s"
+                        iconStart="@tui.pencil"
+                        class="rounded-full! opacity-60 hover:opacity-100"
+                        [title]="'edit' | translate"
+                        (click)="editRoute(tr, $event)"
+                      >
+                        {{ 'edit' | translate }}
+                      </button>
+                    }
                     <app-grade
                       [grade]="tr.route.grade"
                       [kind]="tr.route.climbing_kind"
@@ -228,25 +279,6 @@ export interface TopoPathEditorConfig {
                     />
 
                     <div class="flex items-center gap-1">
-                      @if (
-                        tr
-                          | topoCanEditRoute
-                            : context.data.isIndoor
-                            : context.data.center
-                            : context.data.centerId
-                      ) {
-                        <button
-                          tuiIconButton
-                          appearance="flat"
-                          size="s"
-                          iconStart="@tui.pencil"
-                          class="rounded-full! opacity-60 hover:opacity-100"
-                          [title]="'edit' | translate"
-                          (click)="editRoute(tr, $event)"
-                        >
-                          {{ 'edit' | translate }}
-                        </button>
-                      }
                       <div class="route-action-slot">
                         @if (hasPath) {
                           @if (
@@ -284,72 +316,74 @@ export interface TopoPathEditorConfig {
                 }
               </div>
 
-              <!-- Tips inside scrollbar -->
-              <div class="tips">
-                <p class="tip">
-                  <tui-icon icon="@tui.mouse-pointer-2" class="tip-icon" />
-                  {{ 'topos.editor.addPoint' | translate }}
-                </p>
-                <p class="tip">
-                  <tui-icon icon="@tui.move" class="tip-icon" />
-                  {{ 'topos.editor.movePoint' | translate }}
-                </p>
-                <p class="tip">
-                  <tui-icon icon="@tui.trash" class="tip-icon" />
-                  {{ deletePointTipKey() | translate }}
-                </p>
-                <div class="tip items-start!">
-                  <tui-icon
-                    icon="@tui.mouse-pointer-click"
-                    class="tip-icon mt-0.5 shrink-0"
-                  />
-                  <div class="flex-1 flex flex-col gap-1.5 min-w-0">
-                    <span>
-                      {{ 'topos.editor.cyclePointState' | translate }}:
-                    </span>
-                    <div
-                      class="flex items-center justify-between flex-wrap gap-x-1.5 gap-y-1"
-                    >
-                      <div class="flex items-center gap-1 shrink-0">
-                        <span
-                          class="w-2.5 h-2.5 rounded-full bg-[#22C55E] inline-block shrink-0 shadow-xs"
-                        ></span>
-                        <span>{{ 'topos.legend.start' | translate }}</span>
-                      </div>
-                      <tui-icon
-                        icon="@tui.chevron-right"
-                        class="text-[10px] opacity-35 shrink-0"
-                      />
-                      <div class="flex items-center gap-1 shrink-0">
-                        <span
-                          class="w-2.5 h-2.5 rounded-full bg-[#EF4444] inline-block shrink-0 shadow-xs"
-                        ></span>
-                        <span>{{ 'topos.legend.top' | translate }}</span>
-                      </div>
-                      <tui-icon
-                        icon="@tui.chevron-right"
-                        class="text-[10px] opacity-35 shrink-0"
-                      />
-                      <div class="flex items-center gap-1 shrink-0">
-                        <span
-                          class="w-2.5 h-2.5 rounded-full bg-[#3B82F6] inline-block shrink-0 shadow-xs"
-                        ></span>
-                        <span>{{ 'topos.legend.match' | translate }}</span>
-                      </div>
-                      <tui-icon
-                        icon="@tui.chevron-right"
-                        class="text-[10px] opacity-35 shrink-0"
-                      />
-                      <div class="flex items-center gap-1 shrink-0">
-                        <span
-                          class="w-2.5 h-2.5 rounded-full bg-[#EAB308] inline-block shrink-0 shadow-xs"
-                        ></span>
-                        <span>{{ 'topos.legend.foot' | translate }}</span>
+              <!-- Tips inside scrollbar (only once a route is selected) -->
+              @if (selectedRoute()) {
+                <div class="tips">
+                  <p class="tip">
+                    <tui-icon icon="@tui.mouse-pointer-2" class="tip-icon" />
+                    {{ 'topos.editor.addPoint' | translate }}
+                  </p>
+                  <p class="tip">
+                    <tui-icon icon="@tui.move" class="tip-icon" />
+                    {{ 'topos.editor.movePoint' | translate }}
+                  </p>
+                  <p class="tip">
+                    <tui-icon icon="@tui.trash" class="tip-icon" />
+                    {{ deletePointTipKey() | translate }}
+                  </p>
+                  <div class="tip items-start!">
+                    <tui-icon
+                      icon="@tui.mouse-pointer-click"
+                      class="tip-icon mt-0.5 shrink-0"
+                    />
+                    <div class="flex-1 flex flex-col gap-1.5 min-w-0">
+                      <span>
+                        {{ 'topos.editor.cyclePointState' | translate }}:
+                      </span>
+                      <div
+                        class="flex items-center justify-between flex-wrap gap-x-1.5 gap-y-1"
+                      >
+                        <div class="flex items-center gap-1 shrink-0">
+                          <span
+                            class="w-2.5 h-2.5 rounded-full bg-[#22C55E] inline-block shrink-0 shadow-xs"
+                          ></span>
+                          <span>{{ 'topos.legend.start' | translate }}</span>
+                        </div>
+                        <tui-icon
+                          icon="@tui.chevron-right"
+                          class="text-[10px] opacity-35 shrink-0"
+                        />
+                        <div class="flex items-center gap-1 shrink-0">
+                          <span
+                            class="w-2.5 h-2.5 rounded-full bg-[#EF4444] inline-block shrink-0 shadow-xs"
+                          ></span>
+                          <span>{{ 'topos.legend.top' | translate }}</span>
+                        </div>
+                        <tui-icon
+                          icon="@tui.chevron-right"
+                          class="text-[10px] opacity-35 shrink-0"
+                        />
+                        <div class="flex items-center gap-1 shrink-0">
+                          <span
+                            class="w-2.5 h-2.5 rounded-full bg-[#3B82F6] inline-block shrink-0 shadow-xs"
+                          ></span>
+                          <span>{{ 'topos.legend.match' | translate }}</span>
+                        </div>
+                        <tui-icon
+                          icon="@tui.chevron-right"
+                          class="text-[10px] opacity-35 shrink-0"
+                        />
+                        <div class="flex items-center gap-1 shrink-0">
+                          <span
+                            class="w-2.5 h-2.5 rounded-full bg-[#EAB308] inline-block shrink-0 shadow-xs"
+                          ></span>
+                          <span>{{ 'topos.legend.foot' | translate }}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              }
             </tui-scrollbar>
 
             <!-- Compact Fixed Bottom Controls -->
@@ -991,6 +1025,21 @@ export interface TopoPathEditorConfig {
             </svg>
           </div>
 
+          <!-- Guidance shown while no route is selected -->
+          @if (!selectedRoute() && !loading()) {
+            <button
+              tuiButton
+              type="button"
+              appearance="primary"
+              size="m"
+              iconStart="@tui.route"
+              class="absolute top-4 left-1/2 z-40 max-w-[calc(100%_-_2rem)] -translate-x-1/2 shadow-lg"
+              (click)="selectFirstRouteOrOpenList()"
+            >
+              {{ 'topos.editor.hintSelectToDraw' | translate }}
+            </button>
+          }
+
           <!-- Loading overlay -->
           @if (loading()) {
             <div class="loading-overlay">
@@ -1137,6 +1186,15 @@ export interface TopoPathEditorConfig {
       padding: 0.25rem 0.75rem 0.5rem;
     }
 
+    /*
+     * Background/color are scoped to non-selected rows so the Taiga
+     * [tuiAppearance] accent style (same specificity, global stylesheet)
+     * is not overridden on the selected one.
+     */
+    .route-item:not([data-appearance='accent']) {
+      background: var(--tui-background-base);
+    }
+
     .route-item {
       display: flex;
       align-items: center;
@@ -1148,8 +1206,6 @@ export interface TopoPathEditorConfig {
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
       border: 1px solid transparent;
-      background: var(--tui-background-base);
-      color: inherit;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
@@ -1157,6 +1213,12 @@ export interface TopoPathEditorConfig {
       background: var(--tui-background-neutral-1-hover);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       border-color: var(--tui-border-hover);
+    }
+
+    /* Selected rows get their colors from [tuiAppearance] accent */
+    .route-item[data-appearance='accent'] {
+      border-color: transparent;
+      box-shadow: 0 4px 15px var(--tui-background-accent-2-half);
     }
 
     .route-item--placeholder {
@@ -1173,13 +1235,6 @@ export interface TopoPathEditorConfig {
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
       border-radius: 1rem;
       opacity: 0.95;
-    }
-
-    .route-item--active {
-      background: var(--tui-background-accent-2) !important;
-      color: var(--tui-text-primary-on-accent-2) !important;
-      border-color: transparent !important;
-      box-shadow: 0 4px 15px var(--tui-background-accent-2-half) !important;
     }
 
     .route-num {
@@ -1372,6 +1427,7 @@ export interface TopoPathEditorConfig {
       overflow: hidden;
       background: var(--tui-background-neutral-2);
       cursor: grab;
+      z-index: 10;
     }
 
     .canvas-area:active {
@@ -1446,6 +1502,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly injector = inject(Injector);
 
   protected readonly canCreateRoute = computed<boolean>(() => {
     if (!this.context.data.isIndoor || !this.context.data.centerId) {
@@ -1495,6 +1552,8 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     viewChild.required<ElementRef<HTMLDivElement>>('container');
   protected readonly editorAreaElement =
     viewChild.required<ElementRef<HTMLDivElement>>('editorArea');
+  protected readonly routeListElement =
+    viewChild.required<ElementRef<HTMLDivElement>>('routeList');
 
   loading = signal(false);
   selectedRoute = signal<TopoRouteWithRoute | null>(null);
@@ -1870,9 +1929,27 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         _ref: newTopoRoute,
       });
       this.pathsVersion.update((v) => v + 1);
-      this.selectRoute(newTopoRoute, true);
+      // A brand new route is always selected so it can be drawn right away
+      this.selectedRoute.set(newTopoRoute);
+      this.scrollRouteIntoView(newRoute.id);
       this.cdr.markForCheck();
     }
+  }
+
+  /** Brings the given route into view inside the sidebar list. */
+  private scrollRouteIntoView(routeId: string | number): void {
+    afterNextRender(
+      {
+        write: () => {
+          const list = this.routeListElement().nativeElement;
+          const target = Array.from(
+            list.querySelectorAll<HTMLElement>('[data-route-id]'),
+          ).find((el) => el.getAttribute('data-route-id') === String(routeId));
+          target?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        },
+      },
+      { injector: this.injector },
+    );
   }
 
   async editRoute(tr: TopoRouteWithRoute, event?: Event): Promise<void> {
@@ -2017,6 +2094,22 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     }
   }
 
+  /**
+   * Canvas hint action: on small screens the list is hidden behind the
+   * drawer, so open it; on desktop select the first route right away.
+   */
+  protected selectFirstRouteOrOpenList(): void {
+    if (this.layoutService.isNotDesktop()) {
+      this.sidebarOpen.set(true);
+      return;
+    }
+    const first = this.topoRoutes[0];
+    if (!first) return;
+    this.selectedRoute.set(first);
+    this.centerOnRoute(first);
+    this.cdr.markForCheck();
+  }
+
   private centerOnRoute(tr: TopoRouteWithRoute): void {
     const path = this.pathsMap.get(tr.route_id);
     if (!path || !path.points || path.points.length === 0) return;
@@ -2028,12 +2121,8 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     const maxY = Math.max(...pts.map((p) => p.y));
     const center = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
 
-    // Ensure we are zoomed in enough to see the route clearly,
-    // but don't force a zoom-out if already zoomed in.
-    if (this.scale() < 1) {
-      this.scale.set(1);
-    }
-
+    // Center the view on the route keeping the current zoom level,
+    // same behaviour as the topo viewer.
     this.centerOnPoint(center);
   }
 

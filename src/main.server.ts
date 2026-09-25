@@ -14,6 +14,17 @@ import {
 import { AppComponent } from './app/app';
 import { config } from './app/app.config.server';
 
+/**
+ * El SSR puede acabar con un rechazo de promesa sin capturar (p. ej. un fallo
+ * de inyección cuando Vite recarga los módulos tras una compilación fallida, o
+ * una navegación que el router rechaza). Node mataría el proceso entero —y con
+ * él el servidor de desarrollo— así que se deja constancia en el log y la
+ * petición fallida no tumba el proceso.
+ */
+process.on('unhandledRejection', (reason) => {
+  console.error('[SSR] Unhandled promise rejection:', reason);
+});
+
 registerLocaleData(localeEs, 'es');
 registerLocaleData(localeEn, 'en');
 registerLocaleData(localeCa, 'ca');
