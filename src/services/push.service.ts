@@ -23,30 +23,69 @@ export class PushService {
 
   readonly isSubscribed = signal<boolean>(false);
   readonly isSupported = signal<boolean>(false);
+  /** Estado del permiso del navegador/SO. Se actualiza tras cada petición. */
+  readonly permission = signal<NotificationPermission>('default');
 
   constructor() {
     if (this.isBrowser) {
-      this.isSupported.set(this.swPush.isEnabled);
+      const hasNotificationApi = typeof Notification !== 'undefined';
+      this.isSupported.set(
+        this.swPush.isEnabled && hasNotificationApi && 'PushManager' in window,
+      );
+      this.permission.set(
+        hasNotificationApi ? Notification.permission : 'default',
+      );
       this.checkSubscription();
     }
   }
 
-  async enablePushNotifications(): Promise<void> {
-    if (!this.swPush.isEnabled) {
+  /**
+   * Pide permiso de notificaciones al sistema (prompt nativo) y, si el usuario
+   * lo concede, crea la suscripción push y la guarda en el backend.
+   *
+   * @returns `true` si la suscripción está creada y guardada.
+   */
+  async enablePushNotifications(): Promise<boolean> {
+    if (!this.isSupported()) {
       console.warn('[PushService] Notifications are not enabled or supported');
+      return false;
+    }
+
+    try {
+      const permission = await this.requestPermission();
+      if (permission !== 'granted') {
+        console.warn('[PushService] Notification permission not granted');
+        return false;
+      }
+
+      const subscription = await this.getOrCreateSubscription();
+      await this.saveSubscription(subscription);
+      this.isSubscribed.set(true);
+      return true;
+    } catch (err: unknown) {
+      console.error('[PushService] Could not enable notifications', err);
+      return false;
+    }
+  }
+
+  /**
+   * Crea la suscripción si falta y la vuelve a guardar en el backend, **sin**
+   * volver a pedir permiso (si no está concedido, no hace nada).
+   */
+  async syncSubscription(): Promise<void> {
+    if (!this.isSupported()) return;
+
+    if (Notification.permission !== 'granted') {
+      this.permission.set(Notification.permission);
       return;
     }
 
     try {
-      const subscription = await this.swPush.requestSubscription({
-        serverPublicKey: ENV_VAPID_PUBLIC_KEY,
-      });
-
+      const subscription = await this.getOrCreateSubscription();
       await this.saveSubscription(subscription);
       this.isSubscribed.set(true);
     } catch (err: unknown) {
-      console.error('[PushService] Could not enable notifications', err);
-      throw err;
+      console.error('[PushService] Could not sync subscription', err);
     }
   }
 
@@ -58,8 +97,8 @@ export class PushService {
       if (subscription) {
         await this.deleteSubscription(subscription);
         await this.swPush.unsubscribe();
-        this.isSubscribed.set(false);
       }
+      this.isSubscribed.set(false);
     } catch (err: unknown) {
       console.error('[PushService] Error unsubscribing', err);
       throw err;
@@ -70,11 +109,34 @@ export class PushService {
     return firstValueFrom(this.swPush.subscription, { defaultValue: null });
   }
 
+  private async requestPermission(): Promise<NotificationPermission> {
+    const current = Notification.permission;
+    if (current !== 'default') {
+      this.permission.set(current);
+      return current;
+    }
+
+    const result = await Notification.requestPermission();
+    this.permission.set(result);
+    return result;
+  }
+
+  private async getOrCreateSubscription(): Promise<PushSubscription> {
+    const existing = await firstValueFrom(this.swPush.subscription, {
+      defaultValue: null,
+    });
+    if (existing) return existing;
+
+    return this.swPush.requestSubscription({
+      serverPublicKey: ENV_VAPID_PUBLIC_KEY,
+    });
+  }
+
   private checkSubscription(): void {
     reactToObservable(this.swPush.subscription, (subscription) => {
       this.isSubscribed.set(!!subscription);
       if (subscription) {
-        // Optionally sync if backend doesn't have it
+        // Re-sincroniza la suscripción con el backend en cada arranque
         void this.saveSubscription(subscription);
       }
     });

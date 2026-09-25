@@ -35,6 +35,31 @@ self.addEventListener("push", (event) => {
   }
 });
 
+// VAPID public key (misma que src/environments/environment.ts). Es pública por
+// definición: solo sirve para identificar a este origin como suscriptor.
+const VAPID_PUBLIC_KEY =
+  "BAbghnk2dciFxebiXegH_omgxn82SbkuZWMF1ZLFbmwrqgDqpvhImShb9fWxDa4_xvdizhCGR_VTPhZH0tlThl0";
+
+// El navegador rota la suscripción (expiración del endpoint, cambio de perfil
+// de Android...). Hay que re-suscribirse desde el SW; el cliente vuelve a
+// guardarla en el backend la próxima vez que arranque la app.
+self.addEventListener("pushsubscriptionchange", (event) => {
+  const applicationServerKey =
+    (event.newSubscription &&
+      event.newSubscription.options.applicationServerKey) ||
+    (event.oldSubscription &&
+      event.oldSubscription.options.applicationServerKey) ||
+    VAPID_PUBLIC_KEY;
+
+  event.waitUntil(
+    self.registration.pushManager
+      .subscribe({ userVisibleOnly: true, applicationServerKey })
+      .catch((err) => {
+        console.error("[ServiceWorker] Resubscribe failed:", err);
+      }),
+  );
+});
+
 self.addEventListener("notificationclick", (event) => {
   console.log(
     "[ServiceWorker] Notification click Received.",

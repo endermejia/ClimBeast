@@ -21,6 +21,10 @@ export const STORAGE_KEYS = {
   messageSound: 'message_sound_enabled_v1',
   notificationSound: 'notification_sound_enabled_v1',
 
+  // Notificaciones push
+  pushPromptAsked: 'lw_push_prompt_asked',
+  pushDisabled: 'lw_push_disabled',
+
   // Carrito / tienda
   cart: 'climbeast_cart',
   checkoutShippingInfo: 'checkout_shipping_info',

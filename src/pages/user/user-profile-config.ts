@@ -58,6 +58,7 @@ import { EightAnuService } from '../../services/eight-anu.service';
 import { FollowRequestsService } from '../../services/follow-requests.service';
 import { LanguageService } from '../../services/language.service';
 import { MerchandiseService } from '../../services/merchandise.service';
+import { PushSubscriptionService } from '../../services/push-subscription.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ThemeService } from '../../services/theme.service';
 import { ToastService } from '../../services/toast.service';
@@ -172,12 +173,15 @@ interface Country {
           [stringifyLanguage]="stringifyLanguage()"
           [userEmail]="userEmail()"
           [languageError]="languageError()"
+          [pushSupported]="pushSupported()"
+          [pushEnabled]="pushEnabled()"
           (updateModel)="onChildUpdateModel($event)"
           (saveLanguage)="saveLanguage()"
           (toggleTheme)="toggleTheme($event)"
           (restartFirstStepsChange)="onRestartFirstStepsChange($event)"
           (messageSoundChange)="onMessageSoundChange($event)"
           (notificationSoundChange)="onNotificationSoundChange($event)"
+          (pushNotificationsChange)="onPushNotificationsChange($event)"
           (privateProfileChange)="onPrivateProfileChange($event)"
         />
 
@@ -241,6 +245,7 @@ export class UserProfileConfigComponent {
   private readonly location = inject(Location);
   private readonly dialogs = inject(TuiDialogService);
   private readonly merchService = inject(MerchandiseService);
+  private readonly pushSubscription = inject(PushSubscriptionService);
 
   /**
    * Used to coordinate the success toast with language changes.
@@ -303,6 +308,14 @@ export class UserProfileConfigComponent {
   protected readonly avatarSrc = computed<string | null>(() => {
     return this.authState.userAvatar() || null;
   });
+
+  /**
+   * Interruptor de notificaciones push. Vive fuera de `model` porque no es un
+   * dato del perfil: refleja el permiso del sistema y la suscripción push.
+   */
+  private readonly pushToggle = signal(this.pushSubscription.pushEnabled());
+  protected readonly pushEnabled = this.pushToggle.asReadonly();
+  protected readonly pushSupported = this.pushSubscription.isSupported;
 
   protected readonly model = signal({
     fullName: '',
@@ -956,6 +969,29 @@ export class UserProfileConfigComponent {
       'profile.updated.notification_sound',
     );
     this.audioPrefs.notificationSoundEnabled.set(enabled);
+  }
+
+  async onPushNotificationsChange(enabled: boolean): Promise<void> {
+    // Refleja el clic ya mismo: si el sistema acaba denegando el permiso hay
+    // que pasar por `true -> false` para que el interruptor se desactive.
+    this.pushToggle.set(enabled);
+
+    if (!enabled) {
+      await this.pushSubscription.disable();
+      this.pushToggle.set(false);
+      return;
+    }
+
+    const granted = await this.pushSubscription.enable();
+    this.pushToggle.set(this.pushSubscription.pushEnabled());
+
+    if (!granted) {
+      this.toast.error(
+        this.pushSubscription.permissionDenied()
+          ? 'pushNotificationsBlocked'
+          : 'pushNotificationsError',
+      );
+    }
   }
 
   onPrivateProfileChange(enabled: boolean): void {

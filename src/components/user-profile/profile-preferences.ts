@@ -96,6 +96,21 @@ import { Language, ProfileConfigModel, Themes } from '../../models';
       <div class="flex flex-col items-end gap-4">
         <!-- Switches -->
         <div class="flex items-center gap-4">
+          <label tuiLabel for="pushNotificationsSwitch">{{
+            'pushNotifications' | translate
+          }}</label>
+          <input
+            id="pushNotificationsSwitch"
+            tuiSwitch
+            type="checkbox"
+            [ngModel]="pushEnabled()"
+            [disabled]="!pushSupported()"
+            (ngModelChange)="pushNotificationsChange.emit($event)"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="flex items-center gap-4">
           <label tuiLabel for="firstStepsSwitch">{{
             'firstSteps' | translate
           }}</label>
@@ -165,6 +180,8 @@ export class ProfilePreferencesComponent {
   );
   readonly userEmail = input<string>('');
   readonly languageError = input<string | null>(null);
+  readonly pushSupported = input<boolean>(false);
+  readonly pushEnabled = input<boolean>(false);
 
   readonly updateModel = output<{ field: string; value: unknown }>();
   readonly saveLanguage = output<void>();
@@ -172,6 +189,7 @@ export class ProfilePreferencesComponent {
   readonly restartFirstStepsChange = output<boolean>();
   readonly messageSoundChange = output<boolean>();
   readonly notificationSoundChange = output<boolean>();
+  readonly pushNotificationsChange = output<boolean>();
   readonly privateProfileChange = output<boolean>();
 
   readonly Themes = Themes;

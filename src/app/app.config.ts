@@ -9,6 +9,7 @@ import {
   ErrorHandler,
   inject,
   isDevMode,
+  provideAppInitializer,
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
   PLATFORM_ID,
@@ -46,6 +47,7 @@ import { AppErrorHandler } from '../services/app-error-handler';
 import { CachedTranslateLoader } from '../services/cached-translate-loader';
 import { errorInterceptor } from '../services/error.interceptor';
 import { LanguageService } from '../services/language.service';
+import { PushSubscriptionService } from '../services/push-subscription.service';
 import { provideSupabaseConfig } from '../services/supabase.service';
 import { SwipeNavigationService } from '../services/swipe-navigation.service';
 import { ThemeService } from '../services/theme.service';
@@ -152,6 +154,13 @@ export const appConfig: ApplicationConfig = {
     provideSupabaseConfig({
       url: ENV_SUPABASE_URL,
       anonKey: ENV_SUPABASE_ANON_KEY,
+    }),
+    // Eageriza el servicio que, en la primera apertura, pide permiso de
+    // notificaciones al sistema y mantiene la suscripción push sincronizada.
+    provideAppInitializer(() => {
+      if (inject(IS_BROWSER)) {
+        inject(PushSubscriptionService);
+      }
     }),
     provideServiceWorker('service-worker.js', {
       enabled: !isDevMode(),
