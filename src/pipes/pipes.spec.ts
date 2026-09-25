@@ -25,6 +25,10 @@ import {
   TopoPointStateColorPipe,
   TopoPointStateLabelPipe,
 } from './topo-path.pipe';
+import {
+  UserReportReasonKeyPipe,
+  UserReportStatusAppearancePipe,
+} from './user-report-status.pipe';
 
 describe('ShadeInfoPipe', () => {
   const pipe = new ShadeInfoPipe();
@@ -420,5 +424,31 @@ describe('TopoImagePipe (with DI)', () => {
   it('handles null path', async () => {
     const result = await pipe.transform(null);
     expect(result).toBe('');
+  });
+});
+
+describe('UserReportReasonKeyPipe', () => {
+  const pipe = new UserReportReasonKeyPipe();
+
+  it('builds the translation key for every reason', () => {
+    expect(pipe.transform('spam')).toBe('reportReasons.spam.title');
+    expect(pipe.transform('harassment')).toBe('reportReasons.harassment.title');
+    expect(pipe.transform('inappropriate_content')).toBe(
+      'reportReasons.inappropriate_content.title',
+    );
+    expect(pipe.transform('impersonation')).toBe(
+      'reportReasons.impersonation.title',
+    );
+    expect(pipe.transform('other')).toBe('reportReasons.other.title');
+  });
+});
+
+describe('UserReportStatusAppearancePipe', () => {
+  const pipe = new UserReportStatusAppearancePipe();
+
+  it('maps every status to its badge appearance', () => {
+    expect(pipe.transform('pending')).toBe('accent');
+    expect(pipe.transform('resolved')).toBe('positive');
+    expect(pipe.transform('dismissed')).toBe('neutral');
   });
 });

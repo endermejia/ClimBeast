@@ -14,3 +14,4 @@ export * from './shade-info.pipe';
 export * from './table-sorter.pipe';
 export * from './topo-image.pipe';
 export * from './topo-path.pipe';
+export * from './user-report-status.pipe';

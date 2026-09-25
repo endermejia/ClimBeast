@@ -35,13 +35,13 @@ import { UserReportsService } from '../../services/user-reports.service';
 
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 
-import {
-  UserReportReason,
-  UserReportStatus,
-  UserReportWithDetails,
-} from '../../models';
+import { UserReportStatus, UserReportWithDetails } from '../../models';
 
-import { AvatarUrlPipe } from '../../pipes';
+import {
+  AvatarUrlPipe,
+  UserReportReasonKeyPipe,
+  UserReportStatusAppearancePipe,
+} from '../../pipes';
 
 interface StatusFilter {
   id: UserReportStatus | 'all';
@@ -67,6 +67,8 @@ interface StatusFilter {
     TuiScrollbar,
     TuiSkeleton,
     TuiTable,
+    UserReportReasonKeyPipe,
+    UserReportStatusAppearancePipe,
   ],
   template: `
     <section class="flex flex-col w-full max-w-7xl mx-auto p-4 grow min-h-0">
@@ -219,7 +221,7 @@ interface StatusFilter {
                       <span
                         class="font-semibold text-xs text-red-600 dark:text-red-400"
                       >
-                        {{ getReasonLabel(report.reason) | translate }}
+                        {{ report.reason | userReportReasonKey | translate }}
                       </span>
                       @if (report.details) {
                         <p
@@ -236,7 +238,7 @@ interface StatusFilter {
                     <span
                       tuiBadge
                       size="s"
-                      [appearance]="getStatusAppearance(report.status)"
+                      [appearance]="report.status | userReportStatusAppearance"
                     >
                       {{
                         'admin.userReports.statuses.' + report.status
@@ -351,23 +353,6 @@ export class AdminUserReportsListComponent {
     if (st === 'all') return all;
     return all.filter((r) => r.status === st);
   });
-
-  protected getReasonLabel(reason: UserReportReason): string {
-    return `reportReasons.${reason}.title`;
-  }
-
-  protected getStatusAppearance(status: UserReportStatus): string {
-    switch (status) {
-      case 'pending':
-        return 'accent';
-      case 'resolved':
-        return 'positive';
-      case 'dismissed':
-        return 'neutral';
-      default:
-        return 'neutral';
-    }
-  }
 
   protected async onUpdateStatus(
     report: UserReportWithDetails,
