@@ -214,8 +214,12 @@ import { IS_BROWSER } from '../../app/is-browser';
                   [tuiSkeleton]="loading"
                   [routerLink]="['/equipper', equipper.id]"
                 >
-                  <strong>{{ equipper.routesCount }}</strong>
-                  {{ 'equippedRoutes' | translate | lowercase }}
+                  @if (equipper.routesCount) {
+                    <strong>{{ equipper.routesCount }}</strong>
+                    {{ 'equippedRoutes' | translate | lowercase }}
+                  } @else {
+                    {{ 'equippedRoutes' | translate }}
+                  }
                 </a>
               }
             </div>
