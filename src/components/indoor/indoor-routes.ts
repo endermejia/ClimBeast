@@ -32,6 +32,7 @@ import {
   TuiScrollbar,
   TuiLink,
   TuiHint,
+  TuiGroup,
   TuiCheckbox,
   TuiDialogService,
 } from '@taiga-ui/core';
@@ -78,6 +79,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
     TuiScrollbar,
     TuiLink,
     TuiHint,
+    TuiGroup,
     TuiTable,
     TuiTableTbody,
     TuiTableThGroup,
@@ -249,23 +251,31 @@ import { EmptyStateComponent } from '../ui/empty-state';
                         @case ('topo') {
                           <div tuiCell size="m">
                             <div class="flex flex-wrap gap-1 min-w-0">
-                              @for (t of item.topos; track t.id) {
-                                <a
-                                  tuiLink
-                                  [routerLink]="[
-                                    '/indoor',
-                                    centerSlug() || item.center_slug,
-                                    'topo',
-                                    t.id,
-                                  ]"
-                                  class="text-xs bg-(--tui-background-neutral-1) hover:bg-(--tui-background-neutral-1-hover) text-(--tui-text-primary) px-2 py-0.5 rounded-md transition-colors truncate max-w-full font-medium"
-                                  [class.opacity-50]="t.legacy"
-                                >
-                                  {{ t.name }}
-                                </a>
-                              } @empty {
-                                <span class="opacity-50 text-xs">-</span>
-                              }
+                              <div class="flex flex-wrap gap-x-1 gap-y-0">
+                                @let toposList = item.topos || [];
+                                @if (toposList.length > 0) {
+                                  <div tuiGroup [collapsed]="true">
+                                    @for (t of toposList; track t.id) {
+                                      <a
+                                        tuiButton
+                                        appearance="secondary"
+                                        class="min-w-fit!"
+                                        size="xs"
+                                        [routerLink]="[
+                                          '/indoor',
+                                          centerSlug() || item.center_slug,
+                                          'topo',
+                                          t.id,
+                                        ]"
+                                      >
+                                        {{ t.name }}
+                                      </a>
+                                    }
+                                  </div>
+                                } @else {
+                                  <span class="opacity-50 text-xs">-</span>
+                                }
+                              </div>
                             </div>
                           </div>
                         }
