@@ -519,13 +519,28 @@ export default class IndoorRouteFormComponent {
         if (savedRouteId) {
           await this.indoor.setRouteEquippers(savedRouteId, m.equippers);
           if (assignedTopoId && !this.context.data.hideTopo) {
-            await this.supabase.client.from('indoor_topo_routes').upsert({
-              topo_id: assignedTopoId,
-              route_id: savedRouteId,
-              number: 0,
-              path: null,
-              user_creator_id: this.supabase.authUserId(),
-            });
+            // Si la vía ya está en el croquis NO se vuelve a escribir la fila:
+            // el upsert anterior la pisaba con `path: null` y `number: 0`,
+            // borrando el trazado dibujado y mandando la vía al principio.
+            const { data: linked, error: linkError } =
+              await this.supabase.client
+                .from('indoor_topo_routes')
+                .select('route_id')
+                .eq('topo_id', assignedTopoId)
+                .eq('route_id', savedRouteId)
+                .maybeSingle();
+
+            if (linkError) throw linkError;
+
+            if (!linked) {
+              await this.supabase.client.from('indoor_topo_routes').insert({
+                topo_id: assignedTopoId,
+                route_id: savedRouteId,
+                number: 0,
+                path: null,
+                user_creator_id: this.supabase.authUserId(),
+              });
+            }
           }
         }
 
