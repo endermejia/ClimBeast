@@ -22,12 +22,11 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { AreaMaterialRequestsService } from '../../services/area-material-requests.service';
 
-import type {
-  AreaMaterialRequestWithDetails,
-  MaterialRequestStatus,
-} from '../../models';
+import type { AreaMaterialRequestWithDetails } from '../../models';
 
 import { EmptyStateComponent } from '../ui/empty-state';
+
+import { MaterialRequestStatusAppearancePipe } from '../../pipes';
 
 export interface MaterialRequestsHistoryDialogData {
   areaId: number;
@@ -42,6 +41,7 @@ export interface MaterialRequestsHistoryDialogData {
     DatePipe,
     DecimalPipe,
     EmptyStateComponent,
+    MaterialRequestStatusAppearancePipe,
     TranslatePipe,
     TuiAppearance,
     TuiBadge,
@@ -84,7 +84,7 @@ export interface MaterialRequestsHistoryDialogData {
                   <span
                     tuiBadge
                     size="s"
-                    [appearance]="getStatusAppearance(req.status)"
+                    [appearance]="req.status | materialRequestStatusAppearance"
                   >
                     {{ 'materialRequests.status.' + req.status | translate }}
                   </span>
@@ -199,23 +199,6 @@ export class MaterialRequestsHistoryDialogComponent {
   });
 
   readonly requests = computed(() => this.requestsResource.value() ?? []);
-
-  getStatusAppearance(status: MaterialRequestStatus): string {
-    switch (status) {
-      case 'pending':
-        return 'warning';
-      case 'approved':
-        return 'accent';
-      case 'disposed':
-        return 'positive';
-      case 'cancelled':
-        return 'neutral';
-      case 'rejected':
-        return 'negative';
-      default:
-        return 'neutral';
-    }
-  }
 
   async cancelRequest(requestId: number): Promise<void> {
     this.cancellingId.set(requestId);

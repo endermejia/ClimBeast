@@ -30,7 +30,10 @@ import type {
   MaterialRequestStatus,
 } from '../../models';
 
-import { AvatarUrlPipe } from '../../pipes';
+import {
+  AvatarUrlPipe,
+  MaterialRequestStatusAppearancePipe,
+} from '../../pipes';
 
 @Component({
   selector: 'app-admin-material-requests',
@@ -42,6 +45,7 @@ import { AvatarUrlPipe } from '../../pipes';
     DecimalPipe,
     EmptyStateComponent,
     FormsModule,
+    MaterialRequestStatusAppearancePipe,
     RouterLink,
     TranslatePipe,
     TuiAppearance,
@@ -134,7 +138,7 @@ import { AvatarUrlPipe } from '../../pipes';
                   <span
                     tuiBadge
                     size="m"
-                    [appearance]="getStatusAppearance(req.status)"
+                    [appearance]="req.status | materialRequestStatusAppearance"
                   >
                     {{ 'materialRequests.status.' + req.status | translate }}
                   </span>
@@ -420,23 +424,6 @@ export class AdminMaterialRequestsComponent {
     if (st === 'all') return list;
     return list.filter((r) => r.status === st);
   });
-
-  getStatusAppearance(status: MaterialRequestStatus): string {
-    switch (status) {
-      case 'pending':
-        return 'warning';
-      case 'approved':
-        return 'accent';
-      case 'disposed':
-        return 'positive';
-      case 'cancelled':
-        return 'neutral';
-      case 'rejected':
-        return 'negative';
-      default:
-        return 'neutral';
-    }
-  }
 
   async updateStatus(
     requestId: number,

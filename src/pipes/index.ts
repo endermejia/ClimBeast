@@ -7,6 +7,7 @@ export * from './context-index.pipe';
 export * from './grade-label.pipe';
 export * from './icon-src.pipe';
 export * from './includes-id.pipe';
+export * from './material-request-status.pipe';
 export * from './mention-link.pipe';
 export * from './order-status-color.pipe';
 export * from './sanitize-html.pipe';

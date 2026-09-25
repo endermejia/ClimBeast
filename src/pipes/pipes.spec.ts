@@ -13,6 +13,7 @@ import { AnyToSchedulePipe } from './any-to-schedule.pipe';
 import { AscentDatePipe } from './ascent-date.pipe';
 import { AvatarUrlPipe } from './avatar-url.pipe';
 import { IconSrcPipe } from './icon-src.pipe';
+import { MaterialRequestStatusAppearancePipe } from './material-request-status.pipe';
 import { MentionLinkPipe } from './mention-link.pipe';
 import { SanitizeHtmlPipe } from './sanitize-html.pipe';
 import { ShadeInfoPipe } from './shade-info.pipe';
@@ -450,5 +451,17 @@ describe('UserReportStatusAppearancePipe', () => {
     expect(pipe.transform('pending')).toBe('accent');
     expect(pipe.transform('resolved')).toBe('positive');
     expect(pipe.transform('dismissed')).toBe('neutral');
+  });
+});
+
+describe('MaterialRequestStatusAppearancePipe', () => {
+  const pipe = new MaterialRequestStatusAppearancePipe();
+
+  it('maps every status to its badge appearance', () => {
+    expect(pipe.transform('pending')).toBe('warning');
+    expect(pipe.transform('approved')).toBe('accent');
+    expect(pipe.transform('disposed')).toBe('positive');
+    expect(pipe.transform('cancelled')).toBe('neutral');
+    expect(pipe.transform('rejected')).toBe('negative');
   });
 });
