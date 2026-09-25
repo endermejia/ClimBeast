@@ -6,6 +6,7 @@ import {
   effect,
   inject,
   signal,
+  untracked,
   WritableSignal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -44,6 +45,7 @@ import { TourService, TourStep } from '../../services/tour.service';
 
 import { AreaCardSkeletonComponent } from '../../components/area/area-card-skeleton';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
+import { InfiniteScrollTriggerComponent } from '../../components/ui/infinite-scroll-trigger';
 import { PlaceCardComponent } from '../../components/ui/place-card';
 import { TourHintComponent } from '../../components/ui/tour-hint';
 
@@ -55,12 +57,20 @@ import {
 
 import { matchesQuery } from '../../utils';
 
+/**
+ * Tarjetas pintadas por lote. La primera render solo construye esta ventana
+ * (unas pocas pantallas) y el resto entra al acercarse al final, así la
+ * navegación no se bloquea creando decenas de tarjetas de golpe.
+ */
+const CARD_WINDOW = 24;
+
 @Component({
   selector: 'app-indoor-list',
   standalone: true,
   imports: [
     AreaCardSkeletonComponent,
     EmptyStateComponent,
+    InfiniteScrollTriggerComponent,
     LowerCasePipe,
     PlaceCardComponent,
     RouterLink,
@@ -171,11 +181,16 @@ import { matchesQuery } from '../../utils';
             <div
               class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
-              @for (item of filtered(); track item.id) {
+              @for (item of visibleIndoor(); track item.id) {
                 <app-place-card kind="indoor" [item]="item" />
               } @empty {
                 <div class="col-span-full">
                   <app-empty-state icon="@tui.dumbbell" />
+                </div>
+              }
+              @if (hasMoreIndoor()) {
+                <div class="col-span-full flex justify-center">
+                  <app-infinite-scroll-trigger (intersect)="showMoreIndoor()" />
                 </div>
               }
             </div>
@@ -276,6 +291,12 @@ export class IndoorListComponent {
         this.query.set(qVal);
       }
     });
+
+    // Cambiar búsqueda o filtros vuelve la ventana de tarjetas a su tamaño inicial.
+    effect(() => {
+      this.filterKey();
+      untracked(() => this.visibleCount.set(CARD_WINDOW));
+    });
   }
 
   protected readonly hasActiveFilters = computed(() => {
@@ -304,6 +325,31 @@ export class IndoorListComponent {
       );
     });
   });
+
+  /**
+   * Ventana de tarjetas efectivamente pintadas: `filtered()` completo solo se
+   * recorre para el contador y los filtros, el DOM se queda en `CARD_WINDOW`
+   * unidades hasta que el usuario baja el scroll.
+   */
+  private readonly visibleCount = signal(CARD_WINDOW);
+  protected readonly visibleIndoor = computed(() =>
+    this.filtered().slice(0, this.visibleCount()),
+  );
+  protected readonly hasMoreIndoor = computed(
+    () => this.filtered().length > this.visibleCount(),
+  );
+
+  protected showMoreIndoor(): void {
+    this.visibleCount.update((count) => count + CARD_WINDOW);
+  }
+
+  private readonly filterKey = computed(() =>
+    JSON.stringify([
+      this.query(),
+      this.filterState.indoorListGradeRange(),
+      this.filterState.indoorListToposOnly(),
+    ]),
+  );
 
   protected openFilters(): void {
     this.filtersService.openIndoorListFilters();

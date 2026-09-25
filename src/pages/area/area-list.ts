@@ -3,8 +3,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
   WritableSignal,
 } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
@@ -36,6 +38,7 @@ import { TourService, TourStep } from '../../services/tour.service';
 
 import { AreaCardSkeletonComponent } from '../../components/area/area-card-skeleton';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
+import { InfiniteScrollTriggerComponent } from '../../components/ui/infinite-scroll-trigger';
 import { PlaceCardComponent } from '../../components/ui/place-card';
 import { TourHintComponent } from '../../components/ui/tour-hint';
 
@@ -47,11 +50,19 @@ import {
 
 import { matchesQuery } from '../../utils';
 
+/**
+ * Tarjetas pintadas por lote. La primera render solo construye esta ventana
+ * (unas pocas pantallas) y el resto entra al acercarse al final, así la
+ * navegación no se bloquea creando cientos de tarjetas de golpe.
+ */
+const CARD_WINDOW = 24;
+
 @Component({
   selector: 'app-area-list',
   imports: [
     AreaCardSkeletonComponent,
     EmptyStateComponent,
+    InfiniteScrollTriggerComponent,
     LowerCasePipe,
     PlaceCardComponent,
     RouterLink,
@@ -160,11 +171,16 @@ import { matchesQuery } from '../../utils';
             <div
               class="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
-              @for (a of filtered(); track a.id) {
+              @for (a of visibleAreas(); track a.id) {
                 <app-place-card kind="area" [item]="a" />
               } @empty {
                 <div class="col-span-full">
                   <app-empty-state icon="@tui.map" />
+                </div>
+              }
+              @if (hasMoreAreas()) {
+                <div class="col-span-full flex justify-center">
+                  <app-infinite-scroll-trigger (intersect)="showMoreAreas()" />
                 </div>
               }
             </div>
@@ -329,6 +345,41 @@ export class AreaListComponent {
         toposMatches(a),
     );
   });
+
+  /**
+   * Ventana de tarjetas efectivamente pintadas: `filtered()` completo solo se
+   * recorre para el contador y los filtros, el DOM se queda en `CARD_WINDOW`
+   * unidades hasta que el usuario baja el scroll.
+   */
+  private readonly visibleCount = signal(CARD_WINDOW);
+  readonly visibleAreas = computed(() =>
+    this.filtered().slice(0, this.visibleCount()),
+  );
+  readonly hasMoreAreas = computed(
+    () => this.filtered().length > this.visibleCount(),
+  );
+
+  protected showMoreAreas(): void {
+    this.visibleCount.update((count) => count + CARD_WINDOW);
+  }
+
+  /** Cambiar búsqueda o filtros vuelve la ventana a su tamaño inicial. */
+  private readonly filterKey = computed(() =>
+    JSON.stringify([
+      this.query(),
+      this.selectedGradeRange(),
+      this.selectedCategories(),
+      this.selectedShade(),
+      this.filterState.areaListToposOnly(),
+    ]),
+  );
+
+  constructor() {
+    effect(() => {
+      this.filterKey();
+      untracked(() => this.visibleCount.set(CARD_WINDOW));
+    });
+  }
 
   onQuery(v: string) {
     this.query.set(v);

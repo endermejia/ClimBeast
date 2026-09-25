@@ -487,11 +487,15 @@ const PAGE_SIZE = 20;
                       @let anuResults = mappedAreaAnuResults();
 
                       @if (routesList.length > 0) {
-                        <app-outdoor-routes-table
-                          [data]="routesList"
-                          [showLocation]="true"
-                          [showRowColors]="true"
-                        />
+                        @defer (on viewport) {
+                          <app-outdoor-routes-table
+                            [data]="filteredAreaRoutes()"
+                            [showLocation]="true"
+                            [showRowColors]="true"
+                          />
+                        } @placeholder {
+                          <div class="min-h-32"></div>
+                        }
                       }
 
                       @if (
