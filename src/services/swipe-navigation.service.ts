@@ -26,9 +26,40 @@ function normalizePath(url: string): string {
 }
 
 /**
+ * Superficies con uso propio del arrastre horizontal o con contenido editable
+ * cuyo gesto no debe convertirse en navegación:
+ *
+ * - sliders y rangos (los filtros de gradiente/moves, el ancho de línea del
+ *   editor de topos); los de Taiga renderizan el pulgar como `input[type=range]`,
+ *   pero el gesto puede empezar sobre la pista, que es un hermano del input,
+ * - tablas: su scroll horizontal y la reordenación de columnas/filas,
+ * - controles de formulario (`input`, `select`, `textarea`, contenido
+ *   editable), donde el arrastre mueve el cursor o cambia el valor,
+ * - elementos arrastrables (`cdkDrag`, `draggable`).
+ *
+ * Botones y enlaces no entran: empezar el gesto sobre un elemento clicable es
+ * lo normal al deslizar por la pantalla y bloquearlos dejaría el swipe casi
+ * sin uso.
+ */
+const BLOCKED_SURFACES = [
+  'tui-range',
+  'tui-input-range',
+  'tui-slider',
+  'input',
+  'select',
+  'textarea',
+  '[contenteditable]:not([contenteditable="false"])',
+  'table',
+  '[cdkdrag]',
+  '[cdkdraghandle]',
+  '[draggable="true"]',
+].join(',');
+
+/**
  * Detecta si el gesto empieza en una superficie que tiene su propio uso para
  * el arrastre horizontal, para no robarle el gesto:
  *
+ * - los selectores de `BLOCKED_SURFACES` (sliders, tablas, formularios...),
  * - contenedores con scroll horizontal nativo (carruseles, chips, listas),
  * - el mapa de Leaflet (`leaflet-container`),
  * - cualquier elemento marcado con `data-swipe-block` (el visor de topos, con
@@ -46,7 +77,8 @@ function startsInBlockedSurface(target: EventTarget | null): boolean {
 
     if (
       el.hasAttribute('data-swipe-block') ||
-      el.classList.contains('leaflet-container')
+      el.classList.contains('leaflet-container') ||
+      el.matches(BLOCKED_SURFACES)
     ) {
       return true;
     }

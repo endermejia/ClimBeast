@@ -4,7 +4,7 @@ import { provideRouter, Router } from '@angular/router';
 
 import type { TuiSwipeEvent } from '@taiga-ui/cdk';
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 import { MockLocalStorage } from '../testing/mock-local-storage';
 import { LocalStorage } from './local-storage';
@@ -48,6 +48,12 @@ describe('SwipeNavigationService', () => {
     service = TestBed.inject(SwipeNavigationService);
     router = TestBed.inject(Router);
     document.documentElement.removeAttribute('data-nav-dir');
+  });
+
+  afterEach(() => {
+    document
+      .querySelectorAll('[data-swipe-host]')
+      .forEach((host) => host.remove());
   });
 
   it('debería estar creado', () => {
@@ -151,6 +157,134 @@ describe('SwipeNavigationService', () => {
     expect(document.documentElement.getAttribute('data-nav-dir')).toBeNull();
 
     host.remove();
+  });
+
+  /**
+   * Monta una superficie de prueba dentro de un anfitrión de swipe y devuelve
+   * el elemento sobre el que debe empezar el gesto.
+   */
+  function surfaceHost(setup: (host: HTMLElement) => Element): Element {
+    const host = document.createElement('div');
+    host.setAttribute('data-swipe-host', '');
+    const target = setup(host);
+    document.body.appendChild(host);
+    return target;
+  }
+
+  it('ignora los swipes que empiezan en un slider de filtro', async () => {
+    const track = surfaceHost((host) => {
+      const range = document.createElement('tui-range');
+      const trackEl = document.createElement('div');
+      const thumb = document.createElement('input');
+      thumb.type = 'range';
+      trackEl.appendChild(thumb);
+      range.appendChild(trackEl);
+      host.appendChild(range);
+      return trackEl;
+    });
+
+    await router.navigate(['/home']);
+    await service.onSwipe(swipeEvent('left', track));
+
+    expect(currentRoute()).toBe('/home');
+    expect(document.documentElement.getAttribute('data-nav-dir')).toBeNull();
+  });
+
+  it('ignora los swipes que empiezan en el pulgar de un slider', async () => {
+    const thumb = surfaceHost((host) => {
+      const range = document.createElement('tui-range');
+      const input = document.createElement('input');
+      input.type = 'range';
+      range.appendChild(input);
+      host.appendChild(range);
+      return input;
+    });
+
+    await router.navigate(['/home']);
+    await service.onSwipe(swipeEvent('left', thumb));
+
+    expect(currentRoute()).toBe('/home');
+    expect(document.documentElement.getAttribute('data-nav-dir')).toBeNull();
+  });
+
+  it('ignora los swipes que empiezan en una tabla', async () => {
+    const text = surfaceHost((host) => {
+      const table = document.createElement('table');
+      const cell = document.createElement('td');
+      const span = document.createElement('span');
+      cell.appendChild(span);
+      table.appendChild(cell);
+      host.appendChild(table);
+      return span;
+    });
+
+    await router.navigate(['/home']);
+    await service.onSwipe(swipeEvent('left', text));
+
+    expect(currentRoute()).toBe('/home');
+    expect(document.documentElement.getAttribute('data-nav-dir')).toBeNull();
+  });
+
+  it('ignora los swipes que empiezan en un control de formulario', async () => {
+    const input = surfaceHost((host) => {
+      const control = document.createElement('input');
+      host.appendChild(control);
+      return control;
+    });
+
+    await router.navigate(['/home']);
+    await service.onSwipe(swipeEvent('left', input));
+
+    expect(currentRoute()).toBe('/home');
+    expect(document.documentElement.getAttribute('data-nav-dir')).toBeNull();
+  });
+
+  it('ignora los swipes que empiezan en un contenido editable', async () => {
+    const editable = surfaceHost((host) => {
+      const el = document.createElement('div');
+      el.setAttribute('contenteditable', '');
+      host.appendChild(el);
+      return el;
+    });
+
+    await router.navigate(['/home']);
+    await service.onSwipe(swipeEvent('left', editable));
+
+    expect(currentRoute()).toBe('/home');
+    expect(document.documentElement.getAttribute('data-nav-dir')).toBeNull();
+  });
+
+  it('ignora los swipes que empiezan en un elemento arrastrable', async () => {
+    const child = surfaceHost((host) => {
+      const row = document.createElement('div');
+      row.setAttribute('cdkDrag', '');
+      const span = document.createElement('span');
+      row.appendChild(span);
+      host.appendChild(row);
+      return span;
+    });
+
+    await router.navigate(['/home']);
+    await service.onSwipe(swipeEvent('left', child));
+
+    expect(currentRoute()).toBe('/home');
+    expect(document.documentElement.getAttribute('data-nav-dir')).toBeNull();
+  });
+
+  it('navega si el gesto empieza en un botón (no se bloquea lo clicable)', async () => {
+    const child = surfaceHost((host) => {
+      const button = document.createElement('button');
+      const span = document.createElement('span');
+      button.appendChild(span);
+      host.appendChild(button);
+      return span;
+    });
+
+    await router.navigate(['/home']);
+    await service.onSwipe(swipeEvent('left', child));
+
+    expect(currentRoute()).toBe('/area');
+    expect(document.documentElement.getAttribute('data-nav-dir')).toBe('next');
   });
 
   it('ignora los swipes que empiezan en una superficie bloqueada', async () => {
