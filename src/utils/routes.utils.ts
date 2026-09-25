@@ -13,6 +13,25 @@ import {
 
 import { normalizeName } from './index';
 
+/** Joined normalized names, computed once per row instead of per comparison. */
+function normalizedNamesKey(
+  items: readonly { name?: string | null }[],
+): string {
+  return items.map((item) => normalizeName(item.name)).join(', ');
+}
+
+/**
+ * Sorts by `name` with the key precomputed once per item, keeping
+ * `normalizeName` out of the comparator entirely.
+ */
+function sortByNormalizedName<T extends { name?: string | null }>(
+  items: readonly T[],
+): T[] {
+  const keyed = items.map((item) => ({ item, key: normalizeName(item.name) }));
+  keyed.sort((a, b) => tuiDefaultSort(a.key, b.key));
+  return keyed.map((entry) => entry.item);
+}
+
 export function mapRouteToTableRow(
   r: RouteWithExtras | IndoorRouteWithExtras,
 ): RoutesTableRow {
@@ -22,6 +41,13 @@ export function mapRouteToTableRow(
     const indoor = r as IndoorRouteWithExtras;
     const rating = indoor.rating || 0;
     const ascents = indoor.ascent_count || 0;
+    const topos = (indoor.topos || []).map((t) => ({
+      id: t.id,
+      name: t.name,
+      legacy: t.legacy,
+      link: ['/indoor', indoor.center_slug || 'unknown', 'topo', t.id],
+    }));
+    const equippers = indoor.equippers || [];
 
     return {
       id: indoor.id,
@@ -44,13 +70,10 @@ export function mapRouteToTableRow(
         'route',
         indoor.slug || '',
       ],
-      topos: (indoor.topos || []).map((t) => ({
-        id: t.id,
-        name: t.name,
-        legacy: t.legacy,
-        link: ['/indoor', indoor.center_slug || 'unknown', 'topo', t.id],
-      })),
-      equippers: indoor.equippers || [],
+      topos,
+      equippers,
+      equippersSortKey: normalizedNamesKey(equippers),
+      toposSortKey: normalizedNamesKey(topos),
       own_ascent: indoor.own_ascent || null,
       isIndoor: true,
       _ref: r,
@@ -62,6 +85,20 @@ export function mapRouteToTableRow(
       PROJECT_GRADE_LABEL;
     const rating = outdoor.rating || 0;
     const ascents = outdoor.ascent_count || 0;
+    const equippers = outdoor.equippers || [];
+    const topos = sortByNormalizedName(
+      (outdoor.topos || []).map((t) => ({
+        id: t.id,
+        name: t.name,
+        link: [
+          '/area',
+          outdoor.area_slug || 'unknown',
+          outdoor.crag_slug || 'unknown',
+          'topo',
+          t.id.toString(),
+        ],
+      })),
+    );
 
     return {
       id: outdoor.id,
@@ -90,22 +127,10 @@ export function mapRouteToTableRow(
         outdoor.crag_slug || 'unknown',
         outdoor.slug,
       ],
-      topos: (outdoor.topos || [])
-        .map((t) => ({
-          id: t.id,
-          name: t.name,
-          link: [
-            '/area',
-            outdoor.area_slug || 'unknown',
-            outdoor.crag_slug || 'unknown',
-            'topo',
-            t.id.toString(),
-          ],
-        }))
-        .sort((a, b) =>
-          tuiDefaultSort(normalizeName(a.name), normalizeName(b.name)),
-        ),
-      equippers: outdoor.equippers || [],
+      topos,
+      equippers,
+      equippersSortKey: normalizedNamesKey(equippers),
+      toposSortKey: normalizedNamesKey(topos),
       own_ascent: outdoor.own_ascent || null,
       isIndoor: false,
       _ref: r,
@@ -123,20 +148,10 @@ export const ROUTE_TABLE_SORTERS: Record<
   height: (a, b) => tuiDefaultSort(a.height ?? 0, b.height ?? 0),
   rating: (a, b) => tuiDefaultSort(a.rating, b.rating),
   ascents: (a, b) => tuiDefaultSort(a.ascents, b.ascents),
-  equippers: (a, b) => {
-    const aVal = (a.equippers || [])
-      .map((e) => normalizeName(e.name))
-      .join(', ');
-    const bVal = (b.equippers || [])
-      .map((e) => normalizeName(e.name))
-      .join(', ');
-    return tuiDefaultSort(aVal, bVal);
-  },
-  topo: (a, b) => {
-    const aVal = a.topos.map((t) => normalizeName(t.name)).join(', ');
-    const bVal = b.topos.map((t) => normalizeName(t.name)).join(', ');
-    return tuiDefaultSort(aVal, bVal) || tuiDefaultSort(a.route, b.route);
-  },
+  equippers: (a, b) => tuiDefaultSort(a.equippersSortKey, b.equippersSortKey),
+  topo: (a, b) =>
+    tuiDefaultSort(a.toposSortKey, b.toposSortKey) ||
+    tuiDefaultSort(a.route, b.route),
   color: (a, b) => {
     const aName = a.color ? INDOOR_ROUTE_COLORS[a.color] || '' : '';
     const bName = b.color ? INDOOR_ROUTE_COLORS[b.color] || '' : '';

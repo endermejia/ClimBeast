@@ -63,14 +63,21 @@ export class EightAnuService {
 
       if (response?.items && response.items.length > 0) {
         if (cragName) {
-          // Buscar coincidencia exacta por nombre
-          const match = response.items.find(
-            (i) =>
-              i.type === 1 &&
-              normalizeName(i.cragName) === normalizeName(cragName) &&
-              normalizeName(i.areaName) === normalizeName(areaName),
-          ) as SearchCragItem;
-          if (match) return match;
+          // Buscar coincidencia exacta por nombre. Normalizamos el objetivo una
+          // vez y cada resultado una vez, en lugar de normalizar dentro de la
+          // comparación (se re-ejecutaba por cada resultado de la respuesta).
+          const targetCrag = normalizeName(cragName);
+          const targetArea = normalizeName(areaName);
+          const exact = (
+            response.items.filter((i) => i.type === 1) as SearchCragItem[]
+          )
+            .map((item) => ({
+              item,
+              crag: normalizeName(item.cragName),
+              area: normalizeName(item.areaName),
+            }))
+            .find((e) => e.crag === targetCrag && e.area === targetArea);
+          if (exact) return exact.item;
         }
 
         const item = response.items[0] as SearchCragItem;
@@ -110,27 +117,37 @@ export class EightAnuService {
       );
 
       if (response?.items && response.items.length > 0) {
+        // Normalizamos el objetivo una vez y cada resultado una vez; las dos
+        // búsquedas de abajo (exacta y por crag/area) reutilizan esas claves en
+        // vez de volver a normalizar la misma fila.
+        const targetCrag = normalizeName(cragName);
+        const targetArea = normalizeName(areaName);
+        const results = (
+          response.items.filter((i) => i.type === 3) as SearchRouteItem[]
+        ).map((item) => ({
+          item,
+          name: normalizeName(item.zlaggableName),
+          crag: normalizeName(item.cragName),
+          area: normalizeName(item.areaName),
+        }));
+
         if (routeName) {
-          // Buscar coincidencia exacta por nombre
-          const match = response.items.find(
-            (i) =>
-              i.type === 3 &&
-              normalizeName(i.zlaggableName) === normalizeName(routeName) &&
-              normalizeName(i.cragName) === normalizeName(cragName) &&
-              normalizeName(i.areaName) === normalizeName(areaName),
-          ) as SearchRouteItem;
-          if (match) return match;
+          const targetName = normalizeName(routeName);
+          const exact = results.find(
+            (e) =>
+              e.name === targetName &&
+              e.crag === targetCrag &&
+              e.area === targetArea,
+          );
+          if (exact) return exact.item;
         }
 
         // Si no hay routeName o no hay coincidencia exacta, devolver el primero que coincida con crag/area
-        const matchCrag = response.items.find(
-          (i) =>
-            i.type === 3 &&
-            normalizeName(i.cragName) === normalizeName(cragName) &&
-            normalizeName(i.areaName) === normalizeName(areaName),
-        ) as SearchRouteItem;
+        const matchCrag = results.find(
+          (e) => e.crag === targetCrag && e.area === targetArea,
+        );
 
-        if (matchCrag) return matchCrag;
+        if (matchCrag) return matchCrag.item;
 
         return response.items[0] as SearchRouteItem;
       }

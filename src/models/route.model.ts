@@ -121,6 +121,13 @@ export interface RoutesTableRow {
     link: string[];
   }[];
   equippers: EquipperDto[];
+  /**
+   * Precomputed accent/case-insensitive sort keys, built once per dataset in
+   * `mapRouteToTableRow` so the table comparators never call `normalizeName`
+   * (which would run O(n log n) times on every sort).
+   */
+  equippersSortKey: string;
+  toposSortKey: string;
   own_ascent: { id: number | string; type: AscentType | null } | null;
   isIndoor: boolean;
   canEdit?: boolean;

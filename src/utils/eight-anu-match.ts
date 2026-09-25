@@ -56,14 +56,34 @@ export function matchExistingAreas(
   const dbAreaIdBySlug = new Map<string, number>();
   const existingAreaSlugs = new Set<string>();
 
+  // One normalization pass over the database rows: the lookups below are plain
+  // Map gets instead of re-running normalizeName on every area for every CSV
+  // row (O(csv × db) → O(csv + db)).
+  const areaBySlug = new Map<string, DbAreaRecord>();
+  const areaByNormalizedName = new Map<string, DbAreaRecord>();
+  const areaByEightAnuSlug = new Map<string, DbAreaRecord>();
+  // "First row wins", mirroring Array.find over dbAreas in its original order.
+  const setIfAbsent = (
+    map: Map<string, DbAreaRecord>,
+    key: string,
+    area: DbAreaRecord,
+  ): void => {
+    if (!map.has(key)) map.set(key, area);
+  };
+
+  for (const area of dbAreas) {
+    setIfAbsent(areaBySlug, area.slug, area);
+    setIfAbsent(areaByNormalizedName, normalizeName(area.name), area);
+    for (const s of area.eight_anu_crag_slugs ?? []) {
+      setIfAbsent(areaByEightAnuSlug, s, area);
+    }
+  }
+
   for (const csv of csvAreas) {
-    const bySlug = dbAreas.find((area) => area.slug === csv.slug);
-    const csvName = normalizeName(csv.name);
-    const byName = dbAreas.find((area) => normalizeName(area.name) === csvName);
-    const byEightAnu = dbAreas.find((area) =>
-      area.eight_anu_crag_slugs?.includes(csv.slug),
-    );
-    const match = bySlug ?? byName ?? byEightAnu;
+    const match =
+      areaBySlug.get(csv.slug) ??
+      areaByNormalizedName.get(normalizeName(csv.name)) ??
+      areaByEightAnuSlug.get(csv.slug);
 
     if (!match) continue;
 
@@ -93,12 +113,27 @@ export function matchExistingCrags(
   const existing = new Set<string>();
 
   const cragsByAreaId = new Map<number, DbCragRecord[]>();
+  // Normalized-name / 8a-slug indexes scoped by area, built once per dataset so
+  // the CSV loop below never re-normalizes a database row.
+  const cragByNameKey = new Map<string, DbCragRecord>();
+  const cragByEightAnuKey = new Map<string, DbCragRecord>();
+  const scoped = (areaId: number, term: string): string =>
+    `${areaId}\u0000${term}`;
+
   for (const crag of dbCrags) {
     const list = cragsByAreaId.get(crag.area_id);
     if (list) {
       list.push(crag);
     } else {
       cragsByAreaId.set(crag.area_id, [crag]);
+    }
+
+    const nameKey = scoped(crag.area_id, normalizeName(crag.name));
+    if (!cragByNameKey.has(nameKey)) cragByNameKey.set(nameKey, crag);
+
+    for (const s of crag.eight_anu_sector_slugs ?? []) {
+      const slugKey = scoped(crag.area_id, s);
+      if (!cragByEightAnuKey.has(slugKey)) cragByEightAnuKey.set(slugKey, crag);
     }
   }
 
@@ -110,13 +145,10 @@ export function matchExistingCrags(
     const candidates = cragsByAreaId.get(areaId);
     if (!candidates?.length) continue;
 
-    const csvName = normalizeName(csv.cragName);
     const match =
       candidates.find((crag) => crag.slug === csv.cragSlug) ??
-      candidates.find((crag) => normalizeName(crag.name) === csvName) ??
-      candidates.find((crag) =>
-        crag.eight_anu_sector_slugs?.includes(csv.cragSlug),
-      );
+      cragByNameKey.get(scoped(areaId, normalizeName(csv.cragName))) ??
+      cragByEightAnuKey.get(scoped(areaId, csv.cragSlug));
 
     if (match) {
       existing.add(`${csv.areaSlug}|${csv.cragSlug}`);
