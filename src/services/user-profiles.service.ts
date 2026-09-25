@@ -6,14 +6,9 @@ import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslateService } from '@ngx-translate/core';
 
-import { firstValueFrom, Observable } from 'rxjs';
+import { defer, firstValueFrom, from, Observable, switchMap } from 'rxjs';
 
-import { Import8aComponent } from '../components/ascent/import-8a';
-
-import { AscentCalendarDialogComponent } from '../components/dialogs/ascent-calendar-dialog';
-import { FavoritesDialogComponent } from '../components/dialogs/favorites-dialog';
 import { ImageEditorDialogComponent } from '../components/dialogs/image-editor-dialog';
-import { ProjectsDialogComponent } from '../components/dialogs/projects-dialog';
 
 import {
   RouteDto,
@@ -45,12 +40,21 @@ export class UserProfilesService {
     const targetUserId = userId || this.supabase.authUserId();
     if (!targetUserId) return;
 
+    // Loaded lazily to avoid a circular dependency between this service and
+    // the dialogs (NG0919: component metadata read while the cycle resolves)
     void firstValueFrom(
-      this.dialogs.open(new PolymorpheusComponent(ProjectsDialogComponent), {
-        label: this.translate.instant('projects'),
-        size: 'l',
-        data: { userId: targetUserId, startingYear },
-      }),
+      defer(() => from(import('../components/dialogs/projects-dialog'))).pipe(
+        switchMap(({ ProjectsDialogComponent }) =>
+          this.dialogs.open(
+            new PolymorpheusComponent(ProjectsDialogComponent),
+            {
+              label: this.translate.instant('projects'),
+              size: 'l',
+              data: { userId: targetUserId, startingYear },
+            },
+          ),
+        ),
+      ),
       { defaultValue: undefined },
     );
   }
@@ -60,11 +64,18 @@ export class UserProfilesService {
     if (!targetUserId) return;
 
     void firstValueFrom(
-      this.dialogs.open(new PolymorpheusComponent(FavoritesDialogComponent), {
-        label: this.translate.instant('likes'),
-        size: 'l',
-        data: { userId: targetUserId },
-      }),
+      defer(() => from(import('../components/dialogs/favorites-dialog'))).pipe(
+        switchMap(({ FavoritesDialogComponent }) =>
+          this.dialogs.open(
+            new PolymorpheusComponent(FavoritesDialogComponent),
+            {
+              label: this.translate.instant('likes'),
+              size: 'l',
+              data: { userId: targetUserId },
+            },
+          ),
+        ),
+      ),
       { defaultValue: undefined },
     );
   }
@@ -77,16 +88,22 @@ export class UserProfilesService {
     if (!targetUserId) return;
 
     void firstValueFrom(
-      this.dialogs.open(
-        new PolymorpheusComponent(AscentCalendarDialogComponent),
-        {
-          label: this.translate.instant('ascentCalendar'),
-          size: 'm',
-          data: {
-            userId: targetUserId,
-            user: user || undefined,
-          },
-        },
+      defer(() =>
+        from(import('../components/dialogs/ascent-calendar-dialog')),
+      ).pipe(
+        switchMap(({ AscentCalendarDialogComponent }) =>
+          this.dialogs.open(
+            new PolymorpheusComponent(AscentCalendarDialogComponent),
+            {
+              label: this.translate.instant('ascentCalendar'),
+              size: 'm',
+              data: {
+                userId: targetUserId,
+                user: user || undefined,
+              },
+            },
+          ),
+        ),
       ),
       { defaultValue: undefined },
     );
@@ -94,12 +111,16 @@ export class UserProfilesService {
 
   openImport8aDialog(): void {
     void firstValueFrom(
-      this.dialogs.open(new PolymorpheusComponent(Import8aComponent), {
-        label: this.translate.instant('import8a.searchTitle'),
-        size: 'l',
-        dismissible: false,
-        closable: true,
-      }),
+      defer(() => from(import('../components/ascent/import-8a'))).pipe(
+        switchMap(({ Import8aComponent }) =>
+          this.dialogs.open(new PolymorpheusComponent(Import8aComponent), {
+            label: this.translate.instant('import8a.searchTitle'),
+            size: 'l',
+            dismissible: false,
+            closable: true,
+          }),
+        ),
+      ),
       { defaultValue: undefined },
     );
   }
