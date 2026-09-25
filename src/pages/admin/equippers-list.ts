@@ -214,7 +214,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                 @for (item of list; track item.id) {
                   <tr tuiTr>
                     <td *tuiCell="'name'" tuiTd>
-                      <div class="flex items-center gap-2">
+                      <div class="flex h-full items-center gap-2">
                         @if (item.id) {
                           <a
                             tuiLink
