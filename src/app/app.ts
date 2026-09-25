@@ -32,7 +32,7 @@ import { NavbarComponent } from '../components/ui/navbar';
 import { OfflineBannerComponent } from '../components/ui/offline-banner';
 
 import { STORAGE_KEYS } from '../constants';
-import { reactToObservable } from '../utils';
+import { isRogueHardwareKey, reactToObservable } from '../utils';
 
 import { IS_BROWSER } from './is-browser';
 
@@ -165,32 +165,10 @@ export class AppComponent implements OnDestroy {
     if (this.isBrowser) {
       // Intercept rogue hardware key events (e.g. OnePlus alert slider / physical mute switches)
       // which fire KEYCODE_F3 (133 / DOM 114) and KEYCODE_SEARCH (84 / DomKey: BrowserSearch / Find),
-      // triggering the browser's Find-in-page modal
+      // triggering the browser's Find-in-page modal. Note that 84 is also the letter T:
+      // `isRogueHardwareKey` only swallows it when the event does not produce the letter.
       this.suppressRogueSearch = (e: KeyboardEvent) => {
-        const key = (e.key || '').toLowerCase();
-        const code = (e.code || '').toLowerCase();
-        const keyCode = e.keyCode || e.which;
-
-        const isFKey =
-          key === 'f3' ||
-          code === 'f3' ||
-          keyCode === 114 ||
-          keyCode === 133 ||
-          /^f\d+$/.test(key) ||
-          /^f\d+$/.test(code) ||
-          (keyCode >= 112 && keyCode <= 123) ||
-          (keyCode >= 121 && keyCode <= 132);
-
-        const isSearchKey =
-          key === 'find' ||
-          code === 'find' ||
-          key === 'search' ||
-          code === 'search' ||
-          keyCode === 84 ||
-          keyCode === 170 ||
-          ((keyCode === 84 || keyCode === 170) && key !== 't');
-
-        if (isFKey || isSearchKey) {
+        if (isRogueHardwareKey(e)) {
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
