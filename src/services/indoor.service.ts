@@ -34,7 +34,7 @@ import {
 import type { TopoPath } from '../models/topo.model';
 
 import { CACHE_KEYS } from '../constants';
-import { handleErrorToast } from '../utils';
+import { handleErrorToast, slugify } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 
@@ -473,18 +473,79 @@ export class IndoorService {
   }
 
   // Indoor Routes management
+
+  /**
+   * `indoor_routes` has a unique (center_id, slug) constraint and routes are
+   * slugged from their name, so two routes sharing a name collide. Returns the
+   * first free variant inside the center: `base`, `base-2`, `base-3`…
+   */
+  private async uniqueRouteSlug(
+    centerId: string | null,
+    baseSlug: string,
+    excludeRouteId?: string,
+  ): Promise<string> {
+    if (!centerId || !baseSlug) return baseSlug;
+
+    const { data, error } = await this.supabase.client
+      .from('indoor_routes')
+      .select('id, slug')
+      .eq('center_id', centerId);
+
+    if (error) throw error;
+
+    const taken = new Set(
+      (data ?? [])
+        .filter((route) => route.id !== excludeRouteId)
+        .map((route) => route.slug),
+    );
+
+    if (!taken.has(baseSlug)) return baseSlug;
+
+    let suffix = 2;
+    while (taken.has(`${baseSlug}-${suffix}`)) suffix++;
+    return `${baseSlug}-${suffix}`;
+  }
+
+  /** center_id of a route, only fetched when an update does not carry it. */
+  private async getRouteCenterId(routeId: string): Promise<string | null> {
+    const { data, error } = await this.supabase.client
+      .from('indoor_routes')
+      .select('center_id')
+      .eq('id', routeId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data?.center_id ?? null;
+  }
+
   async createRoute(
     payload: Omit<IndoorRouteDto, 'id' | 'created_at'>,
   ): Promise<IndoorRouteDto | null> {
+    const baseSlug = payload.slug || slugify(payload.name);
+    const slug = await this.uniqueRouteSlug(payload.center_id, baseSlug);
     const toInsert = {
       ...payload,
+      slug,
       user_creator_id: payload.user_creator_id ?? this.supabase.authUserId(),
     };
-    const { data, error } = await this.supabase.client
+
+    let { data, error } = await this.supabase.client
       .from('indoor_routes')
       .insert(toInsert)
       .select('*')
       .single();
+
+    // Two routes created at the same time can pick the same slug: retry once
+    if (error?.code === '23505') {
+      const retrySlug = await this.uniqueRouteSlug(payload.center_id, baseSlug);
+      if (retrySlug !== slug) {
+        ({ data, error } = await this.supabase.client
+          .from('indoor_routes')
+          .insert({ ...toInsert, slug: retrySlug })
+          .select('*')
+          .single());
+      }
+    }
 
     if (error) throw error;
     this.equipperService.equipperIndoorRoutesResource.reload();
@@ -495,9 +556,26 @@ export class IndoorService {
     id: string,
     updates: Partial<IndoorRouteDto>,
   ): Promise<boolean> {
+    let payload = updates;
+
+    if (payload.slug !== undefined) {
+      const centerId =
+        payload.center_id !== undefined
+          ? payload.center_id
+          : await this.getRouteCenterId(id);
+      payload = {
+        ...payload,
+        slug: await this.uniqueRouteSlug(
+          centerId,
+          payload.slug || slugify(payload.name ?? ''),
+          id,
+        ),
+      };
+    }
+
     const { error } = await this.supabase.client
       .from('indoor_routes')
-      .update(updates)
+      .update(payload)
       .eq('id', id);
 
     if (error) throw error;
