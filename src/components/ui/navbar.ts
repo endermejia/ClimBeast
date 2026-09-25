@@ -148,13 +148,11 @@ import { TourHintComponent } from './tour-hint';
 
           <!-- Explore -->
           <a
-            [routerLink]="layout.isOffline() ? null : exploreTab.target()"
+            [routerLink]="exploreTab.target()"
             [class.active]="isExploreActive()"
             tuiAppearance="flat-grayscale"
             [tuiSkeleton]="loading()"
             class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full relative group"
-            [class.pointer-events-none]="layout.isOffline()"
-            [class.opacity-50]="layout.isOffline()"
             [attr.aria-label]="'nav.explore' | translate"
             (click)="onExploreClick()"
           >
@@ -445,7 +443,6 @@ export class NavbarComponent {
         return 'tour.home.description';
     }
   });
-  protected readonly layout = inject(LayoutService);
   protected readonly exploreTab = inject(ExploreTabService);
 
   private readonly router = inject(Router);
