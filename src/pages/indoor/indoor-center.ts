@@ -457,6 +457,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                               [data]="ascent"
                               [showRoute]="true"
                               [showUser]="true"
+                              [showCenter]="false"
                             />
                           } @empty {
                             <div class="col-span-full">
@@ -503,6 +504,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                           [data]="ascent"
                           [showRoute]="true"
                           [showUser]="true"
+                          [showCenter]="false"
                         />
                       } @empty {
                         <app-empty-state

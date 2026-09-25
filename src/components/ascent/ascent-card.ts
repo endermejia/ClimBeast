@@ -252,15 +252,17 @@ import { AscentTypeComponent } from './ascent-type';
                 >
                   {{ ascent.route.name }}
                 </a>
-                <span class="mx-1.5 opacity-70 text-sm">&bull;</span>
-                <span class="text-sm opacity-70">
-                  <a
-                    class="hover:underline cursor-pointer"
-                    [routerLink]="['/indoor', ascent.route.center_slug]"
-                  >
-                    {{ ascent.route.center_name }}
-                  </a>
-                </span>
+                @if (showCenter() && ascent.route.center_name) {
+                  <span class="mx-1.5 opacity-70 text-sm">&bull;</span>
+                  <span class="text-sm opacity-70">
+                    <a
+                      class="hover:underline cursor-pointer"
+                      [routerLink]="['/indoor', ascent.route.center_slug]"
+                    >
+                      {{ ascent.route.center_name }}
+                    </a>
+                  </span>
+                }
               } @else {
                 <a
                   class="font-bold hover:underline cursor-pointer"
@@ -437,6 +439,7 @@ export class AscentCardComponent {
   showRoute = input(true);
   showCrag = input(true);
   showArea = input(true);
+  showCenter = input(true);
   showPhoto = input(true);
   showComment = input(true);
   showLikesAndComments = input(true);

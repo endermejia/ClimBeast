@@ -51,6 +51,19 @@ function createMockAscent(
   } as RouteAscentWithExtras;
 }
 
+function createIndoorAscent(): RouteAscentWithExtras {
+  return createMockAscent({
+    route: {
+      name: 'Route',
+      slug: 'route',
+      grade: 25,
+      climbing_kind: 'sport',
+      center_slug: 'boulder-gym',
+      center_name: 'Boulder Gym',
+    } as never,
+  });
+}
+
 function createMockAscentsService() {
   const ascentCommentsUpdate = new Subject<number>();
   const ascentInfoSignal = signal({
@@ -313,6 +326,30 @@ describe('AscentCardComponent', () => {
       fixture.detectChanges();
       await fixture.whenStable();
       expect(fixture.nativeElement.textContent).not.toContain('Great climb!');
+    });
+
+    it('showCenter defaults to true', () => {
+      const fixture = TestBed.createComponent(AscentCardComponent);
+      fixture.componentRef.setInput('data', createMockAscent());
+      expect(fixture.componentInstance.showCenter()).toBe(true);
+    });
+
+    it('renders indoor center when showCenter is true', async () => {
+      const fixture = TestBed.createComponent(AscentCardComponent);
+      fixture.componentRef.setInput('data', createIndoorAscent());
+      fixture.componentRef.setInput('showCenter', true);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(fixture.nativeElement.textContent).toContain('Boulder Gym');
+    });
+
+    it('does not render indoor center when showCenter is false', async () => {
+      const fixture = TestBed.createComponent(AscentCardComponent);
+      fixture.componentRef.setInput('data', createIndoorAscent());
+      fixture.componentRef.setInput('showCenter', false);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(fixture.nativeElement.textContent).not.toContain('Boulder Gym');
     });
   });
 });
