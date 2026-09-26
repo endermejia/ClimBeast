@@ -3,3 +3,7 @@
 ## 2025-02-21 - Query Memoization in Filter Loops
 **Learning:** Functions like `matchesQuery` called inside `.filter()` or multi-field search predicates normalize the same `query` string repeatedly (NFD string normalization + multiple regexes) N times per filter pass.
 **Action:** Memoize `lastQuery` and pre-split `lastQueryWords` so subsequent calls with the identical search query during list filtering skip re-normalization and string splitting entirely.
+
+## 2025-02-26 - Pipe Array Callback Closure Allocation
+**Learning:** Evaluated inside template `@for` loops across table rows (such as `RoutesTableComponent`), pipes using `Array.prototype.some` or `.filter` allocate callback functions and closure scope objects repeatedly on change detection passes.
+**Action:** Replace `Array.prototype.some(...)` with indexed `for` loops in pure pipes (`pure: true`) to eliminate closure allocations and frame overhead while remaining completely stateless.
