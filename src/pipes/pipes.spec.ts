@@ -12,6 +12,7 @@ import { MockThemeService } from '../testing/mock-theme.service';
 import { AnyToSchedulePipe } from './any-to-schedule.pipe';
 import { AscentDatePipe } from './ascent-date.pipe';
 import { AvatarUrlPipe } from './avatar-url.pipe';
+import { ErrorSeverityAppearancePipe } from './error-severity-appearance.pipe';
 import { IconSrcPipe } from './icon-src.pipe';
 import { MaterialRequestStatusAppearancePipe } from './material-request-status.pipe';
 import { MentionLinkPipe } from './mention-link.pipe';
@@ -463,5 +464,18 @@ describe('MaterialRequestStatusAppearancePipe', () => {
     expect(pipe.transform('disposed')).toBe('positive');
     expect(pipe.transform('cancelled')).toBe('neutral');
     expect(pipe.transform('rejected')).toBe('negative');
+  });
+});
+
+describe('ErrorSeverityAppearancePipe', () => {
+  const pipe = new ErrorSeverityAppearancePipe();
+
+  it('maps every error severity to its badge appearance', () => {
+    expect(pipe.transform('critical')).toBe('negative');
+    expect(pipe.transform('error')).toBe('warning');
+    expect(pipe.transform('warning')).toBe('info');
+    expect(pipe.transform('info')).toBe('neutral');
+    expect(pipe.transform(null)).toBe('neutral');
+    expect(pipe.transform(undefined)).toBe('neutral');
   });
 });
