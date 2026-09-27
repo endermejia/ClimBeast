@@ -25,6 +25,7 @@ import { RoutesService } from '../../services/routes.service';
 import {
   AscentType,
   RouteDto,
+  RouteWithExtras,
   ClimbingKind,
   ClimbingKinds,
 } from '../../models';
@@ -145,8 +146,8 @@ export interface PyramidSlotDialogData {
                     <div class="flex flex-col min-w-0">
                       <span class="font-bold truncate">{{ route.name }}</span>
                       <span class="text-[10px] opacity-60 truncate">
-                        {{ getExtra(route)['crag_name'] }} /
-                        {{ getExtra(route)['area_name'] }}
+                        {{ route.crag_name }} /
+                        {{ route.area_name }}
                       </span>
                     </div>
                   </div>
@@ -206,7 +207,7 @@ export class PyramidSlotDialogComponent {
 
   data = this.context.data;
   searchQuery = signal('');
-  results = signal<RouteDto[]>([]);
+  results = signal<Partial<RouteWithExtras>[]>([]);
   loading = signal(false);
 
   private searchTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -227,7 +228,7 @@ export class PyramidSlotDialogComponent {
           query,
           this.data.expectedGrade,
         );
-        this.results.set(routes as RouteDto[]);
+        this.results.set(routes);
       } catch (e) {
         console.error('Error searching routes:', e);
       } finally {
@@ -236,12 +237,8 @@ export class PyramidSlotDialogComponent {
     }, 400);
   }
 
-  getExtra(route: RouteDto): Record<string, unknown> {
-    return route as Record<string, unknown>;
-  }
-
-  selectRoute(route: RouteDto): void {
-    this.context.completeWith(route);
+  selectRoute(route: Partial<RouteWithExtras>): void {
+    this.context.completeWith(route as RouteDto);
   }
 
   removeRoute(): void {
