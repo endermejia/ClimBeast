@@ -47,6 +47,7 @@ import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
 import { ChartAscentsByGradeComponent } from '../../components/charts/chart-ascents-by-grade';
 import { ChartAscentsByStyleComponent } from '../../components/charts/chart-ascents-by-style';
 import { GradeComponent } from '../../components/ui/avatar-grade';
+import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import {
   SectionHeaderAction,
   SectionHeaderComponent,
@@ -75,6 +76,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     FormsModule,
     GradeComponent,
     LowerCasePipe,
+    OfflineNotCachedComponent,
     RouterLink,
     SectionHeaderComponent,
     TranslatePipe,
@@ -402,10 +404,18 @@ import { IS_BROWSER } from '../../app/is-browser';
               </tui-scrollbar>
             </div>
           </div>
-        } @else {
+        } @else if (
+          outdoorData.areasListResource.isLoading() ||
+          outdoorData.cragDetailResource.isLoading() ||
+          outdoorData.routeDetailResource.isLoading()
+        ) {
           <div class="flex items-center justify-center w-full min-h-[50vh]">
             <tui-loader size="xxl" />
           </div>
+        } @else {
+          <app-offline-not-cached
+            [fallbackUrl]="'/area/' + areaSlug() + '/' + cragSlug()"
+          />
         }
       </section>
     </tui-scrollbar>
@@ -496,6 +506,7 @@ export class OutdoorRouteComponent {
       const crag = this.outdoorData.cragDetail();
       const route = this.route();
       if (!area || !crag || !route) {
+        if (!navigator.onLine) return;
         this.router.navigateByUrl('/page-not-found');
       }
     });

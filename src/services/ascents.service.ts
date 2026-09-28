@@ -866,8 +866,9 @@ export class AscentsService {
       .eq('route_ascent_id', ascentId);
 
     if (error) {
+      // Never break the whole feed over a secondary counter: degrade to 0.
       console.error('[AscentsService] getLikesInfo count error', error);
-      throw error;
+      return { likes_count: 0, user_liked: false };
     }
 
     let user_liked = false;
@@ -925,8 +926,9 @@ export class AscentsService {
       .eq('route_ascent_id', ascentId);
 
     if (error) {
+      // Never break the whole feed over a secondary counter: degrade to 0.
       console.error('[AscentsService] getCommentsCount error', error);
-      throw error;
+      return 0;
     }
 
     return count ?? 0;

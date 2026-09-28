@@ -13,7 +13,7 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { TuiButton, TuiDialogService } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
-import { filter, firstValueFrom, switchMap } from 'rxjs';
+import { catchError, filter, firstValueFrom, of, switchMap } from 'rxjs';
 
 import { WeatherService } from '../../services/weather.service';
 
@@ -65,6 +65,7 @@ export class MeteoButtonComponent {
     toObservable(this.coords).pipe(
       filter((c): c is { lat: number; lng: number } => !!c),
       switchMap((c) => this.weatherService.getForecast(c.lat, c.lng)),
+      catchError(() => of(null)),
     ),
   );
 

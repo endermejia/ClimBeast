@@ -49,6 +49,7 @@ import { ChartRoutesByGradeComponent } from '../../components/charts/chart-route
 import { CragRoutesComponent } from '../../components/crag/crag-routes';
 import { CragToposComponent } from '../../components/crag/crag-topos';
 import { MeteoButtonComponent } from '../../components/ui/meteo-button';
+import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import { ParkingButtonComponent } from '../../components/ui/parking-button';
 import {
   SectionHeaderAction,
@@ -81,6 +82,7 @@ const PAGE_SIZE = 20;
     CragToposComponent,
     LowerCasePipe,
     MeteoButtonComponent,
+    OfflineNotCachedComponent,
     ParkingButtonComponent,
     SectionHeaderComponent,
     TranslatePipe,
@@ -293,10 +295,15 @@ const PAGE_SIZE = 20;
               </tui-scrollbar>
             </div>
           </div>
-        } @else {
+        } @else if (
+          outdoorData.areasListLoading() ||
+          outdoorData.cragDetailResource.isLoading()
+        ) {
           <div class="flex items-center justify-center w-full min-h-[50vh]">
             <tui-loader size="xxl" />
           </div>
+        } @else {
+          <app-offline-not-cached [fallbackUrl]="'/area/' + areaSlug()" />
         }
       </section>
     </tui-scrollbar>
@@ -637,6 +644,7 @@ export class CragComponent {
       const area = this.outdoorData.selectedArea();
       const crag = this.outdoorData.cragDetail();
       if (!area || !crag) {
+        if (!navigator.onLine) return;
         this.router.navigateByUrl('/page-not-found');
       }
     });

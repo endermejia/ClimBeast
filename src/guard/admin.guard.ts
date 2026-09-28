@@ -3,7 +3,7 @@ import { CanMatchFn, Router, UrlTree } from '@angular/router';
 
 import { SupabaseService } from '../services/supabase.service';
 
-import { waitForResource } from '../utils';
+import { pageNotFoundTree, waitForResource } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 
@@ -40,15 +40,15 @@ export const adminGuard: CanMatchFn = async (): Promise<boolean | UrlTree> => {
         '[AdminGuard] User is not admin. is_admin:',
         profile?.is_admin,
       );
-      return router.createUrlTree(['/page-not-found']);
+      return pageNotFoundTree(router);
     }
 
     // If profile didn't load after waiting, redirect to page-not-found
     console.error('[AdminGuard] Timeout waiting for user profile');
-    return router.createUrlTree(['/page-not-found']);
+    return pageNotFoundTree(router);
   } catch (e) {
     console.warn('[AdminGuard] Unexpected error, using safe fallback', e);
-    return router.createUrlTree(['/page-not-found']);
+    return pageNotFoundTree(router);
   }
 };
 
@@ -86,10 +86,10 @@ export const areaAdminGuard: CanMatchFn = async (): Promise<
       console.warn('[AreaAdminGuard] User has no admin permissions');
     }
 
-    return router.createUrlTree(['/page-not-found']);
+    return pageNotFoundTree(router);
   } catch (e) {
     console.warn('[AreaAdminGuard] Unexpected error, using safe fallback', e);
-    return router.createUrlTree(['/page-not-found']);
+    return pageNotFoundTree(router);
   }
 };
 
@@ -131,10 +131,10 @@ export const indoorAdminGuard: CanMatchFn = async (): Promise<
       );
     }
 
-    return router.createUrlTree(['/page-not-found']);
+    return pageNotFoundTree(router);
   } catch (e) {
     console.warn('[IndoorAdminGuard] Unexpected error, using safe fallback', e);
-    return router.createUrlTree(['/page-not-found']);
+    return pageNotFoundTree(router);
   }
 };
 
@@ -174,9 +174,9 @@ export const routesetterGuard: CanMatchFn = async (): Promise<
       console.warn('[RoutesetterGuard] User has no routesetter permissions');
     }
 
-    return router.createUrlTree(['/page-not-found']);
+    return pageNotFoundTree(router);
   } catch (e) {
     console.warn('[RoutesetterGuard] Unexpected error, using safe fallback', e);
-    return router.createUrlTree(['/page-not-found']);
+    return pageNotFoundTree(router);
   }
 };

@@ -88,4 +88,39 @@ describe('CacheService', () => {
     expect(result).toBe('default');
     expect(service.get('expired-key', null)).toBeNull();
   });
+
+  it('should return cached value even if TTL has expired when offline', () => {
+    const originalOnLine = navigator.onLine;
+    try {
+      Object.defineProperty(navigator, 'onLine', {
+        value: false,
+        configurable: true,
+      });
+      mockStorage.setItem(
+        'expired-offline-key',
+        JSON.stringify('still-available'),
+      );
+      mockStorage.setItem(
+        'expired-offline-key_ts',
+        String(Date.now() - 100000),
+      );
+      const result = service.get('expired-offline-key', 'default', 50000);
+      expect(result).toBe('still-available');
+    } finally {
+      Object.defineProperty(navigator, 'onLine', {
+        value: originalOnLine,
+        configurable: true,
+      });
+    }
+  });
+
+  it('should fallback to cached value in fetchOrCache when fetcher fails', async () => {
+    mockStorage.setItem('fallback-key', JSON.stringify('cached-data'));
+    const result = await service.fetchOrCache(
+      'fallback-key',
+      () => Promise.reject(new Error('Network error')),
+      { fallbackValue: 'fallback-value' },
+    );
+    expect(result).toBe('cached-data');
+  });
 });

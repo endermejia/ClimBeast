@@ -192,6 +192,7 @@ export abstract class TopoPageBase {
       if (isLoading) return;
       const t = this.topo();
       if (!t) {
+        if (!navigator.onLine) return;
         this.router.navigateByUrl('/page-not-found');
       }
     });

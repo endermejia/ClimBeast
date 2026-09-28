@@ -8,8 +8,10 @@ const HIGH_DEMAND_ROUTES = [
   'area',
   'explore',
   'indoor',
+  'profile',
   'admin',
   'my-areas',
+  'my-indoor-centers',
 ];
 
 @Injectable({ providedIn: 'root' })

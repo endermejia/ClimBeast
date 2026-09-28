@@ -2,6 +2,7 @@ import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   ElementRef,
   effect,
   inject,
@@ -19,10 +20,12 @@ import { TuiSkeleton } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { filter, switchMap } from 'rxjs';
+import { catchError, filter, map, of, switchMap } from 'rxjs';
 
 import { LanguageService } from '../../services/language.service';
 import { WeatherService } from '../../services/weather.service';
+
+import { WeatherDay } from '../../models';
 
 @Component({
   selector: 'app-weather-forecast',
@@ -39,7 +42,17 @@ import { WeatherService } from '../../services/weather.service';
     TuiSkeleton,
   ],
   template: `
-    @if (weather(); as days) {
+    @if (loadFailed()) {
+      <!-- Forecast could not be fetched (offline / network error) -->
+      <div
+        class="flex flex-col items-center justify-center gap-3 py-8 text-center"
+      >
+        <tui-icon icon="@tui.wifi-off" class="size-8 opacity-60" />
+        <p class="text-sm opacity-70 m-0">
+          {{ 'weather.unavailable' | translate }}
+        </p>
+      </div>
+    } @else if (weather(); as days) {
       <div class="flex flex-col gap-4">
         <h3
           class="text-sm font-semibold flex items-center gap-2 opacity-70 uppercase tracking-wider"
@@ -260,11 +273,32 @@ export class WeatherForecastComponent {
 
   coords = input.required<{ lat: number; lng: number }>();
 
-  readonly weather = toSignal(
+  private readonly forecastResult = toSignal(
     toObservable(this.coords).pipe(
       filter((c) => !!c.lat && !!c.lng),
-      switchMap((c) => this.weatherService.getForecast(c.lat, c.lng)),
+      switchMap((c) =>
+        this.weatherService.getForecast(c.lat, c.lng).pipe(
+          map((days): { days: WeatherDay[]; ok: boolean } => ({
+            days,
+            ok: true,
+          })),
+          // Offline / network failure: degrade instead of erroring, so the
+          // dialog shows an "unavailable" message rather than an endless
+          // skeleton (a toSignal error would also throw on read).
+          catchError(() =>
+            of({ days: [] as WeatherDay[], ok: false } as const),
+          ),
+        ),
+      ),
     ),
+  );
+
+  /** Days of the forecast, or null while nothing has loaded yet. */
+  readonly weather = computed(() => this.forecastResult()?.days ?? null);
+
+  /** True when the last forecast request failed (e.g. offline). */
+  protected readonly loadFailed = computed(
+    () => this.forecastResult()?.ok === false,
   );
 
   constructor() {

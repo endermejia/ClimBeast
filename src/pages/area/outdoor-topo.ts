@@ -26,6 +26,7 @@ import { PaywallComponent } from '../../components/paywall/paywall';
 import { TopoRoutesTableComponent } from '../../components/topo/topo-routes-table';
 import { TopoViewerComponent } from '../../components/topo/topo-viewer';
 import type { TopoRouteRow } from '../../components/topo/topo.types';
+import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import {
   SectionHeaderAction,
   SectionHeaderComponent,
@@ -40,6 +41,7 @@ import { TopoPageBase } from './topo-page-base';
 @Component({
   selector: 'app-outdoor-topo',
   imports: [
+    OfflineNotCachedComponent,
     PaywallComponent,
     ShadeInfoPipe,
     SectionHeaderComponent,
@@ -199,10 +201,14 @@ import { TopoPageBase } from './topo-page-base';
               />
             </div>
           }
-        } @else {
+        } @else if (outdoorData.topoDetailResource.isLoading()) {
           <div class="flex items-center justify-center h-full">
             <tui-loader size="xxl" />
           </div>
+        } @else {
+          <app-offline-not-cached
+            [fallbackUrl]="'/area/' + areaSlug() + '/' + cragSlug()"
+          />
         }
       </section>
     </div>

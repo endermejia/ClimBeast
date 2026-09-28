@@ -31,10 +31,12 @@ import { AreasService } from '../../services/areas.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
+import { OnlineStatusService } from '../../services/online-status.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 
 import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
+import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 
 import {
   ClimbingKinds,
@@ -52,6 +54,7 @@ import { matchesQuery } from '../../utils';
     EmptyStateComponent,
     IconSrcPipe,
     LowerCasePipe,
+    OfflineNotCachedComponent,
     TranslatePipe,
     TuiAppearance,
     TuiAvatar,
@@ -169,7 +172,12 @@ import { matchesQuery } from '../../utils';
               </button>
             } @empty {
               <div class="col-span-full">
-                <app-empty-state icon="@tui.map" message="myAreas.empty" />
+                @if (onlineStatus.isOffline()) {
+                  <!-- Sin red no hay nada que filtrar: ofrecemos volver. -->
+                  <app-offline-not-cached fallbackUrl="/home" />
+                } @else {
+                  <app-empty-state icon="@tui.map" message="myAreas.empty" />
+                }
               </div>
             }
           </div>
@@ -188,6 +196,7 @@ export class MyAreasComponent {
   protected readonly authState = inject(AuthStateService);
   protected readonly router = inject(Router);
   protected readonly areasService = inject(AreasService);
+  protected readonly onlineStatus = inject(OnlineStatusService);
   protected readonly outdoorData = inject(OutdoorDataService);
   private readonly filterState = inject(FilterStateService);
   private readonly filtersService = inject(FiltersService);

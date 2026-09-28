@@ -71,6 +71,7 @@ import { TopoCardComponent } from '../../components/topo/topo-card';
 import { GradeComponent } from '../../components/ui/avatar-grade';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { MeteoButtonComponent } from '../../components/ui/meteo-button';
+import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import { ParkingButtonComponent } from '../../components/ui/parking-button';
 import { PlaceCardComponent } from '../../components/ui/place-card';
 import {
@@ -125,6 +126,7 @@ const PAGE_SIZE = 20;
     IconSrcPipe,
     InitialsPipe,
     LowerCasePipe,
+    OfflineNotCachedComponent,
     OutdoorRoutesTableComponent,
     PaywallComponent,
     PlaceCardComponent,
@@ -748,21 +750,23 @@ const PAGE_SIZE = 20;
                     }
                   </div>
                 }
-              } @else {
+              } @else if (outdoorData.areasListLoading()) {
                 <div class="flex items-center justify-center py-16">
                   <tui-loader size="xxl" />
                 </div>
+              } @else {
+                <app-offline-not-cached fallbackUrl="/area" />
               }
             </div>
           </tui-scrollbar>
         </div>
 
         <!-- Right Column: Ascents Sidebar (desktop only) -->
-        <div
-          class="hidden lg:flex lg:w-[420px] xl:w-[460px] 2xl:w-[500px] shrink-0 min-w-0 lg:h-full flex-col"
-        >
-          <div class="flex flex-col w-full lg:h-full min-w-0 lg:min-h-0">
-            @if (outdoorData.selectedArea(); as area) {
+        @if (outdoorData.selectedArea(); as area) {
+          <div
+            class="hidden lg:flex lg:w-[420px] xl:w-[460px] 2xl:w-[500px] shrink-0 min-w-0 lg:h-full flex-col"
+          >
+            <div class="flex flex-col w-full lg:h-full min-w-0 lg:min-h-0">
               <app-area-revenue-panel
                 [areaId]="area.id"
                 [areaName]="area.name"
@@ -772,21 +776,21 @@ const PAGE_SIZE = 20;
                 [toposCount]="area.topos_count || 0"
                 class="mb-6 block"
               />
-            }
-            <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
-              <div class="w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6">
-                <app-ascents-feed
-                  [ascents]="accumulatedAscents()"
-                  [isLoading]="ascentsLoading()"
-                  [hasMore]="hasMoreAscents()"
-                  [showRoute]="true"
-                  [showArea]="false"
-                  (loadMore)="loadMoreAscents()"
-                />
-              </div>
-            </tui-scrollbar>
+              <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
+                <div class="w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6">
+                  <app-ascents-feed
+                    [ascents]="accumulatedAscents()"
+                    [isLoading]="ascentsLoading()"
+                    [hasMore]="hasMoreAscents()"
+                    [showRoute]="true"
+                    [showArea]="false"
+                    (loadMore)="loadMoreAscents()"
+                  />
+                </div>
+              </tui-scrollbar>
+            </div>
           </div>
-        </div>
+        }
       </section>
     </tui-scrollbar>
   `,
@@ -1482,6 +1486,7 @@ export class AreaComponent {
       const loading = this.outdoorData.areasListResource.isLoading();
       const area = this.outdoorData.selectedArea();
       if (!loading && !area) {
+        if (!navigator.onLine) return;
         this.router.navigateByUrl('/page-not-found');
       }
     });

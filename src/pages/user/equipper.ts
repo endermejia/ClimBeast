@@ -25,20 +25,25 @@ import { firstValueFrom } from 'rxjs';
 import { EquipperRequestsService } from '../../services/equipper-requests.service';
 import { EquipperService } from '../../services/equipper.service';
 import { LayoutService } from '../../services/layout.service';
+import { OnlineStatusService } from '../../services/online-status.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 
 import { IndoorRoutesComponent } from '../../components/indoor/indoor-routes';
 import { OutdoorRoutesTableComponent } from '../../components/route/outdoor-routes-table';
+import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import { UserInfoComponent } from '../../components/ui/user-info';
 
 import { EquipperRequestDto } from '../../models';
+
+import { safeResourceValue } from '../../utils';
 
 @Component({
   selector: 'app-equipper',
   standalone: true,
   imports: [
     IndoorRoutesComponent,
+    OfflineNotCachedComponent,
     OutdoorRoutesTableComponent,
     RouterLink,
     TranslatePipe,
@@ -54,102 +59,110 @@ import { EquipperRequestDto } from '../../models';
       <section
         class="w-full max-w-[1600px] mx-auto grid gap-6 px-4 py-4 pb-6 sm:px-6 lg:px-8 lg:pb-2"
       >
-        @let equipper = equipperService.equipperDetailResource.value();
-        @let loading = equipperService.equipperDetailResource.isLoading();
-        @if (loading) {
-          <div class="flex items-center gap-4">
-            <div
-              class="w-16 h-16 rounded-full border border-white/10"
-              [tuiSkeleton]="true"
-            ></div>
-            <div class="space-y-2">
+        @if (showOfflineFallback()) {
+          <app-offline-not-cached fallbackUrl="/home" class="w-full" />
+        } @else {
+          @let equipper = equipperService.equipperDetailResource.value();
+          @let loading = equipperService.equipperDetailResource.isLoading();
+          @if (loading) {
+            <div class="flex items-center gap-4">
               <div
-                class="w-48 h-6 rounded border border-white/10"
+                class="w-16 h-16 rounded-full border border-white/10"
                 [tuiSkeleton]="true"
               ></div>
-              <div
-                class="w-32 h-4 rounded border border-white/10"
-                [tuiSkeleton]="true"
-              ></div>
-            </div>
-          </div>
-        } @else if (equipper) {
-          <app-user-info
-            [name]="equipper.user_profile?.name || equipper.name"
-            [avatar]="equipper.user_profile?.avatar"
-            [country]="profileCountry()"
-            [city]="equipper.user_profile?.city"
-            [bio]="equipper.user_profile?.bio"
-            [age]="profileAge()"
-            [startingClimbingYear]="
-              equipper.user_profile?.starting_climbing_year
-            "
-            [nameClickable]="!!equipper.user_id"
-            [avatarClickable]="!!equipper.user_id"
-            (nameClick)="navigateToUserProfile(equipper.user_id)"
-            (avatarClick)="navigateToUserProfile(equipper.user_id)"
-          >
-            @if (equipper.user_id === null) {
-              <button
-                nameActions
-                tuiIconButton
-                type="button"
-                appearance="action-grayscale"
-                size="s"
-                iconStart="@tui.circle-help"
-                [tuiHint]="'equipperRequest.unclaimedInfo' | translate"
-                [attr.aria-label]="'equipperRequest.requestButton' | translate"
-                (click.zoneless)="openRequestDialog(equipper.id, equipper.name)"
-              ></button>
-            } @else {
-              <!--
-                Reserves the space of the options button shown by user-profile,
-                so the name wraps and the header row keep the same size on both
-                pages (avoids the jump when navigating between them).
-              -->
-              <span
-                nameActions
-                aria-hidden="true"
-                class="w-[var(--tui-height-s)] h-[var(--tui-height-s)] shrink-0"
-              ></span>
-            }
-            @if (equipper.user_id) {
-              <div extraInfo class="mt-2">
-                <a tuiLink [routerLink]="['/profile', equipper.user_id]">
-                  {{ 'nav.viewProfile' | translate }}
-                </a>
+              <div class="space-y-2">
+                <div
+                  class="w-48 h-6 rounded border border-white/10"
+                  [tuiSkeleton]="true"
+                ></div>
+                <div
+                  class="w-32 h-4 rounded border border-white/10"
+                  [tuiSkeleton]="true"
+                ></div>
               </div>
-            }
-          </app-user-info>
-        }
+            </div>
+          } @else if (equipper) {
+            <app-user-info
+              [name]="equipper.user_profile?.name || equipper.name"
+              [avatar]="equipper.user_profile?.avatar"
+              [country]="profileCountry()"
+              [city]="equipper.user_profile?.city"
+              [bio]="equipper.user_profile?.bio"
+              [age]="profileAge()"
+              [startingClimbingYear]="
+                equipper.user_profile?.starting_climbing_year
+              "
+              [nameClickable]="!!equipper.user_id"
+              [avatarClickable]="!!equipper.user_id"
+              (nameClick)="navigateToUserProfile(equipper.user_id)"
+              (avatarClick)="navigateToUserProfile(equipper.user_id)"
+            >
+              @if (equipper.user_id === null) {
+                <button
+                  nameActions
+                  tuiIconButton
+                  type="button"
+                  appearance="action-grayscale"
+                  size="s"
+                  iconStart="@tui.circle-help"
+                  [tuiHint]="'equipperRequest.unclaimedInfo' | translate"
+                  [attr.aria-label]="
+                    'equipperRequest.requestButton' | translate
+                  "
+                  (click.zoneless)="
+                    openRequestDialog(equipper.id, equipper.name)
+                  "
+                ></button>
+              } @else {
+                <!--
+                  Reserves the space of the options button shown by user-profile,
+                  so the name wraps and the header row keep the same size on both
+                  pages (avoids the jump when navigating between them).
+                -->
+                <span
+                  nameActions
+                  aria-hidden="true"
+                  class="w-[var(--tui-height-s)] h-[var(--tui-height-s)] shrink-0"
+                ></span>
+              }
+              @if (equipper.user_id) {
+                <div extraInfo class="mt-2">
+                  <a tuiLink [routerLink]="['/profile', equipper.user_id]">
+                    {{ 'nav.viewProfile' | translate }}
+                  </a>
+                </div>
+              }
+            </app-user-info>
+          }
 
-        <!-- Equipper Routes Table -->
-        <section>
-          <h2 class="text-xl font-bold mb-4">
-            {{ 'equipper.routes' | translate }} ({{
-              equipperService.equipperRoutesResource.value()?.length || 0
-            }})
-          </h2>
-          <app-outdoor-routes-table
-            [data]="equipperService.equipperRoutesResource.value() || []"
-          />
-        </section>
-
-        <!-- Equipper Indoor Routes -->
-        @let indoorRoutes =
-          equipperService.equipperIndoorRoutesResource.value() || [];
-        @if (indoorRoutes.length > 0) {
+          <!-- Equipper Routes Table -->
           <section>
             <h2 class="text-xl font-bold mb-4">
-              {{ 'equipper.indoorRoutes' | translate }} ({{
-                indoorRoutes.length
+              {{ 'equipper.routes' | translate }} ({{
+                equipperService.equipperRoutesResource.value()?.length || 0
               }})
             </h2>
-            <app-indoor-routes
-              [customRoutes]="indoorRoutes"
-              [showStats]="false"
+            <app-outdoor-routes-table
+              [data]="equipperService.equipperRoutesResource.value() || []"
             />
           </section>
+
+          <!-- Equipper Indoor Routes -->
+          @let indoorRoutes =
+            equipperService.equipperIndoorRoutesResource.value() || [];
+          @if (indoorRoutes.length > 0) {
+            <section>
+              <h2 class="text-xl font-bold mb-4">
+                {{ 'equipper.indoorRoutes' | translate }} ({{
+                  indoorRoutes.length
+                }})
+              </h2>
+              <app-indoor-routes
+                [customRoutes]="indoorRoutes"
+                [showStats]="false"
+              />
+            </section>
+          }
         }
       </section>
     </tui-scrollbar>
@@ -162,6 +175,7 @@ export class EquipperComponent {
   protected readonly equipperService = inject(EquipperService);
   protected readonly equipperRequests = inject(EquipperRequestsService);
   protected readonly layoutService = inject(LayoutService);
+  protected readonly onlineStatus = inject(OnlineStatusService);
   protected readonly supabase = inject(SupabaseService);
   private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
@@ -178,6 +192,17 @@ export class EquipperComponent {
       this.equipperService.equipperDetailResource.value()?.user_profile
         ?.country as TuiCountryIsoCode,
   );
+
+  /**
+   * Offline and this equipper was never cached: swap the whole section for the
+   * fallback with *go back* / *go home* instead of rendering an empty shell
+   * ("Equipper routes (0)").
+   */
+  readonly showOfflineFallback = computed(() => {
+    if (!this.onlineStatus.isOffline()) return false;
+    const res = this.equipperService.equipperDetailResource;
+    return !res.isLoading() && !safeResourceValue(res);
+  });
 
   readonly profileAge = computed(() => {
     const bd =

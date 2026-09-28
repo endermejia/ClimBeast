@@ -33,10 +33,12 @@ import { ToastService } from '../../services/toast.service';
 
 import { TopoCardComponent } from '../topo/topo-card';
 import { EmptyStateComponent } from '../ui/empty-state';
+import { OfflineNotCachedComponent } from '../ui/offline-not-cached';
 
 import type { IndoorCenterDto, IndoorTopoListItem } from '../../models';
 
 import { STORAGE_KEYS } from '../../constants';
+import { safeResourceValue } from '../../utils';
 
 @Component({
   selector: 'app-indoor-topos',
@@ -50,6 +52,7 @@ import { STORAGE_KEYS } from '../../constants';
     TuiButton,
     TuiCheckbox,
     EmptyStateComponent,
+    OfflineNotCachedComponent,
     TopoCardComponent,
   ],
   template: `
@@ -81,7 +84,7 @@ import { STORAGE_KEYS } from '../../constants';
         }
       </div>
 
-      @if (toposResource.value(); as topos) {
+      @if (topos(); as topos) {
         <div class="grid gap-2 grid-cols-1 xl:grid-cols-2">
           @for (topo of topos; track topo.id) {
             <app-topo-card
@@ -99,6 +102,8 @@ import { STORAGE_KEYS } from '../../constants';
         </div>
       } @else if (toposResource.isLoading()) {
         <tui-loader />
+      } @else {
+        <app-offline-not-cached [fallbackUrl]="'/indoor/' + centerSlug()" />
       }
     </div>
   `,
@@ -162,6 +167,15 @@ export class IndoorToposComponent {
     loader: ({ params }): Promise<IndoorTopoListItem[]> =>
       this.indoor.getCenterTopos(params.id, params.showLegacyTopos),
   });
+
+  /**
+   * Safe view of the resource: `undefined` while loading or when the request
+   * failed (offline). Reading `resource.value()` directly throws in that case
+   * and would blank the whole tab.
+   */
+  protected readonly topos = computed(() =>
+    safeResourceValue<IndoorTopoListItem[]>(this.toposResource),
+  );
 
   onCardClick(topo: IndoorTopoListItem): void {
     void this.router.navigate(['/indoor', this.centerSlug(), 'topo', topo.id]);

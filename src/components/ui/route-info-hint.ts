@@ -22,6 +22,8 @@ import {
   VERTICAL_LIFE_GRADES,
 } from '../../models';
 
+import { safeResourceValue } from '../../utils';
+
 @Component({
   selector: 'app-route-info-hint',
   standalone: true,
@@ -101,6 +103,7 @@ export class RouteInfoHintComponent {
   });
 
   protected readonly ascents = computed(
-    () => this.ascentsResource.value() ?? [],
+    // `value()` throws when the query failed (offline) → degrade to [].
+    () => safeResourceValue(this.ascentsResource) ?? [],
   );
 }

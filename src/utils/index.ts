@@ -16,6 +16,7 @@ export * from './logger';
 export * from './map-location-url';
 export * from './mentions.utils';
 export * from './number.utils';
+export * from './page-not-found-url';
 export * from './open-image-editor';
 export * from './open-photo-viewer';
 export * from './pagination.utils';

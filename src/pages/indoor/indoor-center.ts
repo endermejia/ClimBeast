@@ -53,6 +53,7 @@ import { IndoorCentersDataService } from '../../services/indoor-centers-data.ser
 import { IndoorService } from '../../services/indoor.service';
 import { LayoutService } from '../../services/layout.service';
 import { MapDataService } from '../../services/map-data.service';
+import { OnlineStatusService } from '../../services/online-status.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { VisitedIndoorCentersService } from '../../services/visited-indoor-centers.service';
@@ -66,6 +67,7 @@ import {
   CarouselItem,
 } from '../../components/ui/custom-carousel';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
+import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import {
   SectionHeaderAction,
   SectionHeaderComponent,
@@ -129,6 +131,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     AnyToSchedulePipe,
     CustomCarouselComponent,
     EmptyStateComponent,
+    OfflineNotCachedComponent,
     AscentCardComponent,
     UbicacionDropdownComponent,
   ],
@@ -520,16 +523,20 @@ import { IS_BROWSER } from '../../app/is-browser';
             </div>
           </div>
         } @else if (centerNotFound()) {
-          <div
-            class="w-full min-h-[50vh] flex flex-col items-center justify-center gap-3 text-center"
-          >
-            <h2 class="text-2xl font-bold">
-              {{ 'notFound.title' | translate }}
-            </h2>
-            <a tuiButton appearance="flat" routerLink="/home">{{
-              'notFound.goHome' | translate
-            }}</a>
-          </div>
+          @if (onlineStatus.isOffline()) {
+            <app-offline-not-cached fallbackUrl="/indoor" />
+          } @else {
+            <div
+              class="w-full min-h-[50vh] flex flex-col items-center justify-center gap-3 text-center"
+            >
+              <h2 class="text-2xl font-bold">
+                {{ 'notFound.title' | translate }}
+              </h2>
+              <a tuiButton appearance="flat" routerLink="/home">{{
+                'notFound.goHome' | translate
+              }}</a>
+            </div>
+          }
         } @else {
           <div class="w-full min-h-[50vh] flex items-center justify-center">
             <tui-loader size="xxl" />
@@ -556,6 +563,7 @@ export class IndoorCenterComponent {
   protected readonly filtersService = inject(FiltersService);
   protected readonly layoutService = inject(LayoutService);
   protected readonly mapData = inject(MapDataService);
+  protected readonly onlineStatus = inject(OnlineStatusService);
   protected readonly indoorCentersData = inject(IndoorCentersDataService);
   protected readonly indoor = inject(IndoorService);
   protected readonly supabase = inject(SupabaseService);

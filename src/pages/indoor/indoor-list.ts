@@ -42,6 +42,7 @@ import { FiltersService } from '../../services/filters.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 import { IndoorService } from '../../services/indoor.service';
 import { LayoutService } from '../../services/layout.service';
+import { OnlineStatusService } from '../../services/online-status.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { ScrollService } from '../../services/scroll.service';
 import { TourService, TourStep } from '../../services/tour.service';
@@ -49,6 +50,7 @@ import { TourService, TourStep } from '../../services/tour.service';
 import { AreaCardSkeletonComponent } from '../../components/area/area-card-skeleton';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { InfiniteScrollTriggerComponent } from '../../components/ui/infinite-scroll-trigger';
+import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import { PlaceCardComponent } from '../../components/ui/place-card';
 import { TourHintComponent } from '../../components/ui/tour-hint';
 
@@ -75,6 +77,7 @@ const CARD_WINDOW = 24;
     EmptyStateComponent,
     InfiniteScrollTriggerComponent,
     LowerCasePipe,
+    OfflineNotCachedComponent,
     PlaceCardComponent,
     RouterLink,
     RouterLinkActive,
@@ -189,7 +192,12 @@ const CARD_WINDOW = 24;
                 <app-place-card kind="indoor" [item]="item" />
               } @empty {
                 <div class="col-span-full">
-                  <app-empty-state icon="@tui.dumbbell" />
+                  @if (onlineStatus.isOffline()) {
+                    <!-- Sin red no hay nada que filtrar: ofrecemos volver. -->
+                    <app-offline-not-cached fallbackUrl="/home" />
+                  } @else {
+                    <app-empty-state icon="@tui.dumbbell" />
+                  }
                 </div>
               }
               @if (hasMoreIndoor()) {
@@ -256,6 +264,7 @@ export class IndoorListComponent {
   protected readonly scrollbar = viewChild(TuiScrollbar, { read: ElementRef });
   protected readonly skeletons = Array.from({ length: 16 }, (_, i) => i);
   protected readonly layoutService = inject(LayoutService);
+  protected readonly onlineStatus = inject(OnlineStatusService);
   protected readonly tourService = inject(TourService);
   protected readonly TourStep = TourStep;
   private readonly scrollService = inject(ScrollService);

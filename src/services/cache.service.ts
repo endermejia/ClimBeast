@@ -17,10 +17,13 @@ export class CacheService {
     if (!this.isBrowser) return defaultValue;
 
     if (ttlMs !== undefined && ttlMs > 0) {
-      const lastUpdated = this.getLastUpdated(key);
-      if (lastUpdated !== null && Date.now() - lastUpdated > ttlMs) {
-        this.remove(key);
-        return defaultValue;
+      const isOnline = typeof navigator === 'undefined' || navigator.onLine;
+      if (isOnline) {
+        const lastUpdated = this.getLastUpdated(key);
+        if (lastUpdated !== null && Date.now() - lastUpdated > ttlMs) {
+          this.remove(key);
+          return defaultValue;
+        }
       }
     }
 
@@ -51,8 +54,8 @@ export class CacheService {
 
   /**
    * Attempt `fetcher()`. On success the result is written to cache and returned.
-   * On failure the previously cached value (if any and not expired) is returned; otherwise
-   * `fallbackValue` is returned. Log output is tagged with `logTag`.
+   * On failure the previously cached value (if any, preserving data offline) is returned;
+   * otherwise `fallbackValue` is returned. Log output is tagged with `logTag`.
    */
   async fetchOrCache<T>(
     key: string,
@@ -68,7 +71,7 @@ export class CacheService {
       return result;
     } catch (e) {
       console.warn(`[${tag}] fetchOrCache error for key: ${key}`, e);
-      const cached = this.get<T | undefined>(key, undefined, options?.ttlMs);
+      const cached = this.get<T | undefined>(key, undefined);
       if (cached !== undefined) return cached;
       return fallback;
     }

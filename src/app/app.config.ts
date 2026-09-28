@@ -52,6 +52,8 @@ import { provideSupabaseConfig } from '../services/supabase.service';
 import { SwipeNavigationService } from '../services/swipe-navigation.service';
 import { ThemeService } from '../services/theme.service';
 
+import { pageNotFoundTree } from '../utils';
+
 import {
   ENV_SUPABASE_ANON_KEY,
   ENV_SUPABASE_URL,
@@ -91,7 +93,7 @@ function handleNavigationError(
   if (repeatedNavigationErrors >= 2) {
     return undefined;
   }
-  return new RedirectCommand(inject(Router).createUrlTree(['/page-not-found']));
+  return new RedirectCommand(pageNotFoundTree(inject(Router)));
 }
 
 export const appConfig: ApplicationConfig = {

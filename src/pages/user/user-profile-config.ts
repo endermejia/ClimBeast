@@ -41,6 +41,7 @@ import {
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import {
+  catchError,
   debounceTime,
   filter,
   firstValueFrom,
@@ -282,9 +283,13 @@ export class UserProfileConfigComponent {
       debounceTime(300),
       switchMap((query: string) =>
         query.length >= 3
-          ? this.eightAnuService
-              .searchUsers(query)
-              .pipe(map((res: { items: EightAnuUser[] }) => res.items))
+          ? this.eightAnuService.searchUsers(query).pipe(
+              map((res: { items: EightAnuUser[] }) => res.items),
+              // Offline / network failure → empty results instead of an
+              // observable error, which `toSignal` would rethrow when read and
+              // blank the whole settings page.
+              catchError(() => of([])),
+            )
           : of([]),
       ),
       tap(() => this.eightAnuShowLoader.set(false)),

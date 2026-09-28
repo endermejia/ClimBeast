@@ -26,8 +26,10 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { AuthStateService } from '../../services/auth-state.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
+import { OnlineStatusService } from '../../services/online-status.service';
 
 import { EmptyStateComponent } from '../../components/ui/empty-state';
+import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import { PlaceCardComponent } from '../../components/ui/place-card';
 
 import { matchesQuery } from '../../utils';
@@ -37,6 +39,7 @@ import { matchesQuery } from '../../utils';
   standalone: true,
   imports: [
     EmptyStateComponent,
+    OfflineNotCachedComponent,
     PlaceCardComponent,
     TranslatePipe,
     TuiAppearance,
@@ -110,10 +113,15 @@ import { matchesQuery } from '../../utils';
               <app-place-card kind="indoor" [item]="center" />
             } @empty {
               <div class="col-span-full">
-                <app-empty-state
-                  icon="@tui.wrench"
-                  message="routesetting.empty"
-                />
+                @if (onlineStatus.isOffline()) {
+                  <!-- Sin red no hay nada que filtrar: ofrecemos volver. -->
+                  <app-offline-not-cached fallbackUrl="/home" />
+                } @else {
+                  <app-empty-state
+                    icon="@tui.wrench"
+                    message="routesetting.empty"
+                  />
+                }
               </div>
             }
           </div>
@@ -131,6 +139,7 @@ import { matchesQuery } from '../../utils';
 export class RoutesettingComponent {
   protected readonly authState = inject(AuthStateService);
   protected readonly indoorCentersData = inject(IndoorCentersDataService);
+  protected readonly onlineStatus = inject(OnlineStatusService);
 
   readonly loading = computed(
     () =>

@@ -30,7 +30,7 @@ import {
 } from '../../models';
 
 import { CACHE_KEYS } from '../../constants';
-import { createCachedResource } from '../../utils';
+import { createCachedResource, safeResourceValue } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -187,7 +187,14 @@ export class IndoorVouchersComponent {
 
   protected readonly activeVouchers = computed<
     IndoorVoucherPurchaseWithVoucher[]
-  >(() => this.activeVouchersResource.value() || []);
+  >(
+    // resource.value() throws when the request failed (offline) — degrade to
+    // an empty list instead of breaking the whole tab.
+    () =>
+      safeResourceValue<IndoorVoucherPurchaseWithVoucher[]>(
+        this.activeVouchersResource,
+      ) ?? [],
+  );
   protected readonly availableVouchers = computed<IndoorVoucherDto[]>(() =>
     this.availableVouchersCached.signal(),
   );

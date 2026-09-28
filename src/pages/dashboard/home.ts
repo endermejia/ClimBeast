@@ -588,7 +588,16 @@ export class HomeComponent {
     if (willFetchIndoor) {
       promises.push(this.fetchIndoorAscents(this.indoorPage, filter));
     }
-    const results = await Promise.all(promises);
+    const results: (RouteAscentWithExtras & { kind: 'ascent' })[][] = [];
+    try {
+      results.push(...(await Promise.all(promises)));
+    } catch (e) {
+      // Offline / network failure: never leave the feed in a loading state.
+      console.warn('[Home] feed page fetch failed', e);
+      this.hasMore.set(false);
+      this.isLoading.set(false);
+      return;
+    }
     if (this.fetchVersion() !== version) return;
 
     let outdoorResult: (RouteAscentWithExtras & { kind: 'ascent' })[] = [];
@@ -935,10 +944,6 @@ export class HomeComponent {
       filterOptions.gradeRange,
       'route.grade',
     );
-    const { count, error: countError } = await countQuery;
-    if (countError) throw countError;
-    if (fromIdx >= (count ?? 0)) return [];
-
     let query = this.supabase.client.from('indoor_ascents').select(
       `
           *,
@@ -960,6 +965,12 @@ export class HomeComponent {
     query = applyGradeFilter(query, filterOptions.gradeRange, 'route.grade');
 
     try {
+      // Inside the try: if the count query fails (offline) we fall through to
+      // the cache fallback below instead of aborting the whole feed.
+      const { count, error: countError } = await countQuery;
+      if (countError) throw countError;
+      if (fromIdx >= (count ?? 0)) return [];
+
       const { data: ascents, error } = await query
         .order('date', { ascending: false })
         .order('id', { ascending: false })
@@ -1074,10 +1085,6 @@ export class HomeComponent {
       filterOptions.gradeRange,
       'grade',
     );
-    const { count, error: countError } = await countQuery;
-    if (countError) throw countError;
-    if (fromIdx >= (count ?? 0)) return [];
-
     let query = this.supabase.client.from('route_ascents').select(
       `
           *,
@@ -1103,6 +1110,12 @@ export class HomeComponent {
     const cacheKey = CACHE_KEYS.homeFeed(filter, page);
 
     try {
+      // Inside the try: if the count query fails (offline) we fall through to
+      // the cache fallback below instead of aborting the whole feed.
+      const { count, error: countError } = await countQuery;
+      if (countError) throw countError;
+      if (fromIdx >= (count ?? 0)) return [];
+
       const { data: ascents, error } = await query
         .order('date', { ascending: false })
         .order('id', { ascending: false })

@@ -4,6 +4,7 @@ import { CanMatchFn, Route, Router, UrlTree } from '@angular/router';
 import { SupabaseService } from '../services/supabase.service';
 
 import { CACHE_KEYS } from '../constants/cache-keys';
+import { pageNotFoundTree } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 
@@ -94,6 +95,6 @@ export const authGuard: CanMatchFn = async (
   } catch (e) {
     // Redirigir a una ruta pública segura en vez de dejar la navegación vacía.
     console.warn('[authGuard] Unexpected error, using safe fallback', e);
-    return router.createUrlTree(['/page-not-found']);
+    return pageNotFoundTree(router);
   }
 };

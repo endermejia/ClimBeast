@@ -37,6 +37,7 @@ import { TopoImageCacheService } from '../../services/topo-image-cache.service';
 import { TopoRoutesTableComponent } from '../../components/topo/topo-routes-table';
 import { TopoViewerComponent } from '../../components/topo/topo-viewer';
 import type { TopoRouteRow } from '../../components/topo/topo.types';
+import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import {
   SectionHeaderAction,
   SectionHeaderComponent,
@@ -62,6 +63,7 @@ import { TopoPageBase } from '../area/topo-page-base';
   standalone: true,
   imports: [
     FormsModule,
+    OfflineNotCachedComponent,
     SectionHeaderComponent,
     TopoRoutesTableComponent,
     TopoViewerComponent,
@@ -247,10 +249,12 @@ import { TopoPageBase } from '../area/topo-page-base';
               />
             </div>
           </div>
-        } @else {
+        } @else if (indoorData.topoDetailResource.isLoading()) {
           <div class="flex items-center justify-center h-full">
             <tui-loader size="xxl" />
           </div>
+        } @else {
+          <app-offline-not-cached [fallbackUrl]="'/indoor/' + centerSlug()" />
         }
       </section>
     </div>

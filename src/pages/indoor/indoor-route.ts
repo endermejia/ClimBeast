@@ -35,6 +35,7 @@ import { AuthStateService } from '../../services/auth-state.service';
 import { BreadcrumbsService } from '../../services/breadcrumbs.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 import { IndoorService } from '../../services/indoor.service';
+import { OnlineStatusService } from '../../services/online-status.service';
 import { ToastService } from '../../services/toast.service';
 
 import { AscentCardComponent } from '../../components/ascent/ascent-card';
@@ -43,6 +44,7 @@ import { ChartAscentsByGradeComponent } from '../../components/charts/chart-asce
 import { ChartAscentsByStyleComponent } from '../../components/charts/chart-ascents-by-style';
 import { GradeComponent } from '../../components/ui/avatar-grade';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
+import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import {
   SectionHeaderAction,
   SectionHeaderComponent,
@@ -60,7 +62,7 @@ import {
   IndoorCenterDto,
 } from '../../models';
 
-import { inputValueOrUndefined } from '../../utils';
+import { inputValueOrUndefined, safeResourceValue } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -69,6 +71,7 @@ import { IS_BROWSER } from '../../app/is-browser';
   standalone: true,
   imports: [
     CommonModule,
+    OfflineNotCachedComponent,
     RouterLink,
     TranslatePipe,
     TuiAvatar,
@@ -403,12 +406,16 @@ import { IS_BROWSER } from '../../app/is-browser';
             </div>
           </div>
         } @else if (routeNotFound()) {
-          <div
-            class="w-full min-h-[50vh] flex flex-col items-center justify-center gap-3 text-center opacity-50"
-          >
-            <tui-icon icon="@tui.circle-alert" class="text-5xl" />
-            <p class="text-lg font-bold">Route not found</p>
-          </div>
+          @if (onlineStatus.isOffline()) {
+            <app-offline-not-cached [fallbackUrl]="'/indoor/' + centerSlug()" />
+          } @else {
+            <div
+              class="w-full min-h-[50vh] flex flex-col items-center justify-center gap-3 text-center opacity-50"
+            >
+              <tui-icon icon="@tui.circle-alert" class="text-5xl" />
+              <p class="text-lg font-bold">Route not found</p>
+            </div>
+          }
         } @else {
           <div class="w-full min-h-[50vh] flex items-center justify-center">
             <tui-loader size="xxl" />
@@ -425,6 +432,7 @@ export class IndoorRouteComponent {
   routeSlug = input.required<string>();
 
   protected readonly indoor = inject(IndoorService);
+  protected readonly onlineStatus = inject(OnlineStatusService);
   protected readonly authState = inject(AuthStateService);
   protected readonly breadcrumbsService = inject(BreadcrumbsService);
   protected readonly indoorCentersData = inject(IndoorCentersDataService);
@@ -520,7 +528,8 @@ export class IndoorRouteComponent {
   });
 
   protected readonly ascents = computed(
-    () => this.ascentsResource.value() || [],
+    // `value()` throws when the query failed (offline) → degrade to [].
+    () => safeResourceValue(this.ascentsResource) ?? [],
   );
 
   protected readonly ascentsResource = resource({

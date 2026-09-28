@@ -91,7 +91,10 @@ export class MapDataService {
         .lte('longitude', bounds.north_east_longitude);
 
       if (sbError) {
-        throw sbError;
+        // Never take the map down: keep the last successful payload (or an
+        // empty one on a cold offline start) so the screen stays usable.
+        console.error('[MapDataService] mapResource query error', sbError);
+        return this.lastMapResponse();
       }
 
       const supabaseCragItems: MapCragItem[] = (sbCrags || []).map((c) => {

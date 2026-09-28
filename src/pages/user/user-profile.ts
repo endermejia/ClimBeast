@@ -39,6 +39,7 @@ import { FollowRequestsService } from '../../services/follow-requests.service';
 import { FollowsService } from '../../services/follows.service';
 import { LayoutService } from '../../services/layout.service';
 import { MessagingService } from '../../services/messaging.service';
+import { OnlineStatusService } from '../../services/online-status.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { ProfileDataService } from '../../services/profile-data.service';
 import { ScrollService } from '../../services/scroll.service';
@@ -50,6 +51,7 @@ import { UserReportsService } from '../../services/user-reports.service';
 import { UserListDialogComponent } from '../../components/dialogs/user-list-dialog';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { MenuOptionsButtonComponent } from '../../components/ui/menu-options-button';
+import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import { UserInfoComponent } from '../../components/ui/user-info';
 import { UserProfileAscentsComponent } from '../../components/user-profile/user-profile-ascents';
 import { UserProfileFiltersComponent } from '../../components/user-profile/user-profile-filters';
@@ -61,6 +63,7 @@ import { CACHE_KEYS } from '../../constants';
 import {
   createCachedResource,
   openPhotoViewer,
+  pageNotFoundTree,
   reactToObservable,
   safeResourceValue,
 } from '../../utils';
@@ -74,6 +77,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     EmptyStateComponent,
     LowerCasePipe,
     MenuOptionsButtonComponent,
+    OfflineNotCachedComponent,
     ReactiveFormsModule,
     RouterLink,
     TranslatePipe,
@@ -110,268 +114,274 @@ import { IS_BROWSER } from '../../app/is-browser';
       <section
         class="w-full max-w-[1600px] mx-auto py-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden pb-6 lg:pb-2"
       >
-        <!-- Left Column: User Info + Filters (mobile) + Statistics -->
-        <div
-          class="flex flex-col gap-6 w-full px-4 lg:px-0 lg:flex-1 min-w-0 lg:h-full lg:overflow-hidden overflow-x-hidden"
-        >
-          @let loading = !profile();
-          <app-user-info
-            [loading]="loading"
-            [avatar]="profile()?.avatar"
-            [name]="profile()?.name"
-            [city]="profile()?.city"
-            [country]="profileCountry()"
-            [age]="profileAge()"
-            [startingClimbingYear]="profile()?.starting_climbing_year"
-            [bio]="profile()?.bio"
-            [avatarClickable]="true"
-            [hasActions]="true"
-            (avatarClick)="showEnlargedPhoto()"
-            class="shrink-0"
+        @if (showOfflineFallback()) {
+          <app-offline-not-cached fallbackUrl="/home" class="w-full" />
+        } @else {
+          <!-- Left Column: User Info + Filters (mobile) + Statistics -->
+          <div
+            class="flex flex-col gap-6 w-full px-4 lg:px-0 lg:flex-1 min-w-0 lg:h-full lg:overflow-hidden overflow-x-hidden"
           >
-            <div nameActions class="inline-flex items-center">
-              @if (isOwnProfile()) {
-                <app-menu-options-button
-                  appearance="action-grayscale"
-                  direction="bottom"
-                  size="s"
-                  [iconOnly]="true"
-                />
-              } @else {
-                @let blockMessages = blockState().blockMessages;
-                @let blockAscents = blockState().blockAscents;
-                <button
-                  [appearance]="
-                    blockMessages || blockAscents
-                      ? 'negative'
-                      : 'action-grayscale'
-                  "
-                  iconStart="@tui.ellipsis-vertical"
-                  size="s"
-                  tuiIconButton
-                  type="button"
-                  [tuiSkeleton]="loading"
-                  [tuiDropdown]="dropdownContent"
-                  [(tuiDropdownOpen)]="dropdownOpen"
-                >
-                  {{ 'options' | translate }}
-                </button>
-                <ng-template #dropdownContent>
-                  <tui-data-list>
-                    <button
-                      tuiOption
-                      [tuiAppearance]="blockMessages ? 'negative' : 'neutral'"
-                      iconStart="@tui.message-circle-off"
-                      (click)="toggleBlockMessages(); dropdownOpen.set(false)"
-                    >
-                      {{
-                        (blockMessages ? 'messagesBlocked' : 'blockMessages')
-                          | translate
-                      }}
-                    </button>
-                    <button
-                      tuiOption
-                      [tuiAppearance]="blockAscents ? 'negative' : 'neutral'"
-                      iconStart="@tui.bell-off"
-                      (click)="toggleHideAscents(); dropdownOpen.set(false)"
-                    >
-                      {{
-                        (blockAscents ? 'ascentsHidden' : 'hideAscents')
-                          | translate
-                      }}
-                    </button>
-                    <button
-                      tuiOption
-                      tuiAppearance="negative"
-                      iconStart="@tui.flag"
-                      (click)="openReportDialog(); dropdownOpen.set(false)"
-                    >
-                      {{ 'reportUser' | translate }}
-                    </button>
-                  </tui-data-list>
-                </ng-template>
-              }
-            </div>
-
-            <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2" extraInfo>
-              <button
-                tuiLink
-                type="button"
-                [tuiSkeleton]="loading"
-                (click)="openFollowsDialog('followers')"
-              >
-                <strong>{{ followersCount() }}</strong>
-                {{ 'followers' | translate | lowercase }}
-              </button>
-              <button
-                tuiLink
-                type="button"
-                [tuiSkeleton]="loading"
-                (click)="openFollowsDialog('following')"
-              >
-                <strong>{{ followingCount() }}</strong>
-                {{ 'following' | translate | lowercase }}
-              </button>
-              @if (equipperResource.value(); as equipper) {
-                <a
-                  tuiLink
-                  [tuiSkeleton]="loading"
-                  [routerLink]="['/equipper', equipper.id]"
-                >
-                  @if (equipper.routesCount) {
-                    <strong>{{ equipper.routesCount }}</strong>
-                    {{ 'equippedRoutes' | translate | lowercase }}
-                  } @else {
-                    {{ 'equippedRoutes' | translate }}
-                  }
-                </a>
-              }
-            </div>
-
-            <div class="flex flex-wrap gap-2 min-w-0 max-w-full" actions>
-              @if (hasProjects()) {
-                <button
-                  tuiButton
-                  type="button"
-                  appearance="secondary"
-                  size="s"
-                  iconStart="@tui.target"
-                  [tuiSkeleton]="loading"
-                  (click)="openProjectsDialog()"
-                >
-                  {{ 'projects' | translate }}
-                </button>
-              }
-
-              @if (isOwnProfile()) {
-                <button
-                  tuiButton
-                  type="button"
-                  appearance="secondary"
-                  size="s"
-                  iconStart="@tui.heart"
-                  [tuiSkeleton]="loading"
-                  (click)="openFavoritesDialog()"
-                >
-                  {{ 'likes' | translate }}
-                </button>
-              }
-
-              @if (!isOwnProfile()) {
-                @let following = isFollowing();
-                @let requested = isRequested();
-                @let hasIncomingRequest = hasIncomingFollowRequest();
-                @let isPrivate = profile()?.private;
-
-                @if (hasIncomingRequest) {
-                  <button
-                    tuiButton
-                    type="button"
-                    appearance="primary"
+            @let loading = !profile();
+            <app-user-info
+              [loading]="loading"
+              [avatar]="profile()?.avatar"
+              [name]="profile()?.name"
+              [city]="profile()?.city"
+              [country]="profileCountry()"
+              [age]="profileAge()"
+              [startingClimbingYear]="profile()?.starting_climbing_year"
+              [bio]="profile()?.bio"
+              [avatarClickable]="true"
+              [hasActions]="true"
+              (avatarClick)="showEnlargedPhoto()"
+              class="shrink-0"
+            >
+              <div nameActions class="inline-flex items-center">
+                @if (isOwnProfile()) {
+                  <app-menu-options-button
+                    appearance="action-grayscale"
+                    direction="bottom"
                     size="s"
-                    [iconStart]="'@tui.check'"
-                    [tuiSkeleton]="loading || followLoading()"
-                    (click)="acceptFollowRequest()"
+                    [iconOnly]="true"
+                  />
+                } @else {
+                  @let blockMessages = blockState().blockMessages;
+                  @let blockAscents = blockState().blockAscents;
+                  <button
+                    [appearance]="
+                      blockMessages || blockAscents
+                        ? 'negative'
+                        : 'action-grayscale'
+                    "
+                    iconStart="@tui.ellipsis-vertical"
+                    size="s"
+                    tuiIconButton
+                    type="button"
+                    [tuiSkeleton]="loading"
+                    [tuiDropdown]="dropdownContent"
+                    [(tuiDropdownOpen)]="dropdownOpen"
                   >
-                    {{ 'allowFollow' | translate }}
+                    {{ 'options' | translate }}
                   </button>
+                  <ng-template #dropdownContent>
+                    <tui-data-list>
+                      <button
+                        tuiOption
+                        [tuiAppearance]="blockMessages ? 'negative' : 'neutral'"
+                        iconStart="@tui.message-circle-off"
+                        (click)="toggleBlockMessages(); dropdownOpen.set(false)"
+                      >
+                        {{
+                          (blockMessages ? 'messagesBlocked' : 'blockMessages')
+                            | translate
+                        }}
+                      </button>
+                      <button
+                        tuiOption
+                        [tuiAppearance]="blockAscents ? 'negative' : 'neutral'"
+                        iconStart="@tui.bell-off"
+                        (click)="toggleHideAscents(); dropdownOpen.set(false)"
+                      >
+                        {{
+                          (blockAscents ? 'ascentsHidden' : 'hideAscents')
+                            | translate
+                        }}
+                      </button>
+                      <button
+                        tuiOption
+                        tuiAppearance="negative"
+                        iconStart="@tui.flag"
+                        (click)="openReportDialog(); dropdownOpen.set(false)"
+                      >
+                        {{ 'reportUser' | translate }}
+                      </button>
+                    </tui-data-list>
+                  </ng-template>
                 }
+              </div>
 
+              <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2" extraInfo>
                 <button
-                  tuiButton
+                  tuiLink
                   type="button"
-                  [appearance]="
-                    following || requested ? 'secondary' : 'primary'
-                  "
-                  size="s"
-                  [iconStart]="
-                    following
-                      ? '@tui.bell-filled'
-                      : requested
-                        ? '@tui.clock'
-                        : '@tui.bell'
-                  "
-                  [tuiSkeleton]="loading || followLoading()"
-                  (click)="toggleFollow()"
+                  [tuiSkeleton]="loading"
+                  (click)="openFollowsDialog('followers')"
                 >
-                  {{
-                    (following
-                      ? 'followingStatus'
-                      : requested
-                        ? 'requestedStatus'
-                        : isPrivate
-                          ? 'requestFollow'
-                          : 'follow'
-                    ) | translate
-                  }}
+                  <strong>{{ followersCount() }}</strong>
+                  {{ 'followers' | translate | lowercase }}
                 </button>
+                <button
+                  tuiLink
+                  type="button"
+                  [tuiSkeleton]="loading"
+                  (click)="openFollowsDialog('following')"
+                >
+                  <strong>{{ followingCount() }}</strong>
+                  {{ 'following' | translate | lowercase }}
+                </button>
+                @if (equipperResource.value(); as equipper) {
+                  <a
+                    tuiLink
+                    [tuiSkeleton]="loading"
+                    [routerLink]="['/equipper', equipper.id]"
+                  >
+                    @if (equipper.routesCount) {
+                      <strong>{{ equipper.routesCount }}</strong>
+                      {{ 'equippedRoutes' | translate | lowercase }}
+                    } @else {
+                      {{ 'equippedRoutes' | translate }}
+                    }
+                  </a>
+                }
+              </div>
 
-                @if (following || !isPrivate) {
+              <div class="flex flex-wrap gap-2 min-w-0 max-w-full" actions>
+                @if (hasProjects()) {
                   <button
                     tuiButton
                     type="button"
                     appearance="secondary"
                     size="s"
-                    iconStart="@tui.send"
+                    iconStart="@tui.target"
                     [tuiSkeleton]="loading"
-                    (click)="openChat()"
+                    (click)="openProjectsDialog()"
                   >
-                    {{ 'sendMessage' | translate }}
+                    {{ 'projects' | translate }}
                   </button>
                 }
-              }
 
-              @if (hasAscents()) {
-                <button
-                  tuiButton
-                  type="button"
-                  appearance="secondary"
-                  size="s"
-                  iconStart="@tui.calendar"
-                  [tuiSkeleton]="loading"
-                  (click)="openAscentCalendarDialog()"
-                >
-                  {{ 'ascentCalendar' | translate }}
-                </button>
-              }
-            </div>
-          </app-user-info>
+                @if (isOwnProfile()) {
+                  <button
+                    tuiButton
+                    type="button"
+                    appearance="secondary"
+                    size="s"
+                    iconStart="@tui.heart"
+                    [tuiSkeleton]="loading"
+                    (click)="openFavoritesDialog()"
+                  >
+                    {{ 'likes' | translate }}
+                  </button>
+                }
 
+                @if (!isOwnProfile()) {
+                  @let following = isFollowing();
+                  @let requested = isRequested();
+                  @let hasIncomingRequest = hasIncomingFollowRequest();
+                  @let isPrivate = profile()?.private;
+
+                  @if (hasIncomingRequest) {
+                    <button
+                      tuiButton
+                      type="button"
+                      appearance="primary"
+                      size="s"
+                      [iconStart]="'@tui.check'"
+                      [tuiSkeleton]="loading || followLoading()"
+                      (click)="acceptFollowRequest()"
+                    >
+                      {{ 'allowFollow' | translate }}
+                    </button>
+                  }
+
+                  <button
+                    tuiButton
+                    type="button"
+                    [appearance]="
+                      following || requested ? 'secondary' : 'primary'
+                    "
+                    size="s"
+                    [iconStart]="
+                      following
+                        ? '@tui.bell-filled'
+                        : requested
+                          ? '@tui.clock'
+                          : '@tui.bell'
+                    "
+                    [tuiSkeleton]="loading || followLoading()"
+                    (click)="toggleFollow()"
+                  >
+                    {{
+                      (following
+                        ? 'followingStatus'
+                        : requested
+                          ? 'requestedStatus'
+                          : isPrivate
+                            ? 'requestFollow'
+                            : 'follow'
+                      ) | translate
+                    }}
+                  </button>
+
+                  @if (following || !isPrivate) {
+                    <button
+                      tuiButton
+                      type="button"
+                      appearance="secondary"
+                      size="s"
+                      iconStart="@tui.send"
+                      [tuiSkeleton]="loading"
+                      (click)="openChat()"
+                    >
+                      {{ 'sendMessage' | translate }}
+                    </button>
+                  }
+                }
+
+                @if (hasAscents()) {
+                  <button
+                    tuiButton
+                    type="button"
+                    appearance="secondary"
+                    size="s"
+                    iconStart="@tui.calendar"
+                    [tuiSkeleton]="loading"
+                    (click)="openAscentCalendarDialog()"
+                  >
+                    {{ 'ascentCalendar' | translate }}
+                  </button>
+                }
+              </div>
+            </app-user-info>
+
+            @if (isOwnProfile() || !profile()?.private || isFollowing()) {
+              <!-- Filters: visible on mobile only -->
+              <app-user-profile-filters class="lg:hidden" />
+
+              <!-- Statistics: fills remaining height in left column on desktop -->
+              <div
+                class="w-full flex-1 min-w-0 min-h-0 flex flex-col lg:overflow-hidden"
+              >
+                <app-user-profile-statistics
+                  [userId]="
+                    profile()?.id || id() || supabase.authUserId() || ''
+                  "
+                  class="w-full lg:flex-1 min-w-0 lg:min-h-0"
+                />
+              </div>
+            } @else {
+              <div class="mt-8">
+                <app-empty-state icon="@tui.lock" message="privateProfile" />
+              </div>
+            }
+          </div>
+
+          <!-- Right Column: Filters (desktop) + Ascents -->
           @if (isOwnProfile() || !profile()?.private || isFollowing()) {
-            <!-- Filters: visible on mobile only -->
-            <app-user-profile-filters class="lg:hidden" />
-
-            <!-- Statistics: fills remaining height in left column on desktop -->
             <div
-              class="w-full flex-1 min-w-0 min-h-0 flex flex-col lg:overflow-hidden"
+              class="w-full lg:w-[420px] xl:w-[460px] 2xl:w-[500px] shrink-0 min-w-0 lg:h-full flex flex-col"
             >
-              <app-user-profile-statistics
-                [userId]="profile()?.id || id() || supabase.authUserId() || ''"
+              <div class="hidden lg:block">
+                <app-user-profile-filters />
+              </div>
+              <app-user-profile-ascents
+                [userId]="profile()?.id || id() || ''"
+                [isOwnProfile]="isOwnProfile()"
+                [profile]="profile()"
                 class="w-full lg:flex-1 min-w-0 lg:min-h-0"
               />
             </div>
-          } @else {
-            <div class="mt-8">
-              <app-empty-state icon="@tui.lock" message="privateProfile" />
-            </div>
           }
-        </div>
-
-        <!-- Right Column: Filters (desktop) + Ascents -->
-        @if (isOwnProfile() || !profile()?.private || isFollowing()) {
-          <div
-            class="w-full lg:w-[420px] xl:w-[460px] 2xl:w-[500px] shrink-0 min-w-0 lg:h-full flex flex-col"
-          >
-            <div class="hidden lg:block">
-              <app-user-profile-filters />
-            </div>
-            <app-user-profile-ascents
-              [userId]="profile()?.id || id() || ''"
-              [isOwnProfile]="isOwnProfile()"
-              [profile]="profile()"
-              class="w-full lg:flex-1 min-w-0 lg:min-h-0"
-            />
-          </div>
         }
       </section>
     </tui-scrollbar>
@@ -380,6 +390,7 @@ import { IS_BROWSER } from '../../app/is-browser';
 })
 export class UserProfileComponent {
   protected readonly messagingService = inject(MessagingService);
+  protected readonly onlineStatus = inject(OnlineStatusService);
   protected readonly profileData = inject(ProfileDataService);
   protected readonly outdoorData = inject(OutdoorDataService);
   protected readonly layout = inject(LayoutService);
@@ -519,6 +530,16 @@ export class UserProfileComponent {
       !this.profile() &&
       (this.supabase.userProfileResource.isLoading() ||
         this.externalProfileResource.isLoading()),
+  );
+
+  /**
+   * Offline and this profile was never cached: there is nothing to render, so
+   * the page swaps its whole content for the fallback with *go back* /
+   * *go home* instead of leaving a permanent skeleton. When there is no
+   * connectivity we must never bounce the user to another route.
+   */
+  readonly showOfflineFallback = computed(
+    () => !this.profile() && !this.loading() && this.onlineStatus.isOffline(),
   );
 
   readonly profileCountry = computed(
@@ -681,7 +702,10 @@ export class UserProfileComponent {
       if (loading) return;
       const profile = this.profile();
       if (!profile) {
-        this.router.navigateByUrl('/page-not-found');
+        // Sin conexión la propia página pinta `showOfflineFallback`; rebotar a
+        // otra ruta dejaría al usuario perdido.
+        if (this.onlineStatus.isOffline()) return;
+        this.router.navigateByUrl(pageNotFoundTree(this.router));
       }
     });
 

@@ -9,6 +9,7 @@ import {
 import { authGuard } from '../guard/auth.guard';
 import { noAuthGuard } from '../guard/no-auth.guard';
 import { rootRedirectGuard } from '../guard/root-redirect.guard';
+import { PageNotFoundComponent } from '../pages/marketing/page-not-found';
 
 export const routes: Routes = [
   {
@@ -327,16 +328,10 @@ export const routes: Routes = [
   },
   {
     path: 'page-not-found',
-    loadComponent: () =>
-      import('../pages/marketing/page-not-found').then(
-        (m) => m.PageNotFoundComponent,
-      ),
+    component: PageNotFoundComponent,
   },
   {
     path: '**',
-    loadComponent: () =>
-      import('../pages/marketing/page-not-found').then(
-        (m) => m.PageNotFoundComponent,
-      ),
+    component: PageNotFoundComponent,
   },
 ];
