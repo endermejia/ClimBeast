@@ -518,6 +518,19 @@ export default class IndoorRouteFormComponent {
 
         if (savedRouteId) {
           await this.indoor.setRouteEquippers(savedRouteId, m.equippers);
+          const oldTopoId = this.context.data.routeData?.topo_id;
+          if (
+            oldTopoId &&
+            assignedTopoId !== oldTopoId &&
+            !this.context.data.hideTopo
+          ) {
+            await this.supabase.client
+              .from('indoor_topo_routes')
+              .delete()
+              .eq('topo_id', oldTopoId)
+              .eq('route_id', savedRouteId);
+            this.indoor.invalidateTopoCache(oldTopoId);
+          }
           if (assignedTopoId && !this.context.data.hideTopo) {
             // Si la vía ya está en el croquis NO se vuelve a escribir la fila:
             // el upsert anterior la pisaba con `path: null` y `number: 0`,
@@ -540,6 +553,8 @@ export default class IndoorRouteFormComponent {
                 path: null,
                 user_creator_id: this.supabase.authUserId(),
               });
+              this.indoor.invalidateTopoCache(assignedTopoId);
+              this.indoor.syncRouteUpdate(savedRouteId, payload);
             }
           }
         }
