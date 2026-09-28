@@ -105,7 +105,11 @@ describe('IndoorService - Admin Requests', () => {
           provide: IndoorDataService,
           useValue: {
             indoorRouteDetailResource: { reload: vi.fn() },
-            topoDetailResource: { reload: vi.fn() },
+            topoDetailResource: { reload: vi.fn(), update: vi.fn() },
+            centerToposResource: { reload: vi.fn() },
+            invalidateTopoCache: vi.fn(),
+            syncRouteUpdate: vi.fn(),
+            syncRouteDelete: vi.fn(),
           },
         },
       ],
@@ -564,6 +568,39 @@ describe('IndoorService - Admin Requests', () => {
         'ascent-uuid-1',
         true,
       );
+      expect(
+        equipperService.equipperIndoorRoutesResource.reload,
+      ).toHaveBeenCalled();
+      expect(
+        indoorCentersData.indoorRoutesReloadTick.update,
+      ).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateRoute', () => {
+    it('updates route in supabase and syncs indoor data resources', async () => {
+      const indoorData = TestBed.inject(IndoorDataService);
+      const equipperService = TestBed.inject(EquipperService);
+      const indoorCentersData = TestBed.inject(IndoorCentersDataService);
+
+      vi.spyOn(mockSupabase.client, 'from').mockReturnValue({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
+      } as unknown as ReturnType<typeof mockSupabase.client.from>);
+
+      const result = await service.updateRoute('route-1', {
+        name: 'New Route Name',
+        color: '#3B82F6',
+        grade: 17,
+      });
+
+      expect(result).toBe(true);
+      expect(indoorData.syncRouteUpdate).toHaveBeenCalledWith('route-1', {
+        name: 'New Route Name',
+        color: '#3B82F6',
+        grade: 17,
+      });
       expect(
         equipperService.equipperIndoorRoutesResource.reload,
       ).toHaveBeenCalled();

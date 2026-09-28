@@ -518,6 +518,30 @@ export class IndoorService {
     return data?.center_id ?? null;
   }
 
+  invalidateTopoCache(topoId?: string | number | null): void {
+    this.indoorData.invalidateTopoCache(topoId);
+  }
+
+  syncRouteUpdate(routeId: string, changes: Partial<IndoorRouteDto>): void {
+    this.indoorData.syncRouteUpdate(routeId, changes);
+    this.reloadCenterRoutes();
+    this.equipperService.equipperIndoorRoutesResource.reload();
+  }
+
+  syncRouteCreate(route: IndoorRouteDto): void {
+    this.indoorData.invalidateTopoCache(route.topo_id);
+    this.indoorData.topoDetailResource.reload();
+    this.indoorData.centerToposResource.reload();
+    this.reloadCenterRoutes();
+    this.equipperService.equipperIndoorRoutesResource.reload();
+  }
+
+  syncRouteDelete(routeId: string): void {
+    this.indoorData.syncRouteDelete(routeId);
+    this.reloadCenterRoutes();
+    this.equipperService.equipperIndoorRoutesResource.reload();
+  }
+
   async createRoute(
     payload: Omit<IndoorRouteDto, 'id' | 'created_at'>,
   ): Promise<IndoorRouteDto | null> {
@@ -548,7 +572,7 @@ export class IndoorService {
     }
 
     if (error) throw error;
-    this.equipperService.equipperIndoorRoutesResource.reload();
+    this.syncRouteCreate(data as IndoorRouteDto);
     return data as IndoorRouteDto;
   }
 
@@ -579,7 +603,7 @@ export class IndoorService {
       .eq('id', id);
 
     if (error) throw error;
-    this.equipperService.equipperIndoorRoutesResource.reload();
+    this.syncRouteUpdate(id, payload);
     return true;
   }
 
@@ -590,7 +614,7 @@ export class IndoorService {
       .eq('id', id);
 
     if (error) throw error;
-    this.equipperService.equipperIndoorRoutesResource.reload();
+    this.syncRouteDelete(id);
     this.toast.success('messages.toasts.routeDeleted');
     return true;
   }
