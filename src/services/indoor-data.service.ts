@@ -12,6 +12,7 @@ import {
   ClimbingKinds,
   IndoorAscentDto,
   IndoorCenterDto,
+  IndoorRouteDto,
   IndoorRouteWithExtras,
   RouteAscentDto,
   TopoDetail,
@@ -112,6 +113,70 @@ export class IndoorDataService {
   readonly topoDetailResource = this.cachedTopoDetail.resource;
   readonly topoDetail: Signal<TopoDetail | null> = this.cachedTopoDetail.signal;
 
+  invalidateTopoCache(topoId?: string | number | null): void {
+    if (topoId) {
+      this.cache.remove(CACHE_KEYS.topoDetail(String(topoId)));
+    }
+    const currentId = this.selectedTopoId();
+    if (currentId) {
+      this.cache.remove(CACHE_KEYS.topoDetail(currentId));
+    }
+  }
+
+  syncRouteUpdate(routeId: string, changes: Partial<IndoorRouteDto>): void {
+    this.invalidateTopoCache(changes.topo_id);
+
+    this.topoDetailResource.update((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        topo_routes: current.topo_routes.map((tr) =>
+          String(tr.route_id) === String(routeId)
+            ? {
+                ...tr,
+                route: {
+                  ...tr.route,
+                  ...(changes.name !== undefined ? { name: changes.name } : {}),
+                  ...(changes.grade !== undefined && changes.grade !== null
+                    ? { grade: changes.grade }
+                    : {}),
+                  ...(changes.climbing_kind
+                    ? { climbing_kind: changes.climbing_kind }
+                    : {}),
+                  ...(changes.color !== undefined
+                    ? { color: changes.color }
+                    : {}),
+                  ...(changes.slug !== undefined ? { slug: changes.slug } : {}),
+                },
+              }
+            : tr,
+        ),
+      };
+    });
+
+    this.topoDetailResource.reload();
+    this.centerToposResource.reload();
+    this.indoorRouteDetailResource.reload();
+  }
+
+  syncRouteDelete(routeId: string): void {
+    this.invalidateTopoCache();
+
+    this.topoDetailResource.update((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        topo_routes: current.topo_routes.filter(
+          (tr) => String(tr.route_id) !== String(routeId),
+        ),
+      };
+    });
+
+    this.topoDetailResource.reload();
+    this.centerToposResource.reload();
+    this.indoorRouteDetailResource.reload();
+  }
+
   readonly indoorRouteDetailResource = resource({
     params: () => ({
       centerSlug: this.selectedCenterSlug(),
@@ -194,7 +259,7 @@ export class IndoorDataService {
       .single();
     if (topoErr) throw topoErr;
 
-    const { data: trs, error: trsErr } = await this.supabase.client
+    let trsQuery = this.supabase.client
       .from('indoor_topo_routes')
       .select(
         `
@@ -206,8 +271,13 @@ export class IndoorDataService {
       `,
       )
       .eq('topo_id', id)
-      .eq('route.own_ascent.user_id', userId ?? '')
       .order('number', { ascending: true });
+
+    if (userId) {
+      trsQuery = trsQuery.eq('route.own_ascent.user_id', userId);
+    }
+
+    const { data: trs, error: trsErr } = await trsQuery;
 
     if (trsErr) throw trsErr;
 
