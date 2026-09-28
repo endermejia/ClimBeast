@@ -59,3 +59,4 @@ Thumbs.db
 supabase/.env
 !supabase/.env.example
 .junie
+/skills
