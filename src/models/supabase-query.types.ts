@@ -111,18 +111,21 @@ export interface AreaAdminWithUser {
 
 // ---- Route Queries ----
 
-/** Route search result with basic crag info */
+/** Route search result with flattened crag and area info */
 export interface RouteSearchResult {
   id: number;
   name: string;
   slug: string;
   grade: number;
-  climbing_kind: ClimbingKind | null;
-  crag: {
-    id: number;
-    name: string;
-    slug: string;
-  };
+  climbing_kind: ClimbingKind;
+  height?: number | null;
+  eight_anu_route_slugs?: string[] | null;
+  crag_id?: number;
+  crag_name?: string;
+  crag_slug?: string;
+  area_id?: number;
+  area_name?: string;
+  area_slug?: string;
 }
 
 // ---- Equipper Queries ----

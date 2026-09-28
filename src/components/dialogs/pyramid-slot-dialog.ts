@@ -2,19 +2,22 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  computed,
   inject,
+  resource,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
-import { TuiDialogContext } from '@taiga-ui/core';
 import {
   TuiButton,
+  TuiDialogContext,
   TuiIcon,
+  TuiInput,
   TuiLoader,
   TuiScrollbar,
-  TuiInput,
 } from '@taiga-ui/core';
 import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 
@@ -24,14 +27,19 @@ import { RoutesService } from '../../services/routes.service';
 
 import {
   AscentType,
-  RouteDto,
   ClimbingKind,
   ClimbingKinds,
+  RouteDto,
+  RouteSearchResult,
 } from '../../models';
 
 import { AscentTypeComponent } from '../ascent/ascent-type';
 
 import { GradeComponent } from '../ui/avatar-grade';
+
+export interface PyramidRouteItem extends RouteSearchResult {
+  location: string;
+}
 
 export interface PyramidSlotDialogData {
   level: number;
@@ -144,16 +152,17 @@ export interface PyramidSlotDialogData {
                     />
                     <div class="flex flex-col min-w-0">
                       <span class="font-bold truncate">{{ route.name }}</span>
-                      <span class="text-[10px] opacity-60 truncate">
-                        {{ getExtra(route)['crag_name'] }} /
-                        {{ getExtra(route)['area_name'] }}
-                      </span>
+                      @if (route.location) {
+                        <span class="text-[10px] opacity-60 truncate">
+                          {{ route.location }}
+                        </span>
+                      }
                     </div>
                   </div>
                   <tui-icon icon="@tui.chevron-right" class="opacity-40" />
                 </div>
               } @empty {
-                @if (searchQuery().length >= 2) {
+                @if (hasMinQuery()) {
                   <div class="p-8 text-center opacity-40 italic">
                     {{ 'noResults' | translate }}
                   </div>
@@ -179,7 +188,7 @@ export interface PyramidSlotDialogData {
             size="m"
             class="w-full"
             [disabled]="data.canDelete === false"
-            (click)="selectRoute(null!)"
+            (click)="removeRoute()"
           >
             {{ 'pyramid.remove' | translate }}
           </button>
@@ -197,50 +206,71 @@ export interface PyramidSlotDialogData {
 export class PyramidSlotDialogComponent {
   protected readonly ClimbingKinds = ClimbingKinds;
 
-  private routesService = inject(RoutesService);
-  private router = inject(Router);
-  context =
-    inject<TuiDialogContext<RouteDto | null, PyramidSlotDialogData>>(
+  private readonly routesService = inject(RoutesService);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+  readonly context =
+    inject<TuiDialogContext<RouteSearchResult | null, PyramidSlotDialogData>>(
       POLYMORPHEUS_CONTEXT,
     );
 
-  data = this.context.data;
-  searchQuery = signal('');
-  results = signal<RouteDto[]>([]);
-  loading = signal(false);
+  readonly data = this.context.data;
+  readonly searchQuery = signal('');
+  private readonly debouncedQuery = signal('');
+  private debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-  private searchTimeout: ReturnType<typeof setTimeout> | undefined;
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      if (this.debounceTimer) {
+        clearTimeout(this.debounceTimer);
+      }
+    });
+  }
+
+  readonly searchRoutesResource = resource({
+    params: () => ({
+      query: this.debouncedQuery(),
+      expectedGrade: this.data.expectedGrade,
+    }),
+    loader: async ({ params: { query, expectedGrade } }) => {
+      if (query.length < 2) return [];
+      try {
+        return await this.routesService.searchRoutes(query, expectedGrade);
+      } catch (e) {
+        console.error('Error searching routes:', e);
+        return [];
+      }
+    },
+  });
+
+  readonly loading = computed(() => this.searchRoutesResource.isLoading());
+
+  readonly results = computed<PyramidRouteItem[]>(() => {
+    const routes = this.searchRoutesResource.value() ?? [];
+    return routes.map((route) => ({
+      ...route,
+      location: [route.crag_name, route.area_name].filter(Boolean).join(' / '),
+    }));
+  });
+
+  readonly hasMinQuery = computed(() => this.searchQuery().trim().length >= 2);
 
   onSearchChange(query: string): void {
     this.searchQuery.set(query);
-    if (query.length < 2) {
-      this.results.set([]);
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      this.debouncedQuery.set('');
       return;
     }
-
-    if (this.searchTimeout) clearTimeout(this.searchTimeout);
-
-    this.searchTimeout = setTimeout(async () => {
-      this.loading.set(true);
-      try {
-        const routes = await this.routesService.searchRoutes(
-          query,
-          this.data.expectedGrade,
-        );
-        this.results.set(routes as RouteDto[]);
-      } catch (e) {
-        console.error('Error searching routes:', e);
-      } finally {
-        this.loading.set(false);
-      }
+    this.debounceTimer = setTimeout(() => {
+      this.debouncedQuery.set(trimmed);
     }, 400);
   }
 
-  getExtra(route: RouteDto): Record<string, unknown> {
-    return route as Record<string, unknown>;
-  }
-
-  selectRoute(route: RouteDto): void {
+  selectRoute(route: RouteSearchResult | null): void {
     this.context.completeWith(route);
   }
 

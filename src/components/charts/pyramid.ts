@@ -44,6 +44,7 @@ import {
   ClimbingKinds,
   GRADE_NUMBER_TO_LABEL,
   RouteDto,
+  RouteSearchResult,
   UserPyramidSlotDto,
   VERTICAL_LIFE_GRADES,
 } from '../../models';
@@ -589,7 +590,7 @@ export class PyramidComponent implements AfterViewInit {
     }
 
     const route = await firstValueFrom(
-      this.dialogs.open<RouteDto | null>(
+      this.dialogs.open<RouteSearchResult | null>(
         new PolymorpheusComponent(PyramidSlotDialogComponent),
         {
           label: this.translate.instant('pyramid.level') + ' ' + level,

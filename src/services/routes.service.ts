@@ -25,9 +25,10 @@ import type {
   EquipperDto,
   RouteDto,
   RouteInsertDto,
+  RouteSearchResult,
+  RouteSimpleRow,
   RouteUpdateDto,
   RouteWithExtras,
-  RouteSimpleRow,
 } from '../models';
 
 import { CACHE_KEYS } from '../constants/cache-keys';
@@ -500,7 +501,7 @@ export class RoutesService {
   async searchRoutes(
     query: string,
     grade?: number,
-  ): Promise<Partial<RouteWithExtras>[]> {
+  ): Promise<RouteSearchResult[]> {
     if (!this.isBrowser || query.trim().length < 2) return [];
     await this.supabase.whenReady();
 
@@ -559,7 +560,7 @@ export class RoutesService {
           area_id: r.crag.area.id,
           area_name: r.crag.area.name,
           area_slug: r.crag.area.slug,
-        }) as Partial<RouteWithExtras>,
+        }) as RouteSearchResult,
     );
   }
 
