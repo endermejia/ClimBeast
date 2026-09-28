@@ -23,6 +23,7 @@ import { LocalStorage } from '../services/local-storage';
 import { NotificationService } from '../services/notification.service';
 import { OfflineWarmupService } from '../services/offline-warmup.service';
 import { RealtimeService } from '../services/realtime.service';
+import { ScrollService } from '../services/scroll.service';
 import { SeoService } from '../services/seo.service';
 import { SwipeNavigationService } from '../services/swipe-navigation.service';
 import { ThemeService } from '../services/theme.service';
@@ -77,6 +78,7 @@ import { IS_BROWSER } from './is-browser';
 export class AppComponent implements OnDestroy {
   protected readonly router = inject(Router);
   protected readonly swipeNav = inject(SwipeNavigationService);
+  protected readonly scrollService = inject(ScrollService);
   private readonly themeService = inject(ThemeService);
   protected readonly cartService = inject(CartService);
   private swCheckInterval: ReturnType<typeof setInterval> | null = null;

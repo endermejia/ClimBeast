@@ -303,8 +303,13 @@ export class IndoorListComponent {
     });
 
     // Cambiar búsqueda o filtros vuelve la ventana de tarjetas a su tamaño inicial.
+    let initialRun = true;
     effect(() => {
       this.filterKey();
+      if (initialRun) {
+        initialRun = false;
+        return;
+      }
       untracked(() => this.visibleCount.set(CARD_WINDOW));
     });
   }
@@ -313,11 +318,13 @@ export class IndoorListComponent {
     const current = this.router.url.split('?')[0].split('#')[0];
     if (current === path) {
       event.preventDefault();
+      this.visibleCount.set(CARD_WINDOW);
       this.scrollToTop();
     }
   }
 
   private scrollToTop(): void {
+    this.visibleCount.set(CARD_WINDOW);
     if (this.scrollbar()?.nativeElement) {
       this.scrollbar()!.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -355,7 +362,7 @@ export class IndoorListComponent {
    * recorre para el contador y los filtros, el DOM se queda en `CARD_WINDOW`
    * unidades hasta que el usuario baja el scroll.
    */
-  private readonly visibleCount = signal(CARD_WINDOW);
+  private readonly visibleCount = this.indoorCentersData.indoorListVisibleCount;
   protected readonly visibleIndoor = computed(() =>
     this.filtered().slice(0, this.visibleCount()),
   );

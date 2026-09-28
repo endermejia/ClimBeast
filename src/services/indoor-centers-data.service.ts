@@ -1,4 +1,4 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal, WritableSignal } from '@angular/core';
 
 import {
   AmountByEveryGrade,
@@ -30,6 +30,7 @@ export class IndoorCentersDataService {
   private readonly cache = inject(CacheService);
 
   readonly indoorRoutesReloadTick = signal(0);
+  readonly indoorListVisibleCount: WritableSignal<number> = signal(24);
 
   /**
    * Lista cacheada (stale-while-revalidate): las visitas calientes pintan la

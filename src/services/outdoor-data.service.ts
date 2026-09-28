@@ -48,6 +48,7 @@ export class OutdoorDataService {
   selectedCragSlug: WritableSignal<string | null> = signal(null);
   selectedTopoId: WritableSignal<string | null> = signal(null);
   selectedRouteSlug: WritableSignal<string | null> = signal(null);
+  readonly areaListVisibleCount: WritableSignal<number> = signal(24);
 
   clearSelection(): void {
     if (this.selectedAreaSlug() !== null) this.selectedAreaSlug.set(null);

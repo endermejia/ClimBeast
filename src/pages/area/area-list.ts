@@ -357,7 +357,7 @@ export class AreaListComponent {
    * recorre para el contador y los filtros, el DOM se queda en `CARD_WINDOW`
    * unidades hasta que el usuario baja el scroll.
    */
-  private readonly visibleCount = signal(CARD_WINDOW);
+  private readonly visibleCount = this.outdoorData.areaListVisibleCount;
   readonly visibleAreas = computed(() =>
     this.filtered().slice(0, this.visibleCount()),
   );
@@ -385,8 +385,13 @@ export class AreaListComponent {
       this.scrollToTop();
     });
 
+    let initialRun = true;
     effect(() => {
       this.filterKey();
+      if (initialRun) {
+        initialRun = false;
+        return;
+      }
       untracked(() => this.visibleCount.set(CARD_WINDOW));
     });
   }
@@ -395,11 +400,13 @@ export class AreaListComponent {
     const current = this.router.url.split('?')[0].split('#')[0];
     if (current === path) {
       event.preventDefault();
+      this.visibleCount.set(CARD_WINDOW);
       this.scrollToTop();
     }
   }
 
   private scrollToTop(): void {
+    this.visibleCount.set(CARD_WINDOW);
     if (this.scrollbar()?.nativeElement) {
       this.scrollbar()!.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
     }
