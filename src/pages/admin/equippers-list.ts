@@ -56,7 +56,7 @@ import { EmptyStateComponent } from '../../components/ui/empty-state';
 
 import { EquipperDto } from '../../models';
 
-import { handleErrorToast, matchesQuery } from '../../utils';
+import { handleErrorToast, matchesQuery, safeResourceValue } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -258,9 +258,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                         />
                         <tui-data-list-wrapper
                           *tuiDropdown
-                          [items]="
-                            usersResource.value() || [] | tuiFilterByInput
-                          "
+                          [items]="userOptions() | tuiFilterByInput"
                         />
                       </tui-textfield>
                     </td>
@@ -381,12 +379,24 @@ export class AdminEquippersListComponent {
     },
   });
 
+  /**
+   * Opciones del combo de usuario.
+   *
+   * Se lee con `safeResourceValue`: `resource.value()` lanza
+   * `ResourceValueError` cuando la query ha fallado y esa excepción se
+   * produce dentro del change detection, abortando el refresco de la vista
+   * entera (la pantalla se queda congelada hasta recargar).
+   */
+  protected readonly userOptions = computed(() =>
+    safeResourceValue(this.usersResource, []),
+  );
+
   protected readonly userStringify = (
     user: { id: string; name: string | null } | string | null,
   ): string => {
     if (!user) return '';
     if (typeof user === 'string') {
-      const found = this.usersResource.value()?.find((u) => u.id === user);
+      const found = this.userOptions().find((u) => u.id === user);
       return found?.name || user;
     }
     return user.name || user.id;

@@ -63,7 +63,7 @@ import { AreaListItem, IndoorCenterDto } from '../../models';
 
 import { CACHE_KEYS } from '../../constants';
 import { AvatarUrlPipe } from '../../pipes';
-import { matchesQuery, reactToObservable } from '../../utils';
+import { matchesQuery, reactToObservable, waitForResource } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -732,11 +732,12 @@ export class AdminUsersListComponent {
       this.loading.set(true);
       await this.supabase.whenReady();
 
-      // 1. Load areas if not already loaded
+      // 1. Load areas if not already loaded. Espera acotada: `areasList()` es
+      // stale-while-revalidate (caché inmediata) y el fetch propio de Supabase
+      // aborta a los 15s, así que un `while (isLoading())` sin límite solo
+      // podía dejar la pantalla en esqueleto de forma indefinida.
       if (this.outdoorData.areasList().length === 0) {
-        while (this.outdoorData.areasListResource.isLoading()) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
+        await waitForResource(this.outdoorData.areasListResource, 150, 100);
       }
       const areas = this.outdoorData.areasList();
       const areasMap = new Map(areas.map((a) => [a.id, a]));
