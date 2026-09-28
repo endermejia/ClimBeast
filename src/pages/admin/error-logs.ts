@@ -46,7 +46,7 @@ import { ToastService } from '../../services/toast.service';
 
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 
-import { AvatarUrlPipe } from '../../pipes';
+import { AvatarUrlPipe, ErrorSeverityAppearancePipe } from '../../pipes';
 import { matchesQuery } from '../../utils';
 
 @Component({
@@ -56,6 +56,7 @@ import { matchesQuery } from '../../utils';
     AvatarUrlPipe,
     DatePipe,
     EmptyStateComponent,
+    ErrorSeverityAppearancePipe,
     FormsModule,
     RouterLink,
     TranslatePipe,
@@ -338,7 +339,7 @@ import { matchesQuery } from '../../utils';
                     <span
                       tuiBadge
                       size="s"
-                      [appearance]="getSeverityAppearance(log.severity)"
+                      [appearance]="log.severity | errorSeverityAppearance"
                     >
                       {{
                         'admin.errorLogs.severities.' + log.severity
@@ -556,19 +557,6 @@ export class AdminErrorLogsComponent {
       this.toast.success(
         this.translate.instant('admin.errorLogs.copiedAllSuccess'),
       );
-    }
-  }
-
-  getSeverityAppearance(severity: ErrorSeverity): string {
-    switch (severity) {
-      case 'critical':
-        return 'negative';
-      case 'error':
-        return 'warning';
-      case 'warning':
-        return 'info';
-      default:
-        return 'neutral';
     }
   }
 
