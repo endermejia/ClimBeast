@@ -118,11 +118,14 @@ export abstract class TopoPageBase {
         String(tr.route_id) === String(selectedId);
       const isHovered =
         tr.route_id === hoveredId || String(tr.route_id) === String(hoveredId);
+      const routeColor = this.isIndoor()
+        ? (tr.route.color ?? null)
+        : tr.route.color || tr.path?.color;
       const style = getRouteStyleProperties(
         isSelected,
         isHovered,
         tr.route.grade,
-        tr.route.color || tr.path?.color,
+        routeColor,
         hasSelection,
       );
       const width = getRouteStrokeWidth(
@@ -151,6 +154,7 @@ export abstract class TopoPageBase {
     inject(DestroyRef).onDestroy(() => {
       if (this.isIndoor()) {
         this.breadcrumbsService.selectedIndoorCenter.set(null);
+        this.indoorData.selectedTopoId.set(null);
       }
     });
 
