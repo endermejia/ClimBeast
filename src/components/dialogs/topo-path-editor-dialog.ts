@@ -1564,6 +1564,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   }
   topoRoutes: TopoRouteWithRoute[] = [];
   newIndoorRoutes: IndoorRouteDto[] = [];
+  hasRouteEdits = false;
   pathsMap = new Map<
     string | number,
     {
@@ -1685,11 +1686,14 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     > = {};
     for (const [key, entry] of this.pathsMap) {
       const isSelected = String(selected?.route_id) === String(key);
+      const routeColor = this.context.data.isIndoor
+        ? (entry._ref?.route?.color ?? null)
+        : entry._ref?.route?.color || entry.color || entry._ref?.path?.color;
       map[String(key)] = getRouteStyleProperties(
         isSelected,
         false,
         entry._ref?.route?.grade,
-        entry._ref?.route?.color || entry.color || entry._ref?.path?.color,
+        routeColor,
         hasSelection,
       );
     }
@@ -2022,10 +2026,18 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
           }
         }
 
+        this.hasRouteEdits = true;
         const pathEntry = this.pathsMap.get(tr.route_id);
         if (pathEntry) {
           pathEntry._ref = tr;
+          if (this.context.data.isIndoor) {
+            pathEntry.color = tr.route.color ?? undefined;
+          }
         }
+        if (tr.path && this.context.data.isIndoor) {
+          tr.path.color = tr.route.color ?? undefined;
+        }
+        this.topoRoutes = [...this.topoRoutes];
         this.pathsVersion.update((v) => v + 1);
 
         if (this.selectedRoute()?.route_id === tr.route_id) {
@@ -2407,6 +2419,14 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       const idsToDelete = this.newIndoorRoutes.map((r) => r.id);
       void Promise.all(idsToDelete.map((id) => this.indoor.deleteRoute(id)));
     }
+    if (this.context.data.isIndoor && this.hasRouteEdits) {
+      const topoId = this.context.data.topoId;
+      if (topoId) {
+        this.indoor.invalidateTopoCache(topoId);
+      }
+      this.indoorData.topoDetailResource.reload();
+      this.indoor.reloadCenterRoutes();
+    }
     this.context.completeWith(false);
   }
 
@@ -2418,7 +2438,9 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
           routeId,
           path: {
             points: path.points,
-            color: path.color,
+            color: this.context.data.isIndoor
+              ? (path._ref?.route?.color ?? path.color)
+              : path.color,
             width: this.lineWidth(),
             type: path.type || 'line',
             isTraverse: path.isTraverse || false,
@@ -2486,6 +2508,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         }
 
         this.newIndoorRoutes = [];
+        this.indoor.invalidateTopoCache(topoId);
         this.indoorData.topoDetailResource.reload();
         this.indoor.reloadCenterRoutes();
       } else {
