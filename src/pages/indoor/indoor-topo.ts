@@ -548,7 +548,7 @@ export class IndoorTopoComponent extends TopoPageBase {
       user_creator_id: tr.user_creator_id,
     }));
 
-    const result = await this.toposService.openTopoPathEditor({
+    await this.toposService.openTopoPathEditor({
       imageUrl,
       topoRoutes: routes as TopoRouteWithRoute[],
       topoName: topo.name,
@@ -559,10 +559,11 @@ export class IndoorTopoComponent extends TopoPageBase {
       center: topo.indoor_center ?? undefined,
     });
 
-    if (result) {
-      this.indoorData.topoDetailResource.reload();
-      this.indoorService.reloadCenterRoutes();
+    if (topo.id) {
+      this.indoorService.invalidateTopoCache(topo.id);
     }
+    this.indoorData.topoDetailResource.reload();
+    this.indoorService.reloadCenterRoutes();
   }
 
   protected openEditTopo(topo: TopoDetail): void {
