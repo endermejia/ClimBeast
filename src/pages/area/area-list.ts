@@ -4,9 +4,11 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   signal,
   untracked,
+  viewChild,
   WritableSignal,
 } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
@@ -34,6 +36,7 @@ import { FiltersService } from '../../services/filters.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 import { LayoutService } from '../../services/layout.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
+import { ScrollService } from '../../services/scroll.service';
 import { TourService, TourStep } from '../../services/tour.service';
 
 import { AreaCardSkeletonComponent } from '../../components/area/area-card-skeleton';
@@ -48,7 +51,7 @@ import {
   ORDERED_GRADE_VALUES,
 } from '../../models';
 
-import { matchesQuery } from '../../utils';
+import { matchesQuery, reactToObservable } from '../../utils';
 
 /**
  * Tarjetas pintadas por lote. La primera render solo construye esta ventana
@@ -92,6 +95,7 @@ const CARD_WINDOW = 24;
                 routerLink="/area"
                 routerLinkActive="active"
                 [routerLinkActiveOptions]="{ exact: true }"
+                (click)="onTabClick($event, '/area')"
               >
                 <tui-icon icon="@tui.map-pinned" />
                 {{ filtered().length }}
@@ -239,11 +243,13 @@ const CARD_WINDOW = 24;
   host: { class: 'flex grow min-h-0' },
 })
 export class AreaListComponent {
+  protected readonly scrollbar = viewChild(TuiScrollbar, { read: ElementRef });
   protected readonly skeletons = Array.from({ length: 16 }, (_, i) => i);
   protected readonly layoutService = inject(LayoutService);
   protected readonly router = inject(Router);
   protected readonly tourService = inject(TourService);
   protected readonly TourStep = TourStep;
+  private readonly scrollService = inject(ScrollService);
 
   protected onMapClick(): void {
     if (
@@ -375,10 +381,28 @@ export class AreaListComponent {
   );
 
   constructor() {
+    reactToObservable(this.scrollService.scrollToTop$, () => {
+      this.scrollToTop();
+    });
+
     effect(() => {
       this.filterKey();
       untracked(() => this.visibleCount.set(CARD_WINDOW));
     });
+  }
+
+  protected onTabClick(event: MouseEvent, path: string): void {
+    const current = this.router.url.split('?')[0].split('#')[0];
+    if (current === path) {
+      event.preventDefault();
+      this.scrollToTop();
+    }
+  }
+
+  private scrollToTop(): void {
+    if (this.scrollbar()?.nativeElement) {
+      this.scrollbar()!.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
   onQuery(v: string) {

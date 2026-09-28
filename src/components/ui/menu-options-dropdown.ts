@@ -14,6 +14,7 @@ import { TuiSegmented } from '@taiga-ui/kit';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AuthStateService } from '../../services/auth-state.service';
+import { ScrollService } from '../../services/scroll.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ThemeService } from '../../services/theme.service';
 import { ToastService } from '../../services/toast.service';
@@ -202,9 +203,16 @@ export class MenuOptionsDropdownComponent {
   private readonly supabase = inject(SupabaseService);
   private readonly userProfilesService = inject(UserProfilesService);
   private readonly toast = inject(ToastService);
+  private readonly scrollService = inject(ScrollService);
 
   protected navigateToProfile(): void {
     this.closeDropdown.emit();
+    const current = this.router.url.split('?')[0].split('#')[0];
+    const ownId = this.authState.userProfile()?.id;
+    if (current === '/profile' || (ownId && current === `/profile/${ownId}`)) {
+      this.scrollService.scrollToTop();
+      return;
+    }
     void this.router.navigate(['/profile']);
   }
 

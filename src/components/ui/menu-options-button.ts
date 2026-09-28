@@ -16,6 +16,9 @@ import { TuiAvatar, TuiPulse, TuiSkeleton } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { AuthStateService } from '../../services/auth-state.service';
+import { ScrollService } from '../../services/scroll.service';
+
 import { MenuOptionsDropdownComponent } from './menu-options-dropdown';
 
 @Component({
@@ -167,6 +170,8 @@ export class MenuOptionsButtonComponent {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly elementRef = inject(ElementRef);
+  private readonly authState = inject(AuthStateService);
+  private readonly scrollService = inject(ScrollService);
 
   private holdTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private isHeld = false;
@@ -268,6 +273,12 @@ export class MenuOptionsButtonComponent {
   }
 
   protected navigateToProfile(): void {
+    const current = this.router.url.split('?')[0].split('#')[0];
+    const ownId = this.authState.userProfile()?.id;
+    if (current === '/profile' || (ownId && current === `/profile/${ownId}`)) {
+      this.scrollService.scrollToTop();
+      return;
+    }
     void this.router.navigate(['/profile']);
   }
 }

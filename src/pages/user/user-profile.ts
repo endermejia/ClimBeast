@@ -5,10 +5,12 @@ import {
   computed,
   DestroyRef,
   effect,
+  ElementRef,
   inject,
   input,
   resource,
   signal,
+  viewChild,
 } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -39,6 +41,7 @@ import { LayoutService } from '../../services/layout.service';
 import { MessagingService } from '../../services/messaging.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { ProfileDataService } from '../../services/profile-data.service';
+import { ScrollService } from '../../services/scroll.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
@@ -58,6 +61,7 @@ import { CACHE_KEYS } from '../../constants';
 import {
   createCachedResource,
   openPhotoViewer,
+  reactToObservable,
   safeResourceValue,
 } from '../../utils';
 
@@ -392,6 +396,9 @@ export class UserProfileComponent {
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly userReportsService = inject(UserReportsService);
+  private readonly elementRef = inject(ElementRef);
+  private readonly scrollService = inject(ScrollService);
+  protected readonly scrollbar = viewChild(TuiScrollbar, { read: ElementRef });
 
   // Route param (optional)
   id = input<string | undefined>();
@@ -655,6 +662,10 @@ export class UserProfileComponent {
 
   constructor() {
     const destroyRef = inject(DestroyRef);
+
+    reactToObservable(this.scrollService.scrollToTop$, () => {
+      this.scrollToTop();
+    });
 
     // Update global loading state
     effect(() => {
@@ -983,6 +994,17 @@ export class UserProfileComponent {
     if (!avatar) return;
 
     openPhotoViewer(this.dialogs, avatar);
+  }
+
+  private scrollToTop(): void {
+    if (this.scrollbar()?.nativeElement) {
+      this.scrollbar()!.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    const el = this.elementRef.nativeElement as HTMLElement;
+    const scrollbars = el.querySelectorAll('tui-scrollbar');
+    scrollbars.forEach((sb) => {
+      sb.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }
 }
 

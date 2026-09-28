@@ -83,6 +83,7 @@ import { TourHintComponent } from './tour-hint';
           type="button"
           tuiAppearance="flat-grayscale"
           routerLink="/home"
+          (click)="scrollToTop($event)"
         >
           <img
             ngSrc="/logo/climbeast-small.svg"
@@ -154,7 +155,7 @@ import { TourHintComponent } from './tour-hint';
             [tuiSkeleton]="loading()"
             class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full relative group"
             [attr.aria-label]="'nav.explore' | translate"
-            (click)="onExploreClick()"
+            (click)="onExploreClick($event)"
           >
             <div
               class="absolute inset-0 pointer-events-none"
@@ -470,7 +471,8 @@ export class NavbarComponent {
   );
 
   protected scrollToTop(event: MouseEvent): void {
-    if (this.router.url === '/home') {
+    const current = this.router.url.split('?')[0].split('#')[0];
+    if (current === '/home') {
       event.preventDefault();
       this.scrollService.scrollToTop();
     }
@@ -480,12 +482,18 @@ export class NavbarComponent {
     this.tourService.next();
   }
 
-  protected onExploreClick(): void {
+  protected onExploreClick(event: MouseEvent): void {
     if (
       this.tourService.isActive() &&
       this.tourService.step() === TourStep.EXPLORE
     ) {
       void this.tourService.next();
+    }
+    const current = this.router.url.split('?')[0].split('#')[0];
+    const target = this.exploreTab.target();
+    if (current === target && (current === '/area' || current === '/indoor')) {
+      event.preventDefault();
+      this.scrollService.scrollToTop();
     }
   }
 
