@@ -14,6 +14,7 @@ import { AscentDatePipe } from './ascent-date.pipe';
 import { AvatarUrlPipe } from './avatar-url.pipe';
 import { ErrorSeverityAppearancePipe } from './error-severity-appearance.pipe';
 import { IconSrcPipe } from './icon-src.pipe';
+import { IsCurrentHourPipe } from './is-current-hour.pipe';
 import { MaterialRequestStatusAppearancePipe } from './material-request-status.pipe';
 import { MentionLinkPipe } from './mention-link.pipe';
 import { SanitizeHtmlPipe } from './sanitize-html.pipe';
@@ -481,5 +482,26 @@ describe('ErrorSeverityAppearancePipe', () => {
     expect(pipe.transform(null)).toBe('neutral');
     expect(pipe.transform(undefined)).toBe('neutral');
     expect(pipe.transform('unknown')).toBe('neutral');
+  });
+});
+
+describe('IsCurrentHourPipe', () => {
+  const pipe = new IsCurrentHourPipe();
+
+  it('returns true for current date/time', () => {
+    const now = new Date();
+    expect(pipe.transform(now)).toBe(true);
+  });
+
+  it('returns false for date with different hour or day', () => {
+    const now = new Date();
+    const differentHour = new Date(now.getTime() - 3600 * 1000 * 2);
+    expect(pipe.transform(differentHour)).toBe(false);
+  });
+
+  it('returns false for null, undefined or invalid date string', () => {
+    expect(pipe.transform(null)).toBe(false);
+    expect(pipe.transform(undefined)).toBe(false);
+    expect(pipe.transform('invalid-date')).toBe(false);
   });
 });

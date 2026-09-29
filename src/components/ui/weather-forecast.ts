@@ -27,6 +27,8 @@ import { WeatherService } from '../../services/weather.service';
 
 import { WeatherDay } from '../../models';
 
+import { IsCurrentHourPipe } from '../../pipes';
+
 @Component({
   selector: 'app-weather-forecast',
   standalone: true,
@@ -34,6 +36,7 @@ import { WeatherDay } from '../../models';
     CommonModule,
     DatePipe,
     DecimalPipe,
+    IsCurrentHourPipe,
     TranslatePipe,
     TuiHint,
     TuiIcon,
@@ -117,17 +120,18 @@ import { WeatherDay } from '../../models';
           >
             <div class="flex gap-3 px-2 pb-4">
               @for (hour of selectedDay.hourly; track hour.time) {
+                <!-- Pure IsCurrentHourPipe memoizes calculation per hourly item in the template loop -->
                 <div
                   #hourItem
                   class="flex flex-col items-center min-w-[50px] min-h-[120px] p-1 rounded-xl transition-colors border hour-item select-none"
                   [class.bg-(--tui-background-neutral-1)]="
-                    isCurrentHour(hour.time)
+                    hour.time | isCurrentHour
                   "
                   [class.border-(--tui-border-normal-hover)]="
-                    isCurrentHour(hour.time)
+                    hour.time | isCurrentHour
                   "
                   [class.border-(--tui-border-normal)]="
-                    !isCurrentHour(hour.time)
+                    !(hour.time | isCurrentHour)
                   "
                 >
                   <span class="text-[10px] opacity-60">
@@ -343,13 +347,4 @@ export class WeatherForecastComponent {
     });
   }
 
-  protected isCurrentHour(date: Date): boolean {
-    const now = new Date();
-    return (
-      date.getHours() === now.getHours() &&
-      date.getDate() === now.getDate() &&
-      date.getMonth() === now.getMonth() &&
-      date.getFullYear() === now.getFullYear()
-    );
-  }
 }
