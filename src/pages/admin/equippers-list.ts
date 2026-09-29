@@ -6,7 +6,7 @@ import {
   resource,
   signal,
   TemplateRef,
-  ViewChild,
+  viewChild,
   WritableSignal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -360,8 +360,8 @@ export class AdminEquippersListComponent {
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
 
-  @ViewChild('addEquipperDialog')
-  private readonly addEquipperDialog?: TemplateRef<TuiDialogContext<string>>;
+  private readonly addEquipperDialog =
+    viewChild<TemplateRef<TuiDialogContext<string>>>('addEquipperDialog');
 
   protected readonly equipperName = signal('');
 
@@ -467,12 +467,13 @@ export class AdminEquippersListComponent {
   }
 
   protected async addNewEquipper(): Promise<void> {
-    if (!this.addEquipperDialog) return;
+    const dialog = this.addEquipperDialog();
+    if (!dialog) return;
     this.equipperName.set('');
 
     try {
       const name = await firstValueFrom(
-        this.dialogs.open<string>(this.addEquipperDialog, {
+        this.dialogs.open<string>(dialog, {
           size: 's',
           label: this.translate.instant('admin.equippers.newEquipperTitle'),
         }),

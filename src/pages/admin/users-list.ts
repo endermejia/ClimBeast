@@ -1,10 +1,16 @@
 import {
+  CdkFixedSizeVirtualScroll,
+  CdkVirtualForOf,
+  CdkVirtualScrollViewport,
+} from '@angular/cdk/scrolling';
+import {
   ChangeDetectionStrategy,
   Component,
   computed,
   inject,
-  Injector,
   signal,
+  TemplateRef,
+  viewChild,
   WritableSignal,
 } from '@angular/core';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -22,23 +28,28 @@ import {
   TuiButton,
   TuiCell,
   TuiDataList,
+  type TuiDialogContext,
   TuiDialogService,
   TuiFilterByInputPipe,
   TuiIcon,
   TuiInput,
+  TuiLabel,
   TuiLink,
   TuiOptGroup,
-  TuiScrollbar,
+  TuiScrollControls,
+  TuiScrollRef,
+  TuiTextfield,
   TuiTitle,
 } from '@taiga-ui/core';
 import {
+  TUI_CONFIRM,
+  type TuiConfirmData,
   TuiAvatar,
+  TuiBadge,
   TuiBadgeNotification,
   TuiBadgedContentComponent,
   TuiBadgedContentDirective,
   TuiChevron,
-  TUI_CONFIRM,
-  type TuiConfirmData,
   TuiComboBox,
   TuiDataListWrapper,
   TuiInputChip,
@@ -46,9 +57,8 @@ import {
   TuiSkeleton,
 } from '@taiga-ui/kit';
 
-import { WaIntersectionObserver } from '@ng-web-apis/intersection-observer';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, type Observer } from 'rxjs';
 
 import { CacheService } from '../../services/cache.service';
 import { IndoorService } from '../../services/indoor.service';
@@ -63,7 +73,7 @@ import { AreaListItem, IndoorCenterDto } from '../../models';
 
 import { CACHE_KEYS } from '../../constants';
 import { AvatarUrlPipe } from '../../pipes';
-import { matchesQuery, reactToObservable, waitForResource } from '../../utils';
+import { matchesQuery, waitForResource } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -75,11 +85,11 @@ interface UserWithRole {
   is_admin: boolean;
   canDelete: boolean;
   assignedAreas: AreaListItem[];
-  areasControl: FormControl<AreaListItem[]>;
   assignedCenters: IndoorCenterDto[];
-  centersControl: FormControl<IndoorCenterDto[]>;
   routesetterCenters: IndoorCenterDto[];
-  routesetterCentersControl: FormControl<IndoorCenterDto[]>;
+  expandedAreas?: boolean;
+  expandedCenters?: boolean;
+  expandedRoutesetters?: boolean;
 }
 
 @Component({
@@ -87,6 +97,9 @@ interface UserWithRole {
   standalone: true,
   imports: [
     AvatarUrlPipe,
+    CdkFixedSizeVirtualScroll,
+    CdkVirtualForOf,
+    CdkVirtualScrollViewport,
     EmptyStateComponent,
     FormsModule,
     ReactiveFormsModule,
@@ -94,6 +107,7 @@ interface UserWithRole {
     TranslatePipe,
     TuiAppearance,
     TuiAvatar,
+    TuiBadge,
     TuiBadgedContentComponent,
     TuiBadgedContentDirective,
     TuiBadgeNotification,
@@ -107,18 +121,20 @@ interface UserWithRole {
     TuiIcon,
     TuiInput,
     TuiInputChip,
+    TuiLabel,
     TuiLink,
     TuiMultiSelect,
     TuiOptGroup,
-    TuiScrollbar,
+    TuiScrollControls,
+    TuiScrollRef,
     TuiSkeleton,
     TuiTable,
+    TuiTextfield,
     TuiTitle,
-    WaIntersectionObserver,
   ],
   template: `
-    <section class="flex flex-col w-full max-w-7xl mx-auto p-4">
-      <header class="mb-4 flex items-center justify-between gap-2">
+    <section class="flex flex-col w-full max-w-7xl mx-auto p-4 grow min-h-0">
+      <header class="mb-4 flex items-center justify-between gap-2 shrink-0">
         <h1 class="text-2xl font-bold">
           <a
             routerLink="/admin"
@@ -144,11 +160,11 @@ interface UserWithRole {
         </h1>
       </header>
 
-      <p class="mb-6 text-tui-text-secondary opacity-60">
+      <p class="mb-6 text-tui-text-secondary opacity-60 shrink-0">
         {{ 'admin.users.description' | translate }}
       </p>
 
-      <div class="mb-6 flex flex-col sm:flex-row gap-3">
+      <div class="mb-6 flex flex-col sm:flex-row gap-3 shrink-0">
         <tui-textfield class="grow" [tuiTextfieldCleaner]="true">
           <label tuiLabel for="user-search">{{ 'search' | translate }}</label>
           <input
@@ -203,8 +219,102 @@ interface UserWithRole {
         </tui-textfield>
       </div>
 
-      <tui-scrollbar waIntersectionRoot class="flex grow">
-        @if (filteredUsers().length > 0) {
+      @if (loading()) {
+        <table
+          [size]="layout.isMobile() ? 's' : 'l'"
+          tuiTable
+          class="w-full"
+          [columns]="columns"
+        >
+          <thead tuiThead>
+            <tr tuiThGroup>
+              <th *tuiHead="'user'" tuiTh class="user-column min-w-[200px]">
+                {{ 'user' | translate }}
+              </th>
+              <th *tuiHead="'email'" tuiTh class="email-column min-w-[180px]">
+                {{ 'email' | translate }}
+              </th>
+              <th *tuiHead="'role'" tuiTh class="role-column min-w-[120px]">
+                {{ 'role' | translate }}
+              </th>
+              <th *tuiHead="'areas'" tuiTh class="areas-column min-w-[180px]">
+                {{ 'admin.users.adminInArea' | translate }}
+              </th>
+              <th
+                *tuiHead="'centers'"
+                tuiTh
+                class="centers-column min-w-[180px]"
+              >
+                {{ 'admin.users.adminInCenter' | translate }}
+              </th>
+              <th
+                *tuiHead="'routesetters'"
+                tuiTh
+                class="routesetters-column min-w-[180px]"
+              >
+                {{ 'admin.users.routesetterIn' | translate }}
+              </th>
+              <th
+                *tuiHead="'actions'"
+                tuiTh
+                class="actions-column w-24 min-w-[90px] text-right"
+              >
+                {{ 'actions' | translate }}
+              </th>
+            </tr>
+          </thead>
+          <tbody tuiTbody>
+            @for (_item of skeletons; track $index) {
+              <tr tuiTr>
+                <td *tuiCell="'user'" tuiTd class="user-cell">
+                  <div class="flex items-center gap-3">
+                    <div
+                      [tuiSkeleton]="true"
+                      class="w-10 h-10 rounded-full shrink-0"
+                    ></div>
+                    <div [tuiSkeleton]="true" class="w-32 h-4"></div>
+                  </div>
+                </td>
+                <td *tuiCell="'email'" tuiTd class="email-column">
+                  <div [tuiSkeleton]="true" class="w-32 h-4"></div>
+                </td>
+                <td *tuiCell="'role'" tuiTd class="role-cell">
+                  <div [tuiSkeleton]="true" class="w-20 h-7 rounded-xl"></div>
+                </td>
+                <td *tuiCell="'areas'" tuiTd class="areas-column">
+                  <div [tuiSkeleton]="true" class="w-24 h-6 rounded-md"></div>
+                </td>
+                <td *tuiCell="'centers'" tuiTd class="centers-column">
+                  <div [tuiSkeleton]="true" class="w-24 h-6 rounded-md"></div>
+                </td>
+                <td *tuiCell="'routesetters'" tuiTd class="routesetters-column">
+                  <div [tuiSkeleton]="true" class="w-24 h-6 rounded-md"></div>
+                </td>
+                <td
+                  *tuiCell="'actions'"
+                  tuiTd
+                  class="actions-column text-right"
+                >
+                  <div
+                    [tuiSkeleton]="true"
+                    class="w-8 h-8 rounded-full ml-auto"
+                  ></div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else if (filteredUsers().length > 0) {
+        <cdk-virtual-scroll-viewport
+          #viewport
+          appendOnly
+          tuiScrollRef
+          class="viewport grow min-h-0 w-full"
+          [itemSize]="rowHeight"
+          [maxBufferPx]="500"
+          [minBufferPx]="400"
+        >
+          <tui-scroll-controls />
           <table
             [size]="layout.isMobile() ? 's' : 'l'"
             tuiTable
@@ -216,52 +326,63 @@ interface UserWithRole {
           >
             @let sortedUsersList = filteredUsers() | tuiTableSort;
             <thead tuiThead>
-              <tr tuiThGroup>
+              <tr
+                tuiThGroup
+                [style.inset-block-start.px]="
+                  -(viewport.getOffsetToRenderedContentStart() || 0)
+                "
+              >
                 <th
                   *tuiHead="'user'"
                   tuiTh
-                  class="user-column min-w-[220px]"
+                  class="user-column min-w-[200px]"
                   [sorter]="userSorter"
+                  [sticky]="true"
                 >
                   {{ 'user' | translate }}
                 </th>
                 <th
                   *tuiHead="'email'"
                   tuiTh
-                  class="email-column min-w-[200px]"
+                  class="email-column min-w-[180px]"
                   [sorter]="emailSorter"
+                  [sticky]="true"
                 >
                   {{ 'email' | translate }}
                 </th>
                 <th
                   *tuiHead="'role'"
                   tuiTh
-                  class="role-column min-w-[140px]"
+                  class="role-column min-w-[120px]"
                   [sorter]="roleSorter"
+                  [sticky]="true"
                 >
                   {{ 'role' | translate }}
                 </th>
                 <th
                   *tuiHead="'areas'"
                   tuiTh
-                  class="areas-column min-w-[240px]"
+                  class="areas-column min-w-[180px]"
                   [sorter]="areasSorter"
+                  [sticky]="true"
                 >
                   {{ 'admin.users.adminInArea' | translate }}
                 </th>
                 <th
                   *tuiHead="'centers'"
                   tuiTh
-                  class="centers-column min-w-[240px]"
+                  class="centers-column min-w-[180px]"
                   [sorter]="centersSorter"
+                  [sticky]="true"
                 >
                   {{ 'admin.users.adminInCenter' | translate }}
                 </th>
                 <th
                   *tuiHead="'routesetters'"
                   tuiTh
-                  class="routesetters-column min-w-[240px]"
+                  class="routesetters-column min-w-[180px]"
                   [sorter]="routesettersSorter"
+                  [sticky]="true"
                 >
                   {{ 'admin.users.routesetterIn' | translate }}
                 </th>
@@ -269,262 +390,430 @@ interface UserWithRole {
             </thead>
 
             <tbody tuiTbody [data]="sortedUsersList">
-              @if (loading()) {
-                @for (_item of skeletons; track $index) {
-                  <tr tuiTr>
-                    <td *tuiCell="'user'" tuiTd class="user-cell">
-                      <div class="flex items-center gap-3">
-                        <div
-                          [tuiSkeleton]="true"
-                          class="w-10 h-10 rounded-full shrink-0"
-                        ></div>
-                        <div [tuiSkeleton]="true" class="w-32 h-4"></div>
-                      </div>
-                    </td>
-                    <td *tuiCell="'email'" tuiTd class="email-column">
-                      <div [tuiSkeleton]="true" class="w-32 h-4"></div>
-                    </td>
-                    <td *tuiCell="'role'" tuiTd class="role-cell">
-                      <div [tuiSkeleton]="true" class="w-24 h-8"></div>
-                    </td>
-                    <td *tuiCell="'areas'" tuiTd class="areas-column">
-                      <div [tuiSkeleton]="true" class="w-full h-10"></div>
-                    </td>
-                    <td *tuiCell="'centers'" tuiTd class="centers-column">
-                      <div [tuiSkeleton]="true" class="w-full h-10"></div>
-                    </td>
-                    <td
-                      *tuiCell="'routesetters'"
-                      tuiTd
-                      class="routesetters-column"
-                    >
-                      <div [tuiSkeleton]="true" class="w-full h-10"></div>
-                    </td>
-                  </tr>
-                }
-              } @else {
-                @for (user of sortedUsersList; track user.id) {
-                  <tr tuiTr [class.is-current]="user.id === currentUserId()">
-                    <td *tuiCell="'user'" tuiTd class="user-cell">
-                      <div class="flex items-center gap-3 min-w-0">
-                        <a
-                          [routerLink]="['/profile', user.id]"
-                          class="shrink-0"
-                        >
-                          <span tuiAvatar size="m">
-                            @if (user.avatar; as avatar) {
-                              <img [src]="avatar | avatarUrl" alt="avatar" />
-                            } @else {
-                              <tui-icon icon="@tui.user" />
-                            }
-                          </span>
-                        </a>
-                        <div class="flex items-center gap-2 min-w-0">
-                          <a
-                            tuiLink
-                            [routerLink]="['/profile', user.id]"
-                            class="font-medium truncate"
-                          >
-                            {{ user.name || ('anonymous' | translate) }}
-                          </a>
-                          @if (user.id === currentUserId()) {
-                            <span class="text-xs opacity-60 shrink-0">
-                              ({{ 'you' | translate }})
-                            </span>
-                          }
-                          @if (user.canDelete) {
-                            <button
-                              size="s"
-                              appearance="negative"
-                              iconStart="@tui.trash"
-                              tuiIconButton
-                              type="button"
-                              class="rounded-full! shrink-0"
-                              [title]="'admin.users.delete' | translate"
-                              (click.zoneless)="deleteUser(user)"
-                            >
-                              {{ 'admin.users.delete' | translate }}
-                            </button>
-                          }
-                        </div>
-                      </div>
-                    </td>
-                    <td *tuiCell="'email'" tuiTd class="email-column">
-                      <span
-                        class="text-sm truncate text-neutral-600 dark:text-neutral-400 font-mono"
-                      >
-                        {{ user.email || '-' }}
+              <tr
+                tuiTr
+                *cdkVirtualFor="let user of sortedUsersList; trackBy: trackById"
+                [class.is-current]="user.id === currentUserId()"
+              >
+                <td *tuiCell="'user'" tuiTd class="user-cell">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <a [routerLink]="['/profile', user.id]" class="shrink-0">
+                      <span tuiAvatar size="m">
+                        @if (user.avatar; as avatar) {
+                          <img [src]="avatar | avatarUrl" alt="avatar" />
+                        } @else {
+                          <tui-icon icon="@tui.user" />
+                        }
                       </span>
-                    </td>
-                    <td *tuiCell="'role'" tuiTd class="role-cell">
-                      <button
-                        tuiButton
-                        size="s"
-                        [appearance]="user.is_admin ? 'primary' : 'flat'"
-                        [disabled]="user.id === currentUserId()"
-                        (click.zoneless)="toggleAdminStatus(user)"
-                        [title]="
-                          user.id === currentUserId()
-                            ? ('admin.users.cannotRemoveSelf' | translate)
-                            : user.is_admin
-                              ? ('admin.users.revokeAdmin' | translate)
-                              : ('admin.users.makeAdmin' | translate)
-                        "
-                        class="rounded-xl"
+                    </a>
+                    <div class="flex items-center gap-2 min-w-0">
+                      <a
+                        tuiLink
+                        [routerLink]="['/profile', user.id]"
+                        class="font-medium truncate"
                       >
-                        <tui-icon
-                          [icon]="
-                            user.is_admin ? '@tui.shield' : '@tui.shield-off'
-                          "
+                        {{ user.name || ('anonymous' | translate) }}
+                      </a>
+                      @if (user.id === currentUserId()) {
+                        <span class="text-xs opacity-60 shrink-0">
+                          ({{ 'you' | translate }})
+                        </span>
+                      }
+                      @if (user.canDelete) {
+                        <button
                           size="s"
-                        />
-                        Admin
-                      </button>
-                    </td>
+                          appearance="negative"
+                          iconStart="@tui.trash"
+                          tuiIconButton
+                          type="button"
+                          class="rounded-full! shrink-0"
+                          [title]="'admin.users.delete' | translate"
+                          (click.zoneless)="deleteUser(user)"
+                        >
+                          {{ 'admin.users.delete' | translate }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </td>
+                <td *tuiCell="'email'" tuiTd class="email-column">
+                  <span
+                    class="text-sm truncate text-neutral-600 dark:text-neutral-400 font-mono"
+                  >
+                    {{ user.email || '-' }}
+                  </span>
+                </td>
+                <td *tuiCell="'role'" tuiTd class="role-cell">
+                  <button
+                    tuiButton
+                    size="s"
+                    [appearance]="user.is_admin ? 'primary' : 'flat'"
+                    [disabled]="user.id === currentUserId()"
+                    (click.zoneless)="toggleAdminStatus(user)"
+                    [title]="
+                      user.id === currentUserId()
+                        ? ('admin.users.cannotRemoveSelf' | translate)
+                        : user.is_admin
+                          ? ('admin.users.revokeAdmin' | translate)
+                          : ('admin.users.makeAdmin' | translate)
+                    "
+                    class="rounded-xl"
+                  >
+                    <tui-icon
+                      [icon]="user.is_admin ? '@tui.shield' : '@tui.shield-off'"
+                      size="s"
+                    />
+                    Admin
+                  </button>
+                </td>
 
-                    <td *tuiCell="'areas'" tuiTd class="areas-column">
-                      <tui-textfield
-                        multi
-                        tuiChevron
-                        [stringify]="stringifyArea"
-                        [disabledItemHandler]="strings"
-                        [identityMatcher]="areaIdentityMatcher"
-                        [tuiTextfieldCleaner]="false"
-                      >
-                        <input
-                          tuiInputChip
-                          id="areas-select-{{ user.id }}"
-                          [formControl]="user.areasControl"
-                          [placeholder]="'select' | translate"
-                          autocomplete="off"
-                        />
-                        <tui-input-chip *tuiItem />
-                        <tui-data-list *tuiDropdown>
-                          <tui-opt-group
-                            [label]="'areas' | translate"
-                            tuiMultiSelectGroup
-                          >
-                            @for (
-                              area of availableAreas() | tuiFilterByInput;
-                              track area.id
-                            ) {
-                              <button
-                                type="button"
-                                new
-                                tuiOption
-                                [value]="area"
-                              >
-                                <div tuiCell size="s">
-                                  <div tuiTitle>
-                                    {{ area.name }}
-                                  </div>
-                                </div>
-                              </button>
-                            }
-                          </tui-opt-group>
-                        </tui-data-list>
-                      </tui-textfield>
-                    </td>
-                    <td *tuiCell="'centers'" tuiTd class="centers-column">
-                      <tui-textfield
-                        multi
-                        tuiChevron
-                        [stringify]="stringifyCenter"
-                        [disabledItemHandler]="strings"
-                        [identityMatcher]="centerIdentityMatcher"
-                        [tuiTextfieldCleaner]="false"
-                      >
-                        <input
-                          tuiInputChip
-                          id="centers-select-{{ user.id }}"
-                          [formControl]="user.centersControl"
-                          [placeholder]="'select' | translate"
-                          autocomplete="off"
-                        />
-                        <tui-input-chip *tuiItem />
-                        <tui-data-list *tuiDropdown>
-                          <tui-opt-group
-                            [label]="'indoor.title' | translate"
-                            tuiMultiSelectGroup
-                          >
-                            @for (
-                              center of availableCenters() | tuiFilterByInput;
-                              track center.id
-                            ) {
-                              <button
-                                type="button"
-                                new
-                                tuiOption
-                                [value]="center"
-                              >
-                                <div tuiCell size="s">
-                                  <div tuiTitle>
-                                    {{ center.name }}
-                                  </div>
-                                </div>
-                              </button>
-                            }
-                          </tui-opt-group>
-                        </tui-data-list>
-                      </tui-textfield>
-                    </td>
-                    <td
-                      *tuiCell="'routesetters'"
-                      tuiTd
-                      class="routesetters-column"
+                <td
+                  *tuiCell="'areas'"
+                  tuiTd
+                  class="areas-column cursor-pointer hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50 transition-colors"
+                  (click.zoneless)="openEditPermissions(user)"
+                  [title]="'admin.users.editRoles' | translate"
+                >
+                  @if (user.assignedAreas.length === 0) {
+                    <span class="text-xs text-neutral-400 dark:text-neutral-500"
+                      >—</span
                     >
-                      <tui-textfield
-                        multi
-                        tuiChevron
-                        [stringify]="stringifyCenter"
-                        [disabledItemHandler]="strings"
-                        [identityMatcher]="centerIdentityMatcher"
-                        [tuiTextfieldCleaner]="false"
-                      >
-                        <input
-                          tuiInputChip
-                          id="routesetters-select-{{ user.id }}"
-                          [formControl]="user.routesetterCentersControl"
-                          [placeholder]="'select' | translate"
-                          autocomplete="off"
-                        />
-                        <tui-input-chip *tuiItem />
-                        <tui-data-list *tuiDropdown>
-                          <tui-opt-group
-                            [label]="'indoor.title' | translate"
-                            tuiMultiSelectGroup
+                  } @else {
+                    <div class="flex flex-wrap items-center gap-1 py-1">
+                      @if (user.expandedAreas) {
+                        @for (area of user.assignedAreas; track area.id) {
+                          <span
+                            tuiBadge
+                            appearance="neutral"
+                            size="s"
+                            class="max-w-[120px] truncate"
                           >
-                            @for (
-                              center of availableCenters() | tuiFilterByInput;
-                              track center.id
-                            ) {
-                              <button
-                                type="button"
-                                new
-                                tuiOption
-                                [value]="center"
-                              >
-                                <div tuiCell size="s">
-                                  <div tuiTitle>
-                                    {{ center.name }}
-                                  </div>
-                                </div>
-                              </button>
-                            }
-                          </tui-opt-group>
-                        </tui-data-list>
-                      </tui-textfield>
-                    </td>
-                  </tr>
-                }
-              }
+                            {{ area.name }}
+                          </span>
+                        }
+                      } @else {
+                        @for (
+                          area of user.assignedAreas.slice(0, 2);
+                          track area.id
+                        ) {
+                          <span
+                            tuiBadge
+                            appearance="neutral"
+                            size="s"
+                            class="max-w-[120px] truncate"
+                          >
+                            {{ area.name }}
+                          </span>
+                        }
+                        @if (user.assignedAreas.length > 2) {
+                          <button
+                            type="button"
+                            tuiBadge
+                            appearance="accent"
+                            size="s"
+                            class="cursor-pointer hover:opacity-80 transition-opacity"
+                            [title]="'showMore' | translate"
+                            (click.zoneless)="
+                              toggleExpand(user, 'areas', $event)
+                            "
+                          >
+                            +{{ user.assignedAreas.length - 2 }}
+                          </button>
+                        }
+                      }
+                    </div>
+                  }
+                </td>
+                <td
+                  *tuiCell="'centers'"
+                  tuiTd
+                  class="centers-column cursor-pointer hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50 transition-colors"
+                  (click.zoneless)="openEditPermissions(user)"
+                  [title]="'admin.users.editRoles' | translate"
+                >
+                  @if (user.assignedCenters.length === 0) {
+                    <span class="text-xs text-neutral-400 dark:text-neutral-500"
+                      >—</span
+                    >
+                  } @else {
+                    <div class="flex flex-wrap items-center gap-1 py-1">
+                      @if (user.expandedCenters) {
+                        @for (center of user.assignedCenters; track center.id) {
+                          <span
+                            tuiBadge
+                            appearance="neutral"
+                            size="s"
+                            class="max-w-[120px] truncate"
+                          >
+                            {{ center.name }}
+                          </span>
+                        }
+                      } @else {
+                        @for (
+                          center of user.assignedCenters.slice(0, 2);
+                          track center.id
+                        ) {
+                          <span
+                            tuiBadge
+                            appearance="neutral"
+                            size="s"
+                            class="max-w-[120px] truncate"
+                          >
+                            {{ center.name }}
+                          </span>
+                        }
+                        @if (user.assignedCenters.length > 2) {
+                          <button
+                            type="button"
+                            tuiBadge
+                            appearance="accent"
+                            size="s"
+                            class="cursor-pointer hover:opacity-80 transition-opacity"
+                            [title]="'showMore' | translate"
+                            (click.zoneless)="
+                              toggleExpand(user, 'centers', $event)
+                            "
+                          >
+                            +{{ user.assignedCenters.length - 2 }}
+                          </button>
+                        }
+                      }
+                    </div>
+                  }
+                </td>
+                <td
+                  *tuiCell="'routesetters'"
+                  tuiTd
+                  class="routesetters-column cursor-pointer hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50 transition-colors"
+                  (click.zoneless)="openEditPermissions(user)"
+                  [title]="'admin.users.editRoles' | translate"
+                >
+                  @if (user.routesetterCenters.length === 0) {
+                    <span class="text-xs text-neutral-400 dark:text-neutral-500"
+                      >—</span
+                    >
+                  } @else {
+                    <div class="flex flex-wrap items-center gap-1 py-1">
+                      @if (user.expandedRoutesetters) {
+                        @for (
+                          center of user.routesetterCenters;
+                          track center.id
+                        ) {
+                          <span
+                            tuiBadge
+                            appearance="neutral"
+                            size="s"
+                            class="max-w-[120px] truncate"
+                          >
+                            {{ center.name }}
+                          </span>
+                        }
+                      } @else {
+                        @for (
+                          center of user.routesetterCenters.slice(0, 2);
+                          track center.id
+                        ) {
+                          <span
+                            tuiBadge
+                            appearance="neutral"
+                            size="s"
+                            class="max-w-[120px] truncate"
+                          >
+                            {{ center.name }}
+                          </span>
+                        }
+                        @if (user.routesetterCenters.length > 2) {
+                          <button
+                            type="button"
+                            tuiBadge
+                            appearance="accent"
+                            size="s"
+                            class="cursor-pointer hover:opacity-80 transition-opacity"
+                            [title]="'showMore' | translate"
+                            (click.zoneless)="
+                              toggleExpand(user, 'routesetters', $event)
+                            "
+                          >
+                            +{{ user.routesetterCenters.length - 2 }}
+                          </button>
+                        }
+                      }
+                    </div>
+                  }
+                </td>
+              </tr>
             </tbody>
           </table>
-        } @else {
-          <app-empty-state icon="@tui.users" />
-        }
-      </tui-scrollbar>
+        </cdk-virtual-scroll-viewport>
+      } @else {
+        <app-empty-state icon="@tui.users" />
+      }
     </section>
+
+    <!-- Edit Permissions Dialog -->
+    <ng-template #editPermissionsDialog let-observer>
+      @if (editingUser(); as user) {
+        <form
+          class="flex flex-col gap-4 p-1"
+          (submit.zoneless)="
+            $event.preventDefault(); submitPermissions(observer)
+          "
+        >
+          <div
+            class="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl"
+          >
+            <span tuiAvatar size="m">
+              @if (user.avatar; as avatar) {
+                <img [src]="avatar | avatarUrl" alt="avatar" />
+              } @else {
+                <tui-icon icon="@tui.user" />
+              }
+            </span>
+            <div class="flex flex-col min-w-0">
+              <span class="font-semibold truncate">
+                {{ user.name || ('anonymous' | translate) }}
+              </span>
+              <span class="text-xs text-neutral-500 font-mono truncate">
+                {{ user.email || '-' }}
+              </span>
+            </div>
+          </div>
+
+          <tui-textfield
+            multi
+            tuiChevron
+            [stringify]="stringifyArea"
+            [disabledItemHandler]="strings"
+            [identityMatcher]="areaIdentityMatcher"
+            [tuiTextfieldCleaner]="false"
+          >
+            <label tuiLabel for="edit-areas-select">{{
+              'admin.users.adminInArea' | translate
+            }}</label>
+            <input
+              tuiInputChip
+              id="edit-areas-select"
+              [formControl]="editAreasControl"
+              [placeholder]="'select' | translate"
+              autocomplete="off"
+            />
+            <tui-input-chip *tuiItem />
+            <tui-data-list *tuiDropdown>
+              <tui-opt-group [label]="'areas' | translate" tuiMultiSelectGroup>
+                @for (
+                  area of availableAreas() | tuiFilterByInput;
+                  track area.id
+                ) {
+                  <button type="button" new tuiOption [value]="area">
+                    <div tuiCell size="s">
+                      <div tuiTitle>{{ area.name }}</div>
+                    </div>
+                  </button>
+                }
+              </tui-opt-group>
+            </tui-data-list>
+          </tui-textfield>
+
+          <tui-textfield
+            multi
+            tuiChevron
+            [stringify]="stringifyCenter"
+            [disabledItemHandler]="strings"
+            [identityMatcher]="centerIdentityMatcher"
+            [tuiTextfieldCleaner]="false"
+          >
+            <label tuiLabel for="edit-centers-select">{{
+              'admin.users.adminInCenter' | translate
+            }}</label>
+            <input
+              tuiInputChip
+              id="edit-centers-select"
+              [formControl]="editCentersControl"
+              [placeholder]="'select' | translate"
+              autocomplete="off"
+            />
+            <tui-input-chip *tuiItem />
+            <tui-data-list *tuiDropdown>
+              <tui-opt-group
+                [label]="'indoor.title' | translate"
+                tuiMultiSelectGroup
+              >
+                @for (
+                  center of availableCenters() | tuiFilterByInput;
+                  track center.id
+                ) {
+                  <button type="button" new tuiOption [value]="center">
+                    <div tuiCell size="s">
+                      <div tuiTitle>{{ center.name }}</div>
+                    </div>
+                  </button>
+                }
+              </tui-opt-group>
+            </tui-data-list>
+          </tui-textfield>
+
+          <tui-textfield
+            multi
+            tuiChevron
+            [stringify]="stringifyCenter"
+            [disabledItemHandler]="strings"
+            [identityMatcher]="centerIdentityMatcher"
+            [tuiTextfieldCleaner]="false"
+          >
+            <label tuiLabel for="edit-routesetters-select">{{
+              'admin.users.routesetterIn' | translate
+            }}</label>
+            <input
+              tuiInputChip
+              id="edit-routesetters-select"
+              [formControl]="editRoutesettersControl"
+              [placeholder]="'select' | translate"
+              autocomplete="off"
+            />
+            <tui-input-chip *tuiItem />
+            <tui-data-list *tuiDropdown>
+              <tui-opt-group
+                [label]="'indoor.title' | translate"
+                tuiMultiSelectGroup
+              >
+                @for (
+                  center of availableCenters() | tuiFilterByInput;
+                  track center.id
+                ) {
+                  <button type="button" new tuiOption [value]="center">
+                    <div tuiCell size="s">
+                      <div tuiTitle>{{ center.name }}</div>
+                    </div>
+                  </button>
+                }
+              </tui-opt-group>
+            </tui-data-list>
+          </tui-textfield>
+
+          <div class="flex justify-end gap-2 mt-4">
+            <button
+              tuiButton
+              type="button"
+              appearance="flat"
+              size="m"
+              [disabled]="isSavingPermissions()"
+              (click.zoneless)="observer.complete()"
+            >
+              {{ 'cancel' | translate }}
+            </button>
+            <button
+              tuiButton
+              type="submit"
+              appearance="primary"
+              size="m"
+              [disabled]="isSavingPermissions()"
+            >
+              {{ 'save' | translate }}
+            </button>
+          </div>
+        </form>
+      }
+    </ng-template>
   `,
   styles: [
     `
@@ -533,31 +822,48 @@ interface UserWithRole {
       }
 
       .user-column {
-        min-width: 220px;
-      }
-
-      .email-column {
         min-width: 200px;
       }
 
+      .email-column {
+        min-width: 180px;
+      }
+
       .role-column {
-        min-width: 140px;
+        min-width: 120px;
       }
 
       .areas-column {
-        min-width: 240px;
+        min-width: 180px;
       }
 
       .centers-column {
-        min-width: 240px;
+        min-width: 180px;
       }
 
       .routesetters-column {
-        min-width: 240px;
+        min-width: 180px;
       }
 
       .user-cell {
-        padding: 0.75rem 0.5rem;
+        padding: 0.5rem 0.5rem;
+      }
+
+      .viewport {
+        height: 100%;
+        min-height: 400px;
+      }
+
+      table {
+        inline-size: 100%;
+
+        th {
+          inset-block-start: inherit;
+        }
+
+        tr {
+          min-height: 3.5rem;
+        }
       }
     `,
   ],
@@ -569,12 +875,15 @@ export class AdminUsersListComponent {
   protected readonly supabase = inject(SupabaseService);
   private readonly indoor = inject(IndoorService);
   private readonly outdoorData = inject(OutdoorDataService);
-  private readonly injector = inject(Injector);
   private readonly dialogs = inject(TuiDialogService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
   private readonly cache = inject(CacheService);
+
+  private readonly editPermissionsDialog = viewChild<
+    TemplateRef<TuiDialogContext<boolean>>
+  >('editPermissionsDialog');
 
   protected readonly columns = [
     'user',
@@ -584,6 +893,10 @@ export class AdminUsersListComponent {
     'centers',
     'routesetters',
   ];
+
+  protected readonly rowHeight = 56;
+  protected readonly trackById = (_index: number, user: UserWithRole): string =>
+    user.id;
 
   protected readonly searchQuery = signal('');
   protected readonly filterArea = signal<AreaListItem | null>(null);
@@ -664,8 +977,22 @@ export class AdminUsersListComponent {
 
   protected readonly strings = tuiIsString;
 
-  protected readonly skeletons = Array(25).fill(0);
+  protected readonly skeletons = Array(10).fill(0);
   protected readonly direction = signal<TuiSortDirection>(TuiSortDirection.Asc);
+
+  // Edit dialog state
+  protected readonly editingUser = signal<UserWithRole | null>(null);
+  protected readonly editAreasControl = new FormControl<AreaListItem[]>([], {
+    nonNullable: true,
+  });
+  protected readonly editCentersControl = new FormControl<IndoorCenterDto[]>(
+    [],
+    { nonNullable: true },
+  );
+  protected readonly editRoutesettersControl = new FormControl<
+    IndoorCenterDto[]
+  >([], { nonNullable: true });
+  protected readonly isSavingPermissions = signal<boolean>(false);
 
   /**
    * Sorter logic for Role column: Admins appear first when ascending, non-admins first when descending.
@@ -732,17 +1059,12 @@ export class AdminUsersListComponent {
       this.loading.set(true);
       await this.supabase.whenReady();
 
-      // 1. Load areas if not already loaded. Espera acotada: `areasList()` es
-      // stale-while-revalidate (caché inmediata) y el fetch propio de Supabase
-      // aborta a los 15s, así que un `while (isLoading())` sin límite solo
-      // podía dejar la pantalla en esqueleto de forma indefinida.
       if (this.outdoorData.areasList().length === 0) {
         await waitForResource(this.outdoorData.areasListResource, 150, 100);
       }
       const areas = this.outdoorData.areasList();
       const areasMap = new Map(areas.map((a) => [a.id, a]));
 
-      // 2. Fetch user profiles (including email and is_admin)
       const { data: profiles, error: profilesError } =
         await this.supabase.client.rpc('get_admin_users');
 
@@ -752,7 +1074,6 @@ export class AdminUsersListComponent {
         return;
       }
 
-      // 3. Fetch all area-admin mappings
       const { data: mappings, error: mappingsError } =
         await this.supabase.client.from('area_admins').select('*');
 
@@ -765,7 +1086,6 @@ export class AdminUsersListComponent {
         mappingsByEquipper.set(m.user_id, list);
       });
 
-      // 4. Fetch indoor center admins
       const { data: centerMappings, error: centerMappingsError } =
         await this.supabase.client.from('indoor_center_admins').select('*');
 
@@ -781,7 +1101,6 @@ export class AdminUsersListComponent {
         },
       );
 
-      // 5. Fetch indoor center routesetters
       const { data: routesetterMappings, error: routesetterMappingsError } =
         await this.supabase.client
           .from('indoor_center_routesetters')
@@ -799,7 +1118,6 @@ export class AdminUsersListComponent {
         },
       );
 
-      // 6. Fetch available centers
       const centers = await this.indoor.getAllCenters();
       this.availableCenters.set(centers);
       const centersMap = new Map(centers.map((c) => [c.id, c]));
@@ -818,53 +1136,17 @@ export class AdminUsersListComponent {
             .map((id) => areasMap.get(id))
             .filter((a): a is AreaListItem => !!a);
 
-          const areasControl = new FormControl(assignedAreas, {
-            nonNullable: true,
-          });
-          reactToObservable(
-            areasControl.valueChanges,
-            (newAreas: AreaListItem[]) => {
-              void this.onAreasChange(profile.id, newAreas);
-            },
-            this.injector,
-          );
-
           const assignedCenterIds =
             centerMappingsByEquipper.get(profile.id) || [];
           const assignedCenters = assignedCenterIds
             .map((id) => centersMap.get(id))
             .filter((c): c is IndoorCenterDto => !!c);
 
-          const centersControl = new FormControl(assignedCenters, {
-            nonNullable: true,
-          });
-          reactToObservable(
-            centersControl.valueChanges,
-            (newCenters: IndoorCenterDto[]) => {
-              void this.onCentersChange(profile.id, newCenters);
-            },
-            this.injector,
-          );
-
           const routesetterCenterIds =
             routesetterMappingsByUser.get(profile.id) || [];
           const routesetterCenters = routesetterCenterIds
             .map((id) => centersMap.get(id))
             .filter((c): c is IndoorCenterDto => !!c);
-
-          const routesetterCentersControl = new FormControl(
-            routesetterCenters,
-            {
-              nonNullable: true,
-            },
-          );
-          reactToObservable(
-            routesetterCentersControl.valueChanges,
-            (newCenters: IndoorCenterDto[]) => {
-              void this.onRoutesettersChange(profile.id, newCenters);
-            },
-            this.injector,
-          );
 
           const isNameSameAsEmail =
             !!profile.name &&
@@ -881,11 +1163,11 @@ export class AdminUsersListComponent {
             is_admin: !!profile.is_admin,
             canDelete,
             assignedAreas,
-            areasControl,
             assignedCenters,
-            centersControl,
             routesetterCenters,
-            routesetterCentersControl,
+            expandedAreas: false,
+            expandedCenters: false,
+            expandedRoutesetters: false,
           };
         },
       );
@@ -895,6 +1177,91 @@ export class AdminUsersListComponent {
       console.error('[UsersListAdmin] Exception loading users:', e);
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  protected toggleExpand(
+    user: UserWithRole,
+    field: 'areas' | 'centers' | 'routesetters',
+    event?: Event,
+  ): void {
+    event?.stopPropagation();
+    this.users.update((list) =>
+      list.map((u) => {
+        if (u.id !== user.id) return u;
+        if (field === 'areas') return { ...u, expandedAreas: true };
+        if (field === 'centers') return { ...u, expandedCenters: true };
+        return { ...u, expandedRoutesetters: true };
+      }),
+    );
+  }
+
+  protected async openEditPermissions(user: UserWithRole): Promise<void> {
+    const dialog = this.editPermissionsDialog();
+    if (!dialog) return;
+
+    this.editingUser.set(user);
+    this.editAreasControl.setValue([...user.assignedAreas]);
+    this.editCentersControl.setValue([...user.assignedCenters]);
+    this.editRoutesettersControl.setValue([...user.routesetterCenters]);
+
+    try {
+      await firstValueFrom(
+        this.dialogs.open<boolean>(dialog, {
+          size: 'm',
+          label: this.translate.instant('admin.users.editRoles'),
+        }),
+        { defaultValue: false },
+      );
+    } catch (e) {
+      console.error('[UsersListAdmin] Exception in edit dialog:', e);
+    } finally {
+      this.editingUser.set(null);
+    }
+  }
+
+  protected async submitPermissions(
+    observer: Observer<boolean>,
+  ): Promise<void> {
+    const user = this.editingUser();
+    if (!user) {
+      observer.complete();
+      return;
+    }
+
+    try {
+      this.isSavingPermissions.set(true);
+      const newAreas = this.editAreasControl.value;
+      const newCenters = this.editCentersControl.value;
+      const newRoutesetters = this.editRoutesettersControl.value;
+
+      await Promise.all([
+        this.onAreasChange(user.id, newAreas),
+        this.onCentersChange(user.id, newCenters),
+        this.onRoutesettersChange(user.id, newRoutesetters),
+      ]);
+
+      this.users.update((list) =>
+        list.map((u) =>
+          u.id === user.id
+            ? {
+                ...u,
+                assignedAreas: newAreas,
+                assignedCenters: newCenters,
+                routesetterCenters: newRoutesetters,
+              }
+            : u,
+        ),
+      );
+
+      this.toast.success(this.translate.instant('admin.users.saved'));
+      observer.next(true);
+      observer.complete();
+    } catch (e) {
+      console.error('[UsersListAdmin] Error saving permissions:', e);
+      this.toast.error(this.translate.instant('admin.users.saveError'));
+    } finally {
+      this.isSavingPermissions.set(false);
     }
   }
 
@@ -1049,6 +1416,7 @@ export class AdminUsersListComponent {
       }
     } catch (e) {
       console.error('[UsersListAdmin] Exception updating areas:', e);
+      throw e;
     }
   }
 
@@ -1097,6 +1465,7 @@ export class AdminUsersListComponent {
       }
     } catch (e) {
       console.error('[UsersListAdmin] Exception updating centers:', e);
+      throw e;
     }
   }
 
@@ -1144,6 +1513,7 @@ export class AdminUsersListComponent {
       }
     } catch (e) {
       console.error('[UsersListAdmin] Exception updating routesetters:', e);
+      throw e;
     }
   }
 }

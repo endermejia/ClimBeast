@@ -5,7 +5,7 @@ import {
   inject,
   input,
   TemplateRef,
-  ViewChild,
+  viewChild,
 } from '@angular/core';
 
 import { TuiButton, TuiDialogService } from '@taiga-ui/core';
@@ -46,7 +46,7 @@ export class ParkingButtonComponent {
   crag = input<CragDetail | null>(null);
   parkings = input<ParkingDto[] | null>(null);
 
-  @ViewChild('dialogTpl') private readonly dialogTpl!: TemplateRef<unknown>;
+  private readonly dialogTpl = viewChild<TemplateRef<unknown>>('dialogTpl');
 
   protected readonly totalCapacity = computed(() => {
     const parkings = this.parkings() ?? this.crag()?.parkings ?? [];
@@ -54,7 +54,9 @@ export class ParkingButtonComponent {
   });
 
   protected openDialog(): void {
-    void firstValueFrom(this.dialogs.open(this.dialogTpl, { size: 'l' }), {
+    const tpl = this.dialogTpl();
+    if (!tpl) return;
+    void firstValueFrom(this.dialogs.open(tpl, { size: 'l' }), {
       defaultValue: undefined,
     });
   }

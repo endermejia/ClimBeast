@@ -6,7 +6,7 @@ import {
   inject,
   input,
   TemplateRef,
-  ViewChild,
+  viewChild,
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
@@ -52,7 +52,7 @@ export class MeteoButtonComponent {
   latitude = input<number>();
   longitude = input<number>();
 
-  @ViewChild('dialogTpl') private readonly dialogTpl!: TemplateRef<unknown>;
+  private readonly dialogTpl = viewChild<TemplateRef<unknown>>('dialogTpl');
 
   protected readonly coords = computed(() => {
     const lat = this.latitude();
@@ -75,7 +75,9 @@ export class MeteoButtonComponent {
   });
 
   protected openDialog(): void {
-    void firstValueFrom(this.dialogs.open(this.dialogTpl, { size: 'l' }), {
+    const tpl = this.dialogTpl();
+    if (!tpl) return;
+    void firstValueFrom(this.dialogs.open(tpl, { size: 'l' }), {
       defaultValue: undefined,
     });
   }
