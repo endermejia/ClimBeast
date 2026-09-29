@@ -484,8 +484,10 @@ export class ProfileDataService {
           });
         };
 
-        const shouldFetchOutdoor = (!showIndoor && !showOutdoor) || showOutdoor;
-        const shouldFetchIndoor = (!showIndoor && !showOutdoor) || showIndoor;
+        const isBoth = showIndoor && showOutdoor;
+        const shouldFetchOutdoor =
+          isBoth || showOutdoor || (!showIndoor && !showOutdoor);
+        const shouldFetchIndoor = isBoth || (showIndoor && !showOutdoor);
 
         const promises: Promise<void>[] = [];
         if (shouldFetchOutdoor) promises.push(fetchOutdoor());
@@ -528,8 +530,10 @@ export class ProfileDataService {
     loader: async ({ params }): Promise<number | undefined> => {
       const { userId, showIndoor, showOutdoor } = params;
       if (!userId || !this.isBrowser) return undefined;
-      const shouldFetchOutdoor = (!showIndoor && !showOutdoor) || showOutdoor;
-      const shouldFetchIndoor = (!showIndoor && !showOutdoor) || showIndoor;
+      const isBoth = showIndoor && showOutdoor;
+      const shouldFetchOutdoor =
+        isBoth || showOutdoor || (!showIndoor && !showOutdoor);
+      const shouldFetchIndoor = isBoth || (showIndoor && !showOutdoor);
       try {
         await this.supabase.whenReady();
         let total = 0;

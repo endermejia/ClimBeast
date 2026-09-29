@@ -193,12 +193,12 @@ export class UserProfileStatisticsComponent {
         )
       : null;
 
+    const isBoth = showIndoor && showOutdoor;
+    const isIndoorOnly = showIndoor && !showOutdoor;
+
     return this.rawStats().filter(
       (ascent) =>
-        ((showIndoor && showOutdoor) ||
-          (!showIndoor && !showOutdoor) ||
-          (showIndoor && ascent.is_indoor) ||
-          (showOutdoor && !ascent.is_indoor)) &&
+        (isBoth || (isIndoorOnly ? ascent.is_indoor : !ascent.is_indoor)) &&
         (!allowedGrades ||
           allowedGrades.has(ascent.ascent_grade || ascent.route_grade)) &&
         (!allowedKinds ||

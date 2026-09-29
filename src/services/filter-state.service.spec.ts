@@ -65,7 +65,7 @@ describe('FilterStateService', () => {
     ]);
     expect(service.profileAscentsCategories()).toEqual([]);
     expect(service.profileAscentsShowIndoor()).toBe(false);
-    expect(service.profileAscentsShowOutdoor()).toBe(false);
+    expect(service.profileAscentsShowOutdoor()).toBe(true);
   });
 
   it('should have default indoor topo filters', () => {
@@ -130,6 +130,7 @@ describe('FilterStateService', () => {
     service.profileAscentsGradeRange.set([5, 20]);
     service.profileAscentsCategories.set([1]);
     service.profileAscentsShowIndoor.set(true);
+    service.profileAscentsShowOutdoor.set(false);
 
     // 2. Switch to another user's profile
     service.setProfileContext(false);
@@ -140,7 +141,7 @@ describe('FilterStateService', () => {
     ]);
     expect(service.profileAscentsCategories()).toEqual([]);
     expect(service.profileAscentsShowIndoor()).toBe(false);
-    expect(service.profileAscentsShowOutdoor()).toBe(false);
+    expect(service.profileAscentsShowOutdoor()).toBe(true);
 
     // 3. Switch back to own profile -> restores saved filters
     service.setProfileContext(true);
@@ -148,5 +149,6 @@ describe('FilterStateService', () => {
     expect(service.profileAscentsGradeRange()).toEqual([5, 20]);
     expect(service.profileAscentsCategories()).toEqual([1]);
     expect(service.profileAscentsShowIndoor()).toBe(true);
+    expect(service.profileAscentsShowOutdoor()).toBe(false);
   });
 });

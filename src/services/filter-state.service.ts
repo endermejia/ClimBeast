@@ -70,7 +70,7 @@ export class FilterStateService {
   ]);
   profileAscentsCategories: WritableSignal<number[]> = signal([]);
   profileAscentsShowIndoor: WritableSignal<boolean> = signal(false);
-  profileAscentsShowOutdoor: WritableSignal<boolean> = signal(false);
+  profileAscentsShowOutdoor: WritableSignal<boolean> = signal(true);
 
   // ---- Indoor Centers List Filters ----
   private readonly indoorListGradeRangeKey = STORAGE_KEYS.indoorListGradeRange;
@@ -495,7 +495,14 @@ export class FilterStateService {
       if (rawProfileOutdoor !== null) {
         this.profileAscentsShowOutdoor.set(rawProfileOutdoor === 'true');
       } else {
-        this.profileAscentsShowOutdoor.set(false);
+        this.profileAscentsShowOutdoor.set(true);
+      }
+
+      if (
+        !this.profileAscentsShowIndoor() &&
+        !this.profileAscentsShowOutdoor()
+      ) {
+        this.profileAscentsShowOutdoor.set(true);
       }
     } catch {
       this.resetProfileFilters();
@@ -506,7 +513,7 @@ export class FilterStateService {
     this.profileAscentsGradeRange.set([0, ORDERED_GRADE_VALUES.length - 1]);
     this.profileAscentsCategories.set([]);
     this.profileAscentsShowIndoor.set(false);
-    this.profileAscentsShowOutdoor.set(false);
+    this.profileAscentsShowOutdoor.set(true);
   }
 
   resetIndoorTopoGradeRange(): void {

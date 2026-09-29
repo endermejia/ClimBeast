@@ -125,7 +125,7 @@ export class UserProfileAscentsComponent {
     const categoriesActive = this.selectedCategories().length > 0;
     const indoor = this.showIndoor();
     const outdoor = this.showOutdoor();
-    const indoorOutdoorActive = (indoor || outdoor) && !(indoor && outdoor);
+    const indoorOutdoorActive = indoor || !outdoor;
     return gradeActive || categoriesActive || indoorOutdoorActive;
   });
 
