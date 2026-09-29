@@ -12,6 +12,7 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { AuthStateService } from '../../services/auth-state.service';
 import { CartService } from '../../services/cart.service';
 
 import { MerchandiseItemDetail } from '../../models';
@@ -68,8 +69,37 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
                 }}
               </span>
             }
-            <div class="text-2xl font-black tabular-nums ml-auto">
-              {{ item.price | number: '1.2-2' }}€
+            <div class="flex items-center gap-3 ml-auto">
+              @if (isAdmin()) {
+                <div class="flex gap-2">
+                  <button
+                    tuiIconButton
+                    appearance="accent"
+                    size="s"
+                    type="button"
+                    class="rounded-xl!"
+                    (click)="setAction('edit')"
+                    [attr.aria-label]="'edit' | translate"
+                  >
+                    <tui-icon icon="@tui.pencil" />
+                  </button>
+
+                  <button
+                    tuiIconButton
+                    appearance="negative"
+                    size="s"
+                    type="button"
+                    class="rounded-xl!"
+                    (click)="setAction('delete')"
+                    [attr.aria-label]="'delete' | translate"
+                  >
+                    <tui-icon icon="@tui.trash" />
+                  </button>
+                </div>
+              }
+              <div class="text-2xl font-black tabular-nums">
+                {{ item.price | number: '1.2-2' }}€
+              </div>
             </div>
           </div>
 
@@ -204,10 +234,23 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
 })
 export class MerchandiseItemDialogComponent {
   private readonly cartService = inject(CartService);
+  private readonly authState = inject(AuthStateService);
+
+  protected readonly isAdmin = this.authState.isAdmin;
 
   protected readonly context =
-    injectContext<TuiDialogContext<void, MerchandiseItemDetail>>();
+    injectContext<
+      TuiDialogContext<'edit' | 'delete' | undefined, MerchandiseItemDetail>
+    >();
   protected readonly item: MerchandiseItemDetail = this.context.data;
+
+  /**
+   * Cierra la ficha devolviendo la acción elegida: quien la abrió
+   * (`MerchandiseService`) se encarga de abrir el formulario o de borrar.
+   */
+  protected setAction(action: 'edit' | 'delete'): void {
+    this.context.completeWith(action);
+  }
 
   protected index = signal(0);
 
@@ -278,6 +321,6 @@ export class MerchandiseItemDialogComponent {
     });
 
     this.cartService.showCart.set(true);
-    this.context.completeWith();
+    this.context.completeWith(undefined);
   }
 }

@@ -7,6 +7,7 @@ import {
   effect,
   inject,
   input,
+  resource,
   signal,
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
@@ -15,8 +16,10 @@ import { RouterLink } from '@angular/router';
 
 import { TuiAutoFocus } from '@taiga-ui/cdk';
 import {
+  TuiAppearance,
   TuiDataList,
   TuiIcon,
+  TuiLink,
   TuiScrollbar,
   TuiTextfield,
   TuiTitle,
@@ -36,8 +39,10 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs';
 
 import { AreasService } from '../../services/areas.service';
+import { AuthStateService } from '../../services/auth-state.service';
 import { CragsService } from '../../services/crags.service';
 import { LocalStorage } from '../../services/local-storage';
+import { MerchandiseService } from '../../services/merchandise.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { RoutesService } from '../../services/routes.service';
 import { SearchService } from '../../services/search.service';
@@ -50,6 +55,7 @@ import {
   ActiveArea,
   ActiveCrag,
   ActiveIndoorCenter,
+  MerchandiseItemDetail,
   SearchAreaItem,
   SearchCragItem,
   SearchData,
@@ -73,12 +79,14 @@ import { TourHintComponent } from './tour-hint';
     RouterLink,
     TourHintComponent,
     TranslatePipe,
+    TuiAppearance,
     TuiAutoFocus,
     TuiAvatar,
     TuiBadge,
     TuiDataList,
     TuiIcon,
     TuiInputSearch,
+    TuiLink,
     TuiPulse,
     TuiScrollbar,
     TuiSkeleton,
@@ -172,7 +180,8 @@ import { TourHintComponent } from './tour-hint';
                 @if (
                   item.type === 'user' ||
                   item.type === 'indoor' ||
-                  item.type === 'equipper'
+                  item.type === 'equipper' ||
+                  item.type === 'shop-item'
                 ) {
                   <span tuiAvatar size="xs" class="shrink-0">
                     @if (item.icon && !item.icon.startsWith('@tui.')) {
@@ -185,7 +194,9 @@ import { TourHintComponent } from './tour-hint';
                             ? '@tui.user'
                             : item.type === 'equipper'
                               ? '@tui.hammer'
-                              : '@tui.map-pin')
+                              : item.type === 'shop-item'
+                                ? '@tui.shirt'
+                                : '@tui.map-pin')
                         "
                       />
                     }
@@ -202,47 +213,119 @@ import { TourHintComponent } from './tour-hint';
               </div>
             </ng-template>
 
-            <!-- Sin búsqueda activa: últimos buscados + populares -->
+            <!-- Sin búsqueda activa: últimos buscados + populares + tienda -->
             @if (!searchValue().trim() && hasSuggestions()) {
               <div
                 class="flex flex-col bg-(--tui-background-base) rounded-xl overflow-hidden w-[calc(100vw-1rem)] md:w-auto md:min-w-200 max-h-[80vh] relative"
               >
                 <tui-scrollbar class="flex-1 min-h-0">
-                  <tui-data-list size="s">
-                    @if (recentSuggestions().length > 0) {
-                      <tui-opt-group [label]="'search.recent' | translate">
-                        @for (item of recentSuggestions(); track item.href) {
-                          <a
-                            tuiOption
-                            [routerLink]="item.href"
-                            (click)="onSuggestionClick()"
-                          >
-                            <ng-container
-                              [ngTemplateOutlet]="itemTemplate"
-                              [ngTemplateOutletContext]="{ $implicit: item }"
-                            ></ng-container>
-                          </a>
-                        }
-                      </tui-opt-group>
-                    }
+                  @if (
+                    recentSuggestions().length > 0 ||
+                    popularSuggestions().length > 0
+                  ) {
+                    <tui-data-list size="s">
+                      @if (recentSuggestions().length > 0) {
+                        <tui-opt-group [label]="'search.recent' | translate">
+                          @for (item of recentSuggestions(); track item.href) {
+                            <a
+                              tuiOption
+                              [routerLink]="item.href"
+                              (click)="onSuggestionClick()"
+                            >
+                              <ng-container
+                                [ngTemplateOutlet]="itemTemplate"
+                                [ngTemplateOutletContext]="{ $implicit: item }"
+                              ></ng-container>
+                            </a>
+                          }
+                        </tui-opt-group>
+                      }
 
-                    @if (popularSuggestions().length > 0) {
-                      <tui-opt-group [label]="'search.popular' | translate">
-                        @for (item of popularSuggestions(); track item.href) {
+                      @if (popularSuggestions().length > 0) {
+                        <tui-opt-group [label]="'search.popular' | translate">
+                          @for (item of popularSuggestions(); track item.href) {
+                            <a
+                              tuiOption
+                              [routerLink]="item.href"
+                              (click)="onSuggestionClick()"
+                            >
+                              <ng-container
+                                [ngTemplateOutlet]="itemTemplate"
+                                [ngTemplateOutletContext]="{ $implicit: item }"
+                              ></ng-container>
+                            </a>
+                          }
+                        </tui-opt-group>
+                      }
+                    </tui-data-list>
+                  }
+
+                  <!-- 🛒 Tienda: artículos destacados para potenciar las ventas -->
+                  @if (showShopSection()) {
+                    <div
+                      class="flex flex-col gap-3 border-t border-(--tui-border-normal) p-3"
+                    >
+                      <div class="flex items-center justify-between gap-2">
+                        <span
+                          tuiAppearance="flat-grayscale"
+                          class="flex items-center gap-1.5"
+                        >
+                          <tui-icon icon="@tui.store" />
+                          <span tuiTitle>{{
+                            'search.shop.title' | translate
+                          }}</span>
+                        </span>
+                        <a
+                          tuiLink
+                          routerLink="/merchandising"
+                          (click)="onSuggestionClick()"
+                        >
+                          {{ 'search.shop.viewAll' | translate }}
+                        </a>
+                      </div>
+
+                      <div class="flex gap-3 overflow-x-auto pb-1">
+                        @for (
+                          featured of featuredShopItems();
+                          track featured.item.id
+                        ) {
                           <a
-                            tuiOption
-                            [routerLink]="item.href"
+                            tuiAppearance="flat-grayscale"
+                            routerLink="/merchandising"
                             (click)="onSuggestionClick()"
+                            class="flex w-28 shrink-0 flex-col gap-2 rounded-2xl border border-(--tui-border-normal) p-2 no-underline"
                           >
-                            <ng-container
-                              [ngTemplateOutlet]="itemTemplate"
-                              [ngTemplateOutletContext]="{ $implicit: item }"
-                            ></ng-container>
+                            <span
+                              class="relative block aspect-square w-full overflow-hidden rounded-xl bg-(--tui-background-neutral-1)"
+                            >
+                              @if (featured.item.image_urls?.[0]; as imageUrl) {
+                                <img
+                                  [src]="imageUrl"
+                                  [alt]="featured.item.name"
+                                  loading="lazy"
+                                  class="h-full w-full object-cover"
+                                />
+                              } @else {
+                                <tui-icon
+                                  icon="@tui.shirt"
+                                  class="m-auto size-6 opacity-30"
+                                />
+                              }
+                            </span>
+                            <span tuiTitle>{{ featured.item.name }}</span>
+                            <span
+                              tuiBadge
+                              appearance="primary"
+                              size="s"
+                              class="mt-auto self-start"
+                            >
+                              {{ featured.price }}
+                            </span>
                           </a>
                         }
-                      </tui-opt-group>
-                    }
-                  </tui-data-list>
+                      </div>
+                    </div>
+                  }
                 </tui-scrollbar>
               </div>
             } @else if (results() !== null) {
@@ -394,9 +477,12 @@ export class SearchDropdownComponent {
   protected readonly outdoorData = inject(OutdoorDataService);
   private readonly searchService = inject(SearchService);
   private readonly areasService = inject(AreasService);
+  private readonly authState = inject(AuthStateService);
   private readonly cragsService = inject(CragsService);
+  private readonly merchService = inject(MerchandiseService);
   private readonly routesService = inject(RoutesService);
   private readonly storage = inject(LocalStorage);
+  private readonly translate = inject(TranslateService);
   private readonly visitedAreas = inject(VisitedAreasService);
   private readonly visitedCrags = inject(VisitedCragsService);
   private readonly visitedIndoorCenters = inject(VisitedIndoorCentersService);
@@ -404,6 +490,32 @@ export class SearchDropdownComponent {
   readonly searchValue = signal('');
   readonly searchOpen = signal(false);
   protected activeSearchTab = signal(0);
+
+  /**
+   * El catálogo de la tienda solo se pide la primera vez que se abre el
+   * buscador: `shopRequested` se queda en `true` para que cerrarlo no
+   * descargue los artículos ya cargados ni obligue a repetir la consulta.
+   *
+   * Mismo criterio que la página de la tienda: los usuarios ven solo
+   * artículos `active`, los admins ven además los inactivos (su catálogo).
+   */
+  private readonly shopRequested = signal(false);
+
+  private readonly shopResource = resource<
+    MerchandiseItemDetail[],
+    { admin: boolean } | undefined
+  >({
+    params: () =>
+      this.shopRequested() ? { admin: this.authState.isAdmin() } : undefined,
+    loader: ({ params }) =>
+      this.merchService.getMerchandiseItems(!params.admin, false),
+  });
+
+  /** Re-renderiza los precios formateados al cambiar de idioma. */
+  private readonly langChange = toSignal(
+    this.translate.onLangChange.pipe(map(() => true)),
+    { initialValue: false },
+  );
 
   constructor() {
     const cdr = inject(ChangeDetectorRef);
@@ -430,6 +542,7 @@ export class SearchDropdownComponent {
     effect(() => {
       if (this.searchOpen()) {
         this.activeSearchTab.set(0);
+        this.shopRequested.set(true);
       }
     });
 
@@ -456,12 +569,21 @@ export class SearchDropdownComponent {
   protected readonly groupedResults = computed(() => {
     const data = this.results();
     if (!data) return [];
-    return Object.entries(data)
+
+    const groups = Object.entries(data)
       .filter(([, items]) => items.length > 0)
       .map(([key, items]) => ({
         key,
         items: items as readonly SearchItem[],
       }));
+
+    // Artículos de la tienda que encajan con la búsqueda.
+    const shopItems = this.shopResults();
+    if (shopItems.length > 0) {
+      groups.push({ key: 'search.shop.title', items: shopItems });
+    }
+
+    return groups;
   });
 
   protected readonly totalResults = computed(() =>
@@ -470,6 +592,54 @@ export class SearchDropdownComponent {
       0,
     ),
   );
+
+  // ─── Tienda ────────────────────────────────────────────────────────────────
+
+  private readonly shopItems = computed(() => this.shopResource.value() ?? []);
+
+  /**
+   * Artículos destacados que se muestran como tarjetas dentro del panel
+   * vacío del buscador, para dar visibilidad a la tienda sin teclear nada.
+   */
+  protected readonly featuredShopItems = computed(() => {
+    this.langChange();
+    return this.shopItems()
+      .slice(0, 4)
+      .map((item) => ({ item, price: this.formatPrice(item.price) }));
+  });
+
+  /** La sección solo aparece si la tienda tiene artículos que enseñar. */
+  protected readonly showShopSection = computed(
+    () => this.featuredShopItems().length > 0,
+  );
+
+  /** Artículos de la tienda que coinciden con lo que se está escribiendo. */
+  protected readonly shopResults = computed<SearchItem[]>(() => {
+    this.langChange();
+    const query = this.searchValue().trim().toLowerCase();
+    if (query.length < 2) return [];
+
+    return this.shopItems()
+      .filter((item) =>
+        [item.name, item.description ?? '', item.category ?? ''].some((field) =>
+          field.toLowerCase().includes(query),
+        ),
+      )
+      .slice(0, 6)
+      .map((item) => this.toSearchItem(item));
+  });
+
+  /** Artículo de la tienda como elemento del buscador. */
+  private toSearchItem(item: MerchandiseItemDetail): SearchItem {
+    return {
+      title: item.name,
+      subtitle: this.formatPrice(item.price),
+      href: '/merchandising',
+      icon: item.image_urls?.[0] ?? '@tui.shirt',
+      type: 'shop-item',
+      data: item,
+    };
+  }
 
   /**
    * Últimos buscados: sitios ya visitados (áreas, sectores y rocódromos)
@@ -563,7 +733,8 @@ export class SearchDropdownComponent {
   protected readonly hasSuggestions = computed(
     () =>
       this.recentSuggestions().length > 0 ||
-      this.popularSuggestions().length > 0,
+      this.popularSuggestions().length > 0 ||
+      this.showShopSection(),
   );
 
   protected onSuggestionClick(): void {
@@ -580,6 +751,14 @@ export class SearchDropdownComponent {
     } catch {
       return [];
     }
+  }
+
+  /** Precio en euros con el formato del idioma activo ("12,00 €"). */
+  private formatPrice(value: number): string {
+    return new Intl.NumberFormat(this.translate.currentLang || 'es', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(value);
   }
 
   protected onTourNext(): void {

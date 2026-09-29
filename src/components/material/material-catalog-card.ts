@@ -6,7 +6,7 @@ import {
   output,
 } from '@angular/core';
 
-import { TuiButton, TuiIcon } from '@taiga-ui/core';
+import { TuiIcon } from '@taiga-ui/core';
 import { TuiBadge } from '@taiga-ui/kit';
 import { TuiCardLarge } from '@taiga-ui/layout';
 
@@ -22,7 +22,6 @@ import type { MaterialCatalogItem } from '../../models';
     DecimalPipe,
     TranslatePipe,
     TuiBadge,
-    TuiButton,
     TuiCardLarge,
     TuiIcon,
   ],
@@ -66,39 +65,13 @@ import type { MaterialCatalogItem } from '../../models';
           </span>
         </div>
 
-        <div class="absolute top-3 left-3 flex flex-col gap-2 z-10">
-          <div class="flex gap-2">
-            <button
-              tuiIconButton
-              appearance="accent"
-              size="s"
-              type="button"
-              class="rounded-xl! shadow-lg bg-(--tui-background-accent-1)! text-(--tui-background-base)!"
-              (click)="edit.emit(item()); $event.stopPropagation()"
-              [attr.aria-label]="'edit' | translate"
-            >
-              <tui-icon icon="@tui.pencil" />
-            </button>
-
-            <button
-              tuiIconButton
-              appearance="negative"
-              size="s"
-              type="button"
-              class="rounded-xl! shadow-lg"
-              (click)="delete.emit(item()); $event.stopPropagation()"
-              [attr.aria-label]="'delete' | translate"
-            >
-              <tui-icon icon="@tui.trash" />
-            </button>
-          </div>
-
-          @if (item().active === false) {
+        @if (item().active === false) {
+          <div class="absolute top-3 left-3 z-10">
             <span tuiBadge size="s">
               {{ 'admin.materialCatalog.inactive' | translate }}
             </span>
-          }
-        </div>
+          </div>
+        }
       </div>
 
       <!-- Info Container -->
@@ -123,6 +96,4 @@ import type { MaterialCatalogItem } from '../../models';
 export class MaterialCatalogCardComponent {
   item = input.required<MaterialCatalogItem>();
   clicked = output<MaterialCatalogItem>();
-  edit = output<MaterialCatalogItem>();
-  delete = output<MaterialCatalogItem>();
 }

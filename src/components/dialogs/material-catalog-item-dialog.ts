@@ -1,18 +1,27 @@
 import { CommonModule, DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
-import { type TuiDialogContext, TuiIcon } from '@taiga-ui/core';
+import { type TuiDialogContext, TuiButton, TuiIcon } from '@taiga-ui/core';
 import { TuiBadge } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
+
+import { AuthStateService } from '../../services/auth-state.service';
 
 import type { MaterialCatalogItem } from '../../models';
 
 @Component({
   selector: 'app-material-catalog-item-dialog',
   standalone: true,
-  imports: [CommonModule, DecimalPipe, TranslatePipe, TuiBadge, TuiIcon],
+  imports: [
+    CommonModule,
+    DecimalPipe,
+    TranslatePipe,
+    TuiBadge,
+    TuiButton,
+    TuiIcon,
+  ],
   template: `
     <div
       class="grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6 md:gap-10 items-start"
@@ -53,8 +62,37 @@ import type { MaterialCatalogItem } from '../../models';
               }}
             </span>
           </div>
-          <div class="text-2xl font-black tabular-nums shrink-0">
-            {{ item.price | number: '1.2-2' }}€
+          <div class="flex items-center gap-3 shrink-0">
+            @if (isAdmin()) {
+              <div class="flex gap-2">
+                <button
+                  tuiIconButton
+                  appearance="accent"
+                  size="s"
+                  type="button"
+                  class="rounded-xl!"
+                  (click)="setAction('edit')"
+                  [attr.aria-label]="'edit' | translate"
+                >
+                  <tui-icon icon="@tui.pencil" />
+                </button>
+
+                <button
+                  tuiIconButton
+                  appearance="negative"
+                  size="s"
+                  type="button"
+                  class="rounded-xl!"
+                  (click)="setAction('delete')"
+                  [attr.aria-label]="'delete' | translate"
+                >
+                  <tui-icon icon="@tui.trash" />
+                </button>
+              </div>
+            }
+            <div class="text-2xl font-black tabular-nums">
+              {{ item.price | number: '1.2-2' }}€
+            </div>
           </div>
         </div>
 
@@ -76,7 +114,21 @@ import type { MaterialCatalogItem } from '../../models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MaterialCatalogItemDialogComponent {
+  private readonly authState = inject(AuthStateService);
+
+  protected readonly isAdmin = this.authState.isAdmin;
+
   protected readonly context =
-    injectContext<TuiDialogContext<void, MaterialCatalogItem>>();
+    injectContext<
+      TuiDialogContext<'edit' | 'delete' | undefined, MaterialCatalogItem>
+    >();
   protected readonly item: MaterialCatalogItem = this.context.data;
+
+  /**
+   * Cierra la ficha devolviendo la acción elegida: quien la abrió
+   * (`MaterialCatalogService`) se encarga de abrir el formulario o de borrar.
+   */
+  protected setAction(action: 'edit' | 'delete'): void {
+    this.context.completeWith(action);
+  }
 }

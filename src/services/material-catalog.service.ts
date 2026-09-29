@@ -1,6 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 
 import { TuiDialogService } from '@taiga-ui/core';
+import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslateService } from '@ngx-translate/core';
@@ -86,9 +87,14 @@ export class MaterialCatalogService {
     }
   }
 
-  openMaterialItem(item: MaterialCatalogItem): void {
-    void firstValueFrom(
-      this.dialogs.open(
+  /**
+   * Abre la ficha del artículo. Si un admin edita o borra desde el diálogo,
+   * se aplica la acción y se devuelve `true` para que quien lo abrió pueda
+   * refrescar su lista.
+   */
+  async openMaterialItem(item: MaterialCatalogItem): Promise<boolean> {
+    const action = await firstValueFrom(
+      this.dialogs.open<'edit' | 'delete' | undefined>(
         new PolymorpheusComponent(MaterialCatalogItemDialogComponent),
         {
           data: item,
@@ -99,6 +105,36 @@ export class MaterialCatalogService {
       ),
       { defaultValue: undefined },
     );
+
+    if (action === 'edit') return this.openMaterialCatalogItemForm(item);
+    if (action === 'delete') return this.deleteItem(item);
+    return false;
+  }
+
+  /** Confirma y borra el artículo. Devuelve `true` si se borró. */
+  async deleteItem(item: MaterialCatalogItem): Promise<boolean> {
+    const confirmed = await firstValueFrom(
+      this.dialogs.open<boolean>(TUI_CONFIRM, {
+        label: this.translate.instant('admin.materialCatalog.deleteTitle'),
+        size: 's',
+        data: {
+          content: this.translate.instant(
+            'admin.materialCatalog.deleteConfirm',
+            {
+              name: item.name,
+            },
+          ),
+          yes: this.translate.instant('delete'),
+          no: this.translate.instant('cancel'),
+          appearance: 'primary-destructive',
+        } as TuiConfirmData,
+      }),
+      { defaultValue: false },
+    );
+
+    if (!confirmed) return false;
+
+    return this.deleteMaterialItem(item.id);
   }
 
   async openMaterialCatalogItemForm(

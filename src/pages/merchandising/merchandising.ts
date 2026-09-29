@@ -15,33 +15,27 @@ import { FormsModule } from '@angular/forms';
 import {
   TuiAppearance,
   TuiButton,
-  TuiDialogService,
   TuiIcon,
   TuiNotification,
   TuiScrollbar,
   TuiTitle,
 } from '@taiga-ui/core';
 import {
-  TUI_CONFIRM,
   TuiBadgeNotification,
   TuiBadgedContentComponent,
-  type TuiConfirmData,
   TuiFilter,
   TuiSkeleton,
 } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import { firstValueFrom, startWith } from 'rxjs';
+import { startWith } from 'rxjs';
 
 import { AuthStateService } from '../../services/auth-state.service';
 import { CartService } from '../../services/cart.service';
 import { MerchandiseService } from '../../services/merchandise.service';
-import { ToastService } from '../../services/toast.service';
 
-import { AdminMerchandiseDialogComponent } from '../../components/dialogs/admin-merchandise-dialog';
 import { MerchandiseCardComponent } from '../../components/merchandise/merchandise-card';
 
 import { MerchandiseItemDetail } from '../../models';
@@ -192,8 +186,6 @@ import { IS_BROWSER } from '../../app/is-browser';
                 <app-merchandise-card
                   [item]="item"
                   (clicked)="openItemDetail($event)"
-                  (edit)="editItem($event)"
-                  (delete)="deleteItem($event)"
                 />
               } @empty {
                 <div
@@ -232,10 +224,8 @@ export class MerchandisingComponent {
   private readonly merchService = inject(MerchandiseService);
   protected readonly authState = inject(AuthStateService);
   protected readonly cartService = inject(CartService);
-  private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
   private readonly isBrowser = inject(IS_BROWSER);
-  private readonly dialogService = inject(TuiDialogService);
 
   protected readonly itemsResource = resource<
     MerchandiseItemDetail[],
@@ -311,59 +301,17 @@ export class MerchandisingComponent {
 
   protected readonly isAdmin = this.authState.isAdmin;
 
-  protected openItemDetail(item: MerchandiseItemDetail): void {
-    this.merchService.openMerchandiseItem(item);
-  }
-
-  protected async editItem(item?: MerchandiseItemDetail): Promise<void> {
-    const result = await firstValueFrom(
-      this.dialogService.open<MerchandiseItemDetail | null>(
-        new PolymorpheusComponent(AdminMerchandiseDialogComponent),
-        {
-          data: item,
-          label: this.translate.instant(
-            item ? 'merchandising.items.edit' : 'merchandising.items.new',
-          ),
-          size: 'm',
-          dismissible: true,
-        },
-      ),
-      { defaultValue: null },
-    );
-    if (result) {
+  protected async openItemDetail(item: MerchandiseItemDetail): Promise<void> {
+    const changed = await this.merchService.openMerchandiseItem(item);
+    if (changed) {
       void this.itemsResource.reload();
     }
   }
 
-  protected async deleteItem(item: MerchandiseItemDetail): Promise<void> {
-    const confirmed = await firstValueFrom(
-      this.dialogService.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('merchandising.items.deleteTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('merchandising.items.deleteConfirm', {
-            name: item.name,
-          }),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    );
-
-    if (confirmed) {
-      const ok = await this.merchService.deleteMerchandiseItem(item.id);
-      if (ok) {
-        this.toast.success(
-          this.translate.instant('merchandising.items.deleteSuccess'),
-        );
-        void this.itemsResource.reload();
-      } else {
-        this.toast.error(
-          this.translate.instant('merchandising.items.deleteError'),
-        );
-      }
+  protected async editItem(item?: MerchandiseItemDetail): Promise<void> {
+    const saved = await this.merchService.editItem(item);
+    if (saved) {
+      void this.itemsResource.reload();
     }
   }
 }

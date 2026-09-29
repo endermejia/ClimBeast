@@ -337,7 +337,7 @@ export class CartOverlayComponent {
       if (item.type === 'merchandise') {
         const product = await this.merchService.getMerchandiseItemById(item.id);
         if (product) {
-          this.merchService.openMerchandiseItem(product);
+          void this.merchService.openMerchandiseItem(product);
         }
       }
     } finally {

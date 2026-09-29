@@ -9,16 +9,10 @@ import {
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
-import {
-  TuiButton,
-  TuiDialogService,
-  TuiIcon,
-  TuiScrollbar,
-} from '@taiga-ui/core';
-import { TUI_CONFIRM, type TuiConfirmData, TuiSkeleton } from '@taiga-ui/kit';
+import { TuiButton, TuiIcon, TuiScrollbar } from '@taiga-ui/core';
+import { TuiSkeleton } from '@taiga-ui/kit';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { MaterialCatalogService } from '../../services/material-catalog.service';
 
@@ -95,8 +89,6 @@ import type { MaterialCatalogItem } from '../../models';
               <app-material-catalog-card
                 [item]="item"
                 (clicked)="openItemDetail($event)"
-                (edit)="openEditItem($event)"
-                (delete)="deleteItem($event)"
               />
             } @empty {
               <app-empty-state
@@ -114,8 +106,6 @@ import type { MaterialCatalogItem } from '../../models';
 })
 export class AdminMaterialCatalogComponent {
   private readonly catalogService = inject(MaterialCatalogService);
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly translate = inject(TranslateService);
 
   readonly catalogResource = resource<MaterialCatalogItem[], void>({
     loader: () => this.catalogService.loadCatalog(true),
@@ -123,49 +113,17 @@ export class AdminMaterialCatalogComponent {
 
   readonly allItems = computed(() => this.catalogResource.value() ?? []);
 
-  openItemDetail(item: MaterialCatalogItem): void {
-    this.catalogService.openMaterialItem(item);
+  async openItemDetail(item: MaterialCatalogItem): Promise<void> {
+    const changed = await this.catalogService.openMaterialItem(item);
+    if (changed) {
+      void this.catalogResource.reload();
+    }
   }
 
   async openCreateItem(): Promise<void> {
     const success = await this.catalogService.openMaterialCatalogItemForm();
     if (success) {
       void this.catalogResource.reload();
-    }
-  }
-
-  async openEditItem(item: MaterialCatalogItem): Promise<void> {
-    const success = await this.catalogService.openMaterialCatalogItemForm(item);
-    if (success) {
-      void this.catalogResource.reload();
-    }
-  }
-
-  async deleteItem(item: MaterialCatalogItem): Promise<void> {
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('admin.materialCatalog.deleteTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant(
-            'admin.materialCatalog.deleteConfirm',
-            {
-              name: item.name,
-            },
-          ),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    );
-
-    if (confirmed) {
-      const ok = await this.catalogService.deleteMaterialItem(item.id);
-      if (ok) {
-        void this.catalogResource.reload();
-      }
     }
   }
 }

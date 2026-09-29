@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 
-import { TuiButton, TuiIcon } from '@taiga-ui/core';
+import { TuiIcon } from '@taiga-ui/core';
 import { TuiBadge } from '@taiga-ui/kit';
 import { TuiCardLarge } from '@taiga-ui/layout';
 
@@ -29,7 +29,6 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
     DecimalPipe,
     TranslatePipe,
     TuiBadge,
-    TuiButton,
     CustomCarouselComponent,
     TuiIcon,
     TuiCardLarge,
@@ -78,39 +77,11 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
           </span>
         </div>
 
-        @if (isAdmin()) {
-          <div class="absolute top-3 left-3 flex flex-col gap-2 z-10">
-            <div class="flex gap-2">
-              <button
-                tuiIconButton
-                appearance="accent"
-                size="s"
-                type="button"
-                class="rounded-xl! shadow-lg bg-(--tui-background-accent-1)! text-(--tui-background-base)!"
-                (click)="edit.emit(item()); $event.stopPropagation()"
-                [attr.aria-label]="'edit' | translate"
-              >
-                <tui-icon icon="@tui.pencil" />
-              </button>
-
-              <button
-                tuiIconButton
-                appearance="negative"
-                size="s"
-                type="button"
-                class="rounded-xl! shadow-lg"
-                (click)="delete.emit(item()); $event.stopPropagation()"
-                [attr.aria-label]="'delete' | translate"
-              >
-                <tui-icon icon="@tui.trash" />
-              </button>
-            </div>
-
-            @if (item().active === false) {
-              <span tuiBadge size="s">
-                {{ 'merchandising.items.inactive' | translate }}
-              </span>
-            }
+        @if (isAdmin() && item().active === false) {
+          <div class="absolute top-3 left-3 z-10">
+            <span tuiBadge size="s">
+              {{ 'merchandising.items.inactive' | translate }}
+            </span>
           </div>
         }
       </div>
@@ -143,8 +114,6 @@ export class MerchandiseCardComponent {
 
   item = input.required<MerchandiseItemDetail>();
   clicked = output<MerchandiseItemDetail>();
-  edit = output<MerchandiseItemDetail>();
-  delete = output<MerchandiseItemDetail>();
 
   protected readonly index = signal(0);
 

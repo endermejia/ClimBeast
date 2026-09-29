@@ -192,7 +192,7 @@ export class OrderDetailsDialogComponent {
     }
 
     if (item.item_type === 'merchandise' && item.product_data) {
-      this.merchandiseService.openMerchandiseItem(
+      void this.merchandiseService.openMerchandiseItem(
         item.product_data as MerchandiseItemDetail,
       );
     }

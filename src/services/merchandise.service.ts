@@ -1,6 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 
 import { TuiDialogService } from '@taiga-ui/core';
+import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslateService } from '@ngx-translate/core';
@@ -24,11 +25,14 @@ import { IS_BROWSER } from '../app/is-browser';
 
 import { SupabaseService } from './supabase.service';
 
+import { ToastService } from './toast.service';
+
 @Injectable({ providedIn: 'root' })
 export class MerchandiseService {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly dialogs = inject(TuiDialogService);
+  private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
 
   readonly loading = signal(false);
@@ -318,9 +322,14 @@ export class MerchandiseService {
     return this.supabase.getPublicUrl('merchandise', data.path);
   }
 
-  openMerchandiseItem(item: MerchandiseItemDetail): void {
-    void firstValueFrom(
-      this.dialogs.open(
+  /**
+   * Abre la ficha del artículo. Si un admin edita o borra desde el diálogo,
+   * se aplica la acción y se devuelve `true` para que quien lo abrió pueda
+   * refrescar su lista.
+   */
+  async openMerchandiseItem(item: MerchandiseItemDetail): Promise<boolean> {
+    const action = await firstValueFrom(
+      this.dialogs.open<'edit' | 'delete' | undefined>(
         new PolymorpheusComponent(MerchandiseItemDialogComponent),
         {
           data: item,
@@ -332,6 +341,68 @@ export class MerchandiseService {
       ),
       { defaultValue: undefined },
     );
+
+    if (action === 'edit') return this.editItem(item);
+    if (action === 'delete') return this.deleteItem(item);
+    return false;
+  }
+
+  /** Formulario de creación (`item` vacío) o edición. `true` si se guardó. */
+  async editItem(item?: MerchandiseItemDetail): Promise<boolean> {
+    // Import dinámico: mantiene el formulario de edición (y su drag-drop)
+    // fuera del bundle inicial y evita el ciclo con este servicio.
+    const { AdminMerchandiseDialogComponent } =
+      await import('../components/dialogs/admin-merchandise-dialog');
+
+    const result = await firstValueFrom(
+      this.dialogs.open<MerchandiseItemDetail | null>(
+        new PolymorpheusComponent(AdminMerchandiseDialogComponent),
+        {
+          data: item,
+          label: this.translate.instant(
+            item ? 'merchandising.items.edit' : 'merchandising.items.new',
+          ),
+          size: 'm',
+          dismissible: true,
+        },
+      ),
+      { defaultValue: null },
+    );
+
+    return !!result;
+  }
+
+  /** Confirma y borra el artículo. Devuelve `true` si se borró. */
+  async deleteItem(item: MerchandiseItemDetail): Promise<boolean> {
+    const confirmed = await firstValueFrom(
+      this.dialogs.open<boolean>(TUI_CONFIRM, {
+        label: this.translate.instant('merchandising.items.deleteTitle'),
+        size: 's',
+        data: {
+          content: this.translate.instant('merchandising.items.deleteConfirm', {
+            name: item.name,
+          }),
+          yes: this.translate.instant('delete'),
+          no: this.translate.instant('cancel'),
+          appearance: 'primary-destructive',
+        } as TuiConfirmData,
+      }),
+      { defaultValue: false },
+    );
+
+    if (!confirmed) return false;
+
+    const ok = await this.deleteMerchandiseItem(item.id);
+    if (ok) {
+      this.toast.success(
+        this.translate.instant('merchandising.items.deleteSuccess'),
+      );
+    } else {
+      this.toast.error(
+        this.translate.instant('merchandising.items.deleteError'),
+      );
+    }
+    return ok;
   }
 
   openOrderDetails(order: OrderDetail): void {
