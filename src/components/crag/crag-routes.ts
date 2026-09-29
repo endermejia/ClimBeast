@@ -79,7 +79,9 @@ import { EmptyStateComponent } from '../ui/empty-state';
           </button>
         </div>
       }
-      <div class="flex items-end gap-2">
+      <div
+        class="sticky top-0 z-10 flex items-end gap-2 bg-(--tui-background-base)"
+      >
         <tui-textfield class="grow block" tuiTextfieldSize="l">
           <label tuiLabel for="routes-search">{{
             'searchPlaceholder' | translate
