@@ -27,11 +27,9 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { map, merge, startWith } from 'rxjs';
 
-import {
-  ClimbingKind,
-  ClimbingKinds,
-  ORDERED_GRADE_VALUES,
-} from '../../models';
+import { ORDERED_GRADE_VALUES } from '../../models';
+
+import { ClimbingKindByLabelPipe } from '../../pipes/climbing-kind.pipe';
 
 import { clamp } from '../../utils';
 
@@ -60,6 +58,7 @@ export interface FilterDialog {
 @Component({
   selector: 'app-filter-dialog',
   imports: [
+    ClimbingKindByLabelPipe,
     ClimbingKindIconComponent,
     FormsModule,
     ReactiveFormsModule,
@@ -95,7 +94,7 @@ export interface FilterDialog {
           <ng-template #climbingKindContent let-item>
             <span class="inline-flex items-center gap-1.5">
               <app-climbing-kind-icon
-                [kind]="getKindByLabel(item)"
+                [kind]="item | climbingKindByLabel: climbingKindItems()"
                 [showHint]="false"
               />
               <span>{{ item }}</span>
@@ -225,14 +224,6 @@ export class FilterDialogComponent {
       this.translate.instant('filters.types.multipitch'),
     ];
   });
-
-  protected getKindByLabel(label: string): ClimbingKind | null {
-    const items = this.climbingKindItems();
-    if (label === items[0]) return ClimbingKinds.SPORT;
-    if (label === items[1]) return ClimbingKinds.BOULDER;
-    if (label === items[2]) return ClimbingKinds.MULTIPITCH;
-    return null;
-  }
 
   // Items for shade filter (no-op for now) as a signal
   readonly shadeItems: Signal<string[]> = computed(() => {
