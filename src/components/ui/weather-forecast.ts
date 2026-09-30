@@ -116,18 +116,22 @@ import { WeatherDay } from '../../models';
             (touchend)="$event.stopPropagation()"
           >
             <div class="flex gap-3 px-2 pb-4">
-              @for (hour of selectedDay.hourly; track hour.time) {
+              @for (
+                hour of selectedDay.hourly;
+                track hour.time;
+                let i = $index
+              ) {
                 <div
                   #hourItem
                   class="flex flex-col items-center min-w-[50px] min-h-[120px] p-1 rounded-xl transition-colors border hour-item select-none"
                   [class.bg-(--tui-background-neutral-1)]="
-                    isCurrentHour(hour.time)
+                    i === currentHourIndex()
                   "
                   [class.border-(--tui-border-normal-hover)]="
-                    isCurrentHour(hour.time)
+                    i === currentHourIndex()
                   "
                   [class.border-(--tui-border-normal)]="
-                    !isCurrentHour(hour.time)
+                    i !== currentHourIndex()
                   "
                 >
                   <span class="text-[10px] opacity-60">
@@ -301,6 +305,23 @@ export class WeatherForecastComponent {
     () => this.forecastResult()?.ok === false,
   );
 
+  /** Index of the current hour within the selected day's hourly forecast, or -1 if not today. */
+  protected readonly currentHourIndex = computed<number>(() => {
+    const days = this.weather();
+    const dayIdx = this.selectedDayIdx();
+    const currentDay = days?.[dayIdx];
+    if (!currentDay || !currentDay.hourly) return -1;
+
+    const now = new Date();
+    return currentDay.hourly.findIndex(
+      (h) =>
+        h.time.getHours() === now.getHours() &&
+        h.time.getDate() === now.getDate() &&
+        h.time.getMonth() === now.getMonth() &&
+        h.time.getFullYear() === now.getFullYear(),
+    );
+  });
+
   constructor() {
     effect(() => {
       this.weather();
@@ -311,17 +332,7 @@ export class WeatherForecastComponent {
           const el = this.hourlyScroll()?.nativeElement;
           if (!el) return;
 
-          const days = this.weather();
-          const dayIdx = this.selectedDayIdx();
-          const currentDay = days?.[dayIdx];
-          if (!currentDay || !currentDay.hourly) return;
-
-          const now = new Date();
-          const currentIdx = currentDay.hourly.findIndex(
-            (h) =>
-              h.time.getHours() === now.getHours() &&
-              h.time.getDate() === now.getDate(),
-          );
+          const currentIdx = this.currentHourIndex();
 
           if (currentIdx !== -1) {
             const target = this.hourItems()[currentIdx]?.nativeElement;
@@ -341,15 +352,5 @@ export class WeatherForecastComponent {
         }, 0);
       });
     });
-  }
-
-  protected isCurrentHour(date: Date): boolean {
-    const now = new Date();
-    return (
-      date.getHours() === now.getHours() &&
-      date.getDate() === now.getDate() &&
-      date.getMonth() === now.getMonth() &&
-      date.getFullYear() === now.getFullYear()
-    );
   }
 }
