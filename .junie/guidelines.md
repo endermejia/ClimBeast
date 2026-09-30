@@ -129,6 +129,7 @@ Este proyecto está construido con Angular 21, renderizado del lado del servidor
 - Eventos en plantillas deben usar el sufijo `.zoneless` (ej.: `(scroll.zoneless)="onScroll(...)"`).
 - Cambio de detección manual: cuando actualices estado desde callbacks externos, usa señales o `effect()` para notificar a la vista.
 - Evita patrones que dependan de Zone.js (p.ej., no confíes en que la vista se actualiza sola tras promesas/tiempos). Usa señales para estado reactivo.
+- **Prohibido inyectar `NgZone` o usar `ngZone.runOutsideAngular()` / `ngZone.run()`**: En runtime `zone.js` no se carga (`"polyfills": []`). Las APIs del navegador (`requestAnimationFrame`, `setTimeout`, eventos DOM) son nativas, no están monkey-patcheadas y no disparan ciclos de detección de cambios. Envolverlas en `runOutsideAngular` es redundante, no hace nada y agrega inyecciones innecesarias.
 
 ## 3) Sintaxis moderna Angular 21
 
