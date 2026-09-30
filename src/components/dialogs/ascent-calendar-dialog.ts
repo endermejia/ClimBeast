@@ -26,6 +26,8 @@ import {
   RouteAscentWithExtras,
 } from '../../models';
 
+import { AscentCountDirective } from '../../directives/ascent-count.directive';
+
 import { AscentCardComponent } from '../ascent/ascent-card';
 
 /** Data passed when opening the dialog. */
@@ -45,6 +47,7 @@ interface AscentDateMarker {
   standalone: true,
   imports: [
     AscentCardComponent,
+    AscentCountDirective,
     CommonModule,
     DatePipe,
     LowerCasePipe,
@@ -91,7 +94,7 @@ interface AscentDateMarker {
             size="s"
             class="font-bold opacity-60"
           >
-            {{ ascentsForSelectedDay().length }}
+            <span [appAscentCount]="ascentsForSelectedDay().length"></span>
             {{ 'ascents' | translate | lowercase }}
           </span>
         </header>

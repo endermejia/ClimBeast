@@ -8,6 +8,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { AscentTypes, RouteScore } from '../../../models';
 
+import { AscentCountDirective } from '../../../directives/ascent-count.directive';
 import { CountUpDirective } from '../../../directives/count-up.directive';
 
 import { ChartAscentsByStyleComponent } from '../../charts/chart-ascents-by-style';
@@ -16,6 +17,7 @@ import { ChartAscentsByStyleComponent } from '../../charts/chart-ascents-by-styl
   selector: 'app-user-profile-stats-score',
   standalone: true,
   imports: [
+    AscentCountDirective,
     ChartAscentsByStyleComponent,
     CommonModule,
     CountUpDirective,
@@ -77,9 +79,8 @@ import { ChartAscentsByStyleComponent } from '../../charts/chart-ascents-by-styl
               class="text-base sm:text-lg lg:text-xl font-bold truncate max-w-full text-center"
               [appCountUp]="totalAscents()"
               #totalAscentsAnim="appCountUp"
-            >
-              {{ totalAscentsAnim.currentValue() | number: '1.0-0' }}
-            </div>
+              [appAscentCount]="totalAscentsAnim.currentValue()"
+            ></div>
             <div
               class="text-[10px] sm:text-xs uppercase opacity-70 font-semibold truncate max-w-full text-center"
             >
@@ -183,9 +184,8 @@ import { ChartAscentsByStyleComponent } from '../../charts/chart-ascents-by-styl
               class="text-sm font-bold tabular-nums truncate w-full"
               [appCountUp]="totalAscents()"
               #totalAscentsAnim="appCountUp"
-            >
-              {{ totalAscentsAnim.currentValue() | number: '1.0-0' }}
-            </span>
+              [appAscentCount]="totalAscentsAnim.currentValue()"
+            ></span>
             <span
               class="text-[10px] uppercase opacity-70 font-semibold truncate w-full"
             >

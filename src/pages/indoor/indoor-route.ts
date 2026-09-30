@@ -65,11 +65,13 @@ import {
 import { inputValueOrUndefined, safeResourceValue } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
+import { AscentCountDirective } from '../../directives/ascent-count.directive';
 
 @Component({
   selector: 'app-indoor-route',
   standalone: true,
   imports: [
+    AscentCountDirective,
     CommonModule,
     OfflineNotCachedComponent,
     RouterLink,
@@ -338,7 +340,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                 <!-- Ascents Section (Mobile only) -->
                 <div class="lg:hidden mt-6">
                   <h2 class="text-2xl font-bold mb-4">
-                    {{ ascents().length }}
+                    <span [appAscentCount]="ascents().length"></span>
                     {{
                       (ascents().length === 1 ? 'ascent' : 'ascents')
                         | translate
@@ -376,7 +378,7 @@ import { IS_BROWSER } from '../../app/is-browser';
               <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
                 <div class="w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6">
                   <h2 class="text-2xl font-bold mb-4">
-                    {{ ascents().length }}
+                    <span [appAscentCount]="ascents().length"></span>
                     {{
                       (ascents().length === 1 ? 'ascent' : 'ascents')
                         | translate

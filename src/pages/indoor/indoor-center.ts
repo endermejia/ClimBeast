@@ -98,11 +98,13 @@ import {
 } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
+import { AscentCountDirective } from '../../directives/ascent-count.directive';
 
 @Component({
   selector: 'app-indoor-center',
   standalone: true,
   imports: [
+    AscentCountDirective,
     CommonModule,
     FormsModule,
     TranslateModule,
@@ -315,7 +317,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                           {{ totalRoutes() }}
                           {{ 'indoor.routes' | translate | lowercase }}
                         } @else if (tabIdx === 2) {
-                          {{ ascentsCount() }}
+                          <span [appAscentCount]="ascentsCount()"></span>
                           {{ 'indoor.ascents' | translate | lowercase }}
                         } @else {
                           {{ vouchersCount() }}

@@ -110,14 +110,16 @@ import {
 } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
+import { AscentCountDirective } from '../../directives/ascent-count.directive';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-area',
   imports: [
-    AscentsFeedComponent,
     AreaRevenuePanelComponent,
+    AscentCountDirective,
+    AscentsFeedComponent,
     AvatarUrlPipe,
     ChartRoutesByGradeComponent,
     EmptyStateComponent,
@@ -414,7 +416,7 @@ const PAGE_SIZE = 20;
                         {{ areaToposCount() }}
                         {{ 'topos' | translate | lowercase }}
                       } @else {
-                        {{ ascentsCount() }}
+                        <span [appAscentCount]="ascentsCount()"></span>
                         {{ 'ascents' | translate | lowercase }}
                       }
                     </button>

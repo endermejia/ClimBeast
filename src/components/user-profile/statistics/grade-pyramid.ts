@@ -14,10 +14,13 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { AscentTypes, GradeDistribution } from '../../../models';
 
+import { AscentCountDirective } from '../../../directives/ascent-count.directive';
+
 @Component({
   selector: 'app-user-profile-stats-pyramid',
   standalone: true,
   imports: [
+    AscentCountDirective,
     CommonModule,
     RouterLink,
     TranslatePipe,
@@ -96,9 +99,10 @@ import { AscentTypes, GradeDistribution } from '../../../models';
                   ></div>
                 }
               </div>
-              <div class="font-mono text-center opacity-70">
-                {{ row.total }}
-              </div>
+              <div
+                class="font-mono text-center opacity-70"
+                [appAscentCount]="row.total"
+              ></div>
             </div>
           }
 
@@ -132,7 +136,8 @@ import { AscentTypes, GradeDistribution } from '../../../models';
       <div class="trend-hint">
         <div class="trend-hint-header">
           <span class="trend-hint-year">
-            {{ total }} {{ 'ascents' | translate | lowercase }}
+            <span [appAscentCount]="total"></span>
+            {{ 'ascents' | translate | lowercase }}
           </span>
           <span class="trend-hint-score">
             {{ label }}

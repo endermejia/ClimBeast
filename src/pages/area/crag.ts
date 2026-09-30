@@ -70,12 +70,14 @@ import { CACHE_KEYS } from '../../constants';
 import { createCachedResource, handleErrorToast, slugify } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
+import { AscentCountDirective } from '../../directives/ascent-count.directive';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-crag',
   imports: [
+    AscentCountDirective,
     AscentsFeedComponent,
     ChartRoutesByGradeComponent,
     CragRoutesComponent,
@@ -216,7 +218,7 @@ const PAGE_SIZE = 20;
                           {{ toposCount() }}
                           {{ 'topos' | translate | lowercase }}
                         } @else {
-                          {{ ascentsCount() }}
+                          <span [appAscentCount]="ascentsCount()"></span>
                           {{ 'ascents' | translate | lowercase }}
                         }
                       </button>

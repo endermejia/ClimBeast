@@ -46,10 +46,6 @@ import { TuiBadge, TuiInputNumber, TuiPin, TuiRating } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
-import { GradeComponent } from '../ui/avatar-grade';
-import { EmptyStateComponent } from '../ui/empty-state';
-
 import {
   AscentType,
   INDOOR_ROUTE_COLORS,
@@ -60,10 +56,18 @@ import {
 import { IncludesIdPipe } from '../../pipes';
 import { ROUTE_TABLE_SORTERS } from '../../utils';
 
+import { AscentCountDirective } from '../../directives/ascent-count.directive';
+
+import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
+import { GradeComponent } from '../ui/avatar-grade';
+
+import { EmptyStateComponent } from '../ui/empty-state';
+
 @Component({
   selector: 'app-routes-table',
   standalone: true,
   imports: [
+    AscentCountDirective,
     ButtonAscentTypeComponent,
     EmptyStateComponent,
     FormsModule,
@@ -337,7 +341,7 @@ import { ROUTE_TABLE_SORTERS } from '../../utils';
                         }
                         @case ('ascents') {
                           <div tuiCell size="m">
-                            <span>{{ item.ascents }}</span>
+                            <span [appAscentCount]="item.ascents"></span>
                           </div>
                         }
                         @case ('topo') {
