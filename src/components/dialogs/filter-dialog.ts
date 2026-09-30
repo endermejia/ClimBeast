@@ -57,6 +57,22 @@ export interface FilterDialog {
   showToposOnly?: boolean;
 }
 
+interface CategoryConfig {
+  readonly id: number;
+  readonly kind: ClimbingKind;
+  readonly labelKey: string;
+}
+
+const CATEGORY_CONFIGS: readonly CategoryConfig[] = [
+  { id: 0, kind: ClimbingKinds.SPORT, labelKey: 'filters.types.sport' },
+  { id: 1, kind: ClimbingKinds.BOULDER, labelKey: 'filters.types.boulder' },
+  {
+    id: 2,
+    kind: ClimbingKinds.MULTIPITCH,
+    labelKey: 'filters.types.multipitch',
+  },
+];
+
 @Component({
   selector: 'app-filter-dialog',
   imports: [
@@ -89,16 +105,16 @@ export interface FilterDialog {
           <tui-filter
             formControlName="filters"
             size="l"
-            [items]="climbingKindItems()"
+            [items]="categoryIndices"
             [content]="climbingKindContent"
           />
-          <ng-template #climbingKindContent let-item>
+          <ng-template #climbingKindContent let-index>
             <span class="inline-flex items-center gap-1.5">
               <app-climbing-kind-icon
-                [kind]="getKindByLabel(item)"
+                [kind]="categoryKinds[index]"
                 [showHint]="false"
               />
-              <span>{{ item }}</span>
+              <span>{{ categoryLabels()[index] }}</span>
             </span>
           </ng-template>
         </section>
@@ -215,24 +231,14 @@ export class FilterDialogComponent {
     return this.context.data?.showToposOnly ?? false;
   }
 
-  // Items for TuiFilter (types) as signals
-  readonly climbingKindItems: Signal<string[]> = computed(() => {
+  // Category items and kinds for TuiFilter
+  protected readonly categoryIndices = CATEGORY_CONFIGS.map((c) => c.id);
+  protected readonly categoryKinds = CATEGORY_CONFIGS.map((c) => c.kind);
+  readonly categoryLabels: Signal<readonly string[]> = computed(() => {
     // read to establish dependency
     this._i18nTick();
-    return [
-      this.translate.instant('filters.types.sport'),
-      this.translate.instant('filters.types.boulder'),
-      this.translate.instant('filters.types.multipitch'),
-    ];
+    return CATEGORY_CONFIGS.map((c) => this.translate.instant(c.labelKey));
   });
-
-  protected getKindByLabel(label: string): ClimbingKind | null {
-    const items = this.climbingKindItems();
-    if (label === items[0]) return ClimbingKinds.SPORT;
-    if (label === items[1]) return ClimbingKinds.BOULDER;
-    if (label === items[2]) return ClimbingKinds.MULTIPITCH;
-    return null;
-  }
 
   // Items for shade filter (no-op for now) as a signal
   readonly shadeItems: Signal<string[]> = computed(() => {
@@ -262,7 +268,7 @@ export class FilterDialogComponent {
 
   // Reactive form for types (and shade placeholder)
   protected readonly form = new FormGroup({
-    filters: new FormControl<string[]>([]),
+    filters: new FormControl<number[]>([]),
     shade: new FormControl<string[]>([]),
     indoorOutdoor: new FormControl<string[]>([]),
     gradeRange: new FormControl<[number, number]>([0, 0], {
@@ -306,14 +312,11 @@ export class FilterDialogComponent {
   constructor() {
     const d = this.context.data;
     if (d) {
-      const itemsNow = this.climbingKindItems();
-      const selectedFilters = d.categories
-        .map((i) => itemsNow[i])
-        .filter(Boolean);
-
-      this.form.patchValue({
-        filters: selectedFilters,
-      });
+      if (Array.isArray(d.categories)) {
+        this.form.patchValue({
+          filters: d.categories,
+        });
+      }
 
       if (Array.isArray(d.selectedShade) && d.selectedShade.length) {
         const shadeNow = this.shadeItems();
@@ -442,12 +445,7 @@ export class FilterDialogComponent {
   });
 
   protected submit(): void {
-    const selected = this.form.value.filters ?? [];
-    const categories: number[] = [];
-    const itemsNow = this.climbingKindItems();
-    if (selected.includes(itemsNow[0])) categories.push(0);
-    if (selected.includes(itemsNow[1])) categories.push(1);
-    if (selected.includes(itemsNow[2])) categories.push(2);
+    const categories = this.form.value.filters ?? [];
 
     const selectedShadeLabels = this.form.value.shade ?? [];
     const shadeNow = this.shadeItems();
