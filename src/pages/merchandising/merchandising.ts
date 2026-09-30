@@ -99,44 +99,37 @@ import { IS_BROWSER } from '../../app/is-browser';
       >
         <!-- 🚀 Hero Page Header -->
         <header
-          class="relative flex flex-col items-center text-center gap-6 py-12 px-6 rounded-[3.5rem] overflow-hidden border border-(--tui-border-normal) shadow-2xl shadow-black/5"
+          class="relative flex flex-col items-center text-center gap-5 sm:gap-6 py-6 sm:py-8 px-6 rounded-[3rem] overflow-hidden border border-(--tui-border-normal) shadow-2xl shadow-black/5"
           style="background: var(--tui-background-base)"
         >
-          <div class="relative flex flex-col items-center gap-4 text-center">
+          <div class="relative flex flex-col items-center gap-1 text-center">
+            <h1 class="sr-only">{{ 'climbeast.title' | translate }}</h1>
             <img
               src="logo/climbeast.svg"
-              alt="ClimBeast Logo"
-              class="h-16 sm:h-20 w-auto mb-2 opacity-90 drop-shadow-sm"
+              alt="ClimBeast"
+              class="h-32 sm:h-40 md:h-48 w-auto object-contain opacity-95 drop-shadow-md"
             />
-            <h1
-              class="text-4xl sm:text-5xl font-black tracking-tight text-balance leading-tight flex flex-col items-center"
+            <span
+              class="text-xs sm:text-sm font-black uppercase tracking-[0.3em] text-(--tui-text-tertiary)"
             >
-              <span class="leading-none">{{
-                'climbeast.title' | translate
-              }}</span>
-              <span
-                class="text-[10px] sm:text-xs font-bold uppercase tracking-[0.3em] text-(--tui-text-tertiary) mt-2"
-              >
-                {{ 'climbeast.subtitle' | translate }}
-              </span>
-            </h1>
+              {{ 'climbeast.subtitle' | translate }}
+            </span>
           </div>
-
-          <p
-            class="relative text-base sm:text-lg text-(--tui-text-secondary) leading-relaxed max-w-2xl text-balance"
-          >
-            {{ 'merchandising.description' | translate }}
-          </p>
 
           <div
             tuiNotification
             appearance="info"
             size="s"
-            class="relative max-w-lg rounded-2xl! border-none bg-(--tui-background-neutral-1) shadow-sm"
+            class="relative max-w-xl rounded-2xl! border-none bg-(--tui-background-neutral-1) shadow-sm"
           >
-            <span class="text-xs font-medium">
-              {{ 'merchandising.croquisDisclaimer' | translate }}
-            </span>
+            <div class="flex flex-col items-center gap-1.5 text-center">
+              <span class="text-xs font-bold text-(--tui-text-primary)">
+                {{ 'merchandising.description' | translate }}
+              </span>
+              <span class="text-xs font-medium text-(--tui-text-secondary)">
+                {{ 'merchandising.croquisDisclaimer' | translate }}
+              </span>
+            </div>
           </div>
         </header>
 
