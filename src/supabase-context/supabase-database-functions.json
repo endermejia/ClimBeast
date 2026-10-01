@@ -7,6 +7,13 @@
     "description": null
   },
   {
+    "name": "check_chat_message_update",
+    "arguments": "",
+    "return_type": "trigger",
+    "security_definer": true,
+    "description": null
+  },
+  {
     "name": "check_is_admin_update",
     "arguments": "",
     "return_type": "trigger",
@@ -148,14 +155,14 @@
   },
   {
     "name": "is_area_equipper",
-    "arguments": "p_area_id bigint, p_uid uuid",
+    "arguments": "p_area_id bigint",
     "return_type": "boolean",
     "security_definer": true,
     "description": null
   },
   {
     "name": "is_area_equipper",
-    "arguments": "p_area_id bigint",
+    "arguments": "p_area_id bigint, p_uid uuid",
     "return_type": "boolean",
     "security_definer": true,
     "description": null

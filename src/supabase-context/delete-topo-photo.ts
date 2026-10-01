@@ -123,7 +123,7 @@ Deno.serve(async (req: Request) => {
     if (!isAdmin) {
       const { data, error } = await supabaseAdminClient.rpc(
         'is_crag_equipper',
-        { p_crag_id: topo.crag_id },
+        { p_crag_id: topo.crag_id, p_uid: userId },
       );
 
       if (error) {
