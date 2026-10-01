@@ -19,6 +19,8 @@ export function textMatchesRoute(
   r: Partial<RouteWithExtras>,
   query: string,
 ): boolean {
+  // Fast path: empty search query matches everything instantly
+  if (!query) return true;
   const nameMatch = matchesQuery(r.name, query);
   const gradeLabel = GRADE_NUMBER_TO_LABEL[r.grade as VERTICAL_LIFE_GRADES];
   const gradeMatch = matchesQuery(gradeLabel, query);
@@ -29,10 +31,21 @@ export function gradeMatchesRoute(
   r: Partial<RouteWithExtras>,
   minIdx: number,
   maxIdx: number,
+  allowedLabelsSet?: Set<string>,
 ): boolean {
-  const allowedLabels = ORDERED_GRADE_VALUES.slice(minIdx, maxIdx + 1);
+  // Fast path: full grade range matches all routes instantly without array/set allocations
+  if (minIdx === 0 && maxIdx >= ORDERED_GRADE_VALUES.length - 1) {
+    return true;
+  }
   const label = GRADE_NUMBER_TO_LABEL[r.grade as VERTICAL_LIFE_GRADES];
   if (!label || label === PROJECT_GRADE_LABEL) return true;
+
+  // Use precomputed Set if provided by filter loop for O(1) membership check
+  if (allowedLabelsSet) {
+    return allowedLabelsSet.has(label);
+  }
+
+  const allowedLabels = ORDERED_GRADE_VALUES.slice(minIdx, maxIdx + 1);
   return (allowedLabels as readonly string[]).includes(label);
 }
 
@@ -55,11 +68,19 @@ export function filterRoutes<T extends Partial<RouteWithExtras>>(
   const { query, gradeRange, categories } = options;
   const [minIdx, maxIdx] = gradeRange;
 
+  // Pre-allocate Set once outside filter loop to eliminate per-element array slice allocations
+  const isFullGradeRange =
+    minIdx === 0 && maxIdx >= ORDERED_GRADE_VALUES.length - 1;
+  const allowedLabelsSet = !isFullGradeRange
+    ? new Set<string>(ORDERED_GRADE_VALUES.slice(minIdx, maxIdx + 1))
+    : undefined;
+
+  // Re-ordered predicates: cheap boolean/kind check first, then O(1) grade check, then expensive text matching
   return routes.filter(
     (r) =>
-      textMatchesRoute(r, query) &&
-      gradeMatchesRoute(r, minIdx, maxIdx) &&
-      categoryMatchesRoute(r, categories),
+      categoryMatchesRoute(r, categories) &&
+      gradeMatchesRoute(r, minIdx, maxIdx, allowedLabelsSet) &&
+      textMatchesRoute(r, query),
   );
 }
 
