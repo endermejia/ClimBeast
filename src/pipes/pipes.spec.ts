@@ -9,10 +9,8 @@ import { ThemeService } from '../services/theme.service';
 import { COMMON_TEST_PROVIDERS } from '../testing';
 import { MockLanguageService } from '../testing/mock-language.service';
 import { MockThemeService } from '../testing/mock-theme.service';
-import { AnyToSchedulePipe } from './any-to-schedule.pipe';
 import { AscentDatePipe } from './ascent-date.pipe';
 import { AvatarUrlPipe } from './avatar-url.pipe';
-import { ErrorSeverityAppearancePipe } from './error-severity-appearance.pipe';
 import { IconSrcPipe } from './icon-src.pipe';
 import { MaterialRequestStatusAppearancePipe } from './material-request-status.pipe';
 import { MentionLinkPipe } from './mention-link.pipe';
@@ -27,10 +25,6 @@ import {
   TopoPointStateColorPipe,
   TopoPointStateLabelPipe,
 } from './topo-path.pipe';
-import {
-  UserReportReasonKeyPipe,
-  UserReportStatusAppearancePipe,
-} from './user-report-status.pipe';
 
 describe('ShadeInfoPipe', () => {
   const pipe = new ShadeInfoPipe();
@@ -174,32 +168,6 @@ describe('TopoIsTraversePipe', () => {
     const map = new Map([[1, { isTraverse: false }]]);
     expect(pipe.transform(1, map)).toBe(false);
     expect(pipe.transform(2, map)).toBe(false);
-  });
-});
-
-describe('AnyToSchedulePipe', () => {
-  const pipe = new AnyToSchedulePipe();
-
-  it('returns normal schedule and exceptions', () => {
-    const input = {
-      normal: { mon: '09:00-17:00' },
-      exceptions: [{ date: '2024-01-01', closed: true }],
-    };
-    const result = pipe.transform(input);
-    expect(result.normal).toEqual({ mon: '09:00-17:00' });
-    expect(result.exceptions).toHaveLength(1);
-  });
-
-  it('returns defaults for null input', () => {
-    const result = pipe.transform(null);
-    expect(result.normal).toEqual({});
-    expect(result.exceptions).toEqual([]);
-  });
-
-  it('returns defaults for undefined input', () => {
-    const result = pipe.transform(undefined);
-    expect(result.normal).toEqual({});
-    expect(result.exceptions).toEqual([]);
   });
 });
 
@@ -429,32 +397,6 @@ describe('TopoImagePipe (with DI)', () => {
   });
 });
 
-describe('UserReportReasonKeyPipe', () => {
-  const pipe = new UserReportReasonKeyPipe();
-
-  it('builds the translation key for every reason', () => {
-    expect(pipe.transform('spam')).toBe('reportReasons.spam.title');
-    expect(pipe.transform('harassment')).toBe('reportReasons.harassment.title');
-    expect(pipe.transform('inappropriate_content')).toBe(
-      'reportReasons.inappropriate_content.title',
-    );
-    expect(pipe.transform('impersonation')).toBe(
-      'reportReasons.impersonation.title',
-    );
-    expect(pipe.transform('other')).toBe('reportReasons.other.title');
-  });
-});
-
-describe('UserReportStatusAppearancePipe', () => {
-  const pipe = new UserReportStatusAppearancePipe();
-
-  it('maps every status to its badge appearance', () => {
-    expect(pipe.transform('pending')).toBe('accent');
-    expect(pipe.transform('resolved')).toBe('positive');
-    expect(pipe.transform('dismissed')).toBe('neutral');
-  });
-});
-
 describe('MaterialRequestStatusAppearancePipe', () => {
   const pipe = new MaterialRequestStatusAppearancePipe();
 
@@ -464,22 +406,5 @@ describe('MaterialRequestStatusAppearancePipe', () => {
     expect(pipe.transform('disposed')).toBe('positive');
     expect(pipe.transform('cancelled')).toBe('neutral');
     expect(pipe.transform('rejected')).toBe('negative');
-  });
-});
-
-describe('ErrorSeverityAppearancePipe', () => {
-  const pipe = new ErrorSeverityAppearancePipe();
-
-  it('maps every error severity to its badge appearance', () => {
-    expect(pipe.transform('critical')).toBe('negative');
-    expect(pipe.transform('error')).toBe('warning');
-    expect(pipe.transform('warning')).toBe('info');
-    expect(pipe.transform('info')).toBe('neutral');
-  });
-
-  it('returns neutral for null, undefined, or unknown severity', () => {
-    expect(pipe.transform(null)).toBe('neutral');
-    expect(pipe.transform(undefined)).toBe('neutral');
-    expect(pipe.transform('unknown')).toBe('neutral');
   });
 });

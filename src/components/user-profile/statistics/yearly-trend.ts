@@ -13,14 +13,11 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { AscentTypes, TrendData, TrendDetail } from '../../../models';
 
-import { ContextIndexPipe } from '../../../pipes';
-
 @Component({
   selector: 'app-user-profile-stats-trends',
   standalone: true,
   imports: [
     CommonModule,
-    ContextIndexPipe,
     DecimalPipe,
     RouterLink,
     TranslatePipe,
@@ -68,7 +65,7 @@ import { ContextIndexPipe } from '../../../pipes';
     <!-- Hint content for Line Chart -->
     <ng-template #trendHintContent let-points let-index="index">
       <div class="trend-hint">
-        @let i = index | contextIndex;
+        @let i = index?.index ?? index?.$implicit ?? index ?? 0;
         @let details = trendDetails()[i];
 
         <div class="trend-hint-header">

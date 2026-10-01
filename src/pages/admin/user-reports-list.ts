@@ -37,11 +37,7 @@ import { EmptyStateComponent } from '../../components/ui/empty-state';
 
 import { UserReportStatus, UserReportWithDetails } from '../../models';
 
-import {
-  AvatarUrlPipe,
-  UserReportReasonKeyPipe,
-  UserReportStatusAppearancePipe,
-} from '../../pipes';
+import { AvatarUrlPipe } from '../../pipes';
 
 interface StatusFilter {
   id: UserReportStatus | 'all';
@@ -67,8 +63,6 @@ interface StatusFilter {
     TuiScrollbar,
     TuiSkeleton,
     TuiTable,
-    UserReportReasonKeyPipe,
-    UserReportStatusAppearancePipe,
   ],
   template: `
     <section class="flex flex-col w-full max-w-7xl mx-auto p-4 grow min-h-0">
@@ -221,7 +215,10 @@ interface StatusFilter {
                       <span
                         class="font-semibold text-xs text-red-600 dark:text-red-400"
                       >
-                        {{ report.reason | userReportReasonKey | translate }}
+                        {{
+                          'reportReasons.' + report.reason + '.title'
+                            | translate
+                        }}
                       </span>
                       @if (report.details) {
                         <p
@@ -238,7 +235,9 @@ interface StatusFilter {
                     <span
                       tuiBadge
                       size="s"
-                      [appearance]="report.status | userReportStatusAppearance"
+                      [appearance]="
+                        statusAppearance[report.status] ?? 'neutral'
+                      "
                     >
                       {{
                         'admin.userReports.statuses.' + report.status
@@ -329,6 +328,12 @@ export class AdminUserReportsListComponent {
     { id: 'resolved', labelKey: 'admin.userReports.statuses.resolved' },
     { id: 'dismissed', labelKey: 'admin.userReports.statuses.dismissed' },
   ];
+
+  protected readonly statusAppearance: Record<UserReportStatus, string> = {
+    pending: 'accent',
+    resolved: 'positive',
+    dismissed: 'neutral',
+  };
 
   protected readonly reportsResource = resource({
     params: () => ({

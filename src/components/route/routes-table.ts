@@ -53,7 +53,6 @@ import {
   RoutesTableRow,
 } from '../../models';
 
-import { IncludesIdPipe } from '../../pipes';
 import { ROUTE_TABLE_SORTERS } from '../../utils';
 
 import { AscentCountDirective } from '../../directives/ascent-count.directive';
@@ -72,7 +71,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
     EmptyStateComponent,
     FormsModule,
     GradeComponent,
-    IncludesIdPipe,
     RouterLink,
     TranslatePipe,
     TuiBadge,
@@ -418,7 +416,9 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                       track topo.id
                                     ) {
                                       @let isAttached =
-                                        item.topos | includesId: topo.id;
+                                        !!attachedTopoIdsMap()
+                                          .get(item.id)
+                                          ?.has(topo.id);
 
                                       <button
                                         tuiOption
@@ -640,6 +640,14 @@ export class RoutesTableComponent {
   protected readonly canEditAny = computed(() =>
     this.data().some((item) => !!item.canEdit),
   );
+
+  protected readonly attachedTopoIdsMap = computed(() => {
+    const map = new Map<string | number, Set<string | number>>();
+    for (const row of this.data()) {
+      map.set(row.id, new Set(row.topos?.map((t) => t.id) ?? []));
+    }
+    return map;
+  });
 
   protected readonly sorters = ROUTE_TABLE_SORTERS;
 

@@ -80,6 +80,7 @@ import {
   IndoorAscentWithExtras,
   IndoorCenterDto,
   IndoorRouteWithExtras,
+  IndoorSchedule,
   IndoorTopoListItem,
   IndoorVoucherDto,
   ORDERED_GRADE_VALUES,
@@ -89,7 +90,6 @@ import {
 } from '../../models';
 
 import { CACHE_KEYS, STORAGE_KEYS } from '../../constants';
-import { AnyToSchedulePipe } from '../../pipes';
 import {
   createCachedResource,
   handleErrorToast,
@@ -130,7 +130,6 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
     IndoorVouchersComponent,
     IndoorRoutesTableComponent,
     IndoorToposComponent,
-    AnyToSchedulePipe,
     CustomCarouselComponent,
     EmptyStateComponent,
     OfflineNotCachedComponent,
@@ -243,7 +242,7 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
                         {{ 'indoor.schedule' | translate }}
                       </h3>
 
-                      @let schedule = c.schedule | anyToSchedule;
+                      @let schedule = centerSchedule();
                       <div class="flex flex-col gap-1 text-sm">
                         @for (
                           day of [
@@ -609,6 +608,14 @@ export class IndoorCenterComponent {
     // captura los errores) y devuelve la caché o `null` si no hay datos.
     () => this.centerCached.signal(),
   );
+
+  protected readonly centerSchedule = computed<IndoorSchedule>(() => {
+    const s = this.center()?.schedule as IndoorSchedule | undefined;
+    return {
+      normal: s?.normal || {},
+      exceptions: s?.exceptions || [],
+    };
+  });
 
   /** Solo mostramos «no encontrado» cuando la consulta ya ha terminado. */
   protected readonly centerNotFound = computed(() => {

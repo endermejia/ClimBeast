@@ -51,12 +51,7 @@ import { MerchandiseService } from '../../services/merchandise.service';
 
 import { OrderDetailsDialogComponent } from '../../components/dialogs/order-details-dialog';
 
-import { OrderDetail, OrderStatus } from '../../models/merchandise.model';
-
-import {
-  OrderStatusAppearancePipe,
-  OrderStatusColorPipe,
-} from '../../pipes/order-status-color.pipe';
+import { OrderDetail, OrderStatus } from '../../models';
 
 @Component({
   selector: 'app-admin-shop-orders',
@@ -64,8 +59,6 @@ import {
     CommonModule,
     DatePipe,
     DecimalPipe,
-    OrderStatusAppearancePipe,
-    OrderStatusColorPipe,
     RouterLink,
     TranslatePipe,
     TuiAppearance,
@@ -166,13 +159,16 @@ import {
                     {{ order.currency | uppercase }}
                   </td>
                   <td tuiTd *tuiCell="'status'">
+                    @let status = order.status;
                     <button
                       tuiButton
                       tuiChevron
                       type="button"
                       size="xs"
                       class="rounded-md! px-2!"
-                      [appearance]="order.status | orderStatusAppearance"
+                      [appearance]="
+                        status ? orderStatusAppearance[status] : 'neutral'
+                      "
                       [tuiDropdown]="statusDropdown"
                       [tuiDropdownOpen]="openDropdownId() === order.id"
                       (click)="toggleDropdown(order.id)"
@@ -180,15 +176,18 @@ import {
                       <span class="flex items-center gap-1">
                         <span
                           class="w-2 h-2 rounded-full"
-                          [ngClass]="order.status | orderStatusColor"
+                          [ngClass]="
+                            status
+                              ? orderStatusClasses[status]
+                              : defaultStatusClass
+                          "
                           style="background-color: currentColor;"
                         ></span>
                         <span
                           class="text-[10px] font-bold uppercase tracking-wider"
                         >
                           {{
-                            'merchandising.order.status.' + order.status
-                              | translate
+                            'merchandising.order.status.' + status | translate
                           }}
                         </span>
                       </span>
@@ -206,7 +205,10 @@ import {
                             <div class="flex items-center gap-2">
                               <span
                                 class="w-2 h-2 rounded-full"
-                                [ngClass]="option | orderStatusColor"
+                                [ngClass]="
+                                  orderStatusClasses[option] ??
+                                  defaultStatusClass
+                                "
                                 style="background-color: currentColor;"
                               ></span>
                               <span class="text-xs uppercase font-medium">
@@ -267,6 +269,27 @@ export class AdminShopOrdersComponent {
     'cancelled',
     'refunded',
   ];
+
+  protected readonly defaultStatusClass =
+    'text-gray-600 bg-gray-500/10 border-gray-500/20';
+
+  protected readonly orderStatusClasses: Record<string, string> = {
+    pending: 'text-yellow-600 bg-yellow-500/10 border-yellow-500/20',
+    paid: 'text-blue-600 bg-blue-500/10 border-blue-500/20',
+    shipped: 'text-purple-600 bg-purple-500/10 border-purple-500/20',
+    delivered: 'text-green-600 bg-green-500/10 border-green-500/20',
+    cancelled: 'text-red-600 bg-red-500/10 border-red-500/20',
+    refunded: 'text-red-600 bg-red-500/10 border-red-500/20',
+  };
+
+  protected readonly orderStatusAppearance: Record<string, string> = {
+    pending: 'warning',
+    paid: 'primary',
+    shipped: 'secondary',
+    delivered: 'success',
+    cancelled: 'error',
+    refunded: 'error',
+  };
 
   protected readonly stringifyStatus = (status: OrderStatus): string =>
     this.translate.instant('merchandising.order.status.' + status);

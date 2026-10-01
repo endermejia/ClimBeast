@@ -46,7 +46,7 @@ import { ToastService } from '../../services/toast.service';
 
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 
-import { AvatarUrlPipe, ErrorSeverityAppearancePipe } from '../../pipes';
+import { AvatarUrlPipe } from '../../pipes';
 import { matchesQuery } from '../../utils';
 
 @Component({
@@ -56,7 +56,6 @@ import { matchesQuery } from '../../utils';
     AvatarUrlPipe,
     DatePipe,
     EmptyStateComponent,
-    ErrorSeverityAppearancePipe,
     FormsModule,
     RouterLink,
     TranslatePipe,
@@ -339,7 +338,9 @@ import { matchesQuery } from '../../utils';
                     <span
                       tuiBadge
                       size="s"
-                      [appearance]="log.severity | errorSeverityAppearance"
+                      [appearance]="
+                        severityAppearance[log.severity] ?? 'neutral'
+                      "
                     >
                       {{
                         'admin.errorLogs.severities.' + log.severity
@@ -464,6 +465,12 @@ export class AdminErrorLogsComponent {
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
+
+  protected readonly severityAppearance: Record<string, string> = {
+    critical: 'negative',
+    error: 'warning',
+    warning: 'info',
+  };
 
   readonly searchQuery = signal('');
   readonly selectedSeverity = signal<'all' | ErrorSeverity>('all');
