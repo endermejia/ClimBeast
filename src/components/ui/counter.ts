@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   input,
@@ -40,6 +41,7 @@ let nextCounterId = 0;
     TuiLabel,
   ],
   template: `
+    @let isInvalid = isControlInvalid();
     <div class="flex flex-col gap-1">
       <div class="flex items-center gap-2">
         <button
@@ -58,7 +60,7 @@ let nextCounterId = 0;
         <tui-textfield
           [tuiTextfieldCleaner]="false"
           class="grow min-w-0"
-          [class.tui-textfield_invalid]="invalid"
+          [class.tui-textfield_invalid]="isInvalid"
         >
           <label tuiLabel [for]="id()">{{ label() | translate }}</label>
           <input
@@ -67,7 +69,7 @@ let nextCounterId = 0;
             [min]="min()"
             [max]="max()"
             [formControl]="control"
-            [invalid]="!!invalid"
+            [invalid]="isInvalid"
             class="w-full!"
             autocomplete="off"
           />
@@ -75,7 +77,7 @@ let nextCounterId = 0;
             <span class="tui-textfield__suffix">{{ suffix() }}</span>
           }
         </tui-textfield>
-        @if (invalid && hasError('required')) {
+        @if (isInvalid && hasRequiredError()) {
           <tui-error [error]="requiredLabel() | translate" />
         }
         <button
@@ -175,11 +177,19 @@ export class CounterComponent implements ControlValueAccessor {
     });
   }
 
-  get invalid(): boolean | null {
-    return this.ngControl
-      ? this.ngControl.invalid &&
-          (this.ngControl.touched || this.ngControl.dirty)
-      : false;
+  protected readonly isControlInvalid = computed(() => {
+    this.status?.();
+    const ctrl = this.ngControl?.control;
+    return !!(ctrl && ctrl.invalid && (ctrl.touched || ctrl.dirty));
+  });
+
+  protected readonly hasRequiredError = computed(() => {
+    this.status?.();
+    return !!this.ngControl?.control?.hasError('required');
+  });
+
+  get invalid(): boolean {
+    return this.isControlInvalid();
   }
 
   hasError(error: string): boolean {

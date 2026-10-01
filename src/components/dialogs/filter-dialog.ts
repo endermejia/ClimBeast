@@ -207,29 +207,14 @@ export class FilterDialogComponent {
   // i18n tick to recompute signals when language/translation changes
   private readonly _i18nTick: WritableSignal<number> = signal(0);
 
-  protected get showCategories(): boolean {
-    return this.context.data?.showCategories ?? true;
-  }
-
-  protected get showShade(): boolean {
-    return this.context.data?.showShade ?? true;
-  }
-
-  protected get showGradeRange(): boolean {
-    return this.context.data?.showGradeRange ?? true;
-  }
-
-  protected get showIndoorOutdoor(): boolean {
-    return this.context.data?.showIndoorOutdoor ?? false;
-  }
-
-  protected get showIndoorAscents(): boolean {
-    return this.context.data?.showIndoorAscents ?? false;
-  }
-
-  protected get showToposOnly(): boolean {
-    return this.context.data?.showToposOnly ?? false;
-  }
+  protected readonly showCategories = this.context.data?.showCategories ?? true;
+  protected readonly showShade = this.context.data?.showShade ?? true;
+  protected readonly showGradeRange = this.context.data?.showGradeRange ?? true;
+  protected readonly showIndoorOutdoor =
+    this.context.data?.showIndoorOutdoor ?? false;
+  protected readonly showIndoorAscents =
+    this.context.data?.showIndoorAscents ?? false;
+  protected readonly showToposOnly = this.context.data?.showToposOnly ?? false;
 
   // Category items and kinds for TuiFilter
   protected readonly categoryIndices = CATEGORY_CONFIGS.map((c) => c.id);
