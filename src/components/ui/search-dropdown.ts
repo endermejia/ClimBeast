@@ -7,6 +7,8 @@ import {
   effect,
   inject,
   input,
+  Pipe,
+  PipeTransform,
   resource,
   signal,
 } from '@angular/core';
@@ -69,11 +71,31 @@ import { gradeToNumber } from '../../utils';
 import { GradeComponent } from './avatar-grade';
 import { TourHintComponent } from './tour-hint';
 
+@Pipe({
+  name: 'isTourHighlight',
+  standalone: true,
+  pure: true,
+})
+export class IsTourHighlightPipe implements PipeTransform {
+  transform(item: SearchItem, isTourSearch: boolean): boolean {
+    if (!isTourSearch) {
+      return false;
+    }
+    const pathSegments = (item.href || '').split('/').filter(Boolean);
+    const isArea =
+      item.type === 'area' ||
+      (pathSegments.length === 2 && pathSegments[0] === 'area');
+    const isMillena = (item.title || '').toLowerCase().includes('millena');
+    return isArea && isMillena;
+  }
+}
+
 @Component({
   selector: 'app-search-dropdown',
   imports: [
     FormsModule,
     GradeComponent,
+    IsTourHighlightPipe,
     NgTemplateOutlet,
     ReactiveFormsModule,
     RouterLink,
@@ -398,15 +420,17 @@ import { TourHintComponent } from './tour-hint';
                             item of group.items;
                             track item.href + item.type + item.title
                           ) {
+                            @let isHighlight =
+                              item | isTourHighlight: isTourSearch();
                             <a
                               tuiOption
                               [routerLink]="item.href || null"
                               (click)="onResultClick(item, $event)"
-                              [class.ring-2]="isTourHighlight(item)"
-                              [class.ring-negative]="isTourHighlight(item)"
+                              [class.ring-2]="isHighlight"
+                              [class.ring-negative]="isHighlight"
                               class="relative"
                             >
-                              @if (isTourHighlight(item)) {
+                              @if (isHighlight) {
                                 <span
                                   class="absolute bottom-2 left-2 pointer-events-none z-10 size-0"
                                 >
@@ -433,15 +457,17 @@ import { TourHintComponent } from './tour-hint';
                           item of activeGroup.items;
                           track item.href + item.type + item.title
                         ) {
+                          @let isHighlight =
+                            item | isTourHighlight: isTourSearch();
                           <a
                             tuiOption
                             [routerLink]="item.href || null"
                             (click)="onResultClick(item, $event)"
-                            [class.ring-2]="isTourHighlight(item)"
-                            [class.ring-negative]="isTourHighlight(item)"
+                            [class.ring-2]="isHighlight"
+                            [class.ring-negative]="isHighlight"
                             class="relative"
                           >
-                            @if (isTourHighlight(item)) {
+                            @if (isHighlight) {
                               <span
                                 class="absolute bottom-2 left-2 pointer-events-none z-10 size-0"
                               >
@@ -552,6 +578,12 @@ export class SearchDropdownComponent {
       }
     });
   }
+
+  protected readonly isTourSearch = computed(
+    () =>
+      this.tourService.isActive() &&
+      this.tourService.step() === TourStep.SEARCH,
+  );
 
   protected readonly results = toSignal(
     toObservable(this.searchValue).pipe(
@@ -845,20 +877,5 @@ export class SearchDropdownComponent {
     if (isTourSearch) {
       void this.tourService.next();
     }
-  }
-
-  protected isTourHighlight(item: SearchItem): boolean {
-    if (
-      !this.tourService.isActive() ||
-      this.tourService.step() !== TourStep.SEARCH
-    ) {
-      return false;
-    }
-    const pathSegments = (item.href || '').split('/').filter(Boolean);
-    const isArea =
-      item.type === 'area' ||
-      (pathSegments.length === 2 && pathSegments[0] === 'area');
-    const isMillena = (item.title || '').toLowerCase().includes('millena');
-    return isArea && isMillena;
   }
 }
