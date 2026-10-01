@@ -28,7 +28,6 @@ import { map, startWith } from 'rxjs';
 
 import { ORDERED_GRADE_VALUES } from '../../models';
 
-import { TopoIsRouteVisiblePipe } from '../../pipes';
 import { clamp } from '../../utils';
 
 export interface IndoorTopoFilterRouteItem {
@@ -57,7 +56,6 @@ export interface IndoorTopoFilterDialogResult {
   imports: [
     FormsModule,
     ReactiveFormsModule,
-    TopoIsRouteVisiblePipe,
     TranslatePipe,
     TuiButton,
     TuiCheckbox,
@@ -168,15 +166,14 @@ export interface IndoorTopoFilterDialogResult {
             </div>
           </div>
           <div class="flex flex-col gap-1 max-h-48 overflow-y-auto pr-1">
-            @for (r of routes; track r.id) {
-              @let isVisible = r.id | topoIsRouteVisible: hiddenRouteIds();
+            @for (r of routesWithVisibility(); track r.id) {
               <label
                 class="flex items-center gap-2.5 p-1.5 rounded hover:bg-(--tui-background-neutral-1) cursor-pointer text-sm"
               >
                 <input
                   tuiCheckbox
                   type="checkbox"
-                  [ngModel]="isVisible"
+                  [ngModel]="r.isVisible"
                   [ngModelOptions]="{ standalone: true }"
                   (ngModelChange)="onRouteVisibilityChange(r.id, $event)"
                 />
@@ -250,6 +247,14 @@ export class IndoorTopoFilterDialogComponent {
   protected readonly hiddenRouteIds = signal<Set<string | number>>(
     new Set(this.context.data?.hiddenRouteIds ?? []),
   );
+
+  protected readonly routesWithVisibility = computed(() => {
+    const hidden = this.hiddenRouteIds();
+    return this.routes.map((r) => ({
+      ...r,
+      isVisible: !hidden.has(r.id),
+    }));
+  });
 
   protected readonly form = new FormGroup({
     gradeRange: new FormControl<[number, number]>(

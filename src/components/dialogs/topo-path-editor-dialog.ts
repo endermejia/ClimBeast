@@ -63,8 +63,6 @@ import {
 
 import {
   GradeLabelPipe,
-  TopoCanEditLinePipe,
-  TopoCanEditRoutePipe,
   TopoHasPathPipe,
   TopoIsTraversePipe,
   TopoPointStateBadgePipe,
@@ -116,8 +114,6 @@ export interface TopoPathEditorConfig {
     CdkDragHandle,
     CdkDragPlaceholder,
     CdkDropList,
-    TopoCanEditLinePipe,
-    TopoCanEditRoutePipe,
     TopoHasPathPipe,
     TopoIsTraversePipe,
     TopoPointStateBadgePipe,
@@ -206,6 +202,7 @@ export interface TopoPathEditorConfig {
                 (cdkDropListDropped)="dropRoute($event)"
               >
                 @for (tr of topoRoutes; track $index; let idx = $index) {
+                  @let isSelected = selectedRoute()?.route_id === tr.route_id;
                   @let hasPath =
                     tr.route_id | topoHasPath: pathsMap : pathsVersion();
                   @let isTraverse =
@@ -216,14 +213,8 @@ export interface TopoPathEditorConfig {
                     role="button"
                     tabindex="0"
                     [attr.data-route-id]="tr.route_id"
-                    [class.route-item--active]="
-                      selectedRoute()?.route_id === tr.route_id
-                    "
-                    [tuiAppearance]="
-                      selectedRoute()?.route_id === tr.route_id
-                        ? 'accent'
-                        : 'none'
-                    "
+                    [class.route-item--active]="isSelected"
+                    [tuiAppearance]="isSelected ? 'accent' : 'none'"
                     (click.zoneless)="selectRoute(tr, true)"
                     (keydown.enter.zoneless)="selectRoute(tr, true)"
                   >
@@ -252,14 +243,7 @@ export interface TopoPathEditorConfig {
                         </span>
                       }
                     </div>
-                    @if (
-                      selectedRoute()?.route_id === tr.route_id &&
-                      (tr
-                        | topoCanEditRoute
-                          : context.data.isIndoor
-                          : context.data.center
-                          : context.data.centerId)
-                    ) {
+                    @if (isSelected && canEditSelectedRoute()) {
                       <button
                         tuiIconButton
                         appearance="flat"
@@ -281,14 +265,7 @@ export interface TopoPathEditorConfig {
                     <div class="flex items-center gap-1">
                       <div class="route-action-slot">
                         @if (hasPath) {
-                          @if (
-                            selectedRoute()?.route_id === tr.route_id &&
-                            (tr
-                              | topoCanEditLine
-                                : context.data.isIndoor
-                                : context.data.center
-                                : context.data.centerId)
-                          ) {
+                          @if (isSelected && canEditSelectedLine()) {
                             <button
                               tuiIconButton
                               appearance="flat"
@@ -1586,6 +1563,59 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     if (!selected) return defaultType;
     const path = this.pathsMap.get(selected.route_id);
     return (path?.type as 'line' | 'circle') || defaultType;
+  });
+
+  protected readonly canEditSelectedRoute = computed<boolean>(() => {
+    const tr = this.selectedRoute();
+    if (!tr) return false;
+    if (!this.context.data.isIndoor) return true;
+    const center = this.context.data.center;
+    if (center) {
+      return this.authState.canEditIndoorRoute(
+        center,
+        tr.route as unknown as IndoorRouteDto,
+      );
+    }
+    const cId =
+      this.context.data.centerId ||
+      (tr.route as unknown as IndoorRouteDto)?.center_id;
+    if (this.authState.isAdmin()) return true;
+    if (cId) {
+      const idStr = String(cId);
+      return (
+        this.authState.adminIndoorCenters().includes(idStr) ||
+        this.authState.routesetterIndoorCenters().includes(idStr)
+      );
+    }
+    return false;
+  });
+
+  protected readonly canEditSelectedLine = computed<boolean>(() => {
+    const tr = this.selectedRoute();
+    if (!tr) return false;
+    if (!this.context.data.isIndoor) return true;
+    const center = this.context.data.center;
+    if (!tr.path) {
+      if (center) {
+        return this.authState.canCreateIndoorLine(center);
+      }
+      return true;
+    }
+    if (center) {
+      return this.authState.canEditIndoorLine(center, tr);
+    }
+    const cId =
+      this.context.data.centerId ||
+      (tr.route as unknown as IndoorRouteDto)?.center_id;
+    if (this.authState.isAdmin()) return true;
+    if (cId) {
+      const idStr = String(cId);
+      return (
+        this.authState.adminIndoorCenters().includes(idStr) ||
+        this.authState.routesetterIndoorCenters().includes(idStr)
+      );
+    }
+    return false;
   });
 
   protected readonly selectedRouteIsTraverse = computed<boolean>(() => {

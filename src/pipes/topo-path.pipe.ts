@@ -1,14 +1,6 @@
-import { inject, Pipe, PipeTransform } from '@angular/core';
+import { Pipe, PipeTransform } from '@angular/core';
 
-import { AuthStateService } from '../services/auth-state.service';
-
-import {
-  IndoorCenterDto,
-  IndoorRouteDto,
-  PointState,
-  TopoPoint,
-  TopoRouteWithRoute,
-} from '../models';
+import { PointState, TopoPoint } from '../models';
 
 import {
   getPointStateBadge as getPointStateBadgeUtil,
@@ -16,31 +8,6 @@ import {
   getPointStateLabel as getPointStateLabelUtil,
   hasPath as hasPathUtil,
 } from '../utils';
-
-export interface Point {
-  x: number;
-  y: number;
-}
-
-@Pipe({
-  name: 'topoPathPoints',
-  standalone: true,
-  pure: true,
-})
-export class TopoPathPointsPipe implements PipeTransform {
-  transform(path: string | undefined): Point[] {
-    if (!path) return [];
-
-    return path
-      .trim()
-      .split(/\s+/)
-      .map((pointStr) => {
-        const [xStr, yStr] = pointStr.split(',');
-        return { x: parseFloat(xStr), y: parseFloat(yStr) };
-      })
-      .filter((p) => !isNaN(p.x) && !isNaN(p.y));
-  }
-}
 
 @Pipe({
   name: 'topoHasPath',
@@ -108,138 +75,5 @@ export class TopoIsTraversePipe implements PipeTransform {
     _version?: number,
   ): boolean {
     return !!pathsMap.get(routeId)?.isTraverse;
-  }
-}
-
-@Pipe({
-  name: 'topoIsRouteVisible',
-  standalone: true,
-  pure: true,
-})
-export class TopoIsRouteVisiblePipe implements PipeTransform {
-  transform(
-    routeId: string | number,
-    hiddenRouteIds:
-      Set<string | number> | (string | number)[] | null | undefined,
-  ): boolean {
-    if (!hiddenRouteIds) return true;
-    if (hiddenRouteIds instanceof Set) {
-      return !hiddenRouteIds.has(routeId);
-    }
-    return !hiddenRouteIds.includes(routeId);
-  }
-}
-
-export type TopoRouteVisibilityState = 'visible' | 'hidden' | 'solo';
-
-@Pipe({
-  name: 'topoRouteVisibilityState',
-  standalone: true,
-  pure: true,
-})
-export class TopoRouteVisibilityStatePipe implements PipeTransform {
-  transform(
-    routeId: string | number,
-    hiddenRouteIds:
-      Set<string | number> | (string | number)[] | null | undefined,
-    totalRoutesCount: number,
-  ): TopoRouteVisibilityState {
-    if (!hiddenRouteIds) return 'visible';
-    const isHidden =
-      hiddenRouteIds instanceof Set
-        ? hiddenRouteIds.has(routeId)
-        : hiddenRouteIds.includes(routeId);
-
-    if (isHidden) return 'hidden';
-
-    const hiddenCount =
-      hiddenRouteIds instanceof Set
-        ? hiddenRouteIds.size
-        : hiddenRouteIds.length;
-
-    if (totalRoutesCount > 1 && hiddenCount >= totalRoutesCount - 1) {
-      return 'solo';
-    }
-
-    return 'visible';
-  }
-}
-
-@Pipe({
-  name: 'topoCanEditRoute',
-  standalone: true,
-  pure: true,
-})
-export class TopoCanEditRoutePipe implements PipeTransform {
-  private readonly authState = inject(AuthStateService);
-
-  transform(
-    tr: TopoRouteWithRoute,
-    isIndoor?: boolean,
-    center?: IndoorCenterDto | null,
-    centerId?: string | null,
-  ): boolean {
-    if (!isIndoor) {
-      return true;
-    }
-    if (center) {
-      return this.authState.canEditIndoorRoute(
-        center,
-        tr.route as unknown as IndoorRouteDto,
-      );
-    }
-    const cId = centerId || (tr.route as unknown as IndoorRouteDto)?.center_id;
-    if (this.authState.isAdmin()) return true;
-    if (cId) {
-      const idStr = String(cId);
-      if (
-        this.authState.adminIndoorCenters().includes(idStr) ||
-        this.authState.routesetterIndoorCenters().includes(idStr)
-      ) {
-        return true;
-      }
-    }
-    return false;
-  }
-}
-
-@Pipe({
-  name: 'topoCanEditLine',
-  standalone: true,
-  pure: true,
-})
-export class TopoCanEditLinePipe implements PipeTransform {
-  private readonly authState = inject(AuthStateService);
-
-  transform(
-    tr: TopoRouteWithRoute,
-    isIndoor?: boolean,
-    center?: IndoorCenterDto | null,
-    centerId?: string | null,
-  ): boolean {
-    if (!isIndoor) {
-      return true;
-    }
-    if (!tr.path) {
-      if (center) {
-        return this.authState.canCreateIndoorLine(center);
-      }
-      return true;
-    }
-    if (center) {
-      return this.authState.canEditIndoorLine(center, tr);
-    }
-    const cId = centerId || (tr.route as unknown as IndoorRouteDto)?.center_id;
-    if (this.authState.isAdmin()) return true;
-    if (cId) {
-      const idStr = String(cId);
-      if (
-        this.authState.adminIndoorCenters().includes(idStr) ||
-        this.authState.routesetterIndoorCenters().includes(idStr)
-      ) {
-        return true;
-      }
-    }
-    return false;
   }
 }
