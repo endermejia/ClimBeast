@@ -41,7 +41,7 @@ let nextCounterId = 0;
     TuiLabel,
   ],
   template: `
-    @let isInvalid = isControlInvalid();
+    @let invalid = isInvalid();
     <div class="flex flex-col gap-1">
       <div class="flex items-center gap-2">
         <button
@@ -60,7 +60,7 @@ let nextCounterId = 0;
         <tui-textfield
           [tuiTextfieldCleaner]="false"
           class="grow min-w-0"
-          [class.tui-textfield_invalid]="isInvalid"
+          [class.tui-textfield_invalid]="invalid"
         >
           <label tuiLabel [for]="id()">{{ label() | translate }}</label>
           <input
@@ -69,7 +69,7 @@ let nextCounterId = 0;
             [min]="min()"
             [max]="max()"
             [formControl]="control"
-            [invalid]="isInvalid"
+            [invalid]="invalid"
             class="w-full!"
             autocomplete="off"
           />
@@ -77,7 +77,7 @@ let nextCounterId = 0;
             <span class="tui-textfield__suffix">{{ suffix() }}</span>
           }
         </tui-textfield>
-        @if (isInvalid && hasRequiredError()) {
+        @if (invalid && hasRequiredError()) {
           <tui-error [error]="requiredLabel() | translate" />
         }
         <button
@@ -177,24 +177,16 @@ export class CounterComponent implements ControlValueAccessor {
     });
   }
 
-  protected readonly isControlInvalid = computed(() => {
+  readonly isInvalid = computed(() => {
     this.status?.();
     const ctrl = this.ngControl?.control;
     return !!(ctrl && ctrl.invalid && (ctrl.touched || ctrl.dirty));
   });
 
-  protected readonly hasRequiredError = computed(() => {
+  readonly hasRequiredError = computed(() => {
     this.status?.();
     return !!this.ngControl?.control?.hasError('required');
   });
-
-  get invalid(): boolean {
-    return this.isControlInvalid();
-  }
-
-  hasError(error: string): boolean {
-    return !!this.ngControl?.control?.hasError(error);
-  }
 
   change(delta: number): void {
     if (this.disabled() || this.isControlDisabled) return;
