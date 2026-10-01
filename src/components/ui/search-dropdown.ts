@@ -134,7 +134,7 @@ import { TourHintComponent } from './tour-hint';
         (click)="searchOpen.set(true)"
         [attr.aria-label]="'search' | translate"
       >
-        @if (tourService.isActive() && tourService.step() === TourStep.SEARCH) {
+        @if (isTourSearch()) {
           <span
             class="absolute bottom-2 left-2 pointer-events-none z-10 size-0"
           >
@@ -363,10 +363,7 @@ import { TourHintComponent } from './tour-hint';
                   </tui-tabs>
                 </div>
 
-                @if (
-                  tourService.isActive() &&
-                  tourService.step() === TourStep.SEARCH
-                ) {
+                @if (isTourSearch()) {
                   <div
                     class="mx-4 mb-2 rounded-xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
                   >
@@ -388,6 +385,7 @@ import { TourHintComponent } from './tour-hint';
                       ) | translate
                     "
                   >
+                    @let highlightHref = tourHighlightHref();
                     @if (
                       groupedResults().length > 1 && activeSearchTab() === 0
                     ) {
@@ -398,15 +396,17 @@ import { TourHintComponent } from './tour-hint';
                             item of group.items;
                             track item.href + item.type + item.title
                           ) {
+                            @let isHighlight =
+                              !!highlightHref && item.href === highlightHref;
                             <a
                               tuiOption
                               [routerLink]="item.href || null"
                               (click)="onResultClick(item, $event)"
-                              [class.ring-2]="isTourHighlight(item)"
-                              [class.ring-negative]="isTourHighlight(item)"
+                              [class.ring-2]="isHighlight"
+                              [class.ring-negative]="isHighlight"
                               class="relative"
                             >
-                              @if (isTourHighlight(item)) {
+                              @if (isHighlight) {
                                 <span
                                   class="absolute bottom-2 left-2 pointer-events-none z-10 size-0"
                                 >
@@ -433,15 +433,17 @@ import { TourHintComponent } from './tour-hint';
                           item of activeGroup.items;
                           track item.href + item.type + item.title
                         ) {
+                          @let isHighlight =
+                            !!highlightHref && item.href === highlightHref;
                           <a
                             tuiOption
                             [routerLink]="item.href || null"
                             (click)="onResultClick(item, $event)"
-                            [class.ring-2]="isTourHighlight(item)"
-                            [class.ring-negative]="isTourHighlight(item)"
+                            [class.ring-2]="isHighlight"
+                            [class.ring-negative]="isHighlight"
                             class="relative"
                           >
-                            @if (isTourHighlight(item)) {
+                            @if (isHighlight) {
                               <span
                                 class="absolute bottom-2 left-2 pointer-events-none z-10 size-0"
                               >
@@ -472,8 +474,7 @@ import { TourHintComponent } from './tour-hint';
 export class SearchDropdownComponent {
   readonly loading = input<boolean>(false);
 
-  protected readonly tourService = inject(TourService);
-  protected readonly TourStep = TourStep;
+  private readonly tourService = inject(TourService);
   protected readonly outdoorData = inject(OutdoorDataService);
   private readonly searchService = inject(SearchService);
   private readonly areasService = inject(AreasService);
@@ -521,9 +522,7 @@ export class SearchDropdownComponent {
     const cdr = inject(ChangeDetectorRef);
     let wasTourSearch = false;
     effect(() => {
-      const isTourSearch =
-        this.tourService.isActive() &&
-        this.tourService.step() === TourStep.SEARCH;
+      const isTourSearch = this.isTourSearch();
 
       if (isTourSearch) {
         wasTourSearch = true;
@@ -592,6 +591,31 @@ export class SearchDropdownComponent {
       0,
     ),
   );
+
+  protected readonly isTourSearch = computed(
+    () =>
+      this.tourService.isActive() &&
+      this.tourService.step() === TourStep.SEARCH,
+  );
+
+  protected readonly tourHighlightHref = computed<string | null>(() => {
+    if (!this.isTourSearch()) return null;
+
+    for (const group of this.groupedResults()) {
+      for (const item of group.items) {
+        if (!item.href) continue;
+        const pathSegments = item.href.split('/').filter(Boolean);
+        const isArea =
+          item.type === 'area' ||
+          (pathSegments.length === 2 && pathSegments[0] === 'area');
+        const isMillena = (item.title || '').toLowerCase().includes('millena');
+        if (isArea && isMillena) {
+          return item.href;
+        }
+      }
+    }
+    return null;
+  });
 
   // ─── Tienda ────────────────────────────────────────────────────────────────
 
@@ -835,9 +859,7 @@ export class SearchDropdownComponent {
       }
     }
 
-    const isTourSearch =
-      this.tourService.isActive() &&
-      this.tourService.step() === TourStep.SEARCH;
+    const isTourSearch = this.isTourSearch();
 
     this.searchOpen.set(false);
     this.searchValue.set('');
@@ -845,20 +867,5 @@ export class SearchDropdownComponent {
     if (isTourSearch) {
       void this.tourService.next();
     }
-  }
-
-  protected isTourHighlight(item: SearchItem): boolean {
-    if (
-      !this.tourService.isActive() ||
-      this.tourService.step() !== TourStep.SEARCH
-    ) {
-      return false;
-    }
-    const pathSegments = (item.href || '').split('/').filter(Boolean);
-    const isArea =
-      item.type === 'area' ||
-      (pathSegments.length === 2 && pathSegments[0] === 'area');
-    const isMillena = (item.title || '').toLowerCase().includes('millena');
-    return isArea && isMillena;
   }
 }
