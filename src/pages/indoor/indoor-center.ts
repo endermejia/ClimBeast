@@ -198,12 +198,7 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
                     } @else {
                       <div class="flex items-center justify-center h-full">
                         <span
-                          [tuiAvatar]="
-                            supabase.getPublicUrl(
-                              'indoor-centers',
-                              c.avatar_url
-                            )
-                          "
+                          [tuiAvatar]="centerAvatarUrl()"
                           size="xxl"
                           class="rounded-3xl"
                         ></span>
@@ -600,6 +595,12 @@ export class IndoorCenterComponent {
       type: 'image',
       url: this.supabase.getPublicUrl('indoor-assets', url),
     }));
+  });
+
+  protected readonly centerAvatarUrl = computed<string>(() => {
+    const avatarUrl = this.center()?.avatar_url;
+    if (!avatarUrl) return '';
+    return this.supabase.getPublicUrl('indoor-centers', avatarUrl);
   });
 
   protected readonly center = computed<IndoorCenterDto | null>(

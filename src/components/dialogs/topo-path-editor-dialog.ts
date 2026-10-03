@@ -63,8 +63,6 @@ import {
 
 import {
   GradeLabelPipe,
-  TopoHasPathPipe,
-  TopoIsTraversePipe,
   TopoPointStateBadgePipe,
   TopoPointStateColorPipe,
   TopoPointStateLabelPipe,
@@ -114,8 +112,6 @@ export interface TopoPathEditorConfig {
     CdkDragHandle,
     CdkDragPlaceholder,
     CdkDropList,
-    TopoHasPathPipe,
-    TopoIsTraversePipe,
     TopoPointStateBadgePipe,
     TopoPointStateColorPipe,
     TopoPointStateLabelPipe,
@@ -203,10 +199,9 @@ export interface TopoPathEditorConfig {
               >
                 @for (tr of topoRoutes; track $index; let idx = $index) {
                   @let isSelected = selectedRoute()?.route_id === tr.route_id;
-                  @let hasPath =
-                    tr.route_id | topoHasPath: pathsMap : pathsVersion();
-                  @let isTraverse =
-                    tr.route_id | topoIsTraverse: pathsMap : pathsVersion();
+                  @let pathMeta = routePathsMeta().get(tr.route_id);
+                  @let hasPath = !!pathMeta?.hasPath;
+                  @let isTraverse = !!pathMeta?.isTraverse;
                   <div
                     cdkDrag
                     class="route-item tui-interactive"
@@ -1555,6 +1550,21 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   >();
   lineWidth = signal(1.5);
   protected pathsVersion = signal(0);
+
+  protected readonly routePathsMeta = computed(() => {
+    this.pathsVersion();
+    const meta = new Map<
+      string | number,
+      { hasPath: boolean; isTraverse: boolean }
+    >();
+    for (const [id, entry] of this.pathsMap) {
+      meta.set(id, {
+        hasPath: (entry.points?.length ?? 0) > 0,
+        isTraverse: !!entry.isTraverse,
+      });
+    }
+    return meta;
+  });
 
   protected readonly selectedRoutePathType = computed<'line' | 'circle'>(() => {
     this.pathsVersion();

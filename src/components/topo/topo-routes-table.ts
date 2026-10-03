@@ -40,7 +40,7 @@ import { RoutesService } from '../../services/routes.service';
 
 import { type TopoRouteWithRoute } from '../../models';
 
-import { AscentInfoPipe, TableSorterPipe } from '../../pipes';
+import { TableSorterPipe } from '../../pipes';
 
 import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
 import { PaywallComponent } from '../paywall/paywall';
@@ -60,7 +60,6 @@ import type { TopoRouteRow } from './topo.types';
     GradeComponent,
     PaywallComponent,
     RouterLink,
-    AscentInfoPipe,
     TableSorterPipe,
     TranslatePipe,
     TuiButton,
@@ -143,6 +142,9 @@ import type { TopoRouteRow } from './topo.types';
                 let i = $index
               ) {
                 <tbody tuiTbody>
+                  @let bgSubtle =
+                    ascentInfo()[item._ref.route.own_ascent?.type || 'default']
+                      ?.backgroundSubtle;
                   <tr
                     #routeRow
                     tuiTr
@@ -161,8 +163,7 @@ import type { TopoRouteRow } from './topo.types';
                     "
                     [style.background]="
                       item.climbed
-                        ? (item._ref.route.own_ascent?.type | ascentInfo)
-                            .backgroundSubtle
+                        ? bgSubtle
                         : item.project
                           ? 'var(--tui-status-info-pale)'
                           : ''
@@ -391,6 +392,8 @@ import type { TopoRouteRow } from './topo.types';
 export class TopoRoutesTableComponent {
   private readonly ascentsService = inject(AscentsService);
   private readonly routesService = inject(RoutesService);
+
+  protected readonly ascentInfo = this.ascentsService.ascentInfo;
 
   sortedTableData = input.required<TopoRouteRow[]>();
   columns = input.required<string[]>();

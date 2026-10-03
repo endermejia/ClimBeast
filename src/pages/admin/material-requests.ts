@@ -30,10 +30,7 @@ import type {
   MaterialRequestStatus,
 } from '../../models';
 
-import {
-  AvatarUrlPipe,
-  MaterialRequestStatusAppearancePipe,
-} from '../../pipes';
+import { AvatarUrlPipe } from '../../pipes';
 
 @Component({
   selector: 'app-admin-material-requests',
@@ -45,7 +42,6 @@ import {
     DecimalPipe,
     EmptyStateComponent,
     FormsModule,
-    MaterialRequestStatusAppearancePipe,
     RouterLink,
     TranslatePipe,
     TuiAppearance,
@@ -138,7 +134,7 @@ import {
                   <span
                     tuiBadge
                     size="m"
-                    [appearance]="req.status | materialRequestStatusAppearance"
+                    [appearance]="statusAppearance[req.status] ?? 'neutral'"
                   >
                     {{ 'materialRequests.status.' + req.status | translate }}
                   </span>
@@ -400,6 +396,14 @@ export class AdminMaterialRequestsComponent {
     'rejected',
     'cancelled',
   ];
+
+  protected readonly statusAppearance: Record<string, string> = {
+    pending: 'warning',
+    approved: 'accent',
+    disposed: 'positive',
+    cancelled: 'neutral',
+    rejected: 'negative',
+  };
 
   selectedStatus = signal<string>('pending');
   rejectModalOpen = signal<boolean>(false);

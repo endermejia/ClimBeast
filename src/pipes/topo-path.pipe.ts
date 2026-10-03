@@ -1,31 +1,12 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
-import { PointState, TopoPoint } from '../models';
+import { PointState } from '../models';
 
 import {
   getPointStateBadge as getPointStateBadgeUtil,
   getPointStateColor as getPointStateColorUtil,
   getPointStateLabel as getPointStateLabelUtil,
-  hasPath as hasPathUtil,
 } from '../utils';
-
-@Pipe({
-  name: 'topoHasPath',
-  standalone: true,
-  pure: true,
-})
-export class TopoHasPathPipe implements PipeTransform {
-  transform(
-    routeId: string | number,
-    pathsMap: Map<
-      string | number,
-      { points: TopoPoint[] | { x: number; y: number }[] }
-    >,
-    _version?: number,
-  ): boolean {
-    return hasPathUtil(routeId, pathsMap);
-  }
-}
 
 @Pipe({
   name: 'topoPointStateColor',
@@ -57,23 +38,5 @@ export class TopoPointStateBadgePipe implements PipeTransform {
 export class TopoPointStateLabelPipe implements PipeTransform {
   transform(state: PointState | undefined): string {
     return getPointStateLabelUtil(state);
-  }
-}
-
-@Pipe({
-  name: 'topoIsTraverse',
-  standalone: true,
-  pure: true,
-})
-export class TopoIsTraversePipe implements PipeTransform {
-  transform(
-    routeId: string | number,
-    pathsMap: Map<
-      string | number,
-      { isTraverse?: boolean; [key: string]: unknown }
-    >,
-    _version?: number,
-  ): boolean {
-    return !!pathsMap.get(routeId)?.isTraverse;
   }
 }

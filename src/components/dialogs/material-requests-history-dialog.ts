@@ -22,11 +22,12 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { AreaMaterialRequestsService } from '../../services/area-material-requests.service';
 
-import type { AreaMaterialRequestWithDetails } from '../../models';
+import type {
+  AreaMaterialRequestWithDetails,
+  MaterialRequestStatus,
+} from '../../models';
 
 import { EmptyStateComponent } from '../ui/empty-state';
-
-import { MaterialRequestStatusAppearancePipe } from '../../pipes';
 
 export interface MaterialRequestsHistoryDialogData {
   areaId: number;
@@ -41,7 +42,6 @@ export interface MaterialRequestsHistoryDialogData {
     DatePipe,
     DecimalPipe,
     EmptyStateComponent,
-    MaterialRequestStatusAppearancePipe,
     TranslatePipe,
     TuiAppearance,
     TuiBadge,
@@ -84,7 +84,7 @@ export interface MaterialRequestsHistoryDialogData {
                   <span
                     tuiBadge
                     size="s"
-                    [appearance]="req.status | materialRequestStatusAppearance"
+                    [appearance]="statusAppearance[req.status] ?? 'neutral'"
                   >
                     {{ 'materialRequests.status.' + req.status | translate }}
                   </span>
@@ -183,6 +183,14 @@ export class MaterialRequestsHistoryDialogComponent {
     injectContext<TuiDialogContext<void, MaterialRequestsHistoryDialogData>>();
 
   private readonly requestsService = inject(AreaMaterialRequestsService);
+
+  protected readonly statusAppearance: Record<MaterialRequestStatus, string> = {
+    pending: 'warning',
+    approved: 'accent',
+    disposed: 'positive',
+    cancelled: 'neutral',
+    rejected: 'negative',
+  };
 
   cancellingId = signal<number | null>(null);
 

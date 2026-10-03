@@ -213,10 +213,10 @@ export class RouteUnifyComponent {
 
   protected readonly stringify = (route: RouteDto) => route.name;
 
-  protected availableSources() {
+  protected readonly availableSources = computed(() => {
     const targetId = this.model().targetRoute?.id;
     return this.cragRoutes().filter((a) => a.id !== targetId);
-  }
+  });
 
   onTargetRouteChange(route: RouteDto | null): void {
     this.model.update((m) => ({ ...m, targetRoute: route }));

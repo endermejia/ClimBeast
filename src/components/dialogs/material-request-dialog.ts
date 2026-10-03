@@ -28,8 +28,6 @@ import { MaterialCatalogService } from '../../services/material-catalog.service'
 
 import type { MaterialCatalogItem } from '../../models';
 
-import { MaterialQuantityPipe } from '../../pipes/material-quantity.pipe';
-
 export interface MaterialRequestDialogData {
   areaId: number;
   areaName: string;
@@ -43,7 +41,6 @@ export interface MaterialRequestDialogData {
     CommonModule,
     DecimalPipe,
     FormsModule,
-    MaterialQuantityPipe,
     TranslatePipe,
     TuiAppearance,
     TuiButton,
@@ -105,15 +102,11 @@ export interface MaterialRequestDialogData {
               }
             } @else {
               @for (item of catalogItems(); track item.id) {
-                <!-- Using pure MaterialQuantityPipe to avoid function re-evaluations during change detection ticks inside template loops -->
+                @let qty = quantities()[item.id] ?? 0;
                 <div
                   class="flex items-center justify-between gap-4 p-3 rounded-2xl border bg-(--tui-background-neutral-1) hover:bg-(--tui-background-neutral-1-hover) transition-all"
-                  [class.border-(--tui-border-focus)]="
-                    (quantities() | materialQuantity: item.id) > 0
-                  "
-                  [class.border-(--tui-border-normal)]="
-                    (quantities() | materialQuantity: item.id) === 0
-                  "
+                  [class.border-(--tui-border-focus)]="qty > 0"
+                  [class.border-(--tui-border-normal)]="qty === 0"
                 >
                   <!-- Item image & info -->
                   <div class="flex items-center gap-3 min-w-0">
@@ -162,9 +155,7 @@ export interface MaterialRequestDialogData {
                       appearance="secondary"
                       size="xs"
                       type="button"
-                      [disabled]="
-                        (quantities() | materialQuantity: item.id) <= 0
-                      "
+                      [disabled]="qty <= 0"
                       (click)="decrementItem(item.id)"
                     >
                       <tui-icon icon="@tui.minus" class="w-3 h-3" />
@@ -172,7 +163,7 @@ export interface MaterialRequestDialogData {
                     <span
                       class="w-8 text-center text-xs font-black tabular-nums"
                     >
-                      {{ quantities() | materialQuantity: item.id }}
+                      {{ qty }}
                     </span>
                     <button
                       tuiButton

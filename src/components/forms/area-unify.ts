@@ -222,10 +222,10 @@ export class AreaUnifyComponent {
 
   protected readonly stringify = (area: AreaDto) => area.name;
 
-  protected availableSources() {
+  protected readonly availableSources = computed(() => {
     const targetId = this.model().targetArea?.id;
     return this.availableAreas().filter((a) => a.id !== targetId);
-  }
+  });
 
   onTargetAreaChange(area: AreaDto | null): void {
     this.model.update((m) => ({ ...m, targetArea: area }));

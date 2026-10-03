@@ -215,10 +215,10 @@ export class CragUnifyComponent {
 
   protected readonly stringify = (crag: CragDto) => crag.name;
 
-  protected availableSources() {
+  protected readonly availableSources = computed(() => {
     const targetId = this.model().targetCrag?.id;
     return this.availableCrags().filter((a) => a.id !== targetId);
-  }
+  });
 
   onTargetCragChange(crag: CragDto | null): void {
     this.model.update((m) => ({ ...m, targetCrag: crag }));

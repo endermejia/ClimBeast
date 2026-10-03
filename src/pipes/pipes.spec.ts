@@ -12,15 +12,12 @@ import { MockThemeService } from '../testing/mock-theme.service';
 import { AscentDatePipe } from './ascent-date.pipe';
 import { AvatarUrlPipe } from './avatar-url.pipe';
 import { IconSrcPipe } from './icon-src.pipe';
-import { MaterialRequestStatusAppearancePipe } from './material-request-status.pipe';
 import { MentionLinkPipe } from './mention-link.pipe';
 import { SanitizeHtmlPipe } from './sanitize-html.pipe';
 import { ShadeInfoPipe } from './shade-info.pipe';
 import { TableSorterPipe } from './table-sorter.pipe';
 import { TopoImagePipe } from './topo-image.pipe';
 import {
-  TopoHasPathPipe,
-  TopoIsTraversePipe,
   TopoPointStateBadgePipe,
   TopoPointStateColorPipe,
   TopoPointStateLabelPipe,
@@ -79,35 +76,6 @@ describe('ShadeInfoPipe', () => {
   });
 });
 
-describe('TopoHasPathPipe', () => {
-  const pipe = new TopoHasPathPipe();
-
-  it('returns true when route has points', () => {
-    const map = new Map([
-      [
-        1,
-        {
-          points: [
-            { x: 0, y: 0 },
-            { x: 1, y: 1 },
-          ],
-        },
-      ],
-    ]);
-    expect(pipe.transform(1, map)).toBe(true);
-  });
-
-  it('returns false when route has empty points', () => {
-    const map = new Map([[1, { points: [] }]]);
-    expect(pipe.transform(1, map)).toBe(false);
-  });
-
-  it('returns false when route not in map', () => {
-    const map = new Map<number, { points: { x: number; y: number }[] }>();
-    expect(pipe.transform(1, map)).toBe(false);
-  });
-});
-
 describe('TopoPointStateColorPipe', () => {
   const pipe = new TopoPointStateColorPipe();
 
@@ -153,21 +121,6 @@ describe('TopoPointStateLabelPipe', () => {
   it('returns empty string for neutral or undefined', () => {
     expect(pipe.transform('neutral')).toBe('');
     expect(pipe.transform(undefined)).toBe('');
-  });
-});
-
-describe('TopoIsTraversePipe', () => {
-  const pipe = new TopoIsTraversePipe();
-
-  it('returns true when route path has isTraverse: true', () => {
-    const map = new Map([[1, { isTraverse: true }]]);
-    expect(pipe.transform(1, map)).toBe(true);
-  });
-
-  it('returns false when isTraverse is false or path missing', () => {
-    const map = new Map([[1, { isTraverse: false }]]);
-    expect(pipe.transform(1, map)).toBe(false);
-    expect(pipe.transform(2, map)).toBe(false);
   });
 });
 
@@ -394,17 +347,5 @@ describe('TopoImagePipe (with DI)', () => {
   it('handles null path', async () => {
     const result = await pipe.transform(null);
     expect(result).toBe('');
-  });
-});
-
-describe('MaterialRequestStatusAppearancePipe', () => {
-  const pipe = new MaterialRequestStatusAppearancePipe();
-
-  it('maps every status to its badge appearance', () => {
-    expect(pipe.transform('pending')).toBe('warning');
-    expect(pipe.transform('approved')).toBe('accent');
-    expect(pipe.transform('disposed')).toBe('positive');
-    expect(pipe.transform('cancelled')).toBe('neutral');
-    expect(pipe.transform('rejected')).toBe('negative');
   });
 });
