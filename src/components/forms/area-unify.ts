@@ -222,10 +222,12 @@ export class AreaUnifyComponent {
 
   protected readonly stringify = (area: AreaDto) => area.name;
 
-  protected availableSources() {
+  // Refactored from a template method call to a computed signal to eliminate
+  // function executions on change detection ticks and memoize available source areas.
+  protected readonly availableSources = computed(() => {
     const targetId = this.model().targetArea?.id;
     return this.availableAreas().filter((a) => a.id !== targetId);
-  }
+  });
 
   onTargetAreaChange(area: AreaDto | null): void {
     this.model.update((m) => ({ ...m, targetArea: area }));

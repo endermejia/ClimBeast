@@ -215,10 +215,12 @@ export class CragUnifyComponent {
 
   protected readonly stringify = (crag: CragDto) => crag.name;
 
-  protected availableSources() {
+  // Refactored from a template method call to a computed signal to eliminate
+  // function executions on change detection ticks and memoize available source crags.
+  protected readonly availableSources = computed(() => {
     const targetId = this.model().targetCrag?.id;
     return this.availableCrags().filter((a) => a.id !== targetId);
-  }
+  });
 
   onTargetCragChange(crag: CragDto | null): void {
     this.model.update((m) => ({ ...m, targetCrag: crag }));

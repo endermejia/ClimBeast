@@ -213,10 +213,12 @@ export class RouteUnifyComponent {
 
   protected readonly stringify = (route: RouteDto) => route.name;
 
-  protected availableSources() {
+  // Refactored from a template method call to a computed signal to eliminate
+  // function executions on change detection ticks and memoize available source routes.
+  protected readonly availableSources = computed(() => {
     const targetId = this.model().targetRoute?.id;
     return this.cragRoutes().filter((a) => a.id !== targetId);
-  }
+  });
 
   onTargetRouteChange(route: RouteDto | null): void {
     this.model.update((m) => ({ ...m, targetRoute: route }));
