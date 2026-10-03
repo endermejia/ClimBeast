@@ -113,6 +113,16 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    if (payload.base64.length > 10 * 1024 * 1024) {
+      return new Response(
+        JSON.stringify({ error: 'File size exceeds 10MB limit' }),
+        {
+          status: 413,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
+    }
+
     // ---- Get previous avatar path from DB (to delete later) ----
     const { data: existingProfile } = await supabaseAdminClient
       .from('user_profiles')
@@ -124,7 +134,17 @@ Deno.serve(async (req: Request) => {
       (existingProfile?.avatar as string | null) ?? null;
 
     // ---- File path: userId + timestamp to avoid cache/collisions ----
-    const ext = (payload.file_name || 'avatar.png').split('.').pop() || 'png';
+    const rawExt =
+      (payload.file_name || 'avatar.png').split('.').pop()?.toLowerCase() ||
+      'png';
+    const ALLOWED_EXTS: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      webp: 'image/webp',
+    };
+    const ext = ALLOWED_EXTS[rawExt] ? rawExt : 'png';
+    const contentType = ALLOWED_EXTS[ext];
     const timestamp = Date.now();
     const fileName = `avatars/${userId}-${timestamp}.${ext}`;
 
@@ -141,7 +161,7 @@ Deno.serve(async (req: Request) => {
     const bucket = 'avatar';
     const { data: uploadData, error: uploadError } =
       await supabaseAdminClient.storage.from(bucket).upload(fileName, bytes, {
-        contentType: payload.content_type || `image/${ext}`,
+        contentType,
         // New filename per upload — no need to upsert
         upsert: false,
       });

@@ -197,6 +197,30 @@ function getNotificationBody(
 
 serve(async (req) => {
   try {
+    const authHeader =
+      req.headers.get('authorization') ||
+      req.headers.get('Authorization') ||
+      '';
+    const apiKey = req.headers.get('apikey') || '';
+    const secretHeader = req.headers.get('x-webhook-secret') || '';
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+    const webhookSecret = Deno.env.get('NOTIFY_PUSH_SECRET') || '';
+
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    const isAuthorized =
+      (webhookSecret &&
+        (token === webhookSecret || secretHeader === webhookSecret)) ||
+      (token && (token === serviceRoleKey || token === anonKey)) ||
+      (apiKey && (apiKey === serviceRoleKey || apiKey === anonKey));
+
+    if (!isAuthorized) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const { record } = await req.json();
     console.log('Notification received:', record);
 
@@ -341,6 +365,12 @@ serve(async (req) => {
 
     // 7. Navigation target URL
     let targetUrl = record.url || '/home';
+    if (
+      !targetUrl.startsWith('/') &&
+      !targetUrl.startsWith('https://climbeast.com')
+    ) {
+      targetUrl = '/home';
+    }
     if (record.type === 'message' && record.room_id) {
       targetUrl = `/chat/${record.room_id}`;
     } else if (

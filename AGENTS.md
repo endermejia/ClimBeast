@@ -37,3 +37,7 @@ Before committing, ensure ALL of the following pass:
 - **100% Zoneless (No `NgZone`)** — The application runs with zoneless change detection (`provideZonelessChangeDetection()`) and `zone.js` is not loaded in browser polyfills. **Do NOT inject `NgZone` or use `ngZone.runOutsideAngular()` / `ngZone.run()`**. Native asynchronous browser APIs (`requestAnimationFrame`, `setTimeout`, DOM event listeners) are unpatched and do not trigger change detection. Reactivity and view updates must be driven exclusively via Angular Signals.
 - **No `subscribe()` in the app** — code must be reactive. Use Angular signals (`signal()`, `computed()`, `resource()`), `toSignal()`, `effect()`, async pipes, or `firstValueFrom()` for single promise conversions. Never use manual `.subscribe()` subscriptions.
 - `inject()` for dependency injection
+
+## Supabase & Domain Conventions
+
+- **Cuentas y Balances de Áreas Públicos por Diseño** — Todas las cuentas, balances y recaudaciones de las áreas (bote de equipamiento, compras de croquis, donaciones y función `get_area_balance`) son públicos por diseño de la plataforma para garantizar la transparencia comunitaria.

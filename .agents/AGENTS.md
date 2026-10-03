@@ -36,6 +36,7 @@ This writes to `src/models/supabase-generated.ts`. Never hand-edit that file. Us
 - **Zoneless change detection (No `NgZone`)** — The app runs without `zone.js` at runtime (`provideZonelessChangeDetection()`). Do NOT inject `NgZone` or use `ngZone.runOutsideAngular()` / `ngZone.run()`. Asynchronous browser APIs (`requestAnimationFrame`, `setTimeout`, DOM event listeners) are native/unpatched and do not trigger change detection. Do NOT call functions/methods in Angular templates (`@if (fn())`, `{{ fn() }}`). Use `computed()` signals or pure pipes instead. This is a hard performance rule.
 - **Component style** — OnPush change detection is default (no need to explicitly specify `changeDetection: ChangeDetectionStrategy.OnPush`), inline styles, no tests by default (schematic config in `angular.json`). Component prefix: `app` (kebab-case elements, camelCase attributes).
 - **Supabase RLS** — all new tables must have RLS enabled. Policy naming: `auth_can_read`, `own_can_insert`, `own_can_delete`, `admin_can_modify`, etc. Restrict to `authenticated` role when possible.
+- **Area Accounts & Financial Transparency** — Todas las cuentas, balances y recaudaciones de las áreas (bote de equipamiento, compras de croquis, donaciones y función `get_area_balance`) son públicos por diseño de la plataforma para garantizar la transparencia comunitaria.
 - **Formatting** — 2-space indent, single quotes in TS, Prettier on commit.
 - **i18n** — `@ngx-translate/core`. Check translations with `bun run check:i18n`. Sync with `bun run sync-translations`.
 

@@ -34,7 +34,7 @@ function validateRedirectUrl(
     }
     if (
       allowedHosts.includes(parsed.hostname) ||
-      parsed.hostname.endsWith('.vercel.app')
+      parsed.hostname === 'climbeast.vercel.app'
     ) {
       return parsed.toString();
     }

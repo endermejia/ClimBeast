@@ -120,6 +120,29 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    if (payload.base64.length > 10 * 1024 * 1024) {
+      return new Response(
+        JSON.stringify({ error: 'File size exceeds 10MB limit' }),
+        {
+          status: 413,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
+    }
+
+    if (
+      payload.thumbnail_base64 &&
+      payload.thumbnail_base64.length > 5 * 1024 * 1024
+    ) {
+      return new Response(
+        JSON.stringify({ error: 'Thumbnail size exceeds 5MB limit' }),
+        {
+          status: 413,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
+    }
+
     const topoId = req.headers.get('topo-id') || req.headers.get('Topo-Id');
 
     if (!topoId) {
@@ -184,7 +207,17 @@ Deno.serve(async (req: Request) => {
     // ─────────────────────────────
     // Upload
     // ─────────────────────────────
-    const ext = (payload.file_name || 'photo.png').split('.').pop() || 'png';
+    const rawExt =
+      (payload.file_name || 'photo.png').split('.').pop()?.toLowerCase() ||
+      'png';
+    const ALLOWED_EXTS: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      webp: 'image/webp',
+    };
+    const ext = ALLOWED_EXTS[rawExt] ? rawExt : 'png';
+    const contentType = ALLOWED_EXTS[ext];
     const fileName = `topos/${topoId}.${ext}`;
 
     const base64 = payload.base64.replace(/^data:.*;base64,/, '');
@@ -199,7 +232,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: uploadData, error: uploadError } =
       await supabaseAdminClient.storage.from(bucket).upload(fileName, bytes, {
-        contentType: payload.content_type || `image/${ext}`,
+        contentType: contentType,
         upsert: true,
       });
 
