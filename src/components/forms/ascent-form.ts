@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -619,7 +618,6 @@ import { CounterComponent } from '../ui/counter';
       </div>
     </form>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full h-full' },
 })
 export default class AscentFormComponent {

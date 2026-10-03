@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   inject,
@@ -205,7 +204,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CragRoutesComponent {
   crag = input.required<CragDetail | null>();

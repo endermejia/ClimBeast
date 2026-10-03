@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   inject,
   input,
@@ -76,7 +75,6 @@ import { IS_BROWSER } from '../../app/is-browser';
       </tui-data-list>
     </tui-textfield>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block min-w-40 max-w-64 h-full' },
 })
 export class RouteEquippersInputComponent {

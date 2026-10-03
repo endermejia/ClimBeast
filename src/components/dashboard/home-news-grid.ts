@@ -1,10 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  output,
-} from '@angular/core';
+import { Component, input, output } from '@angular/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -64,7 +59,6 @@ import { NewsCardSkeletonComponent } from '../ui/news-card-skeleton';
       </div>
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeNewsGridComponent {
   newsLoading = input<boolean>(false);

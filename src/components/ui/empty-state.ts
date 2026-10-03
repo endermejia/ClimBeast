@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { Component, input } from '@angular/core';
 
 import { TuiIcon } from '@taiga-ui/core';
 
@@ -17,7 +17,6 @@ import { TranslatePipe } from '@ngx-translate/core';
       </p>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EmptyStateComponent {
   message = input<string>('empty');

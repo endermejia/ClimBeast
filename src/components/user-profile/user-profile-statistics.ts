@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 
 import { TuiPoint, TuiScrollbar } from '@taiga-ui/core';
 
@@ -57,7 +50,6 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
     UserProfileStatsScoreComponent,
     UserProfileStatsTrendsComponent,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block w-full min-w-0 lg:flex lg:flex-col lg:h-full lg:min-h-0',
   },

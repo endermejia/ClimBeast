@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   forwardRef,
@@ -402,7 +401,6 @@ import { AscentTypeComponent } from './ascent-type';
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AscentCardComponent {
   protected readonly authState = inject(AuthStateService);

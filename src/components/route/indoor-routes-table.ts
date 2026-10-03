@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-} from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiDialogService } from '@taiga-ui/core';
@@ -89,7 +83,6 @@ import { RoutesTableComponent } from './routes-table';
       }
     </ng-template>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IndoorRoutesTableComponent {
   protected readonly layoutService = inject(LayoutService);

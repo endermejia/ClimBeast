@@ -1,6 +1,5 @@
 import { Location } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -108,7 +107,6 @@ interface Country {
     TuiScrollbar,
     TuiTitle,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [tuiDateFormatProvider({ mode: 'dd/mm/yyyy', separator: '/' })],
   host: { class: 'flex grow min-h-0' },
   template: `

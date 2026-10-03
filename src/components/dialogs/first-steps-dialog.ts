@@ -1,5 +1,5 @@
 import { NgOptimizedImage } from '@angular/common';
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Component } from '@angular/core';
 
 import { TuiButton } from '@taiga-ui/core';
 import { type TuiDialogContext } from '@taiga-ui/core';
@@ -40,7 +40,6 @@ import { TranslatePipe } from '@ngx-translate/core';
       </button>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FirstStepsDialogComponent {
   private readonly context = injectContext<TuiDialogContext<void>>();

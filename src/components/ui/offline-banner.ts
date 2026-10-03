@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -44,7 +38,6 @@ import { IS_BROWSER } from '../../app/is-browser';
       </div>
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OfflineBannerComponent {
   private readonly isBrowser = inject(IS_BROWSER);

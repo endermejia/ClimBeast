@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -115,7 +114,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
       </tui-scrollbar>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FollowRequestsDialogComponent {
   private readonly isBrowser = inject(IS_BROWSER);

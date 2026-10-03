@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  input,
-  model,
-} from '@angular/core';
+import { Component, inject, input, model } from '@angular/core';
 
 import { TuiDialogService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
@@ -32,7 +26,6 @@ import { LikesComponent } from './likes';
       (showLikes)="showLikes($event)"
     />
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CommentLikesComponent {
   private readonly ascentsService = inject(AscentsService);

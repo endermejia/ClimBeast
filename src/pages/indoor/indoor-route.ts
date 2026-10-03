@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   DestroyRef,
@@ -426,7 +425,6 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
       </section>
     </tui-scrollbar>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex flex-col w-full h-full min-h-0' },
 })
 export class IndoorRouteComponent {

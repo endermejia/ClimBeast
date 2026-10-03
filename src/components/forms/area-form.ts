@@ -1,6 +1,5 @@
 import { CommonModule, Location } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -346,7 +345,6 @@ interface MinimalArea {
       </div>
     </form>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
 })
 export class AreaFormComponent {

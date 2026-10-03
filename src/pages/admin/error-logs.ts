@@ -1,12 +1,5 @@
 import { DatePipe, UpperCasePipe } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  resource,
-  signal,
-} from '@angular/core';
+import { Component, computed, inject, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -457,7 +450,6 @@ import { matchesQuery } from '../../utils';
       </div>
     </tui-scrollbar>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex grow min-h-0' },
 })
 export class AdminErrorLogsComponent {

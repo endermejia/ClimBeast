@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { TuiAppearance, TuiIcon } from '@taiga-ui/core';
@@ -137,7 +137,6 @@ import { TuiRating, TuiSkeleton } from '@taiga-ui/kit';
       }
     `,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AscentCardSkeletonComponent {
   showUser = input(true);

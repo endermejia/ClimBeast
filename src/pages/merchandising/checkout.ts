@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 
@@ -292,7 +292,6 @@ import { IS_BROWSER } from '../../app/is-browser';
       height: 100%;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CheckoutComponent {
   private readonly fb = inject(FormBuilder);

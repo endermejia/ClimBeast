@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Component } from '@angular/core';
 
 import { TuiDialogContext } from '@taiga-ui/core';
 import { injectContext } from '@taiga-ui/polymorpheus';
@@ -18,7 +18,6 @@ import { ReportUserFormComponent } from '../forms/report-user-form';
       (cancelled)="context.completeWith(false)"
     />
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReportUserDialogComponent {
   protected readonly context =

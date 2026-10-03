@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-} from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 
 import {
   TuiHint,
@@ -48,7 +42,6 @@ import { AscentType } from '../../models';
       }}
     </ng-template>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AscentTypeComponent {
   private readonly ascentsService = inject(AscentsService);

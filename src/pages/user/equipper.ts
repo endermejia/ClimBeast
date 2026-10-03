@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -168,7 +167,6 @@ import { safeResourceValue } from '../../utils';
     </tui-scrollbar>
   `,
   host: { class: 'flex grow min-h-0' },
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EquipperComponent {
   private readonly dialogs = inject(TuiDialogService);

@@ -1,12 +1,5 @@
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  resource,
-  signal,
-} from '@angular/core';
+import { Component, computed, inject, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -383,7 +376,6 @@ import { AvatarUrlPipe } from '../../pipes';
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminMaterialRequestsComponent {
   private readonly requestsService = inject(AreaMaterialRequestsService);

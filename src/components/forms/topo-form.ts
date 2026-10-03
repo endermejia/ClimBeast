@@ -1,6 +1,5 @@
 import { CommonModule, Location } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -401,7 +400,6 @@ import { GradeComponent } from '../ui/avatar-grade';
       </div>
     </form>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex grow min-h-0' },
 })
 export class TopoFormComponent {

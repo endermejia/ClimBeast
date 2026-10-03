@@ -1,10 +1,5 @@
 import { NgOptimizedImage } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-} from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiButton, TuiIcon, TuiTitle } from '@taiga-ui/core';
@@ -41,7 +36,6 @@ import {
     TuiIcon,
     TuiTitle,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
       class="min-h-screen flex flex-col bg-(--tui-background-base) text-(--tui-text-primary)"

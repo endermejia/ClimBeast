@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -276,7 +275,6 @@ export interface IndoorRouteFormData {
       </footer>
     </form>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class IndoorRouteFormComponent {
   private readonly indoor = inject(IndoorService);

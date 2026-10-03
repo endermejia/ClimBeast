@@ -1,10 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  output,
-} from '@angular/core';
+import { Component, input, output } from '@angular/core';
 
 import { TuiScrollbar } from '@taiga-ui/core';
 
@@ -73,7 +68,6 @@ import { NewsCardSkeletonComponent } from '../ui/news-card-skeleton';
       </tui-scrollbar>
     </aside>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeNewsSidebarComponent {
   newsLoading = input<boolean>(false);

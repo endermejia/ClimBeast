@@ -1,11 +1,5 @@
 import { CommonModule, DatePipe } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  resource,
-} from '@angular/core';
+import { Component, computed, inject, resource } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { TuiDialogContext } from '@taiga-ui/core';
@@ -144,7 +138,6 @@ interface GroupedNotification {
       </tui-scrollbar>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NotificationsDialogComponent {
   protected readonly supabase = inject(SupabaseService);

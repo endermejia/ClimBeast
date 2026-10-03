@@ -1,12 +1,5 @@
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  resource,
-  signal,
-} from '@angular/core';
+import { Component, computed, inject, resource, signal } from '@angular/core';
 
 import {
   TuiAppearance,
@@ -176,7 +169,6 @@ export interface MaterialRequestsHistoryDialogData {
       </tui-scrollbar>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MaterialRequestsHistoryDialogComponent {
   protected readonly context =

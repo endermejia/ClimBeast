@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import {
   AfterViewInit,
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -284,7 +283,6 @@ export interface PyramidLevel {
       }
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PyramidComponent implements AfterViewInit {
   userId = input.required<string>();

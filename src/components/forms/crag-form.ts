@@ -1,6 +1,5 @@
 import { CommonModule, Location } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -323,7 +322,6 @@ interface CragFormModel {
       </div>
     </form>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex flex-col max-h-[70dvh] min-h-0 w-full overflow-hidden' },
 })
 export class CragFormComponent {

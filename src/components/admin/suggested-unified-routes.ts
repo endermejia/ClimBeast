@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  resource,
-} from '@angular/core';
+import { Component, computed, inject, resource } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiButton, TuiLoader } from '@taiga-ui/core';
@@ -194,7 +188,6 @@ import { RouteDto } from '../../models';
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SuggestedUnifiedRoutesComponent {
   private readonly routesService = inject(RoutesService);

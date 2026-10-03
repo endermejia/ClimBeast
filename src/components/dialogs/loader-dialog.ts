@@ -1,5 +1,5 @@
 import { AsyncPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 
 import { TuiDialogContext, TuiLoader } from '@taiga-ui/core';
 import { TuiProgress } from '@taiga-ui/kit';
@@ -36,7 +36,6 @@ export interface LoaderData {
       }
     `,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoaderDialogComponent {
   readonly context =

@@ -1,6 +1,5 @@
 import { DecimalPipe } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   inject,
@@ -43,7 +42,6 @@ import { WeatherForecastComponent } from '../../components/ui/weather-forecast';
       }
     </ng-template>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MeteoButtonComponent {
   private readonly dialogs = inject(TuiDialogService);

@@ -1,6 +1,5 @@
 import { DatePipe, CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   ElementRef,
@@ -273,7 +272,6 @@ export interface AscentCommentsDialogData {
       }
     `,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AscentCommentsDialogComponent {
   protected readonly supabase = inject(SupabaseService);

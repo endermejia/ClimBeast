@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  signal,
-  type Signal,
-} from '@angular/core';
+import { Component, computed, signal, type Signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   FormControl,
@@ -205,7 +199,6 @@ export interface IndoorTopoFilterDialogResult {
       </footer>
     </form>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IndoorTopoFilterDialogComponent {
   protected readonly context =

@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  output,
-} from '@angular/core';
+import { Component, input, output } from '@angular/core';
 
 import { TuiButton, TuiIcon } from '@taiga-ui/core';
 
@@ -43,7 +38,6 @@ import { TranslatePipe } from '@ngx-translate/core';
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TourHintComponent {
   readonly description = input.required<string>();

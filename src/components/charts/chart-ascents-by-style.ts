@@ -1,10 +1,5 @@
 import { CommonModule, LowerCasePipe, PercentPipe } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-} from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 
 import { TuiHint } from '@taiga-ui/core';
 import { TuiProgress } from '@taiga-ui/kit';
@@ -29,7 +24,6 @@ export type AscentStyleRecord =
     TuiHint,
     TuiProgress,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full min-w-0' },
   template: `
     @if (effectiveTotal() > 0) {

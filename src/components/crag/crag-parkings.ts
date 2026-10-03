@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-} from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { TuiDialogService, TuiButton } from '@taiga-ui/core';
@@ -107,7 +101,6 @@ import { UbicacionDropdownComponent } from '../ui/ubicacion-dropdown';
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CragParkingsComponent {
   crag = input<CragDetail | null>(null);

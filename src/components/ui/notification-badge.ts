@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 
 import { TuiAppearance } from '@taiga-ui/core';
 import { TuiBadgedContent, TuiBadgeNotification } from '@taiga-ui/kit';
@@ -20,7 +20,6 @@ import { AppNotificationsService } from '../../services/app-notifications.servic
       <ng-content />
     </tui-badged-content>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NotificationBadgeComponent {
   protected readonly notificationsService = inject(AppNotificationsService);

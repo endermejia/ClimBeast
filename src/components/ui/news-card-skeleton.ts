@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Component } from '@angular/core';
 
 import { TuiAppearance } from '@taiga-ui/core';
 import { TuiSkeleton } from '@taiga-ui/kit';
@@ -64,6 +64,5 @@ import { TuiSkeleton } from '@taiga-ui/kit';
       }
     `,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NewsCardSkeletonComponent {}

@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  signal,
-  WritableSignal,
-} from '@angular/core';
+import { Component, inject, signal, WritableSignal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiTable } from '@taiga-ui/addon-table';
@@ -200,7 +194,6 @@ import { IS_BROWSER } from '../../app/is-browser';
       }
     `,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminEquipperRequestsComponent {
   private readonly equipperRequests = inject(EquipperRequestsService);

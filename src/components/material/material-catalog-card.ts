@@ -1,10 +1,5 @@
 import { CommonModule, DecimalPipe } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  output,
-} from '@angular/core';
+import { Component, input, output } from '@angular/core';
 
 import { TuiIcon } from '@taiga-ui/core';
 import { TuiBadge } from '@taiga-ui/kit';
@@ -91,7 +86,6 @@ import type { MaterialCatalogItem } from '../../models';
       </div>
     </button>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MaterialCatalogCardComponent {
   item = input.required<MaterialCatalogItem>();

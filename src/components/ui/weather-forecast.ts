@@ -1,6 +1,5 @@
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   ElementRef,
@@ -262,7 +261,6 @@ import { WeatherDay } from '../../models';
       </tui-loader>
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WeatherForecastComponent {
   private readonly weatherService = inject(WeatherService);

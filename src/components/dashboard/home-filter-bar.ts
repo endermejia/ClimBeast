@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  output,
-  TemplateRef,
-} from '@angular/core';
+import { Component, input, output, TemplateRef } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiAppearance, TuiButton } from '@taiga-ui/core';
@@ -140,7 +134,6 @@ import { DropdownButtonComponent } from '../ui/dropdown-button';
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeFilterBarComponent {
   followsLoaded = input<boolean>(true);

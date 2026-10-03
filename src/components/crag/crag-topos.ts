@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-} from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { TuiIcon } from '@taiga-ui/core';
@@ -75,7 +69,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CragToposComponent {
   crag = input.required<CragDetail | null>();

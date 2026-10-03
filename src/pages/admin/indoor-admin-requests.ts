@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   inject,
@@ -247,7 +246,6 @@ import { IS_BROWSER } from '../../app/is-browser';
       }
     `,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex grow min-h-0' },
 })
 export class AdminIndoorAdminRequestsComponent {

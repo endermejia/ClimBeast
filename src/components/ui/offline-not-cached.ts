@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  input,
-} from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
 import { TuiButton, TuiIcon } from '@taiga-ui/core';
@@ -50,7 +45,6 @@ import { TranslatePipe } from '@ngx-translate/core';
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OfflineNotCachedComponent {
   private readonly router = inject(Router);

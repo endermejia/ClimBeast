@@ -1,10 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  output,
-} from '@angular/core';
+import { Component, input, output } from '@angular/core';
 
 import { TuiButton, TuiIcon } from '@taiga-ui/core';
 
@@ -41,7 +36,6 @@ import { TranslatePipe } from '@ngx-translate/core';
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LikesComponent {
   userLiked = input.required<boolean>();

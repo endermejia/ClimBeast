@@ -1,6 +1,5 @@
 import { DatePipe } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   ElementRef,
   input,
@@ -82,7 +81,6 @@ import { ChatMessageDto } from '../../models';
       </div>
     </tui-scrollbar>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChatMessageListComponent {
   readonly messages = input.required<readonly ChatMessageDto[]>();

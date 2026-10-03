@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiIcon } from '@taiga-ui/core';
@@ -74,7 +74,6 @@ import { SuggestedUnifiedRoutesComponent } from '../../components/admin/suggeste
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminUnifyComponent {
   protected readonly activeTab = signal(0);

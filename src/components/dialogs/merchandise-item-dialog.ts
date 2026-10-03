@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 
 import { TuiButton, TuiDialogContext, TuiIcon } from '@taiga-ui/core';
 import { injectContext } from '@taiga-ui/polymorpheus';
@@ -230,7 +224,6 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
       }
     `,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MerchandiseItemDialogComponent {
   private readonly cartService = inject(CartService);

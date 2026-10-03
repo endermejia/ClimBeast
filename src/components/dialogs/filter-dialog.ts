@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -196,7 +195,6 @@ const CATEGORY_CONFIGS: readonly CategoryConfig[] = [
       </footer>
     </form>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(submit.prevent)': 'submit()' },
 })
 export class FilterDialogComponent {

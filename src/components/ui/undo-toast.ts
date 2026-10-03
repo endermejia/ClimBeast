@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 
 import { TuiPortalContext } from '@taiga-ui/cdk';
 import { TuiButton, TuiButtonX } from '@taiga-ui/core';
@@ -40,7 +40,6 @@ export interface UndoToastData {
       </button>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UndoToastComponent {
   protected readonly context =

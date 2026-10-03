@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-} from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
 import { TuiSortDirection } from '@taiga-ui/addon-table';
@@ -91,7 +85,6 @@ import { mapRouteToTableRow, handleErrorToast } from '../../utils';
       }
     </ng-template>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OutdoorRoutesTableComponent {
   protected readonly layoutService = inject(LayoutService);

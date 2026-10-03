@@ -1,10 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  input,
-} from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 
 import { TuiButton, TuiIcon } from '@taiga-ui/core';
 
@@ -69,7 +64,6 @@ import { AreaDonationsService } from '../../services/area-donations.service';
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PaywallComponent {
   areaId = input.required<number>();

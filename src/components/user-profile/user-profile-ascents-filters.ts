@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  effect,
-  inject,
-  linkedSignal,
-} from '@angular/core';
+import { Component, effect, inject, linkedSignal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 
@@ -39,7 +33,6 @@ import { ProfileDataService } from '../../services/profile-data.service';
     TuiSelect,
     TuiTextfield,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
       class="flex flex-wrap items-center gap-2 w-full min-w-0 px-4 lg:px-1 pt-2 mb-4 shrink-0"

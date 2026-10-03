@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   SecurityContext,
   computed,
@@ -85,7 +84,6 @@ import { NewsItem } from '../../models';
       ></div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NewsCardComponent {
   protected readonly languageService = inject(LanguageService);

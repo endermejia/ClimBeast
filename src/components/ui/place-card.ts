@@ -1,11 +1,5 @@
 import { LowerCasePipe } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-} from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiButton, TuiIcon, TuiLink, TuiTitle } from '@taiga-ui/core';
@@ -215,7 +209,6 @@ export interface PlaceCardItem {
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
 })
 export class PlaceCardComponent {

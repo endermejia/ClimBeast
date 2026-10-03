@@ -1,6 +1,5 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   inject,
@@ -267,7 +266,6 @@ const AREA_TYPE_APPEARANCE_MAP: Record<AreaType, string> = {
       </tui-scrollbar>
     </section>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex grow min-h-0' },
 })
 export class AdminAreaFundsComponent {

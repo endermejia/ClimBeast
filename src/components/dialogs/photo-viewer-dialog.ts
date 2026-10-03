@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { Component, ElementRef, signal, viewChild } from '@angular/core';
 
 import { TuiButton, TuiIcon } from '@taiga-ui/core';
 import { TuiDialogContext } from '@taiga-ui/core';
@@ -94,7 +88,6 @@ export interface PhotoViewerData {
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
       :host {

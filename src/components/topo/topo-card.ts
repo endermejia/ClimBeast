@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   inject,
@@ -140,7 +139,6 @@ import { ChartRoutesByGradeComponent } from '../charts/chart-routes-by-grade';
       </div>
     </button>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block [content-visibility:auto] [contain-intrinsic-size:0_260px]',
   },

@@ -1,10 +1,5 @@
 import { AsyncPipe } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  output,
-} from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 import { TuiNotification } from '@taiga-ui/core';
@@ -89,7 +84,6 @@ import { SanitizeHtmlPipe } from '../../pipes';
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Import8aStepUploadComponent {
   readonly control = input.required<FormControl<TuiFileLike | null>>();

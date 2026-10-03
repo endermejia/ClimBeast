@@ -1,6 +1,5 @@
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   inject,
@@ -450,7 +449,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
       </div>
     </ng-template>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AreaRevenuePanelComponent {
   readonly areaId = input.required<number>();

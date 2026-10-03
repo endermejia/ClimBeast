@@ -1,6 +1,5 @@
 import { isPlatformBrowser, NgOptimizedImage } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   effect,
   inject,
@@ -432,7 +431,6 @@ import { TourHintComponent } from '../ui/tour-hint';
       />
     </ng-template>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProfileGeneralSectionComponent {
   private readonly platformId = inject(PLATFORM_ID);

@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  output,
-  TemplateRef,
-} from '@angular/core';
+import { Component, input, output, TemplateRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import {
@@ -199,7 +193,6 @@ import { Observer } from 'rxjs';
       </div>
     </ng-template>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProfileDangerZoneComponent {
   readonly userEmail = input<string>('');

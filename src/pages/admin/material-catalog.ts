@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  resource,
-} from '@angular/core';
+import { Component, computed, inject, resource } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -102,7 +96,6 @@ import type { MaterialCatalogItem } from '../../models';
       </div>
     </tui-scrollbar>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminMaterialCatalogComponent {
   private readonly catalogService = inject(MaterialCatalogService);

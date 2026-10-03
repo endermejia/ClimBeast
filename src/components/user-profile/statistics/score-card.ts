@@ -1,5 +1,5 @@
 import { CommonModule, DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiHint, TuiScrollbar } from '@taiga-ui/core';
@@ -450,7 +450,6 @@ import { ChartAscentsByStyleComponent } from '../../charts/chart-ascents-by-styl
       max-height: 250px;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block w-full min-w-0',
   },

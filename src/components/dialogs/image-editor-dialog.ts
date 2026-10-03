@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   Inject,
   inject,
@@ -296,7 +295,6 @@ export interface ImageEditorConfig {
       }
     `,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ImageEditorDialogComponent {
   private readonly sanitizer = inject(DomSanitizer);

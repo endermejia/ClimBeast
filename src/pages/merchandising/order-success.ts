@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  resource,
-} from '@angular/core';
+import { Component, computed, inject, resource } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import {
@@ -145,7 +139,6 @@ import { CheckoutService } from '../../services/checkout.service';
       height: 100%;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OrderSuccessComponent {
   private readonly route = inject(ActivatedRoute);

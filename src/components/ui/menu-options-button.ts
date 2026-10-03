@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   DestroyRef,
@@ -137,7 +136,6 @@ import { MenuOptionsDropdownComponent } from './menu-options-dropdown';
       />
     </ng-template>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MenuOptionsButtonComponent {
   appearance = input<string>('flat-grayscale');

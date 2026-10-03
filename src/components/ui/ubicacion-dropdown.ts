@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   inject,
@@ -49,7 +48,6 @@ import { mapLocationUrl } from '../../utils';
       </tui-data-list>
     </ng-template>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UbicacionDropdownComponent {
   latitude = input<number>();

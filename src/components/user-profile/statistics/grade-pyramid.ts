@@ -1,10 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  model,
-} from '@angular/core';
+import { Component, input, model } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiButton, TuiHint, TuiScrollbar } from '@taiga-ui/core';
@@ -255,7 +250,6 @@ import { AscentCountDirective } from '../../../directives/ascent-count.directive
       max-height: 250px;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block w-full min-w-0 xl:h-full',
   },

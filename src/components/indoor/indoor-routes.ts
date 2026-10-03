@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   inject,
   input,
@@ -393,7 +392,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IndoorRoutesComponent {
   centerId = input<string | undefined>(undefined);

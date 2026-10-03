@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  input,
-} from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 
 import { TuiScrollbar } from '@taiga-ui/core';
 
@@ -46,7 +41,6 @@ import { UserProfileProjectsListComponent } from './projects/projects-list';
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block w-full min-w-0 lg:flex lg:flex-col lg:h-full lg:min-h-0',
   },

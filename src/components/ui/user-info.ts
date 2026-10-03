@@ -1,11 +1,5 @@
 import { CommonModule, LowerCasePipe } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  inject,
-  output,
-} from '@angular/core';
+import { Component, input, inject, output } from '@angular/core';
 
 import { TuiIcon } from '@taiga-ui/core';
 import { TuiCountryIsoCode } from '@taiga-ui/i18n';
@@ -131,7 +125,6 @@ import { AvatarUrlPipe, InitialsPipe } from '../../pipes';
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserInfoComponent {
   hasActions = input<boolean>(false);

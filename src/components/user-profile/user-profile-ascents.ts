@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -97,7 +96,6 @@ import { UserProfileAscentsFiltersComponent } from './user-profile-ascents-filte
       </div>
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block w-full min-w-0 lg:flex lg:flex-col lg:h-full lg:min-h-0',
   },

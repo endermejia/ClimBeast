@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiButton, TuiIcon, TuiScrollbar, TuiTitle } from '@taiga-ui/core';
@@ -64,6 +64,5 @@ import { TranslatePipe } from '@ngx-translate/core';
       height: 100%;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OrderFailedComponent {}

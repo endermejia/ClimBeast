@@ -1,6 +1,5 @@
 import { LowerCasePipe } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   inject,
@@ -36,7 +35,6 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiRingChart,
     TuiSkeleton,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   styles: [
     `

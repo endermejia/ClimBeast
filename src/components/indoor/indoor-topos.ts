@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   inject,
   input,
@@ -107,7 +106,6 @@ import { safeResourceValue } from '../../utils';
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IndoorToposComponent {
   centerId = input.required<string>();

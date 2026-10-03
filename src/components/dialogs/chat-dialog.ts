@@ -1,6 +1,5 @@
 import { DatePipe } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -297,7 +296,6 @@ export interface ChatDialogData {
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChatDialogComponent implements OnDestroy {
   protected readonly supabase = inject(SupabaseService);

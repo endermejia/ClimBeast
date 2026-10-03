@@ -1,6 +1,5 @@
 import { LowerCasePipe } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   DestroyRef,
@@ -93,7 +92,6 @@ import { IS_BROWSER } from '../../app/is-browser';
     UserProfileFiltersComponent,
     UserProfileStatisticsComponent,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     @media (min-width: 1024px) {
       :host > tui-scrollbar {

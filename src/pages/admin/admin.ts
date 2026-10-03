@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  resource,
-} from '@angular/core';
+import { Component, inject, resource } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiAppearance, TuiIcon, TuiScrollbar } from '@taiga-ui/core';
@@ -700,7 +695,6 @@ import { IS_BROWSER } from '../../app/is-browser';
       </div>
     </tui-scrollbar>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex grow min-h-0' },
 })
 export class AdminComponent {

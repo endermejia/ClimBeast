@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  output,
-} from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { TuiDropdown, TuiError, TuiIcon, TuiTextfield } from '@taiga-ui/core';
@@ -168,7 +163,6 @@ import { Language, ProfileConfigModel, Themes } from '../../models';
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProfilePreferencesComponent {
   readonly model = input.required<ProfileConfigModel>();

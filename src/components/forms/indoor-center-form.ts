@@ -1,7 +1,6 @@
 import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
 import { CommonModule, Location } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -1290,7 +1289,6 @@ import { IS_BROWSER } from '../../app/is-browser';
       </div>
     </form>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex flex-col max-h-[70dvh] min-h-0 w-full overflow-hidden' },
 })
 export class IndoorCenterFormComponent {

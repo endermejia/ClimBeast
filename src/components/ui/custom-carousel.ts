@@ -1,12 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  model,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, input, model, output, signal } from '@angular/core';
 import { SafeResourceUrl } from '@angular/platform-browser';
 
 import { TuiIcon } from '@taiga-ui/core';
@@ -127,7 +120,6 @@ export interface CarouselItem {
       }
     `,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CustomCarouselComponent {
   items = input.required<CarouselItem[]>();

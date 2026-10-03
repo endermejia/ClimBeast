@@ -1,12 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  input,
-  resource,
-  computed,
-} from '@angular/core';
+import { Component, inject, input, resource, computed } from '@angular/core';
 
 import { TuiAmountPipe } from '@taiga-ui/addon-commerce';
 
@@ -175,7 +168,6 @@ import { IS_BROWSER } from '../../app/is-browser';
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IndoorVouchersComponent {
   centerId = input.required<string>();

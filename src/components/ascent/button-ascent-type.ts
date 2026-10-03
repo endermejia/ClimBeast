@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-} from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 
 import {
   TuiButton,
@@ -36,7 +30,6 @@ import { AscentType } from '../../models';
       <tui-icon [icon]="info.icon" />
     </button>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ButtonAscentTypeComponent {
   private readonly ascentsService = inject(AscentsService);

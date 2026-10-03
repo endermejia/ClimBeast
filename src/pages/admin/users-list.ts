@@ -4,7 +4,6 @@ import {
   CdkVirtualScrollViewport,
 } from '@angular/cdk/scrolling';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   inject,
@@ -867,7 +866,6 @@ interface UserWithRole {
       }
     `,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex grow min-h-0' },
 })
 export class AdminUsersListComponent {

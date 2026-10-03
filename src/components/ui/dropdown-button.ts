@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  model,
-  TemplateRef,
-} from '@angular/core';
+import { Component, input, model, TemplateRef } from '@angular/core';
 
 import { TuiDropdown, TuiIcon } from '@taiga-ui/core';
 
@@ -34,7 +28,6 @@ import { TuiDropdown, TuiIcon } from '@taiga-ui/core';
       </span>
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DropdownButtonComponent {
   label = input.required<string>();

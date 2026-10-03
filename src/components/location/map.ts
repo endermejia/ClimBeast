@@ -1,6 +1,5 @@
 import {
   afterNextRender,
-  ChangeDetectionStrategy,
   Component,
   DestroyRef,
   effect,
@@ -89,7 +88,6 @@ import { IS_BROWSER } from '../../app/is-browser';
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'flex grow min-h-0 w-full',
   },

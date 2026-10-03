@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { TuiButton, TuiDialogContext } from '@taiga-ui/core';
@@ -145,7 +139,6 @@ import { Import8aStepUploadComponent } from './import-8a-step-upload';
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Import8aComponent {
   private readonly supabase = inject(SupabaseService);

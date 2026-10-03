@@ -1,12 +1,5 @@
 import { DatePipe } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  resource,
-  signal,
-} from '@angular/core';
+import { Component, computed, inject, resource, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiTable } from '@taiga-ui/addon-table';
@@ -301,7 +294,6 @@ interface StatusFilter {
       </tui-scrollbar>
     </section>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminUserReportsListComponent {
   private readonly userReportsService = inject(UserReportsService);

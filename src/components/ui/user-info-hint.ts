@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   forwardRef,
@@ -48,7 +47,6 @@ import { UserInfoComponent } from './user-info';
     UserProfileStatsScoreComponent,
     forwardRef(() => AscentCardComponent),
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
       class="w-80 max-w-full p-1 text-(--tui-text-primary) overflow-hidden min-w-0"

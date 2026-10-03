@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiIcon, TuiScrollbar } from '@taiga-ui/core';
@@ -54,7 +54,6 @@ import { EmptyStateComponent } from '../../components/ui/empty-state';
       </tui-scrollbar>
     </section>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex grow min-h-0' },
 })
 export class AdminCommentReportsComponent {}

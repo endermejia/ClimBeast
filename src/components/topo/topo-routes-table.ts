@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   effect,
   inject,
@@ -387,7 +386,6 @@ import type { TopoRouteRow } from './topo.types';
       </tui-scrollbar>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TopoRoutesTableComponent {
   private readonly ascentsService = inject(AscentsService);

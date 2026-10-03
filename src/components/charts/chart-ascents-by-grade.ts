@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-  InputSignal,
-  Signal,
-} from '@angular/core';
+import { Component, computed, input, InputSignal, Signal } from '@angular/core';
 
 import { TuiAppearance } from '@taiga-ui/core';
 
@@ -33,7 +26,6 @@ export interface GradeAscentRow {
 @Component({
   selector: 'app-chart-ascents-by-grade',
   imports: [TranslatePipe, TuiAppearance],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
   template: `
     <div class="w-full max-w-sm mx-auto text-sm font-sans select-none">

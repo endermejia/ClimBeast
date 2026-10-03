@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  resource,
-} from '@angular/core';
+import { Component, computed, inject, input, resource } from '@angular/core';
 
 import { TuiButton, TuiIcon } from '@taiga-ui/core';
 
@@ -48,7 +41,6 @@ import { reactToObservable } from '../../utils';
       </div>
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '[style.display]': 'isHidden() ? "none" : null',
   },

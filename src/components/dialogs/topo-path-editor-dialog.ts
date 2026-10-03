@@ -10,7 +10,6 @@ import { CommonModule } from '@angular/common';
 import {
   afterNextRender,
   AfterViewInit,
-  ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   computed,
@@ -1456,7 +1455,6 @@ export interface TopoPathEditorConfig {
       z-index: 50;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TopoPathEditorDialogComponent implements AfterViewInit {
   protected readonly context =

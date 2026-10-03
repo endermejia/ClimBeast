@@ -1,5 +1,5 @@
 import { CommonModule, DecimalPipe, UpperCasePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { TuiDialogContext } from '@taiga-ui/core';
@@ -154,7 +154,6 @@ import { MerchandiseItemDetail, OrderDetail } from '../../models';
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OrderDetailsDialogComponent {
   protected readonly context =

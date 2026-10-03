@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Component } from '@angular/core';
 
 import { TuiDialogContext, TuiScrollbar } from '@taiga-ui/core';
 import { injectContext } from '@taiga-ui/polymorpheus';
@@ -24,7 +24,6 @@ export interface FavoritesDialogData {
       </tui-scrollbar>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex flex-col max-h-[70dvh] min-h-0 w-full overflow-hidden' },
 })
 export class FavoritesDialogComponent {

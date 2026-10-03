@@ -5,7 +5,6 @@ import {
   UpperCasePipe,
 } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   inject,
@@ -245,7 +244,6 @@ import { OrderDetail, OrderStatus } from '../../models';
       }
     `,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminShopOrdersComponent {
   private readonly merchService = inject(MerchandiseService);

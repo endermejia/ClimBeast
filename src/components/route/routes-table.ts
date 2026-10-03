@@ -1,6 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   DestroyRef,
@@ -595,7 +594,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
       }
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex flex-col min-h-0 min-w-0' },
 })
 export class RoutesTableComponent {

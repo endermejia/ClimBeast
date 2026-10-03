@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -163,7 +162,6 @@ export interface UserListDialogData {
       </tui-scrollbar>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserListDialogComponent {
   private readonly isBrowser = inject(IS_BROWSER);

@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, inject, output, signal } from '@angular/core';
 
 import { TuiButton, TuiIcon, TuiLoader, TuiScrollbar } from '@taiga-ui/core';
 import { TuiBadge } from '@taiga-ui/kit';
@@ -315,7 +309,6 @@ import type { CartProduct } from '../../models';
       display: contents;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CartOverlayComponent {
   private readonly cartService = inject(CartService);

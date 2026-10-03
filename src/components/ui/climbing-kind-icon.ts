@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-} from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 
 import { TuiHint, TuiIcon } from '@taiga-ui/core';
 
@@ -18,7 +12,6 @@ import { CLIMBING_ICONS, ClimbingKind } from '../../models';
   template: `
     <tui-icon [icon]="icon()" [tuiHint]="hint()" [class]="iconClass()" />
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'inline-flex items-center',
   },

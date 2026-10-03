@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   inject,
@@ -38,7 +37,6 @@ import { CragDetail, ParkingDto } from '../../models';
       <app-crag-parkings [crag]="crag()" [parkings]="parkings()" />
     </ng-template>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ParkingButtonComponent {
   private readonly dialogs = inject(TuiDialogService);

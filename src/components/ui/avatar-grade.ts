@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-} from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 
 import { TuiHint, TuiSizeL, TuiSizeS, TuiSizeXS } from '@taiga-ui/core';
 import { TuiBadge } from '@taiga-ui/kit';
@@ -35,7 +30,6 @@ import {
       <strong class="text-shadow-sm">{{ gradeLabel() }}</strong>
     </span>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GradeComponent {
   grade = input.required<number>();

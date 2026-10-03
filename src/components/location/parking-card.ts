@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-} from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 
 import { TuiButton, TuiIcon } from '@taiga-ui/core';
 import { TuiCopy } from '@taiga-ui/kit';
@@ -74,7 +69,6 @@ import { ParkingDto } from '../../models';
       </div>
     </app-place-card>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ParkingCardComponent {
   parking = input.required<ParkingDto>();

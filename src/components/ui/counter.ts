@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -103,7 +102,6 @@ let nextCounterId = 0;
       }
     `,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CounterComponent implements ControlValueAccessor {
   public readonly ngControl = inject(NgControl, { optional: true, self: true });

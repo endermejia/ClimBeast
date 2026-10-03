@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   ElementRef,
   input,
@@ -76,7 +75,6 @@ import { TranslatePipe } from '@ngx-translate/core';
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChatInputComponent {
   readonly newMessage = input.required<string>();

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { Component, input } from '@angular/core';
 
 import { TuiSortDirection } from '@taiga-ui/addon-table';
 import { TuiSkeleton } from '@taiga-ui/kit';
@@ -39,7 +39,6 @@ import { OutdoorRoutesTableComponent } from '../../route/outdoor-routes-table';
       />
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block w-full min-w-0',
   },

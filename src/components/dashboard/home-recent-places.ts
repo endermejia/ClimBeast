@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiAppearance } from '@taiga-ui/core';
@@ -66,7 +66,6 @@ export interface UnifiedActiveItem {
       }
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeRecentPlacesComponent {
   followsLoaded = input<boolean>(true);

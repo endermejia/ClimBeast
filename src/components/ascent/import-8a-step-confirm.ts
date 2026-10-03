@@ -1,11 +1,5 @@
 import { DatePipe } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  input,
-  output,
-} from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { TuiCheckbox, TuiIcon, TuiNotification } from '@taiga-ui/core';
@@ -172,7 +166,6 @@ export type ResolvedAscentItem = EightAnuAscent & {
       </div>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Import8aStepConfirmComponent {
   protected readonly ascentsService = inject(AscentsService);

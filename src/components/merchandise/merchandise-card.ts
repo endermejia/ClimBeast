@@ -1,6 +1,5 @@
 import { CommonModule, DecimalPipe } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   inject,
@@ -106,7 +105,6 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
       </div>
     </button>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MerchandiseCardComponent {
   protected readonly authState = inject(AuthStateService);

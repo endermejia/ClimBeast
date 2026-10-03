@@ -1,6 +1,5 @@
 import { LowerCasePipe } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -257,7 +256,6 @@ const CARD_WINDOW = 24;
       </ng-template>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex grow min-h-0' },
 })
 export class IndoorListComponent {

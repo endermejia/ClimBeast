@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  resource,
-} from '@angular/core';
+import { Component, computed, inject, input, resource } from '@angular/core';
 
 import { TuiDialogService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
@@ -33,7 +26,6 @@ import { LikesComponent } from '../social/likes';
       />
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '[style.display]': 'isHidden() ? "none" : null',
   },

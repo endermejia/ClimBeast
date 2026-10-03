@@ -1,6 +1,5 @@
 import { DatePipe } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   inject,
   input,
@@ -161,7 +160,6 @@ export interface SectionHeaderAction {
       </h1>
     </header>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SectionHeaderComponent {
   protected readonly layoutService = inject(LayoutService);

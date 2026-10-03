@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   DestroyRef,
   computed,
@@ -201,7 +200,6 @@ export interface PyramidSlotDialogData {
       display: block;
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PyramidSlotDialogComponent {
   protected readonly ClimbingKinds = ClimbingKinds;

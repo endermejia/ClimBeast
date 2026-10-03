@@ -1,12 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  resource,
-} from '@angular/core';
+import { Component, computed, inject, input, resource } from '@angular/core';
 
 import { TuiLoader } from '@taiga-ui/core';
 
@@ -33,7 +26,6 @@ import { safeResourceValue } from '../../utils';
     CommonModule,
     TuiLoader,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
       class="w-80 max-w-full p-2 text-(--tui-text-primary) overflow-hidden min-w-0 flex flex-col gap-3"

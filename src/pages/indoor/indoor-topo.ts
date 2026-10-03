@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  resource,
-  signal,
-} from '@angular/core';
+import { Component, computed, inject, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { TuiSortDirection } from '@taiga-ui/addon-table';
@@ -259,7 +252,6 @@ import { TopoPageBase } from '../area/topo-page-base';
       </section>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'flex grow h-full overflow-hidden',
     style: 'touch-action: auto',

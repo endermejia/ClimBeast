@@ -1,12 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  resource,
-  signal,
-} from '@angular/core';
+import { Component, computed, inject, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { form, required, submit } from '@angular/forms/signals';
 
@@ -117,7 +110,6 @@ import { IS_BROWSER } from '../../app/is-browser';
       </div>
     </form>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LinkParkingFormComponent {
   private readonly parkingsService = inject(ParkingsService);

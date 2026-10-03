@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  resource,
-} from '@angular/core';
+import { Component, computed, inject, resource } from '@angular/core';
 
 import {
   TuiButton,
@@ -213,7 +207,6 @@ import { TopoPageBase } from './topo-page-base';
       </section>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'flex grow h-full overflow-hidden',
     style: 'touch-action: auto',

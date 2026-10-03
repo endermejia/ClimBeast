@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  input,
-  resource,
-} from '@angular/core';
+import { Component, inject, input, resource } from '@angular/core';
 
 import { TuiIcon } from '@taiga-ui/core';
 import { TuiAvatar } from '@taiga-ui/kit';
@@ -74,7 +68,6 @@ import { CommentLikesComponent } from '../social/comment-likes';
       </div>
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AscentLastCommentComponent {
   protected readonly supabase = inject(SupabaseService);

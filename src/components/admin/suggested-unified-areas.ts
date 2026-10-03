@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  resource,
-} from '@angular/core';
+import { Component, computed, inject, resource } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiButton, TuiLoader } from '@taiga-ui/core';
@@ -71,7 +65,6 @@ import { normalizeName } from '../../utils';
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SuggestedUnifiedAreasComponent {
   private readonly areasService = inject(AreasService);

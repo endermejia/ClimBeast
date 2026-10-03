@@ -1,9 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  input,
-  output,
-} from '@angular/core';
+import { Component, input, output } from '@angular/core';
 
 import type { TopoRouteWithRoute } from '../../models';
 
@@ -453,7 +448,6 @@ export interface RenderedRoute extends TopoRouteWithRoute {
       </svg>
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TopoRouteRendererComponent {
   readonly renderedRoutes = input.required<readonly RenderedRoute[]>();

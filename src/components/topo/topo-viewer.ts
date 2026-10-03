@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -224,7 +223,6 @@ import {
       </div>
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TopoViewerComponent {
   private readonly isBrowser = inject(IS_BROWSER);

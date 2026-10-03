@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-  output,
-} from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -132,7 +126,6 @@ export interface ProcessedFeedItem {
       }
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AscentsFeedComponent {
   ascents = input.required<FeedItem[]>();

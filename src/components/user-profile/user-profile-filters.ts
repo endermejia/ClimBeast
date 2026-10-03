@@ -1,11 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  linkedSignal,
-} from '@angular/core';
+import { Component, computed, inject, linkedSignal } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import {
@@ -58,7 +52,6 @@ import { FilterDialog, FilterDialogComponent } from '../dialogs/filter-dialog';
     TuiSelect,
     TuiTextfield,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
       class="flex flex-col gap-2 mb-4 shrink-0 w-full min-w-0 px-0 lg:px-1 pt-2"
