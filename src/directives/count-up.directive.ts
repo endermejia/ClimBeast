@@ -1,6 +1,7 @@
 import {
   Directive,
   DestroyRef,
+  NgZone,
   effect,
   inject,
   input,
@@ -17,6 +18,7 @@ import { IS_BROWSER } from '../app/is-browser';
 export class CountUpDirective {
   private readonly destroyRef = inject(DestroyRef);
   private readonly isBrowser = inject(IS_BROWSER);
+  private readonly ngZone = inject(NgZone);
 
   // The target number to count up to
   readonly target = input.required<number>({ alias: 'appCountUp' });
@@ -93,7 +95,11 @@ export class CountUpDirective {
     if (duration <= 0) {
       this.currentValue.set(end);
     } else {
-      this.animationFrameId = requestAnimationFrame(step);
+      // Execute high-frequency 60fps animation loop outside NgZone to avoid
+      // triggering global Angular change detection cycles on every frame.
+      this.ngZone.runOutsideAngular(() => {
+        this.animationFrameId = requestAnimationFrame(step);
+      });
     }
   }
 }
