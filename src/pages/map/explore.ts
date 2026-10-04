@@ -219,10 +219,11 @@ import { IS_BROWSER } from '../../app/is-browser';
         <!-- Map -->
         @defer (on viewport) {
           <div class="absolute inset-0 pointer-events-none"></div>
+          <!-- Optimized template binding: mapAreaItems signal handles shouldShowOutdoor internally in computed() -->
           <app-map
             class="w-full h-full"
             [mapCragItems]="mapCragItems()"
-            [mapAreaItems]="shouldShowOutdoor() ? mapAreaItems() : []"
+            [mapAreaItems]="mapAreaItems()"
             [mapIndoorItems]="mapIndoorItems()"
             [selectedMapCragItem]="mapData.selectedMapCragItem()"
             (selectedMapCragItemChange)="selectMapCragItem($event)"
