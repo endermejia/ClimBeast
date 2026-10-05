@@ -1194,6 +1194,7 @@
   "topos.editor.sortConfirm": "Ziur al zaude bideak ezkerretik eskuinera ordenatu nahi dituzula pantailako posizioaren arabera?",
   "topos.editor.traverse": "Traverse",
   "topos.editTitle": "Editatu krokisa",
+  "topos.fileTooLarge": "Krokisaren irudiak 50MB-ko muga gainditzen du.",
   "topos.legacy": "Erakutsi croquis zaharrak",
   "topos.legend.foot": "Foot",
   "topos.legend.match": "Match",

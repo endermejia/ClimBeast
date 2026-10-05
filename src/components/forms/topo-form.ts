@@ -654,6 +654,11 @@ export class TopoFormComponent {
   }
 
   onPhotoControlChange(file: File | null): void {
+    if (file && file.size > 50 * 1024 * 1024) {
+      this.toast.error('topos.fileTooLarge');
+      this.model.update((m) => ({ ...m, photoControl: null }));
+      return;
+    }
     this.model.update((m) => ({ ...m, photoControl: file }));
     if (file) {
       this.editPhoto(file);

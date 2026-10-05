@@ -1194,6 +1194,7 @@
   "topos.editor.sortConfirm": "Bist du sicher, dass du die Routen von links nach rechts anhand ihrer Position auf dem Bildschirm sortieren möchtest?",
   "topos.editor.traverse": "Traverse",
   "topos.editTitle": "Topo bearbeiten",
+  "topos.fileTooLarge": "Das Topo-Bild überschreitet das Limit von 50 MB.",
   "topos.legacy": "Alte Topos anzeigen",
   "topos.legend.foot": "Fuß",
   "topos.legend.match": "Match",

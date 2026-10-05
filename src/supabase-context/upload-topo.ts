@@ -120,9 +120,12 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    if (payload.base64.length > 10 * 1024 * 1024) {
+    const MAX_PHOTO_BYTES = 50 * 1024 * 1024; // 50MB
+    const MAX_BASE64_LENGTH = Math.ceil((MAX_PHOTO_BYTES * 4) / 3) + 512;
+
+    if (payload.base64.length > MAX_BASE64_LENGTH) {
       return new Response(
-        JSON.stringify({ error: 'File size exceeds 10MB limit' }),
+        JSON.stringify({ error: 'File size exceeds 50MB limit' }),
         {
           status: 413,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -226,6 +229,16 @@ Deno.serve(async (req: Request) => {
 
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    if (bytes.length > MAX_PHOTO_BYTES) {
+      return new Response(
+        JSON.stringify({ error: 'File size exceeds 50MB limit' }),
+        {
+          status: 413,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
     }
 
     const bucket = 'topos';

@@ -1194,6 +1194,7 @@
   "topos.editor.sortConfirm": "Sei sicuro di voler ordinare i tiri da sinistra a destra in base alla loro posizione sullo schermo?",
   "topos.editor.traverse": "Traverse",
   "topos.editTitle": "Modifica schizzo",
+  "topos.fileTooLarge": "L'immagine del topo supera il limite di 50 MB.",
   "topos.legacy": "Mostra topo obsoleti",
   "topos.legend.foot": "Piede",
   "topos.legend.match": "Match",

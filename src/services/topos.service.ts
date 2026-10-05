@@ -227,6 +227,11 @@ export class ToposService {
   async uploadPhoto(topoId: string | number, file: File): Promise<void> {
     if (!this.isBrowser) return;
 
+    if (file.size > 50 * 1024 * 1024) {
+      this.toast.error('topos.fileTooLarge');
+      throw new Error('File size exceeds 50MB limit');
+    }
+
     const toBase64 = (f: File) =>
       new Promise<string>((resolve, reject) => {
         const reader = new FileReader();

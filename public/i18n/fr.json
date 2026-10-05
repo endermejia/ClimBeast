@@ -1194,6 +1194,7 @@
   "topos.editor.sortConfirm": "Êtes-vous sûr de vouloir trier les voies de gauche à droite selon leur position à l'écran ?",
   "topos.editor.traverse": "Traverse",
   "topos.editTitle": "Modifier le topo",
+  "topos.fileTooLarge": "L'image du topo dépasse la limite de 50 Mo.",
   "topos.legacy": "Afficher les anciens topos",
   "topos.legend.foot": "Pied",
   "topos.legend.match": "Match",

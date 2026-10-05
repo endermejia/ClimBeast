@@ -1194,6 +1194,7 @@
   "topos.editor.sortConfirm": "Estàs segur que vols ordenar les vies d'esquerra a dreta segons la seua posició en pantalla?",
   "topos.editor.traverse": "Traverse",
   "topos.editTitle": "Editar croquis",
+  "topos.fileTooLarge": "La imatge del croquis supera el límit màxim de 50MB.",
   "topos.legacy": "Mostrar croquis antics",
   "topos.legend.foot": "Peu",
   "topos.legend.match": "Match",
