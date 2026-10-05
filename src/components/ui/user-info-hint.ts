@@ -10,6 +10,7 @@ import {
 import { Router } from '@angular/router';
 
 import { TuiDialogService } from '@taiga-ui/core';
+import type { TuiCountryIsoCode } from '@taiga-ui/i18n';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -54,17 +55,17 @@ import { UserInfoComponent } from './user-info';
       @let profile = userProfileResource.value();
       <app-user-info
         [loading]="userProfileResource.isLoading()"
-        [name]="profile?.name || fallbackName()"
-        [avatar]="profile?.avatar || fallbackAvatar()"
+        [name]="userName()"
+        [avatar]="userAvatar()"
         [city]="profile?.city"
-        [country]="$any(profile?.country)"
+        [country]="userCountry()"
         [age]="userAge()"
         [startingClimbingYear]="profile?.starting_climbing_year"
         [compact]="true"
         [avatarSize]="'l'"
         [avatarClickable]="true"
         [nameClickable]="true"
-        (avatarClick)="enlargeAvatar(profile?.avatar || fallbackAvatar())"
+        (avatarClick)="enlargeAvatar(userAvatar())"
         (nameClick)="navigateToProfile()"
       />
 
@@ -156,6 +157,20 @@ export class UserInfoHintComponent {
       return data as UserProfileDto | null;
     },
   });
+
+  protected readonly userName = computed(
+    () => this.userProfileResource.value()?.name || this.fallbackName(),
+  );
+
+  protected readonly userAvatar = computed(
+    () => this.userProfileResource.value()?.avatar || this.fallbackAvatar(),
+  );
+
+  protected readonly userCountry = computed(
+    () =>
+      (this.userProfileResource.value()?.country as
+        TuiCountryIsoCode | null | undefined) ?? null,
+  );
 
   protected readonly userAge = computed(() => {
     const bd = this.userProfileResource.value()?.birth_date;

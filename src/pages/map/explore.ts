@@ -222,7 +222,7 @@ import { IS_BROWSER } from '../../app/is-browser';
           <app-map
             class="w-full h-full"
             [mapCragItems]="mapCragItems()"
-            [mapAreaItems]="shouldShowOutdoor() ? mapAreaItems() : []"
+            [mapAreaItems]="mapAreaItems()"
             [mapIndoorItems]="mapIndoorItems()"
             [selectedMapCragItem]="mapData.selectedMapCragItem()"
             (selectedMapCragItemChange)="selectMapCragItem($event)"
