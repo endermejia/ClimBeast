@@ -43,9 +43,9 @@ import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
 import { VisitedCragsService } from '../../services/visited-crags.service';
 
+import { AreaRevenuePanelComponent } from '../../components/area/area-revenue-panel';
 import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
 import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
-
 import { CragRoutesComponent } from '../../components/crag/crag-routes';
 import { CragToposComponent } from '../../components/crag/crag-topos';
 import { MeteoButtonComponent } from '../../components/ui/meteo-button';
@@ -77,6 +77,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-crag',
   imports: [
+    AreaRevenuePanelComponent,
     AscentCountDirective,
     AscentsFeedComponent,
     ChartRoutesByGradeComponent,
@@ -204,6 +205,16 @@ const PAGE_SIZE = 20;
                   </div>
                 }
 
+                <app-area-revenue-panel
+                  [areaId]="c.area_id"
+                  [areaName]="c.area_name"
+                  [isPaywalled]="!c.is_public"
+                  [areaPrice]="c.price || 0"
+                  [isPurchased]="!!c.purchased"
+                  [toposCount]="areaToposCount()"
+                  class="block lg:hidden"
+                />
+
                 @if (segmentedTabs().length > 1) {
                   <tui-segmented
                     [activeItemIndex]="activeTabIndex()"
@@ -282,6 +293,15 @@ const PAGE_SIZE = 20;
             class="hidden lg:flex lg:w-[420px] xl:w-[460px] 2xl:w-[500px] shrink-0 min-w-0 lg:h-full flex-col"
           >
             <div class="flex flex-col w-full lg:h-full min-w-0 lg:min-h-0">
+              <app-area-revenue-panel
+                [areaId]="c.area_id"
+                [areaName]="c.area_name"
+                [isPaywalled]="!c.is_public"
+                [areaPrice]="c.price || 0"
+                [isPurchased]="!!c.purchased"
+                [toposCount]="areaToposCount()"
+                class="mb-6 block"
+              />
               <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
                 <div class="w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6">
                   <app-ascents-feed
@@ -594,6 +614,10 @@ export class CragComponent {
 
   protected readonly toposCount = computed(() => {
     return this.cragDetail()?.topos?.length ?? 0;
+  });
+
+  protected readonly areaToposCount = computed(() => {
+    return this.outdoorData.selectedArea()?.topos_count ?? 0;
   });
 
   constructor() {
