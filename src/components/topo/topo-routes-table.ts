@@ -150,6 +150,7 @@ import type { TopoRouteRow } from './topo.types';
                       : item.project
                         ? 'var(--tui-status-info-pale)'
                         : '';
+                  @let isSelected = item._ref.route_id === selectedRouteId();
                   <tr
                     #routeRow
                     tuiTr
@@ -159,13 +160,10 @@ import type { TopoRouteRow } from './topo.types';
                       '-' +
                       item._ref.route_id
                     "
-                    [class.outline-2]="item._ref.route_id === selectedRouteId()"
-                    [class.outline-[var(--tui-border-focus)]]="
-                      item._ref.route_id === selectedRouteId()
-                    "
-                    [class.-outline-offset-1]="
-                      item._ref.route_id === selectedRouteId()
-                    "
+                    [class.outline-2]="isSelected"
+                    [class.outline-[var(--tui-border-focus)]]="isSelected"
+                    [class.-outline-offset-2]="isSelected"
+                    [class.selected-row]="isSelected"
                     [style.background]="rowBg"
                     [style.--row-bg]="rowBg || null"
                     class="group cursor-pointer"
@@ -178,7 +176,11 @@ import type { TopoRouteRow } from './topo.types';
                         *tuiCell="col"
                         tuiTd
                         [class.sticky-col-right]="col === 'actions'"
-                        class="overflow-hidden text-center"
+                        [class.selected-actions-col]="
+                          isSelected && col === 'actions'
+                        "
+                        [class.overflow-hidden]="col !== 'actions'"
+                        class="text-center"
                       >
                         @switch (col) {
                           @case ('index') {

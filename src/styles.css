@@ -163,6 +163,30 @@ td.sticky-col-right,
   inset-inline-end: 0 !important;
 }
 
+/* Selected row border on sticky right column */
+tr.selected-row td.sticky-col-right,
+tr.selected-row [tuiTd].sticky-col-right,
+td.sticky-col-right.selected-actions-col,
+[tuiTd].sticky-col-right.selected-actions-col {
+  border-bottom-color: var(--tui-border-focus) !important;
+  border-right-color: var(--tui-border-focus) !important;
+}
+
+tr.selected-row > td.sticky-col-right::after,
+tr.selected-row > [tuiTd].sticky-col-right::after,
+td.sticky-col-right.selected-actions-col::after,
+[tuiTd].sticky-col-right.selected-actions-col::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-sizing: border-box;
+  border-top: 2px solid var(--tui-border-focus);
+  border-bottom: 2px solid var(--tui-border-focus);
+  border-right: 2px solid var(--tui-border-focus);
+  z-index: 1;
+}
+
 /* Sticky drop shadows when stuck — clip to horizontal side only */
 .table-stuck-left th.sticky-col-left,
 .table-stuck-left td.sticky-col-left,
