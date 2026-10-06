@@ -27,7 +27,6 @@ import {
   TuiDropdown,
   TuiHint,
   TuiIcon,
-  TuiLink,
   TuiScrollbar,
 } from '@taiga-ui/core';
 
@@ -66,7 +65,6 @@ import type { TopoRouteRow } from './topo.types';
     TuiDropdown,
     TuiHint,
     TuiIcon,
-    TuiLink,
     TuiScrollbar,
     TuiTable,
     TuiTableTbody,
@@ -144,6 +142,14 @@ import type { TopoRouteRow } from './topo.types';
                   @let bgSubtle =
                     ascentInfo()[item._ref.route.own_ascent?.type || 'default']
                       ?.backgroundSubtle;
+                  @let rowBg =
+                    item.climbed
+                      ? bgSubtle && bgSubtle !== 'transparent'
+                        ? bgSubtle
+                        : 'var(--tui-status-positive-pale)'
+                      : item.project
+                        ? 'var(--tui-status-info-pale)'
+                        : '';
                   <tr
                     #routeRow
                     tuiTr
@@ -160,13 +166,8 @@ import type { TopoRouteRow } from './topo.types';
                     [class.-outline-offset-1]="
                       item._ref.route_id === selectedRouteId()
                     "
-                    [style.background]="
-                      item.climbed
-                        ? bgSubtle
-                        : item.project
-                          ? 'var(--tui-status-info-pale)'
-                          : ''
-                    "
+                    [style.background]="rowBg"
+                    [style.--row-bg]="rowBg || null"
                     class="group cursor-pointer"
                     (mouseenter)="hoveredRouteIdChange.emit(item._ref.route_id)"
                     (mouseleave)="hoveredRouteIdChange.emit(null)"
@@ -192,14 +193,29 @@ import type { TopoRouteRow } from './topo.types';
                               class="flex items-center justify-between gap-1.5 h-full min-w-0 w-full"
                             >
                               <div
-                                class="flex items-center gap-1.5 min-w-0 flex-1"
+                                class="flex items-center gap-1 min-w-0 flex-1"
                               >
-                                <a
-                                  tuiLink
-                                  [routerLink]="item.link"
-                                  class="text-left truncate max-w-full w-fit block"
+                                <span
+                                  class="text-left truncate max-w-full font-medium"
+                                  [tuiHint]="isMobile() ? null : item.name"
                                 >
                                   {{ item.name }}
+                                </span>
+                                <a
+                                  tuiIconButton
+                                  [routerLink]="item.link"
+                                  iconStart="@tui.arrow-up-right"
+                                  appearance="flat-grayscale"
+                                  size="xs"
+                                  class="rounded-full! shrink-0 opacity-0 group-hover:opacity-70 hover:opacity-100! focus-visible:opacity-100! transition-opacity"
+                                  [class.opacity-70!]="
+                                    isMobile() ||
+                                    item._ref.route_id === selectedRouteId()
+                                  "
+                                  [tuiHint]="'view' | translate"
+                                  (click.zoneless)="$event.stopPropagation()"
+                                >
+                                  {{ 'view' | translate }}
                                 </a>
                               </div>
                               @if (
@@ -295,6 +311,18 @@ import type { TopoRouteRow } from './topo.types';
                                   </button>
                                   <ng-template #actionMenu>
                                     <tui-data-list size="m">
+                                      <a
+                                        tuiOption
+                                        [routerLink]="item.link"
+                                        class="whitespace-nowrap"
+                                        (click)="openActionId.set(null)"
+                                      >
+                                        <tui-icon
+                                          icon="@tui.arrow-up-right"
+                                          class="mr-2"
+                                        />
+                                        {{ 'view' | translate }}
+                                      </a>
                                       <button
                                         tuiOption
                                         appearance="positive"
