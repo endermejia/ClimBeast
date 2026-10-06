@@ -29,7 +29,10 @@ export function handleErrorToast(
   toast: ToastService,
   severity: ErrorSeverity = 'error',
 ): void {
-  toast.logError(error, severity, 'handleErrorToast');
+  // Do not log client connectivity / network drops to database
+  if (!isNetworkError(error)) {
+    toast.logError(error, severity, 'handleErrorToast');
+  }
 
   const messageKey = resolveErrorKey(error);
   toast.error(messageKey);
@@ -71,14 +74,63 @@ function resolveErrorKey(error: unknown): string {
   return 'errors.unexpected';
 }
 
-function isNetworkError(error: unknown): boolean {
+export function isNetworkError(error: unknown): boolean {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return true;
+  }
   if (error instanceof TypeError) {
     return /failed to fetch|network|load/i.test(error.message);
   }
   if (error instanceof DOMException) {
     return error.name === 'AbortError';
   }
+  if (typeof error === 'object' && error !== null) {
+    const err = error as Record<string, unknown>;
+    const name = typeof err['name'] === 'string' ? err['name'] : '';
+    const msg = typeof err['message'] === 'string' ? err['message'] : '';
+    if (name === 'AbortError') return true;
+    if (
+      /failed to fetch|load failed|network connection|internet connection|offline|abort|signal is aborted/i.test(
+        msg,
+      )
+    ) {
+      return true;
+    }
+  }
   return false;
+}
+
+/**
+ * Safely stringifies an arbitrary value, handling circular references and DOM events.
+ */
+export function safeStringify(obj: unknown): string {
+  try {
+    const seen = new WeakSet();
+    return JSON.stringify(obj, (_key, value) => {
+      if (typeof value === 'object' && value !== null) {
+        if (seen.has(value)) {
+          return '[Circular]';
+        }
+        seen.add(value);
+      }
+      if (value instanceof Error) {
+        return {
+          name: value.name,
+          message: value.message,
+          stack: value.stack,
+        };
+      }
+      if (typeof Event !== 'undefined' && value instanceof Event) {
+        return {
+          type: value.type,
+          target: (value.target as HTMLElement | null)?.tagName ?? null,
+        };
+      }
+      return value;
+    });
+  } catch {
+    return '';
+  }
 }
 
 /**
@@ -86,13 +138,63 @@ function isNetworkError(error: unknown): boolean {
  * @param error The error object to extract the message from
  * @returns The error message as a string
  */
-export function extractErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === 'string') return error;
-  if (error === undefined) return 'undefined';
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return 'Unknown error';
+export function extractErrorMessage(error: unknown, depth = 0): string {
+  if (depth > 5 || !error) return '';
+  if (error instanceof Error) {
+    if (
+      error.message &&
+      error.message !== '[object Object]' &&
+      error.message !== 'Error'
+    ) {
+      return error.message;
+    }
+    if ('cause' in error && error.cause) {
+      const causeMsg = extractErrorMessage(error.cause, depth + 1);
+      if (causeMsg) return causeMsg;
+    }
+    return error.message || '';
   }
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (typeof error === 'object') {
+    if (typeof Event !== 'undefined' && error instanceof Event) {
+      const target = (error.target as HTMLElement | null)?.tagName || 'unknown';
+      const type = error.type || 'event';
+      if (
+        'message' in error &&
+        typeof (error as { message: unknown }).message === 'string'
+      ) {
+        return `${type} (${(error as { message: string }).message})`;
+      }
+      return `Event: ${type} on <${target}>`;
+    }
+
+    const rec = error as Record<string, unknown>;
+    if (
+      typeof rec['message'] === 'string' &&
+      rec['message'].trim() &&
+      rec['message'] !== '[object Object]'
+    ) {
+      return rec['message'];
+    }
+    if (rec['cause']) {
+      const causeMsg = extractErrorMessage(rec['cause'], depth + 1);
+      if (causeMsg) return causeMsg;
+    }
+    if (rec['error']) {
+      const innerMsg = extractErrorMessage(rec['error'], depth + 1);
+      if (innerMsg) return innerMsg;
+    }
+    if (typeof rec['details'] === 'string' && rec['details'].trim()) {
+      return rec['details'];
+    }
+
+    const json = safeStringify(error);
+    if (json && json !== '{}' && json !== '{"message":""}') {
+      return json;
+    }
+  }
+  const str = String(error ?? '');
+  return str === '[object Object]' ? '' : str;
 }

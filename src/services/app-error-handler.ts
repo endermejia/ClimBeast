@@ -1,6 +1,7 @@
 import { ErrorHandler, inject, Injectable } from '@angular/core';
 
 import { STORAGE_KEYS } from '../constants';
+import { extractErrorMessage, isNetworkError } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 import { ErrorLogService } from './error-log.service';
@@ -22,7 +23,8 @@ export class AppErrorHandler implements ErrorHandler {
       trimmed === '{"message":""}' ||
       trimmed === '{}' ||
       trimmed === 'null' ||
-      trimmed === 'undefined'
+      trimmed === 'undefined' ||
+      trimmed === '[object Object]'
     ) {
       return;
     }
@@ -36,14 +38,15 @@ export class AppErrorHandler implements ErrorHandler {
       return;
     }
 
-    // 2. Aborted requests/cancellations (e.g. user navigated away before fetch completed)
+    // 2. Aborted requests/cancellations & network drops (user offline or temporary loss of connection)
     if (
+      isNetworkError(error) ||
       (error instanceof DOMException && error.name === 'AbortError') ||
       (typeof error === 'object' &&
         error !== null &&
         'name' in error &&
         (error as { name: unknown }).name === 'AbortError') ||
-      /AbortError|signal is aborted without reason|The user aborted a request/i.test(
+      /AbortError|signal is aborted without reason|The user aborted a request|Load failed|Failed to fetch|NetworkError/i.test(
         msg,
       )
     ) {
@@ -88,55 +91,6 @@ export class AppErrorHandler implements ErrorHandler {
   }
 
   private extractMessage(error: unknown, depth = 0): string {
-    if (depth > 5 || !error) {
-      return '';
-    }
-    if (error instanceof Error) {
-      if (
-        error.message &&
-        error.message !== '[object Object]' &&
-        error.message !== 'Error'
-      ) {
-        return error.message;
-      }
-      if ('cause' in error && error.cause) {
-        const causeMsg = this.extractMessage(error.cause, depth + 1);
-        if (causeMsg) return causeMsg;
-      }
-      return error.message || '';
-    }
-    if (typeof error === 'string') {
-      return error;
-    }
-    if (typeof error === 'object') {
-      const rec = error as Record<string, unknown>;
-      if (
-        typeof rec['message'] === 'string' &&
-        rec['message'].trim() &&
-        rec['message'] !== '[object Object]'
-      ) {
-        return rec['message'];
-      }
-      if (rec['cause']) {
-        const causeMsg = this.extractMessage(rec['cause'], depth + 1);
-        if (causeMsg) return causeMsg;
-      }
-      if (rec['error']) {
-        const innerMsg = this.extractMessage(rec['error'], depth + 1);
-        if (innerMsg) return innerMsg;
-      }
-      if (typeof rec['details'] === 'string' && rec['details'].trim()) {
-        return rec['details'];
-      }
-      try {
-        const json = JSON.stringify(error);
-        if (json && json !== '{}' && json !== '{"message":""}') {
-          return json;
-        }
-      } catch {
-        // ignore cyclic
-      }
-    }
-    return String(error ?? '');
+    return extractErrorMessage(error, depth);
   }
 }

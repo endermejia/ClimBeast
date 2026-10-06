@@ -1,6 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 
 import { STORAGE_KEYS } from '../constants';
+import { isNetworkError, safeStringify } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 import { LocalStorage } from './local-storage';
@@ -58,6 +59,11 @@ export class ErrorLogService {
   ): Promise<void> {
     if (!this.isBrowser) return;
 
+    // Do not log client network disconnects / aborted fetches to database
+    if (isNetworkError(error)) {
+      return;
+    }
+
     const { message, code, stack } = this.unwrapError(error);
 
     // Ignore empty/blank error messages or empty JSON that have no actionable information
@@ -67,8 +73,14 @@ export class ErrorLogService {
       trimmed === '{"message":""}' ||
       trimmed === '{}' ||
       trimmed === 'null' ||
-      trimmed === 'undefined'
+      trimmed === 'undefined' ||
+      trimmed === '[object Object]'
     ) {
+      return;
+    }
+
+    // Do not log network drops or load failures to database
+    if (/Load failed|Failed to fetch|NetworkError/i.test(trimmed)) {
       return;
     }
 
@@ -282,6 +294,27 @@ export class ErrorLogService {
     }
 
     if (typeof error === 'object') {
+      if (typeof Event !== 'undefined' && error instanceof Event) {
+        const target =
+          (error.target as HTMLElement | null)?.tagName || 'unknown';
+        const type = error.type || 'event';
+        if (
+          'message' in error &&
+          typeof (error as { message: unknown }).message === 'string'
+        ) {
+          return {
+            message: `${type} (${(error as { message: string }).message})`,
+            code: null,
+            stack: null,
+          };
+        }
+        return {
+          message: `Event: ${type} on <${target}>`,
+          code: null,
+          stack: null,
+        };
+      }
+
       const errorObj = error as Record<string, unknown>;
       const innerError = errorObj['error'];
       const cause = errorObj['cause'];
@@ -339,18 +372,15 @@ export class ErrorLogService {
         }
       }
 
-      try {
-        const json = JSON.stringify(error);
-        if (json && json !== '{}' && json !== '{"message":""}') {
-          return { message: json, code, stack };
-        }
-      } catch {
-        // cyclic
+      const json = safeStringify(error);
+      if (json && json !== '{}' && json !== '{"message":""}') {
+        return { message: json, code, stack };
       }
     }
 
+    const fallback = String(error ?? 'Unexpected error');
     return {
-      message: String(error ?? 'Unexpected error'),
+      message: fallback === '[object Object]' ? 'Unexpected error' : fallback,
       code: null,
       stack: null,
     };
