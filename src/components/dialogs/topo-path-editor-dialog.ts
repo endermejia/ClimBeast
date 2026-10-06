@@ -167,6 +167,17 @@ export interface TopoPathEditorConfig {
                 </p>
               </div>
               <div class="flex items-center gap-1">
+                <button
+                  tuiButton
+                  [appearance]="showRouteSelector() ? 'secondary' : 'flat'"
+                  size="s"
+                  iconStart="@tui.link"
+                  class="rounded-full!"
+                  [title]="'topos.manageRoutes' | translate"
+                  (click)="toggleRouteSelector()"
+                >
+                  {{ 'link' | translate }}
+                </button>
                 @if (canCreateRoute()) {
                   <button
                     tuiButton
@@ -183,55 +194,57 @@ export interface TopoPathEditorConfig {
             </div>
 
             <!-- Multiselect to select routes of the crag and link new routes -->
-            <div class="px-3 pb-2 shrink-0">
-              <tui-textfield
-                multi
-                tuiChevron
-                [stringify]="stringifyRoute"
-                [disabledItemHandler]="strings"
-                [identityMatcher]="routeIdentityMatcher"
-                [tuiTextfieldCleaner]="true"
-                size="s"
-                class="w-full"
-              >
-                <label tuiLabel for="topo-multiselect-routes">{{
-                  'topos.manageRoutes' | translate
-                }}</label>
-                <input
-                  tuiInputChip
-                  id="topo-multiselect-routes"
-                  autocomplete="off"
-                  [ngModel]="selectedRoutesForMultiselect()"
-                  (ngModelChange)="onSelectedRoutesChange($event)"
-                  name="selectedRoutes"
-                  [placeholder]="'select' | translate"
-                />
-                <tui-input-chip *tuiItem />
-                <tui-data-list *tuiDropdown>
-                  <tui-opt-group
-                    [label]="'routes' | translate"
-                    tuiMultiSelectGroup
-                  >
-                    @for (
-                      route of availableRoutes() | tuiFilterByInput;
-                      track route.id
-                    ) {
-                      <button type="button" new tuiOption [value]="route">
-                        <div tuiCell size="s">
-                          <app-grade
-                            [grade]="route.grade ?? 0"
-                            [kind]="route.climbing_kind"
-                          />
-                          <div tuiTitle>
-                            {{ route.name }}
+            @if (showRouteSelector()) {
+              <div class="px-3 pb-2 shrink-0">
+                <tui-textfield
+                  multi
+                  tuiChevron
+                  [stringify]="stringifyRoute"
+                  [disabledItemHandler]="strings"
+                  [identityMatcher]="routeIdentityMatcher"
+                  [tuiTextfieldCleaner]="true"
+                  size="s"
+                  class="w-full"
+                >
+                  <label tuiLabel for="topo-multiselect-routes">{{
+                    'topos.manageRoutes' | translate
+                  }}</label>
+                  <input
+                    tuiInputChip
+                    id="topo-multiselect-routes"
+                    autocomplete="off"
+                    [ngModel]="selectedRoutesForMultiselect()"
+                    (ngModelChange)="onSelectedRoutesChange($event)"
+                    name="selectedRoutes"
+                    [placeholder]="'select' | translate"
+                  />
+                  <tui-input-chip *tuiItem />
+                  <tui-data-list *tuiDropdown>
+                    <tui-opt-group
+                      [label]="'routes' | translate"
+                      tuiMultiSelectGroup
+                    >
+                      @for (
+                        route of availableRoutes() | tuiFilterByInput;
+                        track route.id
+                      ) {
+                        <button type="button" new tuiOption [value]="route">
+                          <div tuiCell size="s">
+                            <app-grade
+                              [grade]="route.grade ?? 0"
+                              [kind]="route.climbing_kind"
+                            />
+                            <div tuiTitle>
+                              {{ route.name }}
+                            </div>
                           </div>
-                        </div>
-                      </button>
-                    }
-                  </tui-opt-group>
-                </tui-data-list>
-              </tui-textfield>
-            </div>
+                        </button>
+                      }
+                    </tui-opt-group>
+                  </tui-data-list>
+                </tui-textfield>
+              </div>
+            }
             <tui-scrollbar class="sidebar-scroll">
               <!-- Selection guidance: changes once a route is selected -->
               <div
@@ -1600,9 +1613,14 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   loading = signal(false);
   selectedRoute = signal<TopoRouteWithRoute | null>(null);
   sidebarOpen = signal(true);
+  showRouteSelector = signal(false);
 
   toggleSidebar(): void {
     this.sidebarOpen.update((v) => !v);
+  }
+
+  toggleRouteSelector(): void {
+    this.showRouteSelector.update((v) => !v);
   }
   topoRoutes: TopoRouteWithRoute[] = [];
   newIndoorRoutes: IndoorRouteDto[] = [];
