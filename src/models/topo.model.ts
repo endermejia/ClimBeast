@@ -84,4 +84,5 @@ export interface TopoPathEditorResult {
   }[];
   routeIds?: (string | number)[];
   newIndoorRoutes?: IndoorRouteDto[];
+  newRoutes?: RouteBasicWithOwnData[];
 }

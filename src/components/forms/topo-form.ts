@@ -1189,6 +1189,7 @@ export class TopoFormComponent {
           ? this._dialogCtx?.data?.indoorTopoData?.name
           : topo?.name) || this.model().name,
       topoId,
+      cragId: this.effectiveCragId(),
       standalone: false, // Don't save to DB directly, return the paths
       isIndoor: this.isIndoor(),
       centerId: this.centerId(),
@@ -1206,6 +1207,19 @@ export class TopoFormComponent {
         ]);
         const existingIds = new Set(currentRoutes.map((r) => String(r.id)));
         const toAdd = result.newIndoorRoutes.filter(
+          (r) => !existingIds.has(String(r.id)),
+        );
+        if (toAdd.length > 0) {
+          currentRoutes = [...currentRoutes, ...toAdd];
+          this.model.update((m) => ({
+            ...m,
+            selectedRoutes: currentRoutes,
+          }));
+        }
+      }
+      if (result.newRoutes && result.newRoutes.length > 0) {
+        const existingIds = new Set(currentRoutes.map((r) => String(r.id)));
+        const toAdd = (result.newRoutes as SelectedRoute[]).filter(
           (r) => !existingIds.has(String(r.id)),
         );
         if (toAdd.length > 0) {

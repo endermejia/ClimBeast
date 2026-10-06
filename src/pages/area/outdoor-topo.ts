@@ -367,6 +367,7 @@ export class OutdoorTopoComponent extends TopoPageBase {
       topoRoutes: routes as TopoRouteWithRoute[],
       topoName: topo.name,
       topoId: topo.id,
+      cragId: topo.crag_id,
       standalone: true,
       isIndoor: false,
     });

@@ -17,22 +17,36 @@ import {
   ElementRef,
   inject,
   Injector,
+  resource,
   signal,
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { TuiIdentityMatcher, tuiIsString } from '@taiga-ui/cdk';
 import {
   TuiAppearance,
   TuiButton,
+  TuiCell,
+  TuiDataList,
   TuiDialogContext,
   TuiDialogService,
+  TuiDropdown,
+  TuiFilterByInputPipe,
   TuiIcon,
+  TuiLabel,
   TuiLoader,
+  TuiOptGroup,
   TuiScrollbar,
   TuiSlider,
+  TuiTitle,
 } from '@taiga-ui/core';
-import { TUI_CONFIRM } from '@taiga-ui/kit';
+import {
+  TUI_CONFIRM,
+  TuiChevron,
+  type TuiConfirmData,
+  TuiInputChip,
+} from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -43,6 +57,7 @@ import { AuthStateService } from '../../services/auth-state.service';
 import { IndoorDataService } from '../../services/indoor-data.service';
 import { IndoorService } from '../../services/indoor.service';
 import { LayoutService } from '../../services/layout.service';
+import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { RoutesService } from '../../services/routes.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -50,14 +65,17 @@ import { ToposService } from '../../services/topos.service';
 
 import {
   ClimbingKind,
+  GRADE_NUMBER_TO_LABEL,
   IndoorCenterDto,
   IndoorRouteDto,
   RouteBasicWithOwnData,
+  SelectedRoute,
   TopoPath,
   TopoPathEditorResult,
   topoPathToJson,
   TopoPoint,
   TopoRouteWithRoute,
+  VERTICAL_LIFE_GRADES,
 } from '../../models';
 
 import {
@@ -96,6 +114,7 @@ export interface TopoPathEditorConfig {
   isIndoor?: boolean;
   centerId?: string;
   center?: IndoorCenterDto;
+  cragId?: number | string;
 }
 
 @Component({
@@ -117,10 +136,19 @@ export interface TopoPathEditorConfig {
     TranslateModule,
     TuiAppearance,
     TuiButton,
+    TuiCell,
+    TuiChevron,
+    TuiDataList,
+    TuiDropdown,
+    TuiFilterByInputPipe,
     TuiIcon,
+    TuiInputChip,
+    TuiLabel,
     TuiLoader,
+    TuiOptGroup,
     TuiScrollbar,
     TuiSlider,
+    TuiTitle,
   ],
 
   template: `
@@ -139,21 +167,6 @@ export interface TopoPathEditorConfig {
                 </p>
               </div>
               <div class="flex items-center gap-1">
-                @if (topoRoutes.length > 1) {
-                  <button
-                    tuiButton
-                    appearance="flat"
-                    size="s"
-                    iconStart="@tui.list-ordered"
-                    class="rounded-full!"
-                    [title]="'topos.editor.sort' | translate"
-                    [disabled]="loading()"
-                    (click)="sortByPosition()"
-                  >
-                    {{ 'topos.editor.sort' | translate }}
-                  </button>
-                }
-
                 @if (canCreateRoute()) {
                   <button
                     tuiButton
@@ -167,6 +180,57 @@ export interface TopoPathEditorConfig {
                   </button>
                 }
               </div>
+            </div>
+
+            <!-- Multiselect to select routes of the crag and link new routes -->
+            <div class="px-3 pb-2 shrink-0">
+              <tui-textfield
+                multi
+                tuiChevron
+                [stringify]="stringifyRoute"
+                [disabledItemHandler]="strings"
+                [identityMatcher]="routeIdentityMatcher"
+                [tuiTextfieldCleaner]="true"
+                size="s"
+                class="w-full"
+              >
+                <label tuiLabel for="topo-multiselect-routes">{{
+                  'topos.manageRoutes' | translate
+                }}</label>
+                <input
+                  tuiInputChip
+                  id="topo-multiselect-routes"
+                  autocomplete="off"
+                  [ngModel]="selectedRoutesForMultiselect()"
+                  (ngModelChange)="onSelectedRoutesChange($event)"
+                  name="selectedRoutes"
+                  [placeholder]="'select' | translate"
+                />
+                <tui-input-chip *tuiItem />
+                <tui-data-list *tuiDropdown>
+                  <tui-opt-group
+                    [label]="'routes' | translate"
+                    tuiMultiSelectGroup
+                  >
+                    @for (
+                      route of availableRoutes() | tuiFilterByInput;
+                      track route.id
+                    ) {
+                      <button type="button" new tuiOption [value]="route">
+                        <div tuiCell size="s">
+                          <app-grade
+                            [grade]="route.grade ?? 0"
+                            [kind]="route.climbing_kind"
+                          />
+                          <div tuiTitle>
+                            {{ route.name }}
+                          </div>
+                        </div>
+                      </button>
+                    }
+                  </tui-opt-group>
+                </tui-data-list>
+              </tui-textfield>
             </div>
             <tui-scrollbar class="sidebar-scroll">
               <!-- Selection guidance: changes once a route is selected -->
@@ -257,27 +321,37 @@ export interface TopoPathEditorConfig {
                     />
 
                     <div class="flex items-center gap-1">
-                      <div class="route-action-slot">
-                        @if (hasPath) {
-                          @if (isSelected && canEditSelectedLine()) {
-                            <button
-                              tuiIconButton
-                              appearance="flat"
-                              size="s"
-                              iconStart="@tui.trash"
-                              class="rounded-full!"
-                              [class.text-white!]="true"
-                              (click)="removePath(tr); $event.stopPropagation()"
-                            >
-                              {{ 'delete' | translate }}
-                            </button>
-                          } @else {
-                            <tui-icon icon="@tui.check" class="path-check" />
-                          }
+                      @if (hasPath) {
+                        @if (isSelected && canEditSelectedLine()) {
+                          <button
+                            tuiIconButton
+                            appearance="flat"
+                            size="s"
+                            iconStart="@tui.trash"
+                            class="rounded-full!"
+                            [class.text-white!]="true"
+                            [title]="'delete' | translate"
+                            (click)="removePath(tr); $event.stopPropagation()"
+                          >
+                            {{ 'delete' | translate }}
+                          </button>
                         } @else {
-                          <tui-icon icon="@tui.x" class="path-no-check" />
+                          <tui-icon icon="@tui.check" class="path-check" />
                         }
-                      </div>
+                      }
+                      @if (!hasPath || isSelected) {
+                        <button
+                          tuiIconButton
+                          appearance="flat"
+                          size="s"
+                          iconStart="@tui.unlink"
+                          class="rounded-full! opacity-60 hover:opacity-100"
+                          [title]="'unlink' | translate"
+                          (click)="unlinkRoute(tr, $event)"
+                        >
+                          {{ 'unlink' | translate }}
+                        </button>
+                      }
                     </div>
                     <div
                       *cdkDragPlaceholder
@@ -1267,13 +1341,6 @@ export interface TopoPathEditorConfig {
       filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.1));
     }
 
-    .path-no-check {
-      color: var(--tui-text-negative);
-      font-size: 1rem;
-      flex-shrink: 0;
-      opacity: 0.7;
-    }
-
     .tips {
       padding: 0.5rem 1.25rem 1rem;
       display: flex;
@@ -1466,6 +1533,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   private readonly indoor = inject(IndoorService);
   private readonly indoorData = inject(IndoorDataService);
   private readonly layoutService = inject(LayoutService);
+  private readonly outdoorData = inject(OutdoorDataService);
   private readonly routesService = inject(RoutesService);
   private readonly supabase = inject(SupabaseService);
   private readonly toast = inject(ToastService);
@@ -1473,6 +1541,10 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   private readonly translate = inject(TranslateService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly injector = inject(Injector);
+
+  private readonly unlinkedRouteIds = new Set<string | number>();
+  private readonly newlyLinkedRouteIds = new Set<string | number>();
+  protected readonly topoRoutesVersion = signal(0);
 
   protected readonly canCreateRoute = computed<boolean>(() => {
     if (!this.context.data.isIndoor || !this.context.data.centerId) {
@@ -1572,6 +1644,114 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     const path = this.pathsMap.get(selected.route_id);
     return (path?.type as 'line' | 'circle') || defaultType;
   });
+
+  protected readonly effectiveCragId = computed<number | undefined>(() => {
+    if (this.context.data.cragId) {
+      return Number(this.context.data.cragId);
+    }
+    const fromFirstRoute = (
+      this.context.data.topoRoutes?.[0]?.route as unknown as {
+        crag_id?: number;
+      }
+    )?.crag_id;
+    if (fromFirstRoute) {
+      return Number(fromFirstRoute);
+    }
+    return this.outdoorData.cragDetail()?.id;
+  });
+
+  protected readonly cragRoutesResource = resource({
+    params: () => ({
+      cragId: this.effectiveCragId(),
+      isIndoor: this.context.data.isIndoor,
+      centerId: this.context.data.centerId,
+    }),
+    loader: async ({ params }) => {
+      if (params.isIndoor) {
+        if (!params.centerId) return [];
+        await this.supabase.whenReady();
+        const { data, error } = await this.supabase.client
+          .from('indoor_routes')
+          .select('id, name, grade, climbing_kind, color, center_id')
+          .eq('center_id', params.centerId)
+          .order('name');
+        if (error) {
+          console.error('[TopoEditor] Error loading indoor routes', error);
+          return [];
+        }
+        return (data || []) as unknown as RouteBasicWithOwnData[];
+      }
+      let cragId = params.cragId;
+      if (!cragId && this.context.data.topoId) {
+        await this.supabase.whenReady();
+        const { data: topoData } = await this.supabase.client
+          .from('topos')
+          .select('crag_id')
+          .eq('id', Number(this.context.data.topoId))
+          .single();
+        if (topoData?.crag_id) {
+          cragId = Number(topoData.crag_id);
+        }
+      }
+      if (!cragId) return [];
+      await this.supabase.whenReady();
+      const { data, error } = await this.supabase.client
+        .from('routes')
+        .select('id, name, grade, climbing_kind, slug, height, crag_id')
+        .eq('crag_id', cragId)
+        .order('name');
+      if (error) {
+        console.error('[TopoEditor] Error loading crag routes', error);
+        return [];
+      }
+      return (data || []) as RouteBasicWithOwnData[];
+    },
+  });
+
+  protected readonly availableRoutes = computed<
+    (RouteBasicWithOwnData | SelectedRoute)[]
+  >(() => {
+    this.topoRoutesVersion();
+    const fetched = this.cragRoutesResource.value() ?? [];
+    const current = this.topoRoutes.map((tr) => tr.route);
+    const map = new Map<string, RouteBasicWithOwnData | SelectedRoute>();
+    for (const r of current) {
+      map.set(String(r.id), r);
+    }
+    for (const r of fetched) {
+      if (!map.has(String(r.id))) {
+        map.set(String(r.id), r);
+      }
+    }
+    return Array.from(map.values()).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+  });
+
+  protected readonly selectedRoutesForMultiselect = computed<
+    (RouteBasicWithOwnData | SelectedRoute)[]
+  >(() => {
+    this.topoRoutesVersion();
+    return this.topoRoutes.map((tr) => tr.route as SelectedRoute);
+  });
+
+  protected readonly stringifyRoute = (
+    item: RouteBasicWithOwnData | SelectedRoute,
+  ): string => `${item.name} (${this.gradeStringify(item.grade ?? 0)})`;
+
+  protected readonly routeIdentityMatcher: TuiIdentityMatcher<
+    RouteBasicWithOwnData | SelectedRoute
+  > = (a, b) => String(a.id) === String(b.id);
+
+  protected gradeStringify(grade: number): string {
+    return (
+      GRADE_NUMBER_TO_LABEL[grade as VERTICAL_LIFE_GRADES] ||
+      grade?.toString() ||
+      ''
+    );
+  }
+
+  protected readonly strings = tuiIsString;
 
   protected readonly canEditSelectedRoute = computed<boolean>(() => {
     const tr = this.selectedRoute();
@@ -1877,57 +2057,118 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     );
   }
 
-  async sortByPosition(): Promise<void> {
+  async onSelectedRoutesChange(
+    newSelected: (RouteBasicWithOwnData | SelectedRoute)[],
+  ): Promise<void> {
+    const currentIds = new Set(
+      this.topoRoutes.map((tr) => String(tr.route_id)),
+    );
+    const newIds = new Set(newSelected.map((r) => String(r.id)));
+
+    // 1. Newly added routes
+    const added = newSelected.filter((r) => !currentIds.has(String(r.id)));
+    if (added.length > 0) {
+      for (const r of added) {
+        const newTopoRoute: TopoRouteWithRoute = {
+          topo_id: this.context.data.topoId ?? 0,
+          route_id: r.id,
+          number: this.topoRoutes.length + 1,
+          route: r as unknown as RouteBasicWithOwnData,
+          path: null,
+        };
+        this.topoRoutes = [...this.topoRoutes, newTopoRoute];
+        this.pathsMap.set(r.id, {
+          points: [],
+          type: this.context.data.isIndoor ? 'circle' : 'line',
+          _ref: newTopoRoute,
+        });
+        this.newlyLinkedRouteIds.add(r.id);
+        this.unlinkedRouteIds.delete(r.id);
+      }
+      this.pathsVersion.update((v) => v + 1);
+      this.topoRoutesVersion.update((v) => v + 1);
+      this.routesReordered = true;
+
+      const lastAdded = added[added.length - 1];
+      const matching = this.topoRoutes.find(
+        (tr) => String(tr.route_id) === String(lastAdded.id),
+      );
+      if (matching) {
+        this.selectRoute(matching);
+        this.scrollRouteIntoView(matching.route_id);
+      }
+    }
+
+    // 2. Removed routes
+    const removed = this.topoRoutes.filter(
+      (tr) => !newIds.has(String(tr.route_id)),
+    );
+    if (removed.length > 0) {
+      for (const tr of removed) {
+        await this.unlinkRoute(tr);
+      }
+    }
+  }
+
+  async unlinkRoute(tr: TopoRouteWithRoute, event?: Event): Promise<void> {
+    if (event) {
+      event.stopPropagation();
+    }
+
     const confirmed = await firstValueFrom(
       this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('topos.editor.sort'),
+        label: this.translate.instant('unlink'),
         size: 's',
         data: {
-          content: this.translate.instant('topos.editor.sortConfirm'),
-          yes: this.translate.instant('apply'),
+          content: this.translate.instant('topos.removeRouteConfirm', {
+            name: tr.route.name,
+          }),
+          yes: this.translate.instant('unlink'),
           no: this.translate.instant('cancel'),
-        },
+          appearance: 'primary-destructive',
+        } as TuiConfirmData,
       }),
       { defaultValue: false },
     );
 
-    if (!confirmed) return;
-
-    this.loading.set(true);
-
-    try {
-      // 1. Calculate minX for each route
-      const routesWithX = this.topoRoutes.map((tr) => {
-        const pathData = this.pathsMap.get(tr.route_id);
-        const points = pathData?.points || tr.path?.points || [];
-        const minX =
-          points.length > 0 ? Math.min(...points.map((p) => p.x)) : 999;
-        return { tr, minX };
-      });
-
-      // 2. Sort by minX
-      routesWithX.sort((a, b) => a.minX - b.minX);
-
-      // 3. Update numbers locally (starting from 0)
-      for (let i = 0; i < routesWithX.length; i++) {
-        const tr = routesWithX[i].tr;
-        tr.number = i;
-      }
-
-      // 4. Sort the original array to reflect changes in sidebar
-      this.topoRoutes = [...this.topoRoutes].sort(
-        (a, b) => a.number - b.number,
-      );
-      this.routesReordered = true;
-
-      this.toast.success('messages.toasts.routeUpdated');
+    if (!confirmed) {
+      this.topoRoutesVersion.update((v) => v + 1);
       this.cdr.markForCheck();
-    } catch (error) {
-      console.error('[TopoEditor] Error sorting routes', error);
-      this.toast.error('messages.toasts.pathsSaveError');
-    } finally {
-      this.loading.set(false);
+      return;
     }
+
+    if (this.selectedRoute()?.route_id === tr.route_id) {
+      this.selectedRoute.set(null);
+    }
+
+    this.pathsMap.delete(tr.route_id);
+    this.pathsMap = new Map(this.pathsMap);
+
+    this.topoRoutes = this.topoRoutes.filter((r) => r.route_id !== tr.route_id);
+    this.topoRoutes.forEach((r, i) => {
+      r.number = i + 1;
+    });
+
+    const wasExisting = this.context.data.topoRoutes.some(
+      (r) => String(r.route_id) === String(tr.route_id),
+    );
+    if (wasExisting) {
+      this.unlinkedRouteIds.add(tr.route_id);
+    }
+    this.newlyLinkedRouteIds.delete(tr.route_id);
+
+    const indoorIdx = this.newIndoorRoutes.findIndex(
+      (r) => String(r.id) === String(tr.route_id),
+    );
+    if (indoorIdx !== -1) {
+      const [removed] = this.newIndoorRoutes.splice(indoorIdx, 1);
+      void this.indoor.deleteRoute(removed.id);
+    }
+
+    this.routesReordered = true;
+    this.pathsVersion.update((v) => v + 1);
+    this.topoRoutesVersion.update((v) => v + 1);
+    this.cdr.markForCheck();
   }
 
   private doConstrainTranslation(): void {
@@ -1971,6 +2212,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         _ref: newTopoRoute,
       });
       this.pathsVersion.update((v) => v + 1);
+      this.topoRoutesVersion.update((v) => v + 1);
       // A brand new route is always selected so it can be drawn right away
       this.selectedRoute.set(newTopoRoute);
       this.scrollRouteIntoView(newRoute.id);
@@ -2400,6 +2642,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     });
     this.topoRoutes = [...this.topoRoutes];
     this.routesReordered = true;
+    this.topoRoutesVersion.update((v) => v + 1);
     this.cdr.markForCheck();
   }
 
@@ -2493,6 +2736,9 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
           paths: pathsToUpdate,
           routeIds: this.topoRoutes.map((tr) => tr.route_id),
           newIndoorRoutes: this.newIndoorRoutes,
+          newRoutes: this.topoRoutes.map(
+            (tr) => tr.route as unknown as RouteBasicWithOwnData,
+          ),
         });
         return;
       }
@@ -2501,6 +2747,14 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       if (!topoId) throw new Error('Missing topoId for database saving');
 
       if (this.context.data.isIndoor) {
+        // 1. Delete unlinked indoor routes
+        for (const routeId of this.unlinkedRouteIds) {
+          await this.supabase.client
+            .from('indoor_topo_routes')
+            .delete()
+            .match({ topo_id: String(topoId), route_id: String(routeId) });
+        }
+
         const pathsMap = new Map(
           pathsToUpdate.map((p) => [String(p.routeId), p.path]),
         );
@@ -2508,10 +2762,11 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
           this.newIndoorRoutes.map((r) => String(r.id)),
         );
 
-        // Only upsert routes that were actually modified, newly created, or if routes were reordered
+        // Only upsert routes that were actually modified, newly created, newly linked, or if routes were reordered
         const routesToUpsert = this.topoRoutes.filter((tr) => {
           if (this.routesReordered) return true;
           if (newRouteIdSet.has(String(tr.route_id))) return true;
+          if (this.newlyLinkedRouteIds.has(tr.route_id)) return true;
 
           const path = pathsMap.get(String(tr.route_id));
           const currentSerialized = this.serializePath(
@@ -2546,18 +2801,43 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         }
 
         this.newIndoorRoutes = [];
+        this.newlyLinkedRouteIds.clear();
+        this.unlinkedRouteIds.clear();
         this.indoor.invalidateTopoCache(topoId);
         this.indoorData.topoDetailResource.reload();
         this.indoor.reloadCenterRoutes();
       } else {
+        // 1. Delete unlinked routes
+        for (const routeId of this.unlinkedRouteIds) {
+          await this.topos.removeRoute(topoId, routeId, false);
+        }
+
+        // 2. Add newly linked routes or update existing routes order
+        for (let i = 0; i < this.topoRoutes.length; i++) {
+          const tr = this.topoRoutes[i];
+          if (this.newlyLinkedRouteIds.has(tr.route_id)) {
+            await this.topos.addRoute(
+              {
+                topo_id: Number(topoId),
+                route_id: Number(tr.route_id),
+                number: i,
+              },
+              false,
+            );
+          } else {
+            await this.topos.updateRouteOrder(topoId, tr.route_id, i, false);
+          }
+        }
+
+        // 3. Update route paths
         if (pathsToUpdate.length > 0) {
           await this.topos.bulkUpdateRoutePaths(topoId, pathsToUpdate, false);
         }
 
-        for (let i = 0; i < this.topoRoutes.length; i++) {
-          const tr = this.topoRoutes[i];
-          await this.topos.updateRouteOrder(topoId, tr.route_id, i, false);
-        }
+        this.newlyLinkedRouteIds.clear();
+        this.unlinkedRouteIds.clear();
+        this.outdoorData.topoDetailResource.reload();
+        this.outdoorData.cragDetailResource.reload();
       }
 
       this.toast.success('messages.toasts.pathsSaved');
