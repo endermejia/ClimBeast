@@ -45,7 +45,7 @@ export type AscentStyleRecord =
               size="s"
               tuiProgressBar
               [style.color]="'var(--tui-status-warning)'"
-              [value]="effectiveRp() + effectiveFlash()"
+              [value]="rpPlusFlash()"
             ></progress>
             <progress
               [max]="effectiveTotal()"
@@ -61,7 +61,7 @@ export type AscentStyleRecord =
             @if (effectiveRp() > 0) {
               <div
                 class="h-full cursor-pointer transition-opacity hover:opacity-80"
-                [style.width.%]="(effectiveRp() / effectiveTotal()) * 100"
+                [style.width.%]="rpRatio() * 100"
                 [tuiHint]="
                   ('ascentTypes.rp' | translate) +
                   ': ' +
@@ -71,7 +71,7 @@ export type AscentStyleRecord =
                     | translate
                     | lowercase) +
                   ' (' +
-                  (effectiveRp() / effectiveTotal() | percent: '1.0-0') +
+                  (rpRatio() | percent: '1.0-0') +
                   ')'
                 "
               ></div>
@@ -79,7 +79,7 @@ export type AscentStyleRecord =
             @if (effectiveFlash() > 0) {
               <div
                 class="h-full cursor-pointer transition-opacity hover:opacity-80"
-                [style.width.%]="(effectiveFlash() / effectiveTotal()) * 100"
+                [style.width.%]="flashRatio() * 100"
                 [tuiHint]="
                   ('ascentTypes.f' | translate) +
                   ': ' +
@@ -89,7 +89,7 @@ export type AscentStyleRecord =
                     | translate
                     | lowercase) +
                   ' (' +
-                  (effectiveFlash() / effectiveTotal() | percent: '1.0-0') +
+                  (flashRatio() | percent: '1.0-0') +
                   ')'
                 "
               ></div>
@@ -97,7 +97,7 @@ export type AscentStyleRecord =
             @if (effectiveOs() > 0) {
               <div
                 class="h-full cursor-pointer transition-opacity hover:opacity-80"
-                [style.width.%]="(effectiveOs() / effectiveTotal()) * 100"
+                [style.width.%]="osRatio() * 100"
                 [tuiHint]="
                   ('ascentTypes.os' | translate) +
                   ': ' +
@@ -107,7 +107,7 @@ export type AscentStyleRecord =
                     | translate
                     | lowercase) +
                   ' (' +
-                  (effectiveOs() / effectiveTotal() | percent: '1.0-0') +
+                  (osRatio() | percent: '1.0-0') +
                   ')'
                 "
               ></div>
@@ -135,7 +135,7 @@ export type AscentStyleRecord =
               class="w-2 h-2 rounded-full shrink-0 bg-(--tui-status-negative)"
             ></span>
             <span class="font-bold text-(--tui-text-primary)">
-              {{ effectiveRp() / effectiveTotal() | percent: '1.0-0' }}
+              {{ rpRatio() | percent: '1.0-0' }}
             </span>
           </div>
 
@@ -157,7 +157,7 @@ export type AscentStyleRecord =
               class="w-2 h-2 rounded-full shrink-0 bg-(--tui-status-warning)"
             ></span>
             <span class="font-bold text-(--tui-text-primary)">
-              {{ effectiveFlash() / effectiveTotal() | percent: '1.0-0' }}
+              {{ flashRatio() | percent: '1.0-0' }}
             </span>
           </div>
 
@@ -179,7 +179,7 @@ export type AscentStyleRecord =
               class="w-2 h-2 rounded-full shrink-0 bg-(--tui-status-positive)"
             ></span>
             <span class="font-bold text-(--tui-text-primary)">
-              {{ effectiveOs() / effectiveTotal() | percent: '1.0-0' }}
+              {{ osRatio() | percent: '1.0-0' }}
             </span>
           </div>
         </div>
@@ -243,4 +243,24 @@ export class ChartAscentsByStyleComponent {
     if (parsed) return parsed.os;
     return this.osCount() ?? 0;
   });
+
+  // Reactive primitive computed signals to eliminate repeated inline arithmetic in DOM template bindings
+  protected readonly rpRatio = computed(() => {
+    const tot = this.effectiveTotal();
+    return tot > 0 ? this.effectiveRp() / tot : 0;
+  });
+
+  protected readonly flashRatio = computed(() => {
+    const tot = this.effectiveTotal();
+    return tot > 0 ? this.effectiveFlash() / tot : 0;
+  });
+
+  protected readonly osRatio = computed(() => {
+    const tot = this.effectiveTotal();
+    return tot > 0 ? this.effectiveOs() / tot : 0;
+  });
+
+  protected readonly rpPlusFlash = computed(
+    () => this.effectiveRp() + this.effectiveFlash(),
+  );
 }
