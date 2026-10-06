@@ -162,7 +162,7 @@ import type { TopoRouteRow } from './topo.types';
                     "
                     [class.outline-2]="isSelected"
                     [class.outline-[var(--tui-border-focus)]]="isSelected"
-                    [class.-outline-offset-2]="isSelected"
+                    [class.-outline-offset-1]="isSelected"
                     [class.selected-row]="isSelected"
                     [style.background]="rowBg"
                     [style.--row-bg]="rowBg || null"
@@ -179,8 +179,7 @@ import type { TopoRouteRow } from './topo.types';
                         [class.selected-actions-col]="
                           isSelected && col === 'actions'
                         "
-                        [class.overflow-hidden]="col !== 'actions'"
-                        class="text-center"
+                        class="overflow-hidden text-center"
                       >
                         @switch (col) {
                           @case ('index') {
