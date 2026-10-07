@@ -724,7 +724,9 @@ export class RoutesTableComponent {
   }
 
   private onTableKeyDown(event: KeyboardEvent): void {
-    if (!this.isEditing() || event.key !== 'ArrowDown') {
+    const isDown = event.key === 'ArrowDown';
+    const isUp = event.key === 'ArrowUp';
+    if (!this.isEditing() || (!isDown && !isUp)) {
       return;
     }
 
@@ -747,10 +749,12 @@ export class RoutesTableComponent {
     event.preventDefault();
     event.stopPropagation();
 
-    let nextTr = currentRow.nextElementSibling;
-    while (nextTr) {
-      if (nextTr instanceof HTMLElement && nextTr.tagName === 'TR') {
-        const nextCell = nextTr.querySelector<HTMLElement>(
+    let siblingTr = isUp
+      ? currentRow.previousElementSibling
+      : currentRow.nextElementSibling;
+    while (siblingTr) {
+      if (siblingTr instanceof HTMLElement && siblingTr.tagName === 'TR') {
+        const nextCell = siblingTr.querySelector<HTMLElement>(
           `td[data-col="${col}"]`,
         );
         const nextInput = nextCell?.querySelector<
@@ -770,7 +774,9 @@ export class RoutesTableComponent {
           break;
         }
       }
-      nextTr = nextTr.nextElementSibling;
+      siblingTr = isUp
+        ? siblingTr.previousElementSibling
+        : siblingTr.nextElementSibling;
     }
   }
 

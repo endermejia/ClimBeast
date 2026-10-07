@@ -208,4 +208,127 @@ describe('RoutesTableComponent keyboard navigation', () => {
     expect(event.defaultPrevented).toBe(true);
     expect(document.activeElement).toBe(thirdInput);
   });
+
+  it('moves to height input above on ArrowUp when editing', async () => {
+    const fixture = TestBed.createComponent(TestHostComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const tableComponent = fixture.componentInstance.tableComp()!;
+    tableComponent.isEditing.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const heightInputs = fixture.nativeElement.querySelectorAll(
+      '.route-height-input',
+    ) as NodeListOf<HTMLInputElement>;
+    expect(heightInputs.length).toBe(3);
+
+    const firstInput = heightInputs[0];
+    const secondInput = heightInputs[1];
+    secondInput.focus();
+
+    const event = new KeyboardEvent('keydown', {
+      key: 'ArrowUp',
+      bubbles: true,
+      cancelable: true,
+    });
+    secondInput.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(firstInput);
+  });
+
+  it('moves to equippers input above on ArrowUp when editing', async () => {
+    const fixture = TestBed.createComponent(TestHostComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const tableComponent = fixture.componentInstance.tableComp()!;
+    tableComponent.isEditing.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const equipperInputs = fixture.nativeElement.querySelectorAll(
+      '.equipper-input',
+    ) as NodeListOf<HTMLInputElement>;
+    expect(equipperInputs.length).toBe(3);
+
+    const firstInput = equipperInputs[0];
+    const secondInput = equipperInputs[1];
+    secondInput.focus();
+
+    const event = new KeyboardEvent('keydown', {
+      key: 'ArrowUp',
+      bubbles: true,
+      cancelable: true,
+    });
+    secondInput.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(firstInput);
+  });
+
+  it('skips non-editable row upwards to previous editable row', async () => {
+    const fixture = TestBed.createComponent(TestHostComponent);
+    fixture.componentInstance.data = [
+      createMockRow(1, 15, true),
+      createMockRow(2, 20, false), // cannot edit
+      createMockRow(3, 25, true),
+    ];
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const tableComponent = fixture.componentInstance.tableComp()!;
+    tableComponent.isEditing.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const heightInputs = fixture.nativeElement.querySelectorAll(
+      '.route-height-input',
+    ) as NodeListOf<HTMLInputElement>;
+    expect(heightInputs.length).toBe(2);
+
+    const firstInput = heightInputs[0];
+    const thirdInput = heightInputs[1];
+    thirdInput.focus();
+
+    const event = new KeyboardEvent('keydown', {
+      key: 'ArrowUp',
+      bubbles: true,
+      cancelable: true,
+    });
+    thirdInput.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(firstInput);
+  });
+
+  it('stays on first row on ArrowUp when editing', async () => {
+    const fixture = TestBed.createComponent(TestHostComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const tableComponent = fixture.componentInstance.tableComp()!;
+    tableComponent.isEditing.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const heightInputs = fixture.nativeElement.querySelectorAll(
+      '.route-height-input',
+    ) as NodeListOf<HTMLInputElement>;
+
+    const firstInput = heightInputs[0];
+    firstInput.focus();
+
+    const event = new KeyboardEvent('keydown', {
+      key: 'ArrowUp',
+      bubbles: true,
+      cancelable: true,
+    });
+    firstInput.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(firstInput);
+  });
 });
