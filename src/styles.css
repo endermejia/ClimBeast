@@ -163,12 +163,32 @@ td.sticky-col-right,
   inset-inline-end: 0 !important;
 }
 
-/* Keep sticky actions column in the same stacking layer as other cells in the selected row so the row outline seamlessly wraps it */
+/* Selected row border on sticky right column — seamlessly continues tr outline-2 -outline-offset-1 */
 tr.selected-row td.sticky-col-right,
 tr.selected-row [tuiTd].sticky-col-right,
 td.sticky-col-right.selected-actions-col,
 [tuiTd].sticky-col-right.selected-actions-col {
-  z-index: 0 !important;
+  border-bottom-color: transparent !important;
+  overflow: visible !important;
+}
+
+tr.selected-row > td.sticky-col-right::after,
+tr.selected-row > [tuiTd].sticky-col-right::after,
+td.sticky-col-right.selected-actions-col::after,
+[tuiTd].sticky-col-right.selected-actions-col::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  bottom: -2px;
+  right: -1px;
+  left: 0;
+  pointer-events: none;
+  box-sizing: border-box;
+  border-top: 2px solid var(--tui-border-focus);
+  border-bottom: 2px solid var(--tui-border-focus);
+  border-right: 2px solid var(--tui-border-focus);
+  border-left: none;
+  z-index: 1;
 }
 
 /* Sticky drop shadows when stuck — clip to horizontal side only */

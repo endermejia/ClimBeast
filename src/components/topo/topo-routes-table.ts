@@ -179,7 +179,8 @@ import type { TopoRouteRow } from './topo.types';
                         [class.selected-actions-col]="
                           isSelected && col === 'actions'
                         "
-                        class="overflow-hidden text-center"
+                        [class.overflow-hidden]="col !== 'actions'"
+                        class="text-center"
                       >
                         @switch (col) {
                           @case ('index') {
