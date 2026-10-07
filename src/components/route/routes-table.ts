@@ -194,6 +194,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                     <td
                       *tuiCell="col"
                       tuiTd
+                      [attr.data-col]="col"
                       [class.text-right]="col === 'actions'"
                       [class.sticky-col-left]="col === 'grade'"
                       [class.sticky-col-right]="col === 'actions'"
@@ -708,6 +709,69 @@ export class RoutesTableComponent {
       requestAnimationFrame(() => this.updateFromHost());
       this.destroyRef.onDestroy(() => ro.disconnect());
     });
+
+    effect((onCleanup) => {
+      const tableEl = this.table()?.nativeElement;
+      if (!tableEl || typeof window === 'undefined') return;
+
+      const onKeyDown = (event: KeyboardEvent) => this.onTableKeyDown(event);
+      tableEl.addEventListener('keydown', onKeyDown, { capture: true });
+
+      onCleanup(() => {
+        tableEl.removeEventListener('keydown', onKeyDown, { capture: true });
+      });
+    });
+  }
+
+  private onTableKeyDown(event: KeyboardEvent): void {
+    if (!this.isEditing() || event.key !== 'ArrowDown') {
+      return;
+    }
+
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+
+    if (!target.closest('input, select, tui-textfield')) {
+      return;
+    }
+
+    const currentCell = target.closest('td');
+    const currentRow = target.closest('tr');
+    if (!currentCell || !currentRow) return;
+
+    const col = currentCell.getAttribute('data-col');
+    if (col !== 'equippers' && col !== 'height') {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    let nextTr = currentRow.nextElementSibling;
+    while (nextTr) {
+      if (nextTr instanceof HTMLElement && nextTr.tagName === 'TR') {
+        const nextCell = nextTr.querySelector<HTMLElement>(
+          `td[data-col="${col}"]`,
+        );
+        const nextInput = nextCell?.querySelector<
+          HTMLInputElement | HTMLSelectElement
+        >('input:not([disabled]):not([type="hidden"]), select:not([disabled])');
+        if (nextInput) {
+          nextInput.focus({ preventScroll: true });
+          nextInput.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+          if (
+            nextInput instanceof HTMLInputElement &&
+            nextInput.type !== 'checkbox' &&
+            nextInput.type !== 'radio' &&
+            nextInput.type !== 'file'
+          ) {
+            nextInput.select?.();
+          }
+          break;
+        }
+      }
+      nextTr = nextTr.nextElementSibling;
+    }
   }
 
   protected onScroll(event: Event): void {
