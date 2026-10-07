@@ -331,4 +331,100 @@ describe('RoutesTableComponent keyboard navigation', () => {
     expect(event.defaultPrevented).toBe(true);
     expect(document.activeElement).toBe(firstInput);
   });
+
+  it('does not change cell on ArrowDown or ArrowUp when select dropdown options are open', async () => {
+    const fixture = TestBed.createComponent(TestHostComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const tableComponent = fixture.componentInstance.tableComp()!;
+    tableComponent.isEditing.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const equipperInputs = fixture.nativeElement.querySelectorAll(
+      '.equipper-input',
+    ) as NodeListOf<HTMLInputElement>;
+    const firstInput = equipperInputs[0];
+    firstInput.focus();
+
+    // Mark the textfield/wrapper as open
+    const container = firstInput.closest('.equipper-container')!;
+    container.classList.add('tui-dropdown-open');
+
+    // Create a tui-dropdown with options in the DOM
+    const dropdown = document.createElement('tui-dropdown');
+    const option = document.createElement('button');
+    option.setAttribute('role', 'option');
+    option.setAttribute('tuiOption', '');
+    option.textContent = 'Adam Ondra';
+    dropdown.appendChild(option);
+    document.body.appendChild(dropdown);
+
+    try {
+      const downEvent = new KeyboardEvent('keydown', {
+        key: 'ArrowDown',
+        bubbles: true,
+        cancelable: true,
+      });
+      firstInput.dispatchEvent(downEvent);
+
+      expect(downEvent.defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(firstInput);
+
+      const upEvent = new KeyboardEvent('keydown', {
+        key: 'ArrowUp',
+        bubbles: true,
+        cancelable: true,
+      });
+      firstInput.dispatchEvent(upEvent);
+
+      expect(upEvent.defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(firstInput);
+    } finally {
+      dropdown.remove();
+    }
+  });
+
+  it('changes cell on ArrowDown when dropdown is open but has no selectable options', async () => {
+    const fixture = TestBed.createComponent(TestHostComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const tableComponent = fixture.componentInstance.tableComp()!;
+    tableComponent.isEditing.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const equipperInputs = fixture.nativeElement.querySelectorAll(
+      '.equipper-input',
+    ) as NodeListOf<HTMLInputElement>;
+    const firstInput = equipperInputs[0];
+    const secondInput = equipperInputs[1];
+    firstInput.focus();
+
+    // Mark as open, but dropdown only has hint (no options)
+    const container = firstInput.closest('.equipper-container')!;
+    container.classList.add('tui-dropdown-open');
+
+    const dropdown = document.createElement('tui-dropdown');
+    const hintDiv = document.createElement('div');
+    hintDiv.textContent = 'Buscar...';
+    dropdown.appendChild(hintDiv);
+    document.body.appendChild(dropdown);
+
+    try {
+      const downEvent = new KeyboardEvent('keydown', {
+        key: 'ArrowDown',
+        bubbles: true,
+        cancelable: true,
+      });
+      firstInput.dispatchEvent(downEvent);
+
+      expect(downEvent.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(secondInput);
+    } finally {
+      dropdown.remove();
+    }
+  });
 });

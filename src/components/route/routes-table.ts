@@ -746,6 +746,10 @@ export class RoutesTableComponent {
       return;
     }
 
+    if (this.hasOpenDropdownOptions(target, currentCell)) {
+      return;
+    }
+
     event.preventDefault();
     event.stopPropagation();
 
@@ -778,6 +782,42 @@ export class RoutesTableComponent {
         ? siblingTr.previousElementSibling
         : siblingTr.nextElementSibling;
     }
+  }
+
+  private hasOpenDropdownOptions(
+    target: HTMLElement,
+    cell: HTMLElement,
+  ): boolean {
+    if (target instanceof HTMLSelectElement || target.closest('select')) {
+      return true;
+    }
+
+    const openHost =
+      target.closest('.tui-dropdown-open, [aria-expanded="true"]') ||
+      cell.querySelector('.tui-dropdown-open, [aria-expanded="true"]');
+
+    if (!openHost) {
+      return false;
+    }
+
+    const controlsId = openHost.getAttribute('aria-controls');
+    const openDropdown =
+      (controlsId ? document.getElementById(controlsId) : null) ||
+      document.querySelector('tui-dropdown, [role="listbox"]');
+
+    if (openDropdown) {
+      const options = openDropdown.querySelectorAll(
+        '[role="option"], [tuiOption], button[tuiOption], a[tuiOption]',
+      );
+      if (options.length > 0) {
+        return true;
+      }
+    }
+
+    const cellOptions = cell.querySelectorAll(
+      '[role="option"], [tuiOption], button[tuiOption], a[tuiOption]',
+    );
+    return cellOptions.length > 0;
   }
 
   protected onScroll(event: Event): void {
