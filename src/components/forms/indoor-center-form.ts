@@ -165,6 +165,48 @@ import { IS_BROWSER } from '../../app/is-browser';
           @switch (activeTabIndex()) {
             @case (0) {
               <div class="grid gap-4">
+                <div
+                  class="flex flex-wrap items-center gap-4 rounded-2xl bg-(--tui-background-neutral-1) p-4"
+                >
+                  <div
+                    class="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-(--tui-border-normal) bg-(--tui-background-base)"
+                  >
+                    @if (avatarPreviewUrl(); as avatarUrl) {
+                      <img
+                        [src]="avatarUrl"
+                        [alt]="model().name || ('indoor.avatar' | translate)"
+                        class="size-full object-cover"
+                      />
+                    } @else {
+                      <tui-icon icon="@tui.image" class="text-2xl opacity-50" />
+                    }
+                  </div>
+                  <div class="flex min-w-0 flex-col gap-2">
+                    <h3 class="font-bold text-lg">
+                      {{ 'indoor.avatar' | translate }}
+                    </h3>
+                    <label tuiInputFiles>
+                      <input
+                        accept="image/*"
+                        type="file"
+                        tuiInputFiles
+                        [ngModel]="null"
+                        [ngModelOptions]="{ standalone: true }"
+                        (change)="onAvatarFileChange($event)"
+                      />
+                      <button
+                        tuiButton
+                        type="button"
+                        appearance="secondary-grayscale"
+                        size="s"
+                        iconStart="@tui.pencil"
+                      >
+                        {{ 'indoor.changeAvatar' | translate }}
+                      </button>
+                    </label>
+                  </div>
+                </div>
+
                 <tui-textfield class="block" [tuiTextfieldCleaner]="false">
                   <label tuiLabel for="center-name">{{
                     'name' | translate
@@ -1492,7 +1534,18 @@ export class IndoorCenterFormComponent {
   readonly isSaving = signal(false);
   readonly isUploading = signal(false);
   protected readonly newPhotos = signal<NewPhoto[]>([]);
+  protected readonly newAvatarPhoto = signal<NewPhoto | null>(null);
   private readonly translate = inject(TranslateService);
+
+  protected readonly avatarPreviewUrl = computed(() => {
+    const newPhoto = this.newAvatarPhoto();
+    if (newPhoto) return newPhoto.preview;
+
+    const avatarUrl = this.effectiveCenterData()?.avatar_url;
+    return avatarUrl
+      ? this.supabase.getPublicUrl('indoor-centers', avatarUrl)
+      : '';
+  });
 
   model = signal<{
     name: string;
@@ -1834,6 +1887,26 @@ export class IndoorCenterFormComponent {
     }
   }
 
+  async onAvatarFileChange(event: Event): Promise<void> {
+    const inputVal = event.target as HTMLInputElement;
+    const file = inputVal.files?.[0];
+    inputVal.value = '';
+    if (!file) return;
+
+    const data = {
+      ...COMMON_IMAGE_EDITOR_CONFIG,
+      aspectRatios: [COMMON_IMAGE_EDITOR_CONFIG.aspectRatios[0]],
+      allowFree: false,
+      file,
+    };
+    const result = await openImageEditor(this.dialogs, data);
+
+    if (result) {
+      const preview = await fileToDataUrl(result);
+      this.newAvatarPhoto.set(createNewPhoto(result, preview));
+    }
+  }
+
   removeExistingImage(url: string): void {
     this.model.update((m) => ({
       ...m,
@@ -1937,7 +2010,23 @@ export class IndoorCenterFormComponent {
           throw new Error('Failed to get center ID after save');
         }
 
-        // 3. Save new photos if any (now that we have savedCenterId)
+        // 3. Upload the avatar to the bucket used by indoor center profiles.
+        const avatarPhoto = this.newAvatarPhoto();
+        if (avatarPhoto) {
+          this.isUploading.set(true);
+          const extension = avatarPhoto.file.name.split('.').pop() || 'jpg';
+          const avatarPath = `centers/${savedCenterId}/avatar_${Date.now()}.${extension}`;
+          const { data, error } = await this.supabase.client.storage
+            .from('indoor-centers')
+            .upload(avatarPath, avatarPhoto.file);
+
+          if (error) throw error;
+          await this.indoor.updateCenter(savedCenterId, {
+            avatar_url: data.path,
+          });
+        }
+
+        // 4. Save new photos if any (now that we have savedCenterId)
         if (this.newPhotos().length > 0) {
           this.isUploading.set(true);
           const newPhotoUrls: string[] = [];
@@ -1960,7 +2049,7 @@ export class IndoorCenterFormComponent {
           }
         }
 
-        // 4. Save/Sync Vouchers in database
+        // 5. Save/Sync Vouchers in database
         const vouchersToSync = this.localVouchers();
         for (const v of vouchersToSync) {
           if (v.is_deleted) {
