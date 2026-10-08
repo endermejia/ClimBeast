@@ -167,8 +167,9 @@ export class SearchService {
           }));
         }
 
-        // Areas & Crags: only show create/import when no results at all
+        // Include 8a.nu matches when deciding whether to offer creation actions.
         const hasAnyResults =
+          (eightAnuItems?.length ?? 0) > 0 ||
           areas.length > 0 ||
           crags.length > 0 ||
           routes.length > 0 ||
@@ -193,12 +194,16 @@ export class SearchService {
                   } as SearchItem,
                 ]
               : []),
-            {
-              title: this.translate.instant('areas.newTitle'),
-              href: '',
-              icon: '@tui.plus',
-              type: 'create-area',
-            },
+            ...(!hasAnyResults
+              ? [
+                  {
+                    title: this.translate.instant('areas.newTitle'),
+                    href: '',
+                    icon: '@tui.plus',
+                    type: 'create-area',
+                  } as SearchItem,
+                ]
+              : []),
           ];
         }
 
@@ -219,12 +224,16 @@ export class SearchService {
                   } as SearchItem,
                 ]
               : []),
-            {
-              title: this.translate.instant('crags.newTitle'),
-              href: '',
-              icon: '@tui.plus',
-              type: 'create-crag',
-            },
+            ...(!hasAnyResults
+              ? [
+                  {
+                    title: this.translate.instant('crags.newTitle'),
+                    href: '',
+                    icon: '@tui.plus',
+                    type: 'create-crag',
+                  } as SearchItem,
+                ]
+              : []),
           ];
         }
 
@@ -256,12 +265,16 @@ export class SearchService {
                   } as SearchItem,
                 ]
               : []),
-            {
-              title: this.translate.instant('routes.newTitle'),
-              href: '',
-              icon: '@tui.plus',
-              type: 'create-route',
-            },
+            ...(!hasAnyResults
+              ? [
+                  {
+                    title: this.translate.instant('routes.newTitle'),
+                    href: '',
+                    icon: '@tui.plus',
+                    type: 'create-route',
+                  } as SearchItem,
+                ]
+              : []),
           ];
         }
 
