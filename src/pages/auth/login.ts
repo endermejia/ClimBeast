@@ -90,14 +90,12 @@ import { IS_BROWSER } from '../../app/is-browser';
                 inputmode="email"
                 [value]="email()"
                 (input.zoneless)="onInputEmail(emailInput.value)"
-                [attr.aria-invalid]="
-                  validate() && !emailValid() ? 'true' : null
-                "
+                [attr.aria-invalid]="showEmailError() ? 'true' : null"
                 autocomplete="email"
               />
             </tui-textfield>
 
-            @if (validate() && !emailValid()) {
+            @if (showEmailError()) {
               <div tuiNotification appearance="warning">
                 <h3 tuiTitle>{{ 'auth.enterValidEmail' | translate }}</h3>
               </div>
@@ -114,26 +112,19 @@ import { IS_BROWSER } from '../../app/is-browser';
                 type="password"
                 [value]="password()"
                 (input.zoneless)="onInputPassword(passwordInput.value)"
-                [attr.aria-invalid]="
-                  validate() &&
-                  (isRegister() ? !passwordValid() : password().length === 0)
-                    ? 'true'
-                    : null
-                "
+                [attr.aria-invalid]="showPasswordError() ? 'true' : null"
                 autocomplete="current-password"
               />
               <tui-icon tuiPassword />
             </tui-textfield>
 
-            @if (validate() && isRegister() && !passwordValid()) {
+            @if (showRegisterPasswordError()) {
               <div tuiNotification appearance="warning">
                 <h3 tuiTitle>
                   {{ 'auth.passwordRequirements' | translate: { min: 6 } }}
                 </h3>
               </div>
-            } @else if (
-              validate() && !isRegister() && password().length === 0
-            ) {
+            } @else if (showLoginPasswordEmptyError()) {
               <div tuiNotification appearance="warning">
                 <h3 tuiTitle>{{ 'errors.required' | translate }}</h3>
               </div>
@@ -154,16 +145,14 @@ import { IS_BROWSER } from '../../app/is-browser';
                     confirmPassword.set(confirmRegPasswordInput.value)
                   "
                   [attr.aria-invalid]="
-                    validate() && confirmPassword() !== password()
-                      ? 'true'
-                      : null
+                    showConfirmPasswordError() ? 'true' : null
                   "
                   autocomplete="new-password"
                 />
                 <tui-icon tuiPassword />
               </tui-textfield>
 
-              @if (validate() && confirmPassword() !== password()) {
+              @if (showConfirmPasswordError()) {
                 <div tuiNotification appearance="warning">
                   <h3 tuiTitle>{{ 'errors.passwordMismatch' | translate }}</h3>
                 </div>
@@ -243,15 +232,13 @@ import { IS_BROWSER } from '../../app/is-browser';
                 type="password"
                 [value]="newPassword()"
                 (input.zoneless)="newPassword.set(newPasswordInput.value)"
-                [attr.aria-invalid]="
-                  validate() && !newPasswordValid() ? 'true' : null
-                "
+                [attr.aria-invalid]="showNewPasswordError() ? 'true' : null"
                 autocomplete="new-password"
               />
               <tui-icon tuiPassword />
             </tui-textfield>
 
-            @if (validate() && !newPasswordValid()) {
+            @if (showNewPasswordError()) {
               <div tuiNotification appearance="warning">
                 <h3 tuiTitle>
                   {{ 'auth.passwordRequirements' | translate: { min: 6 } }}
@@ -273,16 +260,14 @@ import { IS_BROWSER } from '../../app/is-browser';
                   confirmPassword.set(confirmPasswordInput.value)
                 "
                 [attr.aria-invalid]="
-                  validate() && confirmPassword() !== newPassword()
-                    ? 'true'
-                    : null
+                  showConfirmNewPasswordError() ? 'true' : null
                 "
                 autocomplete="new-password"
               />
               <tui-icon tuiPassword />
             </tui-textfield>
 
-            @if (validate() && confirmPassword() !== newPassword()) {
+            @if (showConfirmNewPasswordError()) {
               <div tuiNotification appearance="warning">
                 <h3 tuiTitle>{{ 'errors.passwordMismatch' | translate }}</h3>
               </div>
@@ -361,6 +346,42 @@ export class LoginComponent {
       this.emailValid() &&
       this.passwordValid() &&
       this.confirmPassword() === this.password(),
+  );
+
+  // Derived validation UI state computed signals to avoid repeated inline signal/function evaluation in template bindings
+  readonly showEmailError = computed(
+    () => this.validate() && !this.emailValid(),
+  );
+
+  readonly showPasswordError = computed(
+    () =>
+      this.validate() &&
+      (this.isRegister()
+        ? !this.passwordValid()
+        : this.password().length === 0),
+  );
+
+  readonly showRegisterPasswordError = computed(
+    () => this.validate() && this.isRegister() && !this.passwordValid(),
+  );
+
+  readonly showLoginPasswordEmptyError = computed(
+    () => this.validate() && !this.isRegister() && this.password().length === 0,
+  );
+
+  readonly showConfirmPasswordError = computed(
+    () =>
+      this.validate() &&
+      this.isRegister() &&
+      this.confirmPassword() !== this.password(),
+  );
+
+  readonly showNewPasswordError = computed(
+    () => this.validate() && !this.newPasswordValid(),
+  );
+
+  readonly showConfirmNewPasswordError = computed(
+    () => this.validate() && this.confirmPassword() !== this.newPassword(),
   );
 
   private readonly registerQueryParam = toSignal(this.route.queryParams, {
