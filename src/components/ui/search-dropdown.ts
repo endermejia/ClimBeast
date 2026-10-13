@@ -580,7 +580,26 @@ export class SearchDropdownComponent {
       groups.push({ key: 'search.shop.title', items: shopItems });
     }
 
-    return groups;
+    const hasOtherResults = groups.some(({ items }) =>
+      items.some(
+        (item) =>
+          !item.type?.startsWith('create-') &&
+          !item.type?.startsWith('import-'),
+      ),
+    );
+
+    if (!hasOtherResults) return groups;
+
+    return groups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter(
+          (item) =>
+            !item.type?.startsWith('create-') &&
+            !item.type?.startsWith('import-'),
+        ),
+      }))
+      .filter(({ items }) => items.length > 0);
   });
 
   protected readonly totalResults = computed(() =>

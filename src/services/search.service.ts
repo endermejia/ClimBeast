@@ -167,22 +167,22 @@ export class SearchService {
           }));
         }
 
-        // Include 8a.nu matches when deciding whether to offer creation actions.
-        const hasAnyResults =
-          (eightAnuItems?.length ?? 0) > 0 ||
+        const hasSearchResults =
           areas.length > 0 ||
           crags.length > 0 ||
           routes.length > 0 ||
           users.length > 0 ||
           indoors.length > 0 ||
           equippers.length > 0;
+        const hasAnyResults =
+          hasSearchResults || (eightAnuItems?.length ?? 0) > 0;
 
         if (!hasAnyResults || areas.length === 0) {
           const anuArea = eightAnuItems?.find(
             (i): i is SearchAreaItem => i.type === 0,
           );
           results['areas'] = [
-            ...(anuArea
+            ...(anuArea && !hasSearchResults
               ? [
                   {
                     title: `${this.translate.instant('import')} ${anuArea.areaName}`,
@@ -212,7 +212,7 @@ export class SearchService {
             (i): i is SearchCragItem => i.type === 1,
           );
           results['crags'] = [
-            ...(anuCrag
+            ...(anuCrag && !hasSearchResults
               ? [
                   {
                     title: `${this.translate.instant('import')} ${anuCrag.cragName}`,
@@ -248,7 +248,7 @@ export class SearchService {
           );
           results['routes'] = [
             ...(results['routes'] || []),
-            ...(anuRoute
+            ...(anuRoute && !hasSearchResults
               ? [
                   {
                     title: `${this.translate.instant('import')} ${anuRoute.zlaggableName}`,
