@@ -237,11 +237,7 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
                         <div class="flex gap-2 w-full">
                           <button
                             tuiButton
-                            [style.background]="
-                              ascentsService.ascentInfo()[
-                                r.own_ascent.type || 'default'
-                              ].background
-                            "
+                            [style.background]="ownAscentInfo()?.background"
                             class="group relative overflow-hidden text-(--tui-text-primary-on-accent-1)! grow transition-all duration-300"
                             size="m"
                             (click)="onViewAscent(r.own_ascent)"
@@ -250,13 +246,7 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
                             <span
                               class="flex items-center gap-2 transition-all duration-300 ease-out group-hover:opacity-0 group-hover:scale-90 group-hover:-translate-y-1"
                             >
-                              <tui-icon
-                                [icon]="
-                                  ascentsService.ascentInfo()[
-                                    r.own_ascent.type || 'default'
-                                  ].icon
-                                "
-                              />
+                              <tui-icon [icon]="ownAscentInfo()?.icon" />
                               {{
                                 'ascentTypes.' + r.own_ascent.type | translate
                               }}
@@ -467,6 +457,13 @@ export class OutdoorRouteComponent {
   protected readonly totalAscents = computed(
     () => this.outdoorData.routeAscentsResource.value()?.total ?? 0,
   );
+
+  protected readonly ownAscentInfo = computed(() => {
+    const own = this.route()?.own_ascent;
+    if (!own) return null;
+    const type = own.type || 'default';
+    return this.ascentsService.ascentInfo()[type] || null;
+  });
 
   protected readonly accumulatedAscents = signal<FeedItem[]>([]);
   protected readonly isLoading = signal(true);

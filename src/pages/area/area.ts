@@ -519,7 +519,7 @@ const PAGE_SIZE = 20;
                                 </span>
                               </div>
                               @for (
-                                item of anuResults.slice(0, 3);
+                                item of anuResults;
                                 track item.zlaggableId
                               ) {
                                 <div
@@ -1161,10 +1161,12 @@ export class AreaComponent {
   });
 
   protected readonly mappedAreaAnuResults = computed(() => {
-    return (this.areaEightAnuResource.value() || []).map((item) => ({
-      ...item,
-      _grade: gradeToVerticalLife(item.difficulty),
-    }));
+    return (this.areaEightAnuResource.value() || [])
+      .slice(0, 3)
+      .map((item) => ({
+        ...item,
+        _grade: gradeToVerticalLife(item.difficulty),
+      }));
   });
 
   private readonly cachedAscentsCount = createCachedResource<

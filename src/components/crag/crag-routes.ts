@@ -140,7 +140,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                   {{ 'eightAnuResults' | translate }}
                 </span>
               </div>
-              @for (item of anuResults.slice(0, 3); track item.zlaggableId) {
+              @for (item of anuResults; track item.zlaggableId) {
                 <div
                   tuiAppearance="flat"
                   class="p-4 rounded-3xl flex items-center justify-between gap-4"
@@ -363,7 +363,7 @@ export class CragRoutesComponent {
   });
 
   protected readonly mappedAnuResults = computed(() => {
-    return (this.eightAnuResource.value() || []).map((item) => ({
+    return (this.eightAnuResource.value() || []).slice(0, 3).map((item) => ({
       ...item,
       _grade: gradeToVerticalLife(item.difficulty),
     }));

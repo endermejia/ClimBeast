@@ -1,5 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, input, model, output, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  input,
+  model,
+  output,
+  signal,
+} from '@angular/core';
 import { SafeResourceUrl } from '@angular/platform-browser';
 
 import { TuiIcon } from '@taiga-ui/core';
@@ -30,9 +37,7 @@ export interface CarouselItem {
         [class.transition-transform]="!isDragging()"
         [class.duration-500]="!isDragging()"
         [class.ease-out]="!isDragging()"
-        [style.transform]="
-          'translateX(calc(-' + index() * 100 + '% + ' + touchOffset() + 'px))'
-        "
+        [style.transform]="trackTransform()"
       >
         @for (item of items(); track $index) {
           <div
@@ -137,6 +142,9 @@ export class CustomCarouselComponent {
   protected readonly isHovered = signal(false);
   protected readonly touchOffset = signal(0);
   protected readonly isDragging = signal(false);
+  protected readonly trackTransform = computed(
+    () => `translateX(calc(-${this.index() * 100}% + ${this.touchOffset()}px))`,
+  );
 
   private touchStartX = 0;
   private readonly swipeThreshold = 50;
