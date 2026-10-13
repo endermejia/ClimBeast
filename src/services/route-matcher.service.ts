@@ -19,6 +19,7 @@ import {
   DbCragRecord,
   matchExistingAreas,
   matchExistingCrags,
+  normalizeName,
   sectorSlug,
   slugify,
 } from '../utils';
@@ -231,9 +232,11 @@ export class RouteMatcherService {
             crag:crags!inner(
               name,
               slug,
+              eight_anu_sector_slugs,
               area:areas!inner(
                 name,
-                slug
+                slug,
+                eight_anu_crag_slugs
               )
             )
           `,
@@ -247,9 +250,11 @@ export class RouteMatcherService {
               crag: {
                 name: string;
                 slug: string;
+                eight_anu_sector_slugs: string[] | null;
                 area: {
                   name: string;
                   slug: string;
+                  eight_anu_crag_slugs: string[] | null;
                 };
               };
             }[]
@@ -264,9 +269,25 @@ export class RouteMatcherService {
 
         if (matchedRoutes) {
           for (const r of matchedRoutes) {
-            const matchingItems = batch.filter(
-              (b) => slugify(b.name) === slugify(r.name),
-            );
+            const matchingItems = batch.filter((b) => {
+              if (slugify(b.name) !== slugify(r.name)) return false;
+
+              const areaSlug = slugify(b.area);
+              const areaNorm = normalizeName(b.area);
+              const areaMatches =
+                areaSlug === r.crag.area.slug ||
+                areaNorm === normalizeName(r.crag.area.name) ||
+                (r.crag.area.eight_anu_crag_slugs?.includes(areaSlug) ?? false);
+
+              const cragSlug = sectorSlug(b.crag);
+              const cragNorm = normalizeName(b.crag);
+              const cragMatches =
+                cragSlug === r.crag.slug ||
+                cragNorm === normalizeName(r.crag.name) ||
+                (r.crag.eight_anu_sector_slugs?.includes(cragSlug) ?? false);
+
+              return areaMatches && cragMatches;
+            });
 
             for (const item of matchingItems) {
               const key = `${slugify(item.area)}|${sectorSlug(item.crag)}|${slugify(item.name)}`;
@@ -341,22 +362,95 @@ export class RouteMatcherService {
             name: string;
             slug: string;
             eight_anu_route_slugs: string[] | null;
+            crag: {
+              name: string;
+              slug: string;
+              eight_anu_sector_slugs: string[] | null;
+              area: {
+                name: string;
+                slug: string;
+                eight_anu_crag_slugs: string[] | null;
+              };
+            };
           }[] = [];
 
           for (let i = 0; i < allSlugs.length; i += SLUG_CHUNK_SIZE) {
             const slugChunk = allSlugs.slice(i, i + SLUG_CHUNK_SIZE);
             const { data } = await this.supabase.client
               .from('routes')
-              .select('name, slug, eight_anu_route_slugs')
-              .overlaps('eight_anu_route_slugs', slugChunk);
+              .select(
+                `
+                name,
+                slug,
+                eight_anu_route_slugs,
+                crag:crags!inner(
+                  name,
+                  slug,
+                  eight_anu_sector_slugs,
+                  area:areas!inner(
+                    name,
+                    slug,
+                    eight_anu_crag_slugs
+                  )
+                )
+              `,
+              )
+              .overlaps('eight_anu_route_slugs', slugChunk)
+              .overrideTypes<
+                {
+                  name: string;
+                  slug: string;
+                  eight_anu_route_slugs: string[] | null;
+                  crag: {
+                    name: string;
+                    slug: string;
+                    eight_anu_sector_slugs: string[] | null;
+                    area: {
+                      name: string;
+                      slug: string;
+                      eight_anu_crag_slugs: string[] | null;
+                    };
+                  };
+                }[]
+              >();
             if (data) routesBySlugs.push(...data);
+          }
+
+          const unresolvedByKey = new Map<
+            string,
+            { area: string; crag: string; name: string }
+          >();
+          for (const item of unresolvedItems) {
+            const itemKey = `${slugify(item.area)}|${sectorSlug(item.crag)}|${slugify(item.name)}`;
+            unresolvedByKey.set(itemKey, item);
           }
 
           for (const [key, slug8a] of slugByKey.entries()) {
             if (resolvedSlugsMap.has(key)) continue;
-            const match = routesBySlugs.find((r) =>
-              r.eight_anu_route_slugs?.includes(slug8a),
-            );
+            const item = unresolvedByKey.get(key);
+            if (!item) continue;
+
+            const areaSlug = slugify(item.area);
+            const areaNorm = normalizeName(item.area);
+            const cragSlug = sectorSlug(item.crag);
+            const cragNorm = normalizeName(item.crag);
+
+            const match = routesBySlugs.find((r) => {
+              if (!r.eight_anu_route_slugs?.includes(slug8a)) return false;
+
+              const areaMatches =
+                areaSlug === r.crag.area.slug ||
+                areaNorm === normalizeName(r.crag.area.name) ||
+                (r.crag.area.eight_anu_crag_slugs?.includes(areaSlug) ?? false);
+
+              const cragMatches =
+                cragSlug === r.crag.slug ||
+                cragNorm === normalizeName(r.crag.name) ||
+                (r.crag.eight_anu_sector_slugs?.includes(cragSlug) ?? false);
+
+              return areaMatches && cragMatches;
+            });
+
             if (match) {
               resolvedSlugsMap.set(key, {
                 slug: match.slug,
