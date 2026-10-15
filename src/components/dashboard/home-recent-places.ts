@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiAppearance } from '@taiga-ui/core';
@@ -40,24 +40,24 @@ export interface UnifiedActiveItem {
           }
         </div>
       </div>
-    } @else if (items(); as list) {
+    } @else if (itemsWithTrackKeys(); as list) {
       @if (list.length > 0) {
         <div class="flex flex-col gap-2 pb-3">
           <span class="text-xs font-bold opacity-60 uppercase px-1">
             {{ 'home.sectorsAndGyms' | translate }}
           </span>
           <div class="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar">
-            @for (item of list; track item.link.join('/')) {
+            @for (entry of list; track entry.trackKey) {
               <a
-                [routerLink]="item.link"
+                [routerLink]="entry.item.link"
                 tuiAppearance="textfield"
                 class="flex-none p-3 rounded-2xl"
               >
                 <span
                   class="whitespace-nowrap font-bold text-sm"
-                  [class.underline]="item.liked"
-                  [class.underline-offset-2]="item.liked"
-                  >{{ item.name }}</span
+                  [class.underline]="entry.item.liked"
+                  [class.underline-offset-2]="entry.item.liked"
+                  >{{ entry.item.name }}</span
                 >
               </a>
             }
@@ -71,4 +71,14 @@ export class HomeRecentPlacesComponent {
   followsLoaded = input<boolean>(true);
   isLoading = input<boolean>(false);
   items = input<UnifiedActiveItem[] | null>(null);
+
+  // Pre-computes tracking keys using a computed signal to eliminate in-template function executions (item.link.join('/')) on every change detection cycle.
+  protected readonly itemsWithTrackKeys = computed(() => {
+    const rawItems = this.items();
+    if (!rawItems) return null;
+    return rawItems.map((item) => ({
+      item,
+      trackKey: item.link.join('/'),
+    }));
+  });
 }
