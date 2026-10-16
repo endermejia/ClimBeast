@@ -8,6 +8,10 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'order-failed', renderMode: RenderMode.Server },
   { path: 'login', renderMode: RenderMode.Prerender },
   { path: 'info', renderMode: RenderMode.Prerender },
+  { path: 'terms', renderMode: RenderMode.Prerender },
+  { path: 'privacy', renderMode: RenderMode.Prerender },
+  { path: 'cookies', renderMode: RenderMode.Prerender },
+  { path: 'legal', renderMode: RenderMode.Prerender },
   { path: 'explore', renderMode: RenderMode.Prerender },
   {
     path: 'equipper/:id',

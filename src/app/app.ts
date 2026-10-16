@@ -123,9 +123,16 @@ export class AppComponent implements OnDestroy {
    */
   protected readonly showNavbar = computed(() => {
     const path = this.currentPath().split('?')[0].split('#')[0];
-    return !['/login', '/signup', '/info', '/reset-password'].some((p) =>
-      path.startsWith(p),
-    );
+    return ![
+      '/login',
+      '/signup',
+      '/info',
+      '/reset-password',
+      '/terms',
+      '/privacy',
+      '/cookies',
+      '/legal',
+    ].some((p) => path.startsWith(p));
   });
 
   private readonly langChange = toSignal(
@@ -137,7 +144,15 @@ export class AppComponent implements OnDestroy {
 
   constructor() {
     effect(() => {
-      if (this.isBrowser && this.storage.getItem(this.gdprKey) !== 'true') {
+      const path = this.currentPath().split('?')[0].split('#')[0];
+      const isLegalPage = ['/terms', '/privacy', '/cookies', '/legal'].some(
+        (p) => path.startsWith(p),
+      );
+      if (
+        this.isBrowser &&
+        !isLegalPage &&
+        this.storage.getItem(this.gdprKey) !== 'true'
+      ) {
         this.notifications.showGdpr();
       }
     });

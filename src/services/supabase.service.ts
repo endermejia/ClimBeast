@@ -265,8 +265,12 @@ export class SupabaseService {
     return this.authService.getSession(this._client);
   }
 
-  async register(email: string, password: string) {
-    return this.authService.register(email, password);
+  async register(
+    email: string,
+    password: string,
+    options?: { data?: Record<string, unknown>; emailRedirectTo?: string },
+  ) {
+    return this.authService.register(email, password, options);
   }
 
   async login(email: string, password: string) {

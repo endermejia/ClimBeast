@@ -9,22 +9,26 @@ import {
   WritableSignal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import {
   TuiButton,
+  TuiCheckbox,
   TuiIcon,
+  TuiInput,
   TuiNotification,
   TuiTitle,
-  TuiInput,
 } from '@taiga-ui/core';
 import { TuiPassword } from '@taiga-ui/kit';
 import { TuiCardLarge, TuiForm, TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { LocalStorage } from '../../services/local-storage';
 import { SupabaseService } from '../../services/supabase.service';
 
+import { STORAGE_KEYS } from '../../constants';
 import { isComplexPassword, isValidEmail } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
@@ -32,10 +36,13 @@ import { IS_BROWSER } from '../../app/is-browser';
 @Component({
   selector: 'app-login',
   imports: [
+    FormsModule,
     NgOptimizedImage,
+    RouterLink,
     TranslatePipe,
     TuiButton,
     TuiCardLarge,
+    TuiCheckbox,
     TuiForm,
     TuiHeader,
     TuiIcon,
@@ -46,7 +53,9 @@ import { IS_BROWSER } from '../../app/is-browser';
   ],
   template: `
     <div class="relative h-full flex justify-center items-center">
-      <div class="relative z-10 w-full md:w-3/5 flex justify-center p-6">
+      <div
+        class="relative z-10 w-full md:w-3/5 flex flex-col items-center justify-center p-6"
+      >
         <form
           appearance="floating"
           tuiCardLarge
@@ -157,6 +166,80 @@ import { IS_BROWSER } from '../../app/is-browser';
                   <h3 tuiTitle>{{ 'errors.passwordMismatch' | translate }}</h3>
                 </div>
               }
+
+              <div class="flex flex-col gap-2.5 my-2 text-xs">
+                <label
+                  class="flex items-start gap-2.5 cursor-pointer select-none"
+                >
+                  <input
+                    tuiCheckbox
+                    type="checkbox"
+                    name="acceptTerms"
+                    [ngModel]="acceptTerms()"
+                    (ngModelChange)="acceptTerms.set($event)"
+                    class="mt-0.5 shrink-0"
+                  />
+                  <span class="leading-snug text-(--tui-text-secondary)">
+                    {{ 'auth.acceptTermsPrefix' | translate }}
+                    <a
+                      routerLink="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-primary font-medium underline hover:opacity-80"
+                      (click)="$event.stopPropagation()"
+                    >
+                      {{ 'auth.acceptTermsLink' | translate }}
+                    </a>
+                    {{ 'auth.acceptTermsSuffix' | translate }}
+                  </span>
+                </label>
+                @if (showTermsError()) {
+                  <div tuiNotification appearance="warning" size="s">
+                    <h3 tuiTitle>{{ 'auth.termsRequired' | translate }}</h3>
+                  </div>
+                }
+
+                <label
+                  class="flex items-start gap-2.5 cursor-pointer select-none"
+                >
+                  <input
+                    tuiCheckbox
+                    type="checkbox"
+                    name="acceptPrivacy"
+                    [ngModel]="acceptPrivacy()"
+                    (ngModelChange)="acceptPrivacy.set($event)"
+                    class="mt-0.5 shrink-0"
+                  />
+                  <span class="leading-snug text-(--tui-text-secondary)">
+                    {{ 'auth.acceptPrivacyPrefix' | translate }}
+                    <a
+                      routerLink="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-primary font-medium underline hover:opacity-80"
+                      (click)="$event.stopPropagation()"
+                    >
+                      {{ 'auth.acceptPrivacyLink' | translate }}
+                    </a>
+                    {{ 'auth.acceptCookiesPrefix' | translate }}
+                    <a
+                      routerLink="/cookies"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-primary font-medium underline hover:opacity-80"
+                      (click)="$event.stopPropagation()"
+                    >
+                      {{ 'auth.acceptCookiesLink' | translate }}
+                    </a>
+                    {{ 'auth.acceptCookiesSuffix' | translate }}
+                  </span>
+                </label>
+                @if (showPrivacyError()) {
+                  <div tuiNotification appearance="warning" size="s">
+                    <h3 tuiTitle>{{ 'auth.privacyRequired' | translate }}</h3>
+                  </div>
+                }
+              </div>
             }
 
             @if (!isRegister()) {
@@ -286,6 +369,23 @@ import { IS_BROWSER } from '../../app/is-browser';
             </footer>
           }
         </form>
+        @if (!isRecovery()) {
+          <footer
+            class="mt-4 text-center text-xs text-(--tui-text-tertiary) flex justify-center gap-2.5 flex-wrap"
+          >
+            <a routerLink="/terms" class="hover:underline">
+              {{ 'legal.tabTerms' | translate }}
+            </a>
+            <span>•</span>
+            <a routerLink="/privacy" class="hover:underline">
+              {{ 'legal.tabPrivacy' | translate }}
+            </a>
+            <span>•</span>
+            <a routerLink="/cookies" class="hover:underline">
+              {{ 'legal.tabCookies' | translate }}
+            </a>
+          </footer>
+        }
       </div>
       <div
         class="absolute inset-0 md:static w-full md:w-2/5 h-full z-0 pointer-events-none"
@@ -304,6 +404,7 @@ import { IS_BROWSER } from '../../app/is-browser';
 })
 export class LoginComponent {
   private readonly supabase = inject(SupabaseService);
+  private readonly storage = inject(LocalStorage);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly isBrowser = inject(IS_BROWSER);
@@ -314,6 +415,8 @@ export class LoginComponent {
   loading: WritableSignal<boolean> = signal(false);
   validate: WritableSignal<boolean> = signal(false);
   isRegister: WritableSignal<boolean> = signal(false);
+  acceptTerms: WritableSignal<boolean> = signal(false);
+  acceptPrivacy: WritableSignal<boolean> = signal(false);
 
   // Password recovery state
   readonly isRecovery = computed(() => {
@@ -345,7 +448,9 @@ export class LoginComponent {
     () =>
       this.emailValid() &&
       this.passwordValid() &&
-      this.confirmPassword() === this.password(),
+      this.confirmPassword() === this.password() &&
+      this.acceptTerms() &&
+      this.acceptPrivacy(),
   );
 
   // Derived validation UI state computed signals to avoid repeated inline signal/function evaluation in template bindings
@@ -374,6 +479,14 @@ export class LoginComponent {
       this.validate() &&
       this.isRegister() &&
       this.confirmPassword() !== this.password(),
+  );
+
+  readonly showTermsError = computed(
+    () => this.validate() && this.isRegister() && !this.acceptTerms(),
+  );
+
+  readonly showPrivacyError = computed(
+    () => this.validate() && this.isRegister() && !this.acceptPrivacy(),
   );
 
   readonly showNewPasswordError = computed(
@@ -455,6 +568,8 @@ export class LoginComponent {
     this.isRegister.set(next);
     this.validate.set(false);
     this.confirmPassword.set('');
+    this.acceptTerms.set(false);
+    this.acceptPrivacy.set(false);
   }
 
   async submitRegister() {
@@ -469,15 +584,26 @@ export class LoginComponent {
       const { error } = await this.supabase.register(
         this.email(),
         this.password(),
+        {
+          data: {
+            terms_accepted: true,
+            privacy_accepted: true,
+            terms_version: '2026-10-15',
+            accepted_at: new Date().toISOString(),
+          },
+        },
       );
       if (error) {
         this.error.set('auth.registrationError');
         return;
       }
+      this.storage.setItem(STORAGE_KEYS.gdprAccepted, 'true');
       // In most projects, signup requires email confirmation
       this.error.set('auth.registrationSuccess');
       // Switch back to login view
       this.isRegister.set(false);
+      this.acceptTerms.set(false);
+      this.acceptPrivacy.set(false);
     } catch {
       this.error.set('errors.unexpected');
     } finally {

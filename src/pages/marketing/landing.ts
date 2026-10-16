@@ -2,9 +2,8 @@ import { NgOptimizedImage } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TuiButton, TuiIcon, TuiTitle } from '@taiga-ui/core';
+import { TuiButton, TuiIcon } from '@taiga-ui/core';
 import { TuiAvatar, TuiBadge } from '@taiga-ui/kit';
-import { TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -32,58 +31,12 @@ import {
     TuiAvatar,
     TuiBadge,
     TuiButton,
-    TuiHeader,
     TuiIcon,
-    TuiTitle,
   ],
   template: `
     <div
       class="min-h-screen flex flex-col bg-(--tui-background-base) text-(--tui-text-primary)"
     >
-      <!-- Navigation Header -->
-      <header
-        tuiHeader
-        class="sticky top-0 z-50 backdrop-blur-md bg-(--tui-background-base)/90 border-b border-(--tui-border-normal) px-4 sm:px-8 py-3"
-      >
-        <div
-          class="max-w-6xl mx-auto w-full flex items-center justify-between gap-4"
-        >
-          <div class="flex items-center gap-3">
-            <div class="relative w-8 h-8 shrink-0">
-              <img
-                ngSrc="/logo/climbeast.svg"
-                alt="ClimBeast Logo"
-                fill
-                class="object-contain"
-                priority
-              />
-            </div>
-            <span
-              tuiTitle
-              class="font-extrabold! tracking-tight text-3xl sm:text-4xl"
-            >
-              {{ 'appName' | translate }}
-            </span>
-          </div>
-
-          <div class="hidden sm:flex items-center gap-2">
-            <a routerLink="/login" tuiButton size="s" appearance="flat">
-              {{ 'landing.exploreApp' | translate }}
-            </a>
-            <a
-              routerLink="/login"
-              [queryParams]="{ register: 'true' }"
-              tuiButton
-              size="s"
-              appearance="primary"
-              iconEnd="@tui.arrow-right"
-            >
-              {{ 'landing.getStarted' | translate }}
-            </a>
-          </div>
-        </div>
-      </header>
-
       <main
         class="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-8 py-8 sm:py-12 flex flex-col gap-12 sm:gap-16"
       >
@@ -383,7 +336,30 @@ import {
             <span>ClimBeast &copy; {{ currentYear }}</span>
           </div>
 
-          <div class="flex items-center gap-6">
+          <div
+            class="flex flex-wrap items-center justify-center gap-4 sm:gap-6"
+          >
+            <a
+              routerLink="/terms"
+              class="hover:underline text-(--tui-text-secondary)"
+            >
+              {{ 'legal.tabTerms' | translate }}
+            </a>
+            <span>•</span>
+            <a
+              routerLink="/privacy"
+              class="hover:underline text-(--tui-text-secondary)"
+            >
+              {{ 'legal.tabPrivacy' | translate }}
+            </a>
+            <span>•</span>
+            <a
+              routerLink="/cookies"
+              class="hover:underline text-(--tui-text-secondary)"
+            >
+              {{ 'legal.tabCookies' | translate }}
+            </a>
+            <span>•</span>
             <a
               routerLink="/login"
               class="hover:underline text-(--tui-text-secondary)"

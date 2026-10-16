@@ -313,6 +313,27 @@ export const routes: Routes = [
         (m) => m.AdminAreaFundsComponent,
       ),
   },
+  // Legal and policy routes
+  {
+    path: 'terms',
+    loadComponent: () =>
+      import('../pages/legal/legal').then((m) => m.LegalComponent),
+  },
+  {
+    path: 'privacy',
+    loadComponent: () =>
+      import('../pages/legal/legal').then((m) => m.LegalComponent),
+  },
+  {
+    path: 'cookies',
+    loadComponent: () =>
+      import('../pages/legal/legal').then((m) => m.LegalComponent),
+  },
+  {
+    path: 'legal',
+    loadComponent: () =>
+      import('../pages/legal/legal').then((m) => m.LegalComponent),
+  },
   // Public landing page
   {
     path: 'info',

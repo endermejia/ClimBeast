@@ -1,9 +1,10 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
-import { TuiButton, TuiScrollbar, TuiDialogContext } from '@taiga-ui/core';
+import { TuiButton, TuiDialogContext } from '@taiga-ui/core';
 import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { LocalStorage } from '../../services/local-storage';
 
@@ -12,33 +13,34 @@ import { STORAGE_KEYS } from '../../constants';
 @Component({
   selector: 'app-gdpr-notification',
   standalone: true,
-  imports: [TranslateModule, TuiButton, TuiScrollbar],
+  imports: [RouterLink, TranslatePipe, TuiButton],
   template: `
-    <div class="flex flex-col gap-4">
-      <div class="max-h-[40vh] flex flex-col">
-        <tui-scrollbar class="h-full">
-          <div class="text-sm leading-relaxed whitespace-pre-wrap">
-            {{ (showFull() ? 'gdpr.fullPolicy' : 'gdpr.message') | translate }}
-          </div>
-        </tui-scrollbar>
-      </div>
-      <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
-        <button
+    <div class="flex flex-col gap-3 max-w-full overflow-hidden">
+      <p
+        class="text-xs sm:text-sm leading-relaxed text-(--tui-text-primary) m-0 break-words"
+      >
+        {{ 'gdpr.message' | translate }}
+      </p>
+      <div
+        class="flex items-center justify-between gap-2.5 pt-2 border-t border-(--tui-border-normal)/60"
+      >
+        <a
+          routerLink="/legal"
           tuiButton
           type="button"
           size="s"
           appearance="flat"
-          class="font-medium!"
-          (click)="showFull.set(!showFull())"
+          class="text-xs! font-medium! px-2!"
+          (click)="goToLegal()"
         >
-          {{ (showFull() ? 'back' : 'gdpr.readMore') | translate }}
-        </button>
+          {{ 'legal.viewAll' | translate }}
+        </a>
         <button
           tuiButton
           type="button"
           size="s"
           appearance="primary"
-          class="min-w-24"
+          class="text-xs! font-semibold! px-4! shrink-0 min-w-20"
           (click)="accept()"
         >
           {{ 'accept' | translate }}
@@ -50,6 +52,8 @@ import { STORAGE_KEYS } from '../../constants';
     `
       :host {
         display: block;
+        max-width: 100%;
+        box-sizing: border-box;
       }
     `,
   ],
@@ -60,7 +64,9 @@ export class GdprNotificationComponent {
   private readonly storage = inject(LocalStorage);
   private readonly gdprKey = STORAGE_KEYS.gdprAccepted;
 
-  protected readonly showFull = signal(false);
+  protected goToLegal(): void {
+    this.context.completeWith(false);
+  }
 
   accept(): void {
     this.storage.setItem(this.gdprKey, 'true');
