@@ -57,7 +57,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
       <!-- 1. Sección Principal: Donaciones para el área + Bote de equipamiento y mantenimiento -->
       <div
         class="p-4 sm:p-5 border border-(--tui-border-normal) bg-(--tui-background-base) flex flex-col gap-4 rounded-2xl"
-        [class.rounded-b-none]="showDetailsOnMobile() || canManageArea()"
+        [class.rounded-b-none]="isRoundedBottomNone()"
       >
         <header class="flex items-start justify-between gap-3">
           <div class="min-w-0 flex-1">
@@ -479,6 +479,10 @@ export class AreaRevenuePanelComponent {
       !!this.authState.areaAdminPermissions()[id]
     );
   });
+
+  readonly isRoundedBottomNone = computed(
+    () => this.showDetailsOnMobile() || this.canManageArea(),
+  );
 
   readonly balanceResource = resource<
     AreaBalanceSummary | null,

@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject, input, output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { TuiCheckbox, TuiIcon, TuiNotification } from '@taiga-ui/core';
@@ -8,11 +8,11 @@ import { TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { AscentsService } from '../../services/ascents.service';
+import { GradeComponent } from '../ui/avatar-grade';
 
 import { EightAnuAscent, LABEL_TO_VERTICAL_LIFE } from '../../models';
 
-import { GradeComponent } from '../ui/avatar-grade';
+import { AscentInfoPipe } from '../../pipes';
 
 export type ResolvedAscentItem = EightAnuAscent & {
   _resolvedData: { slug: string; eightAnuSlugs: string[] } | undefined;
@@ -23,6 +23,7 @@ export type ResolvedAscentItem = EightAnuAscent & {
 @Component({
   selector: 'app-import-8a-step-confirm',
   imports: [
+    AscentInfoPipe,
     DatePipe,
     FormsModule,
     GradeComponent,
@@ -75,6 +76,7 @@ export type ResolvedAscentItem = EightAnuAscent & {
           track ascent.name + ascent.sector_name + ascent.date;
           let idx = $index
         ) {
+          @let info = ascent.type | ascentInfo;
           @defer (on viewport) {
             <div
               class="p-2 border-b last:border-0 flex justify-between items-center gap-4 transition-all duration-150"
@@ -137,16 +139,9 @@ export type ResolvedAscentItem = EightAnuAscent & {
                   tuiAvatar
                   size="s"
                   class="text-(--tui-text-primary-on-accent-1)!"
-                  [style.background]="
-                    ascentsService.ascentInfo()[ascent.type || 'default']
-                      .background
-                  "
+                  [style.background]="info.background"
                 >
-                  <tui-icon
-                    [icon]="
-                      ascentsService.ascentInfo()[ascent.type || 'default'].icon
-                    "
-                  />
+                  <tui-icon [icon]="info.icon" />
                 </span>
               </div>
             </div>
@@ -168,7 +163,6 @@ export type ResolvedAscentItem = EightAnuAscent & {
   `,
 })
 export class Import8aStepConfirmComponent {
-  protected readonly ascentsService = inject(AscentsService);
   protected readonly LABEL_TO_VERTICAL_LIFE = LABEL_TO_VERTICAL_LIFE;
 
   readonly ascentsWithResolved =
