@@ -41,3 +41,4 @@ Before committing, ensure ALL of the following pass:
 ## Supabase & Domain Conventions
 
 - **Cuentas y Balances de Áreas Públicos por Diseño** — Todas las cuentas, balances y recaudaciones de las áreas (bote de equipamiento, compras de croquis, donaciones y función `get_area_balance`) son públicos por diseño de la plataforma para garantizar la transparencia comunitaria.
+- **Cabecera de `user_profiles` Pública por Diseño** — Los datos de presentación del perfil (`user_profiles`) son visibles para usuarios autenticados como tarjeta de presentación incluso cuando `private = true`. La privacidad del perfil restringe en capa de datos (`is_profile_public`) el historial de ascensiones (`route_ascents`, `indoor_ascents`), estadísticas (`get_user_statistics`), proyectos (`route_projects`), pirámide (`user_pyramid_slots`) y el inicio de nuevas conversaciones de chat (`create_chat_room`).

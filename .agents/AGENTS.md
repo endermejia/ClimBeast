@@ -37,6 +37,7 @@ This writes to `src/models/supabase-generated.ts`. Never hand-edit that file. Us
 - **Component style** — OnPush change detection is default (no need to explicitly specify `changeDetection: ChangeDetectionStrategy.OnPush`), inline styles, no tests by default (schematic config in `angular.json`). Component prefix: `app` (kebab-case elements, camelCase attributes).
 - **Supabase RLS** — all new tables must have RLS enabled. Policy naming: `auth_can_read`, `own_can_insert`, `own_can_delete`, `admin_can_modify`, etc. Restrict to `authenticated` role when possible.
 - **Area Accounts & Financial Transparency** — Todas las cuentas, balances y recaudaciones de las áreas (bote de equipamiento, compras de croquis, donaciones y función `get_area_balance`) son públicos por diseño de la plataforma para garantizar la transparencia comunitaria.
+- **User Profile Header Public by Design** — Los datos de cabecera de `user_profiles` son legibles para usuarios autenticados como tarjeta de presentación aunque `private = true`. La marca `private` restringe en base de datos (`is_profile_public`) las ascensiones (`route_ascents`, `indoor_ascents`), estadísticas (`get_user_statistics`), proyectos (`route_projects`), pirámide (`user_pyramid_slots`) y la creación de nuevas salas de chat (`create_chat_room`).
 - **Formatting** — 2-space indent, single quotes in TS, Prettier on commit.
 - **i18n** — `@ngx-translate/core`. Check translations with `bun run check:i18n`. Sync with `bun run sync-translations`.
 

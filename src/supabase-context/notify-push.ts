@@ -204,15 +204,31 @@ serve(async (req) => {
     const apiKey = req.headers.get('apikey') || '';
     const secretHeader = req.headers.get('x-webhook-secret') || '';
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
     const webhookSecret = Deno.env.get('NOTIFY_PUSH_SECRET') || '';
 
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      serviceRoleKey,
+    );
+
     const token = authHeader.replace(/^Bearer\s+/i, '');
-    const isAuthorized =
-      (webhookSecret &&
-        (token === webhookSecret || secretHeader === webhookSecret)) ||
-      (token && (token === serviceRoleKey || token === anonKey)) ||
-      (apiKey && (apiKey === serviceRoleKey || apiKey === anonKey));
+    let isAuthorized =
+      Boolean(
+        webhookSecret &&
+        (token === webhookSecret || secretHeader === webhookSecret),
+      ) ||
+      Boolean(
+        serviceRoleKey &&
+        (token === serviceRoleKey || apiKey === serviceRoleKey),
+      );
+
+    if (!isAuthorized && secretHeader) {
+      const { data: validSecret } = await supabase.rpc(
+        'verify_notify_push_secret',
+        { p_secret: secretHeader },
+      );
+      isAuthorized = Boolean(validSecret);
+    }
 
     if (!isAuthorized) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -222,7 +238,6 @@ serve(async (req) => {
     }
 
     const { record } = await req.json();
-    console.log('Notification received:', record);
 
     if (!record || !record.user_id) {
       return new Response(
@@ -234,10 +249,82 @@ serve(async (req) => {
       );
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
+    // 0. Validate event against persisted database record to prevent spoofing
+    if (record.type === 'message') {
+      if (!record.id || !record.room_id) {
+        return new Response(
+          JSON.stringify({ error: 'Missing message id or room_id' }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
+      }
+
+      const { data: persistedMsg } = await supabase
+        .from('chat_messages')
+        .select('id, room_id, sender_id, text')
+        .eq('id', record.id)
+        .eq('room_id', record.room_id)
+        .maybeSingle();
+
+      const { data: recipientParticipant } = await supabase
+        .from('chat_participants')
+        .select('user_id')
+        .eq('room_id', record.room_id)
+        .eq('user_id', record.user_id)
+        .maybeSingle();
+
+      if (
+        !persistedMsg ||
+        !recipientParticipant ||
+        persistedMsg.sender_id === record.user_id
+      ) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid or non-existent message record' }),
+          {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
+      }
+
+      record.sender_id = persistedMsg.sender_id;
+      record.text = persistedMsg.text;
+    } else {
+      if (!record.id) {
+        return new Response(
+          JSON.stringify({ error: 'Missing notification id' }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
+      }
+
+      const { data: persistedNotif } = await supabase
+        .from('notifications')
+        .select('id, user_id, actor_id, type, resource_id')
+        .eq('id', record.id)
+        .eq('user_id', record.user_id)
+        .maybeSingle();
+
+      if (!persistedNotif) {
+        return new Response(
+          JSON.stringify({
+            error: 'Invalid or non-existent notification record',
+          }),
+          {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
+      }
+
+      record.type = persistedNotif.type;
+      record.actor_id = persistedNotif.actor_id;
+      record.resource_id = persistedNotif.resource_id;
+    }
 
     // 1. Fetch recipient subscriptions
     const { data: subscriptions, error: subError } = await supabase

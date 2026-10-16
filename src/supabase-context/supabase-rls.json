@@ -164,9 +164,9 @@
     "tablename": "area_purchases",
     "policyname": "Admins and area admins can delete area purchases",
     "permissive": "PERMISSIVE",
-    "roles": "{public}",
+    "roles": "{authenticated}",
     "cmd": "DELETE",
-    "qual": "(is_user_admin(auth.uid()) OR (EXISTS ( SELECT 1\n   FROM area_admins\n  WHERE ((area_admins.area_id = area_purchases.area_id) AND (area_admins.user_id = auth.uid())))))",
+    "qual": "is_user_admin(auth.uid())",
     "with_check": null
   },
   {
@@ -177,7 +177,7 @@
     "roles": "{public}",
     "cmd": "INSERT",
     "qual": null,
-    "with_check": "(is_user_admin(auth.uid()) OR (EXISTS ( SELECT 1\n   FROM area_admins\n  WHERE ((area_admins.area_id = area_purchases.area_id) AND (area_admins.user_id = auth.uid())))))"
+    "with_check": "is_user_admin(auth.uid())"
   },
   {
     "schemaname": "public",
@@ -322,11 +322,11 @@
   {
     "schemaname": "public",
     "tablename": "chat_participants",
-    "policyname": "own_can_delete",
+    "policyname": "admin_can_delete",
     "permissive": "PERMISSIVE",
-    "roles": "{public}",
+    "roles": "{authenticated}",
     "cmd": "DELETE",
-    "qual": "(auth.uid() = user_id)",
+    "qual": "is_user_admin(auth.uid())",
     "with_check": null
   },
   {
@@ -342,11 +342,11 @@
   {
     "schemaname": "public",
     "tablename": "chat_rooms",
-    "policyname": "participants_can_delete",
+    "policyname": "admin_can_delete",
     "permissive": "PERMISSIVE",
-    "roles": "{public}",
+    "roles": "{authenticated}",
     "cmd": "DELETE",
-    "qual": "is_chat_participant(id)",
+    "qual": "is_user_admin(auth.uid())",
     "with_check": null
   },
   {
@@ -586,7 +586,7 @@
     "permissive": "PERMISSIVE",
     "roles": "{public}",
     "cmd": "DELETE",
-    "qual": "( SELECT user_profiles.is_admin\n   FROM user_profiles\n  WHERE (user_profiles.id = auth.uid()))",
+    "qual": "is_user_admin(auth.uid())",
     "with_check": null
   },
   {
@@ -597,7 +597,7 @@
     "roles": "{public}",
     "cmd": "INSERT",
     "qual": null,
-    "with_check": "( SELECT user_profiles.is_admin\n   FROM user_profiles\n  WHERE (user_profiles.id = auth.uid()))"
+    "with_check": "is_user_admin(auth.uid())"
   },
   {
     "schemaname": "public",
@@ -616,7 +616,7 @@
     "permissive": "PERMISSIVE",
     "roles": "{public}",
     "cmd": "DELETE",
-    "qual": "(is_user_admin(auth.uid()) OR (user_id = auth.uid()) OR (EXISTS ( SELECT 1\n   FROM routes\n  WHERE (routes.user_creator_id = auth.uid()))) OR (EXISTS ( SELECT 1\n   FROM area_admins\n  WHERE (area_admins.user_id = auth.uid()))))",
+    "qual": "(is_user_admin(auth.uid()) OR ((user_id IS NOT NULL) AND (user_id = auth.uid())))",
     "with_check": null
   },
   {
@@ -627,7 +627,7 @@
     "roles": "{authenticated}",
     "cmd": "INSERT",
     "qual": null,
-    "with_check": "(is_user_admin(auth.uid()) OR (EXISTS ( SELECT 1\n   FROM routes\n  WHERE (routes.user_creator_id = auth.uid()))) OR (EXISTS ( SELECT 1\n   FROM area_admins\n  WHERE (area_admins.user_id = auth.uid()))) OR (EXISTS ( SELECT 1\n   FROM indoor_center_admins\n  WHERE (indoor_center_admins.user_id = auth.uid()))) OR (EXISTS ( SELECT 1\n   FROM indoor_center_routesetters\n  WHERE (indoor_center_routesetters.user_id = auth.uid()))))"
+    "with_check": "(is_user_admin(auth.uid()) OR ((user_id IS NOT NULL) AND (user_id = auth.uid())))"
   },
   {
     "schemaname": "public",
@@ -806,7 +806,7 @@
     "permissive": "PERMISSIVE",
     "roles": "{public}",
     "cmd": "SELECT",
-    "qual": "((private_ascent = false) OR (auth.uid() = user_id) OR (private_ascent IS NULL))",
+    "qual": "((auth.uid() = user_id) OR ((COALESCE(private_ascent, false) = false) AND is_profile_public(user_id) AND ((auth.uid() IS NULL) OR (NOT has_ascent_blocking(auth.uid(), user_id)))))",
     "with_check": null
   },
   {
@@ -1357,7 +1357,7 @@
     "roles": "{authenticated}",
     "cmd": "INSERT",
     "qual": null,
-    "with_check": "(actor_id = ( SELECT auth.uid() AS uid))"
+    "with_check": "((actor_id = ( SELECT auth.uid() AS uid)) AND (actor_id <> user_id) AND (NOT has_message_blocking(auth.uid(), user_id)))"
   },
   {
     "schemaname": "public",
@@ -1866,7 +1866,7 @@
     "permissive": "PERMISSIVE",
     "roles": "{authenticated}",
     "cmd": "SELECT",
-    "qual": "true",
+    "qual": "(EXISTS ( SELECT 1\n   FROM topos t\n  WHERE (t.id = topo_routes.topo_id)))",
     "with_check": null
   },
   {
@@ -1966,7 +1966,7 @@
     "permissive": "PERMISSIVE",
     "roles": "{public}",
     "cmd": "SELECT",
-    "qual": "true",
+    "qual": "(is_user_admin(auth.uid()) OR is_crag_equipper(crag_id) OR (EXISTS ( SELECT 1\n   FROM (crags c\n     JOIN areas a ON ((a.id = c.area_id)))\n  WHERE ((c.id = topos.crag_id) AND ((COALESCE(a.price, (0)::numeric) <= (0)::numeric) OR (EXISTS ( SELECT 1\n           FROM area_purchases ap\n          WHERE ((ap.area_id = a.id) AND (ap.user_id = auth.uid())))))))))",
     "with_check": null
   },
   {

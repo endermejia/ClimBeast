@@ -4,6 +4,8 @@
     "arguments": "p_request_id bigint",
     "return_type": "void",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  v_request record;\nBEGIN\n  -- 1. Identify the request\n  SELECT * INTO v_request FROM follow_requests WHERE id = p_request_id;\n  \n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Request not found';\n  END IF;\n\n  -- 2. Verify current user is the one being followed\n  IF v_request.followed_id <> auth.uid() THEN\n    RAISE EXCEPTION 'Not authorized';\n  END IF;\n\n  -- 3. Insert into user_follows ignoring conflicts\n  INSERT INTO user_follows (user_id, followed_user_id) \n  VALUES (v_request.follower_id, v_request.followed_id)\n  ON CONFLICT (user_id, followed_user_id) DO NOTHING;\n\n  -- 4. Delete the original notification for the followed user (clean up inbox)\n  DELETE FROM public.notifications \n  WHERE user_id = v_request.followed_id \n    AND actor_id = v_request.follower_id \n    AND type = 'follow_request';\n\n  -- 5. Notify the requester that their petition was accepted\n  INSERT INTO public.notifications (user_id, actor_id, type)\n  VALUES (v_request.follower_id, v_request.followed_id, 'follow_accepted');\n\n  -- 6. DELETE the request record\n  DELETE FROM follow_requests WHERE id = p_request_id;\nEND;\n",
     "description": null
   },
   {
@@ -11,6 +13,8 @@
     "arguments": "",
     "return_type": "trigger",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "definition": "\nBEGIN\n  IF NEW.text IS DISTINCT FROM OLD.text OR\n     NEW.sender_id IS DISTINCT FROM OLD.sender_id OR\n     NEW.room_id IS DISTINCT FROM OLD.room_id OR\n     NEW.created_at IS DISTINCT FROM OLD.created_at THEN\n    RAISE EXCEPTION 'Only read_at can be updated on chat messages.';\n  END IF;\n  RETURN NEW;\nEND;\n",
     "description": null
   },
   {
@@ -18,6 +22,17 @@
     "arguments": "",
     "return_type": "trigger",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "definition": "\nBEGIN\n  -- If is_admin is being changed\n  IF NEW.is_admin IS DISTINCT FROM OLD.is_admin THEN\n    -- Only allow if the person doing the update (auth.uid()) is ALREADY an admin\n    IF NOT public.is_user_admin(auth.uid()) THEN\n      RAISE EXCEPTION 'Only administrators can change the is_admin status.';\n    END IF;\n  END IF;\n  RETURN NEW;\nEND;\n",
+    "description": null
+  },
+  {
+    "name": "check_order_update",
+    "arguments": "",
+    "return_type": "trigger",
+    "security_definer": true,
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "definition": "\nBEGIN\n  IF NOT is_user_admin(auth.uid()) AND current_user NOT IN ('postgres', 'service_role') AND COALESCE(auth.jwt() ->> 'role', '') <> 'service_role' THEN\n    IF NEW.total_amount IS DISTINCT FROM OLD.total_amount OR\n       NEW.currency IS DISTINCT FROM OLD.currency OR\n       NEW.stripe_session_id IS DISTINCT FROM OLD.stripe_session_id OR\n       NEW.user_id IS DISTINCT FROM OLD.user_id OR\n       NEW.created_at IS DISTINCT FROM OLD.created_at THEN\n      RAISE EXCEPTION 'Only order status can be updated by the customer.';\n    END IF;\n  END IF;\n  RETURN NEW;\nEND;\n",
     "description": null
   },
   {
@@ -25,6 +40,8 @@
     "arguments": "p_area_id bigint, p_items jsonb, p_notes text",
     "return_type": "bigint",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  v_user_id       UUID := auth.uid();\n  v_is_area_admin BOOLEAN;\n  v_balance       JSONB;\n  v_available     NUMERIC(10,2);\n  v_total_calc    NUMERIC(10,2) := 0;\n  v_req_id        BIGINT;\n  v_item          RECORD;\n  v_mat_price     NUMERIC(10,2);\n  v_mat_active    BOOLEAN;\nBEGIN\n  IF v_user_id IS NULL THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n\n  SELECT EXISTS (\n    SELECT 1 FROM area_admins WHERE area_id = p_area_id AND user_id = v_user_id\n  ) OR is_user_admin(v_user_id) INTO v_is_area_admin;\n\n  IF NOT v_is_area_admin THEN\n    RAISE EXCEPTION 'User is not an admin of this area';\n  END IF;\n\n  v_balance := get_area_balance(p_area_id);\n  v_available := (v_balance->>'availableBalance')::NUMERIC;\n\n  INSERT INTO area_material_requests (area_id, user_id, status, total_amount, notes)\n  VALUES (p_area_id, v_user_id, 'pending', 0, p_notes)\n  RETURNING id INTO v_req_id;\n\n  FOR v_item IN SELECT * FROM jsonb_to_recordset(p_items) AS x(material_id BIGINT, quantity INT)\n  LOOP\n    SELECT price, active INTO v_mat_price, v_mat_active\n    FROM material_catalog WHERE id = v_item.material_id;\n\n    IF v_mat_price IS NULL OR NOT v_mat_active THEN\n      RAISE EXCEPTION 'Invalid or inactive material item: %', v_item.material_id;\n    END IF;\n\n    IF v_item.quantity <= 0 THEN\n      RAISE EXCEPTION 'Quantity must be positive';\n    END IF;\n\n    INSERT INTO area_material_request_items (request_id, material_id, quantity, unit_price)\n    VALUES (v_req_id, v_item.material_id, v_item.quantity, v_mat_price);\n\n    v_total_calc := v_total_calc + (v_mat_price * v_item.quantity);\n  END LOOP;\n\n  IF v_total_calc > v_available THEN\n    RAISE EXCEPTION 'Request total (%) exceeds available balance (%)', v_total_calc, v_available;\n  END IF;\n\n  UPDATE area_material_requests \n  SET total_amount = v_total_calc \n  WHERE id = v_req_id;\n\n  RETURN v_req_id;\nEND;\n",
     "description": null
   },
   {
@@ -32,6 +49,8 @@
     "arguments": "other_user_id uuid",
     "return_type": "uuid",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  existing_room_id uuid;\n  new_room_id uuid;\n  current_user_id uuid := auth.uid();\nBEGIN\n  IF current_user_id IS NULL THEN\n    RAISE EXCEPTION 'Not authenticated';\n  END IF;\n\n  IF other_user_id IS NULL OR other_user_id = current_user_id THEN\n    RAISE EXCEPTION 'Invalid recipient';\n  END IF;\n\n  IF NOT EXISTS (SELECT 1 FROM public.user_profiles WHERE id = other_user_id) THEN\n    RAISE EXCEPTION 'User not found';\n  END IF;\n\n  IF has_message_blocking(current_user_id, other_user_id) THEN\n    RAISE EXCEPTION 'Cannot start conversation due to user block';\n  END IF;\n\n  SELECT cp1.room_id INTO existing_room_id\n  FROM public.chat_participants cp1\n  INNER JOIN public.chat_participants cp2 ON cp1.room_id = cp2.room_id\n  WHERE cp1.user_id = current_user_id\n    AND cp2.user_id = other_user_id\n  LIMIT 1;\n\n  IF existing_room_id IS NOT NULL THEN\n    RETURN existing_room_id;\n  END IF;\n\n  IF NOT is_profile_public(other_user_id) AND NOT EXISTS (\n    SELECT 1 FROM public.user_follows\n    WHERE user_id = other_user_id AND followed_user_id = current_user_id\n  ) THEN\n    RAISE EXCEPTION 'Cannot start conversation with a private profile';\n  END IF;\n\n  new_room_id := gen_random_uuid();\n\n  INSERT INTO public.chat_rooms (id)\n  VALUES (new_room_id);\n\n  INSERT INTO public.chat_participants (room_id, user_id)\n  VALUES\n    (new_room_id, current_user_id),\n    (new_room_id, other_user_id);\n\n  RETURN new_room_id;\nEND;\n",
     "description": null
   },
   {
@@ -39,6 +58,8 @@
     "arguments": "",
     "return_type": "trigger",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n    v_center_id UUID := NEW.center_id;\n    v_user_id UUID := auth.uid();\n    v_is_admin BOOLEAN := is_user_admin(v_user_id) OR is_indoor_center_admin(v_center_id);\n    v_is_routesetter BOOLEAN := is_indoor_center_routesetter(v_center_id);\n    v_is_creator BOOLEAN := (OLD.user_creator_id IS NOT NULL AND OLD.user_creator_id = v_user_id);\n    v_can_edit BOOLEAN;\n    v_can_archive BOOLEAN;\nBEGIN\n    IF v_is_admin OR v_is_routesetter OR v_is_creator THEN\n        RETURN NEW;\n    END IF;\n\n    v_can_edit := (get_indoor_center_permission(v_center_id, 'can_edit_routes') = 'all');\n    v_can_archive := (get_indoor_center_permission(v_center_id, 'can_archive_routes') = 'all');\n\n    IF v_can_edit THEN\n        RETURN NEW;\n    END IF;\n\n    IF v_can_archive THEN\n        IF (NEW.name IS DISTINCT FROM OLD.name OR\n            NEW.grade IS DISTINCT FROM OLD.grade OR\n            NEW.color IS DISTINCT FROM OLD.color OR\n            NEW.climbing_kind IS DISTINCT FROM OLD.climbing_kind OR\n            NEW.slug IS DISTINCT FROM OLD.slug OR\n            NEW.topo_id IS DISTINCT FROM OLD.topo_id OR\n            NEW.center_id IS DISTINCT FROM OLD.center_id OR\n            NEW.user_creator_id IS DISTINCT FROM OLD.user_creator_id) THEN\n            RAISE EXCEPTION 'Only routesetters, center admins or route creators can edit route details';\n        END IF;\n        RETURN NEW;\n    END IF;\n\n    RAISE EXCEPTION 'Insufficient permissions to update indoor route';\nEND;\n",
     "description": null
   },
   {
@@ -46,6 +67,8 @@
     "arguments": "",
     "return_type": "trigger",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n    v_center_id UUID := NEW.center_id;\n    v_user_id UUID := auth.uid();\n    v_is_admin BOOLEAN := is_user_admin(v_user_id) OR is_indoor_center_admin(v_center_id);\n    v_is_routesetter BOOLEAN := is_indoor_center_routesetter(v_center_id);\n    v_is_creator BOOLEAN := (OLD.user_creator_id IS NOT NULL AND OLD.user_creator_id = v_user_id);\n    v_can_edit BOOLEAN;\n    v_can_archive BOOLEAN;\nBEGIN\n    IF v_is_admin OR v_is_routesetter OR v_is_creator THEN\n        RETURN NEW;\n    END IF;\n\n    v_can_edit := (get_indoor_center_permission(v_center_id, 'can_edit_topos') = 'all');\n    v_can_archive := (get_indoor_center_permission(v_center_id, 'can_archive_topos') = 'all');\n\n    IF v_can_edit THEN\n        RETURN NEW;\n    END IF;\n\n    IF v_can_archive THEN\n        IF (NEW.name IS DISTINCT FROM OLD.name OR\n            NEW.image_url IS DISTINCT FROM OLD.image_url OR\n            NEW.climbing_kind IS DISTINCT FROM OLD.climbing_kind OR\n            NEW.start_date IS DISTINCT FROM OLD.start_date OR\n            NEW.end_date IS DISTINCT FROM OLD.end_date OR\n            NEW.center_id IS DISTINCT FROM OLD.center_id OR\n            NEW.user_creator_id IS DISTINCT FROM OLD.user_creator_id) THEN\n            RAISE EXCEPTION 'Only routesetters, center admins or topo creators can edit topo details';\n        END IF;\n        RETURN NEW;\n    END IF;\n\n    RAISE EXCEPTION 'Insufficient permissions to update indoor topo';\nEND;\n",
     "description": null
   },
   {
@@ -53,6 +76,8 @@
     "arguments": "",
     "return_type": "trigger",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  other_user_id UUID;\n  v_secret text;\nBEGIN\n  SELECT user_id INTO other_user_id\n  FROM public.chat_participants\n  WHERE room_id = NEW.room_id AND user_id != NEW.sender_id\n  LIMIT 1;\n\n  SELECT decrypted_secret INTO v_secret\n  FROM vault.decrypted_secrets\n  WHERE name = 'notify_push_secret'\n  LIMIT 1;\n\n  IF other_user_id IS NOT NULL AND v_secret IS NOT NULL THEN\n    PERFORM\n      net.http_post(\n        url := 'https://eswbehepsagigvlytfxv.supabase.co/functions/v1/notify-push',\n        headers := jsonb_build_object(\n          'Content-Type', 'application/json',\n          'x-webhook-secret', v_secret\n        ),\n        body := jsonb_build_object(\n          'type', 'message',\n          'record', jsonb_build_object(\n            'id', NEW.id,\n            'type', 'message',\n            'user_id', other_user_id,\n            'sender_id', NEW.sender_id,\n            'text', NEW.text,\n            'room_id', NEW.room_id\n          )\n        ),\n        timeout_milliseconds := 5000\n      );\n  END IF;\n\n  RETURN NEW;\nEND;\n",
     "description": null
   },
   {
@@ -60,6 +85,8 @@
     "arguments": "",
     "return_type": "trigger",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  v_secret text;\nBEGIN\n  SELECT decrypted_secret INTO v_secret\n  FROM vault.decrypted_secrets\n  WHERE name = 'notify_push_secret'\n  LIMIT 1;\n\n  IF v_secret IS NOT NULL THEN\n    PERFORM\n      net.http_post(\n        url := 'https://eswbehepsagigvlytfxv.supabase.co/functions/v1/notify-push',\n        headers := jsonb_build_object(\n          'Content-Type', 'application/json',\n          'x-webhook-secret', v_secret\n        ),\n        body := jsonb_build_object(\n          'type', 'INSERT',\n          'table', 'notifications',\n          'record', row_to_json(NEW)\n        ),\n        timeout_milliseconds := 5000\n      );\n  END IF;\n  RETURN NEW;\nEND;\n",
     "description": null
   },
   {
@@ -67,6 +94,8 @@
     "arguments": "",
     "return_type": "TABLE(id uuid, name text, email character varying, avatar text, is_admin boolean)",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nBEGIN\n  -- Allow if superuser / postgres / service_role OR if authenticated user is admin\n  IF current_user NOT IN ('postgres', 'service_role') AND NOT is_user_admin(auth.uid()) THEN\n    RAISE EXCEPTION 'Access denied';\n  END IF;\n\n  RETURN QUERY\n  SELECT \n    p.id,\n    p.name,\n    u.email,\n    p.avatar,\n    COALESCE(p.is_admin, false) AS is_admin\n  FROM public.user_profiles p\n  LEFT JOIN auth.users u ON u.id = p.id;\nEND;\n",
     "description": null
   },
   {
@@ -74,6 +103,8 @@
     "arguments": "p_area_id bigint",
     "return_type": "jsonb",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  v_purchases_net NUMERIC(10,2) := 0;\n  v_donations_net NUMERIC(10,2) := 0;\n  v_withdrawn     NUMERIC(10,2) := 0;\n  v_reserved      NUMERIC(10,2) := 0;\n  v_available     NUMERIC(10,2) := 0;\nBEGIN\n  -- Verificación de permisos: Solo administradores de área o del sistema\n  IF NOT (is_area_equipper(p_area_id, auth.uid()) OR is_user_admin(auth.uid())) THEN\n    RAISE EXCEPTION 'Access denied';\n  END IF;\n\n  SELECT COALESCE(SUM(net_amount), 0) INTO v_purchases_net\n  FROM area_purchases WHERE area_id = p_area_id;\n\n  SELECT COALESCE(SUM(net_amount), 0) INTO v_donations_net\n  FROM area_donations WHERE area_id = p_area_id;\n\n  SELECT COALESCE(SUM(total_amount), 0) INTO v_withdrawn\n  FROM area_material_requests \n  WHERE area_id = p_area_id AND status IN ('approved', 'disposed');\n\n  SELECT COALESCE(SUM(total_amount), 0) INTO v_reserved\n  FROM area_material_requests \n  WHERE area_id = p_area_id AND status = 'pending';\n\n  v_available := (v_purchases_net + v_donations_net) - (v_withdrawn + v_reserved);\n\n  RETURN jsonb_build_object(\n    'totalPurchasesNet', v_purchases_net,\n    'totalDonationsNet', v_donations_net,\n    'totalWithdrawn',    v_withdrawn,\n    'totalReserved',     v_reserved,\n    'availableBalance',  GREATEST(v_available, 0.00)\n  );\nEND;\n",
     "description": null
   },
   {
@@ -81,6 +112,8 @@
     "arguments": "p_area_id bigint",
     "return_type": "json",
     "security_definer": true,
+    "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  v_donations JSON;\n  v_withdrawals JSON;\nBEGIN\n  -- Get recent donations\n  SELECT COALESCE(json_agg(d ORDER BY d.created_at DESC), '[]'::json)\n  INTO v_donations\n  FROM (\n    SELECT\n      ad.id,\n      ad.created_at,\n      ad.net_amount AS amount,\n      ad.donor_message AS message,\n      ad.anonymous,\n      CASE\n        WHEN ad.anonymous THEN NULL\n        ELSE p.name\n      END AS donor_name,\n      CASE\n        WHEN ad.anonymous THEN NULL\n        ELSE p.avatar\n      END AS donor_avatar\n    FROM area_donations ad\n    LEFT JOIN user_profiles p ON p.id = ad.user_id\n    WHERE ad.area_id = p_area_id\n    ORDER BY ad.created_at DESC\n    LIMIT 20\n  ) d;\n\n  -- Get fulfilled/delivered material requests\n  SELECT COALESCE(json_agg(w ORDER BY w.delivered_at DESC), '[]'::json)\n  INTO v_withdrawals\n  FROM (\n    SELECT\n      r.id,\n      COALESCE(r.updated_at, r.created_at) AS delivered_at,\n      r.total_amount AS amount,\n      r.notes,\n      COALESCE((\n        SELECT json_agg(json_build_object(\n          'name', m.name,\n          'quantity', i.quantity,\n          'unit', m.unit\n        ))\n        FROM area_material_request_items i\n        JOIN material_catalog m ON m.id = i.material_id\n        WHERE i.request_id = r.id\n      ), '[]'::json) AS items\n    FROM area_material_requests r\n    WHERE r.area_id = p_area_id\n      AND r.status = 'disposed'\n    ORDER BY r.updated_at DESC\n    LIMIT 20\n  ) w;\n\n  RETURN json_build_object(\n    'donations', v_donations,\n    'withdrawals', v_withdrawals\n  );\nEND;\n",
     "description": null
   },
   {
@@ -88,6 +121,8 @@
     "arguments": "",
     "return_type": "TABLE(climbing_kind climbing_kind[], crags_count integer, topos_count integer, grades jsonb, id integer, liked boolean, name text, shade_afternoon boolean, shade_all_day boolean, shade_morning boolean, slug text, sun_all_day boolean, user_creator_id uuid, created_at timestamp with time zone)",
     "security_definer": false,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres,=X/postgres}",
+    "definition": "\nBEGIN\n    RETURN QUERY\n    WITH topos_per_area AS (\n      SELECT c.area_id, count(*)::integer AS topos_count\n      FROM public.topos t\n      JOIN public.crags c ON t.crag_id = c.id\n      GROUP BY c.area_id\n    ),\n    crags_per_area AS (\n      SELECT c.area_id, count(*)::integer AS crags_count\n      FROM public.crags c\n      GROUP BY c.area_id\n    ),\n    likes AS (\n      SELECT al.area_id, true AS liked\n      FROM public.area_likes al\n      WHERE al.user_id = auth.uid()\n    ),\n    grades_per_area AS (\n      SELECT r_area.area_id,\n             jsonb_object_agg(r_area.grade::text, r_area.cnt) AS grades\n      FROM (\n        SELECT cr.area_id, r.grade, count(*) AS cnt\n        FROM public.routes r\n        JOIN public.crags cr ON cr.id = r.crag_id\n        WHERE r.grade IS NOT NULL\n        GROUP BY cr.area_id, r.grade\n        HAVING count(*) > 0\n        ORDER BY cr.area_id, r.grade\n      ) r_area\n      GROUP BY r_area.area_id\n    ),\n    kinds_per_area AS (\n      SELECT cr.area_id,\n             array_agg(DISTINCT r.climbing_kind) FILTER (WHERE r.climbing_kind IS NOT NULL) AS climbing_kinds\n      FROM public.routes r\n      JOIN public.crags cr ON cr.id = r.crag_id\n      GROUP BY cr.area_id\n    ),\n    shade_flags_per_area AS (\n      SELECT\n        cr.area_id,\n        bool_or(t.shade_morning = true  AND t.shade_afternoon = true)  AS shade_all_day,\n        bool_or(t.shade_morning = true  AND (t.shade_afternoon IS FALSE OR t.shade_afternoon = false))  AS shade_morning,\n        bool_or((t.shade_morning IS FALSE OR t.shade_morning = false) AND t.shade_afternoon = true)  AS shade_afternoon,\n        bool_or((t.shade_morning IS FALSE OR t.shade_morning = false) AND (t.shade_afternoon IS FALSE OR t.shade_afternoon = false)) AS sun_all_day\n      FROM public.topos t\n      JOIN public.crags cr ON cr.id = t.crag_id\n      GROUP BY cr.area_id\n    ),\n    base AS (\n      SELECT\n        a.id::integer AS id,\n        a.name,\n        a.slug,\n        COALESCE(l.liked, false) AS liked,\n        COALESCE(cpa.crags_count, 0)::integer AS crags_count,\n        COALESCE(tpa.topos_count, 0)::integer AS topos_count,\n        COALESCE(gpa.grades, '{}'::jsonb) AS grades,\n        COALESCE(kpa.climbing_kinds, ARRAY[]::public.climbing_kind[]) AS climbing_kind,\n        COALESCE(sfa.shade_all_day, false) AS shade_all_day,\n        COALESCE(sfa.shade_morning, false) AS shade_morning,\n        COALESCE(sfa.shade_afternoon, false) AS shade_afternoon,\n        COALESCE(sfa.sun_all_day, false) AS sun_all_day,\n        a.user_creator_id,\n        a.created_at\n      FROM public.areas a\n      LEFT JOIN crags_per_area cpa ON cpa.area_id = a.id\n      LEFT JOIN topos_per_area tpa ON tpa.area_id = a.id\n      LEFT JOIN likes l ON l.area_id = a.id\n      LEFT JOIN grades_per_area gpa ON gpa.area_id = a.id\n      LEFT JOIN kinds_per_area kpa ON kpa.area_id = a.id\n      LEFT JOIN shade_flags_per_area sfa ON sfa.area_id = a.id\n    )\n    SELECT\n        base.climbing_kind, base.crags_count, base.topos_count, base.grades,\n        base.id, base.liked, base.name, base.shade_afternoon, base.shade_all_day,\n        base.shade_morning, base.slug, base.sun_all_day, base.user_creator_id, base.created_at\n    FROM base\n    ORDER BY (base.liked::int) DESC, base.name ASC;\nEND;\n",
     "description": null
   },
   {
@@ -95,6 +130,8 @@
     "arguments": "",
     "return_type": "TABLE(climbing_kind climbing_kind[], topos_count bigint, topos jsonb, routes_count bigint, grades jsonb, id integer, liked boolean, name text, shade_afternoon boolean, shade_all_day boolean, shade_morning boolean, slug text, sun_all_day boolean, user_creator_id uuid, area_id integer, created_at timestamp with time zone, area_name text, area_slug text)",
     "security_definer": false,
+    "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nBEGIN\n    RETURN QUERY\n    WITH likes AS (\n      SELECT cl.crag_id, true AS liked\n      FROM public.crag_likes cl\n      WHERE cl.user_id = auth.uid()\n    ),\n    kinds_per_crag AS (\n      SELECT r.crag_id,\n        array_agg(DISTINCT r.climbing_kind) FILTER (WHERE r.climbing_kind IS NOT NULL) AS climbing_kinds,\n        count(*) AS routes_count\n      FROM public.routes r\n      GROUP BY r.crag_id\n    ),\n    grades_per_crag AS (\n      SELECT r_crag.crag_id,\n             jsonb_object_agg(r_crag.grade::text, r_crag.cnt) AS grades\n      FROM (\n        SELECT r.crag_id, r.grade, count(*) AS cnt\n        FROM public.routes r\n        WHERE r.grade IS NOT NULL\n        GROUP BY r.crag_id, r.grade\n        HAVING count(*) > 0\n        ORDER BY r.crag_id, r.grade\n      ) r_crag\n      GROUP BY r_crag.crag_id\n    ),\n    shade_flags_per_crag AS (\n      SELECT\n        cr.id AS crag_id,\n        bool_or(t.shade_morning = true  AND t.shade_afternoon = true)  AS shade_all_day,\n        bool_or(t.shade_morning = true  AND (t.shade_afternoon IS FALSE OR t.shade_afternoon = false))  AS shade_morning,\n        bool_or((t.shade_morning IS FALSE OR t.shade_morning = false) AND t.shade_afternoon = true)  AS shade_afternoon,\n        bool_or((t.shade_morning IS FALSE OR t.shade_morning = false) AND (t.shade_afternoon IS FALSE OR t.shade_afternoon = false)) AS sun_all_day,\n        count(t.*)::bigint AS topos_count,\n        COALESCE(jsonb_agg(jsonb_build_object('id', t.id, 'name', t.name, 'slug', t.slug)) FILTER (WHERE t.id IS NOT NULL), '[]'::jsonb) AS topos\n      FROM public.crags cr\n      LEFT JOIN public.topos t ON cr.id = t.crag_id\n      GROUP BY cr.id\n    )\n    SELECT\n      COALESCE(kpa.climbing_kinds, ARRAY[]::public.climbing_kind[]) AS climbing_kind,\n      COALESCE(sfc.topos_count, 0) AS topos_count,\n      COALESCE(sfc.topos, '[]'::jsonb) AS topos,\n      COALESCE(kpa.routes_count, 0) AS routes_count,\n      COALESCE(gpc.grades, '{}'::jsonb) AS grades,\n      c.id::integer AS id,\n      COALESCE(l.liked, false) AS liked,\n      c.name,\n      COALESCE(sfc.shade_afternoon, false) AS shade_afternoon,\n      COALESCE(sfc.shade_all_day, false) AS shade_all_day,\n      COALESCE(sfc.shade_morning, false) AS shade_morning,\n      c.slug,\n      COALESCE(sfc.sun_all_day, false) AS sun_all_day,\n      c.user_creator_id,\n      c.area_id::integer AS area_id,\n      c.created_at,\n      a.name AS area_name,\n      a.slug AS area_slug\n    FROM public.crags c\n           JOIN public.areas a ON c.area_id = a.id\n           LEFT JOIN kinds_per_crag kpa ON kpa.crag_id = c.id\n           LEFT JOIN grades_per_crag gpc ON gpc.crag_id = c.id\n           LEFT JOIN shade_flags_per_crag sfc ON sfc.crag_id = c.id\n           LEFT JOIN likes l ON l.crag_id = c.id\n    ORDER BY (COALESCE(l.liked, false)::int) DESC, c.name ASC;\nEND;\n",
     "description": null
   },
   {
@@ -102,6 +139,8 @@
     "arguments": "p_center_id uuid, p_permission_key text",
     "return_type": "text",
     "security_definer": true,
+    "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\n    SELECT COALESCE(\n        permissions->>p_permission_key,\n        CASE \n            WHEN p_permission_key IN ('can_create_routes', 'can_create_topos', 'can_create_lines') THEN 'routesetters'\n            ELSE 'routesetters_and_creator'\n        END\n    )\n    FROM public.indoor_centers\n    WHERE id = p_center_id;\n",
     "description": null
   },
   {
@@ -109,6 +148,8 @@
     "arguments": "min_lat double precision, min_lng double precision, max_lat double precision, max_lng double precision",
     "return_type": "TABLE(id uuid, name text, slug text, location text)",
     "security_definer": false,
+    "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nBEGIN\n  RETURN QUERY\n  SELECT\n    ic.id,\n    ic.name,\n    ic.slug,\n    ST_AsText(ic.location) as location\n  FROM\n    public.indoor_centers ic\n  WHERE\n    ic.location && ST_MakeEnvelope(min_lng, min_lat, max_lng, max_lat, 4326);\nEND;\n",
     "description": null
   },
   {
@@ -116,6 +157,8 @@
     "arguments": "p_user_id uuid",
     "return_type": "SETOF user_ascent_stat_record",
     "security_definer": false,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nBEGIN\n    RETURN QUERY\n    SELECT\n        ra.date as ascent_date,\n        ra.type::TEXT as ascent_type,\n        ra.grade as ascent_grade,\n        r.grade as route_grade,\n        r.name as route_name,\n        r.slug as route_slug,\n        c.slug as crag_slug,\n        a.slug as area_slug\n    FROM route_ascents ra\n    INNER JOIN routes r ON ra.route_id = r.id\n    INNER JOIN crags c ON r.crag_id = c.id\n    INNER JOIN areas a ON c.area_id = a.id\n    WHERE ra.user_id = p_user_id\n    ORDER BY ra.date DESC;\nEND;\n",
     "description": null
   },
   {
@@ -123,6 +166,8 @@
     "arguments": "",
     "return_type": "trigger",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "definition": "\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    -- If status is pending, create notification\n    INSERT INTO public.notifications (user_id, actor_id, type, resource_id)\n    VALUES (NEW.followed_id, NEW.follower_id, 'follow_request', NEW.id::text);\n  END IF;\n  RETURN NEW;\nEND;\n",
     "description": null
   },
   {
@@ -130,6 +175,8 @@
     "arguments": "",
     "return_type": "trigger",
     "security_definer": true,
+    "acl": "{postgres=X/postgres}",
+    "definition": "\nDECLARE\n  v_display_name text;\nBEGIN\n  v_display_name := COALESCE(\n    NEW.raw_user_meta_data->>'full_name',\n    NEW.raw_user_meta_data->>'name',\n    split_part(NEW.email, '@', 1)\n  );\n\n  INSERT INTO public.user_profiles (id, name, is_admin)\n  VALUES (NEW.id, v_display_name, false)\n  ON CONFLICT (id) DO NOTHING;\n\n  RETURN NEW;\nEND;\n",
     "description": null
   },
   {
@@ -137,6 +184,8 @@
     "arguments": "user_a uuid, user_b uuid",
     "return_type": "boolean",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\r\n  SELECT EXISTS (\r\n    SELECT 1 FROM user_blocks\r\n    WHERE (\r\n      (blocker_id = user_a AND blocked_id = user_b AND block_ascents = true)\r\n      OR\r\n      (blocker_id = user_b AND blocked_id = user_a AND block_ascents = true)\r\n    )\r\n  );\r\n",
     "description": null
   },
   {
@@ -144,6 +193,8 @@
     "arguments": "user_a uuid, user_b uuid",
     "return_type": "boolean",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\r\n  SELECT EXISTS (\r\n    SELECT 1 FROM user_blocks\r\n    WHERE (\r\n      (blocker_id = user_a AND blocked_id = user_b AND block_messages = true)\r\n      OR\r\n      (blocker_id = user_b AND blocked_id = user_a AND block_messages = true)\r\n    )\r\n  );\r\n",
     "description": null
   },
   {
@@ -151,6 +202,8 @@
     "arguments": "ascents jsonb",
     "return_type": "import_8a_ascents_result",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\ndeclare\n  _ascent jsonb;\n  _user_id uuid;\n  _is_admin boolean;\n\n  -- Stats\n  _inserted_ascents int := 0;\n  _skipped_ascents int := 0;\n  _created_areas int := 0;\n  _created_crags int := 0;\n  _created_routes int := 0;\n\n  -- Variables\n  _area_name text;\n  _area_slug text;\n  _area_8a_slug text;\n  _area_id bigint;\n\n  _crag_name text;\n  _crag_slug text;\n  _crag_8a_slug text;\n  _crag_id bigint;\n  _lat float;\n  _lng float;\n\n  _route_name text;\n  _route_slug text;\n  _route_8a_slug text;\n  _route_id bigint;\n  _grade int;\n  _climbing_kind public.climbing_kind;\n\n  _candidate_crag_slug text;\n  _candidate_route_slug text;\n  _all_route_8a_slugs text[];\n  _all_crag_8a_slugs text[];\n\n  _date date;\n  _style public.ascent_type;\n  _tries int;\n  _rating int;\n  _comment text;\n  _recommended boolean;\n\nbegin\n  _user_id := auth.uid();\n  _is_admin := is_user_admin(_user_id);\n\n  for _ascent in select * from jsonb_array_elements(ascents)\n  loop\n    -- Extract Area\n    _area_name := _ascent->>'area_name';\n    _area_slug := _ascent->>'area_slug';\n    _area_8a_slug := _ascent->>'area_8a_slug';\n\n    -- Buscar área en base a slugs de 8a o slug local\n    select id into _area_id from areas\n    where slug = _area_slug\n       or (_area_8a_slug is not null and eight_anu_crag_slugs @> array[_area_8a_slug])\n    limit 1;\n\n    -- Si no se encuentra, intentar buscar globalmente por slug para evitar errores de unicidad\n    if _area_id is null then\n      select id into _area_id from areas where slug = _area_slug limit 1;\n    end if;\n\n    if _area_id is null then\n      insert into areas (name, slug, eight_anu_crag_slugs, user_creator_id)\n      values (_area_name, _area_slug, case when _area_8a_slug is not null then array[_area_8a_slug] else null end, _user_id)\n      on conflict (slug) do update set\n        eight_anu_crag_slugs = case\n          when _area_8a_slug is not null and not (areas.eight_anu_crag_slugs @> array[_area_8a_slug])\n          then array_append(areas.eight_anu_crag_slugs, _area_8a_slug)\n          else areas.eight_anu_crag_slugs\n        end\n      returning id into _area_id;\n\n      if _area_id is null then\n         select id into _area_id from areas where slug = _area_slug;\n      else\n         _created_areas := _created_areas + 1;\n      end if;\n    else\n      if _area_8a_slug is not null and not (coalesce(areas.eight_anu_crag_slugs, array[]::text[]) @> array[_area_8a_slug]) then\n        update areas\n        set eight_anu_crag_slugs = array_append(coalesce(eight_anu_crag_slugs, array[]::text[]), _area_8a_slug)\n        where id = _area_id;\n      end if;\n    end if;\n\n    -- Extract Crag\n    _crag_name := coalesce(nullif(trim(_ascent->>'crag_name'), ''), 'General');\n    _crag_slug := coalesce(nullif(trim(_ascent->>'crag_slug'), ''), 'general');\n    _crag_8a_slug := _ascent->>'crag_8a_slug';\n    _lat := (_ascent->>'lat')::float;\n    _lng := (_ascent->>'lng')::float;\n\n    -- Buscar sector ÚNICAMENTE en el área actual\n    select id into _crag_id from crags\n    where area_id = _area_id\n      and (\n        slug = _crag_slug\n        or (_crag_8a_slug is not null and eight_anu_sector_slugs @> array[_crag_8a_slug])\n        or (_crag_slug is not null and eight_anu_sector_slugs @> array[_crag_slug])\n      )\n    limit 1;\n\n    if _crag_id is null then\n      _candidate_crag_slug := _crag_slug;\n      if exists (select 1 from crags where slug = _candidate_crag_slug) then\n        _candidate_crag_slug := _crag_slug || '-' || _area_slug;\n        while exists (select 1 from crags where slug = _candidate_crag_slug) loop\n          _candidate_crag_slug := _crag_slug || '-' || substr(md5(random()::text), 1, 5);\n        end loop;\n      end if;\n\n      _all_crag_8a_slugs := array_remove(array[_crag_8a_slug, _crag_slug], null);\n\n      insert into crags (name, slug, area_id, latitude, longitude, eight_anu_sector_slugs, user_creator_id)\n      values (_crag_name, _candidate_crag_slug, _area_id, _lat, _lng, case when cardinality(_all_crag_8a_slugs) > 0 then _all_crag_8a_slugs else null end, _user_id)\n      returning id into _crag_id;\n\n      _created_crags := _created_crags + 1;\n    else\n      if _crag_8a_slug is not null or _crag_slug is not null then\n        update crags\n        set eight_anu_sector_slugs = (\n          select array_agg(distinct s)\n          from unnest(array_cat(\n            coalesce(crags.eight_anu_sector_slugs, array[]::text[]),\n            array_remove(array[_crag_8a_slug, _crag_slug], null)\n          )) as s\n          where s is not null and s <> ''\n        )\n        where id = _crag_id\n          and not (coalesce(crags.eight_anu_sector_slugs, array[]::text[]) @> array_remove(array[_crag_8a_slug, _crag_slug], null));\n      end if;\n    end if;\n\n    -- Extract Route\n    _route_name := _ascent->>'route_name';\n    _route_slug := _ascent->>'route_slug';\n    _route_8a_slug := _ascent->>'route_8a_slug';\n    _grade := (_ascent->>'grade')::int;\n    _climbing_kind := (_ascent->>'climbing_kind')::public.climbing_kind;\n\n    -- Intentamos encontrar la vía ÚNICAMENTE en el sector actual (_crag_id)\n    select id into _route_id from routes\n    where crag_id = _crag_id\n      and (\n        slug = _route_slug\n        or (_route_8a_slug is not null and eight_anu_route_slugs @> array[_route_8a_slug])\n        or (_route_slug is not null and eight_anu_route_slugs @> array[_route_slug])\n      )\n    limit 1;\n\n    if _route_id is null then\n      _candidate_route_slug := _route_slug;\n      if exists (select 1 from routes where slug = _candidate_route_slug) then\n        _candidate_route_slug := _route_slug || '-' || _crag_slug;\n        while exists (select 1 from routes where slug = _candidate_route_slug) loop\n          _candidate_route_slug := _route_slug || '-' || substr(md5(random()::text), 1, 5);\n        end loop;\n      end if;\n\n      _all_route_8a_slugs := array_remove(array[_route_8a_slug, _route_slug], null);\n\n      if _ascent ? 'eight_anu_route_slugs' and jsonb_typeof(_ascent->'eight_anu_route_slugs') = 'array' then\n        select coalesce(array_agg(distinct elem), _all_route_8a_slugs) into _all_route_8a_slugs\n        from (\n          select unnest(_all_route_8a_slugs) as elem\n          union\n          select jsonb_array_elements_text(_ascent->'eight_anu_route_slugs') as elem\n        ) s\n        where elem is not null and elem <> '';\n      end if;\n\n      insert into routes (name, slug, crag_id, grade, climbing_kind, eight_anu_route_slugs, user_creator_id)\n      values (_route_name, _candidate_route_slug, _crag_id, _grade, _climbing_kind, case when cardinality(_all_route_8a_slugs) > 0 then _all_route_8a_slugs else null end, _user_id)\n      returning id into _route_id;\n\n      _created_routes := _created_routes + 1;\n    else\n      if _route_8a_slug is not null or _route_slug is not null then\n        update routes\n        set eight_anu_route_slugs = (\n          select array_agg(distinct s)\n          from unnest(array_cat(\n            coalesce(routes.eight_anu_route_slugs, array[]::text[]),\n            array_remove(array[_route_8a_slug, _route_slug], null)\n          )) as s\n          where s is not null and s <> ''\n        )\n        where id = _route_id\n          and not (coalesce(routes.eight_anu_route_slugs, array[]::text[]) @> array_remove(array[_route_8a_slug, _route_slug], null));\n      end if;\n    end if;\n\n    -- Extract Ascent Data\n    _date := (_ascent->>'date')::date;\n    _style := (_ascent->>'style')::public.ascent_type;\n    _tries := coalesce((_ascent->>'attempts')::int, (_ascent->>'tries')::int);\n    if _tries is null or _tries <= 0 then\n      if _style in ('os', 'f') then\n        _tries := 1;\n      else\n        _tries := null;\n      end if;\n    end if;\n    _rating := (_ascent->>'rating')::int;\n    _comment := _ascent->>'comment';\n    _recommended := (_ascent->>'recommended')::boolean;\n\n    -- Check if ascent exists\n    if not exists (select 1 from route_ascents where user_id = _user_id and route_id = _route_id and date = _date) then\n       insert into route_ascents (user_id, route_id, date, type, attempts, rate, comment, recommended, grade)\n       values (_user_id, _route_id, _date, _style, _tries, _rating, _comment, _recommended, _grade);\n       _inserted_ascents := _inserted_ascents + 1;\n    else\n       _skipped_ascents := _skipped_ascents + 1;\n    end if;\n\n  end loop;\n\n  return (\n    _inserted_ascents,\n    _skipped_ascents,\n    _created_areas,\n    _created_crags,\n    _created_routes\n  )::import_8a_ascents_result;\nend;\n",
     "description": null
   },
   {
@@ -158,6 +211,8 @@
     "arguments": "p_area_id bigint",
     "return_type": "boolean",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nBEGIN\n  RETURN EXISTS (\n    SELECT 1\n    FROM public.area_admins ae\n    WHERE ae.area_id = p_area_id\n      AND ae.user_id = (SELECT auth.uid())\n  );\nEND;\n",
     "description": null
   },
   {
@@ -165,6 +220,8 @@
     "arguments": "p_area_id bigint, p_uid uuid",
     "return_type": "boolean",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nBEGIN\n  RETURN EXISTS (\n    SELECT 1\n    FROM public.area_admins ae\n    WHERE ae.area_id = p_area_id\n      AND ae.user_id = p_uid\n  );\nEND;\n",
     "description": null
   },
   {
@@ -172,6 +229,8 @@
     "arguments": "room_id_param uuid",
     "return_type": "boolean",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\r\nBEGIN\r\n  RETURN EXISTS (\r\n    SELECT 1\r\n    FROM chat_participants\r\n    WHERE room_id = room_id_param\r\n      AND user_id = auth.uid()\r\n  );\r\nEND;\r\n",
     "description": null
   },
   {
@@ -179,6 +238,8 @@
     "arguments": "p_crag_id bigint",
     "return_type": "boolean",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "definition": "\nBEGIN\n  RETURN (\n    SELECT public.is_area_equipper(c.area_id)\n    FROM public.crags AS c\n    WHERE c.id = p_crag_id\n    LIMIT 1\n  );\nEND;\n",
     "description": null
   },
   {
@@ -186,6 +247,8 @@
     "arguments": "p_crag_id bigint, p_uid uuid",
     "return_type": "boolean",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nBEGIN\n  RETURN (\n    SELECT public.is_area_equipper(c.area_id, p_uid)\n    FROM public.crags AS c\n    WHERE c.id = p_crag_id\n    LIMIT 1\n  );\nEND;\n",
     "description": null
   },
   {
@@ -193,6 +256,8 @@
     "arguments": "p_center_id uuid",
     "return_type": "boolean",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nBEGIN\n  RETURN EXISTS (\n    SELECT 1 FROM public.indoor_center_admins\n    WHERE center_id = p_center_id AND user_id = auth.uid()\n  );\nEND;\n",
     "description": null
   },
   {
@@ -200,6 +265,8 @@
     "arguments": "p_center_id uuid",
     "return_type": "boolean",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nBEGIN\n  RETURN EXISTS (\n    SELECT 1 FROM public.indoor_center_routesetters\n    WHERE center_id = p_center_id AND user_id = auth.uid()\n  );\nEND;\n",
     "description": null
   },
   {
@@ -207,6 +274,8 @@
     "arguments": "p_user_id uuid",
     "return_type": "boolean",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\n  SELECT EXISTS (\n    SELECT 1 FROM user_profiles\n    WHERE id = p_user_id\n    AND private IS NOT TRUE\n  ) OR EXISTS (\n    SELECT 1 FROM user_follows\n    WHERE user_id = auth.uid() AND followed_user_id = p_user_id\n  );\n",
     "description": null
   },
   {
@@ -214,6 +283,8 @@
     "arguments": "p_room_id uuid, p_user_id uuid",
     "return_type": "boolean",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\r\n  SELECT EXISTS (\r\n    SELECT 1 FROM chat_participants cp\r\n    WHERE cp.room_id = p_room_id\r\n    AND cp.user_id != p_user_id\r\n    AND has_message_blocking(p_user_id, cp.user_id)\r\n  );\r\n",
     "description": null
   },
   {
@@ -221,6 +292,8 @@
     "arguments": "p_uid uuid",
     "return_type": "boolean",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "definition": "\n  SELECT EXISTS (\n    SELECT 1 FROM public.user_profiles\n    WHERE id = p_uid AND is_admin = true\n  );\n",
     "description": null
   },
   {
@@ -228,6 +301,17 @@
     "arguments": "",
     "return_type": "trigger",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "definition": "\nBEGIN\n    IF (TG_TABLE_NAME = 'indoor_topo_routes') THEN\n        IF (OLD.path IS NULL AND NEW.path IS NOT NULL) THEN\n            NEW.user_creator_id := COALESCE(auth.uid(), NEW.user_creator_id);\n        ELSE\n            NEW.user_creator_id := COALESCE(OLD.user_creator_id, NEW.user_creator_id, auth.uid());\n        END IF;\n    ELSE\n        NEW.user_creator_id := COALESCE(OLD.user_creator_id, NEW.user_creator_id, auth.uid());\n    END IF;\n    RETURN NEW;\nEND;\n",
+    "description": null
+  },
+  {
+    "name": "prevent_material_request_tampering",
+    "arguments": "",
+    "return_type": "trigger",
+    "security_definer": true,
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "definition": "\nBEGIN\n  -- Exempt service_role and postgres superusers or global admins\n  IF current_user IN ('postgres', 'service_role') OR (auth.jwt() ->> 'role') = 'service_role' OR is_user_admin(auth.uid()) THEN\n    RETURN NEW;\n  END IF;\n\n  IF NEW.total_amount IS DISTINCT FROM OLD.total_amount OR\n     NEW.area_id IS DISTINCT FROM OLD.area_id OR\n     NEW.user_id IS DISTINCT FROM OLD.user_id THEN\n    RAISE EXCEPTION 'No está permitido modificar el importe, el área o el solicitante de la solicitud';\n  END IF;\n\n  RETURN NEW;\nEND;\n",
     "description": null
   },
   {
@@ -235,6 +319,8 @@
     "arguments": "p_request_id bigint",
     "return_type": "void",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  v_request record;\nBEGIN\n  -- 1. Identify the request\n  SELECT * INTO v_request FROM follow_requests WHERE id = p_request_id;\n  \n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Request not found';\n  END IF;\n\n  -- 2. Verify current user is the one being followed\n  IF v_request.followed_id <> auth.uid() THEN\n    RAISE EXCEPTION 'Not authorized';\n  END IF;\n\n  -- 3. Delete the notification for the followed user\n  DELETE FROM public.notifications \n  WHERE user_id = v_request.followed_id \n    AND actor_id = v_request.follower_id \n    AND type = 'follow_request';\n\n  -- 4. DELETE the request record\n  DELETE FROM follow_requests WHERE id = p_request_id;\nEND;\n",
     "description": null
   },
   {
@@ -242,6 +328,8 @@
     "arguments": "",
     "return_type": "event_trigger",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  cmd record;\nBEGIN\n  FOR cmd IN\n    SELECT *\n    FROM pg_event_trigger_ddl_commands()\n    WHERE command_tag IN ('CREATE TABLE', 'CREATE TABLE AS', 'SELECT INTO')\n      AND object_type IN ('table','partitioned table')\n  LOOP\n     IF cmd.schema_name IS NOT NULL AND cmd.schema_name IN ('public') AND cmd.schema_name NOT IN ('pg_catalog','information_schema') AND cmd.schema_name NOT LIKE 'pg_toast%' AND cmd.schema_name NOT LIKE 'pg_temp%' THEN\n      BEGIN\n        EXECUTE format('alter table if exists %s enable row level security', cmd.object_identity);\n        RAISE LOG 'rls_auto_enable: enabled RLS on %', cmd.object_identity;\n      EXCEPTION\n        WHEN OTHERS THEN\n          RAISE LOG 'rls_auto_enable: failed to enable RLS on %', cmd.object_identity;\n      END;\n     ELSE\n        RAISE LOG 'rls_auto_enable: skip % (either system schema or not in enforced list: %.)', cmd.object_identity, cmd.schema_name;\n     END IF;\n  END LOOP;\nEND;\n",
     "description": null
   },
   {
@@ -249,6 +337,8 @@
     "arguments": "p_query text",
     "return_type": "jsonb",
     "security_definer": false,
+    "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\ndeclare\n  normalized_query text;\n  results jsonb;\nbegin\n  -- Normalize query: remove accents\n  normalized_query := unaccent(lower(p_query));\n  \n  with matched_areas as (\n    select \n      'area' as type,\n      name as title,\n      '/area/' || slug as href,\n      '@tui.map-pin' as icon,\n      null::text as subtitle,\n      null::int as difficulty,\n      null::climbing_kind as climbing_kind,\n      null::jsonb as data,\n      similarity(unaccent(lower(name)), normalized_query) as sml\n    from areas\n    where unaccent(lower(name)) % normalized_query or name ilike '%' || p_query || '%'\n    order by sml desc\n    limit 5\n  ),\n  matched_crags as (\n    select \n      'crag' as type,\n      c.name as title,\n      '/area/' || a.slug || '/' || c.slug as href,\n      '@tui.mountain' as icon,\n      a.name as subtitle,\n      null::int as difficulty,\n      null::climbing_kind as climbing_kind,\n      null::jsonb as data,\n      similarity(unaccent(lower(c.name)), normalized_query) as sml\n    from crags c\n    join areas a on c.area_id = a.id\n    where unaccent(lower(c.name)) % normalized_query or c.name ilike '%' || p_query || '%'\n    order by sml desc\n    limit 5\n  ),\n  matched_routes as (\n    select \n      'route' as type,\n      r.name as title,\n      '/area/' || a.slug || '/' || c.slug || '/' || r.slug as href,\n      '@tui.route' as icon,\n      a.name || ' > ' || c.name as subtitle,\n      r.grade as difficulty,\n      r.climbing_kind as climbing_kind,\n      null::jsonb as data,\n      similarity(unaccent(lower(r.name)), normalized_query) as sml\n    from routes r\n    join crags c on r.crag_id = c.id\n    join areas a on c.area_id = a.id\n    where unaccent(lower(r.name)) % normalized_query or r.name ilike '%' || p_query || '%'\n    order by sml desc\n    limit 10\n  ),\n  matched_users as (\n    select \n      'user' as type,\n      name as title,\n      '/profile/' || id as href,\n      avatar as icon,\n      null::text as subtitle,\n      null::int as difficulty,\n      null::climbing_kind as climbing_kind,\n      jsonb_build_object('id', id, 'avatar', avatar) as data,\n      similarity(unaccent(lower(name)), normalized_query) as sml\n    from user_profiles\n    where unaccent(lower(name)) % normalized_query or name ilike '%' || p_query || '%'\n    order by sml desc\n    limit 5\n  ),\n  matched_indoors as (\n    select \n      'indoor' as type,\n      name as title,\n      '/indoor/' || slug as href,\n      avatar_url as icon,\n      city as subtitle,\n      null::int as difficulty,\n      null::climbing_kind as climbing_kind,\n      jsonb_build_object('id', id, 'avatar_url', avatar_url) as data,\n      similarity(unaccent(lower(name)), normalized_query) as sml\n    from indoor_centers\n    where unaccent(lower(name)) % normalized_query or name ilike '%' || p_query || '%'\n    order by sml desc\n    limit 5\n  )\n  select jsonb_build_object(\n    'areas', coalesce((select jsonb_agg(to_jsonb(ma) - 'sml') from matched_areas ma), '[]'::jsonb),\n    'crags', coalesce((select jsonb_agg(to_jsonb(mc) - 'sml') from matched_crags mc), '[]'::jsonb),\n    'routes', coalesce((select jsonb_agg(to_jsonb(mr) - 'sml') from matched_routes mr), '[]'::jsonb),\n    'users', coalesce((select jsonb_agg(to_jsonb(mu) - 'sml') from matched_users mu), '[]'::jsonb),\n    'indoors', coalesce((select jsonb_agg(to_jsonb(mi) - 'sml') from matched_indoors mi), '[]'::jsonb)\n  ) into results;\n\n  return results;\nend;\n",
     "description": null
   },
   {
@@ -256,6 +346,8 @@
     "arguments": "r routes",
     "return_type": "text",
     "security_definer": false,
+    "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\n  select r.name || ' ' || c.name || ' ' || a.name\n  from crags c\n  join areas a on a.id = c.area_id\n  where c.id = r.crag_id;\n",
     "description": null
   },
   {
@@ -263,6 +355,8 @@
     "arguments": "p_area_id bigint",
     "return_type": "boolean",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  v_user uuid := auth.uid();\n  v_exists boolean;\nBEGIN\n  IF v_user IS NULL THEN\n    RAISE EXCEPTION 'auth.uid() is null - user must be authenticated';\n  END IF;\n  IF p_area_id IS NULL OR p_area_id <= 0 THEN\n    RAISE EXCEPTION 'p_area_id is required and must be > 0';\n  END IF;\n  PERFORM 1 FROM public.areas WHERE id = p_area_id;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Area with id % not found', p_area_id;\n  END IF;\n\n  SELECT EXISTS (\n    SELECT 1 FROM public.area_likes\n    WHERE area_id = p_area_id AND user_id = v_user\n  ) INTO v_exists;\n\n  IF v_exists THEN\n    DELETE FROM public.area_likes WHERE area_id = p_area_id AND user_id = v_user;\n    RETURN false;\n  ELSE\n    INSERT INTO public.area_likes(area_id, user_id, created_at)\n    VALUES (p_area_id, v_user, now());\n    RETURN true;\n  END IF;\nEND;\n",
     "description": null
   },
   {
@@ -270,6 +364,8 @@
     "arguments": "p_comment_id bigint",
     "return_type": "boolean",
     "security_definer": false,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\ndeclare\n  v_user_id uuid := auth.uid();\n  v_exists boolean;\nbegin\n  select exists (\n    select 1 from route_ascent_comment_likes where user_id = v_user_id and comment_id = p_comment_id\n  ) into v_exists;\n  if v_exists then\n    delete from route_ascent_comment_likes where user_id = v_user_id and comment_id = p_comment_id;\n    return false;\n  else\n    insert into route_ascent_comment_likes (user_id, comment_id) values (v_user_id, p_comment_id);\n    return true;\n  end if;\nend;\n",
     "description": null
   },
   {
@@ -277,6 +373,8 @@
     "arguments": "p_crag_id bigint",
     "return_type": "boolean",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  v_user uuid := auth.uid();\n  v_exists boolean;\nBEGIN\n  IF v_user IS NULL THEN\n    RAISE EXCEPTION 'auth.uid() is null - user must be authenticated';\n  END IF;\n  IF p_crag_id IS NULL OR p_crag_id <= 0 THEN\n    RAISE EXCEPTION 'p_crag_id is required and must be > 0';\n  END IF;\n  PERFORM 1 FROM public.crags WHERE id = p_crag_id;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Crag with id % not found', p_crag_id;\n  END IF;\n\n  SELECT EXISTS (\n    SELECT 1 FROM public.crag_likes\n    WHERE crag_id = p_crag_id AND user_id = v_user\n  ) INTO v_exists;\n\n  IF v_exists THEN\n    DELETE FROM public.crag_likes WHERE crag_id = p_crag_id AND user_id = v_user;\n    RETURN false;\n  ELSE\n    INSERT INTO public.crag_likes(crag_id, user_id, created_at)\n    VALUES (p_crag_id, v_user, now());\n    RETURN true;\n  END IF;\nEND;\n",
     "description": null
   },
   {
@@ -284,6 +382,8 @@
     "arguments": "p_center_id uuid",
     "return_type": "boolean",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  v_user uuid := auth.uid();\n  v_exists boolean;\nBEGIN\n  IF v_user IS NULL THEN\n    RAISE EXCEPTION 'auth.uid() is null - user must be authenticated';\n  END IF;\n  IF p_center_id IS NULL THEN\n    RAISE EXCEPTION 'p_center_id is required';\n  END IF;\n  PERFORM 1 FROM public.indoor_centers WHERE id = p_center_id;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'Indoor center with id % not found', p_center_id;\n  END IF;\n  \n  SELECT EXISTS (\n    SELECT 1 FROM public.indoor_center_likes\n    WHERE center_id = p_center_id AND user_id = v_user\n  ) INTO v_exists;\n\n  IF v_exists THEN\n    DELETE FROM public.indoor_center_likes WHERE center_id = p_center_id AND user_id = v_user;\n    RETURN false;\n  ELSE\n    INSERT INTO public.indoor_center_likes(center_id, user_id, created_at)\n    VALUES (p_center_id, v_user, now());\n    RETURN true;\n  END IF;\nEND;\n",
     "description": null
   },
   {
@@ -291,6 +391,8 @@
     "arguments": "p_route_ascent_id bigint",
     "return_type": "boolean",
     "security_definer": false,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  v_user uuid := auth.uid();\n  v_exists boolean;\nBEGIN\n  IF v_user IS NULL THEN RAISE EXCEPTION 'auth.uid() is null - user must be authenticated'; END IF;\n  SELECT EXISTS (SELECT 1 FROM public.route_ascent_likes WHERE route_ascent_id = p_route_ascent_id AND user_id = v_user) INTO v_exists;\n  IF v_exists THEN\n    DELETE FROM public.route_ascent_likes WHERE route_ascent_id = p_route_ascent_id AND user_id = v_user;\n    RETURN false;\n  ELSE\n    INSERT INTO public.route_ascent_likes (route_ascent_id, user_id) VALUES (p_route_ascent_id, v_user);\n    RETURN true;\n  END IF;\nEND;\n",
     "description": null
   },
   {
@@ -298,6 +400,8 @@
     "arguments": "p_route_id bigint",
     "return_type": "boolean",
     "security_definer": false,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  v_user uuid := auth.uid();\n  v_exists boolean;\nBEGIN\n  IF v_user IS NULL THEN RAISE EXCEPTION 'auth.uid() is null - user must be authenticated'; END IF;\n  SELECT EXISTS (SELECT 1 FROM public.route_likes WHERE route_id = p_route_id AND user_id = v_user) INTO v_exists;\n  IF v_exists THEN\n    DELETE FROM public.route_likes WHERE route_id = p_route_id AND user_id = v_user;\n    RETURN false;\n  ELSE\n    INSERT INTO public.route_likes (route_id, user_id) VALUES (p_route_id, v_user);\n    RETURN true;\n  END IF;\nEND;\n",
     "description": null
   },
   {
@@ -305,6 +409,8 @@
     "arguments": "p_route_id bigint",
     "return_type": "boolean",
     "security_definer": false,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  v_user uuid := auth.uid();\n  v_exists boolean;\nBEGIN\n  IF v_user IS NULL THEN RAISE EXCEPTION 'auth.uid() is null - user must be authenticated'; END IF;\n  SELECT EXISTS (SELECT 1 FROM public.route_projects WHERE route_id = p_route_id AND user_id = v_user) INTO v_exists;\n  IF v_exists THEN\n    DELETE FROM public.route_projects WHERE route_id = p_route_id AND user_id = v_user;\n    RETURN false;\n  ELSE\n    INSERT INTO public.route_projects (route_id, user_id) VALUES (p_route_id, v_user);\n    RETURN true;\n  END IF;\nEND;\n",
     "description": null
   },
   {
@@ -312,6 +418,8 @@
     "arguments": "p_target_area_id bigint, p_source_area_ids bigint[], p_new_name text",
     "return_type": "void",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\r\nDECLARE\r\n    _all_slugs text[];\r\n    _duplicate_group record;\r\nBEGIN\r\n    -- 1. Verificación: Solo administradores\r\n    IF NOT is_user_admin(auth.uid()) THEN\r\n        RAISE EXCEPTION 'Only admins can unify areas';\r\n    END IF;\r\n\r\n    -- 2. Recolectar slugs\r\n    SELECT array_agg(DISTINCT s)\r\n    INTO _all_slugs\r\n    FROM (\r\n        SELECT unnest(COALESCE(eight_anu_crag_slugs, ARRAY[]::text[])) as s FROM public.areas\r\n        WHERE id = p_target_area_id OR id = ANY(p_source_area_ids)\r\n        UNION\r\n        SELECT slug FROM public.areas WHERE id = ANY(p_source_area_ids)\r\n    ) t;\r\n\r\n    -- 3. Mover sectores al área destino\r\n    UPDATE public.crags SET area_id = p_target_area_id WHERE area_id = ANY(p_source_area_ids);\r\n\r\n    -- 4. Unificar sectores con el mismo nombre en el área destino\r\n    FOR _duplicate_group IN (\r\n        SELECT array_agg(id ORDER BY id ASC) as ids\r\n        FROM public.crags\r\n        WHERE area_id = p_target_area_id\r\n        GROUP BY lower(name)\r\n        HAVING count(*) > 1\r\n    )\r\n    LOOP\r\n        PERFORM public.unify_crags(\r\n            _duplicate_group.ids[1],\r\n            _duplicate_group.ids[2:array_length(_duplicate_group.ids, 1)],\r\n            (SELECT name FROM public.crags WHERE id = _duplicate_group.ids[1])\r\n        );\r\n    END LOOP;\r\n\r\n    -- 5. Actualizar área destino\r\n    UPDATE public.areas\r\n    SET name = COALESCE(NULLIF(p_new_name, ''), name),\r\n        eight_anu_crag_slugs = _all_slugs\r\n    WHERE id = p_target_area_id;\r\n\r\n    -- 6. Borrar áreas origen\r\n    DELETE FROM public.areas WHERE id = ANY(p_source_area_ids);\r\nEND;\r\n",
     "description": null
   },
   {
@@ -319,6 +427,8 @@
     "arguments": "p_target_crag_id bigint, p_source_crag_ids bigint[], p_new_name text",
     "return_type": "void",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\r\nDECLARE\r\n    _all_slugs text[];\r\n    _duplicate_group record;\r\nBEGIN\r\n    -- 1. Verificación: Solo administradores\r\n    IF NOT is_user_admin(auth.uid()) THEN\r\n        RAISE EXCEPTION 'Only admins can unify crags';\r\n    END IF;\r\n\r\n    -- 2. Recolectar slugs\r\n    SELECT array_agg(DISTINCT s)\r\n    INTO _all_slugs\r\n    FROM (\r\n        SELECT unnest(COALESCE(eight_anu_sector_slugs, ARRAY[]::text[])) as s FROM public.crags\r\n        WHERE id = p_target_crag_id OR id = ANY(p_source_crag_ids)\r\n        UNION\r\n        SELECT slug FROM public.crags WHERE id = ANY(p_source_crag_ids)\r\n    ) t;\r\n\r\n    -- 3. Mover rutas al sector destino\r\n    UPDATE public.routes SET crag_id = p_target_crag_id WHERE crag_id = ANY(p_source_crag_ids);\r\n\r\n    -- 4. Unificar rutas con el mismo nombre en el sector destino\r\n    FOR _duplicate_group IN (\r\n        SELECT array_agg(id ORDER BY id ASC) as ids\r\n        FROM public.routes\r\n        WHERE crag_id = p_target_crag_id\r\n        GROUP BY lower(name)\r\n        HAVING count(*) > 1\r\n    )\r\n    LOOP\r\n        PERFORM public.unify_routes(\r\n            _duplicate_group.ids[1],\r\n            _duplicate_group.ids[2:array_length(_duplicate_group.ids, 1)],\r\n            (SELECT name FROM public.routes WHERE id = _duplicate_group.ids[1])\r\n        );\r\n    END LOOP;\r\n\r\n    -- 5. Actualizar sector destino\r\n    UPDATE public.crags\r\n    SET name = COALESCE(NULLIF(p_new_name, ''), name),\r\n        eight_anu_sector_slugs = _all_slugs\r\n    WHERE id = p_target_crag_id;\r\n\r\n    -- 6. Borrar sectores origen\r\n    DELETE FROM public.crags WHERE id = ANY(p_source_crag_ids);\r\nEND;\r\n",
     "description": null
   },
   {
@@ -326,6 +436,8 @@
     "arguments": "p_target_route_id bigint, p_source_route_ids bigint[], p_new_name text",
     "return_type": "void",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\r\nDECLARE\r\n    _all_slugs text[];\r\nBEGIN\r\n    -- 1. Verificación: Solo administradores\r\n    IF NOT is_user_admin(auth.uid()) THEN\r\n        RAISE EXCEPTION 'Only admins can unify routes';\r\n    END IF;\r\n\r\n    -- 2. Recolectar slugs\r\n    SELECT array_agg(DISTINCT s)\r\n    INTO _all_slugs\r\n    FROM (\r\n        SELECT unnest(COALESCE(eight_anu_route_slugs, ARRAY[]::text[])) as s FROM public.routes\r\n        WHERE id = p_target_route_id OR id = ANY(p_source_route_ids)\r\n        UNION\r\n        SELECT slug FROM public.routes WHERE id = ANY(p_source_route_ids)\r\n    ) t;\r\n\r\n    -- 3. Limpiar duplicados en tablas con restricciones UNIQUE\r\n    DELETE FROM public.route_likes\r\n    WHERE route_id = ANY(p_source_route_ids)\r\n      AND user_id IN (SELECT user_id FROM public.route_likes WHERE route_id = p_target_route_id);\r\n\r\n    DELETE FROM public.route_projects\r\n    WHERE route_id = ANY(p_source_route_ids)\r\n      AND user_id IN (SELECT user_id FROM public.route_projects WHERE route_id = p_target_route_id);\r\n\r\n    DELETE FROM public.route_equippers\r\n    WHERE route_id = ANY(p_source_route_ids)\r\n      AND equipper_id IN (SELECT equipper_id FROM public.route_equippers WHERE route_id = p_target_route_id);\r\n\r\n    DELETE FROM public.topo_routes\r\n    WHERE route_id = ANY(p_source_route_ids)\r\n      AND topo_id IN (SELECT topo_id FROM public.topo_routes WHERE route_id = p_target_route_id);\r\n\r\n    -- 4. Reasignar registros a la vía destino\r\n    UPDATE public.route_ascents SET route_id = p_target_route_id WHERE route_id = ANY(p_source_route_ids);\r\n    UPDATE public.route_likes SET route_id = p_target_route_id WHERE route_id = ANY(p_source_route_ids);\r\n    UPDATE public.route_projects SET route_id = p_target_route_id WHERE route_id = ANY(p_source_route_ids);\r\n    UPDATE public.route_equippers SET route_id = p_target_route_id WHERE route_id = ANY(p_source_route_ids);\r\n    UPDATE public.topo_routes SET route_id = p_target_route_id WHERE route_id = ANY(p_source_route_ids);\r\n\r\n    -- 5. Actualizar vía destino\r\n    UPDATE public.routes\r\n    SET name = COALESCE(NULLIF(p_new_name, ''), name),\r\n        eight_anu_route_slugs = _all_slugs\r\n    WHERE id = p_target_route_id;\r\n\r\n    -- 6. Borrar origen\r\n    DELETE FROM public.routes WHERE id = ANY(p_source_route_ids);\r\nEND;\r\n",
     "description": null
   },
   {
@@ -333,6 +445,8 @@
     "arguments": "",
     "return_type": "trigger",
     "security_definer": false,
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n    item RECORD;\nBEGIN\n    IF (TG_OP = 'UPDATE' AND NEW.status = 'paid' AND OLD.status = 'pending') THEN\n        FOR item IN \n            SELECT * FROM order_items WHERE order_id = NEW.id AND item_type = 'merchandise'\n        LOOP\n            IF item.selected_size IS NOT NULL THEN\n                UPDATE merchandise_stock\n                SET stock = GREATEST(0, stock - COALESCE(item.quantity, 1))\n                WHERE item_id = item.item_id AND size = item.selected_size;\n            END IF;\n        END LOOP;\n    ELSIF (TG_OP = 'UPDATE' AND NEW.status IN ('cancelled', 'refunded') AND OLD.status IN ('paid', 'shipped', 'delivered')) THEN\n        FOR item IN \n            SELECT * FROM order_items WHERE order_id = NEW.id AND item_type = 'merchandise'\n        LOOP\n            IF item.selected_size IS NOT NULL THEN\n                UPDATE merchandise_stock\n                SET stock = stock + COALESCE(item.quantity, 1)\n                WHERE item_id = item.item_id AND size = item.selected_size;\n            END IF;\n        END LOOP;\n    END IF;\n    RETURN NEW;\nEND;\n",
     "description": null
   },
   {
@@ -340,6 +454,8 @@
     "arguments": "",
     "return_type": "trigger",
     "security_definer": true,
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "definition": "DECLARE\r\n    _route_id bigint;\r\n    _ascent_count int;\r\n    _new_grade int;\r\n    _route_ids bigint[];\r\n    _rid bigint;\r\nBEGIN\r\n    -- Determinar qué route_id(s) necesitan actualizarse\r\n    IF TG_OP = 'INSERT' THEN\r\n        _route_ids := ARRAY[NEW.route_id];\r\n    ELSIF TG_OP = 'DELETE' THEN\r\n        _route_ids := ARRAY[OLD.route_id];\r\n    ELSE -- UPDATE\r\n        IF OLD.route_id = NEW.route_id THEN\r\n            _route_ids := ARRAY[NEW.route_id];\r\n        ELSE\r\n            _route_ids := ARRAY[OLD.route_id, NEW.route_id];\r\n        END IF;\r\n    END IF;\r\n\r\n    -- Iterar sobre los route_ids afectados (usualmente uno)\r\n    FOREACH _rid IN ARRAY _route_ids LOOP\r\n        -- Contar encadenes totales para esta vía\r\n        SELECT count(*) INTO _ascent_count\r\n        FROM route_ascents\r\n        WHERE route_id = _rid;\r\n\r\n        -- Solo actualizar si hay más de 3 encadenes\r\n        IF _ascent_count > 3 THEN\r\n            -- Calcular la mediana (PERCENTILE_DISC devuelve un valor existente del conjunto)\r\n            -- Usamos PERCENTILE_DISC(0.5) para obtener la mediana discreta.\r\n            SELECT PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY grade)\r\n            INTO _new_grade\r\n            FROM route_ascents\r\n            WHERE route_id = _rid\r\n              AND type != 'attempt'\r\n              AND grade IS NOT NULL;\r\n\r\n            -- Actualizar la vía con el nuevo grado\r\n            IF _new_grade IS NOT NULL THEN\r\n                UPDATE routes\r\n                SET grade = _new_grade\r\n                WHERE id = _rid;\r\n            END IF;\r\n        END IF;\r\n    END LOOP;\r\n\r\n    RETURN NULL; -- El valor de retorno se ignora en triggers AFTER\r\nEND;",
     "description": null
   },
   {
@@ -347,6 +463,17 @@
     "arguments": "",
     "return_type": "trigger",
     "security_definer": false,
+    "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nBEGIN\n    NEW.updated_at = now();\n    RETURN NEW;\nEND;\n",
+    "description": null
+  },
+  {
+    "name": "verify_notify_push_secret",
+    "arguments": "p_secret text",
+    "return_type": "boolean",
+    "security_definer": true,
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  v_expected text;\nBEGIN\n  IF p_secret IS NULL OR length(p_secret) = 0 THEN\n    RETURN false;\n  END IF;\n\n  SELECT decrypted_secret INTO v_expected\n  FROM vault.decrypted_secrets\n  WHERE name = 'notify_push_secret'\n  LIMIT 1;\n\n  RETURN v_expected IS NOT NULL AND v_expected = p_secret;\nEND;\n",
     "description": null
   }
 ]
