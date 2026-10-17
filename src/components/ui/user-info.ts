@@ -1,5 +1,5 @@
 import { CommonModule, LowerCasePipe } from '@angular/common';
-import { Component, input, inject, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 
 import { TuiIcon } from '@taiga-ui/core';
 import { TuiCountryIsoCode } from '@taiga-ui/i18n';
@@ -82,8 +82,7 @@ import { AvatarUrlPipe, InitialsPipe } from '../../pipes';
             class="flex items-center gap-2"
             [tuiSkeleton]="loading() ? 'country, city' : false"
           >
-            {{ country() ? countriesNames()[country()!] : ''
-            }}{{ country() && city() ? ', ' : '' }}{{ city() || '' }}
+            {{ locationText() }}
           </span>
           @if (age(); as userAge) {
             |
@@ -147,4 +146,17 @@ export class UserInfoComponent {
   nameClick = output<void>();
 
   protected readonly countriesNames = inject(TUI_COUNTRIES);
+
+  // Derived location string formatted with reactive signal memoization
+  // to avoid template re-evaluation and direct dictionary lookups on change detection ticks.
+  protected readonly locationText = computed(() => {
+    const countryCode = this.country();
+    const userCity = this.city();
+    const countryName = countryCode ? this.countriesNames()[countryCode] : '';
+
+    if (countryName && userCity) {
+      return `${countryName}, ${userCity}`;
+    }
+    return countryName || userCity || '';
+  });
 }
