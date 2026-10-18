@@ -46,14 +46,14 @@ import {
       class="relative w-full h-full bg-(--tui-background-neutral-1) md:rounded-xl md:border md:border-(--tui-border-normal) overflow-hidden cursor-grab active:cursor-grabbing touch-none"
       data-swipe-block
       #scrollContainer
-      (wheel.zoneless)="zoomPan.onWheel($event)"
-      (touchstart.zoneless)="zoomPan.onTouchStart($event)"
-      (touchmove.zoneless)="zoomPan.onTouchMove($event)"
-      (touchend.zoneless)="zoomPan.onTouchEnd()"
-      (mousedown.zoneless)="zoomPan.onMouseDown($event)"
-      (mousemove.zoneless)="zoomPan.onMouseMove($event)"
-      (mouseup.zoneless)="zoomPan.onMouseUp()"
-      (mouseleave.zoneless)="zoomPan.onMouseUp()"
+      (wheel.zoneless)="onWheel($event)"
+      (touchstart.zoneless)="onTouchStart($event)"
+      (touchmove.zoneless)="onTouchMove($event)"
+      (touchend.zoneless)="onTouchEnd()"
+      (mousedown.zoneless)="onMouseDown($event)"
+      (mousemove.zoneless)="onMouseMove($event)"
+      (mouseup.zoneless)="onMouseUp()"
+      (mouseleave.zoneless)="onMouseUp()"
       (dblclick.zoneless)="onImageDblClick()"
     >
       <div class="h-full w-full flex items-center justify-center min-w-full">
@@ -108,14 +108,14 @@ import {
         tabindex="0"
         (keydown.enter)="toggleFullscreen(false)"
         (click)="toggleFullscreen(false)"
-        (wheel.zoneless)="zoomPan.onWheel($event)"
-        (touchstart.zoneless)="zoomPan.onTouchStart($event)"
-        (touchmove.zoneless)="zoomPan.onTouchMove($event)"
-        (touchend.zoneless)="zoomPan.onTouchEnd()"
-        (mousedown.zoneless)="zoomPan.onMouseDown($event)"
-        (mousemove.zoneless)="zoomPan.onMouseMove($event)"
-        (mouseup.zoneless)="zoomPan.onMouseUp()"
-        (mouseleave.zoneless)="zoomPan.onMouseUp()"
+        (wheel.zoneless)="onWheel($event)"
+        (touchstart.zoneless)="onTouchStart($event)"
+        (touchmove.zoneless)="onTouchMove($event)"
+        (touchend.zoneless)="onTouchEnd()"
+        (mousedown.zoneless)="onMouseDown($event)"
+        (mousemove.zoneless)="onMouseMove($event)"
+        (mouseup.zoneless)="onMouseUp()"
+        (mouseleave.zoneless)="onMouseUp()"
         (window:keydown.arrowLeft)="selectPrevRoute()"
         (window:keydown.arrowRight)="selectNextRoute()"
         (window:keydown.escape)="toggleFullscreen(false)"
@@ -269,6 +269,7 @@ export class TopoViewerComponent {
   protected readonly isFullscreen = signal(false);
   protected readonly imageRatio = signal(1);
   private lastImageClickTime = 0;
+  private lastTouchTime = 0;
 
   protected readonly zoomScale = linkedSignal({
     source: () => ({ fs: this.isFullscreen() }),
@@ -315,13 +316,71 @@ export class TopoViewerComponent {
   constructor() {
     effect(() => {
       const routeId = this.selectedRouteId();
+      this.hoveredRouteIdChange.emit(null);
       if (routeId && this.imageRatio() > 0) {
         queueMicrotask(() => this.centerOnRoute());
       }
     });
   }
 
+  protected onWheel(event: Event): void {
+    this.hoveredRouteIdChange.emit(null);
+    this.zoomPan.onWheel(event);
+  }
+
+  protected onTouchStart(event: Event): void {
+    this.lastTouchTime = Date.now();
+    this.hoveredRouteIdChange.emit(null);
+    this.zoomPan.onTouchStart(event);
+  }
+
+  protected onTouchMove(event: Event): void {
+    this.lastTouchTime = Date.now();
+    this.hoveredRouteIdChange.emit(null);
+    this.zoomPan.onTouchMove(event);
+  }
+
+  protected onTouchEnd(): void {
+    this.lastTouchTime = Date.now();
+    this.hoveredRouteIdChange.emit(null);
+    this.zoomPan.onTouchEnd();
+  }
+
+  protected onMouseDown(event: Event): void {
+    this.hoveredRouteIdChange.emit(null);
+    this.zoomPan.onMouseDown(event);
+  }
+
+  protected onMouseMove(event: Event): void {
+    if (this.zoomPan.dragState.isDragging) {
+      this.hoveredRouteIdChange.emit(null);
+    }
+    this.zoomPan.onMouseMove(event);
+  }
+
+  protected onMouseUp(): void {
+    if (this.zoomPan.dragState.hasMoved) {
+      this.hoveredRouteIdChange.emit(null);
+    }
+    this.zoomPan.onMouseUp();
+  }
+
   protected onHoverRoute(routeId: string | number): void {
+    if (
+      this.zoomPan.dragState.isDragging ||
+      this.zoomPan.wasRecentlyDragging() ||
+      Date.now() - this.lastTouchTime < 1000
+    ) {
+      return;
+    }
+    const selId = this.selectedRouteId();
+    if (
+      selId !== null &&
+      selId !== undefined &&
+      (selId === routeId || String(selId) === String(routeId))
+    ) {
+      return;
+    }
     this.hoveredRouteIdChange.emit(routeId);
   }
 
@@ -340,6 +399,8 @@ export class TopoViewerComponent {
 
   protected onPathClick(event: Event, route: TopoRouteWithRoute): void {
     event.stopPropagation();
+    if (this.zoomPan.wasRecentlyDragging()) return;
+    this.hoveredRouteIdChange.emit(null);
     const next: string | number | null =
       this.selectedRouteId() === route.route_id ? null : route.route_id;
     this.selectedRouteIdChange.emit(next);
@@ -347,6 +408,7 @@ export class TopoViewerComponent {
 
   protected onImageClick(): void {
     if (this.zoomPan.wasRecentlyDragging()) return;
+    this.hoveredRouteIdChange.emit(null);
 
     const now = Date.now();
     const isDoubleClick = now - this.lastImageClickTime < 350;
@@ -374,12 +436,14 @@ export class TopoViewerComponent {
   }
 
   private handleBackgroundDblClick(): void {
+    this.hoveredRouteIdChange.emit(null);
     if (this.selectedRouteId() !== null) {
       this.selectedRouteIdChange.emit(null);
     }
   }
 
   protected toggleFullscreen(value: boolean): void {
+    this.hoveredRouteIdChange.emit(null);
     this.isFullscreen.set(value);
     if (!value) this.zoomPan.resetZoom();
   }
@@ -393,6 +457,7 @@ export class TopoViewerComponent {
   }
 
   private navigateDrawnRoute(step: number): void {
+    this.hoveredRouteIdChange.emit(null);
     const currentId = this.selectedRouteId();
     const drawn = this.renderedRoutes()
       .filter((tr) => tr.path && tr.path.points.length > 0)
