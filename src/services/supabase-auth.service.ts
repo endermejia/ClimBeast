@@ -237,14 +237,21 @@ export class SupabaseAuthService {
   });
 
   readonly routesetterIndoorCenters = computed(() => {
+    let val: string[] | undefined;
     try {
       if (this.routesetterIndoorCentersResource.hasValue()) {
-        return this.routesetterIndoorCentersResource.value() ?? [];
+        val = this.routesetterIndoorCentersResource.value();
       }
     } catch {
-      return [];
+      val = undefined;
     }
-    return [];
+    if (val !== undefined) return val;
+    const userId = this.authUserId();
+    if (!userId) return [];
+    return this.cache.get<string[]>(
+      CACHE_KEYS.routesetterIndoorCenters(userId),
+      [],
+    );
   });
 
   async getUserProfile(userId: string): Promise<UserProfileDto | null> {
@@ -267,14 +274,26 @@ export class SupabaseAuthService {
   ): Promise<Session | null> {
     const activeClient =
       clientSupplier || (this.clientGetter ? this.client : null);
-    if (!activeClient) return null;
-    const { data, error } = await activeClient.auth.getSession();
-    if (error) {
-      console.warn('[SupabaseAuthService] getSession error', error);
+    if (!activeClient) {
+      return this._session() ?? this.sessionFallback?.() ?? null;
     }
-    let sess = data?.session ?? null;
+    let sess: Session | null = null;
+    try {
+      const result = await Promise.race([
+        activeClient.auth.getSession(),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
+      ]);
+      if (result) {
+        if (result.error) {
+          console.warn('[SupabaseAuthService] getSession error', result.error);
+        }
+        sess = result.data?.session ?? null;
+      }
+    } catch (e) {
+      console.warn('[SupabaseAuthService] getSession exception', e);
+    }
     if (!sess && this.sessionFallback) {
-      // Sin conexión el refresh del token falla y getSession() devuelve null:
+      // Sin conexión o con red muy lenta el refresh del token falla/expira:
       // se conserva la sesión persistida en modo solo lectura para no perder
       // el acceso a los datos cacheados.
       sess = this.sessionFallback();

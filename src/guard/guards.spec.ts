@@ -165,6 +165,25 @@ describe('authGuard', () => {
     expect(reloadSpy).toHaveBeenCalled();
   });
 
+  it('should use cached profile from localStorage without waiting for hanging network when online (lie-fi)', async () => {
+    const session = createMockSession('user-liefi', 'climber@example.com');
+    mockSupabase.setSession(session);
+    mockSupabase.setOnline(true);
+    localStorage.setItem(
+      'cached_user_profile_user-liefi_v1',
+      JSON.stringify({ name: 'Climber Pro' }),
+    );
+
+    const mockClient = (mockSupabase as any).client;
+    const fromSpy = vi.spyOn(mockClient, 'from');
+
+    const router = TestBed.inject(Router);
+    await router.navigate(['protected']);
+    expect(router.url).toBe('/protected');
+    expect(fromSpy).not.toHaveBeenCalled();
+    localStorage.removeItem('cached_user_profile_user-liefi_v1');
+  });
+
   it('should return true on server platform', async () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({

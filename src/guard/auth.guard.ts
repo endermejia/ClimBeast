@@ -35,33 +35,44 @@ export const authGuard: CanMatchFn = async (
     // If the user name is equal to their email, they need to complete their profile setup.
     // We redirect them to /profile/config unless they are already going there.
     if (route.path !== 'profile/config') {
-      // We try to get the profile from the resource, or fetch it if not available yet.
+      // We try to get the profile from the resource/cache first to avoid blocking navigation on slow networks.
       let profileName = supabase.userProfile()?.name;
+
+      if (!profileName) {
+        try {
+          const cacheKey = CACHE_KEYS.userProfile(session.user.id);
+          const cached = localStorage.getItem(cacheKey);
+          if (cached) {
+            const parsed = JSON.parse(cached) as { name?: string } | null;
+            profileName = parsed?.name;
+          }
+        } catch (cacheErr) {
+          console.warn('[authGuard] Error reading from cache', cacheErr);
+        }
+      }
 
       if (!profileName && supabase.isOnline()) {
         try {
-          const { data, error } = await supabase.client
+          const queryPromise = supabase.client
             .from('user_profiles')
             .select('name')
             .eq('id', session.user.id)
             .maybeSingle();
-          if (error) throw error;
-          profileName = data?.name;
+          const result = await Promise.race([
+            queryPromise,
+            new Promise<null>((resolve) =>
+              setTimeout(() => resolve(null), 2500),
+            ),
+          ]);
+          if (result) {
+            if (result.error) throw result.error;
+            profileName = result.data?.name;
+          }
         } catch (e) {
           console.warn(
-            '[authGuard] Error fetching user profile name, falling back to cache',
+            '[authGuard] Error fetching user profile name, continuing without blocking',
             e,
           );
-          try {
-            const cacheKey = CACHE_KEYS.userProfile(session.user.id);
-            const cached = localStorage.getItem(cacheKey);
-            if (cached) {
-              const parsed = JSON.parse(cached);
-              profileName = parsed?.name;
-            }
-          } catch (cacheErr) {
-            console.warn('[authGuard] Error reading from cache', cacheErr);
-          }
         }
       }
 
@@ -69,19 +80,25 @@ export const authGuard: CanMatchFn = async (
         return router.createUrlTree(['/profile/config']);
       }
     } else if (supabase.isOnline()) {
-      // When on the profile config route, always fetch fresh data to check if setup is complete
+      // When on the profile config route, fetch fresh data with a short timeout to check if setup is complete
       try {
-        const { data, error } = await supabase.client
+        const queryPromise = supabase.client
           .from('user_profiles')
           .select('name')
           .eq('id', session.user.id)
           .maybeSingle();
+        const result = await Promise.race([
+          queryPromise,
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
+        ]);
 
-        if (error) throw error;
+        if (result) {
+          if (result.error) throw result.error;
 
-        // If profile is now complete (name != email), refresh the signal
-        if (data?.name && data.name !== session.user.email) {
-          supabase.userProfileResource.reload();
+          // If profile is now complete (name != email), refresh the signal
+          if (result.data?.name && result.data.name !== session.user.email) {
+            supabase.userProfileResource.reload();
+          }
         }
       } catch (e) {
         console.warn(

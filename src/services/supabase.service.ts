@@ -72,6 +72,12 @@ export class SupabaseService {
     this.authService.setSessionFallback(() => this.readStoredSession());
 
     if (this.isBrowser && typeof window !== 'undefined') {
+      // Hidrata la sesión de forma síncrona desde localStorage para que el
+      // primer render y los guards no esperen a la red cuando hay mala cobertura.
+      const storedSession = this.readStoredSession();
+      if (storedSession) {
+        this.authService._session.set(storedSession);
+      }
       // El estado on/off lo gestiona OnlineStatusService; aquí solo se
       // reintenta el refresh del token al recuperar la conexión.
       this.onlineListener = () => {
@@ -82,6 +88,18 @@ export class SupabaseService {
     } else {
       this._readyResolve?.();
     }
+  }
+
+  private hasAuthCallbackInUrl(): boolean {
+    if (!this.isBrowser || typeof window === 'undefined') return false;
+    const hash = window.location.hash || '';
+    const search = window.location.search || '';
+    return (
+      hash.includes('access_token=') ||
+      hash.includes('refresh_token=') ||
+      hash.includes('error_description=') ||
+      search.includes('code=')
+    );
   }
 
   private async initClient(): Promise<void> {
@@ -106,6 +124,7 @@ export class SupabaseService {
             const isOffline =
               typeof navigator !== 'undefined' && !navigator.onLine;
             const urlStr = reqUrl.toString();
+            const isAuthRequest = urlStr.includes('/auth/v1');
             const isStorageOrUpload =
               urlStr.includes('/storage/v1') ||
               urlStr.includes('/functions/v1') ||
@@ -114,12 +133,15 @@ export class SupabaseService {
               options?.body instanceof ArrayBuffer ||
               options?.body instanceof Uint8Array;
 
-            // Give uploads up to 2 minutes, standard queries 15 seconds, offline 3 seconds
+            // Give uploads up to 2 minutes, auth requests 4s (to avoid holding
+            // GoTrue internal lock on flaky coverage), standard queries 15s, offline 3s
             const timeoutMs = isOffline
               ? 3000
-              : isStorageOrUpload
-                ? 120000
-                : 15000;
+              : isAuthRequest
+                ? 4000
+                : isStorageOrUpload
+                  ? 120000
+                  : 15000;
 
             const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
             if (options?.signal) {
@@ -164,15 +186,39 @@ export class SupabaseService {
           this._readyResolve = null;
         }
       });
-      try {
-        const { data } = await this._client.auth.getSession();
-        this.authService._session.set(
-          data?.session ?? this.readStoredSession(),
-        );
-      } catch (err) {
-        console.warn('[SupabaseService] getSession error:', err);
-        this.authService._session.set(this.readStoredSession());
-      } finally {
+
+      // Si no venimos de un callback OAuth/magic-link en la URL, ya tenemos el
+      // cliente creado y la sesión hidratada desde localStorage: desbloqueamos
+      // `whenReady()` de inmediato para que los guards no esperen al refresh de
+      // red (`POST /auth/v1/token`) cuando hay poca cobertura ("lie-fi").
+      if (!this.hasAuthCallbackInUrl() && this._readyResolve) {
+        this._readyResolve();
+        this._readyResolve = null;
+      }
+
+      const sessionPromise = this._client.auth
+        .getSession()
+        .then(({ data }) => {
+          this.authService._session.set(
+            data?.session ?? this.readStoredSession(),
+          );
+        })
+        .catch((err) => {
+          console.warn('[SupabaseService] getSession error:', err);
+          this.authService._session.set(this.readStoredSession());
+        })
+        .finally(() => {
+          if (this._readyResolve) {
+            this._readyResolve();
+            this._readyResolve = null;
+          }
+        });
+
+      if (this._readyResolve) {
+        await Promise.race([
+          sessionPromise,
+          new Promise<void>((resolve) => setTimeout(resolve, 2500)),
+        ]);
         if (this._readyResolve) {
           this._readyResolve();
           this._readyResolve = null;

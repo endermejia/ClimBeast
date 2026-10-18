@@ -25,6 +25,7 @@ import { OfflineWarmupService } from '../services/offline-warmup.service';
 import { RealtimeService } from '../services/realtime.service';
 import { ScrollService } from '../services/scroll.service';
 import { SeoService } from '../services/seo.service';
+import { SupabaseService } from '../services/supabase.service';
 import { SwipeNavigationService } from '../services/swipe-navigation.service';
 import { ThemeService } from '../services/theme.service';
 
@@ -98,6 +99,7 @@ export class AppComponent implements OnDestroy {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly doc = inject(DOCUMENT);
   private readonly seo = inject(SeoService);
+  private readonly supabase = inject(SupabaseService);
   private readonly swUpdate = inject(SwUpdate);
   private readonly offlineWarmup = inject(OfflineWarmupService);
 
@@ -117,12 +119,15 @@ export class AppComponent implements OnDestroy {
   );
 
   /**
-   * Se decide solo por la ruta (sin esperar a la sesión) para que el navbar
-   * venga ya en el HTML del servidor y en el primer render: así no desplaza el
-   * contenido al aparecer.
+   * Se decide por la ruta (y si hay sesión local al arrancar desde `/info`,
+   * que es el `start_url` del manifest) para que el navbar aparezca desde el
+   * primer frame sin dejar la pantalla vacía mientras redirige a `/home`.
    */
   protected readonly showNavbar = computed(() => {
     const path = this.currentPath().split('?')[0].split('#')[0];
+    if (path.startsWith('/info') && this.supabase.session()) {
+      return true;
+    }
     return ![
       '/login',
       '/signup',

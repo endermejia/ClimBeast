@@ -15,12 +15,22 @@ export class CachedTranslateLoader implements TranslateLoader {
 
   public getTranslation(lang: string): Observable<Record<string, unknown>> {
     const cacheKey = CACHE_KEYS.translation(lang);
+    const cached = this.readCached(cacheKey);
+    const isOffline =
+      typeof navigator !== 'undefined' && navigator.onLine === false;
+
+    if (isOffline && cached) {
+      return of(cached);
+    }
+
+    // If we already have a cached copy, don't wait 2 full seconds on flaky coverage
+    const timeoutMs = cached ? 800 : 2000;
 
     // Try to fetch from network first
     return this.http
       .get<Record<string, unknown>>(`${this.prefix}${lang}${this.suffix}`)
       .pipe(
-        timeout(2000), // Wait max 2s before falling back to cache
+        timeout(timeoutMs),
         tap((translation) => {
           if (typeof window !== 'undefined' && window.localStorage) {
             try {
@@ -38,19 +48,25 @@ export class CachedTranslateLoader implements TranslateLoader {
             `[CachedTranslateLoader] Network error fetching ${lang}, checking cache`,
             error,
           );
-          if (typeof window !== 'undefined' && window.localStorage) {
-            const cached = window.localStorage.getItem(cacheKey);
-            if (cached) {
-              try {
-                return of(JSON.parse(cached) as Record<string, unknown>);
-              } catch (e) {
-                console.error('[CachedTranslateLoader] Error parsing cache', e);
-              }
-            }
+          const fallback = cached ?? this.readCached(cacheKey);
+          if (fallback) {
+            return of(fallback);
           }
           // Fallback to empty translation to avoid blocking app boot
           return of({} as Record<string, unknown>);
         }),
       );
+  }
+
+  private readCached(cacheKey: string): Record<string, unknown> | null {
+    if (typeof window === 'undefined' || !window.localStorage) return null;
+    const raw = window.localStorage.getItem(cacheKey);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as Record<string, unknown>;
+    } catch (e) {
+      console.error('[CachedTranslateLoader] Error parsing cache', e);
+      return null;
+    }
   }
 }

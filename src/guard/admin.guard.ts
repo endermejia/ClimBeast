@@ -27,8 +27,10 @@ export const adminGuard: CanMatchFn = async (): Promise<boolean | UrlTree> => {
       return router.createUrlTree([supabase.isOnline() ? '/login' : '/info']);
     }
 
-    // Wait for user profile to be loaded
-    const profile = await waitForResource(supabase.userProfileResource);
+    // Wait for user profile to be loaded (use cached profile immediately if available)
+    const profile =
+      supabase.userProfile() ??
+      (await waitForResource(supabase.userProfileResource));
 
     if (profile !== undefined) {
       if (profile?.is_admin) {
@@ -70,7 +72,9 @@ export const areaAdminGuard: CanMatchFn = async (): Promise<
       return router.createUrlTree([supabase.isOnline() ? '/login' : '/info']);
     }
 
-    const profile = await waitForResource(supabase.userProfileResource);
+    const profile =
+      supabase.userProfile() ??
+      (await waitForResource(supabase.userProfileResource));
 
     if (profile !== undefined) {
       if (profile?.is_admin) {
@@ -78,7 +82,11 @@ export const areaAdminGuard: CanMatchFn = async (): Promise<
       }
 
       // Check if user has area admin permissions
-      const areas = await waitForResource(supabase.adminAreasResource);
+      const cachedAreas = supabase.adminAreas();
+      const areas =
+        cachedAreas.length > 0
+          ? cachedAreas
+          : await waitForResource(supabase.adminAreasResource);
       if (areas !== undefined && areas.length > 0) {
         return true;
       }
@@ -111,7 +119,9 @@ export const indoorAdminGuard: CanMatchFn = async (): Promise<
       return router.createUrlTree([supabase.isOnline() ? '/login' : '/info']);
     }
 
-    const profile = await waitForResource(supabase.userProfileResource);
+    const profile =
+      supabase.userProfile() ??
+      (await waitForResource(supabase.userProfileResource));
 
     if (profile !== undefined) {
       if (profile?.is_admin) {
@@ -119,9 +129,11 @@ export const indoorAdminGuard: CanMatchFn = async (): Promise<
       }
 
       // Check if user has indoor center admin permissions
-      const centers = await waitForResource(
-        supabase.adminIndoorCentersResource,
-      );
+      const cachedCenters = supabase.adminIndoorCenters();
+      const centers =
+        cachedCenters.length > 0
+          ? cachedCenters
+          : await waitForResource(supabase.adminIndoorCentersResource);
       if (centers !== undefined && centers.length > 0) {
         return true;
       }
@@ -156,7 +168,9 @@ export const routesetterGuard: CanMatchFn = async (): Promise<
       return router.createUrlTree([supabase.isOnline() ? '/login' : '/info']);
     }
 
-    const profile = await waitForResource(supabase.userProfileResource);
+    const profile =
+      supabase.userProfile() ??
+      (await waitForResource(supabase.userProfileResource));
 
     if (profile !== undefined) {
       if (profile?.is_admin) {
@@ -164,9 +178,11 @@ export const routesetterGuard: CanMatchFn = async (): Promise<
       }
 
       // Check if user is routesetter in any indoor center
-      const centers = await waitForResource(
-        supabase.routesetterIndoorCentersResource,
-      );
+      const cachedCenters = supabase.routesetterIndoorCenters();
+      const centers =
+        cachedCenters.length > 0
+          ? cachedCenters
+          : await waitForResource(supabase.routesetterIndoorCentersResource);
       if (centers !== undefined && centers.length > 0) {
         return true;
       }
