@@ -49,7 +49,8 @@ import { DropdownButtonComponent } from '../ui/dropdown-button';
               [label]="filterLabels()[feedFilter()] | translate"
               [content]="feedFilterDropdown()"
               [count]="filterCount()"
-              [(open)]="dropdownOpenModel"
+              [open]="dropdownOpen()"
+              (openChange)="dropdownOpenChange.emit($event)"
             />
           }
           <tui-badged-content [style.--tui-radius.%]="50">
@@ -151,11 +152,5 @@ export class HomeFilterBarComponent {
 
   openFilters = output<void>();
   openNotifications = output<void>();
-
-  get dropdownOpenModel(): boolean {
-    return this.dropdownOpen();
-  }
-  set dropdownOpenModel(val: boolean) {
-    this.dropdownOpenChange.emit(val);
-  }
+  // Direct signal reads and output emissions in template replace getter executions for change detection optimization
 }
