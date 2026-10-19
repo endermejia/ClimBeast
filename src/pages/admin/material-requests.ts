@@ -365,7 +365,7 @@ import { AvatarUrlPipe } from '../../pipes';
                 tuiButton
                 appearance="negative"
                 type="button"
-                [disabled]="!rejectionReason().trim()"
+                [disabled]="isRejectDisabled()"
                 (click)="confirmReject()"
               >
                 {{ 'admin.materialRequests.confirmReject' | translate }}
@@ -401,6 +401,13 @@ export class AdminMaterialRequestsComponent {
   rejectModalOpen = signal<boolean>(false);
   rejectingRequestId = signal<number | null>(null);
   rejectionReason = signal<string>('');
+
+  /**
+   * Computed signal to avoid executing .trim() on string in template change detection cycles.
+   */
+  protected readonly isRejectDisabled = computed(
+    () => !this.rejectionReason().trim(),
+  );
 
   readonly pendingCount = this.requestsService.pendingCount;
 
