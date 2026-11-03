@@ -123,11 +123,7 @@ interface Country {
             <button
               class="no-underline text-inherit flex items-center gap-2 bg-transparent border-none p-0 cursor-pointer text-left outline-none"
               (click)="isFirstSteps() ? startTour() : close()"
-              [disabled]="
-                isFirstSteps() &&
-                (profileForm.fullName().invalid() ||
-                  profileForm.fullName().value() === userEmail())
-              "
+              [disabled]="isFirstStepsDisabled()"
             >
               <tui-icon icon="@tui.arrow-left" />
               {{ (isFirstSteps() ? 'next' : 'profile.title') | translate }}
@@ -381,6 +377,13 @@ export class UserProfileConfigComponent {
   );
   protected readonly deleteEmailError = computed(() =>
     this.getFieldError('deleteEmail'),
+  );
+
+  protected readonly isFirstStepsDisabled = computed(
+    () =>
+      this.isFirstSteps() &&
+      (this.profileForm.fullName().invalid() ||
+        this.profileForm.fullName().value() === this.userEmail()),
   );
 
   // Validation helpers and bounds
