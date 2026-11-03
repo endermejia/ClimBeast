@@ -302,6 +302,28 @@ export interface ViewerElements {
   img: HTMLImageElement;
 }
 
+export function calculateViewerMinScale(
+  containerWidth: number,
+  containerHeight: number,
+  imageWidth: number,
+  imageHeight: number,
+  floor = DEFAULT_CONFIG.minScale,
+): number {
+  if (
+    containerWidth <= 0 ||
+    containerHeight <= 0 ||
+    imageWidth <= 0 ||
+    imageHeight <= 0
+  ) {
+    return floor;
+  }
+
+  return Math.max(
+    floor,
+    Math.min(1, containerWidth / imageWidth, containerHeight / imageHeight),
+  );
+}
+
 export function handleViewerWheelZoom(
   event: Event,
   state: ViewerZoomPanState,

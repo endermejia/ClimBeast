@@ -20,6 +20,7 @@ import type { TopoRouteWithRoute } from '../../models';
 import { IconSrcPipe } from '../../pipes';
 
 import { ZoomPanController } from '../../utils/zoom-pan.controller';
+import { calculateViewerMinScale } from '../../utils/zoom-pan.utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -281,26 +282,11 @@ export class TopoViewerComponent {
     computation: () => ({ x: 0, y: 0 }),
   });
 
-  protected readonly minScale = computed(() => {
-    const ratio = this.imageRatio();
-    const isFs = this.isFullscreen();
-    const container = isFs
-      ? this.fullscreenContainer()?.nativeElement
-      : this.scrollContainer()?.nativeElement;
-    if (!container) return 0.1;
-    const w = container.offsetWidth;
-    const h = container.offsetHeight;
-    if (!w || !h) return 0.1;
-    const containerRatio = w / h;
-    if (isFs) return Math.min(1, ratio / containerRatio);
-    return Math.max(0.1, Math.min(1, containerRatio / ratio));
-  });
-
   protected readonly zoomPan = new ZoomPanController(
     this.zoomScale,
     this.zoomPosition,
     () => this.getViewerElements(),
-    () => this.minScale(),
+    () => this.getMinScale(),
   );
 
   protected readonly selectedRouteInfo = computed(() => {
@@ -513,5 +499,18 @@ export class TopoViewerComponent {
       zoomContainer: zoomContainer.nativeElement,
       img: img.nativeElement,
     };
+  }
+
+  private getMinScale(): number {
+    const elements = this.getViewerElements();
+    if (!elements) return 0.1;
+
+    const { container, img } = elements;
+    return calculateViewerMinScale(
+      container.clientWidth || container.offsetWidth,
+      container.clientHeight || container.offsetHeight,
+      img.offsetWidth || img.naturalWidth,
+      img.offsetHeight || img.naturalHeight,
+    );
   }
 }
