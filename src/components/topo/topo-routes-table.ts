@@ -1,10 +1,12 @@
 import {
   Component,
   effect,
+  ElementRef,
   inject,
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
@@ -81,14 +83,20 @@ import type { TopoRouteRow } from './topo.types';
       tabindex="0"
       (keydown)="onTableKeyDown($event)"
     >
-      <tui-scrollbar class="w-full h-full overflow-x-hidden!">
+      <tui-scrollbar
+        #scrollbar
+        class="grow min-h-0 w-full overflow-x-auto no-scrollbar"
+        (scroll.zoneless)="onScroll($event)"
+      >
         @if (hasAccess()) {
           @let sortedData = sortedTableData();
           @if (sortedData.length > 0) {
             <table
+              #table
               tuiTable
               [size]="isMobile() ? 's' : 'm'"
-              class="w-full"
+              class="w-full min-w-max"
+              [class.table-stuck-right]="isStuckRight()"
               [columns]="columns()"
               [direction]="direction()"
               [sorter]="sorter()"
@@ -101,10 +109,13 @@ import type { TopoRouteRow } from './topo.types';
                       *tuiHead="col"
                       tuiTh
                       [sorter]="col | tableSorter"
-                      [style.min-width.px]="isMobile() ? null : COL_MIN_PX[col]"
-                      [style.max-width.px]="isMobile() ? null : COL_MIN_PX[col]"
                       [class.sticky-col-right]="col === 'actions'"
-                      class="text-center"
+                      [class.w-16!]="col === 'height' || col === 'moves'"
+                      [class.min-w-36!]="col === 'name'"
+                      [class.w-min!]="
+                        col === 'index' || col === 'grade' || col === 'actions'
+                      "
+                      class="text-center whitespace-nowrap"
                     >
                       <div
                         class="flex items-center justify-center w-full h-full min-w-0"
@@ -114,9 +125,7 @@ import type { TopoRouteRow } from './topo.types';
                             #
                           }
                           @case ('name') {
-                            <span class="truncate">
-                              {{ 'routes.name' | translate }}
-                            </span>
+                            {{ 'routes.name' | translate }}
                           }
                           @case ('grade') {
                             {{ 'gradeShort' | translate }}
@@ -133,12 +142,12 @@ import type { TopoRouteRow } from './topo.types';
                   }
                 </tr>
               </thead>
-              @for (
-                item of sortedTableData();
-                track item._ref.topo_id + '-' + item._ref.route_id;
-                let i = $index
-              ) {
-                <tbody tuiTbody>
+              <tbody tuiTbody>
+                @for (
+                  item of sortedData;
+                  track item._ref.topo_id + '-' + item._ref.route_id;
+                  let i = $index
+                ) {
                   @let bgSubtle =
                     ascentInfo()[item._ref.route.own_ascent?.type || 'default']
                       ?.backgroundSubtle;
@@ -179,8 +188,12 @@ import type { TopoRouteRow } from './topo.types';
                         [class.selected-actions-col]="
                           isSelected && col === 'actions'
                         "
-                        [class.overflow-hidden]="col !== 'actions'"
-                        class="text-center"
+                        [class.w-min!]="
+                          col === 'index' ||
+                          col === 'grade' ||
+                          col === 'actions'
+                        "
+                        class="text-center whitespace-nowrap"
                       >
                         @switch (col) {
                           @case ('index') {
@@ -192,14 +205,11 @@ import type { TopoRouteRow } from './topo.types';
                           }
                           @case ('name') {
                             <div
-                              class="flex items-center justify-between gap-1.5 h-full min-w-0 w-full"
+                              class="flex items-center justify-between gap-1.5 h-full w-full"
                             >
-                              <div
-                                class="flex items-center gap-1 min-w-0 flex-1"
-                              >
+                              <div class="flex items-center gap-1">
                                 <span
-                                  class="text-left truncate max-w-full font-medium"
-                                  [tuiHint]="isMobile() ? null : item.name"
+                                  class="text-left whitespace-nowrap font-medium"
                                 >
                                   {{ item.name }}
                                 </span>
@@ -259,7 +269,7 @@ import type { TopoRouteRow } from './topo.types';
                           }
                           @case ('actions') {
                             <div
-                              class="flex items-center justify-center gap-1 w-full h-full min-w-0"
+                              class="flex items-center justify-center gap-1 shrink-0 whitespace-nowrap w-full h-full"
                             >
                               @if (!item.climbed) {
                                 @if (isIndoor()) {
@@ -398,8 +408,8 @@ import type { TopoRouteRow } from './topo.types';
                       </td>
                     }
                   </tr>
-                </tbody>
-              }
+                }
+              </tbody>
             </table>
           } @else {
             <app-empty-state icon="@tui.route" />
@@ -436,19 +446,18 @@ export class TopoRoutesTableComponent {
   areaPrice = input(0);
 
   protected readonly openActionId = signal<string | number | null>(null);
+  protected readonly isStuckRight = signal(false);
+
+  private readonly scrollbar = viewChild('scrollbar', {
+    read: ElementRef<HTMLElement>,
+  });
+  private readonly table = viewChild('table', {
+    read: ElementRef<HTMLElement>,
+  });
 
   selectedRouteIdChange = output<string | number | null>();
   hoveredRouteIdChange = output<string | number | null>();
   sortChange = output<TuiTableSortChange<TopoRouteRow>>();
-
-  /** Fixed pixel widths per column. Name is absent → TuiTh uses auto sizing. */
-  protected readonly COL_MIN_PX: Record<string, number> = {
-    index: 44,
-    grade: 68,
-    moves: 60,
-    height: 68,
-    actions: 44,
-  };
 
   constructor() {
     effect(() => {
@@ -459,9 +468,87 @@ export class TopoRoutesTableComponent {
           `route-row-${this.topoId()}-${routeId}`,
         );
         if (!row) return;
-        row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        const scrollbarEl = this.scrollbar()?.nativeElement;
+        if (scrollbarEl) {
+          const rowRect = row.getBoundingClientRect();
+          const containerRect = scrollbarEl.getBoundingClientRect();
+          const targetTop =
+            scrollbarEl.scrollTop +
+            (rowRect.top - containerRect.top) -
+            containerRect.height / 2 +
+            rowRect.height / 2;
+          scrollbarEl.scrollTo({ top: targetTop, behavior: 'smooth' });
+        } else {
+          row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
       });
     });
+
+    effect((onCleanup) => {
+      const scrollbarEl = this.scrollbar()?.nativeElement;
+      const tableEl = this.table()?.nativeElement;
+      let animationFrame: number | undefined;
+      const scheduleUpdate = () => {
+        if (typeof requestAnimationFrame === 'undefined') {
+          this.updateFromHost();
+          return;
+        }
+        animationFrame = requestAnimationFrame(() => this.updateFromHost());
+      };
+
+      if (typeof ResizeObserver === 'undefined') {
+        if (scrollbarEl || tableEl) {
+          scheduleUpdate();
+        }
+        onCleanup(() => {
+          if (
+            animationFrame !== undefined &&
+            typeof cancelAnimationFrame !== 'undefined'
+          ) {
+            cancelAnimationFrame(animationFrame);
+          }
+        });
+        return;
+      }
+      const ro = new ResizeObserver(() => this.updateFromHost());
+      if (scrollbarEl) ro.observe(scrollbarEl);
+      if (tableEl) ro.observe(tableEl);
+      scheduleUpdate();
+      onCleanup(() => {
+        ro.disconnect();
+        if (
+          animationFrame !== undefined &&
+          typeof cancelAnimationFrame !== 'undefined'
+        ) {
+          cancelAnimationFrame(animationFrame);
+        }
+      });
+    });
+  }
+
+  protected onScroll(event: Event): void {
+    this.updateStuck(event.target as HTMLElement);
+  }
+
+  private updateFromHost(): void {
+    const el = this.scrollbar()?.nativeElement;
+    if (el) this.updateStuck(el);
+  }
+
+  private updateStuck(el: HTMLElement): void {
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    const maxScroll = scrollWidth - clientWidth;
+
+    if (maxScroll <= 1) {
+      if (this.isStuckRight()) this.isStuckRight.set(false);
+      return;
+    }
+
+    const stuckRight = maxScroll - scrollLeft > 2;
+
+    if (this.isStuckRight() !== stuckRight) {
+      this.isStuckRight.set(stuckRight);
+    }
   }
 
   protected selectRoute(routeId: string | number): void {
