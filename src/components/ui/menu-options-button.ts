@@ -6,6 +6,7 @@ import {
   HostListener,
   inject,
   input,
+  resource,
   signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
@@ -16,6 +17,7 @@ import { TuiAvatar, TuiPulse, TuiSkeleton } from '@taiga-ui/kit';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AuthStateService } from '../../services/auth-state.service';
+import { AvatarImageCacheService } from '../../services/avatar-image-cache.service';
 import { ScrollService } from '../../services/scroll.service';
 
 import { MenuOptionsDropdownComponent } from './menu-options-dropdown';
@@ -67,7 +69,10 @@ import { MenuOptionsDropdownComponent } from './menu-options-dropdown';
               size="xs"
             >
               @if (avatarUrl()) {
-                <img [src]="avatarUrl()" [alt]="userName() || ''" />
+                <img
+                  [src]="cachedAvatarUrl.value() || avatarUrl()"
+                  [alt]="userName() || ''"
+                />
               } @else {
                 <tui-icon
                   icon="@tui.user"
@@ -164,7 +169,13 @@ export class MenuOptionsButtonComponent {
     () => this.showLogout() ?? !this.avatarMode(),
   );
 
+  protected readonly cachedAvatarUrl = resource({
+    params: () => this.avatarUrl(),
+    loader: ({ params }) => this.avatarImageCache.resolve(params),
+  });
+
   protected open = signal(false);
+  private readonly avatarImageCache = inject(AvatarImageCacheService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly elementRef = inject(ElementRef);

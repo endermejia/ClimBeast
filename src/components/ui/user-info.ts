@@ -1,11 +1,21 @@
 import { CommonModule, LowerCasePipe } from '@angular/common';
-import { Component, computed, inject, input, output } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  resource,
+} from '@angular/core';
 
 import { TuiIcon } from '@taiga-ui/core';
 import { TuiCountryIsoCode } from '@taiga-ui/i18n';
 import { TuiAvatar, TuiSkeleton, TUI_COUNTRIES } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
+
+import { AvatarImageCacheService } from '../../services/avatar-image-cache.service';
+import { SupabaseService } from '../../services/supabase.service';
 
 import { AvatarUrlPipe, InitialsPipe } from '../../pipes';
 
@@ -43,7 +53,7 @@ import { AvatarUrlPipe, InitialsPipe } from '../../pipes';
         >
           @if (avatar(); as photo) {
             <img
-              [src]="photo | avatarUrl"
+              [src]="cachedAvatarUrl.value() || (photo | avatarUrl)"
               [alt]="name() || ''"
               class="w-full h-full object-cover rounded-full!"
             />
@@ -146,6 +156,16 @@ export class UserInfoComponent {
   nameClick = output<void>();
 
   protected readonly countriesNames = inject(TUI_COUNTRIES);
+  private readonly avatarImageCache = inject(AvatarImageCacheService);
+  private readonly supabase = inject(SupabaseService);
+
+  protected readonly cachedAvatarUrl = resource({
+    params: () => {
+      const path = this.avatar();
+      return path ? this.supabase.buildAvatarUrl(path) : null;
+    },
+    loader: ({ params }) => this.avatarImageCache.resolve(params),
+  });
 
   protected readonly locationText = computed(() => {
     const countryCode = this.country();
