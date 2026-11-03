@@ -205,15 +205,17 @@ const PAGE_SIZE = 20;
                   </div>
                 }
 
-                <app-area-revenue-panel
-                  [areaId]="c.area_id"
-                  [areaName]="c.area_name"
-                  [isPaywalled]="!c.is_public"
-                  [areaPrice]="c.price || 0"
-                  [isPurchased]="!!c.purchased"
-                  [toposCount]="areaToposCount()"
-                  class="block lg:hidden"
-                />
+                @if (layoutService.isNotDesktop()) {
+                  <app-area-revenue-panel
+                    [areaId]="c.area_id"
+                    [areaName]="c.area_name"
+                    [isPaywalled]="!c.is_public"
+                    [areaPrice]="c.price || 0"
+                    [isPurchased]="!!c.purchased"
+                    [toposCount]="areaToposCount()"
+                    class="block lg:hidden"
+                  />
+                }
 
                 @if (segmentedTabs().length > 1) {
                   <tui-segmented
@@ -289,34 +291,36 @@ const PAGE_SIZE = 20;
           </div>
 
           <!-- Right Column: Ascents Sidebar (desktop only) -->
-          <div
-            class="hidden lg:flex lg:w-[420px] xl:w-[460px] 2xl:w-[500px] shrink-0 min-w-0 lg:h-full flex-col"
-          >
-            <div class="flex flex-col w-full lg:h-full min-w-0 lg:min-h-0">
-              <app-area-revenue-panel
-                [areaId]="c.area_id"
-                [areaName]="c.area_name"
-                [isPaywalled]="!c.is_public"
-                [areaPrice]="c.price || 0"
-                [isPurchased]="!!c.purchased"
-                [toposCount]="areaToposCount()"
-                class="mb-6 block"
-              />
-              <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
-                <div class="w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6">
-                  <app-ascents-feed
-                    [ascents]="accumulatedAscents()"
-                    [isLoading]="ascentsLoading()"
-                    [hasMore]="hasMoreAscents()"
-                    [showRoute]="true"
-                    [showCrag]="false"
-                    [showArea]="false"
-                    (loadMore)="loadMoreAscents()"
-                  />
-                </div>
-              </tui-scrollbar>
+          @if (!layoutService.isNotDesktop()) {
+            <div
+              class="hidden lg:flex lg:w-[420px] xl:w-[460px] 2xl:w-[500px] shrink-0 min-w-0 lg:h-full flex-col"
+            >
+              <div class="flex flex-col w-full lg:h-full min-w-0 lg:min-h-0">
+                <app-area-revenue-panel
+                  [areaId]="c.area_id"
+                  [areaName]="c.area_name"
+                  [isPaywalled]="!c.is_public"
+                  [areaPrice]="c.price || 0"
+                  [isPurchased]="!!c.purchased"
+                  [toposCount]="areaToposCount()"
+                  class="mb-6 block"
+                />
+                <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
+                  <div class="w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6">
+                    <app-ascents-feed
+                      [ascents]="accumulatedAscents()"
+                      [isLoading]="ascentsLoading()"
+                      [hasMore]="hasMoreAscents()"
+                      [showRoute]="true"
+                      [showCrag]="false"
+                      [showArea]="false"
+                      (loadMore)="loadMoreAscents()"
+                    />
+                  </div>
+                </tui-scrollbar>
+              </div>
             </div>
-          </div>
+          }
         } @else if (
           outdoorData.areasListLoading() ||
           outdoorData.cragDetailResource.isLoading()

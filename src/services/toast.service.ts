@@ -22,21 +22,30 @@ export class ToastService {
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
   private readonly errorLog = inject(ErrorLogService);
+  private readonly activeMessages = new Set<string>();
 
   private async show(
     message: string,
     options?: Partial<TuiToastOptions<unknown>> | undefined,
     autoClose = 3000,
   ): Promise<void> {
+    const appearance = options?.appearance ?? '';
     const translatedMessage = await firstValueFrom(this.translate.get(message));
+    const activeKey = `${appearance}:${String(translatedMessage)}`;
+    if (this.activeMessages.has(activeKey)) return;
 
-    void firstValueFrom(
-      this.toast.open(translatedMessage, {
-        autoClose,
-        ...options,
-      }),
-      { defaultValue: undefined },
-    );
+    this.activeMessages.add(activeKey);
+    try {
+      await firstValueFrom(
+        this.toast.open(translatedMessage, {
+          autoClose,
+          ...options,
+        }),
+        { defaultValue: undefined },
+      );
+    } finally {
+      this.activeMessages.delete(activeKey);
+    }
   }
 
   success(message: string): void {

@@ -63,7 +63,10 @@ export class CacheService {
     options?: { fallbackValue?: T; logTag?: string; ttlMs?: number },
   ): Promise<T> {
     const tag = options?.logTag ?? 'CacheService';
-    const fallback = options?.fallbackValue ?? (undefined as T);
+    const fallback =
+      options?.fallbackValue !== undefined
+        ? options.fallbackValue
+        : (undefined as T);
 
     try {
       const result = await fetcher();

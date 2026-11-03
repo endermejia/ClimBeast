@@ -123,4 +123,14 @@ describe('CacheService', () => {
     );
     expect(result).toBe('cached-data');
   });
+
+  it('should preserve an explicit null fallback when no cached value exists', async () => {
+    const result = await service.fetchOrCache(
+      'empty-fallback-key',
+      () => Promise.reject(new Error('Network error')),
+      { fallbackValue: null },
+    );
+
+    expect(result).toBeNull();
+  });
 });

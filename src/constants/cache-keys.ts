@@ -22,6 +22,8 @@ export const CACHE_KEYS = {
   areasList: 'cached_areas_list_v2',
   areasSimple: 'cached_areas_simple_v1',
   areaDetail: (areaId: number) => `cached_area_detail_${areaId}_v1`,
+  areaBalance: (areaId: number) => `cached_area_balance_${areaId}_v1`,
+  areaTimeline: (areaId: number) => `cached_area_timeline_${areaId}_v1`,
   areaAscents: (areaId: number, page: number) =>
     `cached_area_ascents_${areaId}_${page}_v1`,
   areaAscentsCount: (areaId: number) =>
