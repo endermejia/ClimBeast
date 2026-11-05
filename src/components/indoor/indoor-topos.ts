@@ -180,7 +180,11 @@ export class IndoorToposComponent {
   }
 
   async createTopo(): Promise<void> {
-    const success = await this.indoor.openIndoorTopoForm(this.centerId());
+    const success = await this.indoor.openIndoorTopoForm(
+      this.centerId(),
+      undefined,
+      this.center() ?? undefined,
+    );
     if (success) {
       this.toposResource.reload();
     }
@@ -188,7 +192,11 @@ export class IndoorToposComponent {
 
   async editTopo(topo: IndoorTopoListItem, event: Event): Promise<void> {
     event.stopPropagation();
-    const success = await this.indoor.openIndoorTopoForm(this.centerId(), topo);
+    const success = await this.indoor.openIndoorTopoForm(
+      this.centerId(),
+      topo,
+      this.center() ?? undefined,
+    );
     if (success) {
       this.toposResource.reload();
     }

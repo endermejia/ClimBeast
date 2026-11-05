@@ -13,6 +13,7 @@ export interface IndoorTopoFormData {
   climbing_kind?: 'sport' | 'boulder' | null;
   legacy?: boolean | null;
   center_id?: string;
+  user_creator_id?: string | null;
 }
 
 /**

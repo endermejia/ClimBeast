@@ -10,6 +10,7 @@ export interface RouteBasicDto extends Pick<
   id: string | number;
   height?: number | null;
   color?: string | null;
+  user_creator_id?: string | null;
 }
 
 export interface RouteBasicWithOwnData extends RouteBasicDto {
@@ -110,6 +111,7 @@ export interface RoutesTableRow {
   legacy?: boolean;
   rating: number;
   ascents: number;
+  hasAscents?: boolean;
   liked: boolean;
   project: boolean;
   climbed: boolean;

@@ -1559,11 +1559,31 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   private readonly newlyLinkedRouteIds = new Set<string | number>();
   protected readonly topoRoutesVersion = signal(0);
 
+  protected readonly indoorCenterResource = resource({
+    params: () => {
+      if (!this.context.data.isIndoor) return null;
+      if (this.context.data.center) return null;
+      return this.context.data.centerId
+        ? String(this.context.data.centerId)
+        : null;
+    },
+    loader: async ({ params: centerId }) => {
+      if (!centerId) return null;
+      return await this.indoor.getCenterById(centerId);
+    },
+  });
+
+  protected readonly effectiveCenter = computed<IndoorCenterDto | null>(() => {
+    return (
+      this.context.data.center ?? this.indoorCenterResource.value() ?? null
+    );
+  });
+
   protected readonly canCreateRoute = computed<boolean>(() => {
     if (!this.context.data.isIndoor || !this.context.data.centerId) {
       return false;
     }
-    const center = this.context.data.center;
+    const center = this.effectiveCenter();
     if (center) {
       return this.authState.canCreateIndoorRoute(center);
     }
@@ -1579,7 +1599,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     if (!this.context.data.isIndoor) {
       return true;
     }
-    const center = this.context.data.center;
+    const center = this.effectiveCenter();
     if (center) {
       return this.authState.canEditIndoorTopo(center);
     }
@@ -1775,7 +1795,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     const tr = this.selectedRoute();
     if (!tr) return false;
     if (!this.context.data.isIndoor) return true;
-    const center = this.context.data.center;
+    const center = this.effectiveCenter();
     if (center) {
       return this.authState.canEditIndoorRoute(
         center,
@@ -1800,7 +1820,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     const tr = this.selectedRoute();
     if (!tr) return false;
     if (!this.context.data.isIndoor) return true;
-    const center = this.context.data.center;
+    const center = this.effectiveCenter();
     if (!tr.path) {
       if (center) {
         return this.authState.canCreateIndoorLine(center);
@@ -2220,6 +2240,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         route_id: newRoute.id,
         number: this.topoRoutes.length + 1,
         path: null,
+        user_creator_id: this.supabase.authUserId() ?? newRoute.user_creator_id,
         route: newRoute as unknown as RouteBasicWithOwnData,
       };
       this.topoRoutes = [...this.topoRoutes, newTopoRoute];

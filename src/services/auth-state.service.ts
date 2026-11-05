@@ -299,7 +299,10 @@ export class AuthStateService {
 
   readonly canEditIndoorLine = (
     center: IndoorCenterDto | null | undefined,
-    line?: { user_creator_id?: string | null } | null,
+    line?: {
+      user_creator_id?: string | null;
+      route?: { user_creator_id?: string | null };
+    } | null,
   ): boolean => {
     if (this.isAdmin()) return true;
     if (!center) return false;
@@ -312,7 +315,8 @@ export class AuthStateService {
     }
     const currentUserId = this.supabase.authUserId();
     if (!currentUserId) return false;
-    if (line?.user_creator_id && line.user_creator_id === currentUserId) {
+    const creatorId = line?.user_creator_id || line?.route?.user_creator_id;
+    if (creatorId && creatorId === currentUserId) {
       return true;
     }
     const perms = parseIndoorCenterPermissions(center.permissions);

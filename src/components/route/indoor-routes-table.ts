@@ -114,7 +114,7 @@ export class IndoorRoutesTableComponent {
       const route = slug ? { ...r, center_slug: slug } : r;
       const row = mapRouteToTableRow(route);
       row.canEdit = isEdit;
-      row.canDelete = isEdit;
+      row.canDelete = isEdit && !row.hasAscents;
       row.canAddTopo = isEdit;
       return row;
     });
@@ -193,6 +193,12 @@ export class IndoorRoutesTableComponent {
   protected async deleteIndoorRoute(
     item: RoutesTableRow | RouteItem | IndoorRouteWithExtras,
   ): Promise<void> {
+    const hasAscents =
+      '_ref' in item
+        ? (item.hasAscents ?? (item.ascents > 0 || !!item.own_ascent))
+        : (item.ascent_count ?? 0) > 0 || !!item.own_ascent;
+    if (hasAscents) return;
+
     const r =
       '_ref' in item
         ? (item._ref as IndoorRouteWithExtras)

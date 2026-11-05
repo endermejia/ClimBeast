@@ -41,6 +41,12 @@ export function mapRouteToTableRow(
     const indoor = r as IndoorRouteWithExtras;
     const rating = indoor.rating || 0;
     const ascents = indoor.ascent_count || 0;
+    const rawRefAscents = Array.isArray(
+      (indoor as { ascents?: unknown[] }).ascents,
+    )
+      ? ((indoor as { ascents?: unknown[] }).ascents?.length ?? 0)
+      : 0;
+    const hasAscents = ascents > 0 || !!indoor.own_ascent || rawRefAscents > 0;
     const topos = (indoor.topos || []).map((t) => ({
       id: t.id,
       name: t.name,
@@ -61,6 +67,7 @@ export function mapRouteToTableRow(
       legacy: indoor.legacy || false,
       rating,
       ascents,
+      hasAscents,
       liked: false,
       project: false,
       climbed: !!indoor.own_ascent,
@@ -85,6 +92,12 @@ export function mapRouteToTableRow(
       PROJECT_GRADE_LABEL;
     const rating = outdoor.rating || 0;
     const ascents = outdoor.ascent_count || 0;
+    const rawRefAscents = Array.isArray(
+      (outdoor as { ascents?: unknown[] }).ascents,
+    )
+      ? ((outdoor as { ascents?: unknown[] }).ascents?.length ?? 0)
+      : 0;
+    const hasAscents = ascents > 0 || !!outdoor.own_ascent || rawRefAscents > 0;
     const equippers = outdoor.equippers || [];
     const topos = sortByNormalizedName(
       (outdoor.topos || []).map((t) => ({
@@ -118,6 +131,7 @@ export function mapRouteToTableRow(
       color: null,
       rating,
       ascents,
+      hasAscents,
       liked: outdoor.liked,
       project: outdoor.project,
       climbed: outdoor.climbed ?? false,

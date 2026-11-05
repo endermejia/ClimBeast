@@ -216,6 +216,24 @@ export class IndoorService {
     }
   }
 
+  async getCenterById(id: string): Promise<IndoorCenterDto | null> {
+    if (!this.isBrowser) return null;
+    await this.supabase.whenReady();
+    this.loading.set(true);
+    try {
+      const { data, error } = await this.supabase.client
+        .from('indoor_centers')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as IndoorCenterDto | null;
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
   async getCenterVouchers(centerId: string): Promise<IndoorVoucherDto[]> {
     if (!this.isBrowser) return [];
     await this.supabase.whenReady();
@@ -687,6 +705,7 @@ export class IndoorService {
   async openIndoorTopoForm(
     centerId: string,
     topoData?: IndoorTopoDto,
+    center?: IndoorCenterDto,
   ): Promise<boolean> {
     let initialRoutes: IndoorRouteDto[] & { path?: TopoPath | null }[] = [];
     if (topoData) {
@@ -725,6 +744,7 @@ export class IndoorService {
         data: {
           type: 'indoor',
           centerId,
+          center,
           indoorTopoData: topoData,
           initialRoutes,
           initialRouteIds: initialRoutes.map((r) => r.id),

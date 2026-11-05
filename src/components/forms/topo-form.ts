@@ -45,6 +45,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
+import { AuthStateService } from '../../services/auth-state.service';
 import { CragRoutesDataService } from '../../services/crag-routes-data.service';
 import { IndoorDataService } from '../../services/indoor-data.service';
 import { IndoorService } from '../../services/indoor.service';
@@ -55,6 +56,7 @@ import { ToposService } from '../../services/topos.service';
 
 import {
   GRADE_NUMBER_TO_LABEL,
+  IndoorCenterDto,
   IndoorRouteDto,
   IndoorTopoFormData,
   RouteDto,
@@ -326,9 +328,24 @@ import { GradeComponent } from '../ui/avatar-grade';
       </section>
 
       <div class="mt-4">
-        <h3 class="text-lg font-semibold mb-2">
-          {{ 'topos.manageRoutes' | translate }}
-        </h3>
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-lg font-semibold">
+            {{ 'topos.manageRoutes' | translate }}
+          </h3>
+          @if (isIndoor() && canCreateRoute()) {
+            <button
+              tuiButton
+              type="button"
+              appearance="flat"
+              size="s"
+              iconStart="@tui.plus"
+              class="rounded-full!"
+              (click)="createNewIndoorRoute()"
+            >
+              {{ 'routes.newTitle' | translate }}
+            </button>
+          }
+        </div>
         <tui-textfield
           multi
           tuiChevron
@@ -413,6 +430,7 @@ export class TopoFormComponent {
   private readonly translate = inject(TranslateService);
   private readonly supabase = inject(SupabaseService);
   protected readonly indoor = inject(IndoorService);
+  private readonly authState = inject(AuthStateService);
 
   private readonly _dialogCtx: TuiDialogContext<
     string | boolean | null,
@@ -423,6 +441,7 @@ export class TopoFormComponent {
       initialRouteIds?: (number | string)[];
       type?: 'indoor' | 'outdoor';
       centerId?: string;
+      center?: IndoorCenterDto;
       indoorTopoData?: IndoorTopoFormData;
       initialRoutes?: (IndoorRouteDto & { path?: TopoPath | null })[];
     }
@@ -438,6 +457,7 @@ export class TopoFormComponent {
             initialRouteIds?: (number | string)[];
             type?: 'indoor' | 'outdoor';
             centerId?: string;
+            center?: IndoorCenterDto;
             indoorTopoData?: IndoorTopoFormData;
             initialRoutes?: (IndoorRouteDto & { path?: TopoPath | null })[];
           }
@@ -457,6 +477,7 @@ export class TopoFormComponent {
 
   typeInput = input<'indoor' | 'outdoor'>('outdoor');
   centerIdInput = input<string | undefined>(undefined);
+  centerInput = input<IndoorCenterDto | null>(null);
 
   protected readonly type: Signal<'indoor' | 'outdoor'> = computed(
     () => this._dialogCtx?.data?.type ?? this.typeInput(),
@@ -469,6 +490,37 @@ export class TopoFormComponent {
   protected readonly centerId: Signal<string | undefined> = computed(
     () => this._dialogCtx?.data?.centerId ?? this.centerIdInput(),
   );
+
+  protected readonly indoorCenterResource = resource({
+    params: () => {
+      if (!this.isIndoor()) return null;
+      if (this._dialogCtx?.data?.center || this.centerInput()) return null;
+      return this.centerId();
+    },
+    loader: async ({ params: centerId }) => {
+      if (!centerId) return null;
+      return await this.indoor.getCenterById(centerId);
+    },
+  });
+
+  readonly effectiveCenter = computed<IndoorCenterDto | null>(() => {
+    return (
+      this._dialogCtx?.data?.center ??
+      this.centerInput() ??
+      this.indoorCenterResource.value() ??
+      null
+    );
+  });
+
+  readonly canCreateRoute = computed<boolean>(() => {
+    if (!this.isIndoor()) return false;
+    const center = this.effectiveCenter();
+    if (center) {
+      return this.authState.canCreateIndoorRoute(center);
+    }
+    const centerId = this.centerId();
+    return centerId ? this.authState.canCreateIndoorInCenter(centerId) : false;
+  });
 
   private readonly dialogCragId = this._dialogCtx?.data?.cragId;
   private readonly dialogTopoData = computed(() => {
@@ -825,7 +877,10 @@ export class TopoFormComponent {
             legacy: legacy || false,
             start_date: null,
             end_date: null,
-            user_creator_id: null,
+            user_creator_id:
+              indoorTopoData?.user_creator_id ??
+              this.supabase.authUserId() ??
+              null,
           };
 
           let topoId: string | undefined;
@@ -854,11 +909,17 @@ export class TopoFormComponent {
                 .delete()
                 .eq('topo_id', topoId)
                 .in('route_id', removedIds);
-              await this.supabase.client
+              const { error: unassignErr } = await this.supabase.client
                 .from('indoor_routes')
                 .update({ topo_id: null })
                 .in('id', removedIds)
                 .eq('topo_id', topoId);
+              if (unassignErr) {
+                console.warn(
+                  '[TopoFormComponent] Could not unassign indoor_routes.topo_id:',
+                  unassignErr,
+                );
+              }
             }
 
             // 2. Add or update route associations
@@ -881,11 +942,20 @@ export class TopoFormComponent {
             await Promise.all(upsertPromises);
 
             // 3. Associate all selected routes to this topo in indoor_routes table
-            if (currentIds.length > 0) {
-              await this.supabase.client
+            const routesToAssociate = selectedRoutes
+              .filter((r) => ('topo_id' in r ? r.topo_id !== topoId : true))
+              .map((r) => r.id as string);
+            if (routesToAssociate.length > 0) {
+              const { error: updateErr } = await this.supabase.client
                 .from('indoor_routes')
                 .update({ topo_id: topoId })
-                .in('id', currentIds);
+                .in('id', routesToAssociate);
+              if (updateErr) {
+                console.warn(
+                  '[TopoFormComponent] Could not update indoor_routes.topo_id:',
+                  updateErr,
+                );
+              }
             }
 
             this.indoor.reloadCenterRoutes();
@@ -1145,6 +1215,33 @@ export class TopoFormComponent {
     }
   }
 
+  async createNewIndoorRoute(): Promise<void> {
+    const centerId = this.centerId();
+    if (!centerId) return;
+
+    const currentTopoId = this.isIndoor()
+      ? this._dialogCtx?.data?.indoorTopoData?.id
+      : undefined;
+
+    const result = await this.indoor.openIndoorRouteForm(centerId, undefined, {
+      hideTopo: true,
+      defaultTopoId: currentTopoId,
+    });
+    if (result && typeof result === 'object') {
+      const newRoute = result as IndoorRouteDto;
+      this.pendingNewIndoorRouteIds.update((ids) => [...ids, newRoute.id]);
+      this.model.update((m) => {
+        const existing = m.selectedRoutes;
+        if (existing.some((r) => r.id === newRoute.id)) return m;
+        return {
+          ...m,
+          selectedRoutes: [...existing, newRoute],
+        };
+      });
+      this.indoorRoutes.reload();
+    }
+  }
+
   protected async openPathEditor(overrideUrl?: string): Promise<void> {
     const topo = this.effectiveTopoData();
     const activeUrl =
@@ -1193,6 +1290,7 @@ export class TopoFormComponent {
       standalone: false, // Don't save to DB directly, return the paths
       isIndoor: this.isIndoor(),
       centerId: this.centerId(),
+      center: this.effectiveCenter() ?? undefined,
     });
 
     if (result && typeof result === 'object' && result.saved) {

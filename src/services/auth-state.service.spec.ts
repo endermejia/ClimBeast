@@ -241,4 +241,133 @@ describe('AuthStateService', () => {
       expect(service.canEditIndoorInCenter('any-center')).toBe(true);
     });
   });
+
+  describe('canCreateIndoorRoute', () => {
+    const centerAll = {
+      id: 'center-1',
+      name: 'Gym All',
+      permissions: { can_create_routes: 'all' },
+    };
+    const centerRoutesetters = {
+      id: 'center-2',
+      name: 'Gym Setters',
+      permissions: { can_create_routes: 'routesetters' },
+    };
+
+    it('returns true for global admin regardless of center permissions', () => {
+      mockSupabase.setUserProfile({ id: 'u1', is_admin: true } as never);
+      expect(service.canCreateIndoorRoute(centerRoutesetters as never)).toBe(
+        true,
+      );
+    });
+
+    it('returns true for routesetter or center admin', () => {
+      mockSupabase.setUserProfile({ id: 'u1', is_admin: false } as never);
+      mockSupabase.setRoutesetterIndoorCenters(['center-2']);
+      expect(service.canCreateIndoorRoute(centerRoutesetters as never)).toBe(
+        true,
+      );
+    });
+
+    it('returns true for regular authenticated user when can_create_routes is all', () => {
+      mockSupabase.setUserProfile({ id: 'u1', is_admin: false } as never);
+      mockSupabase.setSession({ user: { id: 'u1' } } as never);
+      expect(service.canCreateIndoorRoute(centerAll as never)).toBe(true);
+    });
+
+    it('returns false for regular user when can_create_routes is routesetters', () => {
+      mockSupabase.setUserProfile({ id: 'u1', is_admin: false } as never);
+      mockSupabase.setSession({ user: { id: 'u1' } } as never);
+      expect(service.canCreateIndoorRoute(centerRoutesetters as never)).toBe(
+        false,
+      );
+    });
+
+    it('returns false when unauthenticated even if can_create_routes is all', () => {
+      mockSupabase.setUserProfile(null);
+      mockSupabase.setSession(null);
+      expect(service.canCreateIndoorRoute(centerAll as never)).toBe(false);
+    });
+  });
+
+  describe('canCreateIndoorLine', () => {
+    const centerAll = {
+      id: 'center-1',
+      name: 'Gym All',
+      permissions: { can_create_lines: 'all' },
+    };
+    const centerRoutesetters = {
+      id: 'center-2',
+      name: 'Gym Setters',
+      permissions: { can_create_lines: 'routesetters' },
+    };
+
+    it('returns true for authenticated user when can_create_lines is all', () => {
+      mockSupabase.setUserProfile({ id: 'u1', is_admin: false } as never);
+      mockSupabase.setSession({ user: { id: 'u1' } } as never);
+      expect(service.canCreateIndoorLine(centerAll as never)).toBe(true);
+    });
+
+    it('returns false for regular user when can_create_lines is routesetters', () => {
+      mockSupabase.setUserProfile({ id: 'u1', is_admin: false } as never);
+      mockSupabase.setSession({ user: { id: 'u1' } } as never);
+      expect(service.canCreateIndoorLine(centerRoutesetters as never)).toBe(
+        false,
+      );
+    });
+  });
+
+  describe('canEditIndoorLine', () => {
+    const centerDefault = {
+      id: 'center-1',
+      name: 'Gym Default',
+      permissions: {
+        can_create_routes: 'all',
+        can_create_lines: 'all',
+        can_edit_lines: 'routesetters_and_creator',
+      },
+    };
+
+    beforeEach(() => {
+      mockSupabase.setUserProfile({ id: 'u1', is_admin: false } as never);
+      mockSupabase.setSession({ user: { id: 'u1' } } as never);
+    });
+
+    it('returns true when user created the line (line.user_creator_id === currentUserId)', () => {
+      const line = { user_creator_id: 'u1' };
+      expect(service.canEditIndoorLine(centerDefault as never, line)).toBe(
+        true,
+      );
+    });
+
+    it('returns true when user created the route (line.route.user_creator_id === currentUserId)', () => {
+      const line = { user_creator_id: null, route: { user_creator_id: 'u1' } };
+      expect(service.canEditIndoorLine(centerDefault as never, line)).toBe(
+        true,
+      );
+    });
+
+    it('returns true when can_edit_lines is all', () => {
+      const centerAll = {
+        id: 'center-1',
+        name: 'Gym All',
+        permissions: { can_edit_lines: 'all' },
+      };
+      const line = {
+        user_creator_id: 'other',
+        route: { user_creator_id: 'other' },
+      };
+      expect(service.canEditIndoorLine(centerAll as never, line)).toBe(true);
+    });
+
+    it('returns false for other users when can_edit_lines is routesetters_and_creator', () => {
+      const line = {
+        user_creator_id: 'other',
+        route: { user_creator_id: 'other' },
+      };
+      expect(service.canEditIndoorLine(centerDefault as never, line)).toBe(
+        false,
+      );
+    });
+  });
 });

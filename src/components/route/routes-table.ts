@@ -489,7 +489,12 @@ import { EmptyStateComponent } from '../ui/empty-state';
                             class="flex items-center justify-end gap-1 shrink-0 whitespace-nowrap"
                           >
                             @if (isEditing()) {
-                              @if (item.canDelete ?? item.canEdit) {
+                              @let hasAscents =
+                                item.hasAscents ??
+                                (item.ascents > 0 || !!item.own_ascent);
+                              @if (
+                                (item.canDelete ?? item.canEdit) && !hasAscents
+                              ) {
                                 <button
                                   [size]="isMobile ? 's' : 'm'"
                                   appearance="negative"

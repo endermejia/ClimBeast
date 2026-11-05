@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { TuiDialogService } from '@taiga-ui/core';
 
 import { TranslateService, TranslateStore } from '@ngx-translate/core';
+import { of } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { IS_BROWSER } from '../app/is-browser';
@@ -607,6 +608,57 @@ describe('IndoorService - Admin Requests', () => {
       expect(
         indoorCentersData.indoorRoutesReloadTick.update,
       ).toHaveBeenCalled();
+    });
+  });
+
+  describe('getCenterById', () => {
+    it('queries indoor_centers by id and returns the center', async () => {
+      const mockCenter = {
+        id: 'center-123',
+        name: 'Boulder Gym',
+        permissions: {},
+      };
+      vi.spyOn(mockSupabase.client, 'from').mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi
+              .fn()
+              .mockResolvedValue({ data: mockCenter, error: null }),
+          }),
+        }),
+      } as unknown as ReturnType<typeof mockSupabase.client.from>);
+
+      const result = await service.getCenterById('center-123');
+      expect(result).toEqual(mockCenter as never);
+    });
+  });
+
+  describe('openIndoorTopoForm', () => {
+    it('passes center and centerId into the dialog context data', async () => {
+      const dialogs = TestBed.inject(TuiDialogService);
+      const mockCenter = {
+        id: 'c-1',
+        name: 'Climb Center',
+        permissions: { can_create_routes: 'all' },
+      };
+      vi.spyOn(dialogs, 'open').mockReturnValue(of(true) as never);
+
+      const result = await service.openIndoorTopoForm(
+        'c-1',
+        undefined,
+        mockCenter as never,
+      );
+      expect(dialogs.open).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          data: expect.objectContaining({
+            centerId: 'c-1',
+            center: mockCenter,
+            type: 'indoor',
+          }),
+        }),
+      );
+      expect(result).toBe(true);
     });
   });
 });

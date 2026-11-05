@@ -538,21 +538,23 @@ describe('RoutesTableComponent actions column (project vs ascent)', () => {
     expect(actionBtn).toBeNull();
   });
 
-  it('shows delete button and replaces ascent buttons when in editing mode', async () => {
+  it('shows delete button and replaces action button when in editing mode for route without ascents', async () => {
     const fixture = TestBed.createComponent(ActionsHostComponent);
     fixture.componentInstance.data = [
       {
         ...createMockRow(1),
-        own_ascent: { id: 10, type: 'rp' },
-        climbed: true,
+        canEdit: true,
+        ascents: 0,
+        own_ascent: null,
       },
     ];
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(
-      fixture.nativeElement.querySelector('app-button-ascent-type'),
-    ).not.toBeNull();
+    const initialBtn = fixture.nativeElement.querySelector(
+      'td[data-col="actions"] button',
+    );
+    expect(initialBtn).not.toBeNull();
     expect(
       fixture.nativeElement.querySelector(
         'td[data-col="actions"] button[appearance="negative"]',
@@ -563,9 +565,6 @@ describe('RoutesTableComponent actions column (project vs ascent)', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(
-      fixture.nativeElement.querySelector('app-button-ascent-type'),
-    ).toBeNull();
     const deleteBtn = fixture.nativeElement.querySelector(
       'td[data-col="actions"] button[appearance="negative"]',
     );
@@ -603,6 +602,77 @@ describe('RoutesTableComponent actions column (project vs ascent)', () => {
         ...createMockRow(99),
         canDelete: false,
         canEdit: false,
+      },
+    ];
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.tableComp()!.isEditing.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(
+      fixture.nativeElement.querySelector(
+        'td[data-col="actions"] button[appearance="negative"]',
+      ),
+    ).toBeNull();
+  });
+
+  it('does not show delete button in editing mode if route has ascents', async () => {
+    const fixture = TestBed.createComponent(ActionsHostComponent);
+    fixture.componentInstance.data = [
+      {
+        ...createMockRow(101),
+        canDelete: true,
+        ascents: 3,
+      },
+    ];
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.tableComp()!.isEditing.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(
+      fixture.nativeElement.querySelector(
+        'td[data-col="actions"] button[appearance="negative"]',
+      ),
+    ).toBeNull();
+  });
+
+  it('does not show delete button in editing mode if route has own_ascent', async () => {
+    const fixture = TestBed.createComponent(ActionsHostComponent);
+    fixture.componentInstance.data = [
+      {
+        ...createMockRow(102),
+        canDelete: true,
+        ascents: 0,
+        own_ascent: { id: 5, type: 'rp' },
+      },
+    ];
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.tableComp()!.isEditing.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(
+      fixture.nativeElement.querySelector(
+        'td[data-col="actions"] button[appearance="negative"]',
+      ),
+    ).toBeNull();
+  });
+
+  it('does not show delete button in editing mode if route has hasAscents flag', async () => {
+    const fixture = TestBed.createComponent(ActionsHostComponent);
+    fixture.componentInstance.data = [
+      {
+        ...createMockRow(103),
+        canDelete: true,
+        ascents: 0,
+        hasAscents: true,
       },
     ];
     fixture.detectChanges();

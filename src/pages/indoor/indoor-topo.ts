@@ -568,17 +568,22 @@ export class IndoorTopoComponent extends TopoPageBase {
     const topoId = this.id();
     if (!topoId || !centerId) return;
     this.indoorService
-      .openIndoorTopoForm(centerId, {
-        id: topoId,
-        name: topo.name,
-        image_url: topo.photo ?? '',
-        climbing_kind: null,
-        legacy: topo.legacy ?? false,
-        center_id: centerId,
-        created_at: '',
-        end_date: null,
-        start_date: null,
-      } as IndoorTopoDto)
+      .openIndoorTopoForm(
+        centerId,
+        {
+          id: topoId,
+          name: topo.name,
+          image_url: topo.photo ?? '',
+          climbing_kind: null,
+          legacy: topo.legacy ?? false,
+          center_id: centerId,
+          created_at: '',
+          end_date: null,
+          start_date: null,
+          user_creator_id: topo.user_creator_id ?? null,
+        } as IndoorTopoDto,
+        topo.indoor_center ?? undefined,
+      )
       .then((success: boolean) => {
         if (!success) return;
         // La foto pudo cambiar en el mismo path: descartar la copia guardada.

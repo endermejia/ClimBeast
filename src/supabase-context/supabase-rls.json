@@ -1136,7 +1136,7 @@
     "permissive": "PERMISSIVE",
     "roles": "{authenticated}",
     "cmd": "DELETE",
-    "qual": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR is_indoor_center_routesetter(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR ((user_creator_id IS NOT NULL) AND (user_creator_id = auth.uid())))",
+    "qual": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR is_indoor_center_routesetter(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR ((user_creator_id IS NOT NULL) AND (user_creator_id = auth.uid())) OR (EXISTS ( SELECT 1\n   FROM indoor_routes r\n  WHERE ((r.id = indoor_topo_routes.route_id) AND (r.user_creator_id IS NOT NULL) AND (r.user_creator_id = auth.uid())))))",
     "with_check": null
   },
   {
@@ -1147,7 +1147,7 @@
     "roles": "{authenticated}",
     "cmd": "INSERT",
     "qual": null,
-    "with_check": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR is_indoor_center_routesetter(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR (get_indoor_center_permission(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id)), 'can_create_lines'::text) = 'all'::text))"
+    "with_check": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR is_indoor_center_routesetter(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR ((user_creator_id IS NOT NULL) AND (user_creator_id = auth.uid())) OR (EXISTS ( SELECT 1\n   FROM indoor_routes r\n  WHERE ((r.id = indoor_topo_routes.route_id) AND (r.user_creator_id IS NOT NULL) AND (r.user_creator_id = auth.uid())))) OR (get_indoor_center_permission(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id)), 'can_create_lines'::text) = 'all'::text) OR (get_indoor_center_permission(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id)), 'can_create_routes'::text) = 'all'::text))"
   },
   {
     "schemaname": "public",
@@ -1156,8 +1156,8 @@
     "permissive": "PERMISSIVE",
     "roles": "{authenticated}",
     "cmd": "UPDATE",
-    "qual": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR is_indoor_center_routesetter(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR ((user_creator_id IS NOT NULL) AND (user_creator_id = auth.uid())) OR (get_indoor_center_permission(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id)), 'can_edit_lines'::text) = 'all'::text) OR ((path IS NULL) AND (get_indoor_center_permission(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id)), 'can_create_lines'::text) = 'all'::text)))",
-    "with_check": null
+    "qual": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR is_indoor_center_routesetter(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR ((user_creator_id IS NOT NULL) AND (user_creator_id = auth.uid())) OR (EXISTS ( SELECT 1\n   FROM indoor_routes r\n  WHERE ((r.id = indoor_topo_routes.route_id) AND (r.user_creator_id IS NOT NULL) AND (r.user_creator_id = auth.uid())))) OR (get_indoor_center_permission(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id)), 'can_edit_lines'::text) = 'all'::text) OR ((path IS NULL) AND (get_indoor_center_permission(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id)), 'can_create_lines'::text) = 'all'::text)))",
+    "with_check": "(is_user_admin(auth.uid()) OR is_indoor_center_admin(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR is_indoor_center_routesetter(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id))) OR ((user_creator_id IS NOT NULL) AND (user_creator_id = auth.uid())) OR (EXISTS ( SELECT 1\n   FROM indoor_routes r\n  WHERE ((r.id = indoor_topo_routes.route_id) AND (r.user_creator_id IS NOT NULL) AND (r.user_creator_id = auth.uid())))) OR (get_indoor_center_permission(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id)), 'can_edit_lines'::text) = 'all'::text) OR (get_indoor_center_permission(( SELECT indoor_topos.center_id\n   FROM indoor_topos\n  WHERE (indoor_topos.id = indoor_topo_routes.topo_id)), 'can_create_lines'::text) = 'all'::text))"
   },
   {
     "schemaname": "public",

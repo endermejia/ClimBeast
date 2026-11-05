@@ -119,7 +119,8 @@ export class OutdoorRoutesTableComponent {
       const row = mapRouteToTableRow(r);
       const canEdit = this.authState.checkRouteEditPermission(r);
       row.canEdit = canEdit;
-      row.canDelete = isAsAdmin || !!areaAdminMap[r.area_id || -1];
+      row.canDelete =
+        (isAsAdmin || !!areaAdminMap[r.area_id || -1]) && !row.hasAscents;
       row.canAddTopo = canEdit;
       return row;
     });
@@ -252,6 +253,12 @@ export class OutdoorRoutesTableComponent {
     row: RoutesTableRow | RouteItem | IndoorRouteWithExtras,
   ): Promise<void> {
     if (!this.isBrowser) return;
+    const hasAscents =
+      '_ref' in row
+        ? (row.hasAscents ?? (row.ascents > 0 || !!row.own_ascent))
+        : (row.ascent_count ?? 0) > 0 || !!row.own_ascent;
+    if (hasAscents) return;
+
     const r = '_ref' in row ? (row._ref as RouteItem) : (row as RouteItem);
 
     const confirmed = await firstValueFrom(
