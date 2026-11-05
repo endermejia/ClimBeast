@@ -21,7 +21,7 @@ const DEFAULT_CONFIG: Required<ZoomPanConfig> = {
   minScale: 0.1,
   maxScale: 10,
   zoomSpeed: 0.15,
-  moveThreshold: 5,
+  moveThreshold: 8,
 };
 
 // ─────────────────────────────────────────────

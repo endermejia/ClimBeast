@@ -64,6 +64,7 @@ export class ZoomPanController {
   onTouchEnd(): void {
     if (this.dragState.hasMoved) {
       this.lastDragEndTime = Date.now();
+      this.dragState.hasMoved = false;
     }
     this.dragState.isDragging = false;
   }
@@ -90,6 +91,7 @@ export class ZoomPanController {
   onMouseUp(): void {
     if (this.dragState.hasMoved) {
       this.lastDragEndTime = Date.now();
+      this.dragState.hasMoved = false;
     }
     this.dragState.isDragging = false;
   }

@@ -574,9 +574,10 @@ export class TopoRoutesTableComponent {
   }
 
   protected selectRoute(routeId: string | number): void {
-    this.selectedRouteIdChange.emit(
-      this.selectedRouteId() === routeId ? null : routeId,
-    );
+    const isCurrent =
+      this.selectedRouteId() === routeId ||
+      String(this.selectedRouteId()) === String(routeId);
+    this.selectedRouteIdChange.emit(isCurrent ? null : routeId);
   }
 
   protected onSortChange(event: TuiTableSortChange<TopoRouteRow>): void {
@@ -630,7 +631,9 @@ export class TopoRoutesTableComponent {
       let nextIndex = 0;
       if (currentId) {
         const currentIndex = data.findIndex(
-          (item) => item?._ref?.route_id === currentId,
+          (item) =>
+            item?._ref?.route_id === currentId ||
+            String(item?._ref?.route_id) === String(currentId),
         );
         if (currentIndex !== -1) {
           nextIndex = (currentIndex + step + data.length) % data.length;

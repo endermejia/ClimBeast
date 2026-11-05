@@ -333,12 +333,11 @@ export class TopoViewerComponent {
   }
 
   protected onMouseDown(event: Event): void {
-    this.hoveredRouteIdChange.emit(null);
     this.zoomPan.onMouseDown(event);
   }
 
   protected onMouseMove(event: Event): void {
-    if (this.zoomPan.dragState.isDragging) {
+    if (this.zoomPan.dragState.isDragging && this.zoomPan.dragState.hasMoved) {
       this.hoveredRouteIdChange.emit(null);
     }
     this.zoomPan.onMouseMove(event);
@@ -387,8 +386,10 @@ export class TopoViewerComponent {
     event.stopPropagation();
     if (this.zoomPan.wasRecentlyDragging()) return;
     this.hoveredRouteIdChange.emit(null);
-    const next: string | number | null =
-      this.selectedRouteId() === route.route_id ? null : route.route_id;
+    const isCurrent =
+      this.selectedRouteId() === route.route_id ||
+      String(this.selectedRouteId()) === String(route.route_id);
+    const next: string | number | null = isCurrent ? null : route.route_id;
     this.selectedRouteIdChange.emit(next);
   }
 
