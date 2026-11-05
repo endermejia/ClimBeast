@@ -52,7 +52,6 @@ import {
   tap,
 } from 'rxjs';
 
-import { AudioPreferencesService } from '../../services/audio-preferences.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { EightAnuService } from '../../services/eight-anu.service';
 import { FollowRequestsService } from '../../services/follow-requests.service';
@@ -70,12 +69,14 @@ import { FollowRequestsDialogComponent } from '../../components/dialogs/follow-r
 import { Profile8aSectionComponent } from '../../components/user-profile/profile-8a-section';
 import { ProfileDangerZoneComponent } from '../../components/user-profile/profile-danger-zone';
 import { ProfileGeneralSectionComponent } from '../../components/user-profile/profile-general-section';
+import { ProfileNotificationsComponent } from '../../components/user-profile/profile-notifications';
 import { ProfilePreferencesComponent } from '../../components/user-profile/profile-preferences';
 
 import {
   EightAnuUser,
   Language,
   Languages,
+  NotificationPreferenceKey,
   Sex,
   Sexes,
   Theme,
@@ -100,6 +101,7 @@ interface Country {
     Profile8aSectionComponent,
     ProfileDangerZoneComponent,
     ProfileGeneralSectionComponent,
+    ProfileNotificationsComponent,
     ProfilePreferencesComponent,
     TranslatePipe,
     TuiHeader,
@@ -168,16 +170,21 @@ interface Country {
           [stringifyLanguage]="stringifyLanguage()"
           [userEmail]="userEmail()"
           [languageError]="languageError()"
-          [pushSupported]="pushSupported()"
-          [pushEnabled]="pushEnabled()"
           (updateModel)="onChildUpdateModel($event)"
           (saveLanguage)="saveLanguage()"
           (toggleTheme)="toggleTheme($event)"
           (restartFirstStepsChange)="onRestartFirstStepsChange($event)"
-          (messageSoundChange)="onMessageSoundChange($event)"
-          (notificationSoundChange)="onNotificationSoundChange($event)"
-          (pushNotificationsChange)="onPushNotificationsChange($event)"
           (privateProfileChange)="onPrivateProfileChange($event)"
+        />
+
+        <!-- Notifications Section -->
+        <app-profile-notifications
+          [enabled]="pushEnabled()"
+          [supported]="pushSupported()"
+          [permissionDenied]="pushPermissionDenied()"
+          [preferences]="notificationPreferences()"
+          (enabledChange)="onNotificationsChange($event)"
+          (preferenceChange)="onNotificationPreferenceChange($event)"
         />
 
         <!-- Account Actions Header -->
@@ -224,7 +231,6 @@ interface Country {
 })
 export class UserProfileConfigComponent {
   protected readonly authState = inject(AuthStateService);
-  protected readonly audioPrefs = inject(AudioPreferencesService);
   protected readonly languageService = inject(LanguageService);
   protected readonly themeService = inject(ThemeService);
   private readonly isBrowser = inject(IS_BROWSER);
@@ -309,12 +315,38 @@ export class UserProfileConfigComponent {
   });
 
   /**
-   * Interruptor de notificaciones push. Vive fuera de `model` porque no es un
-   * dato del perfil: refleja el permiso del sistema y la suscripción push.
+   * Interruptor principal de notificaciones. Vive fuera de `model`: combina el
+   * maestro de cuenta (`notifications_enabled`) con el permiso del sistema y la
+   * suscripción push de este dispositivo. `pushToggle` refleja el clic al
+   * instante mientras se resuelve la petición de permiso.
    */
-  private readonly pushToggle = signal(this.pushSubscription.pushEnabled());
-  protected readonly pushEnabled = this.pushToggle.asReadonly();
+  private readonly pushToggle = signal<boolean | null>(null);
+  protected readonly pushEnabled = computed(
+    () => this.pushToggle() ?? this.pushSubscription.pushEnabled(),
+  );
   protected readonly pushSupported = this.pushSubscription.isSupported;
+  protected readonly pushPermissionDenied =
+    this.pushSubscription.permissionDenied;
+
+  /** Preferencias por categoría, con actualización optimista local. */
+  private readonly notificationOverrides = signal<
+    Partial<Record<NotificationPreferenceKey, boolean>>
+  >({});
+  protected readonly notificationPreferences = computed<
+    Record<NotificationPreferenceKey, boolean>
+  >(() => {
+    const profile = this.profile();
+    const overrides = this.notificationOverrides();
+    return {
+      notify_messages:
+        overrides.notify_messages ?? profile?.notify_messages ?? true,
+      notify_likes: overrides.notify_likes ?? profile?.notify_likes ?? true,
+      notify_comments:
+        overrides.notify_comments ?? profile?.notify_comments ?? true,
+      notify_follows:
+        overrides.notify_follows ?? profile?.notify_follows ?? true,
+    };
+  });
 
   protected readonly model = signal({
     fullName: '',
@@ -330,8 +362,6 @@ export class UserProfileConfigComponent {
     isPrivate: false,
     eightAnuUser: null as EightAnuUser | null,
     deleteEmail: '',
-    messageSound: true,
-    notificationSound: true,
     restartFirstSteps: false,
   });
 
@@ -566,11 +596,6 @@ export class UserProfileConfigComponent {
       birth_date,
       eightAnuUser: this.selectedEightAnuUser.value() || null,
       deleteEmail: '',
-      messageSound:
-        profile.message_sound ?? this.audioPrefs.messageSoundEnabled(),
-      notificationSound:
-        profile.notification_sound ??
-        this.audioPrefs.notificationSoundEnabled(),
       restartFirstSteps: false,
     });
   }
@@ -959,45 +984,54 @@ export class UserProfileConfigComponent {
     this.updateModel('restartFirstSteps', false);
   }
 
-  async onMessageSoundChange(enabled: boolean): Promise<void> {
-    this.updateModel('messageSound', enabled);
-    await this.updateProfile(
-      { message_sound: enabled },
-      'profile.updated.message_sound',
-    );
-    this.audioPrefs.messageSoundEnabled.set(enabled);
-  }
-
-  async onNotificationSoundChange(enabled: boolean): Promise<void> {
-    this.updateModel('notificationSound', enabled);
-    await this.updateProfile(
-      { notification_sound: enabled },
-      'profile.updated.notification_sound',
-    );
-    this.audioPrefs.notificationSoundEnabled.set(enabled);
-  }
-
-  async onPushNotificationsChange(enabled: boolean): Promise<void> {
+  async onNotificationsChange(enabled: boolean): Promise<void> {
     // Refleja el clic ya mismo: si el sistema acaba denegando el permiso hay
     // que pasar por `true -> false` para que el interruptor se desactive.
     this.pushToggle.set(enabled);
 
-    if (!enabled) {
-      await this.pushSubscription.disable();
-      this.pushToggle.set(false);
-      return;
-    }
+    try {
+      if (!enabled) {
+        const ok = await this.pushSubscription.disable();
+        if (ok) {
+          this.toast.success('profile.updated.notifications_enabled');
+        } else {
+          this.toast.error('profile.saveError');
+        }
+        return;
+      }
 
-    const granted = await this.pushSubscription.enable();
-    this.pushToggle.set(this.pushSubscription.pushEnabled());
-
-    if (!granted) {
-      this.toast.error(
-        this.pushSubscription.permissionDenied()
-          ? 'pushNotificationsBlocked'
-          : 'pushNotificationsError',
-      );
+      const granted = await this.pushSubscription.enable();
+      if (granted) {
+        this.toast.success('profile.updated.notifications_enabled');
+      } else {
+        this.toast.error(
+          this.pushSubscription.permissionDenied()
+            ? 'pushNotificationsBlocked'
+            : 'pushNotificationsError',
+        );
+      }
+    } finally {
+      this.pushToggle.set(null);
     }
+  }
+
+  async onNotificationPreferenceChange({
+    key,
+    value,
+  }: {
+    key: NotificationPreferenceKey;
+    value: boolean;
+  }): Promise<void> {
+    this.notificationOverrides.update((o) => ({ ...o, [key]: value }));
+    await this.updateProfile(
+      { [key]: value },
+      'profile.updated.notification_preferences',
+    );
+    this.notificationOverrides.update((o) => {
+      const next = { ...o };
+      delete next[key];
+      return next;
+    });
   }
 
   onPrivateProfileChange(enabled: boolean): void {

@@ -195,6 +195,39 @@ function getNotificationBody(
   }
 }
 
+interface NotificationPreferences {
+  notifications_enabled: boolean | null;
+  notify_messages: boolean | null;
+  notify_likes: boolean | null;
+  notify_comments: boolean | null;
+  notify_follows: boolean | null;
+}
+
+/** Aplica el maestro de cuenta y la preferencia de la categoría del tipo. */
+function isNotificationAllowed(
+  prefs: NotificationPreferences,
+  type: string,
+): boolean {
+  if (prefs.notifications_enabled === false) return false;
+
+  switch (type) {
+    case 'message':
+      return prefs.notify_messages !== false;
+    case 'like':
+    case 'likedComment':
+    case 'liked_comment':
+      return prefs.notify_likes !== false;
+    case 'comment':
+    case 'mention':
+      return prefs.notify_comments !== false;
+    case 'follow_request':
+    case 'follow_accepted':
+      return prefs.notify_follows !== false;
+    default:
+      return true;
+  }
+}
+
 serve(async (req) => {
   try {
     const authHeader =
@@ -344,12 +377,23 @@ serve(async (req) => {
       );
     }
 
-    // 2. Fetch user profile preferences (sound/notifications enabled, language)
+    // 2. Fetch user profile preferences (master switch, categories, language)
     const { data: userProfile } = await supabase
       .from('user_profiles')
-      .select('notification_sound, message_sound, language')
+      .select(
+        'notifications_enabled, notify_messages, notify_likes, notify_comments, notify_follows, language',
+      )
       .eq('id', record.user_id)
       .maybeSingle();
+
+    if (userProfile && !isNotificationAllowed(userProfile, record.type)) {
+      return new Response(
+        JSON.stringify({ success: true, message: 'Disabled by user' }),
+        {
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    }
 
     const lang = userProfile?.language || 'es';
 
@@ -480,18 +524,6 @@ serve(async (req) => {
 
     const results = await Promise.allSettled(
       subscriptions.map((sub) => {
-        let shouldNotify = true;
-
-        if (userProfile) {
-          if (record.type === 'message') {
-            shouldNotify = userProfile.message_sound !== false;
-          } else {
-            shouldNotify = userProfile.notification_sound !== false;
-          }
-        }
-
-        if (!shouldNotify) return Promise.resolve();
-
         const payload = JSON.stringify({
           notification: {
             title,

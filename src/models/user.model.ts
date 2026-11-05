@@ -23,7 +23,9 @@ export interface ProfileConfigModel {
   isPrivate: boolean;
   eightAnuUser: EightAnuUser | null;
   deleteEmail: string;
-  messageSound: boolean;
-  notificationSound: boolean;
   restartFirstSteps: boolean;
 }
+
+/** Preferencias de notificaciones push por categoría (columnas de `user_profiles`). */
+export type NotificationPreferenceKey =
+  'notify_messages' | 'notify_likes' | 'notify_comments' | 'notify_follows';

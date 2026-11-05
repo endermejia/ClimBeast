@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: '14.5';
+    PostgrestVersion: '13.0.5';
   };
   auth: {
     Tables: {
@@ -3710,9 +3710,12 @@ export type Database = {
           id: string;
           is_admin: boolean | null;
           language: Database['public']['Enums']['language'] | null;
-          message_sound: boolean | null;
           name: string;
-          notification_sound: boolean | null;
+          notifications_enabled: boolean;
+          notify_comments: boolean;
+          notify_follows: boolean;
+          notify_likes: boolean;
+          notify_messages: boolean;
           private: boolean | null;
           sex: Database['public']['Enums']['sex'] | null;
           size: number | null;
@@ -3733,9 +3736,12 @@ export type Database = {
           id?: string;
           is_admin?: boolean | null;
           language?: Database['public']['Enums']['language'] | null;
-          message_sound?: boolean | null;
           name: string;
-          notification_sound?: boolean | null;
+          notifications_enabled?: boolean;
+          notify_comments?: boolean;
+          notify_follows?: boolean;
+          notify_likes?: boolean;
+          notify_messages?: boolean;
           private?: boolean | null;
           sex?: Database['public']['Enums']['sex'] | null;
           size?: number | null;
@@ -3756,9 +3762,12 @@ export type Database = {
           id?: string;
           is_admin?: boolean | null;
           language?: Database['public']['Enums']['language'] | null;
-          message_sound?: boolean | null;
           name?: string;
-          notification_sound?: boolean | null;
+          notifications_enabled?: boolean;
+          notify_comments?: boolean;
+          notify_follows?: boolean;
+          notify_likes?: boolean;
+          notify_messages?: boolean;
           private?: boolean | null;
           sex?: Database['public']['Enums']['sex'] | null;
           size?: number | null;
@@ -5025,6 +5034,10 @@ export type Database = {
         };
         Returns: string;
       };
+      verify_notify_push_secret: {
+        Args: { p_secret: string };
+        Returns: boolean;
+      };
     };
     Enums: {
       ascent_type: 'os' | 'rp' | 'f' | 'attempt';
@@ -5108,6 +5121,62 @@ export type Database = {
   };
   storage: {
     Tables: {
+      bucket_lifecycle_states: {
+        Row: {
+          bucket_id: string;
+          claim_id: string | null;
+          claim_until: string | null;
+          continuation: Json | null;
+          failure_count: number;
+          generation: string | null;
+          last_completed_at: string | null;
+          last_error: Json | null;
+          last_result: Json | null;
+          last_started_at: string | null;
+          last_success_at: string | null;
+          next_run_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          bucket_id: string;
+          claim_id?: string | null;
+          claim_until?: string | null;
+          continuation?: Json | null;
+          failure_count?: number;
+          generation?: string | null;
+          last_completed_at?: string | null;
+          last_error?: Json | null;
+          last_result?: Json | null;
+          last_started_at?: string | null;
+          last_success_at?: string | null;
+          next_run_at?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          bucket_id?: string;
+          claim_id?: string | null;
+          claim_until?: string | null;
+          continuation?: Json | null;
+          failure_count?: number;
+          generation?: string | null;
+          last_completed_at?: string | null;
+          last_error?: Json | null;
+          last_result?: Json | null;
+          last_started_at?: string | null;
+          last_success_at?: string | null;
+          next_run_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'bucket_lifecycle_states_bucket_id_fkey';
+            columns: ['bucket_id'];
+            isOneToOne: true;
+            referencedRelation: 'buckets';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       buckets: {
         Row: {
           allowed_mime_types: string[] | null;
@@ -5207,6 +5276,30 @@ export type Database = {
           id?: string;
           type?: Database['storage']['Enums']['buckettype'];
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      lifecycle_abandoned_artifacts: {
+        Row: {
+          attempted_at: string;
+          bucket_id: string;
+          key: string;
+          name: string;
+          version: string | null;
+        };
+        Insert: {
+          attempted_at?: string;
+          bucket_id: string;
+          key: string;
+          name: string;
+          version?: string | null;
+        };
+        Update: {
+          attempted_at?: string;
+          bucket_id?: string;
+          key?: string;
+          name?: string;
+          version?: string | null;
         };
         Relationships: [];
       };
@@ -5455,6 +5548,14 @@ export type Database = {
         Args: { bucketid: string; metadata: Json; name: string; owner: string };
         Returns: undefined;
       };
+      delete_lifecycle_objects: {
+        Args: { object_ids: string[] };
+        Returns: {
+          id: string;
+          is_delete_marker: boolean;
+          metadata: Json;
+        }[];
+      };
       extension: { Args: { name: string }; Returns: string };
       filename: { Args: { name: string }; Returns: string };
       foldername: { Args: { name: string }; Returns: string[] };
@@ -5513,6 +5614,10 @@ export type Database = {
         }[];
       };
       operation: { Args: never; Returns: string };
+      reconcile_lifecycle_state: {
+        Args: { policy_changed: boolean; target_bucket_id: string };
+        Returns: undefined;
+      };
       search: {
         Args: {
           bucketname: string;

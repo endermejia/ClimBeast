@@ -7,13 +7,16 @@ import { STORAGE_KEYS } from '../constants';
 import { AuthStateService } from './auth-state.service';
 import { LocalStorage } from './local-storage';
 import { PushService } from './push.service';
+import { UserProfilesService } from './user-profiles.service';
 
 /**
  * Orquesta el ciclo de vida de las notificaciones push:
  *
- * - En la primera apertura de la app pide permiso al sistema (prompt nativo).
+ * - Al acceder a la app con sesión iniciada pide permiso al sistema (prompt
+ *   nativo) una vez por dispositivo, salvo que el usuario haya desactivado
+ *   las notificaciones a nivel de cuenta (`notifications_enabled = false`).
  * - Mantiene la suscripción sincronizada con el backend mientras el permiso
- *   esté concedido y el usuario no la haya desactivado.
+ *   esté concedido y la cuenta tenga las notificaciones activas.
  * - Expone el estado y las acciones que usa el interruptor de Ajustes.
  */
 @Injectable({ providedIn: 'root' })
@@ -22,10 +25,21 @@ export class PushSubscriptionService {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly push = inject(PushService);
   private readonly storage = inject(LocalStorage);
+  private readonly userProfiles = inject(UserProfilesService);
 
-  /** `true` cuando el SO concedió el permiso y existe suscripción válida. */
+  /** Maestro de cuenta: silencia todos los dispositivos cuando es `false`. */
+  readonly accountEnabled = computed(
+    () => this.authState.userProfile()?.notifications_enabled ?? true,
+  );
+  /**
+   * `true` cuando la cuenta tiene las notificaciones activas, el SO concedió el
+   * permiso y este dispositivo tiene una suscripción válida.
+   */
   readonly pushEnabled = computed(
-    () => this.push.permission() === 'granted' && this.push.isSubscribed(),
+    () =>
+      this.accountEnabled() &&
+      this.push.permission() === 'granted' &&
+      this.push.isSubscribed(),
   );
   /** `true` si el permiso fue bloqueado a nivel de sistema/navegador. */
   readonly permissionDenied = computed(
@@ -42,13 +56,13 @@ export class PushSubscriptionService {
       const profile = this.authState.userProfile();
       if (!profile || !this.push.isSupported()) return;
 
-      // El usuario desactivó las notificaciones desde Ajustes
-      if (this.storage.getItem(STORAGE_KEYS.pushDisabled) === 'true') return;
+      // El usuario desactivó las notificaciones de su cuenta desde Ajustes
+      if (profile.notifications_enabled === false) return;
 
       const permission = this.push.permission();
 
       if (permission === 'default') {
-        // Primera apertura: prompt nativo directo, una sola vez
+        // Prompt nativo directo, una sola vez por dispositivo
         if (this.storage.getItem(STORAGE_KEYS.pushPromptAsked) === 'true') {
           return;
         }
@@ -62,20 +76,37 @@ export class PushSubscriptionService {
     });
   }
 
-  /** Activa las notificaciones (pide permiso si hace falta). */
+  /**
+   * Activa las notificaciones: pide permiso si hace falta, suscribe este
+   * dispositivo y marca la cuenta con `notifications_enabled = true`.
+   */
   async enable(): Promise<boolean> {
-    this.storage.removeItem(STORAGE_KEYS.pushDisabled);
-    return this.push.enablePushNotifications();
+    const granted = await this.push.enablePushNotifications();
+    if (!granted) return false;
+
+    if (!this.accountEnabled()) {
+      const result = await this.userProfiles.updateUserProfile({
+        notifications_enabled: true,
+      });
+      if (!result.success) return false;
+    }
+    return true;
   }
 
-  /** Desactiva las notificaciones y borra la suscripción del backend. */
-  async disable(): Promise<void> {
-    this.storage.setItem(STORAGE_KEYS.pushDisabled, 'true');
+  /**
+   * Desactiva las notificaciones de la cuenta (silencia todos los
+   * dispositivos) y borra la suscripción de este dispositivo.
+   */
+  async disable(): Promise<boolean> {
+    const result = await this.userProfiles.updateUserProfile({
+      notifications_enabled: false,
+    });
     try {
       await this.push.unsubscribe();
     } catch (err: unknown) {
       console.error('[PushSubscriptionService] Error disabling push', err);
     }
+    return result.success;
   }
 
   private async askPermission(): Promise<void> {

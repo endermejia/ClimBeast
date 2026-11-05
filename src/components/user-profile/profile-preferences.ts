@@ -91,21 +91,6 @@ import { Language, ProfileConfigModel, Themes } from '../../models';
       <div class="flex flex-col items-end gap-4">
         <!-- Switches -->
         <div class="flex items-center gap-4">
-          <label tuiLabel for="pushNotificationsSwitch">{{
-            'pushNotifications' | translate
-          }}</label>
-          <input
-            id="pushNotificationsSwitch"
-            tuiSwitch
-            type="checkbox"
-            [ngModel]="pushEnabled()"
-            [disabled]="!pushSupported()"
-            (ngModelChange)="pushNotificationsChange.emit($event)"
-            autocomplete="off"
-          />
-        </div>
-
-        <div class="flex items-center gap-4">
           <label tuiLabel for="firstStepsSwitch">{{
             'firstSteps' | translate
           }}</label>
@@ -115,34 +100,6 @@ import { Language, ProfileConfigModel, Themes } from '../../models';
             type="checkbox"
             [ngModel]="model().restartFirstSteps"
             (ngModelChange)="restartFirstStepsChange.emit($event)"
-            autocomplete="off"
-          />
-        </div>
-
-        <div class="flex items-center gap-4">
-          <label tuiLabel for="msgSoundUtil">{{
-            'messageSound' | translate
-          }}</label>
-          <input
-            id="msgSoundUtil"
-            tuiSwitch
-            type="checkbox"
-            [ngModel]="model().messageSound"
-            (ngModelChange)="messageSoundChange.emit($event)"
-            autocomplete="off"
-          />
-        </div>
-
-        <div class="flex items-center gap-4">
-          <label tuiLabel for="notifSoundUtil">{{
-            'notificationSound' | translate
-          }}</label>
-          <input
-            id="notifSoundUtil"
-            tuiSwitch
-            type="checkbox"
-            [ngModel]="model().notificationSound"
-            (ngModelChange)="notificationSoundChange.emit($event)"
             autocomplete="off"
           />
         </div>
@@ -174,16 +131,11 @@ export class ProfilePreferencesComponent {
   );
   readonly userEmail = input<string>('');
   readonly languageError = input<string | null>(null);
-  readonly pushSupported = input<boolean>(false);
-  readonly pushEnabled = input<boolean>(false);
 
   readonly updateModel = output<{ field: string; value: unknown }>();
   readonly saveLanguage = output<void>();
   readonly toggleTheme = output<boolean>();
   readonly restartFirstStepsChange = output<boolean>();
-  readonly messageSoundChange = output<boolean>();
-  readonly notificationSoundChange = output<boolean>();
-  readonly pushNotificationsChange = output<boolean>();
   readonly privateProfileChange = output<boolean>();
 
   readonly Themes = Themes;
