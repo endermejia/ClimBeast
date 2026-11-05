@@ -173,6 +173,12 @@ function getNotificationBody(
       return 'Has recibido un nuevo mensaje';
     }
 
+    case 'follow': {
+      if (lang === 'en') return `${actorsText} started following you`;
+      if (lang === 'de') return `${actorsText} folgt dir jetzt`;
+      return `${actorsText} ha empezado a seguirte`;
+    }
+
     case 'follow_request': {
       if (lang === 'en') return `${actorsText} sent you a follow request`;
       if (lang === 'de')
@@ -220,6 +226,7 @@ function isNotificationAllowed(
     case 'comment':
     case 'mention':
       return prefs.notify_comments !== false;
+    case 'follow':
     case 'follow_request':
     case 'follow_accepted':
       return prefs.notify_follows !== false;
@@ -503,7 +510,7 @@ serve(async (req) => {
       targetUrl = '/home';
     }
     if (record.type === 'message' && record.room_id) {
-      targetUrl = `/chat/${record.room_id}`;
+      targetUrl = `/home?roomId=${record.room_id}`;
     } else if (
       record.resource_id &&
       ['like', 'comment', 'mention', 'likedComment', 'liked_comment'].includes(
@@ -512,7 +519,7 @@ serve(async (req) => {
     ) {
       targetUrl = `/home?ascent=${record.resource_id}`;
     } else if (
-      ['follow_request', 'follow_accepted'].includes(record.type) &&
+      ['follow', 'follow_request', 'follow_accepted'].includes(record.type) &&
       record.actor_id
     ) {
       targetUrl = `/profile/${record.actor_id}`;

@@ -3,10 +3,14 @@ import { TestBed } from '@angular/core/testing';
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { IS_BROWSER } from '../app/is-browser';
+import { NotificationTypes } from '../models';
 
+import { IS_BROWSER } from '../app/is-browser';
 import { MockSupabaseService } from '../testing/mock-supabase.service';
+import { AppNotificationsService } from './app-notifications.service';
+
 import { FollowsService } from './follows.service';
+
 import { SupabaseService } from './supabase.service';
 import { ToastService } from './toast.service';
 
@@ -24,6 +28,7 @@ describe('FollowsService', () => {
   let service: FollowsService;
   let mockSupabase: MockSupabaseService;
   let mockToast: ReturnType<typeof createMockToast>;
+  let mockNotifications: { createNotification: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     mockSupabase = new MockSupabaseService();
@@ -37,6 +42,9 @@ describe('FollowsService', () => {
     });
 
     mockToast = createMockToast();
+    mockNotifications = {
+      createNotification: vi.fn().mockResolvedValue(undefined),
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -45,6 +53,7 @@ describe('FollowsService', () => {
         { provide: IS_BROWSER, useValue: true },
         { provide: SupabaseService, useValue: mockSupabase },
         { provide: ToastService, useValue: mockToast },
+        { provide: AppNotificationsService, useValue: mockNotifications },
       ],
     });
     service = TestBed.inject(FollowsService);
@@ -60,6 +69,11 @@ describe('FollowsService', () => {
       expect(result).toBe(true);
       expect(mockToast.success).toHaveBeenCalled();
       expect(service.followChange()).toBe(1);
+      expect(mockNotifications.createNotification).toHaveBeenCalledWith({
+        user_id: 'user-2',
+        actor_id: 'user-1',
+        type: NotificationTypes.FOLLOW,
+      });
     });
 
     it('returns false and shows error toast on failure', async () => {

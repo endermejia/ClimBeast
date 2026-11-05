@@ -19,6 +19,22 @@ export const routes: Routes = [
       import('../pages/dashboard/home').then((m) => m.HomeComponent),
   },
   {
+    path: 'chat/:roomId',
+    canMatch: [authGuard],
+    loadComponent: () =>
+      import('../pages/chat/chat-redirect').then(
+        (m) => m.ChatRedirectComponent,
+      ),
+  },
+  {
+    path: 'chat',
+    canMatch: [authGuard],
+    loadComponent: () =>
+      import('../pages/chat/chat-redirect').then(
+        (m) => m.ChatRedirectComponent,
+      ),
+  },
+  {
     path: 'merchandising',
     canMatch: [authGuard],
     children: [

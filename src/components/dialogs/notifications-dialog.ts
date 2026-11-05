@@ -201,6 +201,8 @@ export class NotificationsDialogComponent {
           : 'notifications.likedComment';
       case NotificationTypes.MESSAGE:
         return 'notifications.sentMessage';
+      case NotificationTypes.FOLLOW:
+        return 'notifications.newFollower';
       case NotificationTypes.FOLLOW_REQUEST:
         return 'notifications.followRequest';
       case NotificationTypes.FOLLOW_ACCEPTED:
@@ -259,15 +261,26 @@ export class NotificationsDialogComponent {
       group.type === NotificationTypes.MENTION ||
       group.type === NotificationTypes.LIKED_COMMENT
     ) {
-      const ascentId = Number(group.resource_id);
-      if (!isNaN(ascentId) && ascentId > 0) {
+      const ascentId = group.resource_id;
+      if (
+        ascentId !== undefined &&
+        ascentId !== null &&
+        String(ascentId).trim() !== ''
+      ) {
+        this.context.completeWith();
         void firstValueFrom(this.ascentsService.openAscentDialog(ascentId), {
           defaultValue: undefined,
         });
       }
     } else if (group.type === NotificationTypes.MESSAGE) {
-      this.messagingService.openChatDialog({ userId: group.actor_id });
+      this.context.completeWith();
+      this.messagingService.openChatDialog(
+        group.resource_id
+          ? { roomId: String(group.resource_id) }
+          : { userId: group.actor_id },
+      );
     } else if (
+      group.type === NotificationTypes.FOLLOW ||
       group.type === NotificationTypes.FOLLOW_REQUEST ||
       group.type === NotificationTypes.FOLLOW_ACCEPTED
     ) {

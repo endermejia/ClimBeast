@@ -998,6 +998,7 @@
   "notifications.likedCommentPlural": "li han donat a m'agrada al teu comentari a '{{routeName}}'",
   "notifications.mention": "t'ha mencionat en un comentari a '{{routeName}}'",
   "notifications.mentionPlural": "t'han mencionat en comentaris a '{{routeName}}'",
+  "notifications.newFollower": "ha començat a seguir-te",
   "notifications.sentMessage": "t'ha enviat un missatge",
   "notifications.unknown": "nova notificació",
   "notificationsBlockedHint": "Bloquejades en este navegador. Activa-les en els ajustos del navegador o del sistema.",

@@ -998,6 +998,7 @@
   "notifications.likedCommentPlural": "zure '{{routeName}}' bideko iruzkina gustuko dute",
   "notifications.mention": "aipatu zaitu '{{routeName}}' bideko iruzkin batean",
   "notifications.mentionPlural": "aipatu zaituzte '{{routeName}}' bideko iruzkinetan",
+  "notifications.newFollower": "(e)k jarraitzen hasi zaitu",
   "notifications.sentMessage": "(e)k mezu bat bidali dizu",
   "notifications.unknown": "notifikazio berria",
   "notificationsBlockedHint": "Nabigatzaile honetan blokeatuta. Aktibatu itzazu nabigatzailearen edo sistemaren ezarpenetan.",

@@ -245,6 +245,8 @@ export class HomeComponent {
   protected readonly scrollbar = viewChild(TuiScrollbar, { read: ElementRef });
 
   readonly roomId = input<string | undefined>();
+  readonly ascent = input<string | undefined>();
+  readonly ascentId = input<string | undefined>();
   protected readonly followedIds = signal<Set<string>>(new Set());
   protected readonly followsLoaded = signal(false);
 
@@ -487,6 +489,13 @@ export class HomeComponent {
       const id = this.roomId();
       if (id && this.isBrowser) {
         void this.openChat(id);
+      }
+    });
+
+    effect(() => {
+      const id = this.ascent() || this.ascentId();
+      if (id && this.isBrowser) {
+        this.openAscent(id);
       }
     });
 
@@ -1282,6 +1291,16 @@ export class HomeComponent {
 
     // Clean up URL after closing
     if (this.roomId()) {
+      void this.router.navigate(['/home'], { replaceUrl: true });
+    }
+  }
+
+  protected openAscent(ascentId?: string): void {
+    if (!ascentId) return;
+    this.ascentsService.viewAscent(ascentId);
+
+    // Clean up URL after opening
+    if (this.ascent() || this.ascentId()) {
       void this.router.navigate(['/home'], { replaceUrl: true });
     }
   }

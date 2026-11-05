@@ -1,8 +1,9 @@
 import { inject, Injectable, signal } from '@angular/core';
 
-import { UserProfileDto } from '../models';
+import { NotificationTypes, UserProfileDto } from '../models';
 
 import { IS_BROWSER } from '../app/is-browser';
+import { AppNotificationsService } from './app-notifications.service';
 
 import { SupabaseService } from './supabase.service';
 
@@ -15,6 +16,7 @@ export class FollowsService {
   private readonly supabase = inject(SupabaseService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly toast = inject(ToastService);
+  private readonly notificationsService = inject(AppNotificationsService);
 
   readonly followChange = signal<number>(0);
 
@@ -99,6 +101,11 @@ export class FollowsService {
     });
     this.notifyChange();
     this.toast.success('messages.toasts.userFollowed');
+    void this.notificationsService.createNotification({
+      user_id: followedUserId,
+      actor_id: userId,
+      type: NotificationTypes.FOLLOW,
+    });
     return true;
   }
 

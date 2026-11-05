@@ -68,7 +68,8 @@ self.addEventListener("notificationclick", (event) => {
 
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || "/home";
+  const targetPath = event.notification.data?.url || "/home";
+  const urlToOpen = new URL(targetPath, self.location.origin).href;
 
   event.waitUntil(
     clients
@@ -76,23 +77,24 @@ self.addEventListener("notificationclick", (event) => {
         type: "window",
         includeUncontrolled: true,
       })
-      .then((windowClients) => {
-        // Check if there is already a window open with this URL
-        for (let i = 0; i < windowClients.length; i++) {
-          const client = windowClients[i];
-          // Use URL object for safer comparison
+      .then(async (windowClients) => {
+        // Find existing window client from the same origin
+        for (const client of windowClients) {
           try {
             const clientUrl = new URL(client.url);
-            if (
-              clientUrl.pathname === urlToOpen ||
-              client.url.includes(urlToOpen)
-            ) {
-              if ("focus" in client) return client.focus();
+            if (clientUrl.origin === self.location.origin) {
+              if ("navigate" in client && client.url !== urlToOpen) {
+                await client.navigate(urlToOpen);
+              }
+              if ("focus" in client) {
+                return client.focus();
+              }
             }
           } catch (e) {
-            if (client.url.includes(urlToOpen) && "focus" in client) {
-              return client.focus();
-            }
+            console.error(
+              "[ServiceWorker] Error navigating existing client:",
+              e,
+            );
           }
         }
         // If no window is open, open a new one

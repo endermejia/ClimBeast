@@ -2,6 +2,8 @@ import { PrerenderFallback, RenderMode, ServerRoute } from '@angular/ssr';
 
 export const serverRoutes: ServerRoute[] = [
   { path: 'home', renderMode: RenderMode.Prerender },
+  { path: 'chat', renderMode: RenderMode.Server },
+  { path: 'chat/:roomId', renderMode: RenderMode.Server },
   { path: 'merchandising', renderMode: RenderMode.Server },
   { path: 'merchandising/checkout', renderMode: RenderMode.Server },
   { path: 'order-success', renderMode: RenderMode.Server },

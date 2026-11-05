@@ -998,6 +998,7 @@
   "notifications.likedCommentPlural": "liked your comment on '{{routeName}}'",
   "notifications.mention": "mentioned you in a comment on '{{routeName}}'",
   "notifications.mentionPlural": "mentioned you in comments on '{{routeName}}'",
+  "notifications.newFollower": "started following you",
   "notifications.sentMessage": "sent you a message",
   "notifications.unknown": "new notification",
   "notificationsBlockedHint": "Blocked in this browser. Enable them in your browser or system settings.",
