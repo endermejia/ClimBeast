@@ -433,10 +433,22 @@ describe('RoutesTableComponent actions column (project vs ascent)', () => {
   @Component({
     standalone: true,
     imports: [RoutesTableComponent],
-    template: ` <app-routes-table [data]="data" [columns]="['actions']" /> `,
+    template: `
+      <app-routes-table
+        [data]="data"
+        [columns]="['actions']"
+        (deleteRoute)="onDeleteRoute($event)"
+      />
+    `,
   })
   class ActionsHostComponent {
     data: RoutesTableRow[] = [];
+    deletedRoute: RoutesTableRow | null = null;
+    tableComp = viewChild(RoutesTableComponent);
+
+    onDeleteRoute(row: RoutesTableRow): void {
+      this.deletedRoute = row;
+    }
   }
 
   beforeEach(async () => {
@@ -524,5 +536,86 @@ describe('RoutesTableComponent actions column (project vs ascent)', () => {
 
     expect(ascentBtn).not.toBeNull();
     expect(actionBtn).toBeNull();
+  });
+
+  it('shows delete button and replaces ascent buttons when in editing mode', async () => {
+    const fixture = TestBed.createComponent(ActionsHostComponent);
+    fixture.componentInstance.data = [
+      {
+        ...createMockRow(1),
+        own_ascent: { id: 10, type: 'rp' },
+        climbed: true,
+      },
+    ];
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(
+      fixture.nativeElement.querySelector('app-button-ascent-type'),
+    ).not.toBeNull();
+    expect(
+      fixture.nativeElement.querySelector(
+        'td[data-col="actions"] button[appearance="negative"]',
+      ),
+    ).toBeNull();
+
+    fixture.componentInstance.tableComp()!.isEditing.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(
+      fixture.nativeElement.querySelector('app-button-ascent-type'),
+    ).toBeNull();
+    const deleteBtn = fixture.nativeElement.querySelector(
+      'td[data-col="actions"] button[appearance="negative"]',
+    );
+    expect(deleteBtn).not.toBeNull();
+  });
+
+  it('emits deleteRoute when clicking delete button in editing mode', async () => {
+    const fixture = TestBed.createComponent(ActionsHostComponent);
+    fixture.componentInstance.data = [
+      {
+        ...createMockRow(42),
+        canDelete: true,
+      },
+    ];
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.tableComp()!.isEditing.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const deleteBtn = fixture.nativeElement.querySelector(
+      'td[data-col="actions"] button[appearance="negative"]',
+    );
+    deleteBtn.click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.deletedRoute?.id).toBe(42);
+  });
+
+  it('does not show delete button in editing mode if neither canDelete nor canEdit is true', async () => {
+    const fixture = TestBed.createComponent(ActionsHostComponent);
+    fixture.componentInstance.data = [
+      {
+        ...createMockRow(99),
+        canDelete: false,
+        canEdit: false,
+      },
+    ];
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.tableComp()!.isEditing.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(
+      fixture.nativeElement.querySelector(
+        'td[data-col="actions"] button[appearance="negative"]',
+      ),
+    ).toBeNull();
   });
 });

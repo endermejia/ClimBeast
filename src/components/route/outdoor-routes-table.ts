@@ -63,6 +63,7 @@ import { mapRouteToTableRow, handleErrorToast } from '../../utils';
       (logAscent)="onLogAscent($event)"
       (viewAscent)="onViewAscent($event.row, $event.ascent)"
       (toggleProject)="onToggleProject($event)"
+      (deleteRoute)="deleteRoute($event)"
     />
 
     <ng-template #equippersTpl let-item let-isEditing="isEditing">
@@ -247,19 +248,19 @@ export class OutdoorRoutesTableComponent {
     });
   }
 
-  protected deleteRoute(
+  protected async deleteRoute(
     row: RoutesTableRow | RouteItem | IndoorRouteWithExtras,
-  ): void {
+  ): Promise<void> {
     if (!this.isBrowser) return;
     const r = '_ref' in row ? (row._ref as RouteItem) : (row as RouteItem);
 
-    firstValueFrom(
+    const confirmed = await firstValueFrom(
       this.dialogs.open<boolean>(TUI_CONFIRM, {
         label: this.translate.instant('routes.deleteTitle'),
         size: 's',
         data: {
           content: this.translate.instant('routes.deleteConfirm', {
-            name: r.name,
+            name: r.name || this.translate.instant('route'),
           }),
           yes: this.translate.instant('delete'),
           no: this.translate.instant('cancel'),
@@ -267,11 +268,12 @@ export class OutdoorRoutesTableComponent {
         } as TuiConfirmData,
       }),
       { defaultValue: false },
-    ).then((confirmed) => {
-      if (!confirmed) return;
-      this.routesService
-        .delete(r.id)
-        .catch((err) => handleErrorToast(err, this.toast));
-    });
+    );
+    if (!confirmed) return;
+    try {
+      await this.routesService.delete(r.id);
+    } catch (err: unknown) {
+      handleErrorToast(err, this.toast);
+    }
   }
 }

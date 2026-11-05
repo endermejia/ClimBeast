@@ -55,6 +55,7 @@ import { RoutesTableComponent } from './routes-table';
       [equippersTemplate]="equippersTpl"
       (logAscent)="logIndoorAscent($event)"
       (viewAscent)="viewIndoorAscent($event.row, $event.ascent)"
+      (deleteRoute)="deleteIndoorRoute($event)"
       (toggleRouteOnTopo)="
         toggleRouteOnTopo($event.topoId, $event.routeId, $event.isAttached)
       "
@@ -203,7 +204,7 @@ export class IndoorRoutesTableComponent {
         size: 's',
         data: {
           content: this.translate.instant('routes.deleteConfirm', {
-            name: r.name,
+            name: r.name || this.translate.instant('route'),
           }),
           yes: this.translate.instant('delete'),
           no: this.translate.instant('cancel'),
@@ -213,8 +214,13 @@ export class IndoorRoutesTableComponent {
       { defaultValue: false },
     );
     if (!confirmed) return;
-    await this.indoorService.deleteRoute(r.id);
-    this.indoorService.reloadCenterRoutes();
+    try {
+      await this.indoorService.deleteRoute(r.id);
+      this.indoorService.reloadCenterRoutes();
+    } catch (e: unknown) {
+      console.error('[IndoorRoutesTable] error deleting route', e);
+      handleErrorToast(e, this.toast);
+    }
   }
 
   protected async toggleRouteOnTopo(
