@@ -1,4 +1,4 @@
-import { computed, effect, inject, Injectable } from '@angular/core';
+import { computed, effect, inject, Injectable, signal } from '@angular/core';
 
 import { IS_BROWSER } from '../app/is-browser';
 
@@ -27,9 +27,14 @@ export class PushSubscriptionService {
   private readonly storage = inject(LocalStorage);
   private readonly userProfiles = inject(UserProfilesService);
 
+  private readonly accountOverride = signal<boolean | null>(null);
+
   /** Maestro de cuenta: silencia todos los dispositivos cuando es `false`. */
   readonly accountEnabled = computed(
-    () => this.authState.userProfile()?.notifications_enabled ?? true,
+    () =>
+      this.accountOverride() ??
+      this.authState.userProfile()?.notifications_enabled ??
+      true,
   );
   /**
    * `true` cuando la cuenta tiene las notificaciones activas, el SO concedió el
@@ -54,10 +59,19 @@ export class PushSubscriptionService {
 
     effect(() => {
       const profile = this.authState.userProfile();
-      if (!profile || !this.push.isSupported()) return;
+      if (!profile) return;
+
+      if (
+        this.accountOverride() !== null &&
+        profile.notifications_enabled === this.accountOverride()
+      ) {
+        this.accountOverride.set(null);
+      }
+
+      if (!this.push.isSupported()) return;
 
       // El usuario desactivó las notificaciones de su cuenta desde Ajustes
-      if (profile.notifications_enabled === false) return;
+      if (this.accountEnabled() === false) return;
 
       const permission = this.push.permission();
 
@@ -84,11 +98,16 @@ export class PushSubscriptionService {
     const granted = await this.push.enablePushNotifications();
     if (!granted) return false;
 
-    if (!this.accountEnabled()) {
+    this.accountOverride.set(true);
+
+    if (this.authState.userProfile()?.notifications_enabled !== true) {
       const result = await this.userProfiles.updateUserProfile({
         notifications_enabled: true,
       });
-      if (!result.success) return false;
+      if (!result.success) {
+        this.accountOverride.set(null);
+        return false;
+      }
     }
     return true;
   }
@@ -98,9 +117,13 @@ export class PushSubscriptionService {
    * dispositivos) y borra la suscripción de este dispositivo.
    */
   async disable(): Promise<boolean> {
+    this.accountOverride.set(false);
     const result = await this.userProfiles.updateUserProfile({
       notifications_enabled: false,
     });
+    if (!result.success) {
+      this.accountOverride.set(null);
+    }
     try {
       await this.push.unsubscribe();
     } catch (err: unknown) {

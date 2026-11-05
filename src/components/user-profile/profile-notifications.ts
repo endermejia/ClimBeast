@@ -17,20 +17,19 @@ interface NotificationCategory {
   host: { class: 'contents' },
   imports: [FormsModule, TranslatePipe, TuiSwitch],
   template: `
-    <!-- NOTIFICATIONS -->
-    <div class="flex items-center justify-between gap-4 mt-6">
-      <h2 class="text-lg font-bold m-0">
-        {{ 'notifications' | translate }}
-      </h2>
-    </div>
-
-    <div class="flex flex-col gap-4">
+    <div class="flex flex-col gap-4 mt-6">
       <!-- Master switch -->
       <div class="flex flex-col gap-1">
         <div class="flex items-center justify-between gap-4">
-          <label tuiLabel for="notificationsSwitch">{{
-            'notifications' | translate
-          }}</label>
+          <h2 class="text-lg font-bold m-0">
+            <label
+              tuiLabel
+              for="notificationsSwitch"
+              class="cursor-pointer text-inherit font-inherit"
+            >
+              {{ 'notifications' | translate }}
+            </label>
+          </h2>
           <input
             id="notificationsSwitch"
             tuiSwitch

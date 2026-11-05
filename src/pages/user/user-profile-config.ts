@@ -315,10 +315,10 @@ export class UserProfileConfigComponent {
   });
 
   /**
-   * Interruptor principal de notificaciones. Vive fuera de `model`: combina el
-   * maestro de cuenta (`notifications_enabled`) con el permiso del sistema y la
-   * suscripción push de este dispositivo. `pushToggle` refleja el clic al
-   * instante mientras se resuelve la petición de permiso.
+   * Interruptor principal de notificaciones. Refleja el estado unificado de
+   * `PushSubscriptionService` (cuenta + permiso + suscripción del dispositivo).
+   * `pushToggle` refleja el cambio instantáneamente mientras se resuelven
+   * las llamadas asíncronas del navegador/backend.
    */
   private readonly pushToggle = signal<boolean | null>(null);
   protected readonly pushEnabled = computed(
@@ -328,24 +328,14 @@ export class UserProfileConfigComponent {
   protected readonly pushPermissionDenied =
     this.pushSubscription.permissionDenied;
 
-  /** Preferencias por categoría, con actualización optimista local. */
-  private readonly notificationOverrides = signal<
-    Partial<Record<NotificationPreferenceKey, boolean>>
-  >({});
-  protected readonly notificationPreferences = computed<
+  /** Preferencias por categoría (estado reactivo local sincronizado con el perfil). */
+  protected readonly notificationPreferences = signal<
     Record<NotificationPreferenceKey, boolean>
-  >(() => {
-    const profile = this.profile();
-    const overrides = this.notificationOverrides();
-    return {
-      notify_messages:
-        overrides.notify_messages ?? profile?.notify_messages ?? true,
-      notify_likes: overrides.notify_likes ?? profile?.notify_likes ?? true,
-      notify_comments:
-        overrides.notify_comments ?? profile?.notify_comments ?? true,
-      notify_follows:
-        overrides.notify_follows ?? profile?.notify_follows ?? true,
-    };
+  >({
+    notify_messages: true,
+    notify_likes: true,
+    notify_comments: true,
+    notify_follows: true,
   });
 
   protected readonly model = signal({
@@ -597,6 +587,13 @@ export class UserProfileConfigComponent {
       eightAnuUser: this.selectedEightAnuUser.value() || null,
       deleteEmail: '',
       restartFirstSteps: false,
+    });
+
+    this.notificationPreferences.set({
+      notify_messages: profile.notify_messages ?? true,
+      notify_likes: profile.notify_likes ?? true,
+      notify_comments: profile.notify_comments ?? true,
+      notify_follows: profile.notify_follows ?? true,
     });
   }
 
@@ -1022,16 +1019,20 @@ export class UserProfileConfigComponent {
     key: NotificationPreferenceKey;
     value: boolean;
   }): Promise<void> {
-    this.notificationOverrides.update((o) => ({ ...o, [key]: value }));
-    await this.updateProfile(
+    this.notificationPreferences.update((prefs) => ({
+      ...prefs,
+      [key]: value,
+    }));
+    const ok = await this.updateProfile(
       { [key]: value },
       'profile.updated.notification_preferences',
     );
-    this.notificationOverrides.update((o) => {
-      const next = { ...o };
-      delete next[key];
-      return next;
-    });
+    if (!ok) {
+      this.notificationPreferences.update((prefs) => ({
+        ...prefs,
+        [key]: !value,
+      }));
+    }
   }
 
   onPrivateProfileChange(enabled: boolean): void {
@@ -1042,18 +1043,20 @@ export class UserProfileConfigComponent {
   private async updateProfile(
     updates: Partial<UserProfileDto>,
     toastKey: string | null = 'profile.saveSuccess',
-  ): Promise<void> {
+  ): Promise<boolean> {
     const result = await this.userProfilesService.updateUserProfile(updates);
 
     if (!result.success) {
       console.error('Error saving profile:', result.error);
       this.toast.error('profile.saveError');
+      return false;
     } else if (toastKey) {
       this.pendingSuccessToast.set({
         key: toastKey,
         lang: updates.language || this.languageService.selectedLanguage(),
       });
     }
+    return true;
   }
 
   async logout(): Promise<void> {
