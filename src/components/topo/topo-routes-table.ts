@@ -213,22 +213,20 @@ import type { TopoRouteRow } from './topo.types';
                                 >
                                   {{ item.name }}
                                 </span>
-                                <a
-                                  tuiIconButton
-                                  [routerLink]="item.link"
-                                  iconStart="@tui.arrow-up-right"
-                                  appearance="flat-grayscale"
-                                  size="xs"
-                                  class="rounded-full! shrink-0 opacity-0 group-hover:opacity-70 hover:opacity-100! focus-visible:opacity-100! transition-opacity"
-                                  [class.opacity-70!]="
-                                    isMobile() ||
-                                    item._ref.route_id === selectedRouteId()
-                                  "
-                                  [tuiHint]="'view' | translate"
-                                  (click.zoneless)="$event.stopPropagation()"
-                                >
-                                  {{ 'view' | translate }}
-                                </a>
+                                @if (isSelected) {
+                                  <a
+                                    tuiIconButton
+                                    [routerLink]="item.link"
+                                    iconStart="@tui.arrow-up-right"
+                                    appearance="flat-grayscale"
+                                    size="xs"
+                                    class="rounded-full! shrink-0 opacity-70 hover:opacity-100! focus-visible:opacity-100! transition-opacity"
+                                    [tuiHint]="'view' | translate"
+                                    (click.zoneless)="$event.stopPropagation()"
+                                  >
+                                    {{ 'view' | translate }}
+                                  </a>
+                                }
                               </div>
                               @if (
                                 isIndoor() &&
@@ -477,7 +475,7 @@ export class TopoRoutesTableComponent {
             (rowRect.top - containerRect.top) -
             containerRect.height / 2 +
             rowRect.height / 2;
-          scrollbarEl.scrollTo({ top: targetTop, behavior: 'smooth' });
+          scrollbarEl.scrollTo?.({ top: targetTop, behavior: 'smooth' });
         } else {
           row.scrollIntoView({ block: 'center', behavior: 'smooth' });
         }
