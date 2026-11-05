@@ -488,15 +488,21 @@ import { EmptyStateComponent } from '../ui/empty-state';
                             size="m"
                             class="flex items-center justify-end gap-1 shrink-0 whitespace-nowrap"
                           >
-                            @if (item.own_ascent; as ascent) {
+                            @let showAscentBtn =
+                              item.own_ascent &&
+                              (!item.project || item.climbed);
+                            @if (showAscentBtn) {
                               <app-button-ascent-type
                                 [size]="isMobile ? 's' : 'm'"
-                                [type]="ascent.type"
+                                [type]="item.own_ascent!.type"
                                 [active]="true"
                                 class="cursor-pointer"
                                 [tuiHint]="'ascent.view' | translate"
                                 (click.zoneless)="
-                                  viewAscent.emit({ row: item, ascent: ascent })
+                                  viewAscent.emit({
+                                    row: item,
+                                    ascent: item.own_ascent!,
+                                  })
                                 "
                               />
                             } @else {
@@ -529,6 +535,22 @@ import { EmptyStateComponent } from '../ui/empty-state';
                             }
                             <ng-template #actionMenu>
                               <tui-data-list size="m">
+                                @if (item.own_ascent; as ascent) {
+                                  <button
+                                    tuiOption
+                                    class="whitespace-nowrap"
+                                    (click)="
+                                      viewAscent.emit({
+                                        row: item,
+                                        ascent: ascent,
+                                      });
+                                      openActionId.set(null)
+                                    "
+                                  >
+                                    <tui-icon icon="@tui.eye" class="mr-2" />
+                                    {{ 'ascent.view' | translate }}
+                                  </button>
+                                }
                                 <button
                                   tuiOption
                                   appearance="positive"

@@ -428,3 +428,98 @@ describe('RoutesTableComponent keyboard navigation', () => {
     }
   });
 });
+
+describe('RoutesTableComponent actions column (project vs ascent)', () => {
+  @Component({
+    standalone: true,
+    imports: [RoutesTableComponent],
+    template: ` <app-routes-table [data]="data" [columns]="['actions']" /> `,
+  })
+  class ActionsHostComponent {
+    data: RoutesTableRow[] = [];
+  }
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [ActionsHostComponent, TranslateModule.forRoot()],
+      providers: [
+        provideRouter([]),
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: IS_BROWSER, useValue: true },
+      ],
+    }).compileComponents();
+  });
+
+  it('shows project button when route has only attempt ascent and is a project', async () => {
+    const fixture = TestBed.createComponent(ActionsHostComponent);
+    fixture.componentInstance.data = [
+      {
+        ...createMockRow(1),
+        own_ascent: { id: 10, type: 'attempt' },
+        climbed: false,
+        project: true,
+      },
+    ];
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const ascentBtn = fixture.nativeElement.querySelector(
+      'app-button-ascent-type',
+    );
+    const actionBtn = fixture.nativeElement.querySelector(
+      'td[data-col="actions"] > div > button',
+    );
+
+    expect(ascentBtn).toBeNull();
+    expect(actionBtn).not.toBeNull();
+    expect(actionBtn?.getAttribute('data-appearance')).toBe('info');
+  });
+
+  it('shows ascent button when route has attempt ascent and is not a project', async () => {
+    const fixture = TestBed.createComponent(ActionsHostComponent);
+    fixture.componentInstance.data = [
+      {
+        ...createMockRow(1),
+        own_ascent: { id: 10, type: 'attempt' },
+        climbed: false,
+        project: false,
+      },
+    ];
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const ascentBtn = fixture.nativeElement.querySelector(
+      'app-button-ascent-type',
+    );
+    const actionBtn = fixture.nativeElement.querySelector(
+      'td[data-col="actions"] > div > button',
+    );
+
+    expect(ascentBtn).not.toBeNull();
+    expect(actionBtn).toBeNull();
+  });
+
+  it('shows ascent button when route was climbed even if project is true', async () => {
+    const fixture = TestBed.createComponent(ActionsHostComponent);
+    fixture.componentInstance.data = [
+      {
+        ...createMockRow(1),
+        own_ascent: { id: 10, type: 'rp' },
+        climbed: true,
+        project: true,
+      },
+    ];
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const ascentBtn = fixture.nativeElement.querySelector(
+      'app-button-ascent-type',
+    );
+    const actionBtn = fixture.nativeElement.querySelector(
+      'td[data-col="actions"] > div > button',
+    );
+
+    expect(ascentBtn).not.toBeNull();
+    expect(actionBtn).toBeNull();
+  });
+});
