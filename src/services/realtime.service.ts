@@ -1,17 +1,21 @@
 import { effect, inject, Injectable } from '@angular/core';
 
+import { IS_BROWSER } from '../app/is-browser';
+
 import { AppNotificationsService } from './app-notifications.service';
 import { MessagingService } from './messaging.service';
 import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
 export class RealtimeService {
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly notificationsService = inject(AppNotificationsService);
   private readonly messagingService = inject(MessagingService);
   private readonly supabase = inject(SupabaseService);
 
   constructor() {
     effect((onCleanup) => {
+      if (!this.isBrowser) return;
       const userId = this.supabase.authUserId();
       if (userId) {
         void this.notificationsService.refreshUnreadCount();

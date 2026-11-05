@@ -23,11 +23,14 @@ import {
 
 import { handleErrorToast } from '../utils';
 
+import { IS_BROWSER } from '../app/is-browser';
+
 import { SupabaseService } from './supabase.service';
 import { ToastService } from './toast.service';
 
 @Injectable({ providedIn: 'root' })
 export class AreaMaterialRequestsService {
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
@@ -42,6 +45,7 @@ export class AreaMaterialRequestsService {
     items: { material_id: number; quantity: number }[],
     notes?: string,
   ): Promise<number | null> {
+    if (!this.isBrowser) return null;
     this.loading.set(true);
     await this.supabase.whenReady();
     try {
@@ -68,6 +72,7 @@ export class AreaMaterialRequestsService {
   }
 
   async cancelRequest(requestId: number): Promise<boolean> {
+    if (!this.isBrowser) return false;
     this.loading.set(true);
     await this.supabase.whenReady();
     try {
@@ -98,6 +103,7 @@ export class AreaMaterialRequestsService {
     status: MaterialRequestStatus,
     rejectionReason?: string,
   ): Promise<boolean> {
+    if (!this.isBrowser) return false;
     this.loading.set(true);
     await this.supabase.whenReady();
     try {
@@ -135,6 +141,7 @@ export class AreaMaterialRequestsService {
   async getRequestsByArea(
     areaId: number,
   ): Promise<AreaMaterialRequestWithDetails[]> {
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
     try {
       const { data, error } = await this.supabase.client
@@ -174,6 +181,7 @@ export class AreaMaterialRequestsService {
   async getAllRequests(
     statusFilter?: MaterialRequestStatus,
   ): Promise<AreaMaterialRequestWithDetails[]> {
+    if (!this.isBrowser) return [];
     this.loading.set(true);
     await this.supabase.whenReady();
     try {
@@ -219,6 +227,7 @@ export class AreaMaterialRequestsService {
   }
 
   async loadPendingCount(): Promise<number> {
+    if (!this.isBrowser) return 0;
     await this.supabase.whenReady();
     try {
       const { count, error } = await this.supabase.client

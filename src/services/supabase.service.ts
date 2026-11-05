@@ -1,6 +1,6 @@
 import { computed, inject, Injectable } from '@angular/core';
 
-import type { Session, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, Session, SupabaseClient } from '@supabase/supabase-js';
 
 import { UserProfileDto } from '../models';
 
@@ -72,6 +72,7 @@ export class SupabaseService {
     this.authService.setSessionFallback(() => this.readStoredSession());
 
     if (this.isBrowser && typeof window !== 'undefined') {
+      this.initClient();
       // Hidrata la sesión de forma síncrona desde localStorage para que el
       // primer render y los guards no esperen a la red cuando hay mala cobertura.
       const storedSession = this.readStoredSession();
@@ -84,7 +85,6 @@ export class SupabaseService {
         this.refreshAuthOnReconnect();
       };
       window.addEventListener('online', this.onlineListener);
-      void this.initClient();
     } else {
       this._readyResolve?.();
     }
@@ -102,7 +102,7 @@ export class SupabaseService {
     );
   }
 
-  private async initClient(): Promise<void> {
+  private initClient(): void {
     if (this._client) return;
     const url = this.configService.url;
     const anonKey = this.configService.anonKey;
@@ -116,7 +116,6 @@ export class SupabaseService {
       return;
     }
     try {
-      const { createClient } = await import('@supabase/supabase-js');
       this._client = createClient<Database>(url, anonKey, {
         global: {
           fetch: async (reqUrl, options) => {
@@ -215,14 +214,15 @@ export class SupabaseService {
         });
 
       if (this._readyResolve) {
-        await Promise.race([
+        void Promise.race([
           sessionPromise,
           new Promise<void>((resolve) => setTimeout(resolve, 2500)),
-        ]);
-        if (this._readyResolve) {
-          this._readyResolve();
-          this._readyResolve = null;
-        }
+        ]).then(() => {
+          if (this._readyResolve) {
+            this._readyResolve();
+            this._readyResolve = null;
+          }
+        });
       }
     } catch (e) {
       console.error('[SupabaseService] Failed to initialize client', e);
@@ -288,6 +288,10 @@ export class SupabaseService {
 
   whenReady(): Promise<void> {
     return this._ready;
+  }
+
+  get hasClient(): boolean {
+    return this._client !== null;
   }
 
   get client() {

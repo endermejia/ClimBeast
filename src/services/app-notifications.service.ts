@@ -201,7 +201,7 @@ export class AppNotificationsService {
   watchNotifications(
     callback: (payload: NotificationInsertDto) => void,
   ): RealtimeChannel | null {
-    if (!this.isBrowser) return null;
+    if (!this.isBrowser || !this.supabase.hasClient) return null;
     const userId = this.supabase.authUserId();
     if (!userId) return null;
 

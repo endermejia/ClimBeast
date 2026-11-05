@@ -259,7 +259,7 @@ export class MessagingService {
     roomId: string,
     callback: (message: ChatMessageDto) => void,
   ): RealtimeChannel | null {
-    if (!this.isBrowser) return null;
+    if (!this.isBrowser || !this.supabase.hasClient) return null;
     const channel = this.supabase.client.channel(`room-${roomId}`).on(
       'postgres_changes',
       {
@@ -279,7 +279,7 @@ export class MessagingService {
   watchUnreadCount(
     callback: (payload: ChatMessageDto) => void,
   ): RealtimeChannel | null {
-    if (!this.isBrowser) return null;
+    if (!this.isBrowser || !this.supabase.hasClient) return null;
     const channel = this.supabase.client
       .channel(`unread-messages-${crypto.randomUUID()}`)
       .on(
