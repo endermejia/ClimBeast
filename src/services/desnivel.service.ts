@@ -2,6 +2,19 @@ import { Injectable } from '@angular/core';
 
 import { NewsItem } from '../models';
 
+import { toProxiedDesnivelUrl } from '../utils';
+
+interface WpMediaSize {
+  source_url?: string;
+}
+
+interface WpFeaturedMedia {
+  source_url: string;
+  media_details?: {
+    sizes?: Record<string, WpMediaSize>;
+  };
+}
+
 interface WpPost {
   id: number;
   date: string;
@@ -9,8 +22,21 @@ interface WpPost {
   title: { rendered: string };
   excerpt: { rendered: string };
   _embedded?: {
-    'wp:featuredmedia'?: { source_url: string }[];
+    'wp:featuredmedia'?: WpFeaturedMedia[];
   };
+}
+
+function extractPostImage(post: WpPost): string | undefined {
+  const media = post._embedded?.['wp:featuredmedia']?.[0];
+  if (!media) return undefined;
+  const sizes = media.media_details?.sizes;
+  const rawUrl =
+    sizes?.['post-thumbnail']?.source_url ||
+    sizes?.['large']?.source_url ||
+    sizes?.['medium_large']?.source_url ||
+    sizes?.['full']?.source_url ||
+    media.source_url;
+  return toProxiedDesnivelUrl(rawUrl);
 }
 
 interface WpCategory {
@@ -53,7 +79,7 @@ export class DesnivelService {
         link: post.link,
         date: post.date,
         excerpt: post.excerpt.rendered,
-        image: post._embedded?.['wp:featuredmedia']?.[0]?.source_url,
+        image: extractPostImage(post),
       }));
     } catch (error) {
       console.error('Error fetching Desnivel posts', error);

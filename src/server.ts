@@ -1,5 +1,7 @@
 import { AngularAppEngine, createRequestHandler } from '@angular/ssr';
 
+import { fetchDesnivelUpstream } from './server/desnivel-fetcher';
+
 // Lazily create the Angular App Engine after ensuring manifests are loaded.
 let angularAppEngine: AngularAppEngine | undefined;
 
@@ -63,30 +65,28 @@ export async function netlifyAppEngineHandler(
     }
   }
 
-  // Proxy Desnivel requests to avoid browser CORS restrictions.
+  // Proxy Desnivel requests to avoid browser CORS restrictions and solve SiteGround anti-bot challenge.
   // Example: /api/desnivel/wp-json/... -> https://www.desnivel.com/wp-json/...
   if (pathname.startsWith('/api/desnivel/')) {
-    const upstream =
-      'https://www.desnivel.com' + pathname.replace('/api/desnivel', '');
-    const proxyUrl = new URL(upstream);
-    proxyUrl.search = url.search;
+    const pathWithQuery = pathname.replace('/api/desnivel', '') + url.search;
 
     try {
-      const resp = await fetch(proxyUrl.toString(), {
-        method: request.method,
-        headers: {
-          accept: 'application/json',
-          'User-Agent': request.headers.get('User-Agent') || 'Mozilla/5.0',
-        },
-      });
-      const body = await resp.arrayBuffer();
+      const result = await fetchDesnivelUpstream(pathWithQuery);
       const headers = new Headers();
+      headers.set('Content-Type', result.contentType);
+      const isImage =
+        pathWithQuery.startsWith('/images/') ||
+        /\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i.test(pathWithQuery);
       headers.set(
-        'Content-Type',
-        resp.headers.get('Content-Type') || 'application/json',
+        'Cache-Control',
+        isImage
+          ? 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400'
+          : 'public, max-age=120',
       );
-      headers.set('Cache-Control', 'public, max-age=120');
-      return new Response(body, { status: resp.status, headers });
+      return new Response(result.body as unknown as BodyInit, {
+        status: result.status,
+        headers,
+      });
     } catch (e) {
       return new Response(
         JSON.stringify({

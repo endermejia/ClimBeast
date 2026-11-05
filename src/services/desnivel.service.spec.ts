@@ -86,6 +86,40 @@ describe('DesnivelService', () => {
     expect(secondPageUrl.searchParams.get('page')).toBe('2');
   });
 
+  it('rewrites desnivel image URLs and prefers post-thumbnail when available', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse([{ id: 27, slug: 'escalada-roca' }]))
+      .mockResolvedValueOnce(
+        jsonResponse([
+          {
+            id: 456,
+            date: '2026-11-05T10:00:00',
+            link: 'https://www.desnivel.com/article-2/',
+            title: { rendered: 'Noticia con foto' },
+            excerpt: { rendered: '<p>Foto</p>' },
+            _embedded: {
+              'wp:featuredmedia': [
+                {
+                  source_url: 'https://www.desnivel.com/images/full.jpg',
+                  media_details: {
+                    sizes: {
+                      'post-thumbnail': {
+                        source_url:
+                          'https://www.desnivel.com/images/thumb-750x440.jpg',
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        ]),
+      );
+
+    const posts = await service.getLatestPosts(1);
+    expect(posts[0]?.image).toBe('/api/desnivel/images/thumb-750x440.jpg');
+  });
+
   it('returns no posts if the category slug cannot be resolved', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse([]));
 

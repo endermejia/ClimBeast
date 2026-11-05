@@ -54,6 +54,7 @@ export const STORAGE_KEYS = {
   feedShowIndoorLegacy: 'feed_show_indoor_ascents_v1',
   feedShowOutdoor: 'feed_show_outdoor_v1',
   feedShowIndoorAscents: 'feed_show_indoor_ascents_v2',
+  feedShowNews: 'feed_show_news_v1',
   profileAscentsGradeRange: 'profile_ascents_grade_range_v1',
   profileAscentsCategories: 'profile_ascents_categories_v1',
   profileAscentsShowIndoor: 'profile_ascents_show_indoor_v1',

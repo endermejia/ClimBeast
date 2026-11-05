@@ -5,6 +5,7 @@ import {
   computed,
   inject,
   input,
+  signal,
 } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 
@@ -12,14 +13,22 @@ import { TuiAppearance, TuiButton } from '@taiga-ui/core';
 import { TuiAvatar } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
 
-import { LanguageService } from '../../services/language.service';
-
 import { NewsItem } from '../../models';
+
+import { AscentDatePipe } from '../../pipes';
+import { toProxiedDesnivelUrl } from '../../utils';
 
 @Component({
   selector: 'app-news-card',
   standalone: true,
-  imports: [CommonModule, TuiAppearance, TuiAvatar, TuiButton, TuiHeader],
+  imports: [
+    AscentDatePipe,
+    CommonModule,
+    TuiAppearance,
+    TuiAvatar,
+    TuiButton,
+    TuiHeader,
+  ],
   template: `
     @let data = item();
     <div
@@ -38,7 +47,7 @@ import { NewsItem } from '../../models';
               Desnivel
             </span>
             <span class="text-xs">
-              {{ formattedDate() }}
+              {{ data.date | ascentDate }}
             </span>
           </div>
         </a>
@@ -54,19 +63,22 @@ import { NewsItem } from '../../models';
         </a>
       </header>
 
-      @if (data.image; as img) {
-        <a
-          [href]="data.link"
-          target="_blank"
-          class="-mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full bg-(--tui-background-neutral-1) sm:rounded-2xl overflow-hidden relative block"
-        >
-          <img
-            [src]="img"
-            class="w-full h-auto max-h-[500px] block transition-transform duration-500 hover:scale-[1.02]"
-            [alt]="data.title"
-            loading="lazy"
-          />
-        </a>
+      @if (imageUrl(); as img) {
+        @if (!imageFailed()) {
+          <a
+            [href]="data.link"
+            target="_blank"
+            class="-mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full bg-(--tui-background-neutral-1) sm:rounded-2xl overflow-hidden relative block"
+          >
+            <img
+              [src]="img"
+              class="w-full h-auto max-h-[500px] block transition-transform duration-500 hover:scale-[1.02]"
+              [alt]="data.title"
+              loading="lazy"
+              (error)="imageFailed.set(true)"
+            />
+          </a>
+        }
       }
 
       <div class="flex flex-col gap-1">
@@ -86,30 +98,12 @@ import { NewsItem } from '../../models';
   `,
 })
 export class NewsCardComponent {
-  protected readonly languageService = inject(LanguageService);
   private readonly sanitizer = inject(DomSanitizer);
   item = input.required<NewsItem>();
+  protected readonly imageFailed = signal(false);
 
-  readonly formattedDate = computed(() => {
-    const d = this.item().date;
-    if (!d) return '';
-    const lang = this.languageService.selectedLanguage();
-    const locale = lang === 'va' ? 'ca' : lang || 'es';
-    try {
-      const date = new Date(d);
-      if (isNaN(date.getTime())) return '';
-      return new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(
-        date,
-      );
-    } catch {
-      try {
-        return new Intl.DateTimeFormat('es', { dateStyle: 'long' }).format(
-          new Date(d),
-        );
-      } catch {
-        return '';
-      }
-    }
+  readonly imageUrl = computed(() => {
+    return toProxiedDesnivelUrl(this.item().image) ?? null;
   });
 
   sanitizedTitle = computed(

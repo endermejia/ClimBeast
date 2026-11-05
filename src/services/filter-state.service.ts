@@ -44,6 +44,7 @@ export class FilterStateService {
   private readonly feedShowOutdoorKey = STORAGE_KEYS.feedShowOutdoor;
   private readonly feedShowIndoorAscentsKey =
     STORAGE_KEYS.feedShowIndoorAscents;
+  private readonly feedShowNewsKey = STORAGE_KEYS.feedShowNews;
 
   feedGradeRange: WritableSignal<[number, number]> = signal([
     0,
@@ -53,6 +54,7 @@ export class FilterStateService {
   feedShowIndoor: WritableSignal<boolean> = signal(false);
   feedShowOutdoor: WritableSignal<boolean> = signal(false);
   feedShowIndoorAscents: WritableSignal<boolean> = signal(false);
+  feedShowNews: WritableSignal<boolean> = signal(true);
 
   // ---- User Profile Ascents (Feed) Filters ----
   private readonly profileAscentsGradeRangeKey =
@@ -179,6 +181,12 @@ export class FilterStateService {
       this.localStorage.setItem(
         this.feedShowIndoorAscentsKey,
         String(this.feedShowIndoorAscents()),
+      );
+    });
+    effect(() => {
+      this.localStorage.setItem(
+        this.feedShowNewsKey,
+        String(this.feedShowNews()),
       );
     });
 
@@ -344,6 +352,13 @@ export class FilterStateService {
       );
       if (rawFeedIndoorAscents !== null) {
         this.feedShowIndoorAscents.set(rawFeedIndoorAscents === 'true');
+      }
+
+      const rawFeedNews = this.localStorage.getItem(this.feedShowNewsKey);
+      if (rawFeedNews !== null) {
+        this.feedShowNews.set(rawFeedNews === 'true');
+      } else {
+        this.feedShowNews.set(true);
       }
 
       // Indoor centers list

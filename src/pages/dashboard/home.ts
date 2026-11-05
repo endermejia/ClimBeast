@@ -29,6 +29,7 @@ import { DesnivelService } from '../../services/desnivel.service';
 import { FavoritesDataService } from '../../services/favorites-data.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { FollowsService } from '../../services/follows.service';
+import { LayoutService } from '../../services/layout.service';
 import { LocalStorage } from '../../services/local-storage';
 import { MessagingService } from '../../services/messaging.service';
 import { ScrollService } from '../../services/scroll.service';
@@ -222,6 +223,7 @@ export class HomeComponent {
   protected readonly cart = inject(CartService);
   protected readonly favoritesData = inject(FavoritesDataService);
   protected readonly filterState = inject(FilterStateService);
+  protected readonly layoutService = inject(LayoutService);
   protected readonly notificationsService = inject(AppNotificationsService);
   protected readonly messagingService = inject(MessagingService);
   protected readonly supabase = inject(SupabaseService);
@@ -396,11 +398,14 @@ export class HomeComponent {
   };
 
   protected readonly filterOptions = computed(() => {
+    const isMobile = this.layoutService.isMobile();
     const options: HomeFeedFilter[] = [
       HomeFeedFilters.FOLLOWING,
       HomeFeedFilters.ALL,
-      HomeFeedFilters.NEWS,
     ];
+    if (!isMobile) {
+      options.push(HomeFeedFilters.NEWS);
+    }
     if (this.favoritesData.likedAreaIds().length > 0) {
       options.push(HomeFeedFilters.FAVORITE_AREAS);
     }
@@ -423,7 +428,9 @@ export class HomeComponent {
     const gradeActive = !(lo === 0 && hi === ORDERED_GRADE_VALUES.length - 1);
     const categoriesActive = this.filterState.feedCategories().length > 0;
     const indoorAscents = this.filterState.feedShowIndoorAscents();
-    return gradeActive || categoriesActive || indoorAscents;
+    const isMobile = this.layoutService.isMobile();
+    const newsFilterActive = isMobile && !this.filterState.feedShowNews();
+    return gradeActive || categoriesActive || indoorAscents || newsFilterActive;
   });
 
   constructor() {
@@ -431,6 +438,11 @@ export class HomeComponent {
       // Stale-while-revalidate: paint immediately from cached data on revisit.
       const filter = this.feedFilter();
       const showIndoor = this.filterState.feedShowIndoorAscents();
+      const isMobile = this.layoutService.isMobile();
+      const showNews =
+        isMobile &&
+        filter === HomeFeedFilters.ALL &&
+        this.filterState.feedShowNews();
       const seedOutdoor = this.cache.get<FeedItem[] | undefined>(
         CACHE_KEYS.homeFeed(filter, 0),
         undefined,
@@ -441,8 +453,18 @@ export class HomeComponent {
             undefined,
           )
         : undefined;
+      const seedNewsFeed = showNews
+        ? this.cache.get<NewsItem[] | undefined>(
+            CACHE_KEYS.homeFeedNews(1),
+            undefined,
+          )
+        : undefined;
 
-      const combinedSeed = [...(seedOutdoor ?? []), ...(seedIndoor ?? [])];
+      const combinedSeed = [
+        ...(seedOutdoor ?? []),
+        ...(seedIndoor ?? []),
+        ...(seedNewsFeed ?? []),
+      ];
 
       if (combinedSeed.length > 0) {
         this.ascents.set(
@@ -545,6 +567,8 @@ export class HomeComponent {
       this.filterState.feedCategories();
       this.filterState.feedGradeRange();
       this.filterState.feedShowIndoorAscents();
+      this.filterState.feedShowNews();
+      this.layoutService.isMobile();
 
       if (filter === HomeFeedFilters.FAVORITE_AREAS) {
         this.favoritesData.likedAreaIds();
@@ -568,8 +592,10 @@ export class HomeComponent {
 
   private outdoorPage = 0;
   private indoorPage = 0;
+  private newsFeedPage = 1;
   private outdoorHasMore = true;
   private indoorHasMore = true;
+  private newsFeedHasMore = true;
   private feedSeeded = false;
 
   private resetFeed(opts?: { preserve?: boolean }) {
@@ -581,41 +607,79 @@ export class HomeComponent {
     }
     this.outdoorPage = 0;
     this.indoorPage = 0;
+    this.newsFeedPage = 1;
     this.outdoorHasMore = true;
     this.indoorHasMore = true;
+    this.newsFeedHasMore = true;
     this.hasMore.set(true);
     this.loadMore$.next();
+  }
+
+  private async fetchNewsForFeed(page: number): Promise<NewsItem[]> {
+    if (!this.isBrowser) return [];
+    const cacheKey = CACHE_KEYS.homeFeedNews(page);
+    try {
+      const posts = await this.desnivelService.getLatestPosts(6, page);
+      if (posts && posts.length > 0) {
+        this.storage.setItem(cacheKey, JSON.stringify(posts));
+      }
+      return posts;
+    } catch (e: unknown) {
+      console.warn('[Home] fetchNewsForFeed error/offline, trying cache', e);
+      const cached = this.storage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        } catch {
+          console.error('[Home] News cache parse error');
+        }
+      }
+      return [];
+    }
   }
 
   private async fetchNextPage() {
     const version = this.fetchVersion();
     const filter = this.feedFilter();
     const showIndoorAscents = this.filterState.feedShowIndoorAscents();
+    const isMobile = this.layoutService.isMobile();
+    const showNews =
+      isMobile &&
+      filter === HomeFeedFilters.ALL &&
+      this.filterState.feedShowNews();
 
     const shouldFetchOutdoor = this.outdoorHasMore;
     const shouldFetchIndoor = showIndoorAscents && this.indoorHasMore;
+    const shouldFetchNews = showNews && this.newsFeedHasMore;
 
     const willFetchOutdoor = shouldFetchOutdoor && this.outdoorHasMore;
     const willFetchIndoor = shouldFetchIndoor && this.indoorHasMore;
+    const willFetchNews = shouldFetchNews && this.newsFeedHasMore;
     const isPageZero =
       (willFetchOutdoor ? this.outdoorPage === 0 : true) &&
-      (willFetchIndoor ? this.indoorPage === 0 : true);
+      (willFetchIndoor ? this.indoorPage === 0 : true) &&
+      (willFetchNews ? this.newsFeedPage === 1 : true);
 
-    if (!willFetchOutdoor && !willFetchIndoor) {
+    if (!willFetchOutdoor && !willFetchIndoor && !willFetchNews) {
       this.hasMore.set(false);
       this.isLoading.set(false);
       return;
     }
 
-    const promises: Promise<(RouteAscentWithExtras & { kind: 'ascent' })[]>[] =
-      [];
+    const promises: Promise<FeedItem[]>[] = [];
     if (willFetchOutdoor) {
       promises.push(this.fetchAscents(this.outdoorPage, filter));
     }
     if (willFetchIndoor) {
       promises.push(this.fetchIndoorAscents(this.indoorPage, filter));
     }
-    const results: (RouteAscentWithExtras & { kind: 'ascent' })[][] = [];
+    if (willFetchNews) {
+      promises.push(this.fetchNewsForFeed(this.newsFeedPage));
+    }
+    const results: FeedItem[][] = [];
     try {
       results.push(...(await Promise.all(promises)));
     } catch (e) {
@@ -629,10 +693,13 @@ export class HomeComponent {
 
     let outdoorResult: (RouteAscentWithExtras & { kind: 'ascent' })[] = [];
     let indoorResult: (RouteAscentWithExtras & { kind: 'ascent' })[] = [];
+    let newsResult: NewsItem[] = [];
 
     let idx = 0;
     if (willFetchOutdoor) {
-      outdoorResult = results[idx++] ?? [];
+      outdoorResult = (results[idx++] ?? []) as (RouteAscentWithExtras & {
+        kind: 'ascent';
+      })[];
       if (outdoorResult.length < 10) {
         this.outdoorHasMore = false;
       } else {
@@ -640,19 +707,34 @@ export class HomeComponent {
       }
     }
     if (willFetchIndoor) {
-      indoorResult = results[idx++] ?? [];
+      indoorResult = (results[idx++] ?? []) as (RouteAscentWithExtras & {
+        kind: 'ascent';
+      })[];
       if (indoorResult.length < 10) {
         this.indoorHasMore = false;
       } else {
         this.indoorPage++;
       }
     }
+    if (willFetchNews) {
+      newsResult = (results[idx++] ?? []) as NewsItem[];
+      if (newsResult.length < 6) {
+        this.newsFeedHasMore = false;
+      } else {
+        this.newsFeedPage++;
+      }
+    }
 
-    const newAscents = [...outdoorResult, ...indoorResult];
+    const newAscents: FeedItem[] = [
+      ...outdoorResult,
+      ...indoorResult,
+      ...newsResult,
+    ];
 
     const remainingMore =
       (shouldFetchOutdoor && this.outdoorHasMore) ||
-      (shouldFetchIndoor && this.indoorHasMore);
+      (shouldFetchIndoor && this.indoorHasMore) ||
+      (shouldFetchNews && this.newsFeedHasMore);
     this.hasMore.set(remainingMore);
 
     if (isPageZero) {
@@ -1248,6 +1330,7 @@ export class HomeComponent {
   }
 
   async openFilters() {
+    const isMobile = this.layoutService.isMobile();
     const data: FilterDialog = {
       categories: this.filterState.feedCategories(),
       gradeRange: this.filterState.feedGradeRange(),
@@ -1257,6 +1340,8 @@ export class HomeComponent {
       showIndoorOutdoor: false,
       showIndoorAscents: true,
       showIndoorAscentsValue: this.filterState.feedShowIndoorAscents(),
+      showNews: isMobile,
+      showNewsValue: this.filterState.feedShowNews(),
     };
 
     const result = await firstValueFrom(
@@ -1279,6 +1364,9 @@ export class HomeComponent {
     }
     if (result.showIndoorAscentsValue !== undefined) {
       this.filterState.feedShowIndoorAscents.set(result.showIndoorAscentsValue);
+    }
+    if (result.showNewsValue !== undefined && isMobile) {
+      this.filterState.feedShowNews.set(result.showNewsValue);
     }
   }
 

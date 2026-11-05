@@ -2,6 +2,7 @@ export * from './array.utils';
 export * from './ascents.utils';
 export * from './auth.utils';
 export * from './crag-mappers';
+export * from './desnivel.utils';
 export * from './connect-realtime-channel';
 export * from './drawing.utils';
 export * from './eight-anu-match';

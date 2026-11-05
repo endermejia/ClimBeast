@@ -53,6 +53,8 @@ export interface FilterDialog {
   showIndoorOutdoor?: boolean;
   showIndoorAscents?: boolean;
   showIndoorAscentsValue?: boolean;
+  showNews?: boolean;
+  showNewsValue?: boolean;
   showToposOnly?: boolean;
 }
 
@@ -165,6 +167,15 @@ const CATEGORY_CONFIGS: readonly CategoryConfig[] = [
         </section>
       }
 
+      @if (showNews) {
+        <section class="flex flex-col gap-3">
+          <label class="flex items-center gap-2">
+            <input tuiCheckbox type="checkbox" formControlName="showNews" />
+            <span>{{ 'filters.showNews' | translate }}</span>
+          </label>
+        </section>
+      }
+
       @if (showToposOnly) {
         <section class="flex flex-col gap-3">
           <label class="flex items-center gap-2">
@@ -212,6 +223,7 @@ export class FilterDialogComponent {
     this.context.data?.showIndoorOutdoor ?? false;
   protected readonly showIndoorAscents =
     this.context.data?.showIndoorAscents ?? false;
+  protected readonly showNews = this.context.data?.showNews ?? false;
   protected readonly showToposOnly = this.context.data?.showToposOnly ?? false;
 
   // Category items and kinds for TuiFilter
@@ -258,6 +270,7 @@ export class FilterDialogComponent {
       nonNullable: true,
     }),
     showIndoorAscents: new FormControl<boolean>(false, { nonNullable: true }),
+    showNews: new FormControl<boolean>(true, { nonNullable: true }),
     toposOnly: new FormControl<boolean>(false, { nonNullable: true }),
   });
 
@@ -323,6 +336,9 @@ export class FilterDialogComponent {
       }
       if (d.showIndoorAscentsValue !== undefined) {
         this.form.patchValue({ showIndoorAscents: d.showIndoorAscentsValue });
+      }
+      if (d.showNewsValue !== undefined) {
+        this.form.patchValue({ showNews: d.showNewsValue });
       }
       if (
         d.toposOnly !== undefined &&
@@ -479,6 +495,8 @@ export class FilterDialogComponent {
       showIndoorOutdoor: this.context.data?.showIndoorOutdoor,
       showIndoorAscents: this.context.data?.showIndoorAscents,
       showIndoorAscentsValue: this.form.value.showIndoorAscents ?? false,
+      showNews: this.context.data?.showNews,
+      showNewsValue: this.form.value.showNews ?? true,
       showToposOnly: this.context.data?.showToposOnly,
     };
     this.context.completeWith(payload);
@@ -492,6 +510,7 @@ export class FilterDialogComponent {
       gradeRange: [this.minIndex, this.maxIndex],
       indoorOutdoor: this.showIndoorOutdoor ? [ioNow[0], ioNow[1]] : [],
       showIndoorAscents: false,
+      showNews: true,
       toposOnly: false,
     });
     this.context.completeWith({
@@ -507,6 +526,8 @@ export class FilterDialogComponent {
       showIndoorOutdoor: this.context.data?.showIndoorOutdoor,
       showIndoorAscents: this.context.data?.showIndoorAscents,
       showIndoorAscentsValue: false,
+      showNews: this.context.data?.showNews,
+      showNewsValue: true,
       showToposOnly: this.context.data?.showToposOnly,
     });
   }

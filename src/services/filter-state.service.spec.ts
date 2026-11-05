@@ -58,6 +58,12 @@ describe('FilterStateService', () => {
     expect(service.feedShowOutdoor()).toBe(false);
   });
 
+  it('should have default feed show news enabled', () => {
+    expect(service.feedShowNews()).toBe(true);
+    service.feedShowNews.set(false);
+    expect(service.feedShowNews()).toBe(false);
+  });
+
   it('should have default profile ascents filters', () => {
     expect(service.profileAscentsGradeRange()).toEqual([
       0,
