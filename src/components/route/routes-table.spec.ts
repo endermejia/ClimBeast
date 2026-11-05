@@ -450,7 +450,7 @@ describe('RoutesTableComponent actions column (project vs ascent)', () => {
     }).compileComponents();
   });
 
-  it('shows project button when route has only attempt ascent and is a project', async () => {
+  it('shows attempt button with dropdown options (show-ascent, add-ascent, remove-project) when route has attempt ascent and is a project', async () => {
     const fixture = TestBed.createComponent(ActionsHostComponent);
     fixture.componentInstance.data = [
       {
@@ -472,7 +472,10 @@ describe('RoutesTableComponent actions column (project vs ascent)', () => {
 
     expect(ascentBtn).toBeNull();
     expect(actionBtn).not.toBeNull();
-    expect(actionBtn?.getAttribute('data-appearance')).toBe('info');
+    expect(actionBtn?.getAttribute('data-appearance')).toBe('none');
+    expect(actionBtn?.getAttribute('style')).toContain(
+      'var(--tui-status-neutral)',
+    );
   });
 
   it('shows ascent button when route has attempt ascent and is not a project', async () => {

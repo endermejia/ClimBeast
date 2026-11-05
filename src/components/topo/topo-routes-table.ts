@@ -321,18 +321,6 @@ import type { TopoRouteRow } from './topo.types';
                                   </button>
                                   <ng-template #actionMenu>
                                     <tui-data-list size="m">
-                                      <a
-                                        tuiOption
-                                        [routerLink]="item.link"
-                                        class="whitespace-nowrap"
-                                        (click)="openActionId.set(null)"
-                                      >
-                                        <tui-icon
-                                          icon="@tui.arrow-up-right"
-                                          class="mr-2"
-                                        />
-                                        {{ 'view' | translate }}
-                                      </a>
                                       <button
                                         tuiOption
                                         appearance="positive"

@@ -46,7 +46,7 @@ function createMockTopoRouteRow(
   template: `
     <app-topo-routes-table
       [sortedTableData]="data()"
-      [columns]="['name']"
+      [columns]="columns()"
       [hasAccess]="true"
       [selectedRouteId]="selectedRouteId()"
       [sorter]="sorter"
@@ -59,6 +59,7 @@ class TestHostComponent {
     createMockTopoRouteRow(101, 'Via Uno'),
     createMockTopoRouteRow(102, 'Via Dos'),
   ]);
+  columns = signal<string[]>(['name']);
   selectedRouteId = signal<number | null>(null);
   sorter = () => 0;
 }

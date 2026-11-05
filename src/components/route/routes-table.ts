@@ -488,9 +488,11 @@ import { EmptyStateComponent } from '../ui/empty-state';
                             size="m"
                             class="flex items-center justify-end gap-1 shrink-0 whitespace-nowrap"
                           >
+                            @let isAttemptProject =
+                              item.own_ascent?.type === 'attempt' &&
+                              item.project;
                             @let showAscentBtn =
-                              item.own_ascent &&
-                              (!item.project || item.climbed);
+                              item.own_ascent && !isAttemptProject;
                             @if (showAscentBtn) {
                               <app-button-ascent-type
                                 [size]="isMobile ? 's' : 'm'"
@@ -508,12 +510,30 @@ import { EmptyStateComponent } from '../ui/empty-state';
                             } @else {
                               <button
                                 [size]="isMobile ? 's' : 'm'"
-                                [appearance]="item.project ? 'info' : 'neutral'"
-                                [iconStart]="
-                                  item.project
-                                    ? '@tui.bookmark'
-                                    : '@tui.circle-plus'
+                                [appearance]="
+                                  isAttemptProject
+                                    ? 'none'
+                                    : item.project
+                                      ? 'info'
+                                      : 'neutral'
                                 "
+                                [iconStart]="
+                                  isAttemptProject
+                                    ? '@tui.circle-dashed'
+                                    : item.project
+                                      ? '@tui.bookmark'
+                                      : '@tui.circle-plus'
+                                "
+                                [style.background]="
+                                  isAttemptProject
+                                    ? 'var(--tui-status-neutral)'
+                                    : null
+                                "
+                                [class.text-(--tui-text-primary-on-accent-1)!]="
+                                  isAttemptProject
+                                "
+                                [class.transition-transform]="isAttemptProject"
+                                [class.active:scale-95]="isAttemptProject"
                                 tuiIconButton
                                 type="button"
                                 class="rounded-full!"
@@ -527,9 +547,11 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                 (click.zoneless)="$event.stopPropagation()"
                               >
                                 {{
-                                  item.project
-                                    ? ('project' | translate)
-                                    : ('ascent.new' | translate)
+                                  isAttemptProject
+                                    ? ('ascentTypes.attempt' | translate)
+                                    : item.project
+                                      ? ('project' | translate)
+                                      : ('ascent.new' | translate)
                                 }}
                               </button>
                             }
