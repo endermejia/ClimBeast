@@ -6,6 +6,10 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/api/8anu/:path*", "destination": "https://www.8a.nu/:path*" },
+    {
+      "source": "/api/desnivel/:path*",
+      "destination": "https://www.desnivel.com/:path*"
+    },
     { "source": "/(.*)", "destination": "/" }
   ]
 }

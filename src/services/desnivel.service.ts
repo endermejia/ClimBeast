@@ -13,16 +13,30 @@ interface WpPost {
   };
 }
 
+interface WpCategory {
+  id: number;
+  slug: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class DesnivelService {
-  private readonly baseUrl = 'https://www.desnivel.com/wp-json/wp/v2/posts';
+  private readonly baseUrl = '/api/desnivel/wp-json/wp/v2';
+  private categoryIdPromise: Promise<number | null> | null = null;
 
   async getLatestPosts(limit: number, page = 1): Promise<NewsItem[]> {
-    const url = `${this.baseUrl}?categories=4&per_page=${limit}&page=${page}&_embed`;
     try {
-      const response = await fetch(url);
+      const categoryId = await this.getCategoryId();
+      if (categoryId === null) return [];
+
+      const params = new URLSearchParams({
+        categories: String(categoryId),
+        per_page: String(limit),
+        page: String(page),
+        _embed: 'true',
+      });
+      const response = await fetch(`${this.baseUrl}/posts?${params}`);
       if (!response.ok) {
         if (response.status === 400 || response.status === 404) {
           // Beyond last page in WP REST API
@@ -45,5 +59,31 @@ export class DesnivelService {
       console.error('Error fetching Desnivel posts', error);
       return [];
     }
+  }
+
+  private getCategoryId(): Promise<number | null> {
+    if (!this.categoryIdPromise) {
+      this.categoryIdPromise = fetch(
+        `${this.baseUrl}/categories?slug=escalada-roca`,
+      )
+        .then(async (response) => {
+          if (!response.ok) {
+            throw new Error(
+              `Failed to fetch Desnivel category: ${response.status}`,
+            );
+          }
+          const categories = (await response.json()) as WpCategory[];
+          return (
+            categories.find((category) => category.slug === 'escalada-roca')
+              ?.id ?? null
+          );
+        })
+        .catch((error: unknown) => {
+          this.categoryIdPromise = null;
+          throw error;
+        });
+    }
+
+    return this.categoryIdPromise;
   }
 }

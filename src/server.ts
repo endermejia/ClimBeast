@@ -63,6 +63,41 @@ export async function netlifyAppEngineHandler(
     }
   }
 
+  // Proxy Desnivel requests to avoid browser CORS restrictions.
+  // Example: /api/desnivel/wp-json/... -> https://www.desnivel.com/wp-json/...
+  if (pathname.startsWith('/api/desnivel/')) {
+    const upstream =
+      'https://www.desnivel.com' + pathname.replace('/api/desnivel', '');
+    const proxyUrl = new URL(upstream);
+    proxyUrl.search = url.search;
+
+    try {
+      const resp = await fetch(proxyUrl.toString(), {
+        method: request.method,
+        headers: {
+          accept: 'application/json',
+          'User-Agent': request.headers.get('User-Agent') || 'Mozilla/5.0',
+        },
+      });
+      const body = await resp.arrayBuffer();
+      const headers = new Headers();
+      headers.set(
+        'Content-Type',
+        resp.headers.get('Content-Type') || 'application/json',
+      );
+      headers.set('Cache-Control', 'public, max-age=120');
+      return new Response(body, { status: resp.status, headers });
+    } catch (e) {
+      return new Response(
+        JSON.stringify({
+          error: 'Desnivel upstream fetch failed',
+          message: e instanceof Error ? e.message : String(e),
+        }),
+        { status: 502, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+  }
+
   const engine = await getAngularAppEngine();
   const result = await engine.handle(request);
   return result || new Response('Not found', { status: 404 });

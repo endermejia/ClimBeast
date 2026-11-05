@@ -58,6 +58,7 @@ export const errorInterceptor: HttpInterceptorFn = (
 
       const isExternalNonSupabase =
         url.includes('/api/8anu') ||
+        url.includes('/api/desnivel') ||
         url.includes('8a.nu') ||
         url.includes('vertical-life.info');
 
