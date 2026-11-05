@@ -63,7 +63,9 @@ function deduplicateFeedItems(items: FeedItem[]): FeedItem[] {
     const key =
       item.kind === 'news'
         ? `news-${item.id || item.link}`
-        : `ascent-${item.id}`;
+        : item.route && 'center_slug' in item.route && item.route.center_slug
+          ? `indoor-${item.id}`
+          : `outdoor-${item.id}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -425,12 +427,29 @@ export class HomeComponent {
   constructor() {
     if (this.isBrowser) {
       // Stale-while-revalidate: paint immediately from cached data on revisit.
-      const seed = this.cache.get<FeedItem[] | undefined>(
-        CACHE_KEYS.homeFeed(this.feedFilter(), 0),
+      const filter = this.feedFilter();
+      const showIndoor = this.filterState.feedShowIndoorAscents();
+      const seedOutdoor = this.cache.get<FeedItem[] | undefined>(
+        CACHE_KEYS.homeFeed(filter, 0),
         undefined,
       );
-      if (seed && seed.length > 0) {
-        this.ascents.set(seed);
+      const seedIndoor = showIndoor
+        ? this.cache.get<FeedItem[] | undefined>(
+            CACHE_KEYS.homeFeedIndoor(filter, 0),
+            undefined,
+          )
+        : undefined;
+
+      const combinedSeed = [...(seedOutdoor ?? []), ...(seedIndoor ?? [])];
+
+      if (combinedSeed.length > 0) {
+        this.ascents.set(
+          deduplicateFeedItems(combinedSeed).sort((a, b) => {
+            const dateA = a.date ? new Date(a.date).getTime() : 0;
+            const dateB = b.date ? new Date(b.date).getTime() : 0;
+            return dateB - dateA;
+          }),
+        );
         this.isLoading.set(false);
         this.feedSeeded = true;
       }
@@ -570,9 +589,8 @@ export class HomeComponent {
     const willFetchOutdoor = shouldFetchOutdoor && this.outdoorHasMore;
     const willFetchIndoor = shouldFetchIndoor && this.indoorHasMore;
     const isPageZero =
-      willFetchOutdoor &&
-      this.outdoorPage === 0 &&
-      (!willFetchIndoor || this.indoorPage === 0);
+      (willFetchOutdoor ? this.outdoorPage === 0 : true) &&
+      (willFetchIndoor ? this.indoorPage === 0 : true);
 
     if (!willFetchOutdoor && !willFetchIndoor) {
       this.hasMore.set(false);
@@ -920,6 +938,14 @@ export class HomeComponent {
       likedRouteIds: this.favoritesData.likedRouteIds(),
     };
 
+    // Check if we should proceed based on filter type
+    if (
+      filter === HomeFeedFilters.FOLLOWING &&
+      filterOptions.followedIds.length === 0
+    ) {
+      return [];
+    }
+
     // If categories are filtered and do not include Sport (0) or Boulder (1), no indoor ascents can match
     if (
       filterOptions.categories.length > 0 &&
@@ -964,6 +990,8 @@ export class HomeComponent {
     );
     query = applyGradeFilter(query, filterOptions.gradeRange, 'route.grade');
 
+    const cacheKey = CACHE_KEYS.homeFeedIndoor(filter, page);
+
     try {
       // Inside the try: if the count query fails (offline) we fall through to
       // the cache fallback below instead of aborting the whole feed.
@@ -980,7 +1008,7 @@ export class HomeComponent {
       if (error) throw error;
       if (!ascents || ascents.length === 0) return [];
 
-      return ascents.map((a) => {
+      const result = ascents.map((a) => {
         const { route, user, ...ascentRest } = a;
         let mappedRoute: RouteAscentWithExtras['route'] = undefined;
         if (route) {
@@ -1011,8 +1039,23 @@ export class HomeComponent {
           route: mappedRoute,
         } as unknown as RouteAscentFeedItem;
       });
+
+      this.storage.setItem(cacheKey, JSON.stringify(result));
+      return result;
     } catch (e: unknown) {
-      console.warn('[Home] fetchIndoorAscents error', e);
+      console.warn('[Home] fetchIndoorAscents error/offline, trying cache', e);
+      const cached = this.storage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (!parsed || parsed.length === 0) {
+            return [];
+          }
+          return parsed;
+        } catch {
+          console.error('[Home] Indoor cache parse error');
+        }
+      }
       return [];
     }
   }

@@ -62,6 +62,8 @@ export const CACHE_KEYS = {
   // Home Feed
   homeFeed: (filter: string, page: number) =>
     `cached_home_feed_${filter}_${page}_v1`,
+  homeFeedIndoor: (filter: string, page: number) =>
+    `cached_home_feed_indoor_${filter}_${page}_v1`,
   homeNews: 'cached_home_news_v1',
   followedIds: 'cached_followed_ids_v1',
   activeCrags: 'cached_active_crags_v1',
