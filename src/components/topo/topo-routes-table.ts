@@ -269,124 +269,160 @@ import type { TopoRouteRow } from './topo.types';
                             <div
                               class="flex items-center justify-center gap-1 shrink-0 whitespace-nowrap w-full h-full"
                             >
-                              @if (!item.climbed) {
-                                @if (isIndoor()) {
-                                  <button
-                                    tuiIconButton
-                                    type="button"
-                                    [size]="isMobile() ? 's' : 'm'"
-                                    appearance="neutral"
-                                    iconStart="@tui.circle-plus"
-                                    class="rounded-full!"
-                                    [tuiHint]="'ascent.new' | translate"
-                                    (click.zoneless)="
-                                      onLogAscent(item._ref);
-                                      $event.stopPropagation()
-                                    "
-                                  >
-                                    {{ 'ascent.new' | translate }}
-                                  </button>
-                                } @else {
-                                  <button
-                                    tuiIconButton
-                                    type="button"
-                                    [size]="isMobile() ? 's' : 'm'"
-                                    [appearance]="
-                                      item.project ? 'info' : 'neutral'
-                                    "
-                                    [iconStart]="
-                                      item.project
-                                        ? '@tui.bookmark'
-                                        : '@tui.circle-plus'
-                                    "
-                                    class="rounded-full!"
-                                    [tuiDropdown]="actionMenu"
-                                    tuiDropdownAlign="end"
-                                    [tuiDropdownMinHeight]="140"
-                                    [tuiDropdownOpen]="
-                                      openActionId() === item._ref.route_id
-                                    "
-                                    (tuiDropdownOpenChange)="
-                                      openActionId.set(
-                                        $event ? item._ref.route_id : null
-                                      )
-                                    "
-                                    (click.zoneless)="$event.stopPropagation()"
-                                  >
-                                    {{
-                                      item.project
-                                        ? ('project' | translate)
-                                        : ('ascent.new' | translate)
-                                    }}
-                                  </button>
-                                  <ng-template #actionMenu>
-                                    <tui-data-list size="m">
-                                      <button
-                                        tuiOption
-                                        appearance="positive"
-                                        class="whitespace-nowrap"
-                                        (click)="
-                                          onLogAscent(item._ref);
-                                          openActionId.set(null)
-                                        "
-                                      >
-                                        <tui-icon
-                                          icon="@tui.square-check"
-                                          class="mr-2"
-                                        />
-                                        {{ 'ascent.new' | translate }}
-                                      </button>
-                                      @if (item.project) {
-                                        <button
-                                          tuiOption
-                                          appearance="negative"
-                                          class="whitespace-nowrap"
-                                          (click)="
-                                            onToggleProject(item);
-                                            openActionId.set(null)
-                                          "
-                                        >
-                                          <tui-icon
-                                            icon="@tui.bookmark"
-                                            class="mr-2"
-                                          />
-                                          {{ 'project.remove' | translate }}
-                                        </button>
-                                      } @else {
-                                        <button
-                                          tuiOption
-                                          appearance="info"
-                                          class="whitespace-nowrap"
-                                          (click)="
-                                            onToggleProject(item);
-                                            openActionId.set(null)
-                                          "
-                                        >
-                                          <tui-icon
-                                            icon="@tui.bookmark"
-                                            class="mr-2"
-                                          />
-                                          {{ 'project.add' | translate }}
-                                        </button>
-                                      }
-                                    </tui-data-list>
-                                  </ng-template>
-                                }
-                              } @else if (
-                                item._ref.route.own_ascent;
-                                as ascentToEdit
-                              ) {
+                              @let ownAscent = item._ref.route.own_ascent;
+                              @let isAttemptProject =
+                                ownAscent?.type === 'attempt' && item.project;
+                              @let showAscentBtn =
+                                ownAscent && !isAttemptProject;
+                              @if (showAscentBtn) {
                                 <app-button-ascent-type
                                   [size]="isMobile() ? 's' : 'm'"
-                                  [type]="ascentToEdit.type"
+                                  [type]="ownAscent!.type"
                                   [active]="true"
                                   class="cursor-pointer"
                                   [tuiHint]="'ascent.view' | translate"
                                   (click.zoneless)="
-                                    onViewAscent(ascentToEdit);
+                                    onViewAscent(ownAscent!);
                                     $event.stopPropagation()
                                   "
                                 />
+                              } @else if (isIndoor()) {
+                                <button
+                                  tuiIconButton
+                                  type="button"
+                                  [size]="isMobile() ? 's' : 'm'"
+                                  appearance="neutral"
+                                  iconStart="@tui.circle-plus"
+                                  class="rounded-full!"
+                                  [tuiHint]="'ascent.new' | translate"
+                                  (click.zoneless)="
+                                    onLogAscent(item._ref);
+                                    $event.stopPropagation()
+                                  "
+                                >
+                                  {{ 'ascent.new' | translate }}
+                                </button>
+                              } @else {
+                                <button
+                                  tuiIconButton
+                                  type="button"
+                                  [size]="isMobile() ? 's' : 'm'"
+                                  [appearance]="
+                                    isAttemptProject
+                                      ? 'none'
+                                      : item.project
+                                        ? 'info'
+                                        : 'neutral'
+                                  "
+                                  [iconStart]="
+                                    isAttemptProject
+                                      ? '@tui.circle-dashed'
+                                      : item.project
+                                        ? '@tui.bookmark'
+                                        : '@tui.circle-plus'
+                                  "
+                                  [style.background]="
+                                    isAttemptProject
+                                      ? 'var(--tui-status-neutral)'
+                                      : null
+                                  "
+                                  [class.text-(--tui-text-primary-on-accent-1)!]="
+                                    isAttemptProject
+                                  "
+                                  [class.transition-transform]="
+                                    isAttemptProject
+                                  "
+                                  [class.active:scale-95]="isAttemptProject"
+                                  class="rounded-full!"
+                                  [tuiDropdown]="actionMenu"
+                                  tuiDropdownAlign="end"
+                                  [tuiDropdownMinHeight]="140"
+                                  [tuiDropdownOpen]="
+                                    openActionId() === item._ref.route_id
+                                  "
+                                  (tuiDropdownOpenChange)="
+                                    openActionId.set(
+                                      $event ? item._ref.route_id : null
+                                    )
+                                  "
+                                  (click.zoneless)="$event.stopPropagation()"
+                                >
+                                  {{
+                                    isAttemptProject
+                                      ? ('ascentTypes.attempt' | translate)
+                                      : item.project
+                                        ? ('project' | translate)
+                                        : ('ascent.new' | translate)
+                                  }}
+                                </button>
+                                <ng-template #actionMenu>
+                                  <tui-data-list size="m">
+                                    @if (ownAscent) {
+                                      <button
+                                        tuiOption
+                                        class="whitespace-nowrap"
+                                        (click)="
+                                          onViewAscent(ownAscent);
+                                          openActionId.set(null)
+                                        "
+                                      >
+                                        <tui-icon
+                                          icon="@tui.eye"
+                                          class="mr-2"
+                                        />
+                                        {{ 'ascent.view' | translate }}
+                                      </button>
+                                    }
+                                    <button
+                                      tuiOption
+                                      appearance="positive"
+                                      class="whitespace-nowrap"
+                                      (click)="
+                                        onLogAscent(item._ref);
+                                        openActionId.set(null)
+                                      "
+                                    >
+                                      <tui-icon
+                                        icon="@tui.square-check"
+                                        class="mr-2"
+                                      />
+                                      {{ 'ascent.new' | translate }}
+                                    </button>
+                                    @if (item.project) {
+                                      <button
+                                        tuiOption
+                                        appearance="negative"
+                                        class="whitespace-nowrap"
+                                        (click)="
+                                          onToggleProject(item);
+                                          openActionId.set(null)
+                                        "
+                                      >
+                                        <tui-icon
+                                          icon="@tui.bookmark"
+                                          class="mr-2"
+                                        />
+                                        {{ 'project.remove' | translate }}
+                                      </button>
+                                    } @else {
+                                      <button
+                                        tuiOption
+                                        appearance="info"
+                                        class="whitespace-nowrap"
+                                        (click)="
+                                          onToggleProject(item);
+                                          openActionId.set(null)
+                                        "
+                                      >
+                                        <tui-icon
+                                          icon="@tui.bookmark"
+                                          class="mr-2"
+                                        />
+                                        {{ 'project.add' | translate }}
+                                      </button>
+                                    }
+                                  </tui-data-list>
+                                </ng-template>
                               }
                             </div>
                           }

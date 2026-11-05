@@ -72,7 +72,26 @@ describe('TopoRoutesTableComponent', () => {
         provideRouter([]),
         {
           provide: AscentsService,
-          useValue: { ascentInfo: signal({}) },
+          useValue: {
+            ascentInfo: signal({
+              attempt: {
+                icon: '@tui.circle-dashed',
+                background: 'var(--tui-status-neutral)',
+                backgroundSubtle: 'var(--tui-status-neutral-pale)',
+              },
+              rp: {
+                icon: '@tui.circle',
+                background: 'var(--tui-status-negative)',
+                backgroundSubtle: 'var(--tui-status-positive-pale)',
+              },
+              default: {
+                icon: '@tui.circle',
+                background: '',
+                backgroundSubtle: 'transparent',
+              },
+            }),
+            viewAscent: () => undefined,
+          },
         },
         {
           provide: RoutesService,
@@ -108,5 +127,86 @@ describe('TopoRoutesTableComponent', () => {
     expect(firstRowLink).toBeNull();
     expect(secondRowLink).not.toBeNull();
     expect(secondRowLink?.getAttribute('href')).toBe('/route/102');
+  });
+
+  describe('actions column (project vs ascent)', () => {
+    it('shows attempt button with dropdown when route has attempt ascent and is a project', async () => {
+      const fixture = TestBed.createComponent(TestHostComponent);
+      fixture.componentInstance.columns.set(['name', 'actions']);
+      const row = createMockTopoRouteRow(101, 'Via Proyecto');
+      row.project = true;
+      row.climbed = false;
+      row._ref.route.own_ascent = {
+        id: 10,
+        type: 'attempt',
+      } as unknown as TopoRouteRow['_ref']['route']['own_ascent'];
+      fixture.componentInstance.data.set([row]);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const ascentBtn = fixture.nativeElement.querySelector(
+        'app-button-ascent-type',
+      );
+      const actionBtn = fixture.nativeElement.querySelector(
+        'tbody tr td:last-child button',
+      );
+
+      expect(ascentBtn).toBeNull();
+      expect(actionBtn).not.toBeNull();
+      expect(actionBtn?.getAttribute('data-appearance')).toBe('none');
+      expect(actionBtn?.getAttribute('style')).toContain(
+        'var(--tui-status-neutral)',
+      );
+    });
+
+    it('shows ascent button when route has attempt ascent and is not a project', async () => {
+      const fixture = TestBed.createComponent(TestHostComponent);
+      fixture.componentInstance.columns.set(['name', 'actions']);
+      const row = createMockTopoRouteRow(101, 'Via Intento');
+      row.project = false;
+      row.climbed = false;
+      row._ref.route.own_ascent = {
+        id: 10,
+        type: 'attempt',
+      } as unknown as TopoRouteRow['_ref']['route']['own_ascent'];
+      fixture.componentInstance.data.set([row]);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const ascentBtn = fixture.nativeElement.querySelector(
+        'app-button-ascent-type',
+      );
+      const directButton = fixture.nativeElement.querySelector(
+        'tbody tr td:last-child > button',
+      );
+
+      expect(ascentBtn).not.toBeNull();
+      expect(directButton).toBeNull();
+    });
+
+    it('shows ascent button when route was climbed even if project is true', async () => {
+      const fixture = TestBed.createComponent(TestHostComponent);
+      fixture.componentInstance.columns.set(['name', 'actions']);
+      const row = createMockTopoRouteRow(101, 'Via Encadenada');
+      row.project = true;
+      row.climbed = true;
+      row._ref.route.own_ascent = {
+        id: 10,
+        type: 'rp',
+      } as unknown as TopoRouteRow['_ref']['route']['own_ascent'];
+      fixture.componentInstance.data.set([row]);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const ascentBtn = fixture.nativeElement.querySelector(
+        'app-button-ascent-type',
+      );
+      const directButton = fixture.nativeElement.querySelector(
+        'tbody tr td:last-child > button',
+      );
+
+      expect(ascentBtn).not.toBeNull();
+      expect(directButton).toBeNull();
+    });
   });
 });
