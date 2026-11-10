@@ -1,9 +1,12 @@
 import { inject, Injectable, signal } from '@angular/core';
 
+import { SupabaseNotInitializedError } from '../models';
+
 import { STORAGE_KEYS } from '../constants';
 import { isNetworkError, safeStringify } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
+import { SsrError } from '../errors/ssr.error';
 import { LocalStorage } from './local-storage';
 import { SupabaseService } from './supabase.service';
 
@@ -59,8 +62,12 @@ export class ErrorLogService {
   ): Promise<void> {
     if (!this.isBrowser) return;
 
-    // Do not log client network disconnects / aborted fetches to database
-    if (isNetworkError(error)) {
+    // Do not log client network disconnects, aborted fetches, or SSR/init guards to database
+    if (
+      isNetworkError(error) ||
+      error instanceof SupabaseNotInitializedError ||
+      error instanceof SsrError
+    ) {
       return;
     }
 
@@ -74,7 +81,8 @@ export class ErrorLogService {
       trimmed === '{}' ||
       trimmed === 'null' ||
       trimmed === 'undefined' ||
-      trimmed === '[object Object]'
+      trimmed === '[object Object]' ||
+      /Supabase client is not initialized/i.test(trimmed)
     ) {
       return;
     }
@@ -168,13 +176,17 @@ export class ErrorLogService {
         }
       }
 
-      const dbLogs = (data as AppErrorLog[]).map((log) => ({
-        ...log,
-        severity: (log.severity as ErrorSeverity) || 'error',
-        user_profile: log.user_id
-          ? (userProfilesMap.get(log.user_id) ?? null)
-          : null,
-      }));
+      const dbLogs = (data as AppErrorLog[])
+        .filter(
+          (log) => !/Supabase client is not initialized/i.test(log.message),
+        )
+        .map((log) => ({
+          ...log,
+          severity: (log.severity as ErrorSeverity) || 'error',
+          user_profile: log.user_id
+            ? (userProfilesMap.get(log.user_id) ?? null)
+            : null,
+        }));
 
       const sorted = this.sortLogs(dbLogs);
       this.logs.set(sorted);
@@ -226,7 +238,10 @@ export class ErrorLogService {
     if (!this.isBrowser) return [];
     try {
       const data = this.localStorage.getItem(this.storageKey);
-      return data ? JSON.parse(data) : [];
+      const parsed: AppErrorLog[] = data ? JSON.parse(data) : [];
+      return parsed.filter(
+        (log) => !/Supabase client is not initialized/i.test(log.message ?? ''),
+      );
     } catch {
       return [];
     }

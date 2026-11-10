@@ -34,6 +34,7 @@ export class MockSupabaseService {
   private readonly _userProfile: WritableSignal<UserProfileDto | null> =
     signal(null);
 
+  readonly hasClient = true;
   readonly isOnline = signal(true);
   readonly session = computed(() => this._session());
   readonly authUser = computed(() => this._session()?.user ?? null);

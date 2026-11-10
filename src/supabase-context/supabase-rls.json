@@ -677,7 +677,7 @@
     "roles": "{anon,authenticated}",
     "cmd": "INSERT",
     "qual": null,
-    "with_check": "((message IS NOT NULL) AND (length(message) > 0))"
+    "with_check": "((message IS NOT NULL) AND (length(message) > 0) AND (message !~~* '%Supabase client is not initialized%'::text))"
   },
   {
     "schemaname": "public",

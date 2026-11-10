@@ -4,12 +4,14 @@ import type { OrderDetail } from '../models';
 
 import { extractErrorMessage } from '../utils';
 
+import { IS_BROWSER } from '../app/is-browser';
 import { CartService } from './cart.service';
 
 import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
 export class CheckoutService {
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly cart = inject(CartService);
 
@@ -19,6 +21,7 @@ export class CheckoutService {
   async startStripeCheckout(
     shippingInfo: Record<string, unknown>,
   ): Promise<void> {
+    if (!this.isBrowser) return;
     this.loading.set(true);
     this.error.set(null);
 
@@ -30,6 +33,7 @@ export class CheckoutService {
     }
 
     try {
+      await this.supabase.whenReady();
       await this.cart.refreshStock();
       if (this.cart.hasOutOfStockItems()) {
         this.error.set(
@@ -111,6 +115,8 @@ export class CheckoutService {
     retries = 5,
     delay = 2000,
   ): Promise<OrderDetail | null> {
+    if (!this.isBrowser) return null;
+    await this.supabase.whenReady();
     for (let i = 0; i < retries; i++) {
       const { data, error } = await this.supabase.client
         .from('orders')

@@ -212,7 +212,7 @@ export class PushService {
       this.isSubscribed.set(!!subscription);
       if (subscription) {
         // Re-sincroniza la suscripción con el backend en cada arranque
-        void this.saveSubscription(subscription);
+        await this.saveSubscription(subscription);
       }
     } catch (err: unknown) {
       console.warn('[PushService] Could not check subscription', err);
@@ -220,11 +220,12 @@ export class PushService {
   }
 
   async saveSubscription(subscription: PushSubscription): Promise<void> {
+    if (!this.isBrowser) return;
+    await this.supabase.whenReady();
+    if (!this.supabase.hasClient) return;
+
     const userId = this.supabase.authUserId();
     if (!userId) {
-      console.warn(
-        '[PushService] Skipping saveSubscription: No user ID available',
-      );
       return;
     }
 
@@ -249,6 +250,10 @@ export class PushService {
   private async deleteSubscription(
     subscription: PushSubscription,
   ): Promise<void> {
+    if (!this.isBrowser) return;
+    await this.supabase.whenReady();
+    if (!this.supabase.hasClient) return;
+
     const userId = this.supabase.authUserId();
     if (!userId) return;
 

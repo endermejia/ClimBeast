@@ -21,12 +21,14 @@ import {
 
 import { normalizeName } from '../utils';
 
+import { IS_BROWSER } from '../app/is-browser';
 import { SupabaseService } from './supabase.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class UserProfilesService {
+  private readonly isBrowser = inject(IS_BROWSER);
   private supabase = inject(SupabaseService);
   private dialogs = inject(TuiDialogService);
   private translate = inject(TranslateService);
@@ -150,7 +152,11 @@ export class UserProfilesService {
   async updateUserProfile(
     updates: Partial<UserProfileDto>,
   ): Promise<{ success: boolean; error?: string }> {
+    if (!this.isBrowser) {
+      return { success: false, error: 'Not in browser' };
+    }
     try {
+      await this.supabase.whenReady();
       const userId = this.supabase.authUserId();
       if (!userId) {
         return { success: false, error: 'User not authenticated' };
@@ -183,6 +189,8 @@ export class UserProfilesService {
   }
 
   async searchUsers(query: string): Promise<UserProfileBasicDto[]> {
+    if (!this.isBrowser) return [];
+    await this.supabase.whenReady();
     const q = `%${query.trim()}%`;
     const qLoose = `%${query
       .trim()
@@ -206,6 +214,8 @@ export class UserProfilesService {
   }
 
   async getUserProfile(userId: string): Promise<UserProfileBasicDto | null> {
+    if (!this.isBrowser) return null;
+    await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('user_profiles')
       .select('id, name, avatar')
@@ -230,6 +240,8 @@ export class UserProfilesService {
         | null;
     })[]
   > {
+    if (!this.isBrowser) return [];
+    await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('user_pyramid_slots')
       .select('*, route:routes(*, crag:crags(slug, area:areas(slug)))')
@@ -253,6 +265,10 @@ export class UserProfilesService {
   async updatePyramidSlot(
     slot: UserPyramidSlotInsertDto,
   ): Promise<{ success: boolean; error?: string }> {
+    if (!this.isBrowser) {
+      return { success: false, error: 'Not in browser' };
+    }
+    await this.supabase.whenReady();
     const { error } = await this.supabase.client
       .from('user_pyramid_slots')
       .upsert(slot, { onConflict: 'user_id,year,level,position' });
@@ -268,6 +284,10 @@ export class UserProfilesService {
   async deletePyramidSlot(
     slotId: string,
   ): Promise<{ success: boolean; error?: string }> {
+    if (!this.isBrowser) {
+      return { success: false, error: 'Not in browser' };
+    }
+    await this.supabase.whenReady();
     const { error } = await this.supabase.client
       .from('user_pyramid_slots')
       .delete()

@@ -29,6 +29,7 @@ export class FavoritesService {
 
   async getLikedAreas(userId: string): Promise<AreaListItem[]> {
     if (!this.isBrowser) return [];
+    await this.supabase.whenReady();
 
     const { data: areaLikes } = await this.supabase.client
       .from('area_likes')
@@ -65,6 +66,7 @@ export class FavoritesService {
 
   async getLikedCrags(userId: string): Promise<CragListItem[]> {
     if (!this.isBrowser) return [];
+    await this.supabase.whenReady();
 
     const { data: cragLikes } = await this.supabase.client
       .from('crag_likes')
@@ -97,6 +99,7 @@ export class FavoritesService {
 
   async getLikedRoutes(userId: string): Promise<RouteWithExtras[]> {
     if (!this.isBrowser) return [];
+    await this.supabase.whenReady();
 
     const { data: routeLikes } = await this.supabase.client
       .from('route_likes')
@@ -153,6 +156,7 @@ export class FavoritesService {
 
   async getLikedIndoorCenters(userId: string): Promise<MapIndoorCenterItem[]> {
     if (!this.isBrowser) return [];
+    await this.supabase.whenReady();
 
     const { data: centerLikes } = await this.supabase.client
       .from('indoor_center_likes')

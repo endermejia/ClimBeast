@@ -1,9 +1,12 @@
 import { ErrorHandler, inject, Injectable } from '@angular/core';
 
+import { SupabaseNotInitializedError } from '../models';
+
 import { STORAGE_KEYS } from '../constants';
 import { extractErrorMessage, isNetworkError } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
+import { SsrError } from '../errors/ssr.error';
 import { ErrorLogService } from './error-log.service';
 
 const CHUNK_RELOAD_KEY = STORAGE_KEYS.chunkReloadTs;
@@ -29,8 +32,11 @@ export class AppErrorHandler implements ErrorHandler {
       return;
     }
 
-    // 1. Benign browser notifications that should never be logged
+    // 1. Benign browser notifications and SSR/init guards that should never be logged
     if (
+      error instanceof SupabaseNotInitializedError ||
+      error instanceof SsrError ||
+      /Supabase client is not initialized/i.test(msg) ||
       /ResizeObserver loop (completed with undelivered notifications|limit exceeded)/i.test(
         msg,
       )

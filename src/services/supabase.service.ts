@@ -291,10 +291,16 @@ export class SupabaseService {
   }
 
   get hasClient(): boolean {
+    if (!this._client && this.isBrowser && typeof window !== 'undefined') {
+      this.initClient();
+    }
     return this._client !== null;
   }
 
   get client() {
+    if (!this._client && this.isBrowser && typeof window !== 'undefined') {
+      this.initClient();
+    }
     if (!this._client) {
       throw new SupabaseNotInitializedError();
     }

@@ -6,6 +6,8 @@ import { TuiLoader } from '@taiga-ui/core';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 
+import { IS_BROWSER } from '../../app/is-browser';
+
 @Component({
   selector: 'app-area-redirect',
   imports: [TuiLoader],
@@ -17,13 +19,16 @@ import { ToastService } from '../../services/toast.service';
   standalone: true,
 })
 export class AreaRedirectComponent {
+  private readonly isBrowser = inject(IS_BROWSER);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly supabase = inject(SupabaseService);
   private readonly toast = inject(ToastService);
 
   constructor() {
-    this.init();
+    if (this.isBrowser) {
+      void this.init();
+    }
   }
 
   private async init() {
@@ -63,6 +68,7 @@ export class AreaRedirectComponent {
   }
 
   private async redirectToCrag(cragId: string, success = false) {
+    await this.supabase.whenReady();
     const { data: crag } = await this.supabase.client
       .from('crags')
       .select('slug, area:areas(slug)')
@@ -84,6 +90,7 @@ export class AreaRedirectComponent {
   }
 
   private async redirectToArea(areaId: string, success = false) {
+    await this.supabase.whenReady();
     const { data: area } = await this.supabase.client
       .from('areas')
       .select('slug')
