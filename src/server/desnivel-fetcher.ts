@@ -52,16 +52,32 @@ async function doAcquireClearanceCookie(): Promise<string> {
     },
   );
 
-  if (res1.ok && res1.status === 200) {
+  const contentType1 = res1.headers.get('content-type') || '';
+  if (
+    res1.ok &&
+    res1.status === 200 &&
+    contentType1.includes('application/json')
+  ) {
+    cachedCookie = {
+      cookie: '',
+      expiresAt: Date.now() + 60 * 60 * 1000,
+    };
     return '';
   }
 
   const html1 = await res1.text();
-  const m1 = html1.match(/content="0;([^"]+)"/);
+  const m1 = html1.match(/content="0;\s*(?:url=)?([^"]+)"/i);
   if (!m1) {
     throw new Error('SG-Captcha initial redirect not found');
   }
-  const nextUrl = 'https://www.desnivel.com' + m1[1];
+  let redirectPath = m1[1].trim();
+  if (redirectPath.startsWith("'") && redirectPath.endsWith("'")) {
+    redirectPath = redirectPath.slice(1, -1);
+  }
+  const nextUrl = redirectPath.startsWith('http')
+    ? redirectPath
+    : 'https://www.desnivel.com' +
+      (redirectPath.startsWith('/') ? redirectPath : '/' + redirectPath);
 
   const res2 = await fetch(nextUrl, {
     headers: { 'User-Agent': BROWSER_USER_AGENT },
@@ -124,8 +140,6 @@ async function acquireClearanceCookie(): Promise<string> {
 export async function fetchDesnivelUpstream(
   pathWithQuery: string,
 ): Promise<{ status: number; contentType: string; body: Uint8Array }> {
-  let cookie = await acquireClearanceCookie();
-
   const makeReq = async (cookieHeader: string) => {
     const url = new URL(
       'https://www.desnivel.com' +
@@ -176,16 +190,35 @@ export async function fetchDesnivelUpstream(
           });
         },
       );
+      req.setTimeout(15000, () => {
+        req.destroy(new Error('Desnivel upstream request timed out'));
+      });
       req.on('error', reject);
       req.end();
     });
   };
 
+  let cookie =
+    cachedCookie && cachedCookie.expiresAt > Date.now()
+      ? cachedCookie.cookie
+      : '';
   let result = await makeReq(cookie);
-  if (result.status === 202) {
-    cachedCookie = null;
-    cookie = await acquireClearanceCookie();
-    result = await makeReq(cookie);
+
+  const isApi = pathWithQuery.includes('/wp-json/');
+  const isHtmlChallenge =
+    result.status === 202 ||
+    (isApi &&
+      result.contentType.includes('text/html') &&
+      result.status !== 404);
+
+  if (isHtmlChallenge) {
+    try {
+      cachedCookie = null;
+      cookie = await acquireClearanceCookie();
+      result = await makeReq(cookie);
+    } catch (err) {
+      console.warn('Failed to acquire SG-Captcha clearance cookie:', err);
+    }
   }
 
   return result;

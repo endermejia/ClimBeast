@@ -398,14 +398,11 @@ export class HomeComponent {
   };
 
   protected readonly filterOptions = computed(() => {
-    const isMobile = this.layoutService.isMobile();
     const options: HomeFeedFilter[] = [
       HomeFeedFilters.FOLLOWING,
       HomeFeedFilters.ALL,
+      HomeFeedFilters.NEWS,
     ];
-    if (!isMobile) {
-      options.push(HomeFeedFilters.NEWS);
-    }
     if (this.favoritesData.likedAreaIds().length > 0) {
       options.push(HomeFeedFilters.FAVORITE_AREAS);
     }

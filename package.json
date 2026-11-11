@@ -23,6 +23,7 @@
     "check:imports": "node scripts/check-imports.mjs",
     "check:i18n": "node scripts/check-translations.mjs",
     "sync:i18n": "node scripts/sync-translations.mjs",
+    "postinstall": "node scripts/patch-ng-node-version.mjs && node scripts/patch-taiga-styles.mjs",
     "prepare": "husky"
   },
   "lint-staged": {
