@@ -9,11 +9,17 @@ import {
 } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 
-import { TuiAppearance, TuiButton, TuiIcon } from '@taiga-ui/core';
-import { TuiAvatar } from '@taiga-ui/kit';
+import {
+  TuiAppearance,
+  TuiButton,
+  TuiDialogService,
+  TuiIcon,
+} from '@taiga-ui/core';
+import { TUI_CONFIRM, TuiAvatar, type TuiConfirmData } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
 
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
 
 import { FollowsService } from '../../services/follows.service';
 
@@ -66,7 +72,7 @@ import { toProxiedDesnivelUrl } from '../../utils';
             class="rounded-full!"
             [disabled]="loading()"
             [iconStart]="loading() ? '@tui.loader' : ''"
-            (click)="toggleFollow()"
+            (click)="unfollow('Desnivel')"
           >
             {{ 'followingStatus' | translate }}
           </button>
@@ -79,7 +85,7 @@ import { toProxiedDesnivelUrl } from '../../utils';
             class="rounded-full!"
             [disabled]="loading()"
             [iconStart]="loading() ? '@tui.loader' : ''"
-            (click)="toggleFollow()"
+            (click)="follow()"
           >
             {{ 'follow' | translate }}
           </button>
@@ -127,6 +133,8 @@ import { toProxiedDesnivelUrl } from '../../utils';
 })
 export class NewsCardComponent {
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly dialogs = inject(TuiDialogService);
+  private readonly translate = inject(TranslateService);
   private readonly followsService = inject(FollowsService);
 
   item = input.required<NewsItem>();
@@ -135,13 +143,41 @@ export class NewsCardComponent {
 
   readonly isFollowed = computed(() => this.followsService.followNews());
 
-  async toggleFollow(): Promise<void> {
+  async follow(): Promise<void> {
     if (this.loading()) return;
     this.loading.set(true);
     try {
       await this.followsService.toggleFollowNews();
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  async unfollow(name = 'Desnivel'): Promise<void> {
+    if (this.loading()) return;
+    const data: TuiConfirmData = {
+      content: this.translate.instant('unfollowConfirm', { name }),
+      yes: this.translate.instant('unfollow'),
+      no: this.translate.instant('cancel'),
+      appearance: 'negative',
+    };
+
+    const confirmed = await firstValueFrom(
+      this.dialogs.open<boolean>(TUI_CONFIRM, {
+        label: this.translate.instant('unfollow'),
+        size: 's',
+        data,
+      }),
+      { defaultValue: false },
+    );
+
+    if (confirmed) {
+      this.loading.set(true);
+      try {
+        await this.followsService.toggleFollowNews();
+      } finally {
+        this.loading.set(false);
+      }
     }
   }
 

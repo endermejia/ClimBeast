@@ -1,7 +1,10 @@
 import { PLATFORM_ID, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { TuiDialogService } from '@taiga-ui/core';
+
 import { TranslateModule } from '@ngx-translate/core';
+import { of } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FollowsService } from '../../services/follows.service';
@@ -25,10 +28,12 @@ describe('NewsCardComponent', () => {
 
   const followNewsSignal = signal(true);
   const toggleFollowNewsMock = vi.fn().mockResolvedValue(false);
+  const dialogOpenMock = vi.fn().mockReturnValue(of(true));
 
   beforeEach(async () => {
     followNewsSignal.set(true);
     toggleFollowNewsMock.mockClear();
+    dialogOpenMock.mockClear().mockReturnValue(of(true));
 
     await TestBed.configureTestingModule({
       imports: [NewsCardComponent, TranslateModule.forRoot()],
@@ -41,6 +46,10 @@ describe('NewsCardComponent', () => {
             followNews: followNewsSignal,
             toggleFollowNews: toggleFollowNewsMock,
           },
+        },
+        {
+          provide: TuiDialogService,
+          useValue: { open: dialogOpenMock },
         },
       ],
     }).compileComponents();
@@ -90,7 +99,7 @@ describe('NewsCardComponent', () => {
     expect(dateSpan?.textContent?.trim().length).toBeGreaterThan(0);
   });
 
-  it('renders follow button and toggles news follow state', async () => {
+  it('confirms with dialog before unfollowing news', async () => {
     const fixture = TestBed.createComponent(NewsCardComponent);
     fixture.componentRef.setInput('item', mockNewsItem);
     fixture.detectChanges();
@@ -101,6 +110,42 @@ describe('NewsCardComponent', () => {
     expect(followButton).toBeTruthy();
 
     followButton.click();
+    await fixture.whenStable();
+    expect(dialogOpenMock).toHaveBeenCalledTimes(1);
+    expect(toggleFollowNewsMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not unfollow when confirmation is cancelled', async () => {
+    dialogOpenMock.mockReturnValue(of(false));
+    const fixture = TestBed.createComponent(NewsCardComponent);
+    fixture.componentRef.setInput('item', mockNewsItem);
+    fixture.detectChanges();
+
+    const followButton = fixture.nativeElement.querySelector(
+      'header button[tuibutton]',
+    ) as HTMLButtonElement;
+    expect(followButton).toBeTruthy();
+
+    followButton.click();
+    await fixture.whenStable();
+    expect(dialogOpenMock).toHaveBeenCalledTimes(1);
+    expect(toggleFollowNewsMock).not.toHaveBeenCalled();
+  });
+
+  it('follows news directly without dialog when not followed', async () => {
+    followNewsSignal.set(false);
+    const fixture = TestBed.createComponent(NewsCardComponent);
+    fixture.componentRef.setInput('item', mockNewsItem);
+    fixture.detectChanges();
+
+    const followButton = fixture.nativeElement.querySelector(
+      'header button[tuibutton]',
+    ) as HTMLButtonElement;
+    expect(followButton).toBeTruthy();
+
+    followButton.click();
+    await fixture.whenStable();
+    expect(dialogOpenMock).not.toHaveBeenCalled();
     expect(toggleFollowNewsMock).toHaveBeenCalledTimes(1);
   });
 
