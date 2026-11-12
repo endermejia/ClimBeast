@@ -227,4 +227,36 @@ describe('FollowsService', () => {
       expect(result.items).toEqual([]);
     });
   });
+
+  describe('followNews & toggleFollowNews', () => {
+    it('defaults to true when profile has follow_news true', () => {
+      mockSupabase.setUserProfile({
+        id: 'user-1',
+        name: 'Test',
+        follow_news: true,
+      } as never);
+      expect(service.followNews()).toBe(true);
+    });
+
+    it('toggles follow_news on user_profiles for authenticated user', async () => {
+      mockSupabase.setUserProfile({
+        id: 'user-1',
+        name: 'Test',
+        follow_news: true,
+      } as never);
+
+      const updateMock = vi.fn(() => ({
+        eq: vi.fn(() => Promise.resolve({ error: null })),
+      }));
+      mockSupabase.client.from = vi.fn(() => ({
+        update: updateMock,
+      })) as never;
+
+      const result = await service.toggleFollowNews();
+      expect(result).toBe(false);
+      expect(updateMock).toHaveBeenCalledWith(
+        expect.objectContaining({ follow_news: false }),
+      );
+    });
+  });
 });

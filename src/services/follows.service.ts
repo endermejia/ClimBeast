@@ -1,12 +1,12 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 
 import { NotificationTypes, UserProfileDto } from '../models';
 
+import { STORAGE_KEYS } from '../constants';
+
 import { IS_BROWSER } from '../app/is-browser';
 import { AppNotificationsService } from './app-notifications.service';
-
 import { SupabaseService } from './supabase.service';
-
 import { ToastService } from './toast.service';
 
 @Injectable({
@@ -24,6 +24,61 @@ export class FollowsService {
   readonly followedIds = this._followedIds.asReadonly();
 
   private _followedIdsLoaded = false;
+
+  private readonly guestFollowNews = signal<boolean>(true);
+
+  readonly followNews = computed(() => {
+    const profile = this.supabase.userProfile();
+    if (profile) {
+      return profile.follow_news ?? true;
+    }
+    return this.guestFollowNews();
+  });
+
+  constructor() {
+    if (this.isBrowser) {
+      try {
+        const guestStored = localStorage.getItem(STORAGE_KEYS.followNewsGuest);
+        if (guestStored !== null) {
+          this.guestFollowNews.set(guestStored === 'true');
+        }
+      } catch {
+        // Ignore storage access errors
+      }
+    }
+  }
+
+  async toggleFollowNews(): Promise<boolean> {
+    const next = !this.followNews();
+    const userId = this.supabase.authUserId();
+    if (userId) {
+      await this.supabase.whenReady();
+      const { error } = await this.supabase.client
+        .from('user_profiles')
+        .update({
+          follow_news: next,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('[FollowsService] Error updating follow_news:', error);
+        return !next;
+      }
+
+      this.supabase.userProfileResource.reload();
+    } else {
+      this.guestFollowNews.set(next);
+      if (this.isBrowser) {
+        try {
+          localStorage.setItem(STORAGE_KEYS.followNewsGuest, String(next));
+        } catch {
+          // Ignore storage access errors
+        }
+      }
+    }
+    return next;
+  }
 
   private notifyChange() {
     this.followChange.update((v) => v + 1);

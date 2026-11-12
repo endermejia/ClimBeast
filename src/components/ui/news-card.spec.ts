@@ -1,14 +1,16 @@
-import { PLATFORM_ID } from '@angular/core';
+import { PLATFORM_ID, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { TranslateModule } from '@ngx-translate/core';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { FollowsService } from '../../services/follows.service';
+
+import { NewsItem } from '../../models';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
 import { NewsCardComponent } from './news-card';
-
-import { NewsItem } from '../../models';
 
 describe('NewsCardComponent', () => {
   const mockNewsItem: NewsItem = {
@@ -21,12 +23,25 @@ describe('NewsCardComponent', () => {
     image: 'https://www.desnivel.com/images/2026/11/foto.jpg',
   };
 
+  const followNewsSignal = signal(true);
+  const toggleFollowNewsMock = vi.fn().mockResolvedValue(false);
+
   beforeEach(async () => {
+    followNewsSignal.set(true);
+    toggleFollowNewsMock.mockClear();
+
     await TestBed.configureTestingModule({
       imports: [NewsCardComponent, TranslateModule.forRoot()],
       providers: [
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: IS_BROWSER, useValue: true },
+        {
+          provide: FollowsService,
+          useValue: {
+            followNews: followNewsSignal,
+            toggleFollowNews: toggleFollowNewsMock,
+          },
+        },
       ],
     }).compileComponents();
   });
@@ -73,5 +88,30 @@ describe('NewsCardComponent', () => {
 
     const dateSpan = fixture.nativeElement.querySelector('header span.text-xs');
     expect(dateSpan?.textContent?.trim().length).toBeGreaterThan(0);
+  });
+
+  it('renders follow button and toggles news follow state', async () => {
+    const fixture = TestBed.createComponent(NewsCardComponent);
+    fixture.componentRef.setInput('item', mockNewsItem);
+    fixture.detectChanges();
+
+    const followButton = fixture.nativeElement.querySelector(
+      'header button[tuibutton]',
+    ) as HTMLButtonElement;
+    expect(followButton).toBeTruthy();
+
+    followButton.click();
+    expect(toggleFollowNewsMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders external link icon in title', () => {
+    const fixture = TestBed.createComponent(NewsCardComponent);
+    fixture.componentRef.setInput('item', mockNewsItem);
+    fixture.detectChanges();
+
+    const link = fixture.nativeElement.querySelector('a.group\\/title');
+    expect(link).toBeTruthy();
+    const icon = link.querySelector('tui-icon');
+    expect(icon).toBeTruthy();
   });
 });

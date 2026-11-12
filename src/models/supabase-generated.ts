@@ -3707,6 +3707,7 @@ export type Database = {
           created_at: string | null;
           editing_mode: boolean | null;
           first_steps: boolean | null;
+          follow_news: boolean;
           id: string;
           is_admin: boolean | null;
           language: Database['public']['Enums']['language'] | null;
@@ -3733,6 +3734,7 @@ export type Database = {
           created_at?: string | null;
           editing_mode?: boolean | null;
           first_steps?: boolean | null;
+          follow_news?: boolean;
           id?: string;
           is_admin?: boolean | null;
           language?: Database['public']['Enums']['language'] | null;
@@ -3759,6 +3761,7 @@ export type Database = {
           created_at?: string | null;
           editing_mode?: boolean | null;
           first_steps?: boolean | null;
+          follow_news?: boolean;
           id?: string;
           is_admin?: boolean | null;
           language?: Database['public']['Enums']['language'] | null;

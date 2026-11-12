@@ -9,9 +9,13 @@ import {
 } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 
-import { TuiAppearance, TuiButton } from '@taiga-ui/core';
+import { TuiAppearance, TuiButton, TuiIcon } from '@taiga-ui/core';
 import { TuiAvatar } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
+
+import { TranslatePipe } from '@ngx-translate/core';
+
+import { FollowsService } from '../../services/follows.service';
 
 import { NewsItem } from '../../models';
 
@@ -24,10 +28,12 @@ import { toProxiedDesnivelUrl } from '../../utils';
   imports: [
     AscentDatePipe,
     CommonModule,
+    TranslatePipe,
     TuiAppearance,
     TuiAvatar,
     TuiButton,
     TuiHeader,
+    TuiIcon,
   ],
   template: `
     @let data = item();
@@ -51,16 +57,33 @@ import { toProxiedDesnivelUrl } from '../../utils';
             </span>
           </div>
         </a>
-        <a
-          tuiButton
-          size="s"
-          appearance="secondary-grayscale"
-          class="rounded-full! no-underline"
-          [href]="data.link"
-          target="_blank"
-        >
-          Leer más
-        </a>
+        @if (isFollowed()) {
+          <button
+            tuiButton
+            type="button"
+            size="s"
+            appearance="secondary-grayscale"
+            class="rounded-full!"
+            [disabled]="loading()"
+            [iconStart]="loading() ? '@tui.loader' : ''"
+            (click)="toggleFollow()"
+          >
+            {{ 'followingStatus' | translate }}
+          </button>
+        } @else {
+          <button
+            tuiButton
+            type="button"
+            size="s"
+            appearance="action"
+            class="rounded-full!"
+            [disabled]="loading()"
+            [iconStart]="loading() ? '@tui.loader' : ''"
+            (click)="toggleFollow()"
+          >
+            {{ 'follow' | translate }}
+          </button>
+        }
       </header>
 
       @if (imageUrl(); as img) {
@@ -85,9 +108,14 @@ import { toProxiedDesnivelUrl } from '../../utils';
         <a
           [href]="data.link"
           target="_blank"
-          class="font-bold text-lg leading-tight hover:underline cursor-pointer text-(--tui-text-primary) no-underline"
-          [innerHTML]="sanitizedTitle()"
-        ></a>
+          class="inline-flex items-center gap-1.5 font-bold text-lg leading-tight hover:underline cursor-pointer text-(--tui-text-primary) no-underline group/title"
+        >
+          <span [innerHTML]="sanitizedTitle()"></span>
+          <tui-icon
+            icon="@tui.external-link"
+            class="text-sm opacity-60 group-hover/title:opacity-100 shrink-0"
+          />
+        </a>
       </div>
 
       <div
@@ -99,8 +127,23 @@ import { toProxiedDesnivelUrl } from '../../utils';
 })
 export class NewsCardComponent {
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly followsService = inject(FollowsService);
+
   item = input.required<NewsItem>();
   protected readonly imageFailed = signal(false);
+  protected readonly loading = signal(false);
+
+  readonly isFollowed = computed(() => this.followsService.followNews());
+
+  async toggleFollow(): Promise<void> {
+    if (this.loading()) return;
+    this.loading.set(true);
+    try {
+      await this.followsService.toggleFollowNews();
+    } finally {
+      this.loading.set(false);
+    }
+  }
 
   readonly imageUrl = computed(() => {
     return toProxiedDesnivelUrl(this.item().image) ?? null;
@@ -116,5 +159,5 @@ export class NewsCardComponent {
   );
 
   protected readonly avatarUrl =
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y+mAAAAM1BMVEVHcEwAUowAUowAUowAUowAUowAUowAUowAUowAUowAUowAUowAUowAUowAUowAUowAUow6nXSmAAAAEXRSTlMADd707LdpGUHI/0+VJ32sMXQpKsUAAADTSURBVHgBtdFXgsMgDEXRhxAIPer+Vzsmnp7wmevu4268q7A7mMSdpmwvsDiZaovU+kIr2YDuZD0hTCh2Qgxy3A/4AgvpQHaVFtBbGmX8YI9Ua2xZOLuma+H7jBtNqYPtvgTtWqy/6CxApjin2cAPLlKEpXpMq5La7BdmcjpF29o7ExnLDyayTLLgrirlcbn0dYF8Y+6PHRFhkBxlRM6A4NQ2PG40Oqaq7t/iOew9TRnTwtXkQgi2u+TOuu1FFe943XKpOFlUw6lBDUfs4mdEwDv7AJHCCVtPv7flAAAAAElFTkSuQmCC';
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y+mAAAAM1BMVEVHcEwAUowAUowAUowAUowAUowAUowAUowAUowAUowAUowAUowAUowAUowAUowAUow6nXSmAAAAEXRSTlMADd707LdpGUHI/0+VJ32sMXQpKsUAAADTSURBVHgBtdFXgsMgDEXRhxAIPer+Vzsmnp7wmevu4268q7A7mMSdpmwvsDiZaovU+kIr2YDuZD0hTCh2Qgxy3A/4AgvpQHaVFtBbGmX8YI9Ua2xZOLuma+H7jBtNqYPtvgTtWqy/6CxApjin2cAPLlKEpXpMq5La7BdmcjpF29o7ExnLDyayTLLgrirlcbn0dYF8Y+6PHRFhkBxlRM6A4NQ2PG40Oqaq7t/iOew9TRnTwtXkQgi2u+TOuu1FFe943XKpOFlUw6lBDUfs4mdEwDv7AJHCCVtPv7flAAAAAElFTkSuQmCC';
 }

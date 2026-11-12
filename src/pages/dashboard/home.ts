@@ -425,9 +425,7 @@ export class HomeComponent {
     const gradeActive = !(lo === 0 && hi === ORDERED_GRADE_VALUES.length - 1);
     const categoriesActive = this.filterState.feedCategories().length > 0;
     const indoorAscents = this.filterState.feedShowIndoorAscents();
-    const isMobile = this.layoutService.isMobile();
-    const newsFilterActive = isMobile && !this.filterState.feedShowNews();
-    return gradeActive || categoriesActive || indoorAscents || newsFilterActive;
+    return gradeActive || categoriesActive || indoorAscents;
   });
 
   constructor() {
@@ -438,8 +436,9 @@ export class HomeComponent {
       const isMobile = this.layoutService.isMobile();
       const showNews =
         isMobile &&
-        filter === HomeFeedFilters.ALL &&
-        this.filterState.feedShowNews();
+        (filter === HomeFeedFilters.ALL ||
+          (filter === HomeFeedFilters.FOLLOWING &&
+            this.followsService.followNews()));
       const seedOutdoor = this.cache.get<FeedItem[] | undefined>(
         CACHE_KEYS.homeFeed(filter, 0),
         undefined,
@@ -564,7 +563,7 @@ export class HomeComponent {
       this.filterState.feedCategories();
       this.filterState.feedGradeRange();
       this.filterState.feedShowIndoorAscents();
-      this.filterState.feedShowNews();
+      this.followsService.followNews();
       this.layoutService.isMobile();
 
       if (filter === HomeFeedFilters.FAVORITE_AREAS) {
@@ -645,8 +644,9 @@ export class HomeComponent {
     const isMobile = this.layoutService.isMobile();
     const showNews =
       isMobile &&
-      filter === HomeFeedFilters.ALL &&
-      this.filterState.feedShowNews();
+      (filter === HomeFeedFilters.ALL ||
+        (filter === HomeFeedFilters.FOLLOWING &&
+          this.followsService.followNews()));
 
     const shouldFetchOutdoor = this.outdoorHasMore;
     const shouldFetchIndoor = showIndoorAscents && this.indoorHasMore;
@@ -1327,7 +1327,6 @@ export class HomeComponent {
   }
 
   async openFilters() {
-    const isMobile = this.layoutService.isMobile();
     const data: FilterDialog = {
       categories: this.filterState.feedCategories(),
       gradeRange: this.filterState.feedGradeRange(),
@@ -1337,8 +1336,6 @@ export class HomeComponent {
       showIndoorOutdoor: false,
       showIndoorAscents: true,
       showIndoorAscentsValue: this.filterState.feedShowIndoorAscents(),
-      showNews: isMobile,
-      showNewsValue: this.filterState.feedShowNews(),
     };
 
     const result = await firstValueFrom(
@@ -1361,9 +1358,6 @@ export class HomeComponent {
     }
     if (result.showIndoorAscentsValue !== undefined) {
       this.filterState.feedShowIndoorAscents.set(result.showIndoorAscentsValue);
-    }
-    if (result.showNewsValue !== undefined && isMobile) {
-      this.filterState.feedShowNews.set(result.showNewsValue);
     }
   }
 
