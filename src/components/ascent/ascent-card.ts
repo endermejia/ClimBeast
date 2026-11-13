@@ -119,9 +119,11 @@ import { AscentTypeComponent } from './ascent-type';
               <span class="font-bold text-sm group-hover/user:underline">
                 {{ ascent.user?.name || 'User' }}
               </span>
-              <span class="text-xs">
-                {{ ascent.date | ascentDate }}
-              </span>
+              @if (showDate()) {
+                <span class="text-xs">
+                  {{ ascent.date | ascentDate }}
+                </span>
+              }
             </a>
           </div>
           <ng-template #userHintTemplate>
@@ -179,9 +181,11 @@ import { AscentTypeComponent } from './ascent-type';
         } @else {
           <div class="flex justify-between items-center w-full">
             <div class="flex flex-col">
-              <span class="text-xs text-gray-400">
-                {{ ascent.date | ascentDate }}
-              </span>
+              @if (showDate()) {
+                <span class="text-xs text-gray-400">
+                  {{ ascent.date | ascentDate }}
+                </span>
+              }
             </div>
             @if (ascent.user_id === supabase.authUserId()) {
               <div class="flex flex-col items-end gap-1">
@@ -440,6 +444,7 @@ export class AscentCardComponent {
   showCenter = input(true);
   showPhoto = input(true);
   showComment = input(true);
+  showDate = input(true);
   showLikesAndComments = input(true);
   priority = input(false);
   highlightOwn = input(false);

@@ -29,16 +29,20 @@ import { TuiRating, TuiSkeleton } from '@taiga-ui/kit';
             <div [tuiSkeleton]="true" class="w-8 h-8 rounded-full"></div>
             <div class="flex flex-col gap-1">
               <div [tuiSkeleton]="true" class="w-24 h-3 rounded-full"></div>
-              <div
-                [tuiSkeleton]="true"
-                class="w-16 h-2 rounded-full opacity-60"
-              ></div>
+              @if (showDate()) {
+                <div
+                  [tuiSkeleton]="true"
+                  class="w-16 h-2 rounded-full opacity-60"
+                ></div>
+              }
             </div>
           } @else {
-            <div
-              [tuiSkeleton]="true"
-              class="w-20 h-2 rounded-full opacity-60"
-            ></div>
+            @if (showDate()) {
+              <div
+                [tuiSkeleton]="true"
+                class="w-20 h-2 rounded-full opacity-60"
+              ></div>
+            }
           }
         </div>
         @if (showUser()) {
@@ -149,5 +153,6 @@ import { TuiRating, TuiSkeleton } from '@taiga-ui/kit';
 export class AscentCardSkeletonComponent {
   showUser = input(true);
   showRoute = input(true);
+  showDate = input(true);
   hasPhoto = input(false);
 }

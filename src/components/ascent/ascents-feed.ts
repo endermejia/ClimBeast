@@ -3,17 +3,18 @@ import { Component, computed, input, output } from '@angular/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { InfiniteScrollTriggerComponent } from '../ui/infinite-scroll-trigger';
+import { NewsCardComponent } from '../ui/news-card';
+import { AscentCardComponent } from './ascent-card';
+import { AscentCardSkeletonComponent } from './ascent-card-skeleton';
+
 import {
   FeedItem,
   VERTICAL_LIFE_GRADES,
   GRADE_NUMBER_TO_LABEL,
 } from '../../models';
 
-import { InfiniteScrollTriggerComponent } from '../ui/infinite-scroll-trigger';
-import { NewsCardComponent } from '../ui/news-card';
-import { AscentCardComponent } from './ascent-card';
-
-import { AscentCardSkeletonComponent } from './ascent-card-skeleton';
+import { AscentDatePipe } from '../../pipes';
 
 export interface ProcessedFeedItem {
   item: FeedItem;
@@ -22,6 +23,7 @@ export interface ProcessedFeedItem {
   showRowBreak: boolean;
   showGradeHeader: boolean;
   gradeLabel?: string;
+  showDateHeader: boolean;
 }
 
 @Component({
@@ -29,6 +31,7 @@ export interface ProcessedFeedItem {
   imports: [
     AscentCardComponent,
     AscentCardSkeletonComponent,
+    AscentDatePipe,
     CommonModule,
     InfiniteScrollTriggerComponent,
     NewsCardComponent,
@@ -42,6 +45,28 @@ export interface ProcessedFeedItem {
       [class.lg:grid-cols-3]="columns() >= 3"
     >
       @for (processed of processedItems(); track processed.trackKey) {
+        @if (
+          groupByDate() &&
+          !groupByGrade() &&
+          processed.showDateHeader &&
+          processed.item.date
+        ) {
+          <div
+            class="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pt-3 pb-6 -mb-4 pointer-events-none"
+            style="background: linear-gradient(to bottom, var(--tui-background-base) 0%, var(--tui-background-base) 55%, transparent 100%);"
+            [class.md:col-span-2]="columns() >= 2"
+            [class.lg:col-span-3]="columns() >= 3"
+          >
+            <div class="flex items-center gap-4 pointer-events-auto">
+              <span
+                class="inline-block text-lg font-bold first-letter:uppercase shrink-0 text-(--tui-text-primary)"
+              >
+                {{ processed.item.date | ascentDate }}
+              </span>
+              <div class="h-px grow bg-(--tui-border-normal)"></div>
+            </div>
+          </div>
+        }
         @if (processed.showRowBreak) {
           <div
             class="hidden"
@@ -77,6 +102,7 @@ export interface ProcessedFeedItem {
               [showRoute]="showRoute()"
               [showCrag]="showCrag()"
               [showArea]="showArea()"
+              [showDate]="showDate() && !groupByDate()"
               [priority]="true"
               [highlightOwn]="highlightOwn()"
             />
@@ -88,6 +114,7 @@ export interface ProcessedFeedItem {
                 [showRoute]="showRoute()"
                 [showCrag]="showCrag()"
                 [showArea]="showArea()"
+                [showDate]="showDate() && !groupByDate()"
                 [priority]="false"
                 [highlightOwn]="highlightOwn()"
               />
@@ -95,6 +122,7 @@ export interface ProcessedFeedItem {
               <app-ascent-card-skeleton
                 [showUser]="showUser()"
                 [showRoute]="showRoute()"
+                [showDate]="showDate() && !groupByDate()"
                 [hasPhoto]="!!ascent.photo_path"
               />
             } @error {
@@ -111,6 +139,7 @@ export interface ProcessedFeedItem {
           <app-ascent-card-skeleton
             [showUser]="showUser()"
             [showRoute]="showRoute()"
+            [showDate]="showDate() && !groupByDate()"
           />
         }
       }
@@ -130,12 +159,14 @@ export interface ProcessedFeedItem {
 export class AscentsFeedComponent {
   ascents = input.required<FeedItem[]>();
   groupByGrade = input(false);
+  groupByDate = input(false);
   isLoading = input(false);
   hasMore = input(false);
   showUser = input(true);
   showRoute = input(true);
   showCrag = input(true);
   showArea = input(true);
+  showDate = input(true);
   columns = input<number>(1);
   highlightOwn = input(false);
 
@@ -144,6 +175,7 @@ export class AscentsFeedComponent {
   protected readonly processedItems = computed<ProcessedFeedItem[]>(() => {
     const list = this.ascents();
     const groupByGrade = this.groupByGrade();
+    const groupByDate = this.groupByDate();
 
     return list.map((item, index) => {
       const trackKey =
@@ -154,6 +186,7 @@ export class AscentsFeedComponent {
       let showRowBreak = false;
       let showGradeHeader = false;
       let gradeLabel = '';
+      let showDateHeader = false;
 
       if (item.kind === 'ascent') {
         if (groupByGrade) {
@@ -178,7 +211,18 @@ export class AscentsFeedComponent {
         }
       }
 
-      if (!groupByGrade && index > 0) {
+      if (groupByDate && !groupByGrade) {
+        if (item.date) {
+          const currentDateStr = item.date.substring(0, 10);
+          if (index === 0) {
+            showDateHeader = true;
+          } else {
+            const prev = list[index - 1];
+            const prevDateStr = prev.date ? prev.date.substring(0, 10) : '';
+            showDateHeader = currentDateStr !== prevDateStr;
+          }
+        }
+      } else if (!groupByGrade && index > 0) {
         const prev = list[index - 1];
         if (item.date && prev.date) {
           const currentDateStr = item.date.substring(0, 10);
@@ -194,6 +238,7 @@ export class AscentsFeedComponent {
         showRowBreak,
         showGradeHeader,
         gradeLabel,
+        showDateHeader,
       };
     });
   });

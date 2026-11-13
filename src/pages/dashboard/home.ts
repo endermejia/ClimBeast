@@ -126,9 +126,9 @@ import { IS_BROWSER } from '../../app/is-browser';
       <!-- Main Content Area (Header + Ascents Feed) -->
       <tui-scrollbar class="flex-1 min-w-0 h-full">
         <div class="flex flex-col pb-32 px-4 sm:px-6 lg:px-8">
-          <!-- Unified Sticky Header: Filter + Crags -->
+          <!-- Unified Header: Filter + Crags -->
           <div
-            class="xl:sticky xl:top-0 z-20 bg-(--tui-background-base) flex flex-col -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
+            class="flex flex-col -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
           >
             <!-- Filter Bar -->
             <app-home-filter-bar
@@ -183,6 +183,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                 [isLoading]="isLoading()"
                 [hasMore]="hasMore()"
                 [columns]="2"
+                [groupByDate]="true"
                 (loadMore)="loadMore()"
               />
             }
