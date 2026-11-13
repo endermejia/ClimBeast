@@ -1,17 +1,24 @@
 import { CommonModule, DatePipe, CurrencyPipe } from '@angular/common';
-import { Component, inject, resource, Injector } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  Injector,
+  resource,
+  signal,
+} from '@angular/core';
 import { Router } from '@angular/router';
 
-import { TuiDialogContext } from '@taiga-ui/core';
 import {
-  TuiScrollbar,
+  TuiButton,
+  TuiDialogContext,
+  TuiDialogService,
   TuiIcon,
   TuiLoader,
-  TuiButton,
-  TuiDialogService,
+  TuiScrollbar,
   TuiTitle,
 } from '@taiga-ui/core';
-import { TUI_CONFIRM } from '@taiga-ui/kit';
+import { TUI_CONFIRM, TuiSegmented } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
@@ -34,10 +41,14 @@ interface PurchaseRecord {
   amount: number;
   created_at: string;
   name: string;
-  type: 'area' | 'pack' | 'merchandise';
+  type: 'area' | 'pack' | 'merchandise' | 'donation';
   status?: string;
   slug?: string;
   order?: OrderDetail;
+  message?: string | null;
+  anonymous?: boolean;
+  netAmount?: number;
+  stripeFee?: number;
 }
 
 @Component({
@@ -48,11 +59,12 @@ interface PurchaseRecord {
     CurrencyPipe,
     DatePipe,
     TranslatePipe,
+    TuiButton,
     TuiHeader,
     TuiIcon,
     TuiLoader,
     TuiScrollbar,
-    TuiButton,
+    TuiSegmented,
     TuiTitle,
   ],
   template: `
@@ -61,6 +73,36 @@ interface PurchaseRecord {
         <h2 tuiTitle>{{ 'purchaseHistory.title' | translate }}</h2>
       </header>
 
+      <!-- Segmented filter for all / purchases / donations -->
+      <div class="px-4 pt-3 pb-1 shrink-0">
+        <tui-segmented
+          size="s"
+          class="w-full"
+          [activeItemIndex]="selectedFilterIndex()"
+          (activeItemIndexChange)="selectedFilterIndex.set($event)"
+        >
+          <button type="button">
+            {{ 'purchaseHistory.all' | translate }}
+          </button>
+          <button type="button">
+            {{ 'purchaseHistory.purchases' | translate }}
+            @if (purchasesCount() > 0) {
+              <span class="opacity-60 text-xs ml-1"
+                >({{ purchasesCount() }})</span
+              >
+            }
+          </button>
+          <button type="button">
+            {{ 'purchaseHistory.donations' | translate }}
+            @if (donationsCount() > 0) {
+              <span class="opacity-60 text-xs ml-1"
+                >({{ donationsCount() }})</span
+              >
+            }
+          </button>
+        </tui-segmented>
+      </div>
+
       <tui-scrollbar class="flex-1 overflow-x-hidden!">
         <div class="flex flex-col gap-1 p-2 pb-6">
           @if (purchasesResource.isLoading()) {
@@ -68,7 +110,7 @@ interface PurchaseRecord {
               <tui-loader />
             </div>
           } @else {
-            @for (p of purchasesResource.value(); track p.id) {
+            @for (p of filteredRecords(); track p.id) {
               <div
                 class="flex flex-col gap-3 p-4 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal) transition-colors"
               >
@@ -83,32 +125,56 @@ interface PurchaseRecord {
                         [icon]="
                           p.type === 'area'
                             ? '@tui.map-pin'
-                            : p.type === 'pack'
-                              ? '@tui.layers'
-                              : '@tui.shopping-bag'
+                            : p.type === 'donation'
+                              ? '@tui.heart'
+                              : p.type === 'pack'
+                                ? '@tui.layers'
+                                : '@tui.shopping-bag'
                         "
-                        class="text-(--tui-text-tertiary)"
+                        [class.text-emerald-500]="p.type === 'donation'"
+                        [class.text-(--tui-text-tertiary)]="
+                          p.type !== 'donation'
+                        "
                       />
                     </div>
                     <div class="flex flex-col min-w-0">
                       <span class="font-bold text-base truncate">{{
                         p.name
                       }}</span>
-                      <span class="text-xs opacity-60">
-                        {{
-                          p.created_at
-                            | date
-                              : 'medium'
-                              : undefined
-                              : languageService.selectedLanguage()
-                        }}
-                      </span>
+                      <div class="flex items-center gap-2 text-xs opacity-60">
+                        <span>
+                          {{
+                            p.created_at
+                              | date
+                                : 'medium'
+                                : undefined
+                                : languageService.selectedLanguage()
+                          }}
+                        </span>
+                        @if (p.type === 'donation' && p.anonymous) {
+                          <span>•</span>
+                          <span class="italic text-[11px]">
+                            {{ 'donations.anonymous' | translate }}
+                          </span>
+                        }
+                      </div>
+                      @if (p.type === 'donation' && p.message) {
+                        <span
+                          class="text-xs text-(--tui-text-secondary) italic line-clamp-1 mt-0.5"
+                        >
+                          "{{ p.message }}"
+                        </span>
+                      }
                     </div>
                   </div>
                   <div
-                    class="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 w-full sm:w-auto"
+                    class="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-1 w-full sm:w-auto"
                   >
-                    <span class="font-bold text-lg">
+                    <span
+                      class="font-bold text-lg"
+                      [class.text-emerald-600]="p.type === 'donation'"
+                      [class.dark:text-emerald-400]="p.type === 'donation'"
+                    >
                       {{
                         p.amount
                           | currency
@@ -118,6 +184,12 @@ interface PurchaseRecord {
                             : languageService.selectedLanguage()
                       }}
                     </span>
+                    @if (p.type === 'donation' && p.netAmount !== undefined) {
+                      <span class="text-[11px] text-(--tui-text-secondary)">
+                        ({{ p.netAmount | number: '1.2-2' }} €
+                        {{ 'purchaseHistory.destinationPot' | translate }})
+                      </span>
+                    }
                     @if (p.status) {
                       <span
                         class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shadow-sm border"
@@ -195,10 +267,23 @@ interface PurchaseRecord {
               <div
                 class="py-20 text-center flex flex-col items-center gap-3 opacity-30"
               >
-                <tui-icon icon="@tui.shopping-bag" class="text-6xl" />
-                <span class="font-medium text-lg">{{
-                  'purchaseHistory.empty' | translate
-                }}</span>
+                <tui-icon
+                  [icon]="
+                    selectedFilterIndex() === 2
+                      ? '@tui.heart'
+                      : '@tui.shopping-bag'
+                  "
+                  class="text-6xl"
+                />
+                <span class="font-medium text-lg">
+                  @if (selectedFilterIndex() === 1) {
+                    {{ 'purchaseHistory.emptyPurchases' | translate }}
+                  } @else if (selectedFilterIndex() === 2) {
+                    {{ 'purchaseHistory.emptyDonations' | translate }}
+                  } @else {
+                    {{ 'purchaseHistory.empty' | translate }}
+                  }
+                </span>
               </div>
             }
           }
@@ -229,13 +314,19 @@ export class PurchaseHistoryDialogComponent {
       const userId = this.supabase.authUserId();
       if (!userId) return [];
 
-      // Fetch all types of purchases in parallel
-      const [areaPurchases, orders] = await Promise.all([
+      // Fetch all types of purchases and donations in parallel
+      const [areaPurchases, orders, donations] = await Promise.all([
         this.supabase.client
           .from('area_purchases')
           .select('id, amount, created_at, area:areas (name, slug)')
           .eq('user_id', userId),
         this.merchService.getUserOrders(),
+        this.supabase.client
+          .from('area_donations')
+          .select(
+            'id, gross_amount, net_amount, stripe_fee, created_at, donor_message, anonymous, area:areas (name, slug)',
+          )
+          .eq('user_id', userId),
       ]);
 
       const records: PurchaseRecord[] = [];
@@ -276,6 +367,37 @@ export class PurchaseHistoryDialogComponent {
         );
       }
 
+      // Process Area Donations
+      if (donations.data) {
+        records.push(
+          ...donations.data.map(
+            (d: {
+              id: number;
+              gross_amount: number;
+              net_amount: number;
+              stripe_fee: number;
+              created_at: string;
+              donor_message: string | null;
+              anonymous: boolean;
+              area: { name: string; slug: string } | null;
+            }) => ({
+              id: `donation-${d.id}`,
+              amount: Number(d.gross_amount),
+              netAmount: Number(d.net_amount),
+              stripeFee: Number(d.stripe_fee),
+              created_at: d.created_at || '',
+              name: d.area?.name
+                ? `${this.translate.instant('donations.title')}: ${d.area.name}`
+                : this.translate.instant('donations.title'),
+              type: 'donation' as const,
+              slug: d.area?.slug,
+              message: d.donor_message,
+              anonymous: d.anonymous,
+            }),
+          ),
+        );
+      }
+
       // Sort by date descending
       return records.sort(
         (a, b) =>
@@ -283,6 +405,33 @@ export class PurchaseHistoryDialogComponent {
       );
     },
   });
+
+  selectedFilterIndex = signal<number>(0); // 0: all, 1: purchases, 2: donations
+
+  protected readonly filteredRecords = computed(() => {
+    const list = this.purchasesResource.value() || [];
+    const filter = this.selectedFilterIndex();
+    if (filter === 1) {
+      return list.filter((r) => r.type !== 'donation');
+    }
+    if (filter === 2) {
+      return list.filter((r) => r.type === 'donation');
+    }
+    return list;
+  });
+
+  protected readonly purchasesCount = computed(
+    () =>
+      (this.purchasesResource.value() || []).filter(
+        (r) => r.type !== 'donation',
+      ).length,
+  );
+  protected readonly donationsCount = computed(
+    () =>
+      (this.purchasesResource.value() || []).filter(
+        (r) => r.type === 'donation',
+      ).length,
+  );
 
   protected navigateToArea(slug: string): void {
     if (!slug) return;

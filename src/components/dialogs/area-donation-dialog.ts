@@ -234,6 +234,83 @@ export interface AreaDonationDialogData {
               }}</span>
             </div>
           </label>
+
+          <!-- Transparency breakdown -->
+          <div
+            class="flex flex-col gap-2 p-3.5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+          >
+            <div class="flex items-center justify-between text-xs">
+              <span
+                class="font-bold text-(--tui-text-primary) flex items-center gap-1.5"
+              >
+                <tui-icon
+                  icon="@tui.shield-check"
+                  class="text-emerald-500 w-4 h-4"
+                />
+                {{ 'donations.breakdownTitle' | translate }}
+              </span>
+              <span class="font-mono font-bold text-xs">
+                {{ effectiveAmount() | number: '1.2-2' }} €
+              </span>
+            </div>
+
+            <div class="flex flex-col gap-1.5 pt-1 text-xs">
+              <div class="flex items-center justify-between">
+                <span
+                  class="text-(--tui-text-secondary) flex items-center gap-1.5"
+                >
+                  <tui-icon
+                    icon="@tui.heart"
+                    class="text-emerald-500 w-3.5 h-3.5"
+                  />
+                  {{ 'donations.breakdownDirectToPot' | translate }}
+                </span>
+                <span
+                  class="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums"
+                >
+                  +{{ estimatedNet() | number: '1.2-2' }} €
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <span
+                  class="text-(--tui-text-secondary) flex items-center gap-1.5"
+                >
+                  <tui-icon
+                    icon="@tui.credit-card"
+                    class="text-(--tui-text-tertiary) w-3.5 h-3.5"
+                  />
+                  {{
+                    'donations.breakdownStripeFee'
+                      | translate
+                        : { fee: estimatedStripeFee() | number: '1.2-2' }
+                  }}
+                </span>
+                <span class="text-(--tui-text-secondary) tabular-nums">
+                  -{{ estimatedStripeFee() | number: '1.2-2' }} €
+                </span>
+              </div>
+
+              <div
+                class="flex items-center justify-between pt-1 border-t border-(--tui-border-normal)/60 text-[11px]"
+              >
+                <span
+                  class="text-(--tui-text-secondary) flex items-center gap-1.5"
+                >
+                  <tui-icon
+                    icon="@tui.check"
+                    class="text-emerald-500 w-3 h-3"
+                  />
+                  {{ 'donations.breakdownClimbeastFee' | translate }}
+                </span>
+                <span
+                  class="font-semibold text-emerald-600 dark:text-emerald-400"
+                >
+                  0,00 €
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </tui-scrollbar>
 
@@ -328,6 +405,20 @@ export class AreaDonationDialogComponent {
   readonly unlocksTopos = computed(
     () => this.canUnlockTopos() && this.effectiveAmount() >= this.areaPrice(),
   );
+
+  // Standard European Stripe pricing: 1.5% + €0.25
+  readonly estimatedStripeFee = computed(() => {
+    const gross = this.effectiveAmount();
+    if (gross <= 0) return 0;
+    const fee = gross * 0.015 + 0.25;
+    return Math.round(fee * 100) / 100;
+  });
+
+  readonly estimatedNet = computed(() => {
+    const gross = this.effectiveAmount();
+    const fee = this.estimatedStripeFee();
+    return Math.max(0, Math.round((gross - fee) * 100) / 100);
+  });
 
   constructor() {
     const data = this.context.data;

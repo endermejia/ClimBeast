@@ -112,10 +112,13 @@ export interface AreaPublicDonation {
   id: number;
   amount: number;
   anonymous: boolean;
-  userName: string;
-  userAvatar: string | null;
+  donor_name?: string | null;
+  donor_avatar?: string | null;
+  userName?: string;
+  userAvatar?: string | null;
   message: string | null;
-  createdAt: string;
+  createdAt?: string;
+  created_at?: string;
 }
 
 export interface AreaPublicWithdrawalItem {

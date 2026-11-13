@@ -30,6 +30,8 @@ import { AuthStateService } from '../../services/auth-state.service';
 
 import type { AreaBalanceSummary, AreaPublicTimeline } from '../../models';
 
+import { AvatarUrlPipe, InitialsPipe } from '../../pipes';
+
 import { CountUpDirective } from '../../directives/count-up.directive';
 
 import { EmptyStateComponent } from '../ui/empty-state';
@@ -38,11 +40,13 @@ import { EmptyStateComponent } from '../ui/empty-state';
   selector: 'app-area-revenue-panel',
   standalone: true,
   imports: [
+    AvatarUrlPipe,
     CommonModule,
     CountUpDirective,
     DatePipe,
     DecimalPipe,
     EmptyStateComponent,
+    InitialsPipe,
     TranslatePipe,
     TuiAppearance,
     TuiAvatar,
@@ -278,24 +282,34 @@ import { EmptyStateComponent } from '../ui/empty-state';
                   class="flex items-start justify-between gap-3 p-3 rounded-lg bg-(--tui-background-base) border border-(--tui-border-normal)"
                 >
                   <div class="flex items-start gap-2.5 min-w-0">
+                    @let donorName = d.donor_name ?? d.userName;
+                    @let donorAvatar = d.donor_avatar ?? d.userAvatar;
+                    @let isAnon = d.anonymous || !donorName;
                     <span
                       tuiAvatar
                       size="s"
-                      [appearance]="d.anonymous ? 'neutral' : 'accent'"
+                      [appearance]="isAnon ? 'neutral' : 'accent'"
                       class="shrink-0 mt-0.5"
                     >
-                      <tui-icon
-                        [icon]="d.anonymous ? '@tui.user' : '@tui.heart'"
-                      />
+                      @if (!isAnon && donorAvatar) {
+                        <img
+                          [src]="donorAvatar | avatarUrl"
+                          [alt]="donorName || ''"
+                        />
+                      } @else if (!isAnon && donorName) {
+                        {{ donorName | initials }}
+                      } @else {
+                        <tui-icon icon="@tui.user" />
+                      }
                     </span>
                     <div class="flex flex-col min-w-0">
                       <span
                         class="text-xs font-bold truncate text-(--tui-text-primary)"
                       >
                         {{
-                          d.anonymous
+                          isAnon
                             ? ('donations.anonymous' | translate)
-                            : d.userName || ('donations.anonymous' | translate)
+                            : donorName
                         }}
                       </span>
                       @if (d.message) {
@@ -308,7 +322,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                       <span
                         class="text-[10px] text-(--tui-text-secondary) mt-1"
                       >
-                        {{ d.createdAt | date: 'dd/MM/yyyy' }}
+                        {{ d.created_at || d.createdAt | date: 'dd/MM/yyyy' }}
                       </span>
                     </div>
                   </div>
