@@ -19,7 +19,7 @@ import { TuiRating, TuiSkeleton } from '@taiga-ui/kit';
   template: `
     <div
       tuiAppearance="flat-grayscale"
-      class="flex flex-col gap-1 p-4 sm:rounded-3xl rounded-none relative -mx-4 sm:mx-0 w-(calc(100%+2rem)) sm:w-full text-left"
+      class="flex flex-col gap-1 p-4 sm:rounded-3xl rounded-none relative -mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full text-left"
     >
       <header
         class="flex flex-wrap justify-between items-center gap-x-2 gap-y-0 min-h-10"
@@ -52,7 +52,7 @@ import { TuiRating, TuiSkeleton } from '@taiga-ui/kit';
       @if (hasPhoto()) {
         <div
           [tuiSkeleton]="true"
-          class="aspect-4/3 w-full rounded-2xl opacity-20 mb-2"
+          class="aspect-4/3 -mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full rounded-none sm:rounded-2xl opacity-20"
         ></div>
       }
 
@@ -98,22 +98,30 @@ import { TuiRating, TuiSkeleton } from '@taiga-ui/kit';
       </div>
 
       <footer class="flex flex-col gap-1 mt-2">
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 min-h-9">
+          <div class="flex items-center gap-1 min-w-14">
             <tui-icon
               icon="@tui.heart"
               [style.width.rem]="1.5"
               [style.height.rem]="1.5"
               class="opacity-30"
             />
+            <div
+              [tuiSkeleton]="true"
+              class="w-7 h-5 rounded-md opacity-30"
+            ></div>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1 min-w-14">
             <tui-icon
               icon="@tui.message-circle"
               [style.width.rem]="1.5"
               [style.height.rem]="1.5"
               class="opacity-30"
             />
+            <div
+              [tuiSkeleton]="true"
+              class="w-7 h-5 rounded-md opacity-30"
+            ></div>
           </div>
         </div>
       </footer>

@@ -974,58 +974,71 @@ export class AscentsService {
     );
   }
 
-  async getLastComment(
+  async getLastComments(
     ascentId: number,
-  ): Promise<RouteAscentCommentWithExtras | null> {
-    if (!this.isBrowser) return null;
+    limit = 2,
+  ): Promise<RouteAscentCommentWithExtras[]> {
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
 
-    // Reuse the logic from getComments but for one item
     type CommentWithLikes = RouteAscentCommentDto & {
       likes: { count: number }[];
     };
 
-    const { data: comment, error: commentError } = await this.supabase.client
+    const { data: comments, error: commentError } = await this.supabase.client
       .from('route_ascent_comments')
       .select('*, likes:route_ascent_comment_likes(count)')
       .eq('route_ascent_id', ascentId)
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(limit);
 
-    if (commentError || !comment) {
+    if (commentError || !comments || comments.length === 0) {
       if (commentError)
-        console.error('[AscentsService] getLastComment error', commentError);
-      return null;
+        console.error('[AscentsService] getLastComments error', commentError);
+      return [];
     }
 
-    const { data: user, error: userError } = await this.supabase.client
+    const userIds = Array.from(new Set(comments.map((c) => c.user_id)));
+    const { data: users, error: userError } = await this.supabase.client
       .from('user_profiles')
       .select('id, name, avatar')
-      .eq('id', (comment as RouteAscentCommentDto).user_id)
-      .maybeSingle();
+      .in('id', userIds);
 
-    if (userError || !user) return null;
+    if (userError || !users) return [];
+    const userMap = new Map(users.map((u) => [u.id, u]));
 
     const currentUserId = this.supabase.authUserId();
-    let userLiked = false;
+    const likedCommentIds = new Set<number>();
     if (currentUserId) {
-      const { data: like } = await this.supabase.client
+      const commentIds = comments.map((c) => c.id);
+      const { data: likes } = await this.supabase.client
         .from('route_ascent_comment_likes')
         .select('comment_id')
         .eq('user_id', currentUserId)
-        .eq('comment_id', (comment as RouteAscentCommentDto).id)
-        .maybeSingle();
-      userLiked = !!like;
+        .in('comment_id', commentIds);
+      likes?.forEach((l) => likedCommentIds.add(l.comment_id));
     }
 
-    const c = comment as CommentWithLikes;
-    return {
-      ...c,
-      user_profiles: user as UserProfileBasicDto,
-      likes_count: c.likes?.[0]?.count ?? 0,
-      user_liked: userLiked,
-    } as RouteAscentCommentWithExtras;
+    const result = comments
+      .filter((c) => userMap.has(c.user_id))
+      .map((c) => {
+        const cw = c as CommentWithLikes;
+        return {
+          ...cw,
+          user_profiles: userMap.get(c.user_id)!,
+          likes_count: cw.likes?.[0]?.count ?? 0,
+          user_liked: likedCommentIds.has(c.id),
+        } as RouteAscentCommentWithExtras;
+      });
+
+    return result.reverse();
+  }
+
+  async getLastComment(
+    ascentId: number,
+  ): Promise<RouteAscentCommentWithExtras | null> {
+    const comments = await this.getLastComments(ascentId, 1);
+    return comments[0] ?? null;
   }
 
   async getComments(ascentId: number): Promise<RouteAscentCommentWithExtras[]> {

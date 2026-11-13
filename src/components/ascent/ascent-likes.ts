@@ -21,6 +21,7 @@ import { LikesComponent } from '../social/likes';
       <app-likes
         [userLiked]="item().user_liked"
         [likesCount]="item().likes_count"
+        [isLoading]="likesResource.isLoading()"
         (toggleLike)="toggleLike($event)"
         (showLikes)="showLikes($event)"
       />
@@ -42,7 +43,7 @@ export class AscentLikesComponent {
     return this.isPrivate() && this.item().likes_count === 0;
   });
 
-  private readonly likesResource = resource({
+  protected readonly likesResource = resource({
     params: () => this.ascentId(),
     loader: async ({ params: id }) => this.ascentsService.getLikesInfo(id),
   });

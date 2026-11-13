@@ -66,6 +66,7 @@ function createMockAscentsService() {
     toggleLike: vi.fn().mockResolvedValue(true),
     refreshResources: vi.fn(),
     getLastComment: vi.fn().mockResolvedValue(null),
+    getLastComments: vi.fn().mockResolvedValue([]),
   };
 }
 

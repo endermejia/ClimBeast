@@ -384,7 +384,7 @@ import { AscentTypeComponent } from './ascent-type';
 
       @if (showLikesAndComments() && !isIndoor()) {
         <footer class="flex flex-col gap-1 mt-2">
-          <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-2 min-h-9">
             <app-ascent-likes
               [ascentId]="ascent.id"
               [isPrivate]="!!ascent.private_ascent"
