@@ -61,10 +61,6 @@ import { CommentLikesComponent } from '../social/comment-likes';
               >
                 <div class="flex flex-col gap-1 grow min-w-0">
                   <div class="flex items-center gap-1.5">
-                    <tui-icon
-                      icon="@tui.message-circle"
-                      class="w-3! h-3! opacity-50 shrink-0"
-                    />
                     <span tuiAvatar size="xs">
                       @if (comment.user_profiles.avatar; as avatar) {
                         <img [src]="avatar | avatarUrl" alt="avatar" />
