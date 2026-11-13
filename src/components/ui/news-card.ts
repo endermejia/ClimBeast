@@ -9,12 +9,7 @@ import {
 } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 
-import {
-  TuiAppearance,
-  TuiButton,
-  TuiDialogService,
-  TuiIcon,
-} from '@taiga-ui/core';
+import { TuiAppearance, TuiButton, TuiDialogService } from '@taiga-ui/core';
 import { TUI_CONFIRM, TuiAvatar, type TuiConfirmData } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
 
@@ -39,7 +34,6 @@ import { toProxiedDesnivelUrl } from '../../utils';
     TuiAvatar,
     TuiButton,
     TuiHeader,
-    TuiIcon,
   ],
   template: `
     @let data = item();
@@ -116,20 +110,17 @@ import { toProxiedDesnivelUrl } from '../../utils';
         <a
           [href]="data.link"
           target="_blank"
-          class="inline-flex items-center gap-1.5 font-bold text-lg leading-tight hover:underline cursor-pointer text-(--tui-text-primary) no-underline group/title"
-        >
-          <span [innerHTML]="sanitizedTitle()"></span>
-          <tui-icon
-            icon="@tui.external-link"
-            class="text-sm opacity-60 group-hover/title:opacity-100 shrink-0"
-          />
-        </a>
+          class="font-bold text-lg leading-tight hover:underline cursor-pointer text-(--tui-text-primary) no-underline"
+          [innerHTML]="sanitizedTitle()"
+        ></a>
       </div>
 
-      <div
-        class="text-sm italic border-l-2 border-(--tui-border-normal) pl-3 py-1 self-start text-(--tui-text-secondary) line-clamp-3"
+      <a
+        [href]="data.link"
+        target="_blank"
+        class="text-sm italic border-l-2 border-(--tui-border-normal) pl-3 py-1 self-start text-(--tui-text-secondary) line-clamp-3 no-underline cursor-pointer"
         [innerHTML]="sanitizedExcerpt()"
-      ></div>
+      ></a>
     </div>
   `,
 })

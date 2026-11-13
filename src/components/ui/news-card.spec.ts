@@ -161,14 +161,22 @@ describe('NewsCardComponent', () => {
     expect(toggleFollowNewsMock).toHaveBeenCalledTimes(1);
   });
 
-  it('renders external link icon in title', () => {
+  it('links title and excerpt to the article without external link icon', () => {
     const fixture = TestBed.createComponent(NewsCardComponent);
     fixture.componentRef.setInput('item', mockNewsItem);
     fixture.detectChanges();
 
-    const link = fixture.nativeElement.querySelector('a.group\\/title');
-    expect(link).toBeTruthy();
-    const icon = link.querySelector('tui-icon');
-    expect(icon).toBeTruthy();
+    const icon = fixture.nativeElement.querySelector('tui-icon');
+    expect(icon).toBeNull();
+
+    const links = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        'a',
+      ) as NodeListOf<HTMLAnchorElement>,
+    );
+    const excerptLink = links.find((a) => a.textContent?.includes('Extracto'));
+    expect(excerptLink).toBeTruthy();
+    expect(excerptLink?.getAttribute('href')).toBe(mockNewsItem.link);
+    expect(excerptLink?.getAttribute('target')).toBe('_blank');
   });
 });
