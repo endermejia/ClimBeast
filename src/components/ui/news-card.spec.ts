@@ -108,7 +108,7 @@ describe('NewsCardComponent', () => {
       'header span[tuiavatar] img',
     ) as HTMLImageElement;
     expect(avatarImg).toBeTruthy();
-    expect(avatarImg.getAttribute('src')).toContain('data:image/png;base64');
+    expect(avatarImg.getAttribute('src')).toBe('/image/desnivel-avatar.png');
   });
 
   it('confirms with dialog before unfollowing news', async () => {
