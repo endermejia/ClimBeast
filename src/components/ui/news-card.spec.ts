@@ -99,6 +99,18 @@ describe('NewsCardComponent', () => {
     expect(dateSpan?.textContent?.trim().length).toBeGreaterThan(0);
   });
 
+  it('renders avatar image in header', () => {
+    const fixture = TestBed.createComponent(NewsCardComponent);
+    fixture.componentRef.setInput('item', mockNewsItem);
+    fixture.detectChanges();
+
+    const avatarImg = fixture.nativeElement.querySelector(
+      'header span[tuiavatar] img',
+    ) as HTMLImageElement;
+    expect(avatarImg).toBeTruthy();
+    expect(avatarImg.getAttribute('src')).toContain('data:image/png;base64');
+  });
+
   it('confirms with dialog before unfollowing news', async () => {
     const fixture = TestBed.createComponent(NewsCardComponent);
     fixture.componentRef.setInput('item', mockNewsItem);

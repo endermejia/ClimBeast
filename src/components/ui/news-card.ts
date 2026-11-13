@@ -53,7 +53,9 @@ import { toProxiedDesnivelUrl } from '../../utils';
           target="_blank"
           class="flex items-center gap-3 no-underline text-inherit cursor-pointer group/user"
         >
-          <span [tuiAvatar]="avatarUrl" size="s"></span>
+          <span tuiAvatar size="s">
+            <img [src]="avatarUrl" alt="Desnivel" />
+          </span>
           <div class="flex flex-col">
             <span class="font-bold text-sm group-hover/user:underline">
               Desnivel
