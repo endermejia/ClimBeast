@@ -106,6 +106,7 @@ export interface RoutesTableRow {
   crag_name?: string;
   area_slug?: string;
   crag_slug?: string;
+  crag_id?: number;
   height: number | null;
   color: string | null;
   legacy?: boolean;

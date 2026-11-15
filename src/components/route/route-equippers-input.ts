@@ -40,14 +40,14 @@ import { IS_BROWSER } from '../../app/is-browser';
       multi
       tuiChevron
       tuiTextfieldSize="s"
-      class="border-none! bg-transparent! h-full"
-      style="border-block-end: none;"
+      class="h-full! w-full! items-center border-none! bg-transparent!"
       [tuiTextfieldCleaner]="false"
       [stringify]="equipperStringify"
       [identityMatcher]="equipperIdentityMatcher"
     >
       <input
         #chipInput
+        #tuiDropdownHost
         tuiInputChip
         autocomplete="off"
         [ngModel]="equippers()"
@@ -75,7 +75,7 @@ import { IS_BROWSER } from '../../app/is-browser';
       </tui-data-list>
     </tui-textfield>
   `,
-  host: { class: 'block min-w-40 max-w-64 h-full' },
+  host: { class: 'block min-w-40 w-full h-full' },
 })
 export class RouteEquippersInputComponent {
   private readonly routes = inject(RoutesService);

@@ -232,8 +232,12 @@ export class OutdoorDataService {
           shade_morning: t.shade_morning,
           shade_afternoon: t.shade_afternoon,
           shade_change_hour: t.shade_change_hour,
-          route_ids: (t.topo_routes || []).map(
-            (tr: { route_id: number }) => tr.route_id,
+          route_ids: Array.from(
+            new Set(
+              (t.topo_routes || []).map(
+                (tr: { route_id: number }) => tr.route_id,
+              ),
+            ),
           ),
         };
       });

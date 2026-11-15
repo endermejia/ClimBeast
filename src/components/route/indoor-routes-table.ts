@@ -53,6 +53,7 @@ import { RoutesTableComponent } from './routes-table';
       [ascentInfo]="ascentsService.ascentInfo()"
       [isMobile]="layoutService.isMobile()"
       [equippersTemplate]="equippersTpl"
+      (updateRouteName)="onUpdateRouteName($event.row, $event.name)"
       (logAscent)="logIndoorAscent($event)"
       (viewAscent)="viewIndoorAscent($event.row, $event.ascent)"
       (deleteRoute)="deleteIndoorRoute($event)"
@@ -187,6 +188,24 @@ export class IndoorRoutesTableComponent {
     const success = await this.indoorService.openIndoorRouteForm(id, r);
     if (success) {
       this.indoorService.reloadCenterRoutes();
+    }
+  }
+
+  protected async onUpdateRouteName(
+    row: RoutesTableRow,
+    newName: string,
+  ): Promise<void> {
+    const r = row._ref as IndoorRouteWithExtras | undefined;
+    const trimmed = newName.trim();
+    if (!trimmed || (r && trimmed === r.name)) return;
+    try {
+      if (r) {
+        r.name = trimmed;
+      }
+      await this.indoorService.updateRoute(String(row.id), { name: trimmed });
+      this.indoorService.reloadCenterRoutes();
+    } catch (err: unknown) {
+      handleErrorToast(err, this.toast);
     }
   }
 

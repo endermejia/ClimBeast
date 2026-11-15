@@ -112,13 +112,20 @@ export function mapRouteToExtras(
         .filter((e): e is EquipperDto => !!e)
     : undefined;
 
-  // Map topos if requested
+  // Map topos if requested (deduplicating to prevent a route belonging multiple times to the same topo)
   const topos = opts.includeTopos
     ? opts.filterTopos
       ? []
-      : (raw.topo_routes ?? [])
-          .map((tr) => tr.topo)
-          .filter((t): t is { id: number; name: string; slug: string } => !!t)
+      : Array.from(
+          new Map(
+            (raw.topo_routes ?? [])
+              .map((tr) => tr.topo)
+              .filter(
+                (t): t is { id: number; name: string; slug: string } => !!t,
+              )
+              .map((t) => [t.id, t]),
+          ).values(),
+        )
     : undefined;
 
   const result: Record<string, unknown> = {

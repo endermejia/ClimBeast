@@ -119,6 +119,32 @@ import { EmptyStateComponent } from '../ui/empty-state';
           </div>
         </div>
 
+        <!-- Aviso de acceso a croquis -->
+        @if (canUnlockTopos()) {
+          <div
+            class="flex items-center gap-2.5 p-3 rounded-xl bg-(--tui-status-warning-pale) text-(--tui-text-primary) border border-amber-500/20 text-xs"
+          >
+            <tui-icon
+              icon="@tui.lock"
+              class="text-(--tui-status-warning) shrink-0 text-base"
+            />
+            <span class="font-medium leading-snug">
+              {{
+                'donations.toposUnlockHint' | translate: { price: areaPrice() }
+              }}
+            </span>
+          </div>
+        } @else if (isSecretArea()) {
+          <div
+            class="flex items-center gap-2.5 p-3 rounded-xl bg-(--tui-background-neutral-1) text-(--tui-text-secondary) border border-(--tui-border-normal) text-xs"
+          >
+            <tui-icon icon="@tui.lock" class="shrink-0 text-base" />
+            <span class="font-medium leading-snug">
+              {{ 'topos.secretText' | translate }}
+            </span>
+          </div>
+        }
+
         <!-- Botón de contribución con icono de mano y corazón -->
         <button
           tuiButton
@@ -128,7 +154,12 @@ import { EmptyStateComponent } from '../ui/empty-state';
           style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);"
           (click)="openDonationDialog()"
         >
-          {{ 'areaRevenue.contributeButton' | translate }}
+          {{
+            (canUnlockTopos()
+              ? 'payments.paywall.contributeAndUnlock'
+              : 'areaRevenue.contributeButton'
+            ) | translate
+          }}
         </button>
       </div>
 
@@ -498,6 +529,22 @@ export class AreaRevenuePanelComponent {
     () => this.showDetailsOnMobile() || this.canManageArea(),
   );
 
+  readonly canUnlockTopos = computed(
+    () =>
+      this.isPaywalled() &&
+      this.areaPrice() > 0 &&
+      !this.isPurchased() &&
+      !this.canManageArea(),
+  );
+
+  readonly isSecretArea = computed(
+    () =>
+      this.isPaywalled() &&
+      this.areaPrice() <= 0 &&
+      !this.isPurchased() &&
+      !this.canManageArea(),
+  );
+
   readonly balanceResource = resource<
     AreaBalanceSummary | null,
     { areaId: number; change: number }
@@ -538,6 +585,7 @@ export class AreaRevenuePanelComponent {
       isPurchased: this.isPurchased(),
       isPaywalled: this.isPaywalled(),
       toposCount: this.toposCount(),
+      initialAmount: this.canUnlockTopos() ? this.areaPrice() : undefined,
     });
   }
 

@@ -788,9 +788,13 @@ export class TopoFormComponent {
       } else {
         const data = this.effectiveTopoData();
         if (data) {
-          const sortedIds = (data.topo_routes || [])
-            .sort((a, b) => a.number - b.number)
-            .map((tr) => tr.route_id);
+          const sortedIds = Array.from(
+            new Set(
+              (data.topo_routes || [])
+                .sort((a, b) => a.number - b.number)
+                .map((tr) => tr.route_id),
+            ),
+          );
 
           let selected: RouteWithExtras[] = [];
           if (sortedIds.length) {
@@ -1054,14 +1058,19 @@ export class TopoFormComponent {
 
     // 2. Add or update routes with their current index as number
     const addUpdatePromises: Promise<void>[] = [];
+    const processedRouteIds = new Set<number>();
     for (let i = 0; i < selectedRoutes.length; i++) {
       const route = selectedRoutes[i];
-      if (!initial.has(Number(route.id))) {
+      const routeId = Number(route.id);
+      if (processedRouteIds.has(routeId)) continue;
+      processedRouteIds.add(routeId);
+
+      if (!initial.has(routeId)) {
         addUpdatePromises.push(
           this.topos.addRoute(
             {
               topo_id: topo.id,
-              route_id: Number(route.id),
+              route_id: routeId,
               number: i,
             },
             false,
@@ -1070,7 +1079,7 @@ export class TopoFormComponent {
       } else {
         // Update existing route's number to reflect potential sorting
         addUpdatePromises.push(
-          this.topos.updateRouteOrder(topo.id, Number(route.id), i, false),
+          this.topos.updateRouteOrder(topo.id, routeId, i, false),
         );
       }
     }

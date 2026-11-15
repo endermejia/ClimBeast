@@ -150,4 +150,20 @@ describe('AscentsFeedComponent', () => {
     expect(rowBreak?.classList.contains('hidden')).toBe(true);
     expect(rowBreak?.classList.contains('md:block')).toBe(false);
   });
+
+  it('should render items in separate sections per date when groupByDate is true', () => {
+    fixture.componentRef.setInput('ascents', mockAscents);
+    fixture.componentRef.setInput('groupByDate', true);
+    fixture.componentRef.setInput('columns', 2);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const sections = compiled.querySelectorAll('section');
+    expect(sections.length).toBe(2);
+
+    const stickyHeaders = compiled.querySelectorAll('.sticky.top-0');
+    expect(stickyHeaders.length).toBe(2);
+    expect(sections[0].contains(stickyHeaders[0])).toBe(true);
+    expect(sections[1].contains(stickyHeaders[1])).toBe(true);
+  });
 });

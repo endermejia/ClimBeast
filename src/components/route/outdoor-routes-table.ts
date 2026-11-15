@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
 import { TuiSortDirection } from '@taiga-ui/addon-table';
@@ -52,11 +52,16 @@ import { mapRouteToTableRow, handleErrorToast } from '../../utils';
       [activeCol]="activeCol()"
       [showRowColors]="showRowColors()"
       [showAddRouteToTopo]="showAddRouteToTopo()"
+      [showLocation]="showLocation()"
       [availableTopos]="availableTopos()"
+      [toposByCrag]="toposByCrag()"
+      [availableCrags]="availableCrags()"
       [ascentInfo]="ascentsService.ascentInfo()"
       [isMobile]="layoutService.isMobile()"
       [equippersTemplate]="equippersTpl"
       (updateRouteHeight)="onUpdateRouteHeight($event.row, $event.height)"
+      (updateRouteName)="onUpdateRouteName($event.row, $event.name)"
+      (updateRouteCrag)="onUpdateRouteCrag($event.row, $event.cragId)"
       (toggleRouteOnTopo)="
         toggleRouteOnTopo($event.topoId, $event.routeId, $event.isAttached)
       "
@@ -106,10 +111,13 @@ export class OutdoorRoutesTableComponent {
   showLocation = input(false);
   showAdminActions = input(true);
   showRowColors = input(true);
-  showAddRouteToTopo = input(false);
+  showAddRouteToTopo = input(true);
   hiddenColumns = input<string[]>([]);
   activeCol = input<RoutesTableKey>('ascents');
   direction = input<TuiSortDirection>(TuiSortDirection.Desc);
+
+  // Outputs
+  routeUpdated = output<void>();
 
   protected readonly mappedData = computed(() => {
     const isAsAdmin = this.authState.canEditAsAdmin();
@@ -150,11 +158,116 @@ export class OutdoorRoutesTableComponent {
     return cols.filter((c) => !this.hiddenColumns().includes(c));
   });
 
+  protected readonly availableCrags = computed(() => {
+    const crags = this.outdoorData.cragsList();
+    if (crags.length > 0) {
+      return crags.map((c) => ({ id: c.id, name: c.name, slug: c.slug }));
+    }
+    const crag = this.outdoorData.cragDetail();
+    if (crag) {
+      return [{ id: crag.id, name: crag.name, slug: crag.slug }];
+    }
+    const cragsFromData = new Map<
+      number,
+      { id: number; name: string; slug?: string }
+    >();
+    for (const r of this.data()) {
+      if (r.crag_id && r.crag_name) {
+        cragsFromData.set(r.crag_id, {
+          id: r.crag_id,
+          name: r.crag_name,
+          slug: r.crag_slug,
+        });
+      }
+    }
+    return Array.from(cragsFromData.values());
+  });
+
+  protected readonly toposByCrag = computed(() => {
+    const map: Record<
+      string | number,
+      { id: number | string; name: string }[]
+    > = {};
+
+    for (const c of this.outdoorData.cragsList()) {
+      if (c.topos) {
+        map[c.id] = c.topos.map((t) => ({ id: t.id, name: t.name }));
+      }
+    }
+
+    for (const t of this.outdoorData.areaTopos()) {
+      const crag = this.outdoorData
+        .cragsList()
+        .find((c) => c.slug === t.crag_slug);
+      if (crag) {
+        map[crag.id] = map[crag.id] || [];
+        if (!map[crag.id].some((x) => x.id === t.id)) {
+          map[crag.id].push({ id: t.id, name: t.name });
+        }
+      }
+    }
+
+    const crag = this.outdoorData.cragDetail();
+    if (crag && crag.topos) {
+      map[crag.id] = map[crag.id] || [];
+      for (const t of crag.topos) {
+        if (!map[crag.id].some((x) => x.id === t.id)) {
+          map[crag.id].push({ id: t.id, name: t.name });
+        }
+      }
+    }
+
+    for (const r of this.data()) {
+      if (r.crag_id && r.topos) {
+        map[r.crag_id] = map[r.crag_id] || [];
+        for (const t of r.topos) {
+          if (!map[r.crag_id].some((x) => x.id === t.id)) {
+            map[r.crag_id].push({ id: t.id, name: t.name });
+          }
+        }
+      }
+    }
+
+    return map;
+  });
+
   protected readonly availableTopos = computed(() => {
     const crag = this.outdoorData.cragDetail();
     if (!crag || !crag.topos) return [];
     return crag.topos.map((t) => ({ id: t.id, name: t.name }));
   });
+
+  protected onUpdateRouteName(row: RoutesTableRow, name: string): void {
+    const r = row._ref as RouteItem;
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === r.name) return;
+
+    r.name = trimmed;
+    this.routesService
+      .update(r.id, { name: trimmed })
+      .then(() => this.routeUpdated.emit())
+      .catch((err) => handleErrorToast(err, this.toast));
+  }
+
+  protected async onUpdateRouteCrag(
+    row: RoutesTableRow,
+    cragId: number,
+  ): Promise<void> {
+    const r = row._ref as RouteItem;
+    if (r.crag_id === cragId) return;
+
+    try {
+      const oldTopos = row.topos || [];
+      for (const t of oldTopos) {
+        await this.toposService.removeRoute(t.id, r.id, false);
+      }
+      r.crag_id = cragId;
+      await this.routesService.update(r.id, { crag_id: cragId });
+      this.routeUpdated.emit();
+    } catch (err: unknown) {
+      handleErrorToast(err, this.toast);
+    }
+  }
 
   protected onUpdateRouteHeight(
     row: RoutesTableRow,
@@ -168,10 +281,12 @@ export class OutdoorRoutesTableComponent {
           ? parseInt(newHeight, 10)
           : newHeight;
 
-    if (val === r.height) return;
+    if ((val ?? null) === (r.height ?? null)) return;
 
+    r.height = val;
     this.routesService
       .update(r.id, { height: val })
+      .then(() => this.routeUpdated.emit())
       .catch((err) => handleErrorToast(err, this.toast));
   }
 
@@ -197,6 +312,7 @@ export class OutdoorRoutesTableComponent {
       }
       await this.cragRoutesData.cragRoutesResource.reload();
       await this.outdoorData.cragDetailResource.reload();
+      this.routeUpdated.emit();
     } catch (e: unknown) {
       console.error('[OutdoorRoutesTable] error toggling route on topo', e);
       handleErrorToast(e, this.toast);
@@ -279,6 +395,7 @@ export class OutdoorRoutesTableComponent {
     if (!confirmed) return;
     try {
       await this.routesService.delete(r.id);
+      this.routeUpdated.emit();
     } catch (err: unknown) {
       handleErrorToast(err, this.toast);
     }

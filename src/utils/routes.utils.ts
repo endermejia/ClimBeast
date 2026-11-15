@@ -47,7 +47,10 @@ export function mapRouteToTableRow(
       ? ((indoor as { ascents?: unknown[] }).ascents?.length ?? 0)
       : 0;
     const hasAscents = ascents > 0 || !!indoor.own_ascent || rawRefAscents > 0;
-    const topos = (indoor.topos || []).map((t) => ({
+    const uniqueIndoorTopos = Array.from(
+      new Map((indoor.topos || []).map((t) => [t.id, t])).values(),
+    );
+    const topos = uniqueIndoorTopos.map((t) => ({
       id: t.id,
       name: t.name,
       legacy: t.legacy,
@@ -99,8 +102,11 @@ export function mapRouteToTableRow(
       : 0;
     const hasAscents = ascents > 0 || !!outdoor.own_ascent || rawRefAscents > 0;
     const equippers = outdoor.equippers || [];
+    const uniqueOutdoorTopos = Array.from(
+      new Map((outdoor.topos || []).map((t) => [t.id, t])).values(),
+    );
     const topos = sortByNormalizedName(
-      (outdoor.topos || []).map((t) => ({
+      uniqueOutdoorTopos.map((t) => ({
         id: t.id,
         name: t.name,
         link: [
@@ -127,6 +133,7 @@ export function mapRouteToTableRow(
       crag_name: outdoor.crag_name,
       area_slug: outdoor.area_slug,
       crag_slug: outdoor.crag_slug,
+      crag_id: outdoor.crag_id,
       height: outdoor.height || null,
       color: null,
       rating,

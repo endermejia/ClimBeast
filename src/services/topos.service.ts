@@ -168,6 +168,16 @@ export class ToposService {
   async addRoute(payload: TopoRouteInsertDto, reload = true): Promise<void> {
     if (!this.isBrowser) return;
     await this.supabase.whenReady();
+    // Prevent duplicate: check if route already belongs to this topo
+    const { data: existing } = await this.supabase.client
+      .from('topo_routes')
+      .select('id')
+      .eq('topo_id', payload.topo_id)
+      .eq('route_id', payload.route_id)
+      .limit(1);
+    if (existing && existing.length > 0) {
+      return;
+    }
     const { error } = await this.supabase.client
       .from('topo_routes')
       .insert(payload);

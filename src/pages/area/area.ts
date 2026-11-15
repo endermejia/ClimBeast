@@ -173,19 +173,28 @@ const PAGE_SIZE = 20;
         display: none !important;
       }
     }
+    @media (max-width: 1023.98px) {
+      .column-scrollbar,
+      .column-scrollbar ::ng-deep > .t-content {
+        overflow: visible !important;
+      }
+      .column-scrollbar ::ng-deep > tui-scroll-controls {
+        display: none !important;
+      }
+    }
   `,
   template: `
     <tui-scrollbar class="w-full h-full min-h-0 min-w-0">
       <section
-        class="w-full max-w-[1600px] mx-auto py-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden pb-6 lg:pb-2"
+        class="w-full max-w-[1600px] mx-auto pt-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden lg:pb-2"
       >
         <!-- Left Column -->
         <div
           class="flex flex-col w-full lg:flex-1 min-w-0 lg:h-full lg:min-h-0 lg:overflow-hidden"
         >
-          <tui-scrollbar class="w-full h-full min-h-0">
+          <tui-scrollbar class="column-scrollbar w-full h-full min-h-0">
             <div
-              class="flex flex-col gap-4 w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6"
+              class="flex flex-col gap-4 w-full min-w-0 px-4 lg:px-0 lg:pr-4"
             >
               @let canEditAsAdmin = authState.canEditAsAdmin();
               @if (outdoorData.selectedArea(); as area) {
@@ -226,15 +235,15 @@ const PAGE_SIZE = 20;
                       <app-ubicacion-dropdown (viewOnMap)="viewOnMap()" />
                     }
 
-                    @if (hasTopos()) {
-                      @let details = areaDetail();
-                      @let hasAccess =
-                        canEditAsAdmin ||
-                        canAreaAdmin ||
-                        details?.is_public ||
-                        details?.purchased;
+                    @let details = areaDetail();
+                    @let hasAccess =
+                      canEditAsAdmin ||
+                      canAreaAdmin ||
+                      details?.is_public ||
+                      details?.purchased;
 
-                      @if (hasAccess) {
+                    @if (hasAccess) {
+                      @if (hasTopos()) {
                         <button
                           tuiButton
                           appearance="flat"
@@ -245,33 +254,25 @@ const PAGE_SIZE = 20;
                         >
                           {{ 'topos' | translate }}
                         </button>
-                      } @else if (!areaDetailLoading()) {
-                        @let isSecret =
-                          details &&
-                          !details.is_public &&
-                          (details.price === null || details.price === 0);
-                        @if (!isSecret) {
-                          <div class="flex flex-col gap-2">
-                            <button
-                              tuiButton
-                              appearance="accent"
-                              size="m"
-                              type="button"
-                              (click.zoneless)="buyTopo()"
-                              [iconStart]="'@tui.hand-heart'"
-                            >
-                              {{ 'payments.getTopos' | translate }}
-                            </button>
-                          </div>
-                        } @else {
-                          <div
-                            class="flex items-center gap-1.5 opacity-60 text-xs py-2"
-                          >
-                            <tui-icon icon="@tui.lock" />
-                            <span>{{ 'topos.secretText' | translate }}</span>
-                          </div>
-                        }
                       }
+                    } @else if (
+                      !areaDetailLoading() && details && !details.is_public
+                    ) {
+                      @let isSecret =
+                        details.price === null || details.price <= 0;
+                      <div
+                        class="flex items-center gap-1.5 opacity-60 text-xs py-2"
+                      >
+                        <tui-icon icon="@tui.lock" />
+                        <span>
+                          {{
+                            isSecret
+                              ? ('topos.secretText' | translate)
+                              : ('donations.toposUnlockHint'
+                                | translate: { price: details.price })
+                          }}
+                        </span>
+                      </div>
                     }
                   </div>
                   @defer (on viewport; hydrate on viewport) {
@@ -431,7 +432,7 @@ const PAGE_SIZE = 20;
                     [hidden]="currentTab !== 0"
                     [class.hidden]="currentTab !== 0"
                   >
-                    <div class="flex flex-col gap-4">
+                    <div class="flex flex-col gap-2">
                       <!-- Search + Filters for Routes -->
                       @if (canCreateAreaRoute()) {
                         <div class="flex justify-end">
@@ -447,7 +448,7 @@ const PAGE_SIZE = 20;
                         </div>
                       }
                       <div
-                        class="sticky top-0 z-10 flex items-end gap-2 bg-(--tui-background-base)"
+                        class="sticky top-0 z-10 flex items-end gap-2 bg-(--tui-background-base) py-2"
                       >
                         <tui-textfield
                           appearance="floating"
@@ -498,6 +499,7 @@ const PAGE_SIZE = 20;
                             [data]="filteredAreaRoutes()"
                             [showLocation]="true"
                             [showRowColors]="true"
+                            (routeUpdated)="allRoutesResource.reload()"
                           />
                         } @placeholder {
                           <div class="min-h-32"></div>
@@ -620,7 +622,7 @@ const PAGE_SIZE = 20;
                         </div>
                       }
                       <div
-                        class="sticky top-0 z-10 flex items-end gap-2 bg-(--tui-background-base)"
+                        class="sticky top-0 z-10 flex items-end gap-2 bg-(--tui-background-base) py-2"
                       >
                         <tui-textfield
                           appearance="floating"

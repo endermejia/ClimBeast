@@ -112,20 +112,29 @@ const PAGE_SIZE = 20;
         display: none !important;
       }
     }
+    @media (max-width: 1023.98px) {
+      .column-scrollbar,
+      .column-scrollbar ::ng-deep > .t-content {
+        overflow: visible !important;
+      }
+      .column-scrollbar ::ng-deep > tui-scroll-controls {
+        display: none !important;
+      }
+    }
   `,
   template: `
     <tui-scrollbar class="w-full h-full min-h-0 min-w-0">
       <section
-        class="w-full max-w-[1600px] mx-auto py-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden pb-6 lg:pb-2"
+        class="w-full max-w-[1600px] mx-auto pt-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden lg:pb-2"
       >
         @if (cragDetail(); as c) {
           <!-- Left Column: Info + Segmented Tabs -->
           <div
             class="flex flex-col w-full lg:flex-1 min-w-0 lg:h-full lg:min-h-0 lg:overflow-hidden"
           >
-            <tui-scrollbar class="w-full h-full min-h-0">
+            <tui-scrollbar class="column-scrollbar w-full h-full min-h-0">
               <div
-                class="flex flex-col gap-4 w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6"
+                class="flex flex-col gap-4 w-full min-w-0 px-4 lg:px-0 lg:pr-4"
               >
                 <ng-template #cragSwitcher>
                   <tui-data-list>
@@ -150,7 +159,11 @@ const PAGE_SIZE = 20;
                     [itemCount]="sortedCrags().length"
                     [actions]="headerActions()"
                     (toggleLike)="onToggleLike()"
-                  />
+                  >
+                    @if (!c.is_public) {
+                      <tui-icon icon="@tui.lock" />
+                    }
+                  </app-section-header>
                 </div>
 
                 @let lang = languageService.selectedLanguage();
@@ -183,6 +196,27 @@ const PAGE_SIZE = 20;
                         <span class="text-lg font-medium whitespace-nowrap">
                           {{ c.approach }}
                           min.
+                        </span>
+                      </div>
+                    }
+                    @let hasCragAccess =
+                      authState.canEditAsAdmin() ||
+                      authState.areaAdminPermissions()[c.area_id] ||
+                      c.is_public ||
+                      c.purchased;
+                    @if (!hasCragAccess) {
+                      @let isSecret = !c.price || c.price <= 0;
+                      <div
+                        class="flex items-center gap-1.5 opacity-60 text-xs py-2"
+                      >
+                        <tui-icon icon="@tui.lock" />
+                        <span>
+                          {{
+                            isSecret
+                              ? ('topos.secretText' | translate)
+                              : ('donations.toposUnlockHint'
+                                | translate: { price: c.price })
+                          }}
                         </span>
                       </div>
                     }
