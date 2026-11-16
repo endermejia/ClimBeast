@@ -174,9 +174,19 @@ const PAGE_SIZE = 20;
       }
     }
     @media (max-width: 1023.98px) {
+      :host > tui-scrollbar {
+        overflow-x: hidden !important;
+      }
+      :host > tui-scrollbar ::ng-deep > .t-content {
+        min-inline-size: 0 !important;
+        max-inline-size: 100% !important;
+        overflow-x: clip !important;
+      }
       .column-scrollbar,
       .column-scrollbar ::ng-deep > .t-content {
         overflow: visible !important;
+        min-inline-size: 0 !important;
+        max-inline-size: 100% !important;
       }
       .column-scrollbar ::ng-deep > tui-scroll-controls {
         display: none !important;
@@ -186,7 +196,7 @@ const PAGE_SIZE = 20;
   template: `
     <tui-scrollbar class="w-full h-full min-h-0 min-w-0">
       <section
-        class="w-full max-w-[1600px] mx-auto pt-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden lg:pb-2"
+        class="w-full min-w-0 max-w-[1600px] mx-auto pt-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden lg:pb-2"
       >
         <!-- Left Column -->
         <div
@@ -400,6 +410,8 @@ const PAGE_SIZE = 20;
 
                 <!-- Segmented: Routes / Crags / Topos / Ascents -->
                 <tui-segmented
+                  [size]="layoutService.isMobile() ? 's' : 'm'"
+                  class="max-w-full overflow-x-auto no-scrollbar"
                   [activeItemIndex]="activeTabIndex()"
                   (activeItemIndexChange)="activeTabIndex.set($event)"
                 >
@@ -452,7 +464,7 @@ const PAGE_SIZE = 20;
                       >
                         <tui-textfield
                           appearance="floating"
-                          class="grow block"
+                          class="grow block min-w-0"
                           tuiTextfieldSize="l"
                         >
                           <label tuiLabel for="routes-search">{{
@@ -626,7 +638,7 @@ const PAGE_SIZE = 20;
                       >
                         <tui-textfield
                           appearance="floating"
-                          class="grow block"
+                          class="grow block min-w-0"
                           tuiTextfieldSize="l"
                         >
                           <label tuiLabel for="crags-search">{{

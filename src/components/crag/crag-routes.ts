@@ -64,7 +64,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
     TuiLoader,
   ],
   template: `
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2 min-w-0">
       @if (canCreateRoute()) {
         <div class="flex justify-end">
           <button
@@ -81,7 +81,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
       <div
         class="sticky top-0 z-10 flex items-end gap-2 bg-(--tui-background-base) py-2"
       >
-        <tui-textfield class="grow block" tuiTextfieldSize="l">
+        <tui-textfield class="grow block min-w-0" tuiTextfieldSize="l">
           <label tuiLabel for="routes-search">{{
             'searchPlaceholder' | translate
           }}</label>

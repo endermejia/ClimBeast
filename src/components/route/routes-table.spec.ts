@@ -1183,9 +1183,12 @@ describe('RoutesTableComponent focused edit mode', () => {
     const theadEl = hostEl.querySelector('thead') as HTMLTableSectionElement;
     expect(theadEl.style.transform).toBe('');
     expect(hostEl.querySelectorAll('thead th').length).toBe(5);
+    const tableEl = hostEl.querySelector('table') as HTMLTableElement;
+    expect(tableEl.classList.contains('table-fixed')).toBe(false);
 
     fixture.componentRef.setInput('isMobile', true);
     fixture.detectChanges();
+    expect(tableEl.classList.contains('table-fixed')).toBe(true);
     const mobileHeaders = Array.from(hostEl.querySelectorAll('thead th')).map(
       (th) => th.getAttribute('data-col'),
     );

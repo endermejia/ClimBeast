@@ -115,12 +115,13 @@ import { EmptyStateComponent } from '../ui/empty-state';
     @if (data(); as d) {
       @if (d.length > 0) {
         @let isMobile = this.isMobile();
-        <div class="w-full min-w-0">
+        <div class="w-full min-w-0 max-w-full overflow-x-clip">
           <table
             #table
             tuiTable
             [size]="isMobile ? 's' : 'm'"
             class="w-full"
+            [class.table-fixed]="isMobile"
             [columns]="visibleColumns()"
             [direction]="currentDirection"
             [sorter]="currentSorter"
@@ -136,10 +137,8 @@ import { EmptyStateComponent } from '../ui/empty-state';
                     [sorter]="sorters[col]"
                     [style.top.px]="stickyTopOffset()"
                     [class.text-center]="col === 'actions' || col === 'ascents'"
-                    [class.w-12!]="
-                      col === 'grade' || col === 'actions' || col === 'ascents'
-                    "
-                    [class.w-14!]="col === 'height'"
+                    [class.w-12!]="col === 'actions' || col === 'ascents'"
+                    [class.w-14!]="col === 'grade' || col === 'height'"
                     [class.w-20!]="col === 'color'"
                   >
                     <div
@@ -239,7 +238,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                           </div>
                         }
                         @case ('route') {
-                          <div tuiCell size="m" class="h-full">
+                          <div tuiCell size="m" class="h-full min-w-0 w-full">
                             @if (isCellActive && canEditRoute) {
                               <tui-textfield
                                 [tuiTextfieldCleaner]="false"
@@ -258,9 +257,9 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                 />
                               </tui-textfield>
                             } @else {
-                              <div class="flex flex-col min-w-0">
+                              <div class="flex flex-col min-w-0 w-full flex-1">
                                 <div
-                                  class="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0"
+                                  class="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 max-w-full"
                                 >
                                   <a
                                     tuiLink
@@ -272,7 +271,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                         ? 'var(--tui-status-negative)'
                                         : ''
                                     "
-                                    class="self-start font-bold! text-base truncate max-w-full w-fit block"
+                                    class="self-start font-bold! text-base truncate max-w-full block"
                                   >
                                     {{ item.route || ('route' | translate) }}
                                   </a>
@@ -299,7 +298,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                       ) {
                                         <a
                                           tuiLink
-                                          class="truncate max-w-full"
+                                          class="truncate max-w-full min-w-0"
                                           [routerLink]="
                                             isEditing()
                                               ? null
@@ -366,7 +365,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                     >
                                       @if (item.topos.length > 0) {
                                         <span
-                                          class="inline-flex flex-wrap items-center gap-x-1"
+                                          class="inline-flex flex-wrap items-center gap-x-1 min-w-0 max-w-full"
                                         >
                                           @for (
                                             t of item.topos;
@@ -374,15 +373,18 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                             let last = $last
                                           ) {
                                             <span
-                                              class="inline-flex items-center"
+                                              class="inline-flex items-center min-w-0 max-w-full"
                                             >
                                               @if (isEditing() || !t.link) {
-                                                <span>{{ t.name }}</span>
+                                                <span
+                                                  class="truncate max-w-full"
+                                                  >{{ t.name }}</span
+                                                >
                                               } @else {
                                                 <a
                                                   tuiLink
                                                   [routerLink]="t.link"
-                                                  class="truncate max-w-full"
+                                                  class="truncate max-w-full min-w-0"
                                                 >
                                                   {{ t.name }}
                                                 </a>
@@ -402,7 +404,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                       }
                                       @if (item.equippers.length > 0) {
                                         <span
-                                          class="inline-flex flex-wrap items-center gap-x-1"
+                                          class="inline-flex flex-wrap items-center gap-x-1 min-w-0 max-w-full"
                                         >
                                           @for (
                                             e of item.equippers;
@@ -410,10 +412,11 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                             let last = $last
                                           ) {
                                             <span
-                                              class="inline-flex items-center"
+                                              class="inline-flex items-center min-w-0 max-w-full"
                                             >
                                               <a
                                                 tuiLink
+                                                class="truncate max-w-full min-w-0"
                                                 [routerLink]="
                                                   isEditing()
                                                     ? null
