@@ -718,7 +718,7 @@ export class RouteMatcherService {
         eight_anu_route_slugs,
         grade,
         climbing_kind: a.climbing_kind ?? ClimbingKinds.SPORT,
-        date: a.date.split('T')[0],
+        date: this.normalizeDate(a.date),
         style: a.type,
         attempts,
         tries: attempts,
@@ -847,39 +847,50 @@ export class RouteMatcherService {
       return this.existingAscentKeysCache;
     }
 
-    let query = this.supabase.client
-      .from('route_ascents')
-      .select(
-        `
-          date,
-          route:routes!inner(
-            slug,
-            name,
-            eight_anu_route_slugs
-          )
-        `,
-      )
-      .eq('user_id', userId)
-      .not('date', 'is', null);
+    const existingAscents: ExistingUserAscentKey[] = [];
+    const PAGE = 1000;
 
-    if (range) {
-      query = query.gte('date', range.from).lte('date', range.to);
-    }
+    for (let from = 0; ; from += PAGE) {
+      let query = this.supabase.client
+        .from('route_ascents')
+        .select(
+          `
+            date,
+            route:routes!inner(
+              slug,
+              name,
+              eight_anu_route_slugs
+            )
+          `,
+        )
+        .eq('user_id', userId)
+        .not('date', 'is', null)
+        .order('id', { ascending: true })
+        .range(from, from + PAGE - 1);
 
-    const { data, error } = await query;
+      if (range) {
+        query = query.gte('date', range.from).lte('date', range.to);
+      }
 
-    if (error) {
-      console.error(
-        '[8a Import] Error loading existing ascents for deduplication:',
-        error,
-      );
-      this.existingAscentKeysCache = new Set<string>();
-      this.existingAscentKeysCacheRange = range || null;
-      return this.existingAscentKeysCache;
+      const { data, error } = await query;
+
+      if (error) {
+        console.error(
+          '[8a Import] Error loading existing ascents for deduplication:',
+          error,
+        );
+        this.existingAscentKeysCache = new Set<string>();
+        this.existingAscentKeysCacheRange = range || null;
+        return this.existingAscentKeysCache;
+      }
+
+      const pageRows = (data ?? []) as ExistingUserAscentKey[];
+      existingAscents.push(...pageRows);
+      if (pageRows.length < PAGE) break;
     }
 
     const existingKeys = new Set<string>();
-    for (const ascent of (data ?? []) as ExistingUserAscentKey[]) {
+    for (const ascent of existingAscents) {
       const routeDataRaw = Array.isArray(ascent.route)
         ? ascent.route[0]
         : ascent.route;
@@ -925,12 +936,18 @@ export class RouteMatcherService {
     this.existingAscentKeysCacheRange = null;
   }
 
+  private normalizeDate(date: string | null | undefined): string {
+    const trimmed = (date ?? '').trim();
+    if (!trimmed) return '';
+    return trimmed.split(/[T\s]/)[0];
+  }
+
   private buildAscentDedupKey(
     date: string | null | undefined,
     slug: string | null | undefined,
     is8aSlug = false,
   ): string | null {
-    const normalizedDate = (date ?? '').split('T')[0].trim();
+    const normalizedDate = this.normalizeDate(date);
     if (!normalizedDate || !slug) return null;
     const identifier = is8aSlug ? `8a:${slug}` : slugify(slug);
     return `${normalizedDate}|${identifier}`;
@@ -940,7 +957,7 @@ export class RouteMatcherService {
     ascents: EightAnuAscent[],
   ): { from: string; to: string } | null {
     const normalizedDates = ascents
-      .map((a) => (a.date || '').split('T')[0].trim())
+      .map((a) => this.normalizeDate(a.date))
       .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
       .sort();
 

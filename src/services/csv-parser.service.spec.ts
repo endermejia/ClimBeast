@@ -116,4 +116,24 @@ describe('CsvParserService', () => {
     expect(result[0].name).toBe('Attempt Route');
     expect(result[0].type).toBe(AscentTypes.ATTEMPT);
   });
+
+  it('normalizes dates with space-separated time (YYYY-MM-DD HH:MM:SS) to YYYY-MM-DD', () => {
+    const csv = createCsv([
+      '"ROUTE","Sin problemas","Alfar","Alfar","Cuenca","ES","2024-04-02 12:00:00","rp","","0","0","2","0","4a","0","Primera reunión","","0",""',
+    ]);
+
+    const result = service.parseCSV(csv);
+    expect(result).toHaveLength(1);
+    expect(result[0].date).toBe('2024-04-02');
+  });
+
+  it('normalizes ISO timestamps with T to YYYY-MM-DD', () => {
+    const csv = createCsv([
+      '"ROUTE","ISO Route","Alfar","Alfar","Cuenca","ES","2024-04-02T12:00:00Z","rp","","0","0","2","0","4a","0","","","0",""',
+    ]);
+
+    const result = service.parseCSV(csv);
+    expect(result).toHaveLength(1);
+    expect(result[0].date).toBe('2024-04-02');
+  });
 });

@@ -156,7 +156,7 @@ export class CsvParserService {
           location_name: locationName,
           sector_name: sectorName,
           country_code: getVal('country_code'),
-          date: getVal('date'),
+          date: this.normalizeDate(getVal('date')),
           type: this.mapType(rawType, rawSubType),
           rating: Math.max(0, Math.min(5, ratingValue)),
           tries: this.parseTries(triesStr, rawType, rawSubType),
@@ -237,5 +237,11 @@ export class CsvParserService {
     }
 
     return AscentTypes.RP;
+  }
+
+  private normalizeDate(rawDate: string): string {
+    const trimmed = rawDate.trim();
+    if (!trimmed) return '';
+    return trimmed.split(/[T\s]/)[0];
   }
 }
