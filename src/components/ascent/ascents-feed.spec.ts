@@ -2,6 +2,7 @@ import { PLATFORM_ID, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
+import { TuiDay } from '@taiga-ui/cdk';
 import { TuiDialogService } from '@taiga-ui/core';
 
 import { TranslateModule } from '@ngx-translate/core';
@@ -165,5 +166,34 @@ describe('AscentsFeedComponent', () => {
     expect(stickyHeaders.length).toBe(2);
     expect(sections[0].contains(stickyHeaders[0])).toBe(true);
     expect(sections[1].contains(stickyHeaders[1])).toBe(true);
+  });
+
+  it('should render clickable date buttons when enableDateNavigation is true and emit dateSelected on day click', () => {
+    fixture.componentRef.setInput('ascents', mockAscents);
+    fixture.componentRef.setInput('groupByDate', true);
+    fixture.componentRef.setInput('enableDateNavigation', true);
+    fixture.componentRef.setInput('minDate', '2024-01-01');
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const dateButtons = compiled.querySelectorAll('.sticky.top-0 button');
+    expect(dateButtons.length).toBe(2);
+
+    const emitted: string[] = [];
+    fixture.componentInstance.dateSelected.subscribe((d) => emitted.push(d));
+
+    const comp = fixture.componentInstance as unknown as {
+      toggleCalendar: (dateKey: string, dateStr: string) => void;
+      onCalendarDayClick: (day: TuiDay) => void;
+      openCalendarDateKey: () => string | null;
+      minCalendarDay: () => TuiDay | null;
+    };
+    comp.toggleCalendar('2024-01-02', '2024-01-02');
+    expect(comp.openCalendarDateKey()).toBe('2024-01-02');
+    expect(comp.minCalendarDay()).toEqual(new TuiDay(2024, 0, 1));
+
+    comp.onCalendarDayClick(new TuiDay(2024, 0, 1));
+    expect(emitted).toEqual(['2024-01-01']);
+    expect(comp.openCalendarDateKey()).toBeNull();
   });
 });

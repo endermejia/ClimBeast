@@ -46,12 +46,15 @@ import { TourService, TourStep } from '../../services/tour.service';
 
 import { ProfileConfigModel, Sex, Sexes } from '../../models';
 
+import { CalendarMonthPickerDirective } from '../../directives/calendar-month-picker.directive';
+
 import { TourHintComponent } from '../ui/tour-hint';
 
 @Component({
   selector: 'app-profile-general-section',
   host: { class: 'contents' },
   imports: [
+    CalendarMonthPickerDirective,
     FormsModule,
     NgOptimizedImage,
     TourHintComponent,
@@ -318,7 +321,7 @@ import { TourHintComponent } from '../ui/tour-hint';
             [tuiSkeleton]="!userEmail()"
             autocomplete="off"
           />
-          <tui-calendar *tuiDropdown />
+          <tui-calendar appCalendarMonthPicker *tuiDropdown />
         </tui-textfield>
         <tui-error [error]="birthDateError()" />
       </div>

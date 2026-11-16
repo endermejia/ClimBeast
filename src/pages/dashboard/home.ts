@@ -13,7 +13,12 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { TuiDataList, TuiDialogService, TuiScrollbar } from '@taiga-ui/core';
+import {
+  TuiButton,
+  TuiDataList,
+  TuiDialogService,
+  TuiScrollbar,
+} from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
@@ -97,6 +102,7 @@ import {
 } from '../../models';
 
 import { CACHE_KEYS, STORAGE_KEYS } from '../../constants';
+import { AscentDatePipe } from '../../pipes';
 import { createCachedResource, reactToObservable } from '../../utils';
 import {
   applyCategoryFilter,
@@ -111,6 +117,7 @@ import { IS_BROWSER } from '../../app/is-browser';
 @Component({
   selector: 'app-home',
   imports: [
+    AscentDatePipe,
     AscentsFeedComponent,
     CommonModule,
     HomeFilterBarComponent,
@@ -118,6 +125,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     HomeNewsSidebarComponent,
     HomeRecentPlacesComponent,
     TranslatePipe,
+    TuiButton,
     TuiDataList,
     TuiScrollbar,
   ],
@@ -177,6 +185,21 @@ import { IS_BROWSER } from '../../app/is-browser';
                 (loadMoreNews)="loadMoreNews()"
               />
             } @else {
+              @if (feedAnchorDate(); as anchorDate) {
+                <div class="flex items-center gap-2 mt-2">
+                  <button
+                    type="button"
+                    size="s"
+                    tuiButton
+                    appearance="secondary"
+                    iconStart="@tui.calendar"
+                    iconEnd="@tui.x"
+                    (click)="clearDateAnchor()"
+                  >
+                    {{ anchorDate | ascentDate }}
+                  </button>
+                </div>
+              }
               <!-- Ascents Feed -->
               <app-ascents-feed
                 [ascents]="ascents()"
@@ -184,6 +207,9 @@ import { IS_BROWSER } from '../../app/is-browser';
                 [hasMore]="hasMore()"
                 [columns]="2"
                 [groupByDate]="true"
+                [enableDateNavigation]="true"
+                [minDate]="oldestAscentDate()"
+                (dateSelected)="onDateSelected($event)"
                 (loadMore)="loadMore()"
               />
             }
@@ -502,6 +528,9 @@ export class HomeComponent {
       }
     });
     void this.loadNews();
+    if (this.isBrowser) {
+      void this.loadOldestAscentDate();
+    }
     inject(DestroyRef).onDestroy(() => this.loadMore$.complete());
 
     effect(() => {
@@ -643,7 +672,9 @@ export class HomeComponent {
     const filter = this.feedFilter();
     const showIndoorAscents = this.filterState.feedShowIndoorAscents();
     const isMobile = this.layoutService.isMobile();
+    const anchorDate = this.feedAnchorDate();
     const showNews =
+      !anchorDate &&
       isMobile &&
       (filter === HomeFeedFilters.ALL ||
         (filter === HomeFeedFilters.FOLLOWING &&
@@ -932,6 +963,51 @@ export class HomeComponent {
   protected readonly isLoading = signal(true);
   protected readonly hasMore = signal(true);
   protected readonly ascents = signal<FeedItem[]>([]);
+  protected readonly oldestAscentDate = signal<string | null>(null);
+  protected readonly feedAnchorDate = signal<string | null>(null);
+
+  protected onDateSelected(date: string): void {
+    this.feedAnchorDate.set(date);
+    this.resetFeed();
+    this.scrollToTop();
+  }
+
+  protected clearDateAnchor(): void {
+    this.feedAnchorDate.set(null);
+    this.resetFeed();
+    this.scrollToTop();
+  }
+
+  private async loadOldestAscentDate(): Promise<void> {
+    if (!this.isBrowser) return;
+    await this.supabase.whenReady();
+
+    const [{ data: oldestOutdoor }, { data: oldestIndoor }] = await Promise.all(
+      [
+        this.supabase.client
+          .from('route_ascents')
+          .select('date')
+          .not('date', 'is', null)
+          .order('date', { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+        this.supabase.client
+          .from('indoor_ascents')
+          .select('date')
+          .not('date', 'is', null)
+          .order('date', { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+      ],
+    );
+
+    const candidates = [oldestOutdoor?.date, oldestIndoor?.date]
+      .filter((d): d is string => Boolean(d))
+      .map((d) => d.substring(0, 10))
+      .sort();
+
+    this.oldestAscentDate.set(candidates[0] ?? null);
+  }
 
   private async loadNews(): Promise<void> {
     if (!this.isBrowser) {
@@ -1047,6 +1123,10 @@ export class HomeComponent {
     let countQuery = this.supabase.client
       .from('indoor_ascents')
       .select('*', { count: 'exact', head: true });
+    const anchorDate = this.feedAnchorDate();
+    if (anchorDate) {
+      countQuery = countQuery.lte('date', anchorDate);
+    }
     countQuery = applyIndoorUserFilter(countQuery, filterOptions);
     countQuery = applyCategoryFilter(
       countQuery,
@@ -1071,6 +1151,9 @@ export class HomeComponent {
     );
 
     query = applyIndoorUserFilter(query, filterOptions);
+    if (anchorDate) {
+      query = query.lte('date', anchorDate);
+    }
     query = applyCategoryFilter(
       query,
       filterOptions.categories,
@@ -1129,11 +1212,13 @@ export class HomeComponent {
         } as unknown as RouteAscentFeedItem;
       });
 
-      this.storage.setItem(cacheKey, JSON.stringify(result));
+      if (!anchorDate) {
+        this.storage.setItem(cacheKey, JSON.stringify(result));
+      }
       return result;
     } catch (e: unknown) {
       console.warn('[Home] fetchIndoorAscents error/offline, trying cache', e);
-      const cached = this.storage.getItem(cacheKey);
+      const cached = !anchorDate ? this.storage.getItem(cacheKey) : null;
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
@@ -1205,6 +1290,10 @@ export class HomeComponent {
         count: 'exact',
         head: true,
       });
+    const anchorDate = this.feedAnchorDate();
+    if (anchorDate) {
+      countQuery = countQuery.lte('date', anchorDate);
+    }
     countQuery = applyUserFilter(countQuery, filterOptions);
     countQuery = applyCategoryFilter(
       countQuery,
@@ -1231,6 +1320,9 @@ export class HomeComponent {
     );
 
     query = applyUserFilter(query, filterOptions);
+    if (anchorDate) {
+      query = query.lte('date', anchorDate);
+    }
     query = applyCategoryFilter(
       query,
       filterOptions.categories,
@@ -1300,11 +1392,13 @@ export class HomeComponent {
         } as unknown as RouteAscentFeedItem;
       });
 
-      this.storage.setItem(cacheKey, JSON.stringify(result));
+      if (!anchorDate) {
+        this.storage.setItem(cacheKey, JSON.stringify(result));
+      }
       return result;
     } catch (e: unknown) {
       console.warn('[Home] fetchAscents error/offline, trying cache', e);
-      const cached = this.storage.getItem(cacheKey);
+      const cached = !anchorDate ? this.storage.getItem(cacheKey) : null;
       if (cached) {
         try {
           const parsed = JSON.parse(cached);

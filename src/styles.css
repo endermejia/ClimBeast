@@ -766,3 +766,19 @@ app-undo-toast {
     transform: translateX(0);
   }
 }
+
+/* Taiga Calendar Month Picker enhancement */
+tui-calendar tui-calendar-spin tui-spin-button {
+  cursor: pointer;
+}
+
+tui-calendar.cal-month-picker-open > tui-calendar-spin,
+tui-calendar.cal-month-picker-open > tui-calendar-sheet {
+  display: none !important;
+}
+
+tui-calendar.cal-month-picker-open > tui-calendar-month {
+  display: block;
+  width: 100%;
+  padding: 0;
+}

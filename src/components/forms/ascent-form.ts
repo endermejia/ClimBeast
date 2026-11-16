@@ -69,6 +69,8 @@ import { AscentDatePipe } from '../../pipes';
 import { handleErrorToast } from '../../utils';
 import { openImageEditor } from '../../utils/open-image-editor';
 
+import { CalendarMonthPickerDirective } from '../../directives/calendar-month-picker.directive';
+
 import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
 
 import { ImageEditorConfig } from '../dialogs/image-editor-dialog';
@@ -79,6 +81,7 @@ import { CounterComponent } from '../ui/counter';
   selector: 'app-ascent-form',
   imports: [
     ButtonAscentTypeComponent,
+    CalendarMonthPickerDirective,
     CommonModule,
     CounterComponent,
     FormField,
@@ -120,7 +123,7 @@ import { CounterComponent } from '../ui/counter';
               name="date"
               autocomplete="off"
             />
-            <tui-calendar *tuiDropdown />
+            <tui-calendar appCalendarMonthPicker *tuiDropdown />
           </tui-textfield>
           @if (ascentForm.date().invalid() && ascentForm.date().touched()) {
             <tui-error [error]="'errors.required' | translate" />

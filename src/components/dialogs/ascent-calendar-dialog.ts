@@ -27,6 +27,7 @@ import {
 } from '../../models';
 
 import { AscentCountDirective } from '../../directives/ascent-count.directive';
+import { CalendarMonthPickerDirective } from '../../directives/calendar-month-picker.directive';
 
 import { AscentCardComponent } from '../ascent/ascent-card';
 
@@ -48,6 +49,7 @@ interface AscentDateMarker {
   imports: [
     AscentCardComponent,
     AscentCountDirective,
+    CalendarMonthPickerDirective,
     CommonModule,
     DatePipe,
     LowerCasePipe,
@@ -65,6 +67,7 @@ interface AscentDateMarker {
         class="p-2 flex flex-col items-center border-b border-(--tui-border-normal)"
       >
         <tui-calendar
+          appCalendarMonthPicker
           [value]="selectedDay()"
           [markerHandler]="markerHandler()"
           [disabledItemHandler]="disabledItemHandler()"

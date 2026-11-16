@@ -1,7 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
+
+import { TuiDay, TuiMonth } from '@taiga-ui/cdk';
+import { TuiCalendar, TuiDropdown } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
+
+import { CalendarMonthPickerDirective } from '../../directives/calendar-month-picker.directive';
 
 import { InfiniteScrollTriggerComponent } from '../ui/infinite-scroll-trigger';
 import { NewsCardComponent } from '../ui/news-card';
@@ -38,10 +43,13 @@ export interface DateGroup {
     AscentCardComponent,
     AscentCardSkeletonComponent,
     AscentDatePipe,
+    CalendarMonthPickerDirective,
     CommonModule,
     InfiniteScrollTriggerComponent,
     NewsCardComponent,
     TranslatePipe,
+    TuiCalendar,
+    TuiDropdown,
   ],
   template: `
     @if (groupByDate() && !groupByGrade()) {
@@ -54,11 +62,30 @@ export interface DateGroup {
                 style="background: linear-gradient(to bottom, var(--tui-background-base) 0%, var(--tui-background-base) 55%, transparent 100%);"
               >
                 <div class="flex items-center gap-4 pointer-events-auto">
-                  <span
-                    class="inline-block text-lg font-bold first-letter:uppercase shrink-0 text-(--tui-text-primary)"
-                  >
-                    {{ group.date | ascentDate }}
-                  </span>
+                  @if (enableDateNavigation()) {
+                    <button
+                      type="button"
+                      class="inline-flex items-center text-lg font-bold shrink-0 text-(--tui-text-primary) hover:text-(--tui-text-action) transition-colors cursor-pointer bg-transparent border-0 p-0"
+                      [tuiDropdown]="calendarDropdown"
+                      [tuiDropdownOpen]="
+                        openCalendarDateKey() === group.dateKey
+                      "
+                      (tuiDropdownOpenChange)="
+                        onCalendarOpenChange(group.dateKey, group.date, $event)
+                      "
+                      (click)="toggleCalendar(group.dateKey, group.date)"
+                    >
+                      <span class="inline-block first-letter:uppercase">{{
+                        group.date | ascentDate
+                      }}</span>
+                    </button>
+                  } @else {
+                    <span
+                      class="inline-block text-lg font-bold first-letter:uppercase shrink-0 text-(--tui-text-primary)"
+                    >
+                      {{ group.date | ascentDate }}
+                    </span>
+                  }
                   <div class="h-px grow bg-(--tui-border-normal)"></div>
                 </div>
               </div>
@@ -240,6 +267,20 @@ export interface DateGroup {
         }
       </div>
     }
+
+    <ng-template #calendarDropdown>
+      <div class="p-2">
+        <tui-calendar
+          appCalendarMonthPicker
+          [value]="calendarSelectedDay()"
+          [month]="calendarMonth()"
+          [min]="minCalendarDay()"
+          [max]="maxCalendarDay"
+          (monthChange)="calendarMonth.set($event)"
+          (dayClick)="onCalendarDayClick($event)"
+        />
+      </div>
+    </ng-template>
   `,
 })
 export class AscentsFeedComponent {
@@ -255,8 +296,66 @@ export class AscentsFeedComponent {
   showDate = input(true);
   columns = input<number>(1);
   highlightOwn = input(false);
+  enableDateNavigation = input(false);
+  minDate = input<string | null>(null);
 
   loadMore = output<void>();
+  dateSelected = output<string>();
+
+  protected readonly openCalendarDateKey = signal<string | null>(null);
+  protected readonly calendarSelectedDay = signal<TuiDay>(
+    TuiDay.currentLocal(),
+  );
+  protected readonly calendarMonth = signal<TuiMonth>(TuiMonth.currentLocal());
+  protected readonly maxCalendarDay = TuiDay.currentLocal();
+  protected readonly minCalendarDay = computed<TuiDay | null>(() =>
+    this.parseIsoToTuiDay(this.minDate()),
+  );
+
+  protected toggleCalendar(dateKey: string, dateStr: string): void {
+    const isOpen = this.openCalendarDateKey() === dateKey;
+    if (isOpen) {
+      this.openCalendarDateKey.set(null);
+      return;
+    }
+    const day = this.parseIsoToTuiDay(dateStr) ?? TuiDay.currentLocal();
+    this.calendarSelectedDay.set(day);
+    this.calendarMonth.set(new TuiMonth(day.year, day.month));
+    this.openCalendarDateKey.set(dateKey);
+  }
+
+  protected onCalendarOpenChange(
+    dateKey: string,
+    dateStr: string,
+    open: boolean,
+  ): void {
+    if (open) {
+      const day = this.parseIsoToTuiDay(dateStr) ?? TuiDay.currentLocal();
+      this.calendarSelectedDay.set(day);
+      this.calendarMonth.set(new TuiMonth(day.year, day.month));
+      this.openCalendarDateKey.set(dateKey);
+    } else if (this.openCalendarDateKey() === dateKey) {
+      this.openCalendarDateKey.set(null);
+    }
+  }
+
+  protected onCalendarDayClick(day: TuiDay): void {
+    const month = String(day.month + 1).padStart(2, '0');
+    const dayNum = String(day.day).padStart(2, '0');
+    this.openCalendarDateKey.set(null);
+    this.dateSelected.emit(`${day.year}-${month}-${dayNum}`);
+  }
+
+  private parseIsoToTuiDay(dateStr: string | null | undefined): TuiDay | null {
+    if (!dateStr) return null;
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr.trim());
+    if (!match) return null;
+    const year = Number(match[1]);
+    const month = Number(match[2]) - 1;
+    const day = Number(match[3]);
+    if (month < 0 || month > 11 || day < 1 || day > 31) return null;
+    return new TuiDay(year, month, day);
+  }
 
   protected readonly dateGroups = computed<DateGroup[]>(() => {
     if (!this.groupByDate() || this.groupByGrade()) {
