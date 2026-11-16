@@ -69,15 +69,20 @@ import { RoutesTableComponent } from './routes-table';
           (equippersChanged)="indoorService.reloadCenterRoutes()"
         />
       } @else {
-        <div class="flex flex-wrap gap-1 items-center">
-          @for (e of item.equippers; track e.id) {
-            <a
-              tuiLink
-              class="text-xs bg-(--tui-background-neutral-1) hover:bg-(--tui-background-neutral-1-hover) text-(--tui-text-primary) px-2 py-0.5 rounded-md transition-colors truncate max-w-full font-medium"
-              [routerLink]="['/equipper', e.id]"
-            >
-              {{ e.name }}
-            </a>
+        <div class="flex flex-wrap gap-x-1 gap-y-0.5 items-center">
+          @for (e of item.equippers; track e.id; let last = $last) {
+            <span class="inline-flex items-center max-w-full">
+              <a
+                tuiLink
+                class="text-xs bg-(--tui-background-neutral-1) hover:bg-(--tui-background-neutral-1-hover) text-(--tui-text-primary) px-2 py-0.5 rounded-md transition-colors truncate max-w-full font-medium"
+                [routerLink]="['/equipper', e.id]"
+              >
+                {{ e.name }}
+              </a>
+              @if (!last) {
+                <span class="text-xs opacity-60">,</span>
+              }
+            </span>
           } @empty {
             <span class="opacity-50 text-xs">-</span>
           }

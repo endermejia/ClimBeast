@@ -1211,4 +1211,34 @@ describe('RoutesTableComponent focused edit mode', () => {
     expect(theadEl.style.transform).toBe('translate3d(0, 120px, 0)');
     expect(theadEl.style.zIndex).toBe('30');
   });
+
+  it('renders comma separators between multiple equippers in the default cell view', () => {
+    const fixture = TestBed.createComponent(RoutesTableComponent);
+    const row = createMockRow(1, 15, false);
+    row.equippers = [
+      {
+        id: 1,
+        name: 'Alice',
+        created_at: '',
+        description: null,
+        user_id: null,
+      },
+      {
+        id: 2,
+        name: 'Bob',
+        created_at: '',
+        description: null,
+        user_id: null,
+      },
+    ];
+    fixture.componentRef.setInput('data', [row]);
+    fixture.componentRef.setInput('columns', ['route', 'equippers']);
+    fixture.detectChanges();
+
+    const cell = (fixture.nativeElement as HTMLElement).querySelector(
+      'td[data-col="equippers"]',
+    ) as HTMLElement;
+    const text = cell.textContent?.replace(/\s+/g, ' ').trim();
+    expect(text).toBe('Alice , Bob');
+  });
 });
