@@ -747,6 +747,12 @@ import { EmptyStateComponent } from '../ui/empty-state';
       isolation: isolate;
       z-index: 0;
     }
+    thead[tuiThead] {
+      will-change: transform;
+    }
+    thead[tuiThead] th {
+      background: var(--tui-background-base);
+    }
     td.cell-selected {
       padding: 0 !important;
       vertical-align: middle;
@@ -1366,9 +1372,7 @@ export class RoutesTableComponent {
         this.hostEl.nativeElement.parentElement,
       );
 
-      let rafId = 0;
       const updateStickyHeader = () => {
-        rafId = 0;
         const containerTop = scrollContainer
           ? scrollContainer.getBoundingClientRect().top
           : 0;
@@ -1402,35 +1406,26 @@ export class RoutesTableComponent {
         }
       };
 
-      const scheduleUpdate = () => {
-        if (!rafId) {
-          rafId = requestAnimationFrame(updateStickyHeader);
-        }
-      };
-
       const scrollTarget: EventTarget = scrollContainer ?? window;
-      scrollTarget.addEventListener('scroll', scheduleUpdate, {
+      scrollTarget.addEventListener('scroll', updateStickyHeader, {
         passive: true,
       });
-      window.addEventListener('resize', scheduleUpdate, { passive: true });
+      window.addEventListener('resize', updateStickyHeader, { passive: true });
 
       const ro =
         typeof ResizeObserver !== 'undefined'
-          ? new ResizeObserver(scheduleUpdate)
+          ? new ResizeObserver(updateStickyHeader)
           : null;
       ro?.observe(tableEl);
       if (scrollContainer) {
         ro?.observe(scrollContainer);
       }
 
-      scheduleUpdate();
+      updateStickyHeader();
 
       onCleanup(() => {
-        if (rafId) {
-          cancelAnimationFrame(rafId);
-        }
-        scrollTarget.removeEventListener('scroll', scheduleUpdate);
-        window.removeEventListener('resize', scheduleUpdate);
+        scrollTarget.removeEventListener('scroll', updateStickyHeader);
+        window.removeEventListener('resize', updateStickyHeader);
         ro?.disconnect();
         resetThead();
       });

@@ -1165,7 +1165,7 @@ describe('RoutesTableComponent focused edit mode', () => {
     ]);
   });
 
-  it('translates thead to stay sticky under outer scroll container on desktop and mobile', async () => {
+  it('translates thead synchronously on outer scroll container on desktop and mobile', async () => {
     const fixture = TestBed.createComponent(RoutesTableComponent);
     fixture.componentRef.setInput('data', [createMockRow(1, 15, true)]);
     fixture.componentRef.setInput('isMobile', false);
@@ -1199,7 +1199,6 @@ describe('RoutesTableComponent focused edit mode', () => {
     });
 
     window.dispatchEvent(new Event('scroll'));
-    await new Promise((resolve) => setTimeout(resolve, 30));
 
     expect(theadEl.style.transform).toBe('translate3d(0, 120px, 0)');
     expect(theadEl.style.zIndex).toBe('30');
@@ -1208,7 +1207,6 @@ describe('RoutesTableComponent focused edit mode', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     window.dispatchEvent(new Event('scroll'));
-    await new Promise((resolve) => setTimeout(resolve, 30));
 
     expect(theadEl.style.transform).toBe('translate3d(0, 120px, 0)');
     expect(theadEl.style.zIndex).toBe('30');
