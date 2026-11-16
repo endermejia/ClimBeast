@@ -122,9 +122,8 @@ import { EmptyStateComponent } from '../ui/empty-state';
         @let isMobile = this.isMobile();
         <div
           #stickyHeaderScroll
-          class="sticky z-30 w-full overflow-x-auto no-scrollbar bg-(--tui-background-base)"
+          class="sticky z-30 w-full overflow-x-hidden bg-(--tui-background-base)"
           [style.top.px]="stickyTopOffset()"
-          (scroll.zoneless)="onStickyHeaderScroll()"
         >
           <table
             tuiTable
@@ -1740,22 +1739,10 @@ export class RoutesTableComponent {
   protected onScroll(event: Event): void {
     const target = event.target as HTMLElement;
     const stickyEl = this.stickyHeaderScroll()?.nativeElement;
-    if (stickyEl && Math.abs(stickyEl.scrollLeft - target.scrollLeft) > 0.5) {
+    if (stickyEl) {
       stickyEl.scrollLeft = target.scrollLeft;
     }
     this.updateStuck(target);
-  }
-
-  protected onStickyHeaderScroll(): void {
-    const stickyEl = this.stickyHeaderScroll()?.nativeElement;
-    const scrollbarEl = this.scrollbar()?.nativeElement;
-    if (
-      stickyEl &&
-      scrollbarEl &&
-      Math.abs(scrollbarEl.scrollLeft - stickyEl.scrollLeft) > 0.5
-    ) {
-      scrollbarEl.scrollLeft = stickyEl.scrollLeft;
-    }
   }
 
   private updateFromHost(): void {
