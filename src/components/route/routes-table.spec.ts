@@ -1165,50 +1165,32 @@ describe('RoutesTableComponent focused edit mode', () => {
     ]);
   });
 
-  it('translates thead synchronously on outer scroll container on desktop and mobile', async () => {
+  it('renders a pure CSS sticky header container above tui-scrollbar without JS scroll transform', () => {
     const fixture = TestBed.createComponent(RoutesTableComponent);
     fixture.componentRef.setInput('data', [createMockRow(1, 15, true)]);
-    fixture.componentRef.setInput('isMobile', false);
+    fixture.componentRef.setInput('columns', [
+      'grade',
+      'route',
+      'ascents',
+      'actions',
+    ]);
+    fixture.componentRef.setInput('isMobile', true);
     fixture.detectChanges();
 
     const hostEl = fixture.nativeElement as HTMLElement;
-    const tableEl = hostEl.querySelector('table') as HTMLTableElement;
-    const theadEl = tableEl.querySelector('thead') as HTMLTableSectionElement;
+    const stickyHeaderEl = hostEl.querySelector(
+      '.sticky.z-30',
+    ) as HTMLElement | null;
+    const bodyTableEl = hostEl.querySelector(
+      'tui-scrollbar table',
+    ) as HTMLTableElement;
+    const bodyTheadEl = bodyTableEl.querySelector(
+      'thead',
+    ) as HTMLTableSectionElement;
 
-    vi.spyOn(tableEl, 'getBoundingClientRect').mockReturnValue({
-      top: -120,
-      bottom: 480,
-      height: 600,
-      left: 0,
-      right: 500,
-      width: 500,
-      x: 0,
-      y: -120,
-      toJSON: () => ({}),
-    });
-    vi.spyOn(theadEl, 'getBoundingClientRect').mockReturnValue({
-      top: 0,
-      bottom: 44,
-      height: 44,
-      left: 0,
-      right: 500,
-      width: 500,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-    });
-
-    window.dispatchEvent(new Event('scroll'));
-
-    expect(theadEl.style.transform).toBe('translate3d(0, 120px, 0)');
-    expect(theadEl.style.zIndex).toBe('30');
-
-    fixture.componentRef.setInput('isMobile', true);
-    fixture.detectChanges();
-    await fixture.whenStable();
-    window.dispatchEvent(new Event('scroll'));
-
-    expect(theadEl.style.transform).toBe('translate3d(0, 120px, 0)');
-    expect(theadEl.style.zIndex).toBe('30');
+    expect(stickyHeaderEl).not.toBeNull();
+    expect(stickyHeaderEl?.querySelectorAll('th').length).toBeGreaterThan(0);
+    expect(bodyTheadEl.classList.contains('invisible')).toBe(true);
+    expect(bodyTheadEl.style.transform).toBe('');
   });
 });

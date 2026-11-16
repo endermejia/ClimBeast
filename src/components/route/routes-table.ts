@@ -83,6 +83,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
     EmptyStateComponent,
     FormsModule,
     GradeComponent,
+    NgTemplateOutlet,
     RouterLink,
     TranslatePipe,
     TuiBadge,
@@ -114,22 +115,23 @@ import { EmptyStateComponent } from '../ui/empty-state';
     TuiTableHead,
     TuiTableCell,
     TuiTableSortPipe,
-    NgTemplateOutlet,
   ],
   template: `
     @if (data(); as d) {
       @if (d.length > 0) {
         @let isMobile = this.isMobile();
-        <tui-scrollbar
-          #scrollbar
-          class="grow min-h-0 w-full overflow-x-auto no-scrollbar"
-          (scroll.zoneless)="onScroll($event)"
+        <div
+          #stickyHeaderScroll
+          class="sticky z-30 w-full overflow-x-auto no-scrollbar bg-(--tui-background-base)"
+          [style.top.px]="stickyTopOffset()"
+          (scroll.zoneless)="onStickyHeaderScroll()"
         >
           <table
-            #table
             tuiTable
             [size]="isMobile ? 's' : 'm'"
-            class="w-full min-w-max"
+            class="table-fixed"
+            [style.width.px]="stickyTableWidth() || null"
+            [class.w-full]="!stickyTableWidth()"
             [class.table-stuck-left]="isStuckLeft()"
             [class.table-stuck-right]="isStuckRight()"
             [columns]="visibleColumns()"
@@ -137,6 +139,11 @@ import { EmptyStateComponent } from '../ui/empty-state';
             [sorter]="currentSorter"
             (sortChange)="onSortChange($event)"
           >
+            <colgroup>
+              @for (col of visibleColumns(); track col; let idx = $index) {
+                <col [style.width.px]="stickyColWidths()[idx] || null" />
+              }
+            </colgroup>
             <thead tuiThead>
               <tr tuiThGroup>
                 @for (col of visibleColumns(); track col) {
@@ -176,6 +183,82 @@ import { EmptyStateComponent } from '../ui/empty-state';
                               (isEditing() ? 'stopEditing' : 'edit') | translate
                             "
                             (click.zoneless)="toggleEditing()"
+                          >
+                            {{
+                              (isEditing() ? 'stopEditing' : 'edit') | translate
+                            }}
+                          </button>
+                        }
+                      } @else if (col === 'grade') {
+                        {{ 'gradeShort' | translate }}
+                      } @else {
+                        {{ col | translate }}
+                      }
+                    </div>
+                  </th>
+                }
+              </tr>
+            </thead>
+          </table>
+        </div>
+
+        <tui-scrollbar
+          #scrollbar
+          class="grow min-h-0 w-full overflow-x-auto no-scrollbar"
+          [style.margin-top.px]="theadHeight() ? -theadHeight() : null"
+          (scroll.zoneless)="onScroll($event)"
+        >
+          <table
+            #table
+            tuiTable
+            [size]="isMobile ? 's' : 'm'"
+            class="w-full min-w-max"
+            [class.table-stuck-left]="isStuckLeft()"
+            [class.table-stuck-right]="isStuckRight()"
+            [columns]="visibleColumns()"
+            [direction]="currentDirection"
+            [sorter]="currentSorter"
+            (sortChange)="onSortChange($event)"
+          >
+            <thead
+              tuiThead
+              class="invisible pointer-events-none"
+              aria-hidden="true"
+            >
+              <tr tuiThGroup>
+                @for (col of visibleColumns(); track col) {
+                  <th
+                    *tuiHead="col"
+                    tuiTh
+                    [attr.data-col]="col"
+                    [sorter]="sorters[col]"
+                    [class.text-center]="col === 'actions'"
+                    [class.sticky-col-left]="col === 'grade'"
+                    [class.sticky-col-right]="col === 'actions'"
+                    [class.w-16!]="col === 'height'"
+                    [class.w-20!]="col === 'ascents'"
+                    [class.w-24!]="col === 'rating' || col === 'color'"
+                    [class.w-64!]="col === 'equippers'"
+                    [class.min-w-36!]="col === 'route'"
+                    [class.min-w-28!]="col === 'topo'"
+                    [class.w-min!]="col === 'grade' || col === 'actions'"
+                    class="whitespace-nowrap"
+                  >
+                    <div
+                      class="flex items-center gap-1 w-full"
+                      [class.justify-center]="col === 'actions'"
+                    >
+                      @if (col === 'actions') {
+                        @if (canEditAny()) {
+                          <button
+                            appearance="action-grayscale"
+                            size="xs"
+                            tuiIconButton
+                            type="button"
+                            class="rounded-full!"
+                            [iconStart]="
+                              isEditing() ? '@tui.pencil-off' : '@tui.pencil'
+                            "
                           >
                             {{
                               (isEditing() ? 'stopEditing' : 'edit') | translate
@@ -747,9 +830,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
       isolation: isolate;
       z-index: 0;
     }
-    thead[tuiThead] {
-      will-change: transform;
-    }
     thead[tuiThead] th {
       background: var(--tui-background-base);
     }
@@ -1295,6 +1375,9 @@ export class RoutesTableComponent {
   private readonly scrollbar = viewChild('scrollbar', {
     read: ElementRef<HTMLElement>,
   });
+  private readonly stickyHeaderScroll = viewChild('stickyHeaderScroll', {
+    read: ElementRef<HTMLElement>,
+  });
   private readonly table = viewChild('table', {
     read: ElementRef<HTMLElement>,
   });
@@ -1304,6 +1387,10 @@ export class RoutesTableComponent {
   private destroyed = false;
   protected readonly isStuckLeft = signal(false);
   protected readonly isStuckRight = signal(false);
+  protected readonly stickyColWidths = signal<number[]>([]);
+  protected readonly stickyTableWidth = signal<number>(0);
+  protected readonly theadHeight = signal<number>(0);
+  protected readonly stickyTopOffset = signal<number>(0);
 
   constructor() {
     this.destroyRef.onDestroy(() => {
@@ -1354,80 +1441,45 @@ export class RoutesTableComponent {
       const tableEl = this.table()?.nativeElement;
       if (!tableEl || typeof window === 'undefined') return;
 
-      const theadEl = tableEl.querySelector(
-        'thead',
-      ) as HTMLTableSectionElement | null;
-      if (!theadEl) return;
-
-      const resetThead = () => {
-        theadEl.style.position = '';
-        theadEl.style.zIndex = '';
-        theadEl.style.transform = '';
-      };
-
-      // Re-run when mobile/desktop layout changes so scrollContainer updates across breakpoints
+      // Re-run when columns, data, or mobile/desktop layout change
+      this.visibleColumns();
       this.isMobile();
+      this.data();
 
       const scrollContainer = this.findVerticalScrollAncestor(
         this.hostEl.nativeElement.parentElement,
       );
 
-      const updateStickyHeader = () => {
-        const containerTop = scrollContainer
-          ? scrollContainer.getBoundingClientRect().top
-          : 0;
-        let effectiveTop = containerTop;
+      const syncMetrics = () => {
+        if (this.destroyed) return;
+        const theadEl = tableEl.querySelector('thead');
+        if (theadEl) {
+          const ths = Array.from(
+            theadEl.querySelectorAll('th'),
+          ) as HTMLElement[];
+          const widths = ths.map((th) => th.getBoundingClientRect().width);
+          this.stickyColWidths.set(widths);
+          this.stickyTableWidth.set(tableEl.getBoundingClientRect().width);
+          this.theadHeight.set(theadEl.getBoundingClientRect().height);
+        }
 
         const stickySibling = this.findStickySiblingAbove(scrollContainer);
-        if (stickySibling) {
-          const sibRect = stickySibling.getBoundingClientRect();
-          if (
-            sibRect.top <= containerTop + 1 &&
-            sibRect.bottom > containerTop
-          ) {
-            effectiveTop = Math.max(effectiveTop, sibRect.bottom);
-          }
-        }
-
-        const tableRect = tableEl.getBoundingClientRect();
-        const theadRect = theadEl.getBoundingClientRect();
-        const maxOffset = Math.max(0, tableRect.height - theadRect.height);
-        const offset = Math.max(
-          0,
-          Math.min(effectiveTop - tableRect.top, maxOffset),
+        this.stickyTopOffset.set(
+          stickySibling ? stickySibling.getBoundingClientRect().height : 0,
         );
-
-        if (offset > 0.5) {
-          theadEl.style.position = 'relative';
-          theadEl.style.zIndex = '30';
-          theadEl.style.transform = `translate3d(0, ${offset}px, 0)`;
-        } else {
-          resetThead();
-        }
       };
-
-      const scrollTarget: EventTarget = scrollContainer ?? window;
-      scrollTarget.addEventListener('scroll', updateStickyHeader, {
-        passive: true,
-      });
-      window.addEventListener('resize', updateStickyHeader, { passive: true });
 
       const ro =
         typeof ResizeObserver !== 'undefined'
-          ? new ResizeObserver(updateStickyHeader)
+          ? new ResizeObserver(syncMetrics)
           : null;
       ro?.observe(tableEl);
-      if (scrollContainer) {
-        ro?.observe(scrollContainer);
-      }
-
-      updateStickyHeader();
+      window.addEventListener('resize', syncMetrics, { passive: true });
+      requestAnimationFrame(syncMetrics);
 
       onCleanup(() => {
-        scrollTarget.removeEventListener('scroll', updateStickyHeader);
-        window.removeEventListener('resize', updateStickyHeader);
         ro?.disconnect();
-        resetThead();
+        window.removeEventListener('resize', syncMetrics);
       });
     });
 
@@ -1686,7 +1738,24 @@ export class RoutesTableComponent {
   }
 
   protected onScroll(event: Event): void {
-    this.updateStuck(event.target as HTMLElement);
+    const target = event.target as HTMLElement;
+    const stickyEl = this.stickyHeaderScroll()?.nativeElement;
+    if (stickyEl && Math.abs(stickyEl.scrollLeft - target.scrollLeft) > 0.5) {
+      stickyEl.scrollLeft = target.scrollLeft;
+    }
+    this.updateStuck(target);
+  }
+
+  protected onStickyHeaderScroll(): void {
+    const stickyEl = this.stickyHeaderScroll()?.nativeElement;
+    const scrollbarEl = this.scrollbar()?.nativeElement;
+    if (
+      stickyEl &&
+      scrollbarEl &&
+      Math.abs(scrollbarEl.scrollLeft - stickyEl.scrollLeft) > 0.5
+    ) {
+      scrollbarEl.scrollLeft = stickyEl.scrollLeft;
+    }
   }
 
   private updateFromHost(): void {
