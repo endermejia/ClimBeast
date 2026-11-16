@@ -141,7 +141,6 @@ export class IndoorRoutesTableComponent {
       'topo',
       'color',
       'equippers',
-      'rating',
       'ascents',
       'actions',
     ];

@@ -1165,51 +1165,60 @@ describe('RoutesTableComponent focused edit mode', () => {
     ]);
   });
 
-  it('translates thead synchronously on outer scroll container on desktop and mobile', async () => {
+  it('uses pure CSS sticky headers without tui-scrollbar or JS scroll transforms', () => {
     const fixture = TestBed.createComponent(RoutesTableComponent);
     fixture.componentRef.setInput('data', [createMockRow(1, 15, true)]);
+    fixture.componentRef.setInput('columns', [
+      'grade',
+      'route',
+      'crag',
+      'ascents',
+      'actions',
+    ]);
     fixture.componentRef.setInput('isMobile', false);
     fixture.detectChanges();
 
     const hostEl = fixture.nativeElement as HTMLElement;
-    const tableEl = hostEl.querySelector('table') as HTMLTableElement;
-    const theadEl = tableEl.querySelector('thead') as HTMLTableSectionElement;
-
-    vi.spyOn(tableEl, 'getBoundingClientRect').mockReturnValue({
-      top: -120,
-      bottom: 480,
-      height: 600,
-      left: 0,
-      right: 500,
-      width: 500,
-      x: 0,
-      y: -120,
-      toJSON: () => ({}),
-    });
-    vi.spyOn(theadEl, 'getBoundingClientRect').mockReturnValue({
-      top: 0,
-      bottom: 44,
-      height: 44,
-      left: 0,
-      right: 500,
-      width: 500,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-    });
-
-    window.dispatchEvent(new Event('scroll'));
-
-    expect(theadEl.style.transform).toBe('translate3d(0, 120px, 0)');
-    expect(theadEl.style.zIndex).toBe('30');
+    expect(hostEl.querySelector('tui-scrollbar')).toBeNull();
+    const theadEl = hostEl.querySelector('thead') as HTMLTableSectionElement;
+    expect(theadEl.style.transform).toBe('');
+    expect(hostEl.querySelectorAll('thead th').length).toBe(5);
 
     fixture.componentRef.setInput('isMobile', true);
     fixture.detectChanges();
-    await fixture.whenStable();
-    window.dispatchEvent(new Event('scroll'));
+    const mobileHeaders = Array.from(hostEl.querySelectorAll('thead th')).map(
+      (th) => th.getAttribute('data-col'),
+    );
+    expect(mobileHeaders).toEqual(['grade', 'route', 'ascents', 'actions']);
+  });
 
-    expect(theadEl.style.transform).toBe('translate3d(0, 120px, 0)');
-    expect(theadEl.style.zIndex).toBe('30');
+  it('renders rating under route name and omits area name when showLocation is true', () => {
+    const fixture = TestBed.createComponent(RoutesTableComponent);
+    const row = createMockRow(1, 15, false);
+    row.rating = 4.2;
+    row.area_name = 'Chulilla';
+    row.area_slug = 'chulilla';
+    row.crag_name = 'El Pati';
+    row.crag_slug = 'el-pati';
+    fixture.componentRef.setInput('data', [row]);
+    fixture.componentRef.setInput('columns', ['route', 'crag']);
+    fixture.componentRef.setInput('showLocation', true);
+    fixture.componentRef.setInput('isMobile', false);
+    fixture.detectChanges();
+
+    const routeCell = (fixture.nativeElement as HTMLElement).querySelector(
+      'td[data-col="route"]',
+    ) as HTMLElement;
+    expect(routeCell.textContent).toContain('4.2');
+    expect(routeCell.textContent).not.toContain('Chulilla');
+
+    fixture.componentRef.setInput('isMobile', true);
+    fixture.detectChanges();
+    const mobileText = routeCell.textContent ?? '';
+    expect(mobileText.indexOf('El Pati')).toBeGreaterThan(-1);
+    expect(mobileText.indexOf('El Pati')).toBeLessThan(
+      mobileText.indexOf('4.2'),
+    );
   });
 
   it('renders comma separators between multiple equippers in the default cell view', () => {

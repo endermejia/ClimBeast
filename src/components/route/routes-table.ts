@@ -1,4 +1,4 @@
-import { NgTemplateOutlet } from '@angular/common';
+import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectorRef,
   Component,
@@ -37,12 +37,10 @@ import {
   TuiDataList,
   TuiDropdown,
   TuiFilterByInputPipe,
-  TuiGroup,
   TuiHint,
   TuiIcon,
   TuiInput,
   TuiLink,
-  TuiScrollbar,
 } from '@taiga-ui/core';
 import {
   TuiBadge,
@@ -52,7 +50,6 @@ import {
   TuiInputNumber,
   TuiMultiSelect,
   TuiPin,
-  TuiRating,
   TuiSelect,
 } from '@taiga-ui/kit';
 
@@ -80,6 +77,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
   imports: [
     AscentCountDirective,
     ButtonAscentTypeComponent,
+    DecimalPipe,
     EmptyStateComponent,
     FormsModule,
     GradeComponent,
@@ -94,7 +92,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
     TuiDataListWrapper,
     TuiDropdown,
     TuiFilterByInputPipe,
-    TuiGroup,
     TuiHint,
     TuiIcon,
     TuiInput,
@@ -103,8 +100,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
     TuiLink,
     TuiMultiSelect,
     TuiPin,
-    TuiRating,
-    TuiScrollbar,
     TuiSelect,
     TuiTable,
     TuiTableTbody,
@@ -120,18 +115,12 @@ import { EmptyStateComponent } from '../ui/empty-state';
     @if (data(); as d) {
       @if (d.length > 0) {
         @let isMobile = this.isMobile();
-        <tui-scrollbar
-          #scrollbar
-          class="grow min-h-0 w-full overflow-x-auto no-scrollbar"
-          (scroll.zoneless)="onScroll($event)"
-        >
+        <div class="w-full min-w-0">
           <table
             #table
             tuiTable
             [size]="isMobile ? 's' : 'm'"
-            class="w-full min-w-max"
-            [class.table-stuck-left]="isStuckLeft()"
-            [class.table-stuck-right]="isStuckRight()"
+            class="w-full"
             [columns]="visibleColumns()"
             [direction]="currentDirection"
             [sorter]="currentSorter"
@@ -145,21 +134,19 @@ import { EmptyStateComponent } from '../ui/empty-state';
                     tuiTh
                     [attr.data-col]="col"
                     [sorter]="sorters[col]"
-                    [class.text-center]="col === 'actions'"
-                    [class.sticky-col-left]="col === 'grade'"
-                    [class.sticky-col-right]="col === 'actions'"
-                    [class.w-16!]="col === 'height'"
-                    [class.w-20!]="col === 'ascents'"
-                    [class.w-24!]="col === 'rating' || col === 'color'"
-                    [class.w-64!]="col === 'equippers'"
-                    [class.min-w-36!]="col === 'route'"
-                    [class.min-w-28!]="col === 'topo'"
-                    [class.w-min!]="col === 'grade' || col === 'actions'"
-                    class="whitespace-nowrap"
+                    [style.top.px]="stickyTopOffset()"
+                    [class.text-center]="col === 'actions' || col === 'ascents'"
+                    [class.w-12!]="
+                      col === 'grade' || col === 'actions' || col === 'ascents'
+                    "
+                    [class.w-14!]="col === 'height'"
+                    [class.w-20!]="col === 'color'"
                   >
                     <div
                       class="flex items-center gap-1 w-full"
-                      [class.justify-center]="col === 'actions'"
+                      [class.justify-center]="
+                        col === 'actions' || col === 'ascents'
+                      "
                     >
                       @if (col === 'actions') {
                         @if (canEditAny()) {
@@ -184,6 +171,14 @@ import { EmptyStateComponent } from '../ui/empty-state';
                         }
                       } @else if (col === 'grade') {
                         {{ 'gradeShort' | translate }}
+                      } @else if (col === 'ascents') {
+                        <tui-icon
+                          icon="@tui.circle-check"
+                          class="w-4! h-4!"
+                          [style.font-size.rem]="1"
+                          [tuiHint]="'ascents' | translate"
+                          [attr.aria-label]="'ascents' | translate"
+                        />
                       } @else {
                         {{ col | translate }}
                       }
@@ -225,9 +220,6 @@ import { EmptyStateComponent } from '../ui/empty-state';
                       [attr.data-row-key]="item.key"
                       [attr.tabindex]="isCellActive ? -1 : null"
                       [class.text-right]="col === 'actions'"
-                      [class.sticky-col-left]="col === 'grade'"
-                      [class.sticky-col-right]="col === 'actions'"
-                      [class.w-min!]="col === 'grade' || col === 'actions'"
                       [class.cell-selected]="isCellActive"
                       [class.cursor-pointer]="
                         isEditing() &&
@@ -280,7 +272,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                         ? 'var(--tui-status-negative)'
                                         : ''
                                     "
-                                    class="self-start font-bold text-base truncate max-w-full w-fit block"
+                                    class="self-start font-bold! text-base truncate max-w-full w-fit block"
                                   >
                                     {{ item.route || ('route' | translate) }}
                                   </a>
@@ -295,23 +287,150 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                     </span>
                                   }
                                 </div>
-                                @if (
-                                  showLocation() && !isMobile && !item.isIndoor
-                                ) {
+                                @if (item.rating > 0 || isMobile) {
                                   <div
-                                    class="text-xs opacity-70 flex gap-1 items-center whitespace-nowrap"
+                                    class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs opacity-75 mt-0.5 min-w-0"
                                   >
-                                    <a
-                                      tuiLink
-                                      [routerLink]="
-                                        isEditing()
-                                          ? null
-                                          : ['/area', item.area_slug]
-                                      "
-                                    >
-                                      {{ item.area_name }}
-                                    </a>
+                                    @if (isMobile) {
+                                      @if (
+                                        showLocation() &&
+                                        item.crag_name &&
+                                        !item.isIndoor
+                                      ) {
+                                        <a
+                                          tuiLink
+                                          class="truncate max-w-full"
+                                          [routerLink]="
+                                            isEditing()
+                                              ? null
+                                              : [
+                                                  '/area',
+                                                  item.area_slug,
+                                                  item.crag_slug || 'general',
+                                                ]
+                                          "
+                                        >
+                                          {{ item.crag_name }}
+                                        </a>
+                                      }
+                                      @if (item.isIndoor && item.color) {
+                                        <span
+                                          class="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+                                          [style.backgroundColor]="item.color"
+                                        ></span>
+                                      }
+                                      @if (item.height) {
+                                        @if (
+                                          (showLocation() &&
+                                            item.crag_name &&
+                                            !item.isIndoor) ||
+                                          (item.isIndoor && item.color)
+                                        ) {
+                                          <span class="opacity-50">·</span>
+                                        }
+                                        <span>{{ item.height }}m</span>
+                                      }
+                                    }
+                                    @if (item.rating > 0) {
+                                      @if (
+                                        isMobile &&
+                                        ((showLocation() &&
+                                          item.crag_name &&
+                                          !item.isIndoor) ||
+                                          (item.isIndoor && item.color) ||
+                                          item.height)
+                                      ) {
+                                        <span class="opacity-50">·</span>
+                                      }
+                                      <span
+                                        class="inline-flex items-center gap-0.5 font-medium"
+                                      >
+                                        <span>{{
+                                          item.rating | number: '1.0-1'
+                                        }}</span>
+                                        <tui-icon
+                                          icon="@tui.star"
+                                          class="w-3! h-3! text-amber-500"
+                                          [style.font-size.rem]="0.75"
+                                        />
+                                      </span>
+                                    }
                                   </div>
+                                  @if (
+                                    isMobile &&
+                                    (item.topos.length > 0 ||
+                                      item.equippers.length > 0)
+                                  ) {
+                                    <div
+                                      class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs opacity-65 mt-0.5 min-w-0"
+                                    >
+                                      @if (item.topos.length > 0) {
+                                        <span
+                                          class="inline-flex flex-wrap items-center gap-x-1"
+                                        >
+                                          @for (
+                                            t of item.topos;
+                                            track t.id;
+                                            let last = $last
+                                          ) {
+                                            <span
+                                              class="inline-flex items-center"
+                                            >
+                                              @if (isEditing() || !t.link) {
+                                                <span>{{ t.name }}</span>
+                                              } @else {
+                                                <a
+                                                  tuiLink
+                                                  [routerLink]="t.link"
+                                                  class="truncate max-w-full"
+                                                >
+                                                  {{ t.name }}
+                                                </a>
+                                              }
+                                              @if (!last) {
+                                                <span>,</span>
+                                              }
+                                            </span>
+                                          }
+                                        </span>
+                                      }
+                                      @if (
+                                        item.topos.length > 0 &&
+                                        item.equippers.length > 0
+                                      ) {
+                                        <span class="opacity-50">·</span>
+                                      }
+                                      @if (item.equippers.length > 0) {
+                                        <span
+                                          class="inline-flex flex-wrap items-center gap-x-1"
+                                        >
+                                          @for (
+                                            e of item.equippers;
+                                            track e.id;
+                                            let last = $last
+                                          ) {
+                                            <span
+                                              class="inline-flex items-center"
+                                            >
+                                              <a
+                                                tuiLink
+                                                [routerLink]="
+                                                  isEditing()
+                                                    ? null
+                                                    : ['/equipper', e.id]
+                                                "
+                                              >
+                                                {{ e.name }}
+                                              </a>
+                                              @if (!last) {
+                                                <span>,</span>
+                                              }
+                                            </span>
+                                          }
+                                        </span>
+                                      }
+                                    </div>
+                                  }
                                 }
                               </div>
                             }
@@ -420,18 +539,8 @@ import { EmptyStateComponent } from '../ui/empty-state';
                             </div>
                           </div>
                         }
-                        @case ('rating') {
-                          <div tuiCell size="m">
-                            <tui-rating
-                              [max]="5"
-                              [ngModel]="item.rating"
-                              [readOnly]="true"
-                              [style.font-size.rem]="1"
-                            />
-                          </div>
-                        }
                         @case ('ascents') {
-                          <div tuiCell size="m">
+                          <div tuiCell size="m" class="justify-center">
                             <span [appAscentCount]="item.ascents"></span>
                           </div>
                         }
@@ -487,7 +596,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                       ? selectedToposMap[item.key] || item.topos
                                       : item.topos;
                                   @if (displayTopos.length > 0) {
-                                    <div tuiGroup [collapsed]="true">
+                                    <div class="flex flex-wrap gap-1">
                                       @for (t of displayTopos; track t.id) {
                                         @if (isEditing() || !t.link) {
                                           <span
@@ -748,7 +857,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
               }
             </tbody>
           </table>
-        </tui-scrollbar>
+        </div>
       } @else {
         <app-empty-state icon="@tui.list" />
       }
@@ -760,10 +869,9 @@ import { EmptyStateComponent } from '../ui/empty-state';
       isolation: isolate;
       z-index: 0;
     }
-    thead[tuiThead] {
-      will-change: transform;
-    }
     thead[tuiThead] th {
+      position: sticky;
+      z-index: 30;
       background: var(--tui-background-base);
     }
     td.cell-selected {
@@ -1275,7 +1383,12 @@ export class RoutesTableComponent {
   protected readonly openActionId = signal<string | null>(null);
 
   protected readonly visibleColumns = computed(() => {
-    return this.columns();
+    const cols = this.columns();
+    if (!this.isMobile()) {
+      return cols;
+    }
+    const mobileCols = new Set(['grade', 'route', 'ascents', 'actions']);
+    return cols.filter((c) => mobileCols.has(c));
   });
 
   protected onBlurHeight(item: RoutesTableRow, event: Event): void {
@@ -1305,9 +1418,6 @@ export class RoutesTableComponent {
 
   private isHandlingBackspace = false;
 
-  private readonly scrollbar = viewChild('scrollbar', {
-    read: ElementRef<HTMLElement>,
-  });
   private readonly table = viewChild('table', {
     read: ElementRef<HTMLElement>,
   });
@@ -1315,8 +1425,7 @@ export class RoutesTableComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly hostEl = inject<ElementRef<HTMLElement>>(ElementRef);
   private destroyed = false;
-  protected readonly isStuckLeft = signal(false);
-  protected readonly isStuckRight = signal(false);
+  protected readonly stickyTopOffset = signal(0);
 
   constructor() {
     this.destroyRef.onDestroy(() => {
@@ -1332,7 +1441,6 @@ export class RoutesTableComponent {
       this.data();
       this.visibleColumns();
       requestAnimationFrame(() => {
-        this.updateFromHost();
         if (this.isEditing() && this.selectedCell()) {
           const tableEl = this.table()?.nativeElement;
           if (
@@ -1347,100 +1455,38 @@ export class RoutesTableComponent {
       });
     });
 
-    effect(() => {
-      const scrollbarEl = this.scrollbar()?.nativeElement;
-      const tableEl = this.table()?.nativeElement;
-      if (typeof ResizeObserver === 'undefined') {
-        if (scrollbarEl || tableEl) {
-          requestAnimationFrame(() => this.updateFromHost());
-        }
-        return;
-      }
-      const ro = new ResizeObserver(() => this.updateFromHost());
-      if (scrollbarEl) ro.observe(scrollbarEl);
-      if (tableEl) ro.observe(tableEl);
-      requestAnimationFrame(() => this.updateFromHost());
-      this.destroyRef.onDestroy(() => ro.disconnect());
-    });
-
     effect((onCleanup) => {
       const tableEl = this.table()?.nativeElement;
       if (!tableEl || typeof window === 'undefined') return;
 
-      const theadEl = tableEl.querySelector(
-        'thead',
-      ) as HTMLTableSectionElement | null;
-      if (!theadEl) return;
-
-      const resetThead = () => {
-        theadEl.style.position = '';
-        theadEl.style.zIndex = '';
-        theadEl.style.transform = '';
-      };
-
-      // Re-run when mobile/desktop layout changes so scrollContainer updates across breakpoints
+      // Re-run when mobile/desktop layout changes so scrollContainer/stickySibling updates
       this.isMobile();
 
       const scrollContainer = this.findVerticalScrollAncestor(
         this.hostEl.nativeElement.parentElement,
       );
+      const stickySibling = this.findStickySiblingAbove(scrollContainer);
 
-      const updateStickyHeader = () => {
-        const containerTop = scrollContainer
-          ? scrollContainer.getBoundingClientRect().top
-          : 0;
-        let effectiveTop = containerTop;
-
-        const stickySibling = this.findStickySiblingAbove(scrollContainer);
-        if (stickySibling) {
-          const sibRect = stickySibling.getBoundingClientRect();
-          if (
-            sibRect.top <= containerTop + 1 &&
-            sibRect.bottom > containerTop
-          ) {
-            effectiveTop = Math.max(effectiveTop, sibRect.bottom);
-          }
-        }
-
-        const tableRect = tableEl.getBoundingClientRect();
-        const theadRect = theadEl.getBoundingClientRect();
-        const maxOffset = Math.max(0, tableRect.height - theadRect.height);
-        const offset = Math.max(
-          0,
-          Math.min(effectiveTop - tableRect.top, maxOffset),
+      const updateOffset = () => {
+        if (this.destroyed) return;
+        this.stickyTopOffset.set(
+          stickySibling ? stickySibling.getBoundingClientRect().height : 0,
         );
-
-        if (offset > 0.5) {
-          theadEl.style.position = 'relative';
-          theadEl.style.zIndex = '30';
-          theadEl.style.transform = `translate3d(0, ${offset}px, 0)`;
-        } else {
-          resetThead();
-        }
       };
 
-      const scrollTarget: EventTarget = scrollContainer ?? window;
-      scrollTarget.addEventListener('scroll', updateStickyHeader, {
-        passive: true,
-      });
-      window.addEventListener('resize', updateStickyHeader, { passive: true });
-
       const ro =
-        typeof ResizeObserver !== 'undefined'
-          ? new ResizeObserver(updateStickyHeader)
+        typeof ResizeObserver !== 'undefined' && stickySibling
+          ? new ResizeObserver(updateOffset)
           : null;
-      ro?.observe(tableEl);
-      if (scrollContainer) {
-        ro?.observe(scrollContainer);
+      if (stickySibling) {
+        ro?.observe(stickySibling);
       }
-
-      updateStickyHeader();
+      window.addEventListener('resize', updateOffset, { passive: true });
+      updateOffset();
 
       onCleanup(() => {
-        scrollTarget.removeEventListener('scroll', updateStickyHeader);
-        window.removeEventListener('resize', updateStickyHeader);
         ro?.disconnect();
-        resetThead();
+        window.removeEventListener('resize', updateOffset);
       });
     });
 
@@ -1696,36 +1742,6 @@ export class RoutesTableComponent {
     }
 
     return false;
-  }
-
-  protected onScroll(event: Event): void {
-    this.updateStuck(event.target as HTMLElement);
-  }
-
-  private updateFromHost(): void {
-    const el = this.scrollbar()?.nativeElement;
-    if (el) this.updateStuck(el);
-  }
-
-  private updateStuck(el: HTMLElement): void {
-    const { scrollLeft, scrollWidth, clientWidth } = el;
-    const maxScroll = scrollWidth - clientWidth;
-
-    if (maxScroll <= 1) {
-      if (this.isStuckLeft()) this.isStuckLeft.set(false);
-      if (this.isStuckRight()) this.isStuckRight.set(false);
-      return;
-    }
-
-    const stuckLeft = scrollLeft > 2;
-    const stuckRight = maxScroll - scrollLeft > 2;
-
-    if (this.isStuckLeft() !== stuckLeft) {
-      this.isStuckLeft.set(stuckLeft);
-    }
-    if (this.isStuckRight() !== stuckRight) {
-      this.isStuckRight.set(stuckRight);
-    }
   }
 
   protected readonly indoorRouteColors = INDOOR_ROUTE_COLORS;

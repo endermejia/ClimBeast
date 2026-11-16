@@ -155,7 +155,6 @@ export class OutdoorRoutesTableComponent {
       'topo',
       'equippers',
       'height',
-      'rating',
       'ascents',
       'actions',
     ];
