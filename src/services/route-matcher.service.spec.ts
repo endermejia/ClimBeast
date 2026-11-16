@@ -124,4 +124,43 @@ describe('RouteMatcherService', () => {
     expect(result.skipped).toBe(1);
     expect(result.payload).toHaveLength(0);
   });
+
+  it('deduplicates CSV ascent when route name slug matches an existing eight_anu_route_slug even if unresolved', async () => {
+    const existingKeys = new Set<string>([
+      '2019-08-25|turbo-diesel-aereo',
+      '2019-08-25|turbo-diesel',
+      '2019-08-25|8a:turbo-diesel',
+      '2019-08-25|8a:turbo-diesel-el-corredor',
+      '2019-08-25|8a:turbodiesel',
+    ]);
+    vi.spyOn(service, 'getOrLoadExistingAscentKeys').mockResolvedValue(
+      existingKeys,
+    );
+
+    const ascents: EightAnuAscent[] = [
+      {
+        route_boulder: 'ROUTE',
+        name: 'Turbodiesel',
+        location_name: 'Agujas Rojas',
+        sector_name: 'El Corredor',
+        country_code: 'ES',
+        date: '2019-08-25 00:00:00',
+        type: AscentTypes.RP,
+        rating: 0,
+        tries: 1,
+        difficulty: '7a',
+        comment: '',
+        recommended: false,
+        climbing_kind: ClimbingKinds.SPORT,
+      },
+    ];
+
+    const result = await service.deduplicateCsvAscentsAgainstExisting(
+      ascents,
+      new Map(),
+    );
+
+    expect(result.skipped).toBe(1);
+    expect(result.ascents).toHaveLength(0);
+  });
 });

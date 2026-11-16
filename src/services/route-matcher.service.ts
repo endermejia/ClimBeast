@@ -757,12 +757,20 @@ export class RouteMatcherService {
       }
 
       keysToCheck.push(this.buildAscentDedupKey(ascent.date, ascent.name));
+      keysToCheck.push(
+        this.buildAscentDedupKey(ascent.date, slugify(ascent.name), true),
+      );
 
-      const eightAnuSlug = ascent.route_8a_slug || resolved?.eightAnuSlugs?.[0];
-      if (eightAnuSlug) {
+      if (ascent.route_8a_slug) {
         keysToCheck.push(
-          this.buildAscentDedupKey(ascent.date, eightAnuSlug, true),
+          this.buildAscentDedupKey(ascent.date, ascent.route_8a_slug, true),
         );
+      }
+
+      if (resolved?.eightAnuSlugs) {
+        for (const slug8a of resolved.eightAnuSlugs) {
+          keysToCheck.push(this.buildAscentDedupKey(ascent.date, slug8a, true));
+        }
       }
 
       const isDuplicate = keysToCheck.some(
@@ -801,11 +809,18 @@ export class RouteMatcherService {
       keysToCheck.push(
         this.buildAscentDedupKey(ascent.date, ascent.route_slug),
       );
+      keysToCheck.push(
+        this.buildAscentDedupKey(ascent.date, slugify(ascent.route_name), true),
+      );
 
       if (ascent.route_8a_slug) {
         keysToCheck.push(
           this.buildAscentDedupKey(ascent.date, ascent.route_8a_slug, true),
         );
+      }
+
+      for (const slug8a of ascent.eight_anu_route_slugs) {
+        keysToCheck.push(this.buildAscentDedupKey(ascent.date, slug8a, true));
       }
 
       const isDuplicate = keysToCheck.some(
