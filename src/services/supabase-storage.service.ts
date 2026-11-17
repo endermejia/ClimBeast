@@ -50,6 +50,26 @@ export class SupabaseStorageService {
     return `${base}/storage/v1/object/public/${bucket}/${rel}`;
   }
 
+  getCachedTopoSignedUrl(
+    path: string | null | undefined,
+    version?: number,
+  ): string | null {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+
+    const cacheKey = SignedUrlCache.key(
+      'topo-url',
+      path,
+      version ? String(version) : undefined,
+    );
+    const cached = this.signedUrlCache.get(cacheKey);
+    if (cached) return cached.url;
+
+    const lastValidKey = SignedUrlCache.key('topo-last-valid', path);
+    const lastValid = this.signedUrlCache.get(lastValidKey);
+    return lastValid?.url ?? null;
+  }
+
   async getTopoSignedUrl(
     client: SupabaseClient<Database> | null,
     whenReady: () => Promise<void>,

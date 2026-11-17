@@ -358,6 +358,13 @@ export class SupabaseService {
     return this.storageService.getPublicUrl(bucket, path);
   }
 
+  getCachedTopoSignedUrl(
+    path: string | null | undefined,
+    version?: number,
+  ): string | null {
+    return this.storageService.getCachedTopoSignedUrl(path, version);
+  }
+
   async getTopoSignedUrl(
     path: string | null | undefined,
     version?: number,

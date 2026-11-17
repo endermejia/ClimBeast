@@ -205,6 +205,9 @@ export class MockSupabaseService {
       ? `https://mock.supabase.co/storage/v1/object/public/${bucket}/${path}`
       : '';
   }
+  getCachedTopoSignedUrl(path: string | null | undefined): string | null {
+    return path ? `https://mock.url/signed/${path}` : null;
+  }
   async getTopoSignedUrl(path: string | null | undefined): Promise<string> {
     return path ? `https://mock.url/signed/${path}` : '';
   }

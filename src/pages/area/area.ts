@@ -65,9 +65,9 @@ import { VisitedAreasService } from '../../services/visited-areas.service';
 import { AreaRevenuePanelComponent } from '../../components/area/area-revenue-panel';
 import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
 import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
-import { PaywallComponent } from '../../components/paywall/paywall';
 import { OutdoorRoutesTableComponent } from '../../components/route/outdoor-routes-table';
 import { TopoCardComponent } from '../../components/topo/topo-card';
+import { ToposOfflineBarComponent } from '../../components/topo/topos-offline-bar';
 import { GradeComponent } from '../../components/ui/avatar-grade';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { MeteoButtonComponent } from '../../components/ui/meteo-button';
@@ -130,12 +130,12 @@ const PAGE_SIZE = 20;
     LowerCasePipe,
     OfflineNotCachedComponent,
     OutdoorRoutesTableComponent,
-    PaywallComponent,
     PlaceCardComponent,
     ReactiveFormsModule,
     RouterLink,
     SectionHeaderComponent,
     TopoCardComponent,
+    ToposOfflineBarComponent,
     TranslatePipe,
     TuiAppearance,
     TuiAvatar,
@@ -196,7 +196,7 @@ const PAGE_SIZE = 20;
   template: `
     <tui-scrollbar class="w-full h-full min-h-0 min-w-0">
       <section
-        class="w-full min-w-0 max-w-[1600px] mx-auto pt-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden lg:pb-2"
+        class="w-full min-w-0 max-w-[1600px] mx-auto pt-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden pb-2"
       >
         <!-- Left Column -->
         <div
@@ -701,13 +701,27 @@ const PAGE_SIZE = 20;
                       canAreaAdmin ||
                       details?.is_public ||
                       details?.purchased;
+                    @let isSecret =
+                      !hasAccess &&
+                      details &&
+                      !details.is_public &&
+                      (details.price === null || details.price === 0);
 
-                    @if (hasAccess) {
+                    @if (!isSecret) {
+                      @if (hasAccess && outdoorData.areaTopos().length > 0) {
+                        <app-topos-offline-bar
+                          class="block mb-3"
+                          [topos]="outdoorData.areaTopos()"
+                          [scopeKey]="'area:' + area.slug"
+                        />
+                      }
                       <div class="grid gap-2 grid-cols-1 xl:grid-cols-2">
                         @for (t of outdoorData.areaTopos(); track t.id) {
                           <app-topo-card
                             [topo]="t"
-                            (selected)="navigateToTopo(t)"
+                            (selected)="
+                              hasAccess ? navigateToTopo(t) : buyTopo()
+                            "
                           />
                         } @empty {
                           <app-empty-state
@@ -717,33 +731,20 @@ const PAGE_SIZE = 20;
                         }
                       </div>
                     } @else {
-                      @let isSecret =
-                        details &&
-                        !details.is_public &&
-                        (details.price === null || details.price === 0);
-                      @if (!isSecret) {
-                        <app-paywall
-                          [areaId]="area.id"
-                          [price]="details?.price || 0"
-                          [areaName]="area.name"
-                          [toposCount]="area.topos_count || 0"
+                      <div
+                        class="flex flex-col items-center justify-center p-8 text-center gap-2"
+                      >
+                        <tui-icon
+                          icon="@tui.lock"
+                          class="text-4xl opacity-50"
                         />
-                      } @else {
-                        <div
-                          class="flex flex-col items-center justify-center p-8 text-center gap-2"
-                        >
-                          <tui-icon
-                            icon="@tui.lock"
-                            class="text-4xl opacity-50"
-                          />
-                          <p class="text-sm font-semibold opacity-70">
-                            {{ 'topos.restricted' | translate }}
-                          </p>
-                          <p class="text-xs opacity-50">
-                            {{ 'topos.restrictedMessage' | translate }}
-                          </p>
-                        </div>
-                      }
+                        <p class="text-sm font-semibold opacity-70">
+                          {{ 'topos.restricted' | translate }}
+                        </p>
+                        <p class="text-xs opacity-50">
+                          {{ 'topos.restrictedMessage' | translate }}
+                        </p>
+                      </div>
                     }
                   </div>
                 }

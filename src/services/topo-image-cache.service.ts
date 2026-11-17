@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 
 import { IS_BROWSER } from '../app/is-browser';
 
@@ -6,7 +6,7 @@ import { IS_BROWSER } from '../app/is-browser';
 const TOPO_IMAGE_CACHE = 'topo-images';
 
 /** Límite de imágenes persistidas; las más antiguas se descartan (LRU). */
-const MAX_ENTRIES = 40;
+const MAX_ENTRIES = 200;
 
 /**
  * Caché persistente de imágenes de topos (indoor y outdoor).
@@ -32,7 +32,46 @@ export class TopoImageCacheService {
   private readonly objectUrls = new Map<string, string>();
 
   /** Descargas en curso, para no pedir la misma imagen dos veces. */
-  private readonly pending = new Set<string>();
+  private readonly pending = new Map<string, Promise<boolean>>();
+
+  /** Se incrementa cada vez que cambia el contenido de la caché de imágenes. */
+  readonly cacheVersion = signal(0);
+
+  /**
+   * Indica si la imagen de `url` ya tiene sus bytes persistidos en caché.
+   */
+  async has(url: string | null | undefined): Promise<boolean> {
+    if (!url || !this.isBrowser) return false;
+    try {
+      if (this.objectUrls.has(url)) return true;
+      const cache = await this.cacheReady;
+      if (!cache) return false;
+      const cached = await cache.match(url);
+      return !!cached;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Descarga y persiste la imagen de `url` en Cache Storage esperando a que
+   * finalice. Devuelve `true` si la imagen queda disponible en caché.
+   */
+  async prefetch(url: string | null | undefined): Promise<boolean> {
+    if (!url || !this.isBrowser) return false;
+    try {
+      const cache = await this.cacheReady;
+      if (!cache) return false;
+
+      if (this.objectUrls.has(url) || (await cache.match(url))) {
+        return true;
+      }
+
+      return await this.download(url, cache);
+    } catch {
+      return false;
+    }
+  }
 
   /**
    * Devuelve la URL que debe usar el `<img>` de un topo.
@@ -56,7 +95,7 @@ export class TopoImageCacheService {
         if (blobUrl) return blobUrl;
       }
 
-      this.download(url, cache);
+      void this.download(url, cache);
       return url;
     } catch {
       return url;
@@ -75,13 +114,19 @@ export class TopoImageCacheService {
       const cache = await this.cacheReady;
       if (!cache) return;
       const keys = await cache.keys();
+      let deleted = false;
       await Promise.all(
         keys.map(async (request) => {
           if (!request.url.includes(path)) return;
           this.revoke(request.url);
-          await cache.delete(request);
+          if (await cache.delete(request)) {
+            deleted = true;
+          }
         }),
       );
+      if (deleted) {
+        this.cacheVersion.update((v) => v + 1);
+      }
     } catch {
       // best effort
     }
@@ -115,23 +160,30 @@ export class TopoImageCacheService {
     }
   }
 
-  /** Descarga la imagen a Cache Storage sin bloquear el render. */
-  private download(url: string, cache: Cache): void {
-    if (this.pending.has(url)) return;
-    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
-    this.pending.add(url);
-    void (async () => {
+  /** Descarga la imagen a Cache Storage y devuelve `true` si se guardó. */
+  private download(url: string, cache: Cache): Promise<boolean> {
+    const existing = this.pending.get(url);
+    if (existing) return existing;
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return Promise.resolve(false);
+    }
+    const task = (async () => {
       try {
         const response = await fetch(url);
-        if (!response.ok) return;
+        if (!response.ok) return false;
         await cache.put(url, response);
         await this.trim(cache);
+        this.cacheVersion.update((v) => v + 1);
+        return true;
       } catch {
         // Sin red o bloqueado por CORS: se usa la caché del navegador.
+        return false;
       } finally {
         this.pending.delete(url);
       }
     })();
+    this.pending.set(url, task);
+    return task;
   }
 
   /** Descarta las entradas más antiguas al superar el límite. */

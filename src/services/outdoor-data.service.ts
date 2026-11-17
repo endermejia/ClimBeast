@@ -277,6 +277,23 @@ export class OutdoorDataService {
   readonly topoDetailResource = this.cachedTopoDetail.resource;
   readonly topoDetail: Signal<TopoDetail | null> = this.cachedTopoDetail.signal;
 
+  /**
+   * Obtiene y guarda en caché el detalle completo de un topo (rutas y
+   * trazados) para permitir su visualización sin conexión.
+   */
+  async cacheTopoDetail(topoId: number): Promise<TopoDetail | null> {
+    if (!this.isBrowser) return null;
+    const key = CACHE_KEYS.topoDetail(topoId);
+    const existing = this.cache.get<TopoDetail | null>(key, null);
+    if (existing) return existing;
+
+    await this.supabase.whenReady();
+    const userId = this.supabase.authUser()?.id;
+    const detail = await this.fetchOutdoorTopo(topoId, userId);
+    this.cache.set(key, detail);
+    return detail;
+  }
+
   /** Crag detail for selected crag + area slug. */
   private readonly cachedCragDetail = createCachedResource<
     { cragSlug: string | null; areaSlug: string | null },

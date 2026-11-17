@@ -165,4 +165,18 @@ describe('TopoImageCacheService', () => {
 
     expect(revoked).toContain(blobUrl);
   });
+
+  it('has() reports whether the image bytes are cached', async () => {
+    const service = TestBed.inject(TopoImageCacheService);
+
+    await expect(service.has('https://example.com/topo-a.jpg')).resolves.toBe(
+      false,
+    );
+
+    const ok = await service.prefetch('https://example.com/topo-a.jpg');
+    expect(ok).toBe(true);
+    await expect(service.has('https://example.com/topo-a.jpg')).resolves.toBe(
+      true,
+    );
+  });
 });

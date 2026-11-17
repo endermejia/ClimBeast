@@ -135,7 +135,7 @@ const PAGE_SIZE = 20;
   template: `
     <tui-scrollbar class="w-full h-full min-h-0 min-w-0">
       <section
-        class="w-full min-w-0 max-w-[1600px] mx-auto pt-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden lg:pb-2"
+        class="w-full min-w-0 max-w-[1600px] mx-auto pt-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden pb-2"
       >
         @if (cragDetail(); as c) {
           <!-- Left Column: Info + Segmented Tabs -->
