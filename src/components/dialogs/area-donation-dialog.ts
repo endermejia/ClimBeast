@@ -77,21 +77,58 @@ export interface AreaDonationDialogData {
           @if (canUnlockTopos()) {
             @if (unlocksTopos()) {
               <div
-                class="flex items-center gap-3 p-3.5 rounded-2xl bg-(--tui-background-positive-neutral) border border-(--tui-status-positive) text-(--tui-text-primary) transition-all duration-300"
+                class="flex flex-col gap-2 p-3.5 rounded-2xl bg-(--tui-background-positive-neutral) border border-(--tui-status-positive) text-(--tui-text-primary) transition-all duration-300"
               >
-                <div
-                  class="flex items-center justify-center w-8 h-8 rounded-xl bg-(--tui-status-positive-pale) text-(--tui-status-positive) shrink-0 text-lg"
-                >
-                  <tui-icon icon="@tui.circle-check" />
+                <div class="flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div
+                      class="flex items-center justify-center w-8 h-8 rounded-xl bg-(--tui-status-positive-pale) text-(--tui-status-positive) shrink-0 text-lg"
+                    >
+                      <tui-icon icon="@tui.circle-check" />
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                      <span class="text-xs font-bold leading-snug">
+                        {{
+                          'donations.toposIncludedBanner'
+                            | translate: { name: context.data.areaName || '' }
+                        }}
+                      </span>
+                    </div>
+                  </div>
+                  @if (topos().length > 0) {
+                    <button
+                      appearance="flat"
+                      size="xs"
+                      tuiButton
+                      type="button"
+                      class="shrink-0 text-xs font-bold hover:underline cursor-pointer flex items-center gap-1"
+                      (click)="showTopos.set(!showTopos())"
+                    >
+                      <span>{{
+                        (showTopos()
+                          ? 'donations.hideTopos'
+                          : 'donations.viewTopos'
+                        ) | translate
+                      }}</span>
+                      <tui-icon
+                        [icon]="
+                          showTopos() ? '@tui.chevron-up' : '@tui.chevron-down'
+                        "
+                        class="w-3.5 h-3.5 transition-transform"
+                      />
+                    </button>
+                  }
                 </div>
-                <div class="flex flex-col min-w-0">
-                  <span class="text-xs font-bold leading-snug">
-                    {{
-                      'donations.toposIncludedBanner'
-                        | translate: { name: context.data.areaName || '' }
-                    }}
-                  </span>
-                </div>
+
+                @if (topos().length > 0) {
+                  <tui-expand [expanded]="showTopos()">
+                    <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 pt-2">
+                      @for (t of topos(); track t.id) {
+                        <app-topo-card [topo]="t" />
+                      }
+                    </div>
+                  </tui-expand>
+                }
               </div>
             } @else {
               <div
@@ -127,51 +164,6 @@ export interface AreaDonationDialogData {
                 </button>
               </div>
             }
-          }
-
-          <!-- Included topos expandable panel -->
-          @if (topos().length > 0) {
-            <div class="flex flex-col gap-2">
-              <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2 min-w-0">
-                  <tui-icon icon="/image/topo.svg" class="w-4 h-4 shrink-0" />
-                  <span
-                    class="text-xs font-bold uppercase tracking-wider text-(--tui-text-primary) truncate"
-                  >
-                    {{ 'topos' | translate }} ({{ topos().length }})
-                  </span>
-                </div>
-                <button
-                  appearance="flat"
-                  size="xs"
-                  tuiButton
-                  type="button"
-                  class="shrink-0 text-xs font-bold hover:underline cursor-pointer flex items-center gap-1"
-                  (click)="showTopos.set(!showTopos())"
-                >
-                  <span>{{
-                    (showTopos()
-                      ? 'donations.hideTopos'
-                      : 'donations.viewTopos'
-                    ) | translate
-                  }}</span>
-                  <tui-icon
-                    [icon]="
-                      showTopos() ? '@tui.chevron-up' : '@tui.chevron-down'
-                    "
-                    class="w-3.5 h-3.5 transition-transform"
-                  />
-                </button>
-              </div>
-
-              <tui-expand [expanded]="showTopos()">
-                <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 pt-2">
-                  @for (t of topos(); track t.id) {
-                    <app-topo-card [topo]="t" />
-                  }
-                </div>
-              </tui-expand>
-            </div>
           }
 
           <!-- Preset amounts -->
