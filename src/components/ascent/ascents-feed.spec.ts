@@ -13,7 +13,7 @@ import { AscentsService } from '../../services/ascents.service';
 import { FollowsService } from '../../services/follows.service';
 import { SupabaseService } from '../../services/supabase.service';
 
-import { FeedItem } from '../../models';
+import { FeedItem, RouteAscentWithExtras } from '../../models';
 
 import { IS_BROWSER } from '../../app/is-browser';
 import { MockSupabaseService } from '../../testing';
@@ -195,5 +195,116 @@ describe('AscentsFeedComponent', () => {
     comp.onCalendarDayClick(new TuiDay(2024, 0, 1));
     expect(emitted).toEqual(['2024-01-01']);
     expect(comp.openCalendarDateKey()).toBeNull();
+  });
+
+  it('should group ascents by the same user on the same day when groupByDate and groupByUser are true', () => {
+    const multiAscents: FeedItem[] = [
+      {
+        id: 1,
+        kind: 'ascent',
+        user_id: 'user-1',
+        date: '2024-06-15T18:00:00Z',
+        type: 'redpoint',
+        grade: 25,
+        user: { id: 'user-1', name: 'Alice' },
+        route: { name: 'Route A', slug: 'route-a', grade: 25 },
+      } as unknown as FeedItem,
+      {
+        id: 2,
+        kind: 'ascent',
+        user_id: 'user-2',
+        date: '2024-06-15T14:00:00Z',
+        type: 'flash',
+        grade: 24,
+        user: { id: 'user-2', name: 'Bob' },
+        route: { name: 'Route B', slug: 'route-b', grade: 24 },
+      } as unknown as FeedItem,
+      {
+        id: 1,
+        kind: 'ascent',
+        user_id: 'user-1',
+        date: '2024-06-15T10:00:00Z',
+        type: 'os',
+        grade: 22,
+        user: { id: 'user-1', name: 'Alice' },
+        route: {
+          name: 'Indoor Route',
+          slug: 'indoor-route',
+          center_slug: 'gym',
+          center_name: 'Gym',
+          grade: 22,
+        },
+      } as unknown as FeedItem,
+      {
+        id: 3,
+        kind: 'ascent',
+        user_id: 'user-1',
+        date: '2024-06-14T10:00:00Z',
+        type: 'redpoint',
+        grade: 23,
+        user: { id: 'user-1', name: 'Alice' },
+        route: { name: 'Route C', slug: 'route-c', grade: 23 },
+      } as unknown as FeedItem,
+    ];
+
+    fixture.componentRef.setInput('ascents', multiAscents);
+    fixture.componentRef.setInput('groupByDate', true);
+    fixture.componentRef.setInput('groupByUser', true);
+    fixture.detectChanges();
+
+    const comp = fixture.componentInstance as unknown as {
+      dateGroups: () => {
+        dateKey: string;
+        items: {
+          item: FeedItem;
+          extraAscents?: RouteAscentWithExtras[];
+          trackKey: string;
+        }[];
+      }[];
+    };
+
+    const groups = comp.dateGroups();
+    expect(groups.length).toBe(2);
+    expect(groups[0].items.length).toBe(2);
+    expect(groups[0].items[0].trackKey).toBe('ascent-outdoor-1');
+    expect(groups[0].items[0].extraAscents?.length).toBe(1);
+    expect(groups[0].items[0].extraAscents?.[0].route?.name).toBe(
+      'Indoor Route',
+    );
+    expect(groups[0].items[1].extraAscents?.length).toBe(0);
+    expect(groups[1].items.length).toBe(1);
+  });
+
+  it('should not group same-day user ascents when groupByUser is false', () => {
+    const sameDayAscents: FeedItem[] = [
+      {
+        id: 1,
+        kind: 'ascent',
+        user_id: 'user-1',
+        date: '2024-06-15T18:00:00Z',
+        user: { id: 'user-1', name: 'Alice' },
+        route: { name: 'Route A', slug: 'route-a', grade: 25 },
+      } as unknown as FeedItem,
+      {
+        id: 2,
+        kind: 'ascent',
+        user_id: 'user-1',
+        date: '2024-06-15T10:00:00Z',
+        user: { id: 'user-1', name: 'Alice' },
+        route: { name: 'Route B', slug: 'route-b', grade: 24 },
+      } as unknown as FeedItem,
+    ];
+
+    fixture.componentRef.setInput('ascents', sameDayAscents);
+    fixture.componentRef.setInput('groupByDate', true);
+    fixture.componentRef.setInput('groupByUser', false);
+    fixture.detectChanges();
+
+    const comp = fixture.componentInstance as unknown as {
+      dateGroups: () => { items: unknown[] }[];
+    };
+    const groups = comp.dateGroups();
+    expect(groups.length).toBe(1);
+    expect(groups[0].items.length).toBe(2);
   });
 });

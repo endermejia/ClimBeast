@@ -15,14 +15,16 @@ import { AscentCardSkeletonComponent } from './ascent-card-skeleton';
 
 import {
   FeedItem,
-  VERTICAL_LIFE_GRADES,
   GRADE_NUMBER_TO_LABEL,
+  RouteAscentWithExtras,
+  VERTICAL_LIFE_GRADES,
 } from '../../models';
 
 import { AscentDatePipe } from '../../pipes';
 
 export interface ProcessedFeedItem {
   item: FeedItem;
+  extraAscents?: RouteAscentWithExtras[];
   trackKey: string;
   index: number;
   showRowBreak: boolean;
@@ -109,6 +111,7 @@ export interface DateGroup {
                   @if (processed.index === 0) {
                     <app-ascent-card
                       [data]="ascent"
+                      [extraAscents]="processed.extraAscents ?? []"
                       [showUser]="showUser()"
                       [showRoute]="showRoute()"
                       [showCrag]="showCrag()"
@@ -121,6 +124,7 @@ export interface DateGroup {
                     @defer (on viewport) {
                       <app-ascent-card
                         [data]="ascent"
+                        [extraAscents]="processed.extraAscents ?? []"
                         [showUser]="showUser()"
                         [showRoute]="showRoute()"
                         [showCrag]="showCrag()"
@@ -287,6 +291,7 @@ export class AscentsFeedComponent {
   ascents = input.required<FeedItem[]>();
   groupByGrade = input(false);
   groupByDate = input(false);
+  groupByUser = input(false);
   isLoading = input(false);
   hasMore = input(false);
   showUser = input(true);
@@ -391,6 +396,37 @@ export class AscentsFeedComponent {
       }
     }
 
+    if (this.groupByUser()) {
+      for (const group of groups) {
+        const mergedItems: ProcessedFeedItem[] = [];
+        const userEntryMap = new Map<string, ProcessedFeedItem>();
+
+        for (const entry of group.items) {
+          if (entry.item.kind !== 'ascent' || !entry.item.user_id) {
+            mergedItems.push(entry);
+            continue;
+          }
+
+          const existing = userEntryMap.get(entry.item.user_id);
+          if (!existing) {
+            const groupedEntry: ProcessedFeedItem = {
+              ...entry,
+              extraAscents: [],
+            };
+            userEntryMap.set(entry.item.user_id, groupedEntry);
+            mergedItems.push(groupedEntry);
+          } else {
+            existing.extraAscents = [
+              ...(existing.extraAscents ?? []),
+              entry.item,
+            ];
+          }
+        }
+
+        group.items = mergedItems;
+      }
+    }
+
     return groups;
   });
 
@@ -400,10 +436,17 @@ export class AscentsFeedComponent {
     const groupByDate = this.groupByDate();
 
     return list.map((item, index) => {
+      const isIndoorAscent =
+        item.kind === 'ascent' &&
+        !!(
+          item.route &&
+          'center_slug' in item.route &&
+          (item.route as { center_slug?: string }).center_slug
+        );
       const trackKey =
         item.kind === 'news'
           ? `news-${item.id || item.link}`
-          : `ascent-${item.id}`;
+          : `ascent-${isIndoorAscent ? 'indoor' : 'outdoor'}-${item.id}`;
 
       let showRowBreak = false;
       let showGradeHeader = false;

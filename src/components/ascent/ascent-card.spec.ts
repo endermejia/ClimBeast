@@ -353,4 +353,60 @@ describe('AscentCardComponent', () => {
       expect(fixture.nativeElement.textContent).not.toContain('Boulder Gym');
     });
   });
+
+  describe('grouped ascents (extraAscents)', () => {
+    it('renders a single header and multiple ascent items when extraAscents is provided', async () => {
+      const fixture = TestBed.createComponent(AscentCardComponent);
+      const first = createMockAscent({
+        id: 1,
+        comment: 'First climb',
+      });
+      const second = createMockAscent({
+        id: 2,
+        comment: 'Second climb',
+        route: {
+          name: 'La Rambla',
+          slug: 'la-rambla',
+          grade: 28,
+          climbing_kind: 'sport',
+          area_slug: 'siurana',
+          area_name: 'Siurana',
+          crag_slug: 'la-rambla',
+          crag_name: 'La Rambla',
+        } as RouteAscentWithExtras['route'],
+      });
+      const thirdIndoor = {
+        ...createIndoorAscent(),
+        id: 1,
+        comment: 'Indoor session',
+      };
+
+      fixture.componentRef.setInput('data', first);
+      fixture.componentRef.setInput('extraAscents', [second, thirdIndoor]);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelectorAll('app-ascent-card-header').length).toBe(1);
+      expect(el.querySelectorAll('app-ascent-card-item').length).toBe(3);
+      expect(el.textContent).toContain('Silencio');
+      expect(el.textContent).toContain('La Rambla');
+      expect(el.textContent).toContain('Boulder Gym');
+      expect(el.textContent).toContain('First climb');
+      expect(el.textContent).toContain('Second climb');
+      expect(el.textContent).toContain('Indoor session');
+    });
+
+    it('marks card as duplicate when any extra ascent is duplicate', () => {
+      const fixture = TestBed.createComponent(AscentCardComponent);
+      fixture.componentRef.setInput(
+        'data',
+        createMockAscent({ is_duplicate: false }),
+      );
+      fixture.componentRef.setInput('extraAscents', [
+        createMockAscent({ id: 2, is_duplicate: true }),
+      ]);
+      expect(fixture.componentInstance['hasDuplicate']()).toBe(true);
+    });
+  });
 });

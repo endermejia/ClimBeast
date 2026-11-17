@@ -40,6 +40,12 @@ export interface FeedFilterResult<T> {
   earlyReturn: T;
 }
 
+function getFollowingUserIds(options: FeedFilterOptions): string[] {
+  return Array.from(
+    new Set([...options.followedIds, options.userId].filter(Boolean)),
+  );
+}
+
 /**
  * Checks if the filter should proceed based on the filter type and available data.
  * Returns early return value if the query should be skipped.
@@ -51,7 +57,7 @@ export function shouldProceedWithFilter<T>(
 ): FeedFilterResult<T> {
   if (
     filter === HomeFeedFilters.FOLLOWING &&
-    options.followedIds.length === 0
+    getFollowingUserIds(options).length === 0
   ) {
     return { shouldProceed: false, earlyReturn: emptyReturnValue };
   }
@@ -82,7 +88,7 @@ export function shouldProceedWithFilter<T>(
 
 /**
  * Applies user filter to a Supabase query builder.
- * Excludes current user if filter is not 'all', and includes only followed/liked items if applicable.
+ * Excludes current user for favorite-based filters, and includes followed users + self for 'following'.
  */
 export function applyUserFilter<
   T extends {
@@ -92,15 +98,18 @@ export function applyUserFilter<
 >(query: T, options: FeedFilterOptions, userFilterColumn = 'user_id'): T {
   let q = query;
 
-  // Exclude own ascents unless viewing 'all'
-  if (options.filter !== HomeFeedFilters.ALL) {
+  // Exclude own ascents for favorite-based filters (keep own ascents in 'all' and 'following')
+  if (
+    options.filter !== HomeFeedFilters.ALL &&
+    options.filter !== HomeFeedFilters.FOLLOWING
+  ) {
     q = q.neq(userFilterColumn, options.userId);
   }
 
   // Apply specific filter
   switch (options.filter) {
     case HomeFeedFilters.FOLLOWING:
-      q = q.in(userFilterColumn, options.followedIds);
+      q = q.in(userFilterColumn, getFollowingUserIds(options));
       break;
     case HomeFeedFilters.FAVORITE_AREAS:
       q = q.in('routes.crags.area_id', options.likedAreaIds);
@@ -127,12 +136,15 @@ export function applyIndoorUserFilter<
 >(query: T, options: FeedFilterOptions, userFilterColumn = 'user_id'): T {
   let q = query;
 
-  if (options.filter !== HomeFeedFilters.ALL) {
+  if (
+    options.filter !== HomeFeedFilters.ALL &&
+    options.filter !== HomeFeedFilters.FOLLOWING
+  ) {
     q = q.neq(userFilterColumn, options.userId);
   }
 
   if (options.filter === HomeFeedFilters.FOLLOWING) {
-    q = q.in(userFilterColumn, options.followedIds);
+    q = q.in(userFilterColumn, getFollowingUserIds(options));
   }
 
   return q;

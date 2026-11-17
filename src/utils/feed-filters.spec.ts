@@ -3,9 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HomeFeedFilters, ORDERED_GRADE_VALUES } from '../models';
 
 import {
-  shouldProceedWithFilter,
   applyCategoryFilter,
   applyGradeFilter,
+  applyIndoorUserFilter,
+  applyUserFilter,
+  shouldProceedWithFilter,
 } from './feed-filters';
 
 const mockFilterOptions = {
@@ -29,8 +31,8 @@ describe('shouldProceedWithFilter', () => {
     expect(result.shouldProceed).toBe(true);
   });
 
-  it('should not proceed for following with no followed ids', () => {
-    const options = { ...mockFilterOptions, followedIds: [] };
+  it('should not proceed for following with no followed ids and no userId', () => {
+    const options = { ...mockFilterOptions, userId: '', followedIds: [] };
     const result = shouldProceedWithFilter(
       HomeFeedFilters.FOLLOWING,
       options,
@@ -38,6 +40,16 @@ describe('shouldProceedWithFilter', () => {
     );
     expect(result.shouldProceed).toBe(false);
     expect(result.earlyReturn).toEqual([]);
+  });
+
+  it('should proceed for following with userId even if followedIds is empty', () => {
+    const options = { ...mockFilterOptions, followedIds: [] };
+    const result = shouldProceedWithFilter(
+      HomeFeedFilters.FOLLOWING,
+      options,
+      [],
+    );
+    expect(result.shouldProceed).toBe(true);
   });
 
   it('should proceed for following with followed ids', () => {
@@ -151,5 +163,55 @@ describe('applyGradeFilter', () => {
     const partialRange: [number, number] = [15, 25];
     applyGradeFilter(mockQuery, partialRange);
     expect(mockQuery.in).toHaveBeenCalled();
+  });
+});
+
+describe('applyUserFilter & applyIndoorUserFilter', () => {
+  const createQueryMock = () => {
+    const mock = {
+      in: vi.fn(),
+      neq: vi.fn(),
+    };
+    mock.in.mockReturnValue(mock);
+    mock.neq.mockReturnValue(mock);
+    return mock;
+  };
+
+  it('includes followedIds and current userId without neq exclusion in following filter (outdoor)', () => {
+    const query = createQueryMock();
+    applyUserFilter(query, {
+      ...mockFilterOptions,
+      filter: HomeFeedFilters.FOLLOWING,
+    });
+    expect(query.neq).not.toHaveBeenCalled();
+    expect(query.in).toHaveBeenCalledWith('user_id', [
+      'user-2',
+      'user-3',
+      'user-1',
+    ]);
+  });
+
+  it('includes followedIds and current userId without neq exclusion in following filter (indoor)', () => {
+    const query = createQueryMock();
+    applyIndoorUserFilter(query, {
+      ...mockFilterOptions,
+      filter: HomeFeedFilters.FOLLOWING,
+    });
+    expect(query.neq).not.toHaveBeenCalled();
+    expect(query.in).toHaveBeenCalledWith('user_id', [
+      'user-2',
+      'user-3',
+      'user-1',
+    ]);
+  });
+
+  it('excludes current user for favorite_areas filter', () => {
+    const query = createQueryMock();
+    applyUserFilter(query, {
+      ...mockFilterOptions,
+      filter: HomeFeedFilters.FAVORITE_AREAS,
+    });
+    expect(query.neq).toHaveBeenCalledWith('user_id', 'user-1');
+    expect(query.in).toHaveBeenCalledWith('routes.crags.area_id', [1, 2]);
   });
 });

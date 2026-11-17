@@ -207,6 +207,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                 [hasMore]="hasMore()"
                 [columns]="2"
                 [groupByDate]="true"
+                [groupByUser]="true"
                 [enableDateNavigation]="true"
                 [minDate]="oldestAscentDate()"
                 (dateSelected)="onDateSelected($event)"
@@ -1106,7 +1107,8 @@ export class HomeComponent {
     // Check if we should proceed based on filter type
     if (
       filter === HomeFeedFilters.FOLLOWING &&
-      filterOptions.followedIds.length === 0
+      filterOptions.followedIds.length === 0 &&
+      !filterOptions.userId
     ) {
       return [];
     }
@@ -1261,7 +1263,8 @@ export class HomeComponent {
     // Check if we should proceed based on filter type
     if (
       filter === HomeFeedFilters.FOLLOWING &&
-      filterOptions.followedIds.length === 0
+      filterOptions.followedIds.length === 0 &&
+      !filterOptions.userId
     ) {
       return [];
     }

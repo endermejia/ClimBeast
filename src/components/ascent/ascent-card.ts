@@ -1,88 +1,26 @@
-import { CommonModule } from '@angular/common';
-import {
-  Component,
-  computed,
-  forwardRef,
-  inject,
-  input,
-  resource,
-  signal,
-} from '@angular/core';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { Router, RouterLink } from '@angular/router';
+import { Component, computed, inject, input } from '@angular/core';
 
-import { TuiDialogService } from '@taiga-ui/core';
-import { TuiAppearance, TuiButton, TuiHint, TuiIcon } from '@taiga-ui/core';
-import {
-  TUI_CONFIRM,
-  TuiAvatar,
-  TuiBadge,
-  TuiConfirmData,
-  TuiRating,
-  TuiSkeleton,
-} from '@taiga-ui/kit';
-import { TuiHeader } from '@taiga-ui/layout';
-
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TuiAppearance } from '@taiga-ui/core';
 
 import { firstValueFrom } from 'rxjs';
 
 import { AscentsService } from '../../services/ascents.service';
 import { AuthStateService } from '../../services/auth-state.service';
-import { FollowsService } from '../../services/follows.service';
-import { SupabaseService } from '../../services/supabase.service';
 
 import { ClimbingKind, RouteAscentWithExtras } from '../../models';
 
-import { AscentDatePipe, AvatarUrlPipe, InitialsPipe } from '../../pipes';
-import { getEmbedUrl, openPhotoViewer } from '../../utils';
-
-import { GradeComponent } from '../ui/avatar-grade';
-import { ClimbingKindIconComponent } from '../ui/climbing-kind-icon';
-import { CustomCarouselComponent } from '../ui/custom-carousel';
-import { RouteInfoHintComponent } from '../ui/route-info-hint';
-import { UserInfoHintComponent } from '../ui/user-info-hint';
-import { AscentCommentsComponent } from './ascent-comments';
-import { AscentLastCommentComponent } from './ascent-last-comment';
-import { AscentLikesComponent } from './ascent-likes';
-import { AscentTypeComponent } from './ascent-type';
+import { AscentCardHeaderComponent } from './ascent-card-header';
+import { AscentCardItemComponent } from './ascent-card-item';
 
 @Component({
   selector: 'app-ascent-card',
-  imports: [
-    AscentCommentsComponent,
-    AscentLastCommentComponent,
-    AscentLikesComponent,
-    AscentTypeComponent,
-    AscentDatePipe,
-    AvatarUrlPipe,
-    ClimbingKindIconComponent,
-    CommonModule,
-    CustomCarouselComponent,
-    FormsModule,
-    GradeComponent,
-    InitialsPipe,
-    ReactiveFormsModule,
-    RouteInfoHintComponent,
-    RouterLink,
-    TranslatePipe,
-    TuiAppearance,
-    TuiAvatar,
-    TuiBadge,
-    TuiButton,
-    TuiHeader,
-    TuiHint,
-    TuiIcon,
-    TuiRating,
-    TuiSkeleton,
-    forwardRef(() => UserInfoHintComponent),
-  ],
+  imports: [AscentCardHeaderComponent, AscentCardItemComponent, TuiAppearance],
   template: `
     @let ascent = data();
+    @let grouped = isGrouped();
     <div
       [tuiAppearance]="
-        ascent.is_duplicate
+        hasDuplicate()
           ? 'negative'
           : highlightOwn() && isOwnAscent()
             ? 'positive'
@@ -90,353 +28,49 @@ import { AscentTypeComponent } from './ascent-type';
       "
       class="flex flex-col gap-1 p-4 sm:rounded-3xl rounded-none relative no-underline text-inherit hover:no-underline -mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full text-left"
     >
-      <header
-        tuiHeader
-        class="flex flex-wrap justify-between items-center gap-x-2 gap-y-0"
+      <app-ascent-card-header
+        [userId]="ascent.user_id"
+        [user]="ascent.user"
+        [date]="ascent.date"
+        [showUser]="showUser()"
+        [showDate]="showDate()"
+        [showEdit]="!grouped && isOwnAscent()"
+        [isPrivate]="!!ascent.private_ascent"
+        (editClick)="editSingleAscent()"
+      />
+
+      <div
+        class="flex flex-col"
+        [class.divide-y]="grouped"
+        [class.divide-(--tui-border-normal)]="grouped"
       >
-        @if (showUser()) {
-          <div
-            class="flex items-center gap-3"
-            [tuiHint]="userHintTemplate"
-            (contextmenu.zoneless)="$event.preventDefault()"
-          >
-            <span class="flex items-center cursor-pointer select-none">
-              <span tuiAvatar size="s">
-                @if (ascent.user?.avatar; as avatar) {
-                  <img
-                    [src]="avatar | avatarUrl"
-                    [alt]="ascent.user.name || ''"
-                  />
-                } @else {
-                  {{ ascent.user?.name | initials }}
-                }
-              </span>
-            </span>
-            <a
-              [routerLink]="['/profile', ascent.user_id]"
-              class="flex flex-col no-underline text-inherit cursor-pointer group/user select-none"
-            >
-              <span class="font-bold text-sm group-hover/user:underline">
-                {{ ascent.user?.name || 'User' }}
-              </span>
-              @if (showDate()) {
-                <span class="text-xs">
-                  {{ ascent.date | ascentDate }}
-                </span>
-              }
-            </a>
-          </div>
-          <ng-template #userHintTemplate>
-            <app-user-info-hint
-              [userId]="ascent.user_id"
-              [fallbackName]="ascent.user?.name"
-              [fallbackAvatar]="ascent.user?.avatar"
-            />
-          </ng-template>
-
-          @if (ascent.user_id !== supabase.authUserId()) {
-            @if (isFollowed()) {
-              <button
-                tuiButton
-                size="s"
-                appearance="secondary-grayscale"
-                class="rounded-full!"
-                [disabled]="loading()"
-                [iconStart]="loading() ? '@tui.loader' : ''"
-                (click)="unfollow(ascent.user_id, ascent.user?.name || 'User')"
-              >
-                {{ 'followingStatus' | translate }}
-              </button>
-            } @else {
-              <button
-                tuiButton
-                size="s"
-                appearance="action"
-                class="rounded-full!"
-                [disabled]="loading()"
-                [iconStart]="loading() ? '@tui.loader' : ''"
-                (click)="follow(ascent.user_id)"
-              >
-                {{ 'follow' | translate }}
-              </button>
-            }
-          } @else {
-            <div class="flex flex-col items-end gap-1">
-              <button
-                tuiButton
-                size="s"
-                appearance="secondary-grayscale"
-                class="rounded-full!"
-                (click)="editAscent()"
-              >
-                {{ 'edit' | translate }}
-              </button>
-              @if (ascent.private_ascent) {
-                <span tuiBadge appearance="accent" class="text-xs">
-                  {{ 'private' | translate }}
-                </span>
-              }
-            </div>
-          }
-        } @else {
-          <div class="flex justify-between items-center w-full">
-            <div class="flex flex-col">
-              @if (showDate()) {
-                <span class="text-xs text-gray-400">
-                  {{ ascent.date | ascentDate }}
-                </span>
-              }
-            </div>
-            @if (ascent.user_id === supabase.authUserId()) {
-              <div class="flex flex-col items-end gap-1">
-                <button
-                  tuiButton
-                  size="s"
-                  appearance="secondary-grayscale"
-                  class="rounded-full!"
-                  (click)="editAscent()"
-                >
-                  {{ 'edit' | translate }}
-                </button>
-                @if (ascent.private_ascent) {
-                  <span tuiBadge appearance="accent" class="text-xs">
-                    {{ 'private' | translate }}
-                  </span>
-                }
-              </div>
-            }
-          </div>
+        @for (entry of trackedAscents(); track entry.key) {
+          <app-ascent-card-item
+            class="block"
+            [class.pt-3]="grouped && !$first"
+            [class.pb-3]="grouped && !$last"
+            [ascent]="entry.ascent"
+            [showRoute]="showRoute()"
+            [showCrag]="showCrag()"
+            [showArea]="showArea()"
+            [showCenter]="showCenter()"
+            [showPhoto]="showPhoto()"
+            [showComment]="showComment()"
+            [showLikesAndComments]="showLikesAndComments()"
+            [showEdit]="grouped && isOwnAscent()"
+            [priority]="priority() && $first"
+          />
         }
-      </header>
-
-      @if (showPhoto() && mediaItems(); as items) {
-        @if (items.length > 0) {
-          <div
-            class="relative -mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full bg-(--tui-background-neutral-1) overflow-hidden sm:rounded-2xl"
-          >
-            <app-custom-carousel
-              [items]="items"
-              [(index)]="index"
-              [clickable]="true"
-              [priority]="priority()"
-              [loading]="priority() ? 'eager' : 'lazy'"
-              (imageClick)="showEnlargedPhoto($event)"
-            />
-          </div>
-        } @else if (ascentPhotoResource.isLoading()) {
-          <div
-            class="aspect-4/3 bg-(--tui-background-neutral-1) -mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full rounded-none sm:rounded-2xl"
-            tuiSkeleton
-          ></div>
-        }
-      }
-
-      <div class="flex flex-col gap-1">
-        <div class="flex flex-col gap-1">
-          @if (ascent.route && showRoute()) {
-            <div class="text-lg leading-tight wrap-break-word">
-              @if (ascent.route.climbing_kind; as kind) {
-                <app-climbing-kind-icon
-                  [kind]="kind"
-                  iconClass="align-text-bottom mr-1"
-                />
-              }
-              @if (isIndoor()) {
-                <a
-                  class="font-bold hover:underline cursor-pointer"
-                  [routerLink]="[
-                    '/indoor',
-                    ascent.route.center_slug,
-                    'route',
-                    ascent.route.slug,
-                  ]"
-                  [tuiHint]="routeHintTemplate"
-                  (contextmenu.zoneless)="$event.preventDefault()"
-                >
-                  {{ ascent.route.name }}
-                </a>
-                @if (showCenter() && ascent.route.center_name) {
-                  <span class="mx-1.5 opacity-70 text-sm">&bull;</span>
-                  <span class="text-sm opacity-70">
-                    <a
-                      class="hover:underline cursor-pointer"
-                      [routerLink]="['/indoor', ascent.route.center_slug]"
-                    >
-                      {{ ascent.route.center_name }}
-                    </a>
-                  </span>
-                }
-              } @else {
-                <a
-                  class="font-bold hover:underline cursor-pointer"
-                  [routerLink]="[
-                    '/area',
-                    ascent.route.area_slug,
-                    ascent.route.crag_slug || 'general',
-                    ascent.route.slug,
-                  ]"
-                  [tuiHint]="routeHintTemplate"
-                  (contextmenu.zoneless)="$event.preventDefault()"
-                >
-                  {{ ascent.route.name }}
-                </a>
-                @if (showCrag() && ascent.route.crag_name) {
-                  <span class="mx-1.5 opacity-70 text-sm">•</span>
-                  <span class="text-sm opacity-70">
-                    <a
-                      class="hover:underline cursor-pointer"
-                      [routerLink]="[
-                        '/area',
-                        ascent.route.area_slug,
-                        ascent.route.crag_slug || 'general',
-                      ]"
-                    >
-                      {{ ascent.route.crag_name }}
-                    </a>
-                    @if (showArea() && ascent.route.area_name) {
-                      <a
-                        class="hover:underline cursor-pointer ml-1"
-                        [routerLink]="['/area', ascent.route.area_slug]"
-                      >
-                        ({{ ascent.route.area_name }})
-                      </a>
-                    }
-                  </span>
-                }
-              }
-              <ng-template #routeHintTemplate>
-                <app-route-info-hint
-                  [routeId]="ascent.route_id || ascent.route.id"
-                  [isIndoor]="isIndoor()"
-                  [grade]="ascent.route.grade"
-                />
-              </ng-template>
-            </div>
-          }
-          <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-            @if (ascent.grade) {
-              <app-grade
-                [grade]="ascent.grade"
-                [kind]="ascent.route?.climbing_kind"
-              />
-            }
-            @if (ascent.soft) {
-              <span tuiBadge size="s" appearance="neutral">
-                {{ 'ascent.soft' | translate }}
-              </span>
-            }
-            @if (ascent.hard) {
-              <span tuiBadge size="s" appearance="neutral">
-                {{ 'ascent.hard' | translate }}
-              </span>
-            }
-            @if (ascent.type; as ascentType) {
-              <app-ascent-type
-                [type]="ascentType"
-                [attempts]="ascent.attempts"
-              />
-            }
-            @if (ascent.rate) {
-              <div [tuiHint]="ascent.rate">
-                <tui-rating
-                  [ngModel]="ascent.rate"
-                  [max]="5"
-                  [readOnly]="true"
-                  class="pointer-events-none"
-                  [style.font-size.rem]="1"
-                  [attr.aria-label]="'rating' | translate"
-                />
-              </div>
-            }
-            @if (ascent.recommended) {
-              <tui-icon
-                icon="@tui.thumbs-up"
-                class="w-4! h-4! text-(--tui-text-action)"
-                [tuiHint]="'ascent.recommend' | translate"
-              />
-            }
-          </div>
-        </div>
       </div>
-
-      @if (showComment() && ascent.comment; as ascentComment) {
-        <p
-          class="text-sm italic border-l-2 border-(--tui-border-normal) pl-3 py-1 self-start"
-        >
-          "{{ ascentComment }}"
-        </p>
-      }
-
-      @if (moreInfoBadges().length > 0) {
-        <div class="flex flex-wrap gap-x-1 gap-y-1">
-          @for (badge of moreInfoBadges(); track badge.key) {
-            <span tuiBadge size="s" appearance="neutral">
-              {{ badge.label | translate }}
-            </span>
-          }
-        </div>
-      }
-
-      @if (ascent.is_duplicate) {
-        <div
-          class="flex items-center gap-2 text-xs font-bold text-(--tui-text-negative) uppercase tracking-wider mt-1"
-        >
-          <tui-icon icon="@tui.triangle-alert" class="w-4! h-4!" />
-          {{ 'ascent.duplicateWarning' | translate }}
-        </div>
-      }
-
-      @if (showLikesAndComments() && !isIndoor()) {
-        <footer class="flex flex-col gap-1 mt-2">
-          <div class="flex flex-wrap items-center gap-x-4 gap-y-2 min-h-9">
-            <app-ascent-likes
-              [ascentId]="ascent.id"
-              [isPrivate]="!!ascent.private_ascent"
-            />
-            <app-ascent-comments
-              [ascentId]="ascent.id"
-              [isPrivate]="!!ascent.private_ascent"
-            />
-          </div>
-          @if (showComment()) {
-            <app-ascent-last-comment [ascentId]="ascent.id" />
-          }
-        </footer>
-      }
     </div>
   `,
 })
 export class AscentCardComponent {
   protected readonly authState = inject(AuthStateService);
-  protected readonly supabase = inject(SupabaseService);
-
-  protected readonly isIndoor = computed(() => {
-    const r = this.data().route;
-    return !!(
-      r &&
-      'center_slug' in r &&
-      (r as { center_slug?: string }).center_slug
-    );
-  });
-  protected readonly isOwnAscent = computed(() => {
-    const currentUserId = this.authState.userProfile()?.id;
-    const ascentUserId = this.data()?.user_id;
-    return !!(currentUserId && ascentUserId && currentUserId === ascentUserId);
-  });
-  protected readonly router = inject(Router);
-  protected readonly sanitizer = inject(DomSanitizer);
   private readonly ascentsService = inject(AscentsService);
-  private readonly followsService = inject(FollowsService);
-  private readonly translate = inject(TranslateService);
-  private readonly dialogs = inject(TuiDialogService);
-
-  constructor() {
-    if ('ensureFollowedIdsLoaded' in this.followsService) {
-      void this.followsService['ensureFollowedIdsLoaded']();
-    }
-  }
 
   data = input.required<RouteAscentWithExtras>();
+  extraAscents = input<RouteAscentWithExtras[]>([]);
   showUser = input(true);
   showRoute = input(true);
   showCrag = input(true);
@@ -449,155 +83,59 @@ export class AscentCardComponent {
   priority = input(false);
   highlightOwn = input(false);
 
-  protected readonly loading = signal(false);
+  protected readonly isGrouped = computed(() => this.extraAscents().length > 0);
 
-  protected readonly isFollowed = computed(() => {
-    const userId = this.data().user_id;
-    return this.followsService.followedIds().has(userId);
-  });
+  protected readonly ascentsList = computed(() => [
+    this.data(),
+    ...this.extraAscents(),
+  ]);
 
-  protected index = signal(0);
-
-  protected readonly ascentPhotoResource = resource({
-    params: () => (this.showPhoto() ? this.data().photo_path : null),
-    loader: async ({ params: path }) => {
-      if (!path) return null;
-      await this.supabase.whenReady();
-      // Use same transform as topos for stability, resize to 1200px (retina friendly), quality 70
-      return this.supabase.getAscentSignedUrl(path);
-    },
-  });
-  protected readonly ascentPhotoUrl = computed(() =>
-    this.ascentPhotoResource.value(),
+  protected readonly trackedAscents = computed(() =>
+    this.ascentsList().map((ascent) => {
+      const r = ascent.route;
+      const isIndoorItem = !!(
+        r &&
+        'center_slug' in r &&
+        (r as { center_slug?: string }).center_slug
+      );
+      return {
+        key: `${isIndoorItem ? 'indoor' : 'outdoor'}-${ascent.id}`,
+        ascent,
+      };
+    }),
   );
 
-  private static readonly MORE_INFO_FIELDS: {
-    key: keyof RouteAscentWithExtras;
-    label: string;
-  }[] = [
-    { key: 'cruxy', label: 'ascent.climbing.cruxy' },
-    { key: 'athletic', label: 'ascent.climbing.athletic' },
-    { key: 'sloper', label: 'ascent.climbing.sloper' },
-    { key: 'endurance', label: 'ascent.climbing.endurance' },
-    { key: 'technical', label: 'ascent.climbing.technical' },
-    { key: 'crimpy', label: 'ascent.climbing.crimpy' },
-    { key: 'slab', label: 'ascent.steepness.slab' },
-    { key: 'vertical', label: 'ascent.steepness.vertical' },
-    { key: 'overhang', label: 'ascent.steepness.overhang' },
-    { key: 'roof', label: 'ascent.steepness.roof' },
-    { key: 'bad_anchor', label: 'ascent.safety.bad_anchor' },
-    { key: 'bad_bolts', label: 'ascent.safety.bad_bolts' },
-    { key: 'high_first_bolt', label: 'ascent.safety.high_first_bolt' },
-    { key: 'lose_rock', label: 'ascent.safety.lose_rock' },
-    {
-      key: 'bad_clipping_position',
-      label: 'ascent.safety.bad_clipping_position',
-    },
-    { key: 'chipped', label: 'ascent.other.chipped' },
-    { key: 'with_kneepad', label: 'ascent.other.with_kneepad' },
-    { key: 'first_ascent', label: 'ascent.other.first_ascent' },
-    { key: 'traditional', label: 'ascent.other.traditional' },
-    { key: 'sit_start', label: 'ascent.boulder.sit_start' },
-    { key: 'top_out', label: 'ascent.boulder.top_out' },
-    { key: 'highball', label: 'ascent.boulder.highball' },
-  ];
-
-  protected readonly moreInfoBadges = computed(() => {
-    const a = this.data();
-    return AscentCardComponent.MORE_INFO_FIELDS.filter((f) => !!a[f.key]);
+  protected readonly isIndoor = computed(() => {
+    const r = this.data().route;
+    return !!(
+      r &&
+      'center_slug' in r &&
+      (r as { center_slug?: string }).center_slug
+    );
   });
 
-  protected readonly mediaItems = computed(() => {
-    const items: {
-      type: 'image' | 'video';
-      url: string | SafeResourceUrl;
-    }[] = [];
-    const photo = this.ascentPhotoUrl();
-    if (photo) {
-      items.push({ type: 'image', url: photo });
-    }
-    const video = this.data().video_url;
-    if (video) {
-      const embed = getEmbedUrl(video);
-      if (embed) {
-        items.push({
-          type: 'video',
-          url: this.sanitizer.bypassSecurityTrustResourceUrl(embed),
-        });
-      }
-    }
-    return items;
+  protected readonly isOwnAscent = computed(() => {
+    const currentUserId = this.authState.userProfile()?.id;
+    const ascentUserId = this.data()?.user_id;
+    return !!(currentUserId && ascentUserId && currentUserId === ascentUserId);
   });
 
-  async editAscent() {
+  protected readonly hasDuplicate = computed(() =>
+    this.ascentsList().some((a) => a.is_duplicate),
+  );
+
+  async editSingleAscent() {
+    const item = this.data();
     await firstValueFrom(
       this.ascentsService.openAscentForm({
-        ascentData: this.data(),
+        ascentData: item,
         isIndoor: this.isIndoor(),
-        routeId: this.data().route_id as number | string,
-        routeName: this.data().route?.name,
-        climbingKind: this.data().route?.climbing_kind as ClimbingKind,
-        grade: this.data().route?.grade || undefined,
+        routeId: item.route_id as number | string,
+        routeName: item.route?.name,
+        climbingKind: item.route?.climbing_kind as ClimbingKind,
+        grade: item.route?.grade || undefined,
       }),
       { defaultValue: false },
     );
-  }
-
-  async showEnlargedPhoto(url: string | SafeResourceUrl): Promise<void> {
-    if (typeof url !== 'string') return;
-
-    let fullUrl = url;
-    const path = this.data().photo_path;
-
-    // effective URL for viewing might be different (full res)
-    if (path) {
-      // Fetch full resolution URL
-      const signed = await this.supabase.getAscentSignedUrl(path);
-      if (signed) {
-        fullUrl = signed;
-      }
-    }
-
-    openPhotoViewer(this.dialogs, fullUrl);
-  }
-
-  async follow(userId: string) {
-    if (this.loading()) return;
-    this.loading.set(true);
-    try {
-      await this.followsService.follow(userId);
-    } finally {
-      this.loading.set(false);
-    }
-  }
-
-  async unfollow(userId: string, name: string) {
-    if (this.loading()) return;
-    const data: TuiConfirmData = {
-      content: this.translate.instant('unfollowConfirm', {
-        name,
-      }),
-      yes: this.translate.instant('unfollow'),
-      no: this.translate.instant('cancel'),
-      appearance: 'negative',
-    };
-
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('unfollow'),
-        size: 's',
-        data,
-      }),
-      { defaultValue: false },
-    );
-
-    if (confirmed) {
-      this.loading.set(true);
-      try {
-        await this.followsService.unfollow(userId);
-      } finally {
-        this.loading.set(false);
-      }
-    }
   }
 }
