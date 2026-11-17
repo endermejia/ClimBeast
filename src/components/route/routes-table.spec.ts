@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { TuiSortDirection } from '@taiga-ui/addon-table';
-import { provideTaiga, TuiRoot } from '@taiga-ui/core';
+import { provideTaiga, TuiRoot, TuiScrollbar } from '@taiga-ui/core';
 
 import { TranslateModule } from '@ngx-translate/core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -1252,5 +1252,75 @@ describe('RoutesTableComponent focused edit mode', () => {
     ) as HTMLElement;
     const text = cell.textContent?.replace(/\s+/g, ' ').trim();
     expect(text).toBe('Alice , Bob');
+  });
+
+  it('wraps route names on desktop and truncates them on mobile', () => {
+    const fixture = TestBed.createComponent(RoutesTableComponent);
+    fixture.componentRef.setInput('data', [createMockRow(1, 15, false)]);
+    fixture.componentRef.setInput('columns', ['grade', 'route', 'ascents']);
+    fixture.componentRef.setInput('isMobile', false);
+    fixture.detectChanges();
+
+    const hostEl = fixture.nativeElement as HTMLElement;
+    const routeLink = hostEl.querySelector(
+      'td[data-col="route"] a[tuiLink]',
+    ) as HTMLAnchorElement;
+    expect(routeLink.classList.contains('break-words')).toBe(true);
+    expect(routeLink.classList.contains('truncate')).toBe(false);
+
+    fixture.componentRef.setInput('isMobile', true);
+    fixture.detectChanges();
+    expect(routeLink.classList.contains('truncate')).toBe(true);
+    expect(routeLink.classList.contains('break-words')).toBe(false);
+  });
+
+  it('ignores tui-scroll-controls sticky sibling when calculating stickyTopOffset inside tui-scrollbar', async () => {
+    @Component({
+      standalone: true,
+      imports: [RoutesTableComponent, TuiScrollbar],
+      template: `
+        <tui-scrollbar style="height: 400px; overflow: auto;">
+          <section>
+            <app-routes-table
+              [data]="data"
+              [columns]="['grade', 'route', 'ascents']"
+            />
+          </section>
+        </tui-scrollbar>
+      `,
+    })
+    class ScrollbarHostComponent {
+      data = [createMockRow(1, 15, false)];
+    }
+
+    const fixture = TestBed.createComponent(ScrollbarHostComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const hostEl = fixture.nativeElement as HTMLElement;
+    const controls = hostEl.querySelector(
+      'tui-scroll-controls',
+    ) as HTMLElement | null;
+    expect(controls).not.toBeNull();
+    if (controls) {
+      controls.style.position = 'sticky';
+      controls.getBoundingClientRect = () =>
+        ({
+          height: 400,
+          width: 300,
+          top: 0,
+          left: 0,
+          right: 300,
+          bottom: 400,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        }) as DOMRect;
+    }
+    window.dispatchEvent(new Event('resize'));
+    fixture.detectChanges();
+
+    const th = hostEl.querySelector('thead th') as HTMLTableCellElement;
+    expect(th.style.top).toBe('0px');
   });
 });

@@ -42,9 +42,9 @@ import { createCachedResource } from '../../utils';
     TuiSkeleton,
   ],
   template: `
-    <div class="flex flex-col gap-8">
+    <div class="flex flex-col gap-8 w-full min-w-0">
       <!-- Liked Areas -->
-      <section class="grid gap-2">
+      <section class="grid grid-cols-1 gap-2 min-w-0">
         <h3 class="font-bold text-lg flex items-center gap-2">
           <tui-icon icon="@tui.map-pin" />
           {{ 'likedAreas' | translate }}
@@ -67,7 +67,7 @@ import { createCachedResource } from '../../utils';
       </section>
 
       <!-- Liked Crags -->
-      <section class="grid gap-2">
+      <section class="grid grid-cols-1 gap-2 min-w-0">
         <h3 class="font-bold text-lg flex items-center gap-2">
           <tui-icon icon="@tui.layout-grid" />
           {{ 'likedCrags' | translate }}
@@ -90,7 +90,7 @@ import { createCachedResource } from '../../utils';
       </section>
 
       <!-- Liked Indoor Centers -->
-      <section class="grid gap-2">
+      <section class="grid grid-cols-1 gap-2 min-w-0">
         <h3 class="font-bold text-lg flex items-center gap-2">
           <tui-icon icon="@tui.dumbbell" />
           {{ 'likedIndoorCenters' | translate }}
@@ -113,7 +113,7 @@ import { createCachedResource } from '../../utils';
       </section>
 
       <!-- Liked Routes -->
-      <section class="grid gap-2">
+      <section class="grid grid-cols-1 gap-2 min-w-0">
         <h3 class="font-bold text-lg flex items-center gap-2">
           <tui-icon icon="@tui.route" />
           {{ 'likedRoutes' | translate }}

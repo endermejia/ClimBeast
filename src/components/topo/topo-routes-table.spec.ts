@@ -47,6 +47,8 @@ function createMockTopoRouteRow(
     <app-topo-routes-table
       [sortedTableData]="data()"
       [columns]="columns()"
+      [isMobile]="isMobile()"
+      [isIndoor]="isIndoor()"
       [hasAccess]="true"
       [selectedRouteId]="selectedRouteId()"
       [sorter]="sorter"
@@ -60,6 +62,8 @@ class TestHostComponent {
     createMockTopoRouteRow(102, 'Via Dos'),
   ]);
   columns = signal<string[]>(['name']);
+  isMobile = signal(false);
+  isIndoor = signal(false);
   selectedRouteId = signal<number | null>(null);
   sorter = () => 0;
 }
@@ -208,5 +212,37 @@ describe('TopoRoutesTableComponent', () => {
       expect(ascentBtn).not.toBeNull();
       expect(directButton).toBeNull();
     });
+  });
+
+  it('compacts height and moves under bold name without horizontal table scroll', async () => {
+    const fixture = TestBed.createComponent(TestHostComponent);
+    fixture.componentInstance.columns.set([
+      'index',
+      'grade',
+      'name',
+      'height',
+      'moves',
+      'actions',
+    ]);
+    fixture.componentInstance.isIndoor.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const hostEl = fixture.nativeElement as HTMLElement;
+    const tableEl = hostEl.querySelector('table') as HTMLTableElement;
+    expect(tableEl.classList.contains('table-fixed')).toBe(true);
+    expect(tableEl.classList.contains('min-w-max')).toBe(false);
+    expect(hostEl.querySelector('.sticky-col-right')).toBeNull();
+
+    const headerCols = Array.from(hostEl.querySelectorAll('thead th')).map(
+      (th) => th.getAttribute('data-col'),
+    );
+    expect(headerCols).toEqual(['index', 'grade', 'name', 'actions']);
+
+    const nameCell = hostEl.querySelector('td[data-col="name"]') as HTMLElement;
+    const nameSpan = nameCell.querySelector('span.font-bold\\!') as HTMLElement;
+    expect(nameSpan?.textContent?.trim()).toBe('Via Uno');
+    expect(nameCell.textContent).toContain('12m');
+    expect(nameCell.textContent).toContain('20');
   });
 });

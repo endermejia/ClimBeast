@@ -13,18 +13,27 @@ export interface FavoritesDialogData {
   selector: 'app-favorites-dialog',
   standalone: true,
   imports: [TuiScrollbar, UserProfileLikesComponent],
-  template: `
-    <div
-      class="flex flex-col grow max-h-[70dvh] min-h-0 w-full overflow-hidden"
-    >
-      <tui-scrollbar class="grow min-h-0 overflow-x-hidden!">
-        <div class="w-full min-w-0 pr-2">
-          <app-user-profile-likes [userId]="context.data.userId" />
-        </div>
-      </tui-scrollbar>
-    </div>
+  styles: `
+    :host tui-scrollbar {
+      max-block-size: 70dvh !important;
+      overflow-x: hidden !important;
+    }
+    :host tui-scrollbar ::ng-deep > .t-content {
+      min-inline-size: 0 !important;
+      max-inline-size: 100% !important;
+      overflow-x: clip !important;
+    }
   `,
-  host: { class: 'flex flex-col max-h-[70dvh] min-h-0 w-full overflow-hidden' },
+  template: `
+    <tui-scrollbar class="w-full max-h-[70dvh] min-h-0 min-w-0">
+      <div class="w-full min-w-0 pr-2">
+        <app-user-profile-likes [userId]="context.data.userId" />
+      </div>
+    </tui-scrollbar>
+  `,
+  host: {
+    class: 'block w-full min-w-0',
+  },
 })
 export class FavoritesDialogComponent {
   protected readonly context =

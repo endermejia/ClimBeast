@@ -1,5 +1,6 @@
 import {
   Component,
+  computed,
   effect,
   ElementRef,
   inject,
@@ -52,8 +53,28 @@ import type { TopoRouteRow } from './topo.types';
   selector: 'app-topo-routes-table',
   standalone: true,
   host: {
-    class: 'block w-full h-full min-w-0 min-h-0 overflow-hidden',
+    class: 'flex flex-col w-full h-full min-w-0 min-h-0 overflow-hidden',
   },
+  styles: `
+    :host {
+      isolation: isolate;
+      z-index: 0;
+    }
+    :host tui-scrollbar {
+      overflow-x: hidden !important;
+    }
+    :host tui-scrollbar ::ng-deep > .t-content {
+      min-inline-size: 0 !important;
+      max-inline-size: 100% !important;
+      overflow-x: clip !important;
+    }
+    thead[tuiThead] th {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: var(--tui-background-base);
+    }
+  `,
   imports: [
     ButtonAscentTypeComponent,
     EmptyStateComponent,
@@ -83,356 +104,373 @@ import type { TopoRouteRow } from './topo.types';
       tabindex="0"
       (keydown)="onTableKeyDown($event)"
     >
-      <tui-scrollbar
-        #scrollbar
-        class="grow min-h-0 w-full overflow-x-auto no-scrollbar"
-        (scroll.zoneless)="onScroll($event)"
-      >
+      <tui-scrollbar #scrollbar class="w-full h-full min-h-0 min-w-0">
         @if (hasAccess()) {
           @let sortedData = sortedTableData();
+          @let visibleCols = visibleColumns();
+          @let mobile = isMobile();
           @if (sortedData.length > 0) {
-            <table
-              #table
-              tuiTable
-              [size]="isMobile() ? 's' : 'm'"
-              class="w-full min-w-max"
-              [class.table-stuck-right]="isStuckRight()"
-              [columns]="columns()"
-              [direction]="direction()"
-              [sorter]="sorter()"
-              (sortChange)="onSortChange($event)"
-            >
-              <thead tuiThead>
-                <tr tuiThGroup>
-                  @for (col of columns(); track col) {
-                    <th
-                      *tuiHead="col"
-                      tuiTh
-                      [sorter]="col | tableSorter"
-                      [class.sticky-col-right]="col === 'actions'"
-                      [class.w-16!]="col === 'height' || col === 'moves'"
-                      [class.min-w-36!]="col === 'name'"
-                      [class.w-min!]="
-                        col === 'index' || col === 'grade' || col === 'actions'
-                      "
-                      class="text-center whitespace-nowrap"
-                    >
-                      <div
-                        class="flex items-center justify-center w-full h-full min-w-0"
-                      >
-                        @switch (col) {
-                          @case ('index') {
-                            #
-                          }
-                          @case ('name') {
-                            {{ 'routes.name' | translate }}
-                          }
-                          @case ('grade') {
-                            {{ 'gradeShort' | translate }}
-                          }
-                          @case ('height') {
-                            {{ 'routes.height' | translate }}
-                          }
-                          @case ('moves') {
-                            {{ 'movesShort' | translate }}
-                          }
-                        }
-                      </div>
-                    </th>
-                  }
-                </tr>
-              </thead>
-              <tbody tuiTbody>
-                @for (
-                  item of sortedData;
-                  track item._ref.topo_id + '-' + item._ref.route_id;
-                  let i = $index
-                ) {
-                  @let bgSubtle =
-                    ascentInfo()[item._ref.route.own_ascent?.type || 'default']
-                      ?.backgroundSubtle;
-                  @let rowBg =
-                    item.climbed
-                      ? bgSubtle && bgSubtle !== 'transparent'
-                        ? bgSubtle
-                        : 'var(--tui-status-positive-pale)'
-                      : item.project
-                        ? 'var(--tui-status-info-pale)'
-                        : '';
-                  @let isSelected = item._ref.route_id === selectedRouteId();
-                  <tr
-                    #routeRow
-                    tuiTr
-                    [id]="
-                      'route-row-' +
-                      item._ref.topo_id +
-                      '-' +
-                      item._ref.route_id
-                    "
-                    [class.outline-2]="isSelected"
-                    [class.outline-[var(--tui-border-focus)]]="isSelected"
-                    [class.-outline-offset-1]="isSelected"
-                    [class.selected-row]="isSelected"
-                    [style.background]="rowBg"
-                    [style.--row-bg]="rowBg || null"
-                    class="group cursor-pointer"
-                    (mouseenter)="hoveredRouteIdChange.emit(item._ref.route_id)"
-                    (mouseleave)="hoveredRouteIdChange.emit(null)"
-                    (click)="selectRoute(item._ref.route_id)"
-                  >
-                    @for (col of columns(); track col) {
-                      <td
-                        *tuiCell="col"
-                        tuiTd
-                        [class.sticky-col-right]="col === 'actions'"
-                        [class.selected-actions-col]="
-                          isSelected && col === 'actions'
+            <div class="w-full min-w-0 max-w-full overflow-x-clip pr-3">
+              <table
+                tuiTable
+                [size]="mobile ? 's' : 'm'"
+                class="w-full table-fixed"
+                [columns]="visibleCols"
+                [direction]="direction()"
+                [sorter]="sorter()"
+                (sortChange)="onSortChange($event)"
+              >
+                <thead tuiThead>
+                  <tr tuiThGroup>
+                    @for (col of visibleCols; track col) {
+                      <th
+                        *tuiHead="col"
+                        tuiTh
+                        [attr.data-col]="col"
+                        [sorter]="col | tableSorter"
+                        [class.text-center]="
+                          col === 'actions' || col === 'index'
                         "
-                        [class.w-min!]="
-                          col === 'index' ||
-                          col === 'grade' ||
-                          col === 'actions'
+                        [class.w-12!]="
+                          col === 'index' || (col === 'actions' && mobile)
                         "
-                        class="text-center whitespace-nowrap"
+                        [class.w-14!]="col === 'grade'"
+                        [class.w-16!]="col === 'actions' && !mobile"
                       >
-                        @switch (col) {
-                          @case ('index') {
-                            <div
-                              class="flex items-center justify-center w-full h-full min-w-0"
-                            >
-                              {{ item.index + 1 }}
-                            </div>
+                        <div
+                          class="flex items-center gap-1 w-full"
+                          [class.justify-center]="
+                            col === 'actions' || col === 'index'
+                          "
+                        >
+                          @switch (col) {
+                            @case ('index') {
+                              #
+                            }
+                            @case ('name') {
+                              {{ 'routes.name' | translate }}
+                            }
+                            @case ('grade') {
+                              {{ 'gradeShort' | translate }}
+                            }
+                            @case ('height') {
+                              {{ 'routes.height' | translate }}
+                            }
+                            @case ('moves') {
+                              {{ 'movesShort' | translate }}
+                            }
                           }
-                          @case ('name') {
-                            <div
-                              class="flex items-center justify-between gap-1.5 h-full w-full"
-                            >
-                              <div class="flex items-center gap-1">
-                                <span
-                                  class="text-left whitespace-nowrap font-medium"
-                                >
-                                  {{ item.name }}
-                                </span>
-                                @if (isSelected) {
-                                  <a
-                                    tuiIconButton
-                                    [routerLink]="item.link"
-                                    iconStart="@tui.arrow-up-right"
-                                    appearance="flat-grayscale"
-                                    size="xs"
-                                    class="rounded-full! shrink-0 opacity-70 hover:opacity-100! focus-visible:opacity-100! transition-opacity"
-                                    [tuiHint]="'view' | translate"
-                                    (click.zoneless)="$event.stopPropagation()"
-                                  >
-                                    {{ 'view' | translate }}
-                                  </a>
-                                }
-                              </div>
-                              @if (
-                                isIndoor() &&
-                                !columns().includes('moves') &&
-                                item.moves !== undefined
-                              ) {
-                                <span
-                                  class="text-xs opacity-60 shrink-0 font-medium"
-                                >
-                                  {{ item.moves }} {{ 'moves' | translate }}
-                                </span>
-                              }
-                            </div>
-                          }
-                          @case ('grade') {
-                            <div
-                              class="flex items-center justify-center w-full h-full min-w-0"
-                            >
-                              <app-grade
-                                [grade]="item.grade"
-                                [kind]="item._ref.route.climbing_kind"
-                              />
-                            </div>
-                          }
-                          @case ('height') {
-                            <div
-                              class="flex items-center justify-center w-full h-full min-w-0"
-                            >
-                              {{ item.height ? item.height + 'm' : '-' }}
-                            </div>
-                          }
-                          @case ('moves') {
-                            <div
-                              class="flex items-center justify-center w-full h-full min-w-0"
-                            >
-                              {{ item.moves ?? '-' }}
-                            </div>
-                          }
-                          @case ('actions') {
-                            <div
-                              class="flex items-center justify-center gap-1 shrink-0 whitespace-nowrap w-full h-full"
-                            >
-                              @let ownAscent = item._ref.route.own_ascent;
-                              @let isAttemptProject =
-                                ownAscent?.type === 'attempt' && item.project;
-                              @let showAscentBtn =
-                                ownAscent && !isAttemptProject;
-                              @if (showAscentBtn) {
-                                <app-button-ascent-type
-                                  [size]="isMobile() ? 's' : 'm'"
-                                  [type]="ownAscent!.type"
-                                  [active]="true"
-                                  class="cursor-pointer"
-                                  [tuiHint]="'ascent.view' | translate"
-                                  (click.zoneless)="
-                                    onViewAscent(ownAscent!);
-                                    $event.stopPropagation()
-                                  "
-                                />
-                              } @else if (isIndoor()) {
-                                <button
-                                  tuiIconButton
-                                  type="button"
-                                  [size]="isMobile() ? 's' : 'm'"
-                                  appearance="neutral"
-                                  iconStart="@tui.circle-plus"
-                                  class="rounded-full!"
-                                  [tuiHint]="'ascent.new' | translate"
-                                  (click.zoneless)="
-                                    onLogAscent(item._ref);
-                                    $event.stopPropagation()
-                                  "
-                                >
-                                  {{ 'ascent.new' | translate }}
-                                </button>
-                              } @else {
-                                <button
-                                  tuiIconButton
-                                  type="button"
-                                  [size]="isMobile() ? 's' : 'm'"
-                                  [appearance]="
-                                    isAttemptProject
-                                      ? 'none'
-                                      : item.project
-                                        ? 'info'
-                                        : 'neutral'
-                                  "
-                                  [iconStart]="
-                                    isAttemptProject
-                                      ? '@tui.circle-dashed'
-                                      : item.project
-                                        ? '@tui.bookmark'
-                                        : '@tui.circle-plus'
-                                  "
-                                  [style.background]="
-                                    isAttemptProject
-                                      ? 'var(--tui-status-neutral)'
-                                      : null
-                                  "
-                                  [class.text-(--tui-text-primary-on-accent-1)!]="
-                                    isAttemptProject
-                                  "
-                                  [class.transition-transform]="
-                                    isAttemptProject
-                                  "
-                                  [class.active:scale-95]="isAttemptProject"
-                                  class="rounded-full!"
-                                  [tuiDropdown]="actionMenu"
-                                  tuiDropdownAlign="end"
-                                  [tuiDropdownMinHeight]="140"
-                                  [tuiDropdownOpen]="
-                                    openActionId() === item._ref.route_id
-                                  "
-                                  (tuiDropdownOpenChange)="
-                                    openActionId.set(
-                                      $event ? item._ref.route_id : null
-                                    )
-                                  "
-                                  (click.zoneless)="$event.stopPropagation()"
-                                >
-                                  {{
-                                    isAttemptProject
-                                      ? ('ascentTypes.attempt' | translate)
-                                      : item.project
-                                        ? ('project' | translate)
-                                        : ('ascent.new' | translate)
-                                  }}
-                                </button>
-                                <ng-template #actionMenu>
-                                  <tui-data-list size="m">
-                                    @if (ownAscent) {
-                                      <button
-                                        tuiOption
-                                        class="whitespace-nowrap"
-                                        (click)="
-                                          onViewAscent(ownAscent);
-                                          openActionId.set(null)
-                                        "
-                                      >
-                                        <tui-icon
-                                          icon="@tui.eye"
-                                          class="mr-2"
-                                        />
-                                        {{ 'ascent.view' | translate }}
-                                      </button>
-                                    }
-                                    <button
-                                      tuiOption
-                                      appearance="positive"
-                                      class="whitespace-nowrap"
-                                      (click)="
-                                        onLogAscent(item._ref);
-                                        openActionId.set(null)
-                                      "
-                                    >
-                                      <tui-icon
-                                        icon="@tui.square-check"
-                                        class="mr-2"
-                                      />
-                                      {{ 'ascent.new' | translate }}
-                                    </button>
-                                    @if (item.project) {
-                                      <button
-                                        tuiOption
-                                        appearance="negative"
-                                        class="whitespace-nowrap"
-                                        (click)="
-                                          onToggleProject(item);
-                                          openActionId.set(null)
-                                        "
-                                      >
-                                        <tui-icon
-                                          icon="@tui.bookmark"
-                                          class="mr-2"
-                                        />
-                                        {{ 'project.remove' | translate }}
-                                      </button>
-                                    } @else {
-                                      <button
-                                        tuiOption
-                                        appearance="info"
-                                        class="whitespace-nowrap"
-                                        (click)="
-                                          onToggleProject(item);
-                                          openActionId.set(null)
-                                        "
-                                      >
-                                        <tui-icon
-                                          icon="@tui.bookmark"
-                                          class="mr-2"
-                                        />
-                                        {{ 'project.add' | translate }}
-                                      </button>
-                                    }
-                                  </tui-data-list>
-                                </ng-template>
-                              }
-                            </div>
-                          }
-                        }
-                      </td>
+                        </div>
+                      </th>
                     }
                   </tr>
-                }
-              </tbody>
-            </table>
+                </thead>
+                <tbody tuiTbody>
+                  @for (
+                    item of sortedData;
+                    track item._ref.topo_id + '-' + item._ref.route_id;
+                    let i = $index
+                  ) {
+                    @let bgSubtle =
+                      ascentInfo()[
+                        item._ref.route.own_ascent?.type || 'default'
+                      ]?.backgroundSubtle;
+                    @let rowBg =
+                      item.climbed
+                        ? bgSubtle && bgSubtle !== 'transparent'
+                          ? bgSubtle
+                          : 'var(--tui-status-positive-pale)'
+                        : item.project
+                          ? 'var(--tui-status-info-pale)'
+                          : '';
+                    @let isSelected = item._ref.route_id === selectedRouteId();
+                    <tr
+                      #routeRow
+                      tuiTr
+                      [id]="
+                        'route-row-' +
+                        item._ref.topo_id +
+                        '-' +
+                        item._ref.route_id
+                      "
+                      [class.outline-2]="isSelected"
+                      [class.outline-[var(--tui-border-focus)]]="isSelected"
+                      [class.-outline-offset-1]="isSelected"
+                      [style.background]="rowBg"
+                      [style.--row-bg]="rowBg || null"
+                      class="group cursor-pointer"
+                      (mouseenter)="
+                        hoveredRouteIdChange.emit(item._ref.route_id)
+                      "
+                      (mouseleave)="hoveredRouteIdChange.emit(null)"
+                      (click)="selectRoute(item._ref.route_id)"
+                    >
+                      @for (col of visibleCols; track col) {
+                        <td
+                          *tuiCell="col"
+                          tuiTd
+                          [attr.data-col]="col"
+                          [class.text-right]="col === 'actions'"
+                        >
+                          @switch (col) {
+                            @case ('index') {
+                              <div tuiCell size="m" class="justify-center">
+                                {{ item.index + 1 }}
+                              </div>
+                            }
+                            @case ('name') {
+                              <div
+                                tuiCell
+                                size="m"
+                                class="h-full min-w-0 w-full"
+                              >
+                                <div
+                                  class="flex flex-col min-w-0 w-full flex-1"
+                                >
+                                  <div
+                                    class="flex items-center gap-x-1.5 min-w-0 max-w-full"
+                                  >
+                                    <span
+                                      class="font-bold! text-base text-left min-w-0 max-w-full"
+                                      [class.truncate]="mobile"
+                                      [class.break-words]="!mobile"
+                                    >
+                                      {{ item.name }}
+                                    </span>
+                                    @if (isSelected) {
+                                      <a
+                                        tuiIconButton
+                                        [routerLink]="item.link"
+                                        iconStart="@tui.arrow-up-right"
+                                        appearance="flat-grayscale"
+                                        size="xs"
+                                        class="rounded-full! shrink-0 opacity-70 hover:opacity-100! focus-visible:opacity-100! transition-opacity"
+                                        [tuiHint]="'view' | translate"
+                                        (click.zoneless)="
+                                          $event.stopPropagation()
+                                        "
+                                      >
+                                        {{ 'view' | translate }}
+                                      </a>
+                                    }
+                                  </div>
+                                  @let showHeight =
+                                    !visibleCols.includes('height') &&
+                                    !!item.height;
+                                  @let showMoves =
+                                    !visibleCols.includes('moves') &&
+                                    isIndoor() &&
+                                    item.moves !== undefined;
+                                  @if (showHeight || showMoves) {
+                                    <div
+                                      class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs opacity-75 mt-0.5 min-w-0"
+                                    >
+                                      @if (showHeight) {
+                                        <span>{{ item.height }}m</span>
+                                      }
+                                      @if (showHeight && showMoves) {
+                                        <span class="opacity-50">·</span>
+                                      }
+                                      @if (showMoves) {
+                                        <span
+                                          >{{ item.moves }}
+                                          {{ 'moves' | translate }}</span
+                                        >
+                                      }
+                                    </div>
+                                  }
+                                </div>
+                              </div>
+                            }
+                            @case ('grade') {
+                              <div tuiCell size="m">
+                                <app-grade
+                                  [grade]="item.grade"
+                                  [kind]="item._ref.route.climbing_kind"
+                                />
+                              </div>
+                            }
+                            @case ('height') {
+                              <div tuiCell size="m" class="justify-center">
+                                {{ item.height ? item.height + 'm' : '-' }}
+                              </div>
+                            }
+                            @case ('moves') {
+                              <div tuiCell size="m" class="justify-center">
+                                {{ item.moves ?? '-' }}
+                              </div>
+                            }
+                            @case ('actions') {
+                              <div
+                                tuiCell
+                                size="m"
+                                class="flex items-center justify-end gap-1 shrink-0 whitespace-nowrap"
+                              >
+                                @let ownAscent = item._ref.route.own_ascent;
+                                @let isAttemptProject =
+                                  ownAscent?.type === 'attempt' && item.project;
+                                @let showAscentBtn =
+                                  ownAscent && !isAttemptProject;
+                                @if (showAscentBtn) {
+                                  <app-button-ascent-type
+                                    [size]="mobile ? 's' : 'm'"
+                                    [type]="ownAscent!.type"
+                                    [active]="true"
+                                    class="cursor-pointer"
+                                    [tuiHint]="'ascent.view' | translate"
+                                    (click.zoneless)="
+                                      onViewAscent(ownAscent!);
+                                      $event.stopPropagation()
+                                    "
+                                  />
+                                } @else if (isIndoor()) {
+                                  <button
+                                    tuiIconButton
+                                    type="button"
+                                    [size]="mobile ? 's' : 'm'"
+                                    appearance="neutral"
+                                    iconStart="@tui.circle-plus"
+                                    class="rounded-full!"
+                                    [tuiHint]="'ascent.new' | translate"
+                                    (click.zoneless)="
+                                      onLogAscent(item._ref);
+                                      $event.stopPropagation()
+                                    "
+                                  >
+                                    {{ 'ascent.new' | translate }}
+                                  </button>
+                                } @else {
+                                  <button
+                                    tuiIconButton
+                                    type="button"
+                                    [size]="mobile ? 's' : 'm'"
+                                    [appearance]="
+                                      isAttemptProject
+                                        ? 'none'
+                                        : item.project
+                                          ? 'info'
+                                          : 'neutral'
+                                    "
+                                    [iconStart]="
+                                      isAttemptProject
+                                        ? '@tui.circle-dashed'
+                                        : item.project
+                                          ? '@tui.bookmark'
+                                          : '@tui.circle-plus'
+                                    "
+                                    [style.background]="
+                                      isAttemptProject
+                                        ? 'var(--tui-status-neutral)'
+                                        : null
+                                    "
+                                    [class.text-(--tui-text-primary-on-accent-1)!]="
+                                      isAttemptProject
+                                    "
+                                    [class.transition-transform]="
+                                      isAttemptProject
+                                    "
+                                    [class.active:scale-95]="isAttemptProject"
+                                    class="rounded-full!"
+                                    [tuiDropdown]="actionMenu"
+                                    tuiDropdownAlign="end"
+                                    [tuiDropdownMinHeight]="140"
+                                    [tuiDropdownOpen]="
+                                      openActionId() === item._ref.route_id
+                                    "
+                                    (tuiDropdownOpenChange)="
+                                      openActionId.set(
+                                        $event ? item._ref.route_id : null
+                                      )
+                                    "
+                                    (click.zoneless)="$event.stopPropagation()"
+                                  >
+                                    {{
+                                      isAttemptProject
+                                        ? ('ascentTypes.attempt' | translate)
+                                        : item.project
+                                          ? ('project' | translate)
+                                          : ('ascent.new' | translate)
+                                    }}
+                                  </button>
+                                  <ng-template #actionMenu>
+                                    <tui-data-list size="m">
+                                      @if (ownAscent) {
+                                        <button
+                                          tuiOption
+                                          class="whitespace-nowrap"
+                                          (click)="
+                                            onViewAscent(ownAscent);
+                                            openActionId.set(null)
+                                          "
+                                        >
+                                          <tui-icon
+                                            icon="@tui.eye"
+                                            class="mr-2"
+                                          />
+                                          {{ 'ascent.view' | translate }}
+                                        </button>
+                                      }
+                                      <button
+                                        tuiOption
+                                        appearance="positive"
+                                        class="whitespace-nowrap"
+                                        (click)="
+                                          onLogAscent(item._ref);
+                                          openActionId.set(null)
+                                        "
+                                      >
+                                        <tui-icon
+                                          icon="@tui.square-check"
+                                          class="mr-2"
+                                        />
+                                        {{ 'ascent.new' | translate }}
+                                      </button>
+                                      @if (item.project) {
+                                        <button
+                                          tuiOption
+                                          appearance="negative"
+                                          class="whitespace-nowrap"
+                                          (click)="
+                                            onToggleProject(item);
+                                            openActionId.set(null)
+                                          "
+                                        >
+                                          <tui-icon
+                                            icon="@tui.bookmark"
+                                            class="mr-2"
+                                          />
+                                          {{ 'project.remove' | translate }}
+                                        </button>
+                                      } @else {
+                                        <button
+                                          tuiOption
+                                          appearance="info"
+                                          class="whitespace-nowrap"
+                                          (click)="
+                                            onToggleProject(item);
+                                            openActionId.set(null)
+                                          "
+                                        >
+                                          <tui-icon
+                                            icon="@tui.bookmark"
+                                            class="mr-2"
+                                          />
+                                          {{ 'project.add' | translate }}
+                                        </button>
+                                      }
+                                    </tui-data-list>
+                                  </ng-template>
+                                }
+                              </div>
+                            }
+                          }
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           } @else {
             <app-empty-state icon="@tui.route" />
           }
@@ -468,12 +506,11 @@ export class TopoRoutesTableComponent {
   areaPrice = input(0);
 
   protected readonly openActionId = signal<string | number | null>(null);
-  protected readonly isStuckRight = signal(false);
+  protected readonly visibleColumns = computed(() =>
+    this.columns().filter((c) => c !== 'height' && c !== 'moves'),
+  );
 
   private readonly scrollbar = viewChild('scrollbar', {
-    read: ElementRef<HTMLElement>,
-  });
-  private readonly table = viewChild('table', {
     read: ElementRef<HTMLElement>,
   });
 
@@ -505,72 +542,6 @@ export class TopoRoutesTableComponent {
         }
       });
     });
-
-    effect((onCleanup) => {
-      const scrollbarEl = this.scrollbar()?.nativeElement;
-      const tableEl = this.table()?.nativeElement;
-      let animationFrame: number | undefined;
-      const scheduleUpdate = () => {
-        if (typeof requestAnimationFrame === 'undefined') {
-          this.updateFromHost();
-          return;
-        }
-        animationFrame = requestAnimationFrame(() => this.updateFromHost());
-      };
-
-      if (typeof ResizeObserver === 'undefined') {
-        if (scrollbarEl || tableEl) {
-          scheduleUpdate();
-        }
-        onCleanup(() => {
-          if (
-            animationFrame !== undefined &&
-            typeof cancelAnimationFrame !== 'undefined'
-          ) {
-            cancelAnimationFrame(animationFrame);
-          }
-        });
-        return;
-      }
-      const ro = new ResizeObserver(() => this.updateFromHost());
-      if (scrollbarEl) ro.observe(scrollbarEl);
-      if (tableEl) ro.observe(tableEl);
-      scheduleUpdate();
-      onCleanup(() => {
-        ro.disconnect();
-        if (
-          animationFrame !== undefined &&
-          typeof cancelAnimationFrame !== 'undefined'
-        ) {
-          cancelAnimationFrame(animationFrame);
-        }
-      });
-    });
-  }
-
-  protected onScroll(event: Event): void {
-    this.updateStuck(event.target as HTMLElement);
-  }
-
-  private updateFromHost(): void {
-    const el = this.scrollbar()?.nativeElement;
-    if (el) this.updateStuck(el);
-  }
-
-  private updateStuck(el: HTMLElement): void {
-    const { scrollLeft, scrollWidth, clientWidth } = el;
-    const maxScroll = scrollWidth - clientWidth;
-
-    if (maxScroll <= 1) {
-      if (this.isStuckRight()) this.isStuckRight.set(false);
-      return;
-    }
-
-    const stuckRight = maxScroll - scrollLeft > 2;
-
-    if (this.isStuckRight() !== stuckRight) {
-      this.isStuckRight.set(stuckRight);
-    }
   }
 
   protected selectRoute(routeId: string | number): void {

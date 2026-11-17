@@ -56,7 +56,7 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
   template: `
     <div class="flex flex-col w-full lg:h-full min-w-0 lg:min-h-0">
       <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0 min-w-0">
-        <div class="flex flex-col gap-6 w-full min-w-0 p-1 pr-3 sm:pr-4 pb-6">
+        <div class="flex flex-col gap-6 w-full min-w-0 lg:pr-4 pb-6">
           <!-- Top Section: Pyramid (Left ~60%) + Score Card (Right ~40%) -->
           <div
             class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch w-full min-w-0"

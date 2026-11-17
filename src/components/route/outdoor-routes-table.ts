@@ -75,9 +75,9 @@ import { mapRouteToTableRow, handleErrorToast } from '../../utils';
       @if (isEditing) {
         <app-route-equippers-input [route]="outdoorRefMap()[item.id]" />
       } @else {
-        <div class="flex flex-wrap gap-x-1 gap-y-0.5 items-center">
+        <div class="flex flex-wrap gap-x-1 gap-y-0.5 items-center min-w-0">
           @for (e of item.equippers; track e.id; let last = $last) {
-            <span class="inline-flex items-center max-w-full">
+            <span class="inline-flex items-center min-w-0 max-w-full">
               <a
                 tuiLink
                 class="text-xs bg-(--tui-background-neutral-1) hover:bg-(--tui-background-neutral-1-hover) text-(--tui-text-primary) px-2 py-0.5 rounded-md transition-colors truncate max-w-full font-medium"
@@ -96,6 +96,7 @@ import { mapRouteToTableRow, handleErrorToast } from '../../utils';
       }
     </ng-template>
   `,
+  host: { class: 'block w-full min-w-0' },
 })
 export class OutdoorRoutesTableComponent {
   protected readonly layoutService = inject(LayoutService);

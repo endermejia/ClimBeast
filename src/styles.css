@@ -258,6 +258,7 @@ tui-textfield > .t-content {
 }
 
 @media (min-width: 1024px) {
+  tui-dialog[data-size="l"],
   tui-dialog._size_l {
     max-width: 1200px !important;
     width: 95vw !important;

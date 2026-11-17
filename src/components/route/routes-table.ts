@@ -137,8 +137,10 @@ import { EmptyStateComponent } from '../ui/empty-state';
                     [sorter]="sorters[col]"
                     [style.top.px]="stickyTopOffset()"
                     [class.text-center]="col === 'actions' || col === 'ascents'"
-                    [class.w-12!]="col === 'actions' || col === 'ascents'"
-                    [class.w-14!]="col === 'grade' || col === 'height'"
+                    [class.w-12!]="col === 'actions'"
+                    [class.w-14!]="
+                      col === 'grade' || col === 'height' || col === 'ascents'
+                    "
                     [class.w-20!]="col === 'color'"
                   >
                     <div
@@ -271,7 +273,9 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                         ? 'var(--tui-status-negative)'
                                         : ''
                                     "
-                                    class="self-start font-bold! text-base truncate max-w-full block"
+                                    class="self-start font-bold! text-base min-w-0 max-w-full block"
+                                    [class.truncate]="isMobile"
+                                    [class.break-words]="!isMobile"
                                   >
                                     {{ item.route || ('route' | translate) }}
                                   </a>
@@ -479,7 +483,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                           item.crag_slug || 'general',
                                         ]
                                   "
-                                  class="text-sm truncate max-w-full"
+                                  class="text-sm max-w-full break-words"
                                 >
                                   {{ item.crag_name }}
                                 </a>
@@ -592,14 +596,20 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                 </tui-data-list>
                               </tui-textfield>
                             } @else {
-                              <div class="flex flex-wrap gap-1 min-w-0">
-                                <div class="flex flex-wrap gap-x-1 gap-y-0">
+                              <div
+                                class="flex flex-wrap gap-1 min-w-0 max-w-full"
+                              >
+                                <div
+                                  class="flex flex-wrap gap-x-1 gap-y-0 min-w-0 max-w-full"
+                                >
                                   @let displayTopos =
                                     isEditing()
                                       ? selectedToposMap[item.key] || item.topos
                                       : item.topos;
                                   @if (displayTopos.length > 0) {
-                                    <div class="flex flex-wrap gap-1">
+                                    <div
+                                      class="flex flex-wrap gap-1 min-w-0 max-w-full"
+                                    >
                                       @for (t of displayTopos; track t.id) {
                                         @if (isEditing() || !t.link) {
                                           <span
@@ -649,7 +659,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                               />
                             } @else {
                               <div
-                                class="flex flex-wrap gap-x-1 gap-y-0.5 items-center"
+                                class="flex flex-wrap gap-x-1 gap-y-0.5 items-center min-w-0"
                               >
                                 @for (
                                   e of item.equippers;
@@ -657,7 +667,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                   let last = $last
                                 ) {
                                   <span
-                                    class="inline-flex items-center max-w-full"
+                                    class="inline-flex items-center min-w-0 max-w-full"
                                   >
                                     <a
                                       tuiLink
@@ -1783,9 +1793,20 @@ export class RoutesTableComponent {
   ): HTMLElement | null {
     let cur: HTMLElement | null = this.hostEl.nativeElement;
     while (cur && cur !== scrollContainer && cur !== document.body) {
+      // Stop at tui-scrollbar's .t-content wrapper so we never inspect
+      // internal scrollbar chrome such as <tui-scroll-controls> (position: sticky, height: 100%).
+      if (
+        cur.classList.contains('t-content') &&
+        cur.parentElement === scrollContainer
+      ) {
+        break;
+      }
       let sib = cur.previousElementSibling as HTMLElement | null;
       while (sib) {
-        if (getComputedStyle(sib).position === 'sticky') {
+        if (
+          sib.tagName !== 'TUI-SCROLL-CONTROLS' &&
+          getComputedStyle(sib).position === 'sticky'
+        ) {
           return sib;
         }
         sib = sib.previousElementSibling as HTMLElement | null;

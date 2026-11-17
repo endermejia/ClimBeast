@@ -53,10 +53,20 @@ import { safeResourceValue } from '../../utils';
     TuiSkeleton,
     UserInfoComponent,
   ],
+  styles: `
+    :host > tui-scrollbar {
+      overflow-x: hidden !important;
+    }
+    :host > tui-scrollbar ::ng-deep > .t-content {
+      min-inline-size: 0 !important;
+      max-inline-size: 100% !important;
+      overflow-x: clip !important;
+    }
+  `,
   template: `
-    <tui-scrollbar class="flex grow">
+    <tui-scrollbar class="w-full h-full min-h-0 min-w-0">
       <section
-        class="w-full max-w-[1600px] mx-auto grid gap-6 px-4 py-4 pb-6 sm:px-6 lg:px-8 lg:pb-2"
+        class="w-full min-w-0 max-w-[1600px] mx-auto grid grid-cols-1 gap-6 px-4 py-4 pb-6 sm:px-6 lg:px-8 lg:pb-2"
       >
         @if (showOfflineFallback()) {
           <app-offline-not-cached fallbackUrl="/home" class="w-full" />
@@ -135,7 +145,7 @@ import { safeResourceValue } from '../../utils';
           }
 
           <!-- Equipper Routes Table -->
-          <section>
+          <section class="min-w-0">
             <h2 class="text-xl font-bold mb-4">
               {{ 'equipper.routes' | translate }} ({{
                 equipperService.equipperRoutesResource.value()?.length || 0
@@ -150,7 +160,7 @@ import { safeResourceValue } from '../../utils';
           @let indoorRoutes =
             equipperService.equipperIndoorRoutesResource.value() || [];
           @if (indoorRoutes.length > 0) {
-            <section>
+            <section class="min-w-0">
               <h2 class="text-xl font-bold mb-4">
                 {{ 'equipper.indoorRoutes' | translate }} ({{
                   indoorRoutes.length
@@ -166,7 +176,7 @@ import { safeResourceValue } from '../../utils';
       </section>
     </tui-scrollbar>
   `,
-  host: { class: 'flex grow min-h-0' },
+  host: { class: 'flex flex-col w-full h-full min-h-0 min-w-0' },
 })
 export class EquipperComponent {
   private readonly dialogs = inject(TuiDialogService);
