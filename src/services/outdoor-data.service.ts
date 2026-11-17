@@ -21,7 +21,6 @@ import {
   TopoListItem,
   TopoPath,
   TopoRouteWithRoute,
-  VERTICAL_LIFE_GRADES,
 } from '../models';
 
 import { CACHE_KEYS } from '../constants';
@@ -201,46 +200,26 @@ export class OutdoorDataService {
     fetcher: async (areaSlug) => {
       if (!areaSlug) return [];
       const client = await this.supabase.getClient();
-      const { data, error } = await client
-        .from('topos')
-        .select(
-          '*, crags!inner(slug, areas!inner(slug)), topo_routes(route_id, route:routes(grade))',
-        )
-        .eq('crags.areas.slug', areaSlug);
+      const { data, error } = await client.rpc('get_area_topos_preview', {
+        p_area_slug: areaSlug,
+      });
 
       if (error) {
         throw error;
       }
 
-      return (data || []).map((t) => {
-        const grades: AmountByEveryGrade = {};
-        (t.topo_routes || []).forEach((tr) => {
-          const g = tr.route?.grade;
-          if (g != null && g >= 0) {
-            grades[g as VERTICAL_LIFE_GRADES] =
-              (grades[g as VERTICAL_LIFE_GRADES] ?? 0) + 1;
-          }
-        });
-
-        return {
-          id: t.id,
-          name: t.name,
-          slug: t.slug,
-          crag_slug: t.crags?.slug || '',
-          grades,
-          photo: t.photo,
-          shade_morning: t.shade_morning,
-          shade_afternoon: t.shade_afternoon,
-          shade_change_hour: t.shade_change_hour,
-          route_ids: Array.from(
-            new Set(
-              (t.topo_routes || []).map(
-                (tr: { route_id: number }) => tr.route_id,
-              ),
-            ),
-          ),
-        };
-      });
+      return (data || []).map((t) => ({
+        id: t.id,
+        name: t.name,
+        slug: t.slug,
+        crag_slug: t.crag_slug || '',
+        grades: (t.grades ?? {}) as AmountByEveryGrade,
+        photo: t.photo,
+        shade_morning: t.shade_morning,
+        shade_afternoon: t.shade_afternoon,
+        shade_change_hour: t.shade_change_hour,
+        route_ids: t.route_ids ?? [],
+      }));
     },
     cache: this.cache,
     fallbackValue: [],
@@ -349,7 +328,30 @@ export class OutdoorDataService {
         throw error;
       }
 
-      return mapCragToDetail(data as CragWithJoins);
+      const detail = mapCragToDetail(data as CragWithJoins);
+      if (detail.topos.length === 0) {
+        const { data: previewTopos } = await client.rpc(
+          'get_area_topos_preview',
+          {
+            p_area_slug: areaSlug,
+            p_crag_slug: cragSlug,
+          },
+        );
+        if (previewTopos && previewTopos.length > 0) {
+          detail.topos = previewTopos.map((t) => ({
+            id: t.id,
+            name: t.name,
+            slug: t.slug,
+            grades: (t.grades ?? {}) as AmountByEveryGrade,
+            photo: t.photo,
+            shade_morning: t.shade_morning,
+            shade_afternoon: t.shade_afternoon,
+            shade_change_hour: t.shade_change_hour,
+            route_ids: t.route_ids ?? [],
+          }));
+        }
+      }
+      return detail;
     },
     cache: this.cache,
     fallbackValue: null,

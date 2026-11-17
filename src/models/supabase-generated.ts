@@ -650,6 +650,7 @@ export type Database = {
           created_at: string;
           expires_at: string | null;
           id: string;
+          link_token_hash: string | null;
           relates_to: string;
           token_hash: string;
           token_type: Database['auth']['Enums']['one_time_token_type'];
@@ -660,6 +661,7 @@ export type Database = {
           created_at?: string;
           expires_at?: string | null;
           id: string;
+          link_token_hash?: string | null;
           relates_to: string;
           token_hash: string;
           token_type: Database['auth']['Enums']['one_time_token_type'];
@@ -670,6 +672,7 @@ export type Database = {
           created_at?: string;
           expires_at?: string | null;
           id?: string;
+          link_token_hash?: string | null;
           relates_to?: string;
           token_hash?: string;
           token_type?: Database['auth']['Enums']['one_time_token_type'];
@@ -734,6 +737,7 @@ export type Database = {
         Row: {
           attribute_mapping: Json | null;
           created_at: string | null;
+          dedicated_scope: boolean | null;
           entity_id: string;
           id: string;
           metadata_url: string | null;
@@ -745,6 +749,7 @@ export type Database = {
         Insert: {
           attribute_mapping?: Json | null;
           created_at?: string | null;
+          dedicated_scope?: boolean | null;
           entity_id: string;
           id: string;
           metadata_url?: string | null;
@@ -756,6 +761,7 @@ export type Database = {
         Update: {
           attribute_mapping?: Json | null;
           created_at?: string | null;
+          dedicated_scope?: boolean | null;
           entity_id?: string;
           id?: string;
           metadata_url?: string | null;
@@ -4200,6 +4206,21 @@ export type Database = {
       };
       get_area_balance: { Args: { p_area_id: number }; Returns: Json };
       get_area_public_timeline: { Args: { p_area_id: number }; Returns: Json };
+      get_area_topos_preview: {
+        Args: { p_area_slug: string; p_crag_slug?: string };
+        Returns: {
+          crag_slug: string;
+          grades: Json;
+          id: number;
+          name: string;
+          photo: string;
+          route_ids: number[];
+          shade_afternoon: boolean;
+          shade_change_hour: string;
+          shade_morning: boolean;
+          slug: string;
+        }[];
+      };
       get_areas_list: {
         Args: never;
         Returns: {
