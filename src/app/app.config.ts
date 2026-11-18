@@ -137,7 +137,7 @@ export const appConfig: ApplicationConfig = {
     tuiHintOptionsProvider({
       appearance: 'floating',
     }),
-    provideTaiga(),
+    provideTaiga({ fontScaling: false }),
     provideEventPlugins(),
     {
       provide: TUI_PLATFORM,
