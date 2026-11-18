@@ -52,6 +52,7 @@ export class TopoImagePipe implements PipeTransform {
   }
 
   private getThumbnailPath(path: string): string {
+    if (path.endsWith('_thumb.webp')) return path;
     const lastDotIndex = path.lastIndexOf('.');
     if (lastDotIndex === -1) return `${path}_thumb.webp`;
     return `${path.substring(0, lastDotIndex)}_thumb.webp`;

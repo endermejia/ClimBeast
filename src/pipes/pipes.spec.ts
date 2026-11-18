@@ -326,6 +326,17 @@ describe('TopoImagePipe (with DI)', () => {
     expect(result).toContain('topos/123_thumb.webp');
   });
 
+  it('does not double-append _thumb.webp when path is already a thumbnail', async () => {
+    const result = await pipe.transform({
+      path: 'topos/123_thumb.webp',
+      version: 1,
+      isIndoor: false,
+      isThumbnail: true,
+    });
+    expect(result).toContain('topos/123_thumb.webp');
+    expect(result).not.toContain('_thumb_thumb.webp');
+  });
+
   it('falls back to original photo when outdoor thumbnail cannot be signed', async () => {
     const supabase = TestBed.inject(SupabaseService);
     vi.spyOn(supabase, 'getTopoSignedUrl').mockImplementation(
