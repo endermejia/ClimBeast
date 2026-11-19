@@ -106,7 +106,7 @@ export interface AreaDonationDialogData {
                   [disabled]="donationsService.loading()"
                   (click.zoneless)="claimFromPreviousDonations()"
                 >
-                  {{ 'donations.unlockTopos' | translate }}
+                  {{ 'donations.unlocksTopos' | translate }}
                 </button>
               </div>
             }
