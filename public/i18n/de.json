@@ -1058,7 +1058,7 @@
   "payments.isSecret": "Topos auf Einladung",
   "payments.isSecret.desc": "Nur für bestimmte eingeladene Benutzer.",
   "payments.isSecret.notice": "Wer Zugang hat, kann über den Detailbildschirm des Gebiets verwaltet werden — einfach den Bearbeitungsmodus aktivieren und auf \"Zugang verwalten\" tippen.",
-  "payments.paywall.contributeAndUnlock": "Contribute and unlock topos ({{price}} €)",
+  "payments.paywall.contributeAndUnlock": "Beitragen und Topos freischalten",
   "payments.paywall.footer": "100 % deiner Zahlung geht direkt an die Erschließer dieses Gebiets für dessen Instandhaltung. ClimBeast erhebt keine Provision für diese Transaktion.",
   "payments.price": "für alle Topos des Gebiets",
   "payments.priceHelp": "Mindestpreis: 2,00€. Stripe erhebt eine Gebühr von 0,25€ + 1,5% pro Transaktion.",

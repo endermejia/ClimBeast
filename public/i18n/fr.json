@@ -1058,7 +1058,7 @@
   "payments.isSecret": "Topos sur invitation",
   "payments.isSecret.desc": "Pour les utilisateurs invités uniquement.",
   "payments.isSecret.notice": "Vous pourrez gérer qui a accès depuis l'écran de détails de la zone, en activant le mode édition et en appuyant sur \"Gérer les accès\".",
-  "payments.paywall.contributeAndUnlock": "Contribute and unlock topos ({{price}} €)",
+  "payments.paywall.contributeAndUnlock": "Contribuer et débloquer les topos",
   "payments.paywall.footer": "100% de votre paiement va directement aux équipeurs de cette zone pour son entretien. ClimBeast ne prend aucune commission sur cette transaction.",
   "payments.price": "pour tous les topos de la zone",
   "payments.priceHelp": "Prix minimum : 2,00€. Stripe prélève une commission de 0,25€ + 1,5% par transaction.",
