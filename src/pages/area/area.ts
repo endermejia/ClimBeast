@@ -1434,6 +1434,12 @@ export class AreaComponent {
 
   constructor() {
     effect(() => {
+      if (this.donationsService.purchaseVersion() > 0) {
+        untracked(() => this.areaDetailResource.reload());
+      }
+    });
+
+    effect(() => {
       const crags = this.outdoorData.cragsList();
       untracked(() => {
         this.hasAnyCrags.set(crags.length > 0);

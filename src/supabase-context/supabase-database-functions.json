@@ -36,6 +36,15 @@
     "description": null
   },
   {
+    "name": "claim_area_access_from_donations",
+    "arguments": "p_area_id bigint",
+    "return_type": "boolean",
+    "security_definer": true,
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "definition": "\nDECLARE\n  v_user_id uuid := auth.uid();\n  v_price numeric;\n  v_total_donated numeric;\nBEGIN\n  IF v_user_id IS NULL OR p_area_id IS NULL THEN\n    RETURN false;\n  END IF;\n\n  SELECT a.price\n  INTO v_price\n  FROM public.areas a\n  WHERE a.id = p_area_id;\n\n  IF v_price IS NULL OR v_price <= 0 THEN\n    RETURN false;\n  END IF;\n\n  IF EXISTS (\n    SELECT 1\n    FROM public.area_purchases ap\n    WHERE ap.area_id = p_area_id\n      AND ap.user_id = v_user_id\n  ) THEN\n    RETURN true;\n  END IF;\n\n  SELECT COALESCE(SUM(ad.gross_amount), 0)\n  INTO v_total_donated\n  FROM public.area_donations ad\n  WHERE ad.area_id = p_area_id\n    AND ad.user_id = v_user_id\n    AND ad.stripe_session_id IS NOT NULL\n    AND ad.gross_amount > 0;\n\n  IF v_total_donated < v_price THEN\n    RETURN false;\n  END IF;\n\n  INSERT INTO public.area_purchases (\n    user_id,\n    area_id,\n    amount,\n    gross_amount,\n    stripe_fee,\n    net_amount,\n    stripe_session_id\n  )\n  VALUES (\n    v_user_id,\n    p_area_id,\n    0,\n    0,\n    0,\n    0,\n    'claimed_from_donations_' || v_user_id::text || '_' || p_area_id::text\n  )\n  ON CONFLICT (stripe_session_id) DO NOTHING;\n\n  RETURN true;\nEND;\n",
+    "description": null
+  },
+  {
     "name": "create_area_material_request",
     "arguments": "p_area_id bigint, p_items jsonb, p_notes text",
     "return_type": "bigint",

@@ -4055,6 +4055,10 @@ export type Database = {
             };
             Returns: string;
           };
+      claim_area_access_from_donations: {
+        Args: { p_area_id: number };
+        Returns: boolean;
+      };
       create_area_material_request: {
         Args: { p_area_id: number; p_items: Json; p_notes?: string };
         Returns: number;

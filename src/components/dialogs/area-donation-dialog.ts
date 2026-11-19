@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import {
@@ -75,6 +75,42 @@ export interface AreaDonationDialogData {
 
           <!-- Reactive topos unlock indicator -->
           @if (canUnlockTopos()) {
+            @if (canClaimFromPreviousDonations()) {
+              <div
+                class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-(--tui-background-positive-neutral) border border-(--tui-status-positive) text-(--tui-text-primary) transition-all duration-300"
+              >
+                <div class="flex items-center gap-3 min-w-0">
+                  <div
+                    class="flex items-center justify-center w-8 h-8 rounded-xl bg-(--tui-status-positive-pale) text-(--tui-status-positive) shrink-0 text-lg"
+                  >
+                    <tui-icon icon="@tui.circle-check" />
+                  </div>
+                  <span class="text-xs font-bold leading-snug">
+                    {{
+                      'donations.alreadyDonatedUnlockHint'
+                        | translate
+                          : {
+                              amount:
+                                (previousDonatedTotal() | number: '1.0-2'),
+                            }
+                    }}
+                  </span>
+                </div>
+                <button
+                  tuiButton
+                  appearance="positive"
+                  size="s"
+                  type="button"
+                  class="shrink-0"
+                  iconStart="@tui.lock-open"
+                  [disabled]="donationsService.loading()"
+                  (click.zoneless)="claimFromPreviousDonations()"
+                >
+                  {{ 'donations.unlockTopos' | translate }}
+                </button>
+              </div>
+            }
+
             @if (unlocksTopos()) {
               <div
                 class="flex flex-col gap-2 p-3.5 rounded-2xl bg-(--tui-background-positive-neutral) border border-(--tui-status-positive) text-(--tui-text-primary) transition-all duration-300"
@@ -354,6 +390,32 @@ export class AreaDonationDialogComponent {
   readonly canUnlockTopos = computed(
     () => this.areaPrice() > 0 && !this.isPurchased(),
   );
+
+  protected readonly previousDonationsResource = resource({
+    params: () => (this.canUnlockTopos() ? this.context.data.areaId : null),
+    loader: async ({ params: areaId }) => {
+      if (!areaId) return 0;
+      return this.donationsService.getUserAreaDonationsTotal(areaId);
+    },
+  });
+
+  protected readonly previousDonatedTotal = computed(
+    () => this.previousDonationsResource.value() ?? 0,
+  );
+
+  protected readonly canClaimFromPreviousDonations = computed(
+    () =>
+      this.canUnlockTopos() && this.previousDonatedTotal() >= this.areaPrice(),
+  );
+
+  protected async claimFromPreviousDonations(): Promise<void> {
+    const ok = await this.donationsService.claimAccessFromDonations(
+      this.context.data.areaId,
+    );
+    if (ok) {
+      this.context.completeWith();
+    }
+  }
 
   readonly presets = computed(() => {
     const price = this.areaPrice();
