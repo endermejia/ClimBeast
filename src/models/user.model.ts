@@ -23,7 +23,6 @@ export interface ProfileConfigModel {
   isPrivate: boolean;
   eightAnuUser: EightAnuUser | null;
   deleteEmail: string;
-  restartFirstSteps: boolean;
 }
 
 /** Preferencias de notificaciones push por categoría (columnas de `user_profiles`). */

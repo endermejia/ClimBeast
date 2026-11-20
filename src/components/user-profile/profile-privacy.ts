@@ -1,8 +1,8 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
-import { TuiIcon } from '@taiga-ui/core';
+import { TuiButton } from '@taiga-ui/core';
 import { TuiSwitch } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
@@ -10,130 +10,106 @@ import { TranslatePipe } from '@ngx-translate/core';
 @Component({
   selector: 'app-profile-privacy',
   host: { class: 'contents' },
-  imports: [FormsModule, RouterLink, TranslatePipe, TuiIcon, TuiSwitch],
+  imports: [FormsModule, RouterLink, TranslatePipe, TuiButton, TuiSwitch],
   template: `
-    <div class="flex flex-col gap-4 mt-6">
-      <div class="flex flex-col gap-1">
-        <h2 class="text-lg font-bold m-0">
-          {{ 'cookies.settings.title' | translate }}
-        </h2>
-        <p class="m-0 text-sm text-(--tui-text-secondary)">
-          {{ 'cookies.settings.subtitle' | translate }}
-        </p>
-      </div>
+    <section
+      class="flex flex-col gap-3 pt-6 mt-2 border-t border-(--tui-border-normal)"
+    >
+      <h2 class="text-lg font-bold m-0 text-(--tui-text-primary)">
+        {{ 'cookies.settings.title' | translate }}
+      </h2>
 
-      <div
-        class="flex flex-col gap-4 pl-4 border-l-2 border-(--tui-border-normal)"
-      >
-        <!-- Necessary (always enabled) -->
-        <div class="flex items-start justify-between gap-4">
-          <div class="flex flex-col gap-0.5 min-w-0">
-            <label
-              tuiLabel
-              for="privacyNecessarySwitch"
-              class="font-medium text-(--tui-text-primary)"
-            >
-              {{ 'cookies.categories.necessary.title' | translate }}
-            </label>
-            <p class="m-0 text-xs text-(--tui-text-secondary) leading-relaxed">
-              {{ 'cookies.categories.necessary.description' | translate }}
-            </p>
-          </div>
+      <div class="flex flex-col divide-y divide-(--tui-border-normal)/60">
+        <!-- Private profile -->
+        <div class="flex items-center justify-between gap-4 py-3 first:pt-1">
+          <label
+            for="privateProfileSwitch"
+            class="flex flex-col gap-0.5 min-w-0 cursor-pointer"
+          >
+            <span class="text-sm font-medium text-(--tui-text-primary)">
+              {{ 'privateProfile' | translate }}
+            </span>
+            <span class="text-xs text-(--tui-text-secondary) leading-snug">
+              {{ 'profile.private.hint' | translate }}
+            </span>
+          </label>
           <input
-            id="privacyNecessarySwitch"
+            id="privateProfileSwitch"
             tuiSwitch
             type="checkbox"
-            [ngModel]="true"
-            disabled
-            class="shrink-0 mt-0.5"
+            [ngModel]="isPrivate()"
+            (ngModelChange)="privateProfileChange.emit($event)"
+            class="shrink-0"
             autocomplete="off"
           />
         </div>
 
-        <!-- Analytics / Performance (Vercel Speed Insights) -->
-        <div class="flex items-start justify-between gap-4">
+        <!-- Cookie preferences summary + Configure button (opens modal dialog) -->
+        <div class="flex items-center justify-between gap-4 py-3">
           <div class="flex flex-col gap-0.5 min-w-0">
-            <label
-              tuiLabel
-              for="privacyAnalyticsSwitch"
-              class="font-medium text-(--tui-text-primary) cursor-pointer"
-            >
-              {{ 'cookies.categories.analytics.title' | translate }}
-            </label>
-            <p class="m-0 text-xs text-(--tui-text-secondary) leading-relaxed">
-              {{ 'cookies.categories.analytics.description' | translate }}
-            </p>
+            <span class="text-sm font-medium text-(--tui-text-primary)">
+              {{ 'legal.cookies' | translate }}
+            </span>
+            <span class="text-xs text-(--tui-text-secondary)">
+              {{ cookieSummaryKey() | translate }}
+            </span>
           </div>
-          <input
-            id="privacyAnalyticsSwitch"
-            tuiSwitch
-            type="checkbox"
-            [ngModel]="analytics()"
-            (ngModelChange)="analyticsChange.emit($event)"
-            class="shrink-0 mt-0.5"
-            autocomplete="off"
-          />
-        </div>
-
-        <!-- External Media (YouTube embeds) -->
-        <div class="flex items-start justify-between gap-4">
-          <div class="flex flex-col gap-0.5 min-w-0">
-            <label
-              tuiLabel
-              for="privacyExternalMediaSwitch"
-              class="font-medium text-(--tui-text-primary) cursor-pointer"
-            >
-              {{ 'cookies.categories.externalMedia.title' | translate }}
-            </label>
-            <p class="m-0 text-xs text-(--tui-text-secondary) leading-relaxed">
-              {{ 'cookies.categories.externalMedia.description' | translate }}
-            </p>
-          </div>
-          <input
-            id="privacyExternalMediaSwitch"
-            tuiSwitch
-            type="checkbox"
-            [ngModel]="externalMedia()"
-            (ngModelChange)="externalMediaChange.emit($event)"
-            class="shrink-0 mt-0.5"
-            autocomplete="off"
-          />
+          <button
+            tuiButton
+            type="button"
+            size="s"
+            appearance="outline"
+            iconStart="@tui.sliders-horizontal"
+            class="shrink-0"
+            (click)="openCookieSettings.emit()"
+          >
+            {{ 'cookies.settings.configureButton' | translate }}
+          </button>
         </div>
       </div>
 
       <!-- Permanent access to legal documents (LSSI-CE art. 10 / RGPD art. 12) -->
       <div
-        class="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 text-xs text-(--tui-text-secondary)"
+        class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-(--tui-text-tertiary)"
       >
         <a
           routerLink="/terms"
-          class="inline-flex items-center gap-1.5 hover:underline text-(--tui-text-secondary) hover:text-(--tui-text-primary)"
+          class="hover:underline text-(--tui-text-tertiary) hover:text-(--tui-text-primary)"
         >
-          <tui-icon icon="@tui.file-text" class="text-xs" />
           {{ 'legal.tabTerms' | translate }}
         </a>
+        <span aria-hidden="true">&bull;</span>
         <a
           routerLink="/privacy"
-          class="inline-flex items-center gap-1.5 hover:underline text-(--tui-text-secondary) hover:text-(--tui-text-primary)"
+          class="hover:underline text-(--tui-text-tertiary) hover:text-(--tui-text-primary)"
         >
-          <tui-icon icon="@tui.shield" class="text-xs" />
           {{ 'legal.tabPrivacy' | translate }}
         </a>
+        <span aria-hidden="true">&bull;</span>
         <a
           routerLink="/cookies"
-          class="inline-flex items-center gap-1.5 hover:underline text-(--tui-text-secondary) hover:text-(--tui-text-primary)"
+          class="hover:underline text-(--tui-text-tertiary) hover:text-(--tui-text-primary)"
         >
-          <tui-icon icon="@tui.cookie" class="text-xs" />
           {{ 'legal.tabCookies' | translate }}
         </a>
       </div>
-    </div>
+    </section>
   `,
 })
 export class ProfilePrivacyComponent {
+  readonly isPrivate = input<boolean>(false);
   readonly analytics = input<boolean>(false);
   readonly externalMedia = input<boolean>(false);
 
-  readonly analyticsChange = output<boolean>();
-  readonly externalMediaChange = output<boolean>();
+  readonly privateProfileChange = output<boolean>();
+  readonly openCookieSettings = output<void>();
+
+  protected readonly cookieSummaryKey = computed(() => {
+    const a = this.analytics();
+    const m = this.externalMedia();
+    if (a && m) return 'cookies.settings.summaryAll';
+    if (a) return 'cookies.settings.summaryAnalyticsOnly';
+    if (m) return 'cookies.settings.summaryYoutubeOnly';
+    return 'cookies.settings.summaryEssentialOnly';
+  });
 }

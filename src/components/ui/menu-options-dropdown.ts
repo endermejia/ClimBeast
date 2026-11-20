@@ -16,6 +16,8 @@ import { UserProfilesService } from '../../services/user-profiles.service';
 
 import { Themes } from '../../models';
 
+import { ThemeTransitionEvent } from '../../utils';
+
 @Component({
   selector: 'app-menu-options-dropdown',
   imports: [FormsModule, TranslatePipe, TuiAppearance, TuiIcon, TuiSegmented],
@@ -151,13 +153,14 @@ import { Themes } from '../../models';
         <tui-segmented
           size="s"
           [activeItemIndex]="themeService.theme() === Themes.DARK ? 1 : 0"
-          (activeItemIndexChange)="toggleTheme($event === 1)"
+          (pointerdown)="lastEvent = $event"
           (mousedown)="lastEvent = $event"
+          (activeItemIndexChange)="toggleTheme($event === 1)"
         >
-          <button title="light" type="button">
+          <button title="light" type="button" (click)="lastEvent = $event">
             <tui-icon icon="@tui.sun" />
           </button>
-          <button title="dark" type="button">
+          <button title="dark" type="button" (click)="lastEvent = $event">
             <tui-icon icon="@tui.moon" />
           </button>
         </tui-segmented>
@@ -188,7 +191,7 @@ export class MenuOptionsDropdownComponent {
 
   readonly closeDropdown = output<void>();
 
-  protected lastEvent?: MouseEvent;
+  protected lastEvent?: ThemeTransitionEvent;
   protected readonly authState = inject(AuthStateService);
   protected readonly themeService = inject(ThemeService);
   protected readonly Themes = Themes;
@@ -254,23 +257,20 @@ export class MenuOptionsDropdownComponent {
     await this.supabase.logout();
   }
 
-  protected toggleTheme(dark: boolean): void {
+  protected async toggleTheme(dark: boolean): Promise<void> {
     const theme = dark ? Themes.DARK : Themes.LIGHT;
-    this.themeService.setTheme(theme, this.lastEvent);
-    void this.userProfilesService
-      .updateUserProfile({
-        theme,
-      })
-      .then((res) => {
-        if (res.success) {
-          this.toast.success('profile.updated.theme');
-        } else {
-          console.error(
-            '[MenuOptionsDropdownComponent] Error updating theme:',
-            res.error,
-          );
-          this.toast.error('profile.saveError');
-        }
-      });
+    await this.themeService.setTheme(theme, this.lastEvent);
+    const res = await this.userProfilesService.updateUserProfile({
+      theme,
+    });
+    if (res.success) {
+      this.toast.success('profile.updated.theme');
+    } else {
+      console.error(
+        '[MenuOptionsDropdownComponent] Error updating theme:',
+        res.error,
+      );
+      this.toast.error('profile.saveError');
+    }
   }
 }

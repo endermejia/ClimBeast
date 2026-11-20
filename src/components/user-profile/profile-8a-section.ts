@@ -9,17 +9,15 @@ import { TranslatePipe } from '@ngx-translate/core';
   selector: 'app-profile-8a-section',
   imports: [TranslatePipe, TuiBadge, TuiButton, TuiIcon],
   template: `
-    <div
-      class="flex flex-col gap-4 p-5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
-    >
+    <div class="flex flex-col gap-3">
       <h3
-        class="text-base font-semibold flex items-center gap-2 m-0 text-(--tui-text-secondary)"
+        class="text-sm font-semibold flex items-center gap-2 m-0 text-(--tui-text-secondary)"
       >
         <tui-icon icon="@tui.settings" size="s" />
         {{ 'toolsAndManagement' | translate }}
       </h3>
 
-      <div class="flex flex-col gap-3">
+      <div class="flex flex-col gap-2.5">
         @if (isPrivate()) {
           <button
             tuiButton
@@ -62,6 +60,18 @@ import { TranslatePipe } from '@ngx-translate/core';
         >
           {{ 'import8a.button' | translate }}
         </button>
+
+        <button
+          tuiButton
+          iconStart="@tui.compass"
+          appearance="outline"
+          type="button"
+          size="m"
+          class="w-full justify-start group"
+          (click)="restartFirstSteps.emit()"
+        >
+          {{ 'firstSteps.restart' | translate }}
+        </button>
       </div>
     </div>
   `,
@@ -73,4 +83,5 @@ export class Profile8aSectionComponent {
   readonly openFollowRequests = output<void>();
   readonly openPurchaseHistory = output<void>();
   readonly openImport8a = output<void>();
+  readonly restartFirstSteps = output<void>();
 }

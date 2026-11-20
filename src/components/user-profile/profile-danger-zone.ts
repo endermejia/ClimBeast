@@ -30,17 +30,15 @@ import { Observer } from 'rxjs';
     TuiTextfield,
   ],
   template: `
-    <div
-      class="flex flex-col gap-4 p-5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
-    >
+    <div class="flex flex-col gap-3">
       <h3
-        class="text-base font-semibold flex items-center gap-2 m-0 text-(--tui-text-secondary)"
+        class="text-sm font-semibold flex items-center gap-2 m-0 text-(--tui-text-secondary)"
       >
         <tui-icon icon="@tui.shield" size="s" />
         {{ 'securityAndSession' | translate }}
       </h3>
 
-      <div class="flex flex-col gap-3">
+      <div class="flex flex-col gap-2.5">
         <button
           tuiButton
           iconStart="@tui.lock"

@@ -7,7 +7,8 @@ export class MockThemeService {
   readonly theme = signal<Theme>(Themes.LIGHT);
   readonly selectedTheme = this.theme.asReadonly();
 
-  setTheme(newTheme: Theme): void {
+  setTheme(newTheme: Theme): Promise<void> {
     this.theme.set(newTheme);
+    return Promise.resolve();
   }
 }

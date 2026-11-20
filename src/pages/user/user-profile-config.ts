@@ -65,6 +65,7 @@ import { ToastService } from '../../services/toast.service';
 import { TourService, TourStep } from '../../services/tour.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
 
+import { CookieSettingsDialogComponent } from '../../components/dialogs/cookie-settings-dialog';
 import { FirstStepsDialogComponent } from '../../components/dialogs/first-steps-dialog';
 import { FollowRequestsDialogComponent } from '../../components/dialogs/follow-requests-dialog';
 import { Profile8aSectionComponent } from '../../components/user-profile/profile-8a-section';
@@ -86,7 +87,7 @@ import {
   UserProfileDto,
 } from '../../models';
 
-import { isComplexPassword } from '../../utils';
+import { isComplexPassword, ThemeTransitionEvent } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -165,7 +166,7 @@ interface Country {
           (deleteAvatar)="deleteAvatar()"
         />
 
-        <!-- Preferences Section -->
+        <!-- Preferences Section (flat, no outer box) -->
         <app-profile-preferences
           [model]="model()"
           [profileForm]="profileForm"
@@ -175,12 +176,11 @@ interface Country {
           [languageError]="languageError()"
           (updateModel)="onChildUpdateModel($event)"
           (saveLanguage)="saveLanguage()"
+          (themeEvent)="lastEvent = $event"
           (toggleTheme)="toggleTheme($event)"
-          (restartFirstStepsChange)="onRestartFirstStepsChange($event)"
-          (privateProfileChange)="onPrivateProfileChange($event)"
         />
 
-        <!-- Notifications Section -->
+        <!-- Notifications Section (flat, categories always visible) -->
         <app-profile-notifications
           [enabled]="pushEnabled()"
           [supported]="pushSupported()"
@@ -190,22 +190,23 @@ interface Country {
           (preferenceChange)="onNotificationPreferenceChange($event)"
         />
 
-        <!-- Privacy & Cookies Section -->
+        <!-- Privacy & Cookies Section (flat) -->
         <app-profile-privacy
+          [isPrivate]="model().isPrivate"
           [analytics]="consentService.analyticsAllowed()"
           [externalMedia]="consentService.externalMediaAllowed()"
-          (analyticsChange)="onAnalyticsConsentChange($event)"
-          (externalMediaChange)="onExternalMediaConsentChange($event)"
+          (privateProfileChange)="onPrivateProfileChange($event)"
+          (openCookieSettings)="openCookieSettingsDialog()"
         />
 
         <!-- Account Actions Header -->
         <h2
-          class="text-xl font-bold mt-12 mb-6 border-t border-(--tui-border-normal) pt-8"
+          class="text-lg font-bold mt-4 mb-1 border-t border-(--tui-border-normal) pt-6 text-(--tui-text-primary)"
         >
           {{ 'accountActions' | translate }}
         </h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <!-- Tools & Management Section -->
           <app-profile-8a-section
             [isPrivate]="model().isPrivate"
@@ -213,6 +214,7 @@ interface Country {
             (openFollowRequests)="openFollowRequestsDialog()"
             (openPurchaseHistory)="openPurchaseHistoryDialog()"
             (openImport8a)="openImport8aDialog()"
+            (restartFirstSteps)="onRestartFirstSteps()"
           />
 
           <!-- Security & Session Section -->
@@ -308,7 +310,7 @@ export class UserProfileConfigComponent {
     ),
   );
 
-  protected lastEvent?: MouseEvent;
+  protected lastEvent?: ThemeTransitionEvent;
   readonly selectedEightAnuUser = resource<EightAnuUser | null, string | null>({
     params: () => null,
     loader: async () => null,
@@ -364,7 +366,6 @@ export class UserProfileConfigComponent {
     isPrivate: false,
     eightAnuUser: null as EightAnuUser | null,
     deleteEmail: '',
-    restartFirstSteps: false,
   });
 
   protected readonly profileForm = form(this.model, (schemaPath) => {
@@ -599,7 +600,6 @@ export class UserProfileConfigComponent {
       birth_date,
       eightAnuUser: this.selectedEightAnuUser.value() || null,
       deleteEmail: '',
-      restartFirstSteps: false,
     });
 
     this.notificationPreferences.set({
@@ -728,7 +728,7 @@ export class UserProfileConfigComponent {
       return;
     }
     this.model.update((m) => ({ ...m, theme: newTheme }));
-    this.themeService.setTheme(newTheme, this.lastEvent);
+    await this.themeService.setTheme(newTheme, this.lastEvent);
     await this.updateProfile({ theme: newTheme }, 'profile.updated.theme');
   }
 
@@ -962,14 +962,7 @@ export class UserProfileConfigComponent {
     this.userProfilesService.openImport8aDialog();
   }
 
-  async onRestartFirstStepsChange(enabled: boolean): Promise<void> {
-    if (!enabled) {
-      this.updateModel('restartFirstSteps', false);
-      return;
-    }
-
-    this.updateModel('restartFirstSteps', true);
-
+  async onRestartFirstSteps(): Promise<void> {
     const confirmed = await firstValueFrom(
       this.dialogs.open<boolean>(TUI_CONFIRM, {
         label: this.translate.instant('firstSteps.restart'),
@@ -990,8 +983,6 @@ export class UserProfileConfigComponent {
         'profile.updated.first_steps',
       );
     }
-
-    this.updateModel('restartFirstSteps', false);
   }
 
   async onNotificationsChange(enabled: boolean): Promise<void> {
@@ -1053,14 +1044,17 @@ export class UserProfileConfigComponent {
     void this.togglePrivateProfile(enabled);
   }
 
-  protected onAnalyticsConsentChange(enabled: boolean): void {
-    this.consentService.updatePreferences({ analytics: enabled });
-    this.toast.success('cookies.settings.saved');
-  }
-
-  protected onExternalMediaConsentChange(enabled: boolean): void {
-    this.consentService.updatePreferences({ externalMedia: enabled });
-    this.toast.success('cookies.settings.saved');
+  protected openCookieSettingsDialog(): void {
+    void firstValueFrom(
+      this.dialogs.open(
+        new PolymorpheusComponent(CookieSettingsDialogComponent),
+        {
+          label: this.translate.instant('cookies.settings.title'),
+          size: 'm',
+        },
+      ),
+      { defaultValue: undefined },
+    );
   }
 
   private async updateProfile(

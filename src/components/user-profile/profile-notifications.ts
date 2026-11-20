@@ -1,6 +1,7 @@
 import { Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { TuiButton } from '@taiga-ui/core';
 import { TuiSwitch } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
@@ -15,15 +16,15 @@ interface NotificationCategory {
 @Component({
   selector: 'app-profile-notifications',
   host: { class: 'contents' },
-  imports: [FormsModule, TranslatePipe, TuiSwitch],
+  imports: [FormsModule, TranslatePipe, TuiButton, TuiSwitch],
   template: `
-    <div class="flex flex-col gap-4 mt-6">
-      <!-- Master switch -->
+    <section
+      class="flex flex-col gap-3 pt-6 mt-2 border-t border-(--tui-border-normal)"
+    >
       <div class="flex flex-col gap-1">
         <div class="flex items-center justify-between gap-4">
-          <h2 class="text-lg font-bold m-0">
+          <h2 class="text-lg font-bold m-0 text-(--tui-text-primary)">
             <label
-              tuiLabel
               for="notificationsSwitch"
               class="cursor-pointer text-inherit font-inherit"
             >
@@ -40,44 +41,40 @@ interface NotificationCategory {
             autocomplete="off"
           />
         </div>
+
         @if (!supported()) {
-          <p class="m-0 text-sm text-(--tui-text-secondary)">
+          <p class="m-0 text-xs text-(--tui-text-secondary) leading-relaxed">
             {{ 'notificationsUnsupportedHint' | translate }}
           </p>
         } @else if (permissionDenied()) {
-          <p class="m-0 text-sm text-(--tui-text-secondary)">
+          <p class="m-0 text-xs text-(--tui-text-secondary) leading-relaxed">
             {{ 'notificationsBlockedHint' | translate }}
           </p>
         }
       </div>
 
-      <!-- Categories -->
-      <div
-        class="flex flex-col gap-4 pl-4 border-l-2 border-(--tui-border-normal)"
-      >
+      <!-- Always visible (no layout shift); disabled when notifications are off -->
+      <div class="flex flex-wrap gap-2">
         @for (category of categories; track category.key) {
-          <div class="flex items-center justify-between gap-4">
-            <label
-              tuiLabel
-              [for]="category.key"
-              [class.opacity-50]="!enabled()"
-              >{{ category.label | translate }}</label
-            >
-            <input
-              tuiSwitch
-              type="checkbox"
-              [id]="category.key"
-              [ngModel]="preferences()[category.key]"
-              [disabled]="!enabled()"
-              (ngModelChange)="
-                preferenceChange.emit({ key: category.key, value: $event })
-              "
-              autocomplete="off"
-            />
-          </div>
+          @let active = preferences()[category.key];
+          <button
+            tuiButton
+            type="button"
+            size="s"
+            [appearance]="active ? 'secondary' : 'outline'"
+            [iconStart]="active ? '@tui.check' : ''"
+            [disabled]="!enabled()"
+            class="rounded-full!"
+            [attr.aria-pressed]="active"
+            (click)="
+              preferenceChange.emit({ key: category.key, value: !active })
+            "
+          >
+            {{ category.label | translate }}
+          </button>
         }
       </div>
-    </div>
+    </section>
   `,
 })
 export class ProfileNotificationsComponent {

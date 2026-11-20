@@ -8,12 +8,13 @@ import {
   TuiSegmented,
   TuiSelect,
   TuiSkeleton,
-  TuiSwitch,
 } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { Language, ProfileConfigModel, Themes } from '../../models';
+
+import { ThemeTransitionEvent } from '../../utils';
 
 @Component({
   selector: 'app-profile-preferences',
@@ -29,96 +30,82 @@ import { Language, ProfileConfigModel, Themes } from '../../models';
     TuiSegmented,
     TuiSelect,
     TuiSkeleton,
-    TuiSwitch,
     TuiTextfield,
   ],
   template: `
-    <!-- PREFERENCES -->
-    <div class="flex items-center justify-between gap-4 mt-6">
-      <h2 class="text-lg font-bold m-0">
+    <section
+      class="flex flex-col gap-4 pt-6 mt-4 border-t border-(--tui-border-normal)"
+    >
+      <h2 class="text-lg font-bold m-0 text-(--tui-text-primary)">
         {{ 'preferences' | translate }}
       </h2>
-    </div>
 
-    <!-- Language & Theme -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <!-- Left Column: Language & Theme -->
-      <div class="flex flex-col gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
         <!-- Language -->
-        <tui-textfield
-          tuiChevron
-          [tuiTextfieldCleaner]="false"
-          [stringify]="stringifyLanguage()"
+        <div class="flex flex-col">
+          <tui-textfield
+            tuiChevron
+            [tuiTextfieldCleaner]="false"
+            [stringify]="stringifyLanguage()"
+          >
+            <label tuiLabel for="languageSelect">{{
+              'language' | translate
+            }}</label>
+            <input
+              id="languageSelect"
+              tuiSelect
+              [ngModel]="model().language"
+              (ngModelChange)="
+                onModelChange('language', $event); saveLanguage.emit()
+              "
+              [invalid]="profileForm().language().invalid()"
+              [disabled]="profileForm().language().disabled()"
+              [tuiSkeleton]="!userEmail()"
+              autocomplete="off"
+            />
+            <tui-data-list-wrapper *tuiDropdown new [items]="languages()" />
+          </tui-textfield>
+          <tui-error [error]="languageError()" />
+        </div>
+
+        <!-- Theme (grouped together with palette icon, aligned nicely) -->
+        <div
+          class="flex items-center justify-between md:justify-end gap-4 py-1"
         >
-          <label tuiLabel for="languageSelect">{{
-            'language' | translate
-          }}</label>
-          <input
-            id="languageSelect"
-            tuiSelect
-            [ngModel]="model().language"
-            (ngModelChange)="
-              onModelChange('language', $event); saveLanguage.emit()
+          <div
+            class="flex items-center gap-2.5 text-sm font-medium text-(--tui-text-primary)"
+          >
+            <tui-icon icon="@tui.palette" class="opacity-70" />
+            <span>{{ 'theme' | translate }}</span>
+          </div>
+          <tui-segmented
+            size="m"
+            class="w-fit shrink-0"
+            [activeItemIndex]="
+              profileForm().theme().value() === Themes.DARK ? 1 : 0
             "
-            [invalid]="profileForm().language().invalid()"
-            [disabled]="profileForm().language().disabled()"
-            [tuiSkeleton]="!userEmail()"
-            autocomplete="off"
-          />
-          <tui-data-list-wrapper *tuiDropdown new [items]="languages()" />
-        </tui-textfield>
-        <tui-error [error]="languageError()" />
-
-        <!-- Theme -->
-        <tui-segmented
-          size="l"
-          class="w-fit"
-          [activeItemIndex]="
-            profileForm().theme().value() === Themes.DARK ? 1 : 0
-          "
-          (activeItemIndexChange)="toggleTheme.emit($event === 1)"
-        >
-          <button title="light" type="button">
-            <tui-icon icon="@tui.sun" />
-          </button>
-          <button title="dark" type="button">
-            <tui-icon icon="@tui.moon" />
-          </button>
-        </tui-segmented>
-      </div>
-
-      <!-- Right Column: Switches -->
-      <div class="flex flex-col items-end gap-4">
-        <!-- Switches -->
-        <div class="flex items-center gap-4">
-          <label tuiLabel for="firstStepsSwitch">{{
-            'firstSteps' | translate
-          }}</label>
-          <input
-            id="firstStepsSwitch"
-            tuiSwitch
-            type="checkbox"
-            [ngModel]="model().restartFirstSteps"
-            (ngModelChange)="restartFirstStepsChange.emit($event)"
-            autocomplete="off"
-          />
-        </div>
-
-        <div class="flex items-center gap-4">
-          <label tuiLabel for="privateSwitch">{{
-            'privateProfile' | translate
-          }}</label>
-          <input
-            id="privateSwitch"
-            tuiSwitch
-            type="checkbox"
-            [ngModel]="model().isPrivate"
-            (ngModelChange)="privateProfileChange.emit($event)"
-            autocomplete="off"
-          />
+            (pointerdown)="themeEvent.emit($event)"
+            (mousedown)="themeEvent.emit($event)"
+            (activeItemIndexChange)="toggleTheme.emit($event === 1)"
+          >
+            <button
+              title="light"
+              type="button"
+              (click)="themeEvent.emit($event)"
+            >
+              <tui-icon icon="@tui.sun" />
+            </button>
+            <button
+              title="dark"
+              type="button"
+              (click)="themeEvent.emit($event)"
+            >
+              <tui-icon icon="@tui.moon" />
+            </button>
+          </tui-segmented>
         </div>
       </div>
-    </div>
+    </section>
   `,
 })
 export class ProfilePreferencesComponent {
@@ -134,9 +121,8 @@ export class ProfilePreferencesComponent {
 
   readonly updateModel = output<{ field: string; value: unknown }>();
   readonly saveLanguage = output<void>();
+  readonly themeEvent = output<ThemeTransitionEvent>();
   readonly toggleTheme = output<boolean>();
-  readonly restartFirstStepsChange = output<boolean>();
-  readonly privateProfileChange = output<boolean>();
 
   readonly Themes = Themes;
 

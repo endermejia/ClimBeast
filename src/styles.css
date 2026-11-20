@@ -650,6 +650,12 @@ app-undo-toast {
 }
 
 /* Theme transition effect using View Transitions API */
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition: none !important;
+}
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
@@ -662,15 +668,16 @@ app-undo-toast {
 
 .theme-transitioning::view-transition-new(root) {
   z-index: 999;
-  animation: reveal 0.5s ease-out forwards;
+  animation: reveal 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: clip-path;
 }
 
 @keyframes reveal {
   from {
-    clip-path: circle(0% at var(--x) var(--y));
+    clip-path: circle(0px at var(--x, 50%) var(--y, 50%));
   }
   to {
-    clip-path: circle(150% at var(--x) var(--y));
+    clip-path: circle(var(--r, 150%) at var(--x, 50%) var(--y, 50%));
   }
 }
 

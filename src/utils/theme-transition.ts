@@ -4,6 +4,7 @@
  */
 
 interface ThemeTransition {
+  ready?: Promise<void>;
   finished: Promise<void>;
 }
 
@@ -11,12 +12,49 @@ interface ThemeTransitionDocument {
   startViewTransition(callback: () => Promise<void> | void): ThemeTransition;
 }
 
+export type ThemeTransitionEvent = MouseEvent | PointerEvent | Event;
+
+let activeTransitionId = 0;
+
+function resolveOrigin(event?: ThemeTransitionEvent): { x: number; y: number } {
+  if (
+    event &&
+    'clientX' in event &&
+    'clientY' in event &&
+    typeof event.clientX === 'number' &&
+    typeof event.clientY === 'number' &&
+    (event.clientX !== 0 || event.clientY !== 0)
+  ) {
+    return { x: event.clientX, y: event.clientY };
+  }
+
+  const target = event?.currentTarget ?? event?.target;
+  if (
+    typeof Element !== 'undefined' &&
+    target instanceof Element &&
+    typeof target.getBoundingClientRect === 'function'
+  ) {
+    const rect = target.getBoundingClientRect();
+    if (rect.width > 0 || rect.height > 0) {
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      };
+    }
+  }
+
+  return {
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
+  };
+}
+
 export async function triggerThemeTransition(
-  event: MouseEvent | undefined,
+  event: ThemeTransitionEvent | undefined,
   update: () => void | Promise<void>,
 ): Promise<void> {
   // SSR guard — document is not available on server
-  if (typeof document === 'undefined') {
+  if (typeof document === 'undefined' || typeof window === 'undefined') {
     await update();
     return;
   }
@@ -27,14 +65,22 @@ export async function triggerThemeTransition(
     return;
   }
 
-  // Get the click position or fallback to the center of the screen
-  const x = event?.clientX ?? window.innerWidth / 2;
-  const y = event?.clientY ?? window.innerHeight / 2;
+  const { x, y } = resolveOrigin(event);
+  const endRadius = Math.ceil(
+    Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y),
+    ),
+  );
 
-  // Set CSS variables for the animation
-  document.documentElement.style.setProperty('--x', `${x}px`);
-  document.documentElement.style.setProperty('--y', `${y}px`);
-  document.documentElement.classList.add('theme-transitioning');
+  const root = document.documentElement;
+  const currentId = ++activeTransitionId;
+
+  // Set CSS variables for the animation before starting the view transition
+  root.style.setProperty('--x', `${x}px`);
+  root.style.setProperty('--y', `${y}px`);
+  root.style.setProperty('--r', `${endRadius}px`);
+  root.classList.add('theme-transitioning');
 
   const transition = (
     document as unknown as ThemeTransitionDocument
@@ -44,8 +90,11 @@ export async function triggerThemeTransition(
 
   try {
     await transition.finished;
+  } catch {
+    // Ignore AbortError if superseded by another transition
   } finally {
-    // Cleanup
-    document.documentElement.classList.remove('theme-transitioning');
+    if (currentId === activeTransitionId) {
+      root.classList.remove('theme-transitioning');
+    }
   }
 }
