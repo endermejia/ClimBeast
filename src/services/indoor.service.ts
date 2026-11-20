@@ -1064,6 +1064,9 @@ export class IndoorService {
       grade?: number | null;
       video_url?: string | null;
       photo_path?: string | null;
+      photo_width?: number | null;
+      photo_height?: number | null;
+      photo_lqip?: string | null;
     },
   ): Promise<void> {
     const { error } = await this.supabase.client

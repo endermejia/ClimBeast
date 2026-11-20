@@ -7,6 +7,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { of } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AscentsService } from '../../services/ascents.service';
 import {
   ConsentService,
   SPEED_INSIGHTS_INJECTOR,
@@ -18,12 +19,18 @@ import { IS_BROWSER } from '../../app/is-browser';
 import { MockLocalStorage, MockSupabaseService } from '../../testing';
 import { AscentCardMediaComponent } from './ascent-card-media';
 
-describe('AscentCardMediaComponent (YouTube consent gating)', () => {
+describe('AscentCardMediaComponent (YouTube consent gating & progressive photo loading)', () => {
   let storage: MockLocalStorage;
   let consent: ConsentService;
+  let mockAscentsService: {
+    backfillPhotoMetadata: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(async () => {
     storage = new MockLocalStorage();
+    mockAscentsService = {
+      backfillPhotoMetadata: vi.fn().mockResolvedValue(null),
+    };
 
     await TestBed.configureTestingModule({
       imports: [AscentCardMediaComponent, TranslateModule.forRoot()],
@@ -33,6 +40,7 @@ describe('AscentCardMediaComponent (YouTube consent gating)', () => {
         { provide: LocalStorage, useValue: storage },
         { provide: SPEED_INSIGHTS_INJECTOR, useValue: vi.fn() },
         { provide: SupabaseService, useClass: MockSupabaseService },
+        { provide: AscentsService, useValue: mockAscentsService },
         {
           provide: TuiDialogService,
           useValue: { open: vi.fn().mockReturnValue(of(false)) },
@@ -119,5 +127,82 @@ describe('AscentCardMediaComponent (YouTube consent gating)', () => {
     expect(
       (fixture.nativeElement as HTMLElement).querySelector('iframe'),
     ).not.toBeNull();
+  });
+
+  it('reserves exact photo aspect ratio, renders blurred LQIP + skeleton while loading, and sharpens on load', async () => {
+    const mockSupabase = TestBed.inject(SupabaseService);
+    vi.spyOn(mockSupabase, 'getAscentSignedUrl').mockResolvedValue(
+      'https://example.com/signed-photo.webp',
+    );
+
+    const lqipDataUri = 'data:image/webp;base64,UklGRiQAAABXRUJQ';
+    const fixture = TestBed.createComponent(AscentCardMediaComponent);
+    fixture.componentRef.setInput('ascentId', 22440);
+    fixture.componentRef.setInput('photoPath', 'user-1/22440.webp');
+    fixture.componentRef.setInput('photoWidth', 1200);
+    fixture.componentRef.setInput('photoHeight', 1500);
+    fixture.componentRef.setInput('photoLqip', lqipDataUri);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const imgs = Array.from(el.querySelectorAll('img'));
+    expect(imgs.length).toBe(2);
+
+    const lqipImg = imgs[0];
+    const mainImg = imgs[1];
+
+    // Wrapper reserves exact 1200 / 1500 aspect ratio
+    const wrapper = mainImg.parentElement as HTMLElement;
+    expect(wrapper.style.aspectRatio).toContain('1200');
+    expect(wrapper.style.aspectRatio).toContain('1500');
+
+    // Before load: LQIP is visible, skeleton is present, main image is blurred/transparent
+    expect(lqipImg.getAttribute('src')).toBe(lqipDataUri);
+    expect(lqipImg.classList.contains('opacity-0')).toBe(false);
+    expect(el.querySelector('[tuiSkeleton]')).not.toBeNull();
+    expect(mainImg.classList.contains('opacity-0')).toBe(true);
+    expect(mainImg.classList.contains('blur-md')).toBe(true);
+
+    // Simulate image load completion
+    mainImg.dispatchEvent(new Event('load'));
+    fixture.detectChanges();
+
+    // After load: main image is sharp & opaque, LQIP fades out, skeleton removed
+    expect(mainImg.classList.contains('opacity-0')).toBe(false);
+    expect(mainImg.classList.contains('blur-md')).toBe(false);
+    expect(lqipImg.classList.contains('opacity-0')).toBe(true);
+    expect(el.querySelector('[tuiSkeleton]')).toBeNull();
+    expect(mockAscentsService.backfillPhotoMetadata).not.toHaveBeenCalled();
+  });
+
+  it('triggers self-healing backfillPhotoMetadata when legacy photo has no stored dimensions or LQIP', async () => {
+    const mockSupabase = TestBed.inject(SupabaseService);
+    vi.spyOn(mockSupabase, 'getAscentSignedUrl').mockResolvedValue(
+      'https://example.com/legacy-photo.webp',
+    );
+
+    const fixture = TestBed.createComponent(AscentCardMediaComponent);
+    fixture.componentRef.setInput('ascentId', 21536);
+    fixture.componentRef.setInput('photoPath', 'user-1/21536.webp');
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const mainImg = el.querySelector('img') as HTMLImageElement;
+    expect(mainImg).not.toBeNull();
+
+    mainImg.dispatchEvent(new Event('load'));
+    fixture.detectChanges();
+
+    expect(mockAscentsService.backfillPhotoMetadata).toHaveBeenCalledWith(
+      21536,
+      false,
+      'https://example.com/legacy-photo.webp',
+    );
   });
 });

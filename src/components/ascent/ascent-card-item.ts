@@ -48,7 +48,12 @@ import { AscentTypeComponent } from './ascent-type';
     <div class="flex flex-col gap-1">
       @if (showPhoto() && (item.photo_path || item.video_url)) {
         <app-ascent-card-media
+          [ascentId]="item.id"
+          [isIndoor]="isIndoor()"
           [photoPath]="item.photo_path"
+          [photoWidth]="item.photo_width"
+          [photoHeight]="item.photo_height"
+          [photoLqip]="item.photo_lqip"
           [videoUrl]="item.video_url"
           [priority]="priority()"
         />

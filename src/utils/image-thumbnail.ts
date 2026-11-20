@@ -9,6 +9,106 @@ export interface ThumbnailOptions {
   quality?: number;
 }
 
+export interface PhotoMetadata {
+  width: number;
+  height: number;
+  lqip: string;
+}
+
+/**
+ * Extracts original image dimensions (width/height) and generates a tiny
+ * Low-Quality Image Placeholder (LQIP) data URI (~24px WebP) for blur-up loading.
+ */
+export async function extractPhotoMetadata(
+  source: Blob,
+  maxDimension = 24,
+  quality = 0.5,
+): Promise<PhotoMetadata | null> {
+  if (
+    typeof window === 'undefined' ||
+    typeof document === 'undefined' ||
+    typeof Image === 'undefined' ||
+    typeof URL?.createObjectURL !== 'function' ||
+    (typeof navigator !== 'undefined' &&
+      /jsdom/i.test(navigator.userAgent) &&
+      typeof HTMLImageElement !== 'undefined' &&
+      window.Image === HTMLImageElement)
+  ) {
+    return null;
+  }
+
+  let objectUrl: string | null = null;
+
+  try {
+    objectUrl = URL.createObjectURL(source);
+
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      const timeout = setTimeout(() => {
+        reject(new Error('Image load timeout'));
+      }, 4000);
+      image.onload = () => {
+        clearTimeout(timeout);
+        resolve(image);
+      };
+      image.onerror = (err) => {
+        clearTimeout(timeout);
+        reject(err);
+      };
+      image.src = objectUrl!;
+    });
+
+    const originalWidth = img.naturalWidth || img.width;
+    const originalHeight = img.naturalHeight || img.height;
+
+    if (!originalWidth || !originalHeight) {
+      return null;
+    }
+
+    const scale = Math.min(
+      1,
+      maxDimension / Math.max(originalWidth, originalHeight),
+    );
+    const thumbWidth = Math.max(1, Math.round(originalWidth * scale));
+    const thumbHeight = Math.max(1, Math.round(originalHeight * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = thumbWidth;
+    canvas.height = thumbHeight;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return { width: originalWidth, height: originalHeight, lqip: '' };
+    }
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'medium';
+    ctx.drawImage(img, 0, 0, thumbWidth, thumbHeight);
+
+    let lqip = canvas.toDataURL('image/webp', quality);
+    if (!lqip.startsWith('data:image/webp')) {
+      lqip = canvas.toDataURL('image/jpeg', quality);
+    }
+
+    return {
+      width: originalWidth,
+      height: originalHeight,
+      lqip: lqip.startsWith('data:image/') ? lqip : '',
+    };
+  } catch (e) {
+    console.warn('[image-thumbnail] extractPhotoMetadata failed:', e);
+    return null;
+  } finally {
+    if (objectUrl) {
+      try {
+        URL.revokeObjectURL(objectUrl);
+      } catch {
+        // ignore
+      }
+    }
+  }
+}
+
 /**
  * Generates a proportional WebP thumbnail from an image File.
  * Preserves the aspect ratio while scaling down so neither width nor height exceeds limits.

@@ -2120,7 +2120,10 @@ export type Database = {
           grade: number | null;
           id: string;
           notes: string | null;
+          photo_height: number | null;
+          photo_lqip: string | null;
           photo_path: string | null;
+          photo_width: number | null;
           private_ascent: boolean | null;
           rate: number | null;
           recommended: boolean | null;
@@ -2136,7 +2139,10 @@ export type Database = {
           grade?: number | null;
           id?: string;
           notes?: string | null;
+          photo_height?: number | null;
+          photo_lqip?: string | null;
           photo_path?: string | null;
+          photo_width?: number | null;
           private_ascent?: boolean | null;
           rate?: number | null;
           recommended?: boolean | null;
@@ -2152,7 +2158,10 @@ export type Database = {
           grade?: number | null;
           id?: string;
           notes?: string | null;
+          photo_height?: number | null;
+          photo_lqip?: string | null;
           photo_path?: string | null;
+          photo_width?: number | null;
           private_ascent?: boolean | null;
           rate?: number | null;
           recommended?: boolean | null;
@@ -3285,7 +3294,10 @@ export type Database = {
           lose_rock: boolean | null;
           no_score: boolean | null;
           overhang: boolean | null;
+          photo_height: number | null;
+          photo_lqip: string | null;
           photo_path: string | null;
+          photo_width: number | null;
           private_ascent: boolean | null;
           rate: number | null;
           rebolted_by_me: boolean | null;
@@ -3329,7 +3341,10 @@ export type Database = {
           lose_rock?: boolean | null;
           no_score?: boolean | null;
           overhang?: boolean | null;
+          photo_height?: number | null;
+          photo_lqip?: string | null;
           photo_path?: string | null;
+          photo_width?: number | null;
           private_ascent?: boolean | null;
           rate?: number | null;
           rebolted_by_me?: boolean | null;
@@ -3373,7 +3388,10 @@ export type Database = {
           lose_rock?: boolean | null;
           no_score?: boolean | null;
           overhang?: boolean | null;
+          photo_height?: number | null;
+          photo_lqip?: string | null;
           photo_path?: string | null;
+          photo_width?: number | null;
           private_ascent?: boolean | null;
           rate?: number | null;
           rebolted_by_me?: boolean | null;
@@ -4055,6 +4073,16 @@ export type Database = {
             };
             Returns: string;
           };
+      backfill_ascent_photo_metadata: {
+        Args: {
+          p_ascent_id: string;
+          p_height: number;
+          p_is_indoor: boolean;
+          p_lqip: string;
+          p_width: number;
+        };
+        Returns: undefined;
+      };
       claim_area_access_from_donations: {
         Args: { p_area_id: number };
         Returns: boolean;

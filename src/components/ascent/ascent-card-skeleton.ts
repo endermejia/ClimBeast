@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { TuiAppearance, TuiIcon } from '@taiga-ui/core';
@@ -55,9 +55,23 @@ import { TuiRating, TuiSkeleton } from '@taiga-ui/kit';
 
       @if (hasPhoto()) {
         <div
-          [tuiSkeleton]="true"
-          class="aspect-4/3 -mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full rounded-none sm:rounded-2xl opacity-20"
-        ></div>
+          class="relative overflow-hidden -mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full rounded-none sm:rounded-2xl bg-(--tui-background-neutral-1)"
+          [style.aspect-ratio]="photoAspectRatio()"
+          style="max-height: 500px"
+        >
+          @if (photoLqip(); as lqip) {
+            <img
+              [src]="lqip"
+              alt=""
+              aria-hidden="true"
+              class="absolute inset-0 w-full h-full object-contain scale-105 blur-xl pointer-events-none select-none"
+            />
+          }
+          <div
+            [tuiSkeleton]="true"
+            class="absolute inset-0 w-full h-full opacity-20"
+          ></div>
+        </div>
       }
 
       <div class="flex flex-col gap-1">
@@ -155,4 +169,13 @@ export class AscentCardSkeletonComponent {
   showRoute = input(true);
   showDate = input(true);
   hasPhoto = input(false);
+  photoWidth = input<number | null | undefined>(null);
+  photoHeight = input<number | null | undefined>(null);
+  photoLqip = input<string | null | undefined>(null);
+
+  protected readonly photoAspectRatio = computed(() => {
+    const w = this.photoWidth();
+    const h = this.photoHeight();
+    return w && h ? `${w} / ${h}` : '4 / 5';
+  });
 }

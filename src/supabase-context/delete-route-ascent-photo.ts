@@ -165,11 +165,16 @@ Deno.serve(async (req: Request) => {
     }
 
     // ─────────────────────────────
-    // DB Update (Set photo_path to null)
+    // DB Update (Set photo_path and metadata to null)
     // ─────────────────────────────
     const { error: dbErr } = await supabaseAdminClient
       .from(tableName)
-      .update({ photo_path: null })
+      .update({
+        photo_path: null,
+        photo_width: null,
+        photo_height: null,
+        photo_lqip: null,
+      })
       .eq('id', ascentId);
 
     if (dbErr) {

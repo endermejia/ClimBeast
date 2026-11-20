@@ -9,18 +9,22 @@ import {
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 import { TuiDialogService } from '@taiga-ui/core';
-import { TuiSkeleton } from '@taiga-ui/kit';
 
+import { AscentsService } from '../../services/ascents.service';
 import { ConsentService } from '../../services/consent.service';
 import { SupabaseService } from '../../services/supabase.service';
 
-import { getEmbedUrl, openPhotoViewer } from '../../utils';
+import { getEmbedUrl, openPhotoViewer, PhotoMetadata } from '../../utils';
 
-import { CustomCarouselComponent } from '../ui/custom-carousel';
+import {
+  CarouselImageLoadedEvent,
+  CarouselItem,
+  CustomCarouselComponent,
+} from '../ui/custom-carousel';
 
 @Component({
   selector: 'app-ascent-card-media',
-  imports: [CustomCarouselComponent, TuiSkeleton],
+  imports: [CustomCarouselComponent],
   template: `
     @if (mediaItems(); as items) {
       @if (items.length > 0) {
@@ -35,31 +39,36 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
             [loading]="priority() ? 'eager' : 'lazy'"
             [videoConsentGranted]="canLoadVideo()"
             (imageClick)="showEnlargedPhoto($event)"
+            (imageLoaded)="onImageLoaded($event)"
             (loadVideoOnce)="allowVideoOnce.set(true)"
             (enableExternalMedia)="enableExternalMedia()"
           />
         </div>
-      } @else if (ascentPhotoResource.isLoading()) {
-        <div
-          class="aspect-4/3 bg-(--tui-background-neutral-1) -mx-4 sm:mx-0 w-[calc(100%+2rem)] sm:w-full rounded-none sm:rounded-2xl"
-          tuiSkeleton
-        ></div>
       }
     }
   `,
 })
 export class AscentCardMediaComponent {
+  private static readonly backfilledCache = new Map<string, PhotoMetadata>();
+
+  private readonly ascentsService = inject(AscentsService);
   private readonly consent = inject(ConsentService);
   private readonly supabase = inject(SupabaseService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly dialogs = inject(TuiDialogService);
 
+  ascentId = input<number | string | null | undefined>(null);
+  isIndoor = input(false);
   photoPath = input<string | null | undefined>(null);
+  photoWidth = input<number | null | undefined>(null);
+  photoHeight = input<number | null | undefined>(null);
+  photoLqip = input<string | null | undefined>(null);
   videoUrl = input<string | null | undefined>(null);
   priority = input(false);
 
   protected index = signal(0);
   protected readonly allowVideoOnce = signal(false);
+  protected readonly localBackfilled = signal<PhotoMetadata | null>(null);
   protected readonly canLoadVideo = computed(
     () => this.consent.externalMediaAllowed() || this.allowVideoOnce(),
   );
@@ -78,13 +87,27 @@ export class AscentCardMediaComponent {
   });
 
   protected readonly mediaItems = computed(() => {
-    const items: {
-      type: 'image' | 'video';
-      url: string | SafeResourceUrl;
-    }[] = [];
-    const photo = this.ascentPhotoResource.value();
-    if (photo) {
-      items.push({ type: 'image', url: photo });
+    const items: CarouselItem[] = [];
+    const path = this.photoPath();
+    if (path) {
+      const cached =
+        this.localBackfilled() ??
+        AscentCardMediaComponent.backfilledCache.get(path) ??
+        null;
+      const photoUrl = this.ascentPhotoResource.value();
+      const hasFailed =
+        !this.ascentPhotoResource.isLoading() && photoUrl === '';
+
+      if (!hasFailed) {
+        items.push({
+          type: 'image',
+          url: photoUrl || '',
+          width: this.photoWidth() || cached?.width || null,
+          height: this.photoHeight() || cached?.height || null,
+          lqip: this.photoLqip() || cached?.lqip || null,
+          fallbackAspectRatio: '4 / 5',
+        });
+      }
     }
     const video = this.videoUrl();
     if (video) {
@@ -98,6 +121,33 @@ export class AscentCardMediaComponent {
     }
     return items;
   });
+
+  protected async onImageLoaded(
+    event: CarouselImageLoadedEvent,
+  ): Promise<void> {
+    const path = this.photoPath();
+    const id = this.ascentId();
+    if (!path || !id || !event.url) return;
+
+    const hasAllMetadata = !!(
+      this.photoWidth() &&
+      this.photoHeight() &&
+      this.photoLqip()
+    );
+    if (hasAllMetadata || AscentCardMediaComponent.backfilledCache.has(path)) {
+      return;
+    }
+
+    const meta = await this.ascentsService.backfillPhotoMetadata(
+      id,
+      this.isIndoor(),
+      event.url,
+    );
+    if (meta) {
+      AscentCardMediaComponent.backfilledCache.set(path, meta);
+      this.localBackfilled.set(meta);
+    }
+  }
 
   async showEnlargedPhoto(url: string | SafeResourceUrl): Promise<void> {
     if (typeof url !== 'string') return;

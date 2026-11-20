@@ -139,6 +139,9 @@ export interface DateGroup {
                         [showRoute]="showRoute()"
                         [showDate]="showDate() && !groupByDate()"
                         [hasPhoto]="!!ascent.photo_path"
+                        [photoWidth]="ascent.photo_width"
+                        [photoHeight]="ascent.photo_height"
+                        [photoLqip]="ascent.photo_lqip"
                       />
                     } @error {
                       <div class="p-4 text-center text-xs opacity-60">
@@ -240,6 +243,9 @@ export interface DateGroup {
                   [showRoute]="showRoute()"
                   [showDate]="showDate() && !groupByDate()"
                   [hasPhoto]="!!ascent.photo_path"
+                  [photoWidth]="ascent.photo_width"
+                  [photoHeight]="ascent.photo_height"
+                  [photoLqip]="ascent.photo_lqip"
                 />
               } @error {
                 <div class="p-4 text-center text-xs opacity-60">

@@ -35,8 +35,10 @@ import {
 
 import {
   extractMentionIds,
+  extractPhotoMetadata,
   getPaginatedProfilesFromJunction,
   handleErrorToast,
+  PhotoMetadata,
 } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
@@ -516,6 +518,8 @@ export class AscentsService {
     });
   }
 
+  private readonly backfilledAscentKeys = new Set<string>();
+
   async uploadPhoto(
     ascentId: number | string,
     file: File,
@@ -532,7 +536,10 @@ export class AscentsService {
       });
 
     try {
-      const base64 = await toBase64(file);
+      const [base64, metadata] = await Promise.all([
+        toBase64(file),
+        extractPhotoMetadata(file),
+      ]);
       await this.supabase.whenReady();
       const headers: Record<string, string> = {
         'ascent-id': ascentId.toString(),
@@ -541,23 +548,36 @@ export class AscentsService {
       if (isIndoor || typeof ascentId === 'string') {
         headers['is-indoor'] = 'true';
       }
-      const { error } = await this.supabase.client.functions.invoke(
-        'upload-route-ascent-photo',
-        {
+      const { data: uploadRes, error } =
+        await this.supabase.client.functions.invoke<{
+          path?: string;
+          photo_width?: number | null;
+          photo_height?: number | null;
+          photo_lqip?: string | null;
+        }>('upload-route-ascent-photo', {
           body: {
             file_name: file.name,
             content_type: file.type,
             base64,
+            width: metadata?.width,
+            height: metadata?.height,
+            lqip: metadata?.lqip,
           },
           headers,
-        },
-      );
+        });
 
       if (error) throw error;
 
+      const changes: Partial<RouteAscentWithExtras> = {
+        ...(uploadRes?.path ? { photo_path: uploadRes.path } : {}),
+        photo_width: uploadRes?.photo_width ?? metadata?.width ?? null,
+        photo_height: uploadRes?.photo_height ?? metadata?.height ?? null,
+        photo_lqip: uploadRes?.photo_lqip ?? metadata?.lqip ?? null,
+      };
+
       this.toast.success('messages.toasts.ascentUpdated');
-      this.refreshResources(ascentId);
-      this.ascentUpdated$.next({ id: ascentId });
+      this.refreshResources(ascentId, changes);
+      this.ascentUpdated$.next({ id: ascentId, changes });
     } catch (e) {
       console.error('[AscentsService] uploadPhoto error', e);
       throw e;
@@ -591,9 +611,49 @@ export class AscentsService {
       throw error;
     }
 
+    const changes: Partial<RouteAscentWithExtras> = {
+      photo_path: null,
+      photo_width: null,
+      photo_height: null,
+      photo_lqip: null,
+    };
+
     this.toast.success('messages.toasts.photoDeleted');
-    this.refreshResources(ascentId);
-    this.ascentUpdated$.next({ id: ascentId });
+    this.refreshResources(ascentId, changes);
+    this.ascentUpdated$.next({ id: ascentId, changes });
+  }
+
+  async backfillPhotoMetadata(
+    ascentId: number | string,
+    isIndoor: boolean,
+    signedUrl: string,
+  ): Promise<PhotoMetadata | null> {
+    if (!this.isBrowser || !ascentId || !signedUrl) return null;
+
+    const key = `${isIndoor ? 'indoor' : 'outdoor'}-${ascentId}`;
+    if (this.backfilledAscentKeys.has(key)) return null;
+    this.backfilledAscentKeys.add(key);
+
+    try {
+      const response = await fetch(signedUrl);
+      if (!response.ok) return null;
+      const blob = await response.blob();
+      const meta = await extractPhotoMetadata(blob);
+      if (!meta || !meta.width || !meta.height) return null;
+
+      await this.supabase.whenReady();
+      await this.supabase.client.rpc('backfill_ascent_photo_metadata', {
+        p_ascent_id: String(ascentId),
+        p_is_indoor: isIndoor,
+        p_width: meta.width,
+        p_height: meta.height,
+        p_lqip: meta.lqip || '',
+      });
+
+      return meta;
+    } catch {
+      return null;
+    }
   }
 
   openAscentDialog(ascentId: number | string): Observable<void> {

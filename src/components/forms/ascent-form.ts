@@ -1133,6 +1133,9 @@ export default class AscentFormComponent {
           } else if (savedAscentId && this.isExistingPhotoDeleted()) {
             await this.indoorService.updateRouteAscent(savedAscentId, {
               photo_path: null,
+              photo_width: null,
+              photo_height: null,
+              photo_lqip: null,
             });
           }
         } else {

@@ -10,6 +10,7 @@ import {
 import { SafeResourceUrl } from '@angular/platform-browser';
 
 import { TuiButton, TuiIcon } from '@taiga-ui/core';
+import { TuiSkeleton } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -17,12 +18,33 @@ export interface CarouselItem {
   type: 'image' | 'video';
   url: string | SafeResourceUrl;
   alt?: string;
+  width?: number | null;
+  height?: number | null;
+  lqip?: string | null;
+  fallbackAspectRatio?: string | null;
+}
+
+export interface CarouselImageLoadedEvent {
+  url: string;
+  width: number;
+  height: number;
+}
+
+interface ProcessedCarouselSlide {
+  item: CarouselItem;
+  key: string;
+  urlStr: string;
+  isLoaded: boolean;
+  hasError: boolean;
+  showSkeleton: boolean;
+  aspectRatio: string | null;
+  isActive: boolean;
 }
 
 @Component({
   selector: 'app-custom-carousel',
   standalone: true,
-  imports: [CommonModule, TranslatePipe, TuiButton, TuiIcon],
+  imports: [CommonModule, TranslatePipe, TuiButton, TuiIcon, TuiSkeleton],
   template: `
     <div
       class="relative w-full h-full overflow-hidden group rounded-inherit touch-pan-y"
@@ -41,31 +63,71 @@ export interface CarouselItem {
         [class.ease-out]="!isDragging()"
         [style.transform]="trackTransform()"
       >
-        @for (item of items(); track $index) {
+        @for (slide of processedSlides(); track slide.key) {
           <div
             class="w-full shrink-0 flex items-center justify-center min-h-[inherit]"
           >
-            @if (item.type === 'image') {
-              <img
-                [src]="item.url"
-                [alt]="item.alt || ''"
-                class="w-full h-auto block object-contain select-none"
-                [style.max-height]="maxHeight()"
-                [class.cursor-pointer]="clickable()"
-                [class.object-cover]="objectCover()"
+            @if (slide.item.type === 'image') {
+              <div
+                class="relative w-full overflow-hidden flex items-center justify-center"
                 [class.h-full]="objectCover()"
-                [attr.tabindex]="clickable() ? 0 : null"
-                [attr.role]="clickable() ? 'button' : null"
-                [attr.fetchpriority]="priority() ? 'high' : null"
-                [attr.loading]="loading()"
-                (click)="clickable() && imageClick.emit(item.url)"
-                (keydown.enter)="clickable() && imageClick.emit(item.url)"
-              />
+                [style.aspect-ratio]="slide.aspectRatio"
+                [style.max-height]="objectCover() ? null : maxHeight()"
+              >
+                @if (slide.item.lqip) {
+                  <img
+                    [src]="slide.item.lqip"
+                    alt=""
+                    aria-hidden="true"
+                    class="absolute inset-0 w-full h-full object-contain scale-105 blur-xl transition-opacity duration-500 ease-out pointer-events-none select-none"
+                    [class.object-cover]="objectCover()"
+                    [class.opacity-0]="slide.isLoaded"
+                  />
+                }
+                @if (slide.showSkeleton) {
+                  <div
+                    [tuiSkeleton]="true"
+                    class="absolute inset-0 w-full h-full pointer-events-none"
+                    [class.opacity-30]="!!slide.item.lqip"
+                  ></div>
+                }
+                @if (slide.urlStr) {
+                  <img
+                    [src]="slide.item.url"
+                    [alt]="slide.item.alt || ''"
+                    class="relative z-1 w-full block object-contain select-none transition-[opacity,filter,transform] duration-500 ease-out"
+                    [class.h-full]="!!slide.aspectRatio || objectCover()"
+                    [class.h-auto]="!slide.aspectRatio && !objectCover()"
+                    [style.max-height]="maxHeight()"
+                    [class.cursor-pointer]="clickable() && slide.isLoaded"
+                    [class.object-cover]="objectCover()"
+                    [class.opacity-0]="!slide.isLoaded"
+                    [class.blur-md]="!slide.isLoaded"
+                    [class.scale-105]="!slide.isLoaded"
+                    [attr.tabindex]="clickable() ? 0 : null"
+                    [attr.role]="clickable() ? 'button' : null"
+                    [attr.fetchpriority]="priority() ? 'high' : null"
+                    [attr.loading]="loading()"
+                    (load)="onImageLoad(slide.urlStr, $event)"
+                    (error)="onImageError(slide.urlStr)"
+                    (click)="
+                      clickable() &&
+                        slide.isLoaded &&
+                        imageClick.emit(slide.item.url)
+                    "
+                    (keydown.enter)="
+                      clickable() &&
+                        slide.isLoaded &&
+                        imageClick.emit(slide.item.url)
+                    "
+                  />
+                }
+              </div>
             } @else {
               <div class="w-full aspect-video flex items-center justify-center">
                 @if (videoConsentGranted()) {
                   <iframe
-                    [src]="item.url"
+                    [src]="slide.item.url"
                     class="w-full h-full max-w-full"
                     frameborder="0"
                     allowfullscreen
@@ -154,11 +216,11 @@ export interface CarouselItem {
           class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10 pointer-events-none bg-black/30 backdrop-blur-sm rounded-full px-2.5 py-1 transition-opacity duration-300"
           [class.opacity-0]="!isHovered() && hideDotsUntilHover()"
         >
-          @for (_ of items(); track $index; let i = $index) {
+          @for (slide of processedSlides(); track slide.key) {
             <div
               class="h-1.5 rounded-full bg-white transition-all duration-300"
-              [style.width.rem]="index() === i ? 1 : 0.375"
-              [style.opacity]="index() === i ? '1' : '0.45'"
+              [style.width.rem]="slide.isActive ? 1 : 0.375"
+              [style.opacity]="slide.isActive ? '1' : '0.45'"
             ></div>
           }
         </div>
@@ -191,18 +253,80 @@ export class CustomCarouselComponent {
   videoConsentGranted = input(false);
 
   imageClick = output<string | SafeResourceUrl>();
+  imageLoaded = output<CarouselImageLoadedEvent>();
   loadVideoOnce = output<void>();
   enableExternalMedia = output<void>();
 
   protected readonly isHovered = signal(false);
   protected readonly touchOffset = signal(0);
   protected readonly isDragging = signal(false);
+  protected readonly loadedUrls = signal<
+    Record<string, { width: number; height: number }>
+  >({});
+  protected readonly errorUrls = signal<Record<string, boolean>>({});
+
   protected readonly trackTransform = computed(
     () => `translateX(calc(-${this.index() * 100}% + ${this.touchOffset()}px))`,
   );
 
+  protected readonly processedSlides = computed<ProcessedCarouselSlide[]>(
+    () => {
+      const list = this.items();
+      const loadedMap = this.loadedUrls();
+      const errorMap = this.errorUrls();
+      const activeIdx = this.index();
+      const cover = this.objectCover();
+
+      return list.map((item, i) => {
+        const urlStr = typeof item.url === 'string' ? item.url : '';
+        const loadedInfo = urlStr ? loadedMap[urlStr] : undefined;
+        const isLoaded = !!loadedInfo;
+        const hasError = !!(urlStr && errorMap[urlStr]);
+        const showSkeleton = !isLoaded && !hasError;
+        const w = item.width || loadedInfo?.width || null;
+        const h = item.height || loadedInfo?.height || null;
+        const aspectRatio = cover
+          ? null
+          : w && h
+            ? `${w} / ${h}`
+            : (item.fallbackAspectRatio ?? null);
+
+        return {
+          item,
+          key: `${item.type}-${i}`,
+          urlStr,
+          isLoaded,
+          hasError,
+          showSkeleton,
+          aspectRatio,
+          isActive: activeIdx === i,
+        };
+      });
+    },
+  );
+
   private touchStartX = 0;
   private readonly swipeThreshold = 50;
+
+  protected onImageLoad(urlStr: string, event: Event): void {
+    if (!urlStr) return;
+    const img = event.target as HTMLImageElement | null;
+    const width = img?.naturalWidth || 0;
+    const height = img?.naturalHeight || 0;
+    this.loadedUrls.update((prev) => ({
+      ...prev,
+      [urlStr]: { width, height },
+    }));
+    this.imageLoaded.emit({ url: urlStr, width, height });
+  }
+
+  protected onImageError(urlStr: string): void {
+    if (!urlStr) return;
+    this.errorUrls.update((prev) => ({
+      ...prev,
+      [urlStr]: true,
+    }));
+  }
 
   next(): void {
     if (this.index() < this.items().length - 1) {
