@@ -132,45 +132,56 @@ import { ConsentService } from '../../services/consent.service';
         </div>
       }
 
-      <!-- Equal-prominence Accept & Reject buttons (AEPD first-layer compliance) -->
+      <!-- Action buttons: 1st layer (equal Reject/Accept + Configure) vs 2nd layer (Back + Save) -->
       <div
         class="flex flex-col gap-2 pt-2 border-t border-(--tui-border-normal)/60"
       >
-        <div class="grid grid-cols-2 gap-2">
-          <button
-            tuiButton
-            type="button"
-            size="s"
-            appearance="secondary"
-            class="text-xs! font-semibold! w-full"
-            (click)="reject()"
-          >
-            {{ 'cookies.banner.reject' | translate }}
-          </button>
-          <button
-            tuiButton
-            type="button"
-            size="s"
-            appearance="secondary"
-            class="text-xs! font-semibold! w-full"
-            (click)="acceptAll()"
-          >
-            {{ 'cookies.banner.acceptAll' | translate }}
-          </button>
-        </div>
-
         @if (showSettings()) {
-          <button
-            tuiButton
-            type="button"
-            size="s"
-            appearance="primary"
-            class="text-xs! font-semibold! w-full"
-            (click)="saveSelection()"
-          >
-            {{ 'cookies.banner.saveSelection' | translate }}
-          </button>
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              tuiButton
+              type="button"
+              size="s"
+              appearance="flat"
+              class="text-xs! font-medium! w-full"
+              (click)="toggleSettings()"
+            >
+              {{ 'back' | translate }}
+            </button>
+            <button
+              tuiButton
+              type="button"
+              size="s"
+              appearance="primary"
+              class="text-xs! font-semibold! w-full"
+              (click)="saveSelection()"
+            >
+              {{ 'cookies.banner.saveSelection' | translate }}
+            </button>
+          </div>
         } @else {
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              tuiButton
+              type="button"
+              size="s"
+              appearance="secondary"
+              class="text-xs! font-semibold! w-full"
+              (click)="reject()"
+            >
+              {{ 'cookies.banner.reject' | translate }}
+            </button>
+            <button
+              tuiButton
+              type="button"
+              size="s"
+              appearance="secondary"
+              class="text-xs! font-semibold! w-full"
+              (click)="acceptAll()"
+            >
+              {{ 'cookies.banner.acceptAll' | translate }}
+            </button>
+          </div>
           <button
             tuiButton
             type="button"
