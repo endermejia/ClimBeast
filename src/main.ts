@@ -8,8 +8,6 @@ import localeFr from '@angular/common/locales/fr';
 import localeIt from '@angular/common/locales/it';
 import { bootstrapApplication } from '@angular/platform-browser';
 
-import { injectSpeedInsights } from '@vercel/speed-insights';
-
 import { AppComponent } from './app/app';
 import { appConfig } from './app/app.config';
 
@@ -21,8 +19,6 @@ registerLocaleData(localeDe, 'de');
 registerLocaleData(localeEu, 'eu');
 registerLocaleData(localeFr, 'fr');
 registerLocaleData(localeIt, 'it');
-
-injectSpeedInsights();
 
 bootstrapApplication(AppComponent, appConfig).catch((err) => {
   console.error(err);

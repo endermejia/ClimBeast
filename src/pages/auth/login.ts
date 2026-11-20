@@ -25,10 +25,10 @@ import { TuiCardLarge, TuiForm, TuiHeader } from '@taiga-ui/layout';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { LocalStorage } from '../../services/local-storage';
 import { SupabaseService } from '../../services/supabase.service';
 
-import { STORAGE_KEYS } from '../../constants';
+import { CONSENT_VERSION } from '../../models';
+
 import { isComplexPassword, isValidEmail } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
@@ -404,7 +404,6 @@ import { IS_BROWSER } from '../../app/is-browser';
 })
 export class LoginComponent {
   private readonly supabase = inject(SupabaseService);
-  private readonly storage = inject(LocalStorage);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly isBrowser = inject(IS_BROWSER);
@@ -588,7 +587,8 @@ export class LoginComponent {
           data: {
             terms_accepted: true,
             privacy_accepted: true,
-            terms_version: '2026-10-15',
+            min_age_confirmed: true,
+            terms_version: CONSENT_VERSION,
             accepted_at: new Date().toISOString(),
           },
         },
@@ -597,7 +597,6 @@ export class LoginComponent {
         this.error.set('auth.registrationError');
         return;
       }
-      this.storage.setItem(STORAGE_KEYS.gdprAccepted, 'true');
       // In most projects, signup requires email confirmation
       this.error.set('auth.registrationSuccess');
       // Switch back to login view

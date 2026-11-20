@@ -8,6 +8,8 @@
  */
 export const STORAGE_KEYS = {
   // App
+  cookieConsent: 'lw_cookie_consent_v1',
+  /** @deprecated Clave heredada sin granularidad AEPD; se limpia al guardar `cookieConsent`. */
   gdprAccepted: 'lw_gdpr_accepted',
   updateApplied: 'lw_update_applied',
   chunkReloadTs: 'lw_chunk_reload_ts',

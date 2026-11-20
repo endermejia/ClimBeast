@@ -53,6 +53,7 @@ import {
 } from 'rxjs';
 
 import { AuthStateService } from '../../services/auth-state.service';
+import { ConsentService } from '../../services/consent.service';
 import { EightAnuService } from '../../services/eight-anu.service';
 import { FollowRequestsService } from '../../services/follow-requests.service';
 import { LanguageService } from '../../services/language.service';
@@ -71,6 +72,7 @@ import { ProfileDangerZoneComponent } from '../../components/user-profile/profil
 import { ProfileGeneralSectionComponent } from '../../components/user-profile/profile-general-section';
 import { ProfileNotificationsComponent } from '../../components/user-profile/profile-notifications';
 import { ProfilePreferencesComponent } from '../../components/user-profile/profile-preferences';
+import { ProfilePrivacyComponent } from '../../components/user-profile/profile-privacy';
 
 import {
   EightAnuUser,
@@ -103,6 +105,7 @@ interface Country {
     ProfileGeneralSectionComponent,
     ProfileNotificationsComponent,
     ProfilePreferencesComponent,
+    ProfilePrivacyComponent,
     TranslatePipe,
     TuiHeader,
     TuiIcon,
@@ -187,6 +190,14 @@ interface Country {
           (preferenceChange)="onNotificationPreferenceChange($event)"
         />
 
+        <!-- Privacy & Cookies Section -->
+        <app-profile-privacy
+          [analytics]="consentService.analyticsAllowed()"
+          [externalMedia]="consentService.externalMediaAllowed()"
+          (analyticsChange)="onAnalyticsConsentChange($event)"
+          (externalMediaChange)="onExternalMediaConsentChange($event)"
+        />
+
         <!-- Account Actions Header -->
         <h2
           class="text-xl font-bold mt-12 mb-6 border-t border-(--tui-border-normal) pt-8"
@@ -247,6 +258,7 @@ export class UserProfileConfigComponent {
   private readonly dialogs = inject(TuiDialogService);
   private readonly merchService = inject(MerchandiseService);
   private readonly pushSubscription = inject(PushSubscriptionService);
+  protected readonly consentService = inject(ConsentService);
 
   /**
    * Used to coordinate the success toast with language changes.
@@ -406,8 +418,9 @@ export class UserProfileConfigComponent {
         this.profileForm.fullName().value() === this.userEmail()),
   );
 
-  // Validation helpers and bounds
+  // Validation helpers and bounds (art. 7 LOPDGDD: edad mínima 14 años en España)
   readonly today: TuiDay = TuiDay.currentLocal();
+  readonly maxBirthDate: TuiDay = this.today.append({ year: -14 });
   readonly minBirthDate: TuiDay = new TuiDay(1900, 0, 1);
   readonly currentYear: number = new Date().getFullYear();
   readonly minYear: number = 1900;
@@ -749,7 +762,7 @@ export class UserProfileConfigComponent {
         const bd = this.profileForm.birth_date().value();
         if (
           bd &&
-          (bd.dayBefore(this.minBirthDate) || this.today.dayBefore(bd))
+          (bd.dayBefore(this.minBirthDate) || this.maxBirthDate.dayBefore(bd))
         ) {
           return 'profile.birthDate.invalid';
         }
@@ -1038,6 +1051,16 @@ export class UserProfileConfigComponent {
   onPrivateProfileChange(enabled: boolean): void {
     this.updateModel('isPrivate', enabled);
     void this.togglePrivateProfile(enabled);
+  }
+
+  protected onAnalyticsConsentChange(enabled: boolean): void {
+    this.consentService.updatePreferences({ analytics: enabled });
+    this.toast.success('cookies.settings.saved');
+  }
+
+  protected onExternalMediaConsentChange(enabled: boolean): void {
+    this.consentService.updatePreferences({ externalMedia: enabled });
+    this.toast.success('cookies.settings.saved');
   }
 
   private async updateProfile(

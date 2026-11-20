@@ -2,6 +2,7 @@ export * from './area.model';
 export * from './ascent.model';
 export * from './ascent-form.model';
 export * from './breadcrumb-item.model';
+export * from './consent.model';
 export * from './constants';
 export * from './crag.model';
 export * from './eight-anu-ascent.model';

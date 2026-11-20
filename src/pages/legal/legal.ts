@@ -1,25 +1,30 @@
 import { Location, NgOptimizedImage } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 
-import { TuiButton, TuiIcon, TuiNotification, TuiTitle } from '@taiga-ui/core';
-import { TuiTabs } from '@taiga-ui/kit';
+import { TuiButton, TuiIcon, TuiTitle } from '@taiga-ui/core';
+import { TuiSwitch, TuiTabs } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 import { filter, map } from 'rxjs';
+
+import { ConsentService } from '../../services/consent.service';
+import { ToastService } from '../../services/toast.service';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-legal',
   imports: [
+    FormsModule,
     NgOptimizedImage,
     RouterLink,
     TranslatePipe,
     TuiButton,
     TuiIcon,
-    TuiNotification,
+    TuiSwitch,
     TuiTabs,
     TuiTitle,
   ],
@@ -122,6 +127,68 @@ import { IS_BROWSER } from '../../app/is-browser';
                 {{ 'legal.terms.intro' | translate }}
               </p>
 
+              <!-- 0. Legal Notice (LSSI-CE Art. 10) -->
+              <div
+                class="rounded-2xl border border-(--tui-border-normal) bg-(--tui-background-neutral-1) p-5 flex flex-col gap-3"
+              >
+                <div
+                  class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-(--tui-text-tertiary)"
+                >
+                  <tui-icon icon="@tui.info" class="w-4 h-4 shrink-0" />
+                  <span>{{ 'legal.notice.badge' | translate }}</span>
+                </div>
+                <h2 class="text-xl font-bold text-(--tui-text-primary) m-0">
+                  {{ 'legal.notice.title' | translate }}
+                </h2>
+                <p class="text-sm m-0">
+                  {{ 'legal.notice.intro' | translate }}
+                </p>
+                <dl
+                  class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm m-0 pt-2 border-t border-(--tui-border-normal)"
+                >
+                  <div>
+                    <dt class="text-xs text-(--tui-text-tertiary)">
+                      {{ 'legal.notice.ownerLabel' | translate }}
+                    </dt>
+                    <dd class="m-0 font-medium text-(--tui-text-primary)">
+                      Gabriel Mejia Melgarejo
+                    </dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs text-(--tui-text-tertiary)">
+                      {{ 'legal.notice.taxIdLabel' | translate }}
+                    </dt>
+                    <dd class="m-0 font-medium text-(--tui-text-primary)">
+                      74387418J
+                    </dd>
+                  </div>
+                  <div class="sm:col-span-2">
+                    <dt class="text-xs text-(--tui-text-tertiary)">
+                      {{ 'legal.notice.addressLabel' | translate }}
+                    </dt>
+                    <dd class="m-0 font-medium text-(--tui-text-primary)">
+                      Calle Río Bidasoa 93, 03420 Castalla, Alicante, España
+                    </dd>
+                  </div>
+                  <div class="sm:col-span-2">
+                    <dt class="text-xs text-(--tui-text-tertiary)">
+                      {{ 'legal.notice.emailLabel' | translate }}
+                    </dt>
+                    <dd class="m-0 font-medium">
+                      <a
+                        href="mailto:soporte@climbeast.com"
+                        class="text-(--tui-text-primary) underline hover:opacity-80"
+                      >
+                        soporte&#64;climbeast.com
+                      </a>
+                    </dd>
+                  </div>
+                </dl>
+                <p class="text-xs text-(--tui-text-tertiary) m-0 pt-1">
+                  {{ 'legal.notice.jurisdiction' | translate }}
+                </p>
+              </div>
+
               <!-- 1. Service Description -->
               <div
                 class="border-l-2 border-(--tui-border-normal) pl-5 py-1 flex flex-col gap-2 transition-colors hover:border-(--tui-border-hover)"
@@ -213,7 +280,17 @@ import { IS_BROWSER } from '../../app/is-browser';
                 <p>{{ 'legal.terms.ipBody' | translate }}</p>
               </div>
 
-              <!-- 7. Termination & Amendments -->
+              <!-- 7. Commerce, Purchases & Right of Withdrawal -->
+              <div
+                class="border-l-2 border-(--tui-border-normal) pl-5 py-1 flex flex-col gap-2 transition-colors hover:border-(--tui-border-hover)"
+              >
+                <h2 class="text-xl font-bold text-(--tui-text-primary)">
+                  {{ 'legal.terms.commerceTitle' | translate }}
+                </h2>
+                <p>{{ 'legal.terms.commerceBody' | translate }}</p>
+              </div>
+
+              <!-- 8. Termination & Amendments -->
               <div
                 class="border-l-2 border-(--tui-border-normal) pl-5 py-1 flex flex-col gap-2 transition-colors hover:border-(--tui-border-hover)"
               >
@@ -344,6 +421,125 @@ import { IS_BROWSER } from '../../app/is-browser';
                 </h2>
                 <p>{{ 'legal.cookies.manageBody' | translate }}</p>
               </div>
+
+              <!-- 4. Interactive Cookie Preferences Panel -->
+              <div
+                class="rounded-2xl border border-(--tui-border-normal) bg-(--tui-background-neutral-1) p-5 flex flex-col gap-4"
+              >
+                <div class="flex flex-col gap-1">
+                  <h2 class="text-lg font-bold text-(--tui-text-primary) m-0">
+                    {{ 'cookies.settings.title' | translate }}
+                  </h2>
+                  <p class="text-xs text-(--tui-text-secondary) m-0">
+                    {{ 'cookies.settings.subtitle' | translate }}
+                  </p>
+                </div>
+
+                <div class="flex flex-col gap-3.5">
+                  <div class="flex items-start justify-between gap-4">
+                    <div class="flex flex-col gap-0.5 min-w-0">
+                      <span
+                        class="text-sm font-semibold text-(--tui-text-primary)"
+                      >
+                        {{ 'cookies.categories.necessary.title' | translate }}
+                      </span>
+                      <span class="text-xs text-(--tui-text-secondary)">
+                        {{
+                          'cookies.categories.necessary.description' | translate
+                        }}
+                      </span>
+                    </div>
+                    <input
+                      tuiSwitch
+                      type="checkbox"
+                      [ngModel]="true"
+                      disabled
+                      class="shrink-0 mt-0.5"
+                      [attr.aria-label]="
+                        'cookies.categories.necessary.title' | translate
+                      "
+                    />
+                  </div>
+
+                  <div class="flex items-start justify-between gap-4">
+                    <label
+                      for="legalAnalyticsSwitch"
+                      class="flex flex-col gap-0.5 min-w-0 cursor-pointer"
+                    >
+                      <span
+                        class="text-sm font-semibold text-(--tui-text-primary)"
+                      >
+                        {{ 'cookies.categories.analytics.title' | translate }}
+                      </span>
+                      <span class="text-xs text-(--tui-text-secondary)">
+                        {{
+                          'cookies.categories.analytics.description' | translate
+                        }}
+                      </span>
+                    </label>
+                    <input
+                      id="legalAnalyticsSwitch"
+                      tuiSwitch
+                      type="checkbox"
+                      [ngModel]="consent.analyticsAllowed()"
+                      (ngModelChange)="onAnalyticsChange($event)"
+                      class="shrink-0 mt-0.5"
+                    />
+                  </div>
+
+                  <div class="flex items-start justify-between gap-4">
+                    <label
+                      for="legalExternalMediaSwitch"
+                      class="flex flex-col gap-0.5 min-w-0 cursor-pointer"
+                    >
+                      <span
+                        class="text-sm font-semibold text-(--tui-text-primary)"
+                      >
+                        {{
+                          'cookies.categories.externalMedia.title' | translate
+                        }}
+                      </span>
+                      <span class="text-xs text-(--tui-text-secondary)">
+                        {{
+                          'cookies.categories.externalMedia.description'
+                            | translate
+                        }}
+                      </span>
+                    </label>
+                    <input
+                      id="legalExternalMediaSwitch"
+                      tuiSwitch
+                      type="checkbox"
+                      [ngModel]="consent.externalMediaAllowed()"
+                      (ngModelChange)="onExternalMediaChange($event)"
+                      class="shrink-0 mt-0.5"
+                    />
+                  </div>
+                </div>
+
+                <div
+                  class="grid grid-cols-2 gap-2 pt-3 border-t border-(--tui-border-normal)"
+                >
+                  <button
+                    tuiButton
+                    type="button"
+                    size="s"
+                    appearance="secondary"
+                    (click.zoneless)="rejectAllCookies()"
+                  >
+                    {{ 'cookies.banner.reject' | translate }}
+                  </button>
+                  <button
+                    tuiButton
+                    type="button"
+                    size="s"
+                    appearance="secondary"
+                    (click.zoneless)="acceptAllCookies()"
+                  >
+                    {{ 'cookies.banner.acceptAll' | translate }}
+                  </button>
+                </div>
+              </div>
             </section>
           }
         </article>
@@ -382,6 +578,8 @@ export class LegalComponent {
   private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly isBrowser = inject(IS_BROWSER);
+  protected readonly consent = inject(ConsentService);
+  private readonly toast = inject(ToastService);
 
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
@@ -402,6 +600,26 @@ export class LegalComponent {
     const target =
       index === 0 ? '/terms' : index === 1 ? '/privacy' : '/cookies';
     void this.router.navigateByUrl(target);
+  }
+
+  protected onAnalyticsChange(enabled: boolean): void {
+    this.consent.updatePreferences({ analytics: enabled });
+    this.toast.success('cookies.settings.saved');
+  }
+
+  protected onExternalMediaChange(enabled: boolean): void {
+    this.consent.updatePreferences({ externalMedia: enabled });
+    this.toast.success('cookies.settings.saved');
+  }
+
+  protected acceptAllCookies(): void {
+    this.consent.acceptAll();
+    this.toast.success('cookies.settings.saved');
+  }
+
+  protected rejectAllCookies(): void {
+    this.consent.rejectAll();
+    this.toast.success('cookies.settings.saved');
   }
 
   goBack(): void {

@@ -5,6 +5,7 @@ import { IS_BROWSER } from '../app/is-browser';
 import { STORAGE_KEYS } from '../constants';
 
 import { AuthStateService } from './auth-state.service';
+import { ConsentService } from './consent.service';
 import { LocalStorage } from './local-storage';
 import { PushService } from './push.service';
 import { UserProfilesService } from './user-profiles.service';
@@ -22,6 +23,7 @@ import { UserProfilesService } from './user-profiles.service';
 @Injectable({ providedIn: 'root' })
 export class PushSubscriptionService {
   private readonly authState = inject(AuthStateService);
+  private readonly consent = inject(ConsentService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly push = inject(PushService);
   private readonly storage = inject(LocalStorage);
@@ -76,6 +78,11 @@ export class PushSubscriptionService {
       const permission = this.push.permission();
 
       if (permission === 'default') {
+        // Espera a que el usuario decida sobre el banner de privacidad/cookies
+        // para no superponer el prompt nativo de notificaciones.
+        if (!this.consent.hasDecided()) {
+          return;
+        }
         // Prompt nativo directo, una sola vez por dispositivo
         if (this.storage.getItem(STORAGE_KEYS.pushPromptAsked) === 'true') {
           return;

@@ -14,17 +14,20 @@ import { UserProfileDto } from '../models';
 
 import { Database } from '../models/supabase-generated';
 
+import { STORAGE_KEYS } from '../constants';
 import { CACHE_KEYS } from '../constants/cache-keys';
 
 import { IS_BROWSER } from '../app/is-browser';
 
 import { CacheService } from './cache.service';
+import { LocalStorage } from './local-storage';
 
 @Injectable({ providedIn: 'root' })
 export class SupabaseAuthService {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly router = inject(Router);
   private readonly cache = inject(CacheService);
+  private readonly storage = inject(LocalStorage);
 
   readonly _session: WritableSignal<Session | null> = signal<Session | null>(
     null,
@@ -315,6 +318,7 @@ export class SupabaseAuthService {
   }
 
   async logout(clientSupplier?: SupabaseClient<Database> | null) {
+    this.clearSensitiveLocalData();
     const activeClient =
       clientSupplier || (this.clientGetter ? this.client : null);
     if (!activeClient) {
@@ -332,6 +336,26 @@ export class SupabaseAuthService {
       console.error('[SupabaseAuthService] signOut exception', e);
     } finally {
       void this.router.navigateByUrl('/login');
+    }
+  }
+
+  /**
+   * Elimina datos personales o de sesión almacenados localmente (dirección de
+   * envío, ubicación, historial de zonas, logs de errores) preservando
+   * preferencias del dispositivo como el consentimiento de cookies y el tema.
+   */
+  private clearSensitiveLocalData(): void {
+    if (!this.isBrowser) return;
+    const keysToClear = [
+      STORAGE_KEYS.checkoutShippingInfo,
+      STORAGE_KEYS.userLocation,
+      STORAGE_KEYS.visitedAreas,
+      STORAGE_KEYS.visitedCrags,
+      STORAGE_KEYS.visitedIndoorCenters,
+      STORAGE_KEYS.errorLogs,
+    ];
+    for (const key of keysToClear) {
+      this.storage.removeItem(key);
     }
   }
 

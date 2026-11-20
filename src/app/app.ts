@@ -19,6 +19,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { filter, map, merge, startWith } from 'rxjs';
 
 import { CartService } from '../services/cart.service';
+import { ConsentService } from '../services/consent.service';
 import { LocalStorage } from '../services/local-storage';
 import { NotificationService } from '../services/notification.service';
 import { OfflineWarmupService } from '../services/offline-warmup.service';
@@ -94,6 +95,7 @@ export class AppComponent implements OnDestroy {
   }
   private translate = inject(TranslateService);
   private storage = inject(LocalStorage);
+  private readonly consent = inject(ConsentService);
   private readonly notifications = inject(NotificationService);
   protected readonly realtime = inject(RealtimeService);
   private readonly isBrowser = inject(IS_BROWSER);
@@ -102,8 +104,6 @@ export class AppComponent implements OnDestroy {
   private readonly supabase = inject(SupabaseService);
   private readonly swUpdate = inject(SwUpdate);
   private readonly offlineWarmup = inject(OfflineWarmupService);
-
-  private readonly gdprKey = STORAGE_KEYS.gdprAccepted;
 
   /**
    * Ruta actual sin query/hash. El valor inicial sale de la URL de forma
@@ -153,11 +153,7 @@ export class AppComponent implements OnDestroy {
       const isLegalPage = ['/terms', '/privacy', '/cookies', '/legal'].some(
         (p) => path.startsWith(p),
       );
-      if (
-        this.isBrowser &&
-        !isLegalPage &&
-        this.storage.getItem(this.gdprKey) !== 'true'
-      ) {
+      if (this.isBrowser && !isLegalPage && !this.consent.hasDecided()) {
         this.notifications.showGdpr();
       }
     });

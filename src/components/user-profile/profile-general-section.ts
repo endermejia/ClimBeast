@@ -307,7 +307,7 @@ import { TourHintComponent } from '../ui/tour-hint';
             id="birthDateInput"
             tuiInputDate
             class="w-full"
-            [max]="today"
+            [max]="maxBirthDate"
             [min]="minBirthDate"
             [ngModel]="model().birth_date"
             (ngModelChange)="onModelChange('birth_date', $event)"
@@ -491,6 +491,7 @@ export class ProfileGeneralSectionComponent {
 
   readonly sexes: readonly Sex[] = [Sexes.MALE, Sexes.FEMALE, Sexes.OTHER];
   readonly today: TuiDay = TuiDay.currentLocal();
+  readonly maxBirthDate: TuiDay = this.today.append({ year: -14 });
   readonly minBirthDate: TuiDay = new TuiDay(1900, 0, 1);
   readonly currentYear: number = new Date().getFullYear();
   readonly minYear: number = 1900;

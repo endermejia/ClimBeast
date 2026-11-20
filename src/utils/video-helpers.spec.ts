@@ -55,9 +55,9 @@ describe('extractYoutubeId', () => {
 });
 
 describe('getEmbedUrl', () => {
-  it('returns embed URL for valid YouTube URL', () => {
+  it('returns privacy-enhanced embed URL for valid YouTube URL', () => {
     expect(getEmbedUrl('https://youtu.be/dQw4w9WgXcQ')).toBe(
-      'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
     );
   });
 

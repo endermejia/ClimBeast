@@ -11,6 +11,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { TuiDialogService } from '@taiga-ui/core';
 import { TuiSkeleton } from '@taiga-ui/kit';
 
+import { ConsentService } from '../../services/consent.service';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { getEmbedUrl, openPhotoViewer } from '../../utils';
@@ -32,7 +33,10 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
             [clickable]="true"
             [priority]="priority()"
             [loading]="priority() ? 'eager' : 'lazy'"
+            [videoConsentGranted]="canLoadVideo()"
             (imageClick)="showEnlargedPhoto($event)"
+            (loadVideoOnce)="allowVideoOnce.set(true)"
+            (enableExternalMedia)="enableExternalMedia()"
           />
         </div>
       } @else if (ascentPhotoResource.isLoading()) {
@@ -45,6 +49,7 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
   `,
 })
 export class AscentCardMediaComponent {
+  private readonly consent = inject(ConsentService);
   private readonly supabase = inject(SupabaseService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly dialogs = inject(TuiDialogService);
@@ -54,6 +59,14 @@ export class AscentCardMediaComponent {
   priority = input(false);
 
   protected index = signal(0);
+  protected readonly allowVideoOnce = signal(false);
+  protected readonly canLoadVideo = computed(
+    () => this.consent.externalMediaAllowed() || this.allowVideoOnce(),
+  );
+
+  protected enableExternalMedia(): void {
+    this.consent.updatePreferences({ externalMedia: true });
+  }
 
   protected readonly ascentPhotoResource = resource({
     params: () => this.photoPath() || null,

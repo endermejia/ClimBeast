@@ -7,5 +7,5 @@ export function extractYoutubeId(url: string): string | null {
 
 export function getEmbedUrl(url: string): string | null {
   const id = extractYoutubeId(url);
-  return id ? `https://www.youtube.com/embed/${id}` : null;
+  return id ? `https://www.youtube-nocookie.com/embed/${id}` : null;
 }

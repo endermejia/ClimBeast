@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import {
   TuiButton,
@@ -20,8 +20,8 @@ import { TuiHeader } from '@taiga-ui/layout';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { CartService } from '../../services/cart.service';
-
 import { CheckoutService } from '../../services/checkout.service';
+import { LocalStorage } from '../../services/local-storage';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { STORAGE_KEYS } from '../../constants';
@@ -35,6 +35,7 @@ import { IS_BROWSER } from '../../app/is-browser';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterLink,
     TranslatePipe,
     TuiButton,
     TuiChevron,
@@ -184,10 +185,34 @@ import { IS_BROWSER } from '../../app/is-browser';
                 </div>
               }
 
+              <p
+                class="text-xs text-(--tui-text-secondary) leading-relaxed mt-2 mb-0"
+              >
+                {{ 'merchandising.checkout.legalNoticePrefix' | translate }}
+                <a
+                  routerLink="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="underline font-medium text-(--tui-text-primary)"
+                >
+                  {{ 'legal.tabTerms' | translate }}
+                </a>
+                {{ 'auth.acceptCookiesPrefix' | translate }}
+                <a
+                  routerLink="/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="underline font-medium text-(--tui-text-primary)"
+                >
+                  {{ 'legal.tabPrivacy' | translate }}
+                </a>
+                {{ 'merchandising.checkout.legalNoticeSuffix' | translate }}
+              </p>
+
               <button
                 tuiButton
                 type="submit"
-                class="w-full mt-6"
+                class="w-full mt-2"
                 size="l"
                 [disabled]="
                   shippingForm.invalid || loading() || hasOutOfStockItems()
@@ -297,6 +322,7 @@ export class CheckoutComponent {
   private readonly fb = inject(FormBuilder);
   private readonly cart = inject(CartService);
   private readonly checkoutService = inject(CheckoutService);
+  private readonly storage = inject(LocalStorage);
   private readonly supabase = inject(SupabaseService);
   private readonly router = inject(Router);
   private readonly isBrowser = inject(IS_BROWSER);
@@ -327,7 +353,7 @@ export class CheckoutComponent {
     if (this.isBrowser) {
       void this.cart.refreshStock();
 
-      const savedInfo = localStorage.getItem(STORAGE_KEYS.checkoutShippingInfo);
+      const savedInfo = this.storage.getItem(STORAGE_KEYS.checkoutShippingInfo);
       if (savedInfo) {
         try {
           const parsed = JSON.parse(savedInfo);
@@ -344,7 +370,7 @@ export class CheckoutComponent {
       }
 
       reactToObservable(this.shippingForm.valueChanges, (val) => {
-        localStorage.setItem(
+        this.storage.setItem(
           STORAGE_KEYS.checkoutShippingInfo,
           JSON.stringify(val),
         );

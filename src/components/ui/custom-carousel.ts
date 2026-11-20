@@ -9,7 +9,9 @@ import {
 } from '@angular/core';
 import { SafeResourceUrl } from '@angular/platform-browser';
 
-import { TuiIcon } from '@taiga-ui/core';
+import { TuiButton, TuiIcon } from '@taiga-ui/core';
+
+import { TranslatePipe } from '@ngx-translate/core';
 
 export interface CarouselItem {
   type: 'image' | 'video';
@@ -20,7 +22,7 @@ export interface CarouselItem {
 @Component({
   selector: 'app-custom-carousel',
   standalone: true,
-  imports: [CommonModule, TuiIcon],
+  imports: [CommonModule, TranslatePipe, TuiButton, TuiIcon],
   template: `
     <div
       class="relative w-full h-full overflow-hidden group rounded-inherit touch-pan-y"
@@ -61,13 +63,63 @@ export interface CarouselItem {
               />
             } @else {
               <div class="w-full aspect-video flex items-center justify-center">
-                <iframe
-                  [src]="item.url"
-                  class="w-full h-full max-w-full"
-                  frameborder="0"
-                  allowfullscreen
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                ></iframe>
+                @if (videoConsentGranted()) {
+                  <iframe
+                    [src]="item.url"
+                    class="w-full h-full max-w-full"
+                    frameborder="0"
+                    allowfullscreen
+                    loading="lazy"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  ></iframe>
+                } @else {
+                  <div
+                    class="w-full h-full flex flex-col items-center justify-center gap-3 p-6 text-center bg-(--tui-background-neutral-1)"
+                  >
+                    <div
+                      class="w-12 h-12 rounded-full bg-(--tui-background-neutral-2) flex items-center justify-center text-(--tui-text-secondary)"
+                    >
+                      <tui-icon icon="@tui.play" class="text-xl" />
+                    </div>
+                    <div class="flex flex-col gap-1 max-w-sm">
+                      <span
+                        class="text-sm font-semibold text-(--tui-text-primary)"
+                      >
+                        {{ 'cookies.youtubeBlockedTitle' | translate }}
+                      </span>
+                      <p
+                        class="m-0 text-xs leading-relaxed text-(--tui-text-secondary)"
+                      >
+                        {{ 'cookies.youtubeBlockedHint' | translate }}
+                      </p>
+                    </div>
+                    <div
+                      class="flex flex-wrap items-center justify-center gap-2"
+                    >
+                      <button
+                        tuiButton
+                        type="button"
+                        size="s"
+                        appearance="secondary"
+                        (click)="loadVideoOnce.emit(); $event.stopPropagation()"
+                      >
+                        {{ 'cookies.youtubeLoadOnce' | translate }}
+                      </button>
+                      <button
+                        tuiButton
+                        type="button"
+                        size="s"
+                        appearance="primary"
+                        (click)="
+                          enableExternalMedia.emit(); $event.stopPropagation()
+                        "
+                      >
+                        {{ 'cookies.youtubeEnableAlways' | translate }}
+                      </button>
+                    </div>
+                  </div>
+                }
               </div>
             }
           </div>
@@ -136,8 +188,11 @@ export class CustomCarouselComponent {
   hideDotsUntilHover = input(false);
   priority = input(false);
   loading = input<'lazy' | 'eager'>('lazy');
+  videoConsentGranted = input(false);
 
   imageClick = output<string | SafeResourceUrl>();
+  loadVideoOnce = output<void>();
+  enableExternalMedia = output<void>();
 
   protected readonly isHovered = signal(false);
   protected readonly touchOffset = signal(0);
