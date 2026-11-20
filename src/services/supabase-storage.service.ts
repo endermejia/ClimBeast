@@ -5,7 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseNotInitializedError } from '../models';
 import { Database } from '../models/supabase-generated';
 
-import { ENV_SUPABASE_URL } from '../environments/environment';
+import { ENV_STORAGE_URL, ENV_SUPABASE_URL } from '../environments/environment';
 import { SignedUrlCache } from './signed-url-cache';
 import { SUPABASE_URL } from './supabase-config.service';
 
@@ -13,6 +13,38 @@ import { SUPABASE_URL } from './supabase-config.service';
 export class SupabaseStorageService {
   private readonly url = inject(SUPABASE_URL, { optional: true });
   private readonly signedUrlCache = inject(SignedUrlCache);
+
+  private get storageBaseUrl(): string {
+    const customUrl = this.url;
+    if (customUrl && customUrl !== ENV_SUPABASE_URL) {
+      return customUrl.replace(/\/$/, '');
+    }
+    return (ENV_STORAGE_URL || customUrl || ENV_SUPABASE_URL || '').replace(
+      /\/$/,
+      '',
+    );
+  }
+
+  private rewriteStorageUrl(rawUrl: string): string {
+    if (!rawUrl) return '';
+    const supBase = (ENV_SUPABASE_URL || '').replace(/\/$/, '');
+    const r2Base = this.storageBaseUrl;
+    if (supBase && r2Base && rawUrl.startsWith(`${supBase}/storage/v1/`)) {
+      return `${r2Base}${rawUrl.slice(supBase.length)}`;
+    }
+    return rawUrl;
+  }
+
+  private isLegacySignedUrl(rawUrl: string): boolean {
+    const supBase = (ENV_SUPABASE_URL || '').replace(/\/$/, '');
+    const r2Base = this.storageBaseUrl;
+    return !!(
+      supBase &&
+      r2Base &&
+      supBase !== r2Base &&
+      rawUrl.startsWith(`${supBase}/storage/v1/object/sign/`)
+    );
+  }
 
   /** Helper to get client from caller or throw */
   private getClient(
@@ -26,10 +58,12 @@ export class SupabaseStorageService {
 
   buildAvatarUrl(path?: string | null): string {
     if (!path) return '';
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return this.rewriteStorageUrl(path);
+    }
 
     const cleanPath = path.replace(/^\//, '');
-    const base = (this.url || ENV_SUPABASE_URL || '').replace(/\/$/, '');
+    const base = this.storageBaseUrl;
 
     if (cleanPath.startsWith('storage/v1/object/public/')) {
       return `${base}/${cleanPath}`;
@@ -44,8 +78,10 @@ export class SupabaseStorageService {
 
   getPublicUrl(bucket: string, path: string | null | undefined): string {
     if (!path) return '';
-    if (path.startsWith('http')) return path;
-    const base = (this.url || ENV_SUPABASE_URL || '').replace(/\/$/, '');
+    if (path.startsWith('http')) {
+      return this.rewriteStorageUrl(path);
+    }
+    const base = this.storageBaseUrl;
     const rel = String(path).replace(/^\//, '');
     return `${base}/storage/v1/object/public/${bucket}/${rel}`;
   }
@@ -55,7 +91,7 @@ export class SupabaseStorageService {
     version?: number,
   ): string | null {
     if (!path) return null;
-    if (path.startsWith('http')) return path;
+    if (path.startsWith('http')) return this.rewriteStorageUrl(path);
 
     const cacheKey = SignedUrlCache.key(
       'topo-url',
@@ -63,11 +99,16 @@ export class SupabaseStorageService {
       version ? String(version) : undefined,
     );
     const cached = this.signedUrlCache.get(cacheKey);
-    if (cached) return cached.url;
+    if (cached && !this.isLegacySignedUrl(cached.url)) {
+      return cached.url;
+    }
 
     const lastValidKey = SignedUrlCache.key('topo-last-valid', path);
     const lastValid = this.signedUrlCache.get(lastValidKey);
-    return lastValid?.url ?? null;
+    if (lastValid && !this.isLegacySignedUrl(lastValid.url)) {
+      return lastValid.url;
+    }
+    return null;
   }
 
   async getTopoSignedUrl(
@@ -77,7 +118,7 @@ export class SupabaseStorageService {
     version?: number,
   ): Promise<string> {
     if (!path) return '';
-    if (path.startsWith('http')) return path;
+    if (path.startsWith('http')) return this.rewriteStorageUrl(path);
 
     const cacheKey = SignedUrlCache.key(
       'topo-url',
@@ -87,7 +128,9 @@ export class SupabaseStorageService {
     const lastValidKey = SignedUrlCache.key('topo-last-valid', path);
 
     const cached = this.signedUrlCache.get(cacheKey);
-    if (cached) return cached.url;
+    if (cached && !this.isLegacySignedUrl(cached.url)) {
+      return cached.url;
+    }
 
     await whenReady();
     const activeClient = this.getClient(client);
@@ -103,7 +146,7 @@ export class SupabaseStorageService {
       );
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       const lastValid = this.signedUrlCache.get(lastValidKey);
-      if (lastValid) {
+      if (lastValid && !this.isLegacySignedUrl(lastValid.url)) {
         if (isOffline || Date.now() < lastValid.expiresAt) {
           return lastValid.url;
         }
@@ -111,7 +154,7 @@ export class SupabaseStorageService {
       return '';
     }
 
-    let finalUrl = data.signedUrl;
+    let finalUrl = this.rewriteStorageUrl(data.signedUrl);
     if (version) {
       try {
         const u = new URL(finalUrl);
@@ -148,7 +191,7 @@ export class SupabaseStorageService {
     },
   ): Promise<string> {
     if (!path) return '';
-    if (path.startsWith('http')) return path;
+    if (path.startsWith('http')) return this.rewriteStorageUrl(path);
 
     const cacheKey = SignedUrlCache.key(
       'ascent-url',
@@ -156,7 +199,9 @@ export class SupabaseStorageService {
       options ? JSON.stringify(options) : undefined,
     );
     const cached = this.signedUrlCache.get(cacheKey);
-    if (cached) return cached.url;
+    if (cached && !this.isLegacySignedUrl(cached.url)) {
+      return cached.url;
+    }
 
     await whenReady();
     const activeClient = this.getClient(client);
@@ -172,18 +217,19 @@ export class SupabaseStorageService {
       console.warn('[SupabaseStorageService] getAscentSignedUrl error', error);
       const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
       if (isOffline) {
-        const cached = this.signedUrlCache.get(cacheKey);
-        if (cached) {
-          return cached.url;
+        const fallbackCached = this.signedUrlCache.get(cacheKey);
+        if (fallbackCached && !this.isLegacySignedUrl(fallbackCached.url)) {
+          return fallbackCached.url;
         }
       }
       return '';
     }
 
+    const finalUrl = this.rewriteStorageUrl(data.signedUrl);
     const expiresAt = Date.now() + 3600 * 1000 - 300000;
-    this.signedUrlCache.set(cacheKey, { url: data.signedUrl, expiresAt });
+    this.signedUrlCache.set(cacheKey, { url: finalUrl, expiresAt });
 
-    return data.signedUrl;
+    return finalUrl;
   }
 
   async uploadAvatar(

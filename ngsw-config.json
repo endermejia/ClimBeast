@@ -68,6 +68,8 @@
     {
       "name": "supabase-storage",
       "urls": [
+        "https://climbeast-storage.climbeast.workers.dev/storage/v1/object/public/**",
+        "https://climbeast-storage.climbeast.workers.dev/storage/v1/object/sign/**",
         "https://eswbehepsagigvlytfxv.supabase.co/storage/v1/object/public/**",
         "https://eswbehepsagigvlytfxv.supabase.co/storage/v1/object/sign/**"
       ],

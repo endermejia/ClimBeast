@@ -8,6 +8,7 @@ import { SupabaseNotInitializedError } from '../models';
 import { Database } from '../models/supabase-generated';
 
 import { IS_BROWSER } from '../app/is-browser';
+import { ENV_STORAGE_URL, ENV_SUPABASE_URL } from '../environments/environment';
 
 import { LocalStorage } from './local-storage';
 import { OnlineStatusService } from './online-status.service';
@@ -155,7 +156,13 @@ export class SupabaseService {
               }
             }
             try {
-              const response = await fetch(reqUrl, {
+              const storageBase = (ENV_STORAGE_URL || url).replace(/\/$/, '');
+              const supStoragePrefix = `${url.replace(/\/$/, '')}/storage/v1`;
+              const targetUrl =
+                url === ENV_SUPABASE_URL && urlStr.startsWith(supStoragePrefix)
+                  ? `${storageBase}/storage/v1${urlStr.slice(supStoragePrefix.length)}`
+                  : reqUrl;
+              const response = await fetch(targetUrl, {
                 ...options,
                 signal: controller.signal,
               });

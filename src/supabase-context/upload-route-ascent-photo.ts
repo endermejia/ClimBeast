@@ -96,6 +96,7 @@ function extractImageDimensions(
   return null;
 }
 
+const R2_STORAGE_URL = 'https://climbeast-storage.climbeast.workers.dev';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -111,7 +112,22 @@ const supabaseAuthClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 const supabaseAdminClient = createClient(
   SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false } },
+  {
+    auth: { persistSession: false },
+    global: {
+      fetch: (reqUrl, options) => {
+        const urlStr = reqUrl.toString();
+        const storagePrefix = `${SUPABASE_URL.replace(/\/$/, '')}/storage/v1`;
+        if (urlStr.startsWith(storagePrefix)) {
+          return fetch(
+            `${R2_STORAGE_URL}/storage/v1${urlStr.slice(storagePrefix.length)}`,
+            options,
+          );
+        }
+        return fetch(reqUrl, options);
+      },
+    },
+  },
 );
 
 console.info('Upload-route-ascent-photo function started');
@@ -348,9 +364,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const publicUrl =
-      `${SUPABASE_URL.replace(/\/$/, '')}` +
-      `/storage/v1/object/public/${bucket}/${encodeURIComponent(path)}`;
+    const publicUrl = `${R2_STORAGE_URL}/storage/v1/object/public/${bucket}/${encodeURIComponent(path)}`;
 
     return new Response(
       JSON.stringify({

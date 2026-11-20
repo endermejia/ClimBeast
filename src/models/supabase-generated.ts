@@ -4083,6 +4083,10 @@ export type Database = {
         };
         Returns: undefined;
       };
+      check_storage_permission: {
+        Args: { p_bucket: string; p_op: string; p_path: string };
+        Returns: boolean;
+      };
       claim_area_access_from_donations: {
         Args: { p_area_id: number };
         Returns: boolean;
