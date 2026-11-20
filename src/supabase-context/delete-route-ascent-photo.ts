@@ -115,17 +115,55 @@ Deno.serve(async (req: Request) => {
     // ─────────────────────────────
     // Get ascent → user_id and photo_path check
     // ─────────────────────────────
-    const { data: ascent, error: ascentErr } = await supabaseAdminClient
+    let bodyPhotoPath: string | null = null;
+    try {
+      const rawBody = await req.text();
+      if (rawBody) {
+        const parsed = JSON.parse(rawBody);
+        if (typeof parsed?.photo_path === 'string') {
+          bodyPhotoPath = parsed.photo_path;
+        }
+      }
+    } catch {
+      // ignore empty/non-JSON body
+    }
+
+    const { data: ascent } = await supabaseAdminClient
       .from(tableName)
       .select('user_id, photo_path')
       .eq('id', ascentId)
-      .single();
+      .maybeSingle();
 
-    if (ascentErr || !ascent) {
-      console.error(
-        `[delete-route-ascent-photo] ascent not found in ${tableName}`,
-        ascentErr,
-      );
+    if (!ascent) {
+      // Ascent row was already deleted: allow owner to clean up orphaned photo_path
+      if (
+        bodyPhotoPath &&
+        bodyPhotoPath.startsWith(`${userId}/`) &&
+        !bodyPhotoPath.includes('..')
+      ) {
+        const { error: orphanDelErr } = await supabaseAdminClient.storage
+          .from('route-ascent-photos')
+          .remove([bodyPhotoPath]);
+        if (orphanDelErr) {
+          return new Response(
+            JSON.stringify({
+              error: 'Storage removal failed',
+              details: orphanDelErr.message,
+            }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            },
+          );
+        }
+        return new Response(
+          JSON.stringify({ message: 'Orphaned photo deleted successfully' }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          },
+        );
+      }
+
       return new Response(JSON.stringify({ error: 'Ascent not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

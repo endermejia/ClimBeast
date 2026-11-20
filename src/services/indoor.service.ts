@@ -1118,7 +1118,7 @@ export class IndoorService {
     this.ascentsService.refreshResources();
     this.ascentsService.notifyAscentDeleted(ascentId);
 
-    this.toast.showWithUndo('messages.toasts.ascentDeleted', () => {
+    const undoFn = () => {
       this.supabase.client
         .from('indoor_ascents')
         .insert(ascent as IndoorAscentInsertDto)
@@ -1136,7 +1136,25 @@ export class IndoorService {
             );
           }
         });
-    });
+    };
+
+    if (ascent.photo_path) {
+      const photoPath = ascent.photo_path;
+      this.toast.showWithUndo(
+        'messages.toasts.ascentDeleted',
+        undoFn,
+        5000,
+        () => {
+          void this.ascentsService.deleteOrphanedPhoto(
+            ascentId,
+            photoPath,
+            true,
+          );
+        },
+      );
+    } else {
+      this.toast.showWithUndo('messages.toasts.ascentDeleted', undoFn);
+    }
   }
 
   // --- Indoor Center Admin Requests ---

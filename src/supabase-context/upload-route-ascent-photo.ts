@@ -235,7 +235,7 @@ Deno.serve(async (req: Request) => {
     // ─────────────────────────────
     const { data: ascent, error: ascentErr } = await supabaseAdminClient
       .from(tableName)
-      .select('user_id')
+      .select('user_id, photo_path')
       .eq('id', ascentId)
       .single();
 
@@ -319,6 +319,12 @@ Deno.serve(async (req: Request) => {
     }
 
     const path = uploadData?.path || fileName;
+
+    if (ascent.photo_path && ascent.photo_path !== path) {
+      await supabaseAdminClient.storage
+        .from(bucket)
+        .remove([ascent.photo_path]);
+    }
 
     const parsedDims = extractImageDimensions(bytes);
     const validWidth =

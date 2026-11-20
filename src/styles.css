@@ -790,3 +790,13 @@ tui-calendar.cal-month-picker-open > tui-calendar-month {
   width: 100%;
   padding: 0;
 }
+
+/* Highlight today in Taiga UI calendars */
+tui-calendar-sheet .t-cell_today:not([data-range]) {
+  font-weight: 700;
+  color: var(--tui-background-accent-1);
+}
+
+tui-calendar-sheet .t-cell_today:not([data-range])::before {
+  box-shadow: inset 0 0 0 1.5px var(--tui-background-accent-1);
+}

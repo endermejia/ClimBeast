@@ -79,15 +79,25 @@ export class ToastService {
     message: string,
     undoCallback: () => void,
     autoClose = 5000,
+    onFinalizeCallback?: () => void,
   ): void {
+    let undone = false;
+    const wrappedUndo = () => {
+      undone = true;
+      undoCallback();
+    };
     void firstValueFrom(
       this.toast.open(new PolymorpheusComponent(UndoToastComponent), {
-        data: { message, undoCallback },
+        data: { message, undoCallback: wrappedUndo },
         autoClose,
         closable: false,
       }),
       { defaultValue: undefined },
-    );
+    ).finally(() => {
+      if (!undone && onFinalizeCallback) {
+        onFinalizeCallback();
+      }
+    });
   }
 
   showLoader(message: string, progress$?: Observable<number>): Subject<void> {

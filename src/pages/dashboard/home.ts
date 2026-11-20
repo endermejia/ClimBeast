@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 
+import { TuiDay } from '@taiga-ui/cdk';
 import {
   TuiButton,
   TuiDataList,
@@ -968,6 +969,18 @@ export class HomeComponent {
   protected readonly feedAnchorDate = signal<string | null>(null);
 
   protected onDateSelected(date: string): void {
+    const today = TuiDay.currentLocal();
+    const todayStr = `${today.year}-${String(today.month + 1).padStart(2, '0')}-${String(today.day).padStart(2, '0')}`;
+
+    if (date === todayStr) {
+      if (this.feedAnchorDate() !== null) {
+        this.clearDateAnchor();
+      } else {
+        this.scrollToTop();
+      }
+      return;
+    }
+
     this.feedAnchorDate.set(date);
     this.resetFeed();
     this.scrollToTop();

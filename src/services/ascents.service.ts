@@ -801,7 +801,7 @@ export class AscentsService {
     this.refreshResources();
     this.ascentDeleted$.next(id);
 
-    this.toast.showWithUndo('messages.toasts.ascentDeleted', () => {
+    const undoFn = () => {
       this.supabase.client
         .from('route_ascents')
         .insert(ascent as RouteAscentInsertDto)
@@ -815,9 +815,47 @@ export class AscentsService {
             this.ascentCreated$.next(ascent as unknown as RouteAscentDto);
           }
         });
-    });
+    };
+
+    if (ascent.photo_path) {
+      const photoPath = ascent.photo_path;
+      this.toast.showWithUndo(
+        'messages.toasts.ascentDeleted',
+        undoFn,
+        5000,
+        () => {
+          void this.deleteOrphanedPhoto(id, photoPath, false);
+        },
+      );
+    } else {
+      this.toast.showWithUndo('messages.toasts.ascentDeleted', undoFn);
+    }
 
     return true;
+  }
+
+  async deleteOrphanedPhoto(
+    ascentId: number | string,
+    photoPath: string,
+    isIndoor = false,
+  ): Promise<void> {
+    if (!this.isBrowser || !photoPath) return;
+    try {
+      await this.supabase.whenReady();
+      const headers: Record<string, string> = {
+        'ascent-id': ascentId.toString(),
+        'ngsw-bypass': 'true',
+      };
+      if (isIndoor || typeof ascentId === 'string') {
+        headers['is-indoor'] = 'true';
+      }
+      await this.supabase.client.functions.invoke('delete-route-ascent-photo', {
+        body: { photo_path: photoPath },
+        headers,
+      });
+    } catch (e) {
+      console.warn('[AscentsService] deleteOrphanedPhoto error', e);
+    }
   }
 
   private readonly ascentLikesUpdate$ = new Subject<{
