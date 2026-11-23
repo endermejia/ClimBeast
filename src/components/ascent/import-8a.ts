@@ -400,28 +400,27 @@ export class Import8aComponent {
         chunks.push(deduplicatedPayload.slice(i, i + CHUNK_SIZE));
       }
 
-      const results = await Promise.all(
-        chunks.map(async (chunk) => {
-          const { data, error } = await this.supabase.client.rpc(
-            'import_8a_ascents',
-            {
-              ascents: chunk as unknown as Json[],
-            },
-          );
+      const results = [];
+      for (const chunk of chunks) {
+        const { data, error } = await this.supabase.client.rpc(
+          'import_8a_ascents',
+          {
+            ascents: chunk as unknown as Json[],
+          },
+        );
 
-          if (error) {
-            console.error('[8a Import] RPC Error:', error);
-            throw error;
-          }
+        if (error) {
+          console.error('[8a Import] RPC Error:', error);
+          throw error;
+        }
 
-          completedUnits += chunk.length;
-          progress$.next(
-            Math.min(100, Math.floor((completedUnits / totalUnits) * 100)),
-          );
+        completedUnits += chunk.length;
+        progress$.next(
+          Math.min(100, Math.floor((completedUnits / totalUnits) * 100)),
+        );
 
-          return data;
-        }),
-      );
+        results.push(data);
+      }
 
       let totalInserted = 0;
       let totalSkipped = skippedBeforeImport;

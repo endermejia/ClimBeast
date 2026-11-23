@@ -60,31 +60,58 @@ export interface ResolvedSlugData {
   eightAnuSlugs: string[];
 }
 
-interface ExistingUserAscentKey {
-  date: string | null;
-  route:
+interface MatchedRouteRow {
+  name: string;
+  slug: string;
+  eight_anu_route_slugs: string[] | null;
+  crag: {
+    name: string;
+    slug: string;
+    eight_anu_sector_slugs: string[] | null;
+    area: {
+      name: string;
+      slug: string;
+      eight_anu_crag_slugs: string[] | null;
+    };
+  };
+}
+
+interface ExistingUserAscentRoute {
+  slug: string;
+  name: string;
+  eight_anu_route_slugs: string[] | null;
+  crag?:
     | {
         slug: string;
-        name: string;
-        eight_anu_route_slugs: string[] | null;
-        crag: {
-          slug: string;
-          area: {
-            slug: string;
-          };
-        };
+        eight_anu_sector_slugs?: string[] | null;
+        area?:
+          | {
+              slug: string;
+              eight_anu_crag_slugs?: string[] | null;
+            }
+          | {
+              slug: string;
+              eight_anu_crag_slugs?: string[] | null;
+            }[];
       }
     | {
         slug: string;
-        name: string;
-        eight_anu_route_slugs: string[] | null;
-        crag: {
-          slug: string;
-          area: {
-            slug: string;
-          };
-        };
+        eight_anu_sector_slugs?: string[] | null;
+        area?:
+          | {
+              slug: string;
+              eight_anu_crag_slugs?: string[] | null;
+            }
+          | {
+              slug: string;
+              eight_anu_crag_slugs?: string[] | null;
+            }[];
       }[];
+}
+
+interface ExistingUserAscentKey {
+  date: string | null;
+  route: ExistingUserAscentRoute | ExistingUserAscentRoute[];
 }
 
 @Injectable({
@@ -212,20 +239,15 @@ export class RouteMatcherService {
         }
       }
 
-      const itemsToResolve = Array.from(uniqueItems.values());
-      const totalItems = itemsToResolve.length;
-      let completedItems = 0;
+      const csvSlugByKey = new Map<string, string>();
+      for (const a of ascents) {
+        if (a.route_8a_slug) {
+          const key = `${slugify(a.location_name)}|${sectorSlug(a.sector_name)}|${slugify(a.name)}`;
+          csvSlugByKey.set(key, a.route_8a_slug);
+        }
+      }
 
-      const BATCH_SIZE = 100;
-
-      for (let i = 0; i < totalItems; i += BATCH_SIZE) {
-        const batch = itemsToResolve.slice(i, i + BATCH_SIZE);
-        const names = batch.map((b) => b.name);
-
-        const { data: matchedRoutes, error } = await this.supabase.client
-          .from('routes')
-          .select(
-            `
+      const routeSelect = `
             name,
             slug,
             eight_anu_route_slugs,
@@ -239,58 +261,108 @@ export class RouteMatcherService {
                 eight_anu_crag_slugs
               )
             )
-          `,
-          )
-          .in('name', names)
-          .overrideTypes<
-            {
-              name: string;
-              slug: string;
-              eight_anu_route_slugs: string[] | null;
-              crag: {
-                name: string;
-                slug: string;
-                eight_anu_sector_slugs: string[] | null;
-                area: {
-                  name: string;
-                  slug: string;
-                  eight_anu_crag_slugs: string[] | null;
-                };
-              };
-            }[]
-          >();
+          `;
 
-        if (error) {
+      const itemsToResolve = Array.from(uniqueItems.values());
+      const totalItems = itemsToResolve.length;
+      let completedItems = 0;
+
+      const BATCH_SIZE = 100;
+
+      for (let i = 0; i < totalItems; i += BATCH_SIZE) {
+        const batch = itemsToResolve.slice(i, i + BATCH_SIZE);
+        const names = [...new Set(batch.map((b) => b.name))];
+        const candidateSlugs = [
+          ...new Set(
+            batch
+              .flatMap((b) => {
+                const key = `${slugify(b.area)}|${sectorSlug(b.crag)}|${slugify(b.name)}`;
+                const csvSlug = csvSlugByKey.get(key);
+                return csvSlug ? [slugify(b.name), csvSlug] : [slugify(b.name)];
+              })
+              .filter(Boolean),
+          ),
+        ];
+
+        const [byNameRes, bySlugRes, byEightAnuRes] = await Promise.all([
+          this.supabase.client
+            .from('routes')
+            .select(routeSelect)
+            .in('name', names)
+            .overrideTypes<MatchedRouteRow[]>(),
+          candidateSlugs.length > 0
+            ? this.supabase.client
+                .from('routes')
+                .select(routeSelect)
+                .in('slug', candidateSlugs)
+                .overrideTypes<MatchedRouteRow[]>()
+            : Promise.resolve({ data: [] as MatchedRouteRow[], error: null }),
+          candidateSlugs.length > 0
+            ? this.supabase.client
+                .from('routes')
+                .select(routeSelect)
+                .overlaps('eight_anu_route_slugs', candidateSlugs)
+                .overrideTypes<MatchedRouteRow[]>()
+            : Promise.resolve({ data: [] as MatchedRouteRow[], error: null }),
+        ]);
+
+        if (byNameRes.error || bySlugRes.error || byEightAnuRes.error) {
           console.error(
             '[8a Import] Error fetching routes for resolution:',
-            error,
+            byNameRes.error || bySlugRes.error || byEightAnuRes.error,
           );
         }
 
-        if (matchedRoutes) {
-          for (const r of matchedRoutes) {
-            const matchingItems = batch.filter((b) => {
-              if (slugify(b.name) !== slugify(r.name)) return false;
+        const matchedRoutes: MatchedRouteRow[] = [];
+        const seenRouteKeys = new Set<string>();
+        for (const r of [
+          ...(byEightAnuRes.data ?? []),
+          ...(bySlugRes.data ?? []),
+          ...(byNameRes.data ?? []),
+        ]) {
+          const rk = `${r.crag.area.slug}|${r.crag.slug}|${r.slug}`;
+          if (!seenRouteKeys.has(rk)) {
+            seenRouteKeys.add(rk);
+            matchedRoutes.push(r);
+          }
+        }
 
-              const areaSlug = slugify(b.area);
-              const areaNorm = normalizeName(b.area);
-              const areaMatches =
-                areaSlug === r.crag.area.slug ||
-                areaNorm === normalizeName(r.crag.area.name) ||
-                (r.crag.area.eight_anu_crag_slugs?.includes(areaSlug) ?? false);
+        for (const r of matchedRoutes) {
+          const matchingItems = batch.filter((b) => {
+            const itemNameSlug = slugify(b.name);
+            const itemKey = `${slugify(b.area)}|${sectorSlug(b.crag)}|${itemNameSlug}`;
+            const csvSlug = csvSlugByKey.get(itemKey);
 
-              const cragSlug = sectorSlug(b.crag);
-              const cragNorm = normalizeName(b.crag);
-              const cragMatches =
-                cragSlug === r.crag.slug ||
-                cragNorm === normalizeName(r.crag.name) ||
-                (r.crag.eight_anu_sector_slugs?.includes(cragSlug) ?? false);
+            const routeMatches =
+              itemNameSlug === slugify(r.name) ||
+              normalizeName(b.name) === normalizeName(r.name) ||
+              r.slug === itemNameSlug ||
+              (r.eight_anu_route_slugs?.includes(itemNameSlug) ?? false) ||
+              (!!csvSlug &&
+                (r.slug === csvSlug ||
+                  (r.eight_anu_route_slugs?.includes(csvSlug) ?? false)));
+            if (!routeMatches) return false;
 
-              return areaMatches && cragMatches;
-            });
+            const areaSlug = slugify(b.area);
+            const areaNorm = normalizeName(b.area);
+            const areaMatches =
+              areaSlug === r.crag.area.slug ||
+              areaNorm === normalizeName(r.crag.area.name) ||
+              (r.crag.area.eight_anu_crag_slugs?.includes(areaSlug) ?? false);
 
-            for (const item of matchingItems) {
-              const key = `${slugify(item.area)}|${sectorSlug(item.crag)}|${slugify(item.name)}`;
+            const cragSlug = sectorSlug(b.crag);
+            const cragNorm = normalizeName(b.crag);
+            const cragMatches =
+              cragSlug === r.crag.slug ||
+              cragNorm === normalizeName(r.crag.name) ||
+              (r.crag.eight_anu_sector_slugs?.includes(cragSlug) ?? false);
+
+            return areaMatches && cragMatches;
+          });
+
+          for (const item of matchingItems) {
+            const key = `${slugify(item.area)}|${sectorSlug(item.crag)}|${slugify(item.name)}`;
+            if (!resolvedSlugsMap.has(key)) {
               resolvedSlugsMap.set(key, {
                 slug: r.slug,
                 eightAnuSlugs: r.eight_anu_route_slugs || [],
@@ -309,14 +381,6 @@ export class RouteMatcherService {
       });
 
       if (unresolvedItems.length > 0) {
-        const csvSlugByKey = new Map<string, string>();
-        for (const a of ascents) {
-          if (a.route_8a_slug) {
-            const key = `${slugify(a.location_name)}|${sectorSlug(a.sector_name)}|${slugify(a.name)}`;
-            csvSlugByKey.set(key, a.route_8a_slug);
-          }
-        }
-
         const slugByKey = new Map<string, string>();
         const itemsNeedingApi: typeof unresolvedItems = [];
 
@@ -358,62 +422,24 @@ export class RouteMatcherService {
         if (slugByKey.size > 0) {
           const allSlugs = [...new Set(slugByKey.values())];
           const SLUG_CHUNK_SIZE = 50;
-          const routesBySlugs: {
-            name: string;
-            slug: string;
-            eight_anu_route_slugs: string[] | null;
-            crag: {
-              name: string;
-              slug: string;
-              eight_anu_sector_slugs: string[] | null;
-              area: {
-                name: string;
-                slug: string;
-                eight_anu_crag_slugs: string[] | null;
-              };
-            };
-          }[] = [];
+          const routesBySlugs: MatchedRouteRow[] = [];
 
           for (let i = 0; i < allSlugs.length; i += SLUG_CHUNK_SIZE) {
             const slugChunk = allSlugs.slice(i, i + SLUG_CHUNK_SIZE);
-            const { data } = await this.supabase.client
-              .from('routes')
-              .select(
-                `
-                name,
-                slug,
-                eight_anu_route_slugs,
-                crag:crags!inner(
-                  name,
-                  slug,
-                  eight_anu_sector_slugs,
-                  area:areas!inner(
-                    name,
-                    slug,
-                    eight_anu_crag_slugs
-                  )
-                )
-              `,
-              )
-              .overlaps('eight_anu_route_slugs', slugChunk)
-              .overrideTypes<
-                {
-                  name: string;
-                  slug: string;
-                  eight_anu_route_slugs: string[] | null;
-                  crag: {
-                    name: string;
-                    slug: string;
-                    eight_anu_sector_slugs: string[] | null;
-                    area: {
-                      name: string;
-                      slug: string;
-                      eight_anu_crag_slugs: string[] | null;
-                    };
-                  };
-                }[]
-              >();
-            if (data) routesBySlugs.push(...data);
+            const [byEightAnu, bySlug] = await Promise.all([
+              this.supabase.client
+                .from('routes')
+                .select(routeSelect)
+                .overlaps('eight_anu_route_slugs', slugChunk)
+                .overrideTypes<MatchedRouteRow[]>(),
+              this.supabase.client
+                .from('routes')
+                .select(routeSelect)
+                .in('slug', slugChunk)
+                .overrideTypes<MatchedRouteRow[]>(),
+            ]);
+            if (byEightAnu.data) routesBySlugs.push(...byEightAnu.data);
+            if (bySlug.data) routesBySlugs.push(...bySlug.data);
           }
 
           const unresolvedByKey = new Map<
@@ -436,7 +462,12 @@ export class RouteMatcherService {
             const cragNorm = normalizeName(item.crag);
 
             const match = routesBySlugs.find((r) => {
-              if (!r.eight_anu_route_slugs?.includes(slug8a)) return false;
+              if (
+                r.slug !== slug8a &&
+                !(r.eight_anu_route_slugs?.includes(slug8a) ?? false)
+              ) {
+                return false;
+              }
 
               const areaMatches =
                 areaSlug === r.crag.area.slug ||
@@ -688,8 +719,15 @@ export class RouteMatcherService {
 
       const route_8a_slug =
         a.route_8a_slug || resolved?.eightAnuSlugs?.[0] || null;
-      const eight_anu_route_slugs =
-        resolved?.eightAnuSlugs || (route_8a_slug ? [route_8a_slug] : []);
+      const eight_anu_route_slugs = [
+        ...new Set(
+          [
+            ...(resolved?.eightAnuSlugs ?? []),
+            ...(route_8a_slug ? [route_8a_slug] : []),
+            slugify(a.name),
+          ].filter(Boolean),
+        ),
+      ];
       const routeSlug = resolved?.slug || route_8a_slug || slugify(a.name);
       const grade = LABEL_TO_VERTICAL_LIFE[a.difficulty] ?? 0;
 
@@ -745,45 +783,64 @@ export class RouteMatcherService {
     );
     const seenInCsv = new Set<string>();
     const deduplicatedAscents: EightAnuAscent[] = [];
+    const hasUnscopedExisting = this.hasUnscopedKeys(existingKeys);
     let skipped = 0;
 
     for (const ascent of ascents) {
-      const keysToCheck: (string | null)[] = [];
-      const csvKey = `${slugify(ascent.location_name)}|${sectorSlug(ascent.sector_name)}|${slugify(ascent.name)}`;
+      const areaSlug = slugify(ascent.location_name);
+      const cragSlug = sectorSlug(ascent.sector_name);
+      const scope = `${areaSlug}|${cragSlug}`;
+      const csvKey = `${scope}|${slugify(ascent.name)}`;
       const resolved = resolvedSlugsMap.get(csvKey);
 
+      const scopedKeys: string[] = [];
+      const unscopedKeys: string[] = [];
+      const addKey = (slug: string | null | undefined, is8aSlug = false) => {
+        const scopedKey = this.buildScopedAscentDedupKey(
+          ascent.date,
+          scope,
+          slug,
+          is8aSlug,
+        );
+        if (scopedKey) scopedKeys.push(scopedKey);
+        if (hasUnscopedExisting) {
+          const unscopedKey = this.buildAscentDedupKey(
+            ascent.date,
+            slug,
+            is8aSlug,
+          );
+          if (unscopedKey) unscopedKeys.push(unscopedKey);
+        }
+      };
+
       if (resolved?.slug) {
-        keysToCheck.push(this.buildAscentDedupKey(ascent.date, resolved.slug));
+        addKey(resolved.slug);
       }
 
-      keysToCheck.push(this.buildAscentDedupKey(ascent.date, ascent.name));
-      keysToCheck.push(
-        this.buildAscentDedupKey(ascent.date, slugify(ascent.name), true),
-      );
+      addKey(ascent.name);
+      addKey(slugify(ascent.name), true);
 
       if (ascent.route_8a_slug) {
-        keysToCheck.push(
-          this.buildAscentDedupKey(ascent.date, ascent.route_8a_slug, true),
-        );
+        addKey(ascent.route_8a_slug, true);
       }
 
       if (resolved?.eightAnuSlugs) {
         for (const slug8a of resolved.eightAnuSlugs) {
-          keysToCheck.push(this.buildAscentDedupKey(ascent.date, slug8a, true));
+          addKey(slug8a, true);
         }
       }
 
-      const isDuplicate = keysToCheck.some(
-        (k) => k && (existingKeys.has(k) || seenInCsv.has(k)),
-      );
+      const isDuplicate =
+        scopedKeys.some((k) => existingKeys.has(k) || seenInCsv.has(k)) ||
+        unscopedKeys.some((k) => existingKeys.has(k));
 
       if (isDuplicate) {
         skipped++;
         continue;
       }
 
-      for (const k of keysToCheck) {
-        if (k) seenInCsv.add(k);
+      for (const k of scopedKeys) {
+        seenInCsv.add(k);
       }
       deduplicatedAscents.push(ascent);
     }
@@ -801,39 +858,64 @@ export class RouteMatcherService {
 
     const seenInImport = new Set<string>();
     const deduplicatedPayload: Import8aPayload[] = [];
+    const hasUnscopedExisting = this.hasUnscopedKeys(existingKeys);
     let skipped = 0;
 
     for (const ascent of payload) {
-      const keysToCheck: (string | null)[] = [];
+      const areaSlugs = [
+        ...new Set([ascent.area_slug, ascent.area_8a_slug].filter(Boolean)),
+      ];
+      const cragSlugs = [
+        ...new Set([ascent.crag_slug, ascent.crag_8a_slug].filter(Boolean)),
+      ];
+      const scopes = areaSlugs.flatMap((aSlug) =>
+        cragSlugs.map((cSlug) => `${aSlug}|${cSlug}`),
+      );
 
-      keysToCheck.push(
-        this.buildAscentDedupKey(ascent.date, ascent.route_slug),
-      );
-      keysToCheck.push(
-        this.buildAscentDedupKey(ascent.date, slugify(ascent.route_name), true),
-      );
+      const scopedKeys: string[] = [];
+      const unscopedKeys: string[] = [];
+      const addKey = (slug: string | null | undefined, is8aSlug = false) => {
+        for (const scope of scopes) {
+          const scopedKey = this.buildScopedAscentDedupKey(
+            ascent.date,
+            scope,
+            slug,
+            is8aSlug,
+          );
+          if (scopedKey) scopedKeys.push(scopedKey);
+        }
+        if (hasUnscopedExisting) {
+          const unscopedKey = this.buildAscentDedupKey(
+            ascent.date,
+            slug,
+            is8aSlug,
+          );
+          if (unscopedKey) unscopedKeys.push(unscopedKey);
+        }
+      };
+
+      addKey(ascent.route_slug);
+      addKey(slugify(ascent.route_name), true);
 
       if (ascent.route_8a_slug) {
-        keysToCheck.push(
-          this.buildAscentDedupKey(ascent.date, ascent.route_8a_slug, true),
-        );
+        addKey(ascent.route_8a_slug, true);
       }
 
       for (const slug8a of ascent.eight_anu_route_slugs) {
-        keysToCheck.push(this.buildAscentDedupKey(ascent.date, slug8a, true));
+        addKey(slug8a, true);
       }
 
-      const isDuplicate = keysToCheck.some(
-        (k) => k && (existingKeys.has(k) || seenInImport.has(k)),
-      );
+      const isDuplicate =
+        scopedKeys.some((k) => existingKeys.has(k) || seenInImport.has(k)) ||
+        unscopedKeys.some((k) => existingKeys.has(k));
 
       if (isDuplicate) {
         skipped++;
         continue;
       }
 
-      for (const k of keysToCheck) {
-        if (k) seenInImport.add(k);
+      for (const k of scopedKeys) {
+        seenInImport.add(k);
       }
       deduplicatedPayload.push(ascent);
     }
@@ -874,7 +956,15 @@ export class RouteMatcherService {
             route:routes!inner(
               slug,
               name,
-              eight_anu_route_slugs
+              eight_anu_route_slugs,
+              crag:crags!inner(
+                slug,
+                eight_anu_sector_slugs,
+                area:areas!inner(
+                  slug,
+                  eight_anu_crag_slugs
+                )
+              )
             )
           `,
         )
@@ -910,33 +1000,66 @@ export class RouteMatcherService {
         ? ascent.route[0]
         : ascent.route;
       const routeData =
-        routeDataRaw && typeof routeDataRaw === 'object'
-          ? (routeDataRaw as {
-              slug?: string | null;
-              name?: string | null;
-              eight_anu_route_slugs?: string[] | null;
-            })
-          : null;
+        routeDataRaw && typeof routeDataRaw === 'object' ? routeDataRaw : null;
+      if (!routeData) continue;
 
-      const routeIdentifier = routeData?.slug || routeData?.name || '';
-      const key = this.buildAscentDedupKey(ascent.date, routeIdentifier);
-      if (key) {
-        existingKeys.add(key);
-      }
+      const cragRaw = Array.isArray(routeData.crag)
+        ? routeData.crag[0]
+        : routeData.crag;
+      const areaRaw = cragRaw?.area
+        ? Array.isArray(cragRaw.area)
+          ? cragRaw.area[0]
+          : cragRaw.area
+        : undefined;
 
-      if (routeData?.name) {
-        const nameKey = this.buildAscentDedupKey(ascent.date, routeData.name);
-        if (nameKey) {
-          existingKeys.add(nameKey);
-        }
-      }
+      const areaSlugs = [
+        ...new Set(
+          [areaRaw?.slug, ...(areaRaw?.eight_anu_crag_slugs ?? [])].filter(
+            (s): s is string => !!s,
+          ),
+        ),
+      ];
+      const cragSlugs = [
+        ...new Set(
+          [cragRaw?.slug, ...(cragRaw?.eight_anu_sector_slugs ?? [])].filter(
+            (s): s is string => !!s,
+          ),
+        ),
+      ];
+      const scopes = areaSlugs.flatMap((aSlug) =>
+        cragSlugs.map((cSlug) => `${aSlug}|${cSlug}`),
+      );
 
-      if (ascent.date && routeData?.eight_anu_route_slugs) {
-        for (const slug of routeData.eight_anu_route_slugs) {
-          const slugKey = this.buildAscentDedupKey(ascent.date, slug, true);
-          if (slugKey) {
-            existingKeys.add(slugKey);
+      const addExistingKey = (
+        slug: string | null | undefined,
+        is8aSlug = false,
+      ) => {
+        if (scopes.length > 0) {
+          for (const scope of scopes) {
+            const scopedKey = this.buildScopedAscentDedupKey(
+              ascent.date,
+              scope,
+              slug,
+              is8aSlug,
+            );
+            if (scopedKey) existingKeys.add(scopedKey);
           }
+        } else {
+          const key = this.buildAscentDedupKey(ascent.date, slug, is8aSlug);
+          if (key) existingKeys.add(key);
+        }
+      };
+
+      const routeIdentifier = routeData.slug || routeData.name || '';
+      addExistingKey(routeIdentifier);
+
+      if (routeData.name) {
+        addExistingKey(routeData.name);
+      }
+
+      if (ascent.date && routeData.eight_anu_route_slugs) {
+        for (const slug of routeData.eight_anu_route_slugs) {
+          addExistingKey(slug, true);
         }
       }
     }
@@ -955,6 +1078,25 @@ export class RouteMatcherService {
     const trimmed = (date ?? '').trim();
     if (!trimmed) return '';
     return trimmed.split(/[T\s]/)[0];
+  }
+
+  private hasUnscopedKeys(keys: ReadonlySet<string>): boolean {
+    for (const k of keys) {
+      if (k.split('|').length === 2) return true;
+    }
+    return false;
+  }
+
+  private buildScopedAscentDedupKey(
+    date: string | null | undefined,
+    scope: string,
+    slug: string | null | undefined,
+    is8aSlug = false,
+  ): string | null {
+    const normalizedDate = this.normalizeDate(date);
+    if (!normalizedDate || !slug || !scope) return null;
+    const identifier = is8aSlug ? `8a:${slug}` : slugify(slug);
+    return `${normalizedDate}|${scope}|${identifier}`;
   }
 
   private buildAscentDedupKey(

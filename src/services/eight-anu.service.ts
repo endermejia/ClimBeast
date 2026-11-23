@@ -14,7 +14,7 @@ import {
   SearchRouteItem,
 } from '../models';
 
-import { normalizeName, slugify } from '../utils';
+import { normalizeName, sectorSlug, slugify } from '../utils';
 
 @Injectable({
   providedIn: 'root',
@@ -117,39 +117,51 @@ export class EightAnuService {
       );
 
       if (response?.items && response.items.length > 0) {
-        // Normalizamos el objetivo una vez y cada resultado una vez; las dos
-        // búsquedas de abajo (exacta y por crag/area) reutilizan esas claves en
-        // vez de volver a normalizar la misma fila.
-        const targetCrag = normalizeName(cragName);
+        // En la API de 8a.nu, `cragName`/`cragSlug` corresponde a nuestra Area
+        // y `sectorName`/`sectorSlug` corresponde a nuestro Crag/Sector.
         const targetArea = normalizeName(areaName);
+        const targetAreaSlug = slugify(areaName);
+        const targetSector = normalizeName(cragName);
+        const targetSectorSlug = sectorSlug(cragName);
+
         const results = (
           response.items.filter((i) => i.type === 3) as SearchRouteItem[]
         ).map((item) => ({
           item,
           name: normalizeName(item.zlaggableName),
-          crag: normalizeName(item.cragName),
-          area: normalizeName(item.areaName),
+          nameSlug: slugify(item.zlaggableName),
+          areaMatches:
+            normalizeName(item.cragName) === targetArea ||
+            item.cragSlug === targetAreaSlug,
+          sectorMatches:
+            normalizeName(item.sectorName) === targetSector ||
+            item.sectorSlug === targetSectorSlug,
         }));
 
         if (routeName) {
           const targetName = normalizeName(routeName);
+          const targetNameSlug = slugify(routeName);
           const exact = results.find(
             (e) =>
-              e.name === targetName &&
-              e.crag === targetCrag &&
-              e.area === targetArea,
+              (e.name === targetName || e.nameSlug === targetNameSlug) &&
+              e.areaMatches &&
+              e.sectorMatches,
           );
-          if (exact) return exact.item;
+          return exact?.item ?? null;
         }
 
-        // Si no hay routeName o no hay coincidencia exacta, devolver el primero que coincida con crag/area
-        const matchCrag = results.find(
-          (e) => e.crag === targetCrag && e.area === targetArea,
+        // Sin routeName (búsqueda de sector): exigir coincidencia de área y sector
+        const matchSector = results.find(
+          (e) => e.areaMatches && e.sectorMatches,
         );
+        if (matchSector) return matchSector.item;
 
-        if (matchCrag) return matchCrag.item;
+        if (!targetSector || targetSector === 'general') {
+          const matchArea = results.find((e) => e.areaMatches);
+          if (matchArea) return matchArea.item;
+        }
 
-        return response.items[0] as SearchRouteItem;
+        return null;
       }
     } catch (e) {
       console.error('[8a.nu] Error searching route:', e);
