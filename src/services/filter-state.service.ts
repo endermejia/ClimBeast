@@ -100,12 +100,15 @@ export class FilterStateService {
   // ---- Indoor Topo Filters ----
   private readonly indoorTopoGradeRangeKey = STORAGE_KEYS.indoorTopoGradeRange;
   private readonly indoorTopoMovesRangeKey = STORAGE_KEYS.indoorTopoMovesRange;
+  private readonly indoorTopoShowClimbedKey =
+    STORAGE_KEYS.indoorTopoShowClimbed;
 
   indoorTopoGradeRange: WritableSignal<[number, number]> = signal([
     0,
     ORDERED_GRADE_VALUES.length - 2,
   ]);
   indoorTopoMovesRange: WritableSignal<[number, number]> = signal([0, 100]);
+  indoorTopoShowClimbed: WritableSignal<boolean> = signal(true);
 
   readonly isOwnProfile = signal<boolean>(true);
 
@@ -263,6 +266,12 @@ export class FilterStateService {
         JSON.stringify(this.indoorTopoMovesRange()),
       );
     });
+    effect(() => {
+      this.localStorage.setItem(
+        this.indoorTopoShowClimbedKey,
+        String(this.indoorTopoShowClimbed()),
+      );
+    });
   }
 
   private hydrate(): void {
@@ -410,6 +419,13 @@ export class FilterStateService {
         }
       }
 
+      const rawIndoorTopoShowClimbed = this.localStorage.getItem(
+        this.indoorTopoShowClimbedKey,
+      );
+      if (rawIndoorTopoShowClimbed !== null) {
+        this.indoorTopoShowClimbed.set(rawIndoorTopoShowClimbed === 'true');
+      }
+
       // Profile ascents
       this.hydrateProfileFilters();
     } catch {
@@ -524,8 +540,13 @@ export class FilterStateService {
     this.indoorTopoMovesRange.set([0, 100]);
   }
 
+  resetIndoorTopoShowClimbed(): void {
+    this.indoorTopoShowClimbed.set(true);
+  }
+
   resetIndoorTopoFilters(): void {
     this.resetIndoorTopoGradeRange();
     this.resetIndoorTopoMovesRange();
+    this.resetIndoorTopoShowClimbed();
   }
 }

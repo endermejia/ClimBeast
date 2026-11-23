@@ -554,6 +554,7 @@
   "filters.shade.changeAt": "wechselt um",
   "filters.shade.morning": "Schatten vormittags",
   "filters.shade.noShade": "Immer Sonne",
+  "filters.showClimbed": "Durchstiegene anzeigen",
   "filters.toposOnly": "Nur Topos",
   "filters.types.boulder": "Boulder",
   "filters.types.multipitch": "Mehrseillängen",

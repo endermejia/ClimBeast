@@ -1,11 +1,6 @@
-import { Component, computed, signal, type Signal } from '@angular/core';
+import { Component, computed, type Signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import {
-  FormControl,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-} from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 import {
   type TuiDialogContext,
@@ -24,31 +19,23 @@ import { ORDERED_GRADE_VALUES } from '../../models';
 
 import { clamp } from '../../utils';
 
-export interface IndoorTopoFilterRouteItem {
-  id: string | number;
-  name: string;
-  moves: number;
-}
-
 export interface IndoorTopoFilterDialogData {
   gradeRange: [number, number];
   movesRange: [number, number];
   maxPossibleMoves: number;
-  hiddenRouteIds: (string | number)[];
-  routes: IndoorTopoFilterRouteItem[];
+  showClimbed: boolean;
 }
 
 export interface IndoorTopoFilterDialogResult {
   gradeRange: [number, number];
-  movesRange: [number, number];
-  hiddenRouteIds: (string | number)[];
+  movesRange?: [number, number];
+  showClimbed: boolean;
+  cleared?: boolean;
 }
 
 @Component({
   selector: 'app-indoor-topo-filter-dialog',
-  standalone: true,
   imports: [
-    FormsModule,
     ReactiveFormsModule,
     TranslatePipe,
     TuiButton,
@@ -57,20 +44,16 @@ export interface IndoorTopoFilterDialogResult {
     TuiRange,
   ],
   template: `
-    <form
-      class="flex flex-col gap-6"
-      [formGroup]="form"
-      (submit.prevent)="apply()"
-    >
+    <form class="flex flex-col gap-4" [formGroup]="form">
       <!-- Grade Range -->
       <section class="flex flex-col gap-2">
-        <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center justify-between gap-2">
           <span class="font-semibold text-sm">{{ 'grade' | translate }}</span>
-          <div class="flex items-center gap-1 font-medium text-sm">
-            <span>{{ selectedMinGradeLabel() }}</span>
-            <span>-</span>
-            <span>{{ selectedMaxGradeLabel() }}</span>
-          </div>
+          <span
+            class="text-xs font-semibold px-2 py-0.5 rounded-full bg-(--tui-background-neutral-1) tabular-nums"
+          >
+            {{ selectedMinGradeLabel() }} - {{ selectedMaxGradeLabel() }}
+          </span>
         </div>
         <tui-range
           id="indoor-grade-range"
@@ -84,7 +67,7 @@ export interface IndoorTopoFilterDialogResult {
           formControlName="gradeRange"
         />
         <div
-          class="hidden sm:flex flex-wrap gap-2 justify-between text-xs opacity-60 mt-1"
+          class="hidden sm:flex justify-between text-xs opacity-60 px-0.5 mt-0.5"
         >
           @for (label of gradeTickLabels; track label; let i = $index) {
             <a
@@ -101,104 +84,69 @@ export interface IndoorTopoFilterDialogResult {
       </section>
 
       <!-- Moves Range -->
-      <section class="flex flex-col gap-2">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <span class="font-semibold text-sm">{{ 'moves' | translate }}</span>
-          <div class="flex items-center gap-1 font-medium text-sm">
-            <span>{{ selectedMinMoves() }}</span>
-            <span>-</span>
-            <span>{{ selectedMaxMoves() }}</span>
-            <span class="opacity-70 text-xs">
-              {{ 'moves' | translate }}
+      @if (hasMovesData) {
+        <section
+          class="flex flex-col gap-2 pt-4 border-t border-(--tui-border-normal)"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-semibold text-sm">{{ 'moves' | translate }}</span>
+            <span
+              class="text-xs font-semibold px-2 py-0.5 rounded-full bg-(--tui-background-neutral-1) tabular-nums"
+            >
+              {{ selectedMinMoves() }} - {{ selectedMaxMoves() }}
             </span>
           </div>
-        </div>
-        <tui-range
-          id="indoor-moves-range"
-          [style.--tui-thumb-size.rem]="0.75"
-          [min]="0"
-          [max]="maxPossibleMoves"
-          [step]="1"
-          [segments]="movesSegments"
-          [attr.aria-label]="'moves' | translate"
-          formControlName="movesRange"
-        />
-        <div class="flex justify-between text-xs opacity-50 mt-1">
-          <span>0</span>
-          <span>{{ maxPossibleMoves }}</span>
-        </div>
-      </section>
-
-      <!-- Routes Visibility -->
-      @if (routes.length > 0) {
-        <section class="flex flex-col gap-2">
+          <tui-range
+            id="indoor-moves-range"
+            [style.--tui-thumb-size.rem]="0.75"
+            [min]="0"
+            [max]="maxPossibleMoves"
+            [step]="1"
+            [segments]="movesSegments"
+            [attr.aria-label]="'moves' | translate"
+            formControlName="movesRange"
+          />
           <div
-            class="flex items-center justify-between gap-2 pb-1.5 border-b border-(--tui-border-normal)"
+            class="flex justify-between text-xs opacity-50 px-0.5 tabular-nums"
           >
-            <span class="font-semibold text-sm">{{
-              'routes' | translate
-            }}</span>
-            <div class="flex items-center gap-1">
-              <button
-                tuiButton
-                appearance="flat"
-                size="xs"
-                type="button"
-                (click.zoneless)="showAllRoutes()"
-              >
-                {{ 'showAll' | translate }}
-              </button>
-              <button
-                tuiButton
-                appearance="flat"
-                size="xs"
-                type="button"
-                (click.zoneless)="hideAllRoutes()"
-              >
-                {{ 'hideAll' | translate }}
-              </button>
-            </div>
-          </div>
-          <div class="flex flex-col gap-1 max-h-48 overflow-y-auto pr-1">
-            @for (r of routesWithVisibility(); track r.id) {
-              <label
-                class="flex items-center gap-2.5 p-1.5 rounded hover:bg-(--tui-background-neutral-1) cursor-pointer text-sm"
-              >
-                <input
-                  tuiCheckbox
-                  type="checkbox"
-                  [ngModel]="r.isVisible"
-                  [ngModelOptions]="{ standalone: true }"
-                  (ngModelChange)="onRouteVisibilityChange(r.id, $event)"
-                />
-                <span class="truncate font-medium flex-1">{{ r.name }}</span>
-                <span class="text-xs opacity-60 shrink-0"
-                  >{{ r.moves }} mov.</span
-                >
-              </label>
-            }
+            <span>0</span>
+            <span>{{ maxPossibleMoves }}</span>
           </div>
         </section>
       }
 
+      <!-- Show Climbed -->
+      <section class="pt-4 border-t border-(--tui-border-normal)">
+        <label
+          class="flex items-center justify-between gap-3 cursor-pointer select-none"
+        >
+          <span class="text-sm font-medium">
+            {{ 'filters.showClimbed' | translate }}
+          </span>
+          <input tuiCheckbox type="checkbox" formControlName="showClimbed" />
+        </label>
+      </section>
+
       <!-- Footer Buttons -->
       <footer
-        class="flex flex-wrap gap-2 justify-end items-center mt-2 pt-3 border-t border-(--tui-border-normal)"
+        class="flex gap-2 justify-end items-center pt-4 border-t border-(--tui-border-normal)"
       >
         <button
           appearance="secondary"
+          size="m"
           tuiButton
           type="button"
           (click.zoneless)="clear()"
         >
           {{ 'clear' | translate }}
         </button>
-        <button tuiButton type="submit">
+        <button size="m" tuiButton type="submit">
           {{ 'apply' | translate }}
         </button>
       </footer>
     </form>
   `,
+  host: { '(submit.prevent)': 'apply()' },
 })
 export class IndoorTopoFilterDialogComponent {
   protected readonly context =
@@ -210,6 +158,8 @@ export class IndoorTopoFilterDialogComponent {
   protected readonly maxGradeIndex = ORDERED_GRADE_VALUES.length - 2;
   protected readonly gradeSegments = 8;
 
+  protected readonly hasMovesData =
+    (this.context.data?.maxPossibleMoves ?? 0) > 0;
   protected readonly maxPossibleMoves = Math.max(
     this.context.data?.maxPossibleMoves ?? 0,
     1,
@@ -234,21 +184,6 @@ export class IndoorTopoFilterDialogComponent {
     ([, idx]: [number, number]) => ORDERED_GRADE_VALUES[idx] ?? '',
   );
 
-  protected readonly routes: IndoorTopoFilterRouteItem[] =
-    this.context.data?.routes ?? [];
-
-  protected readonly hiddenRouteIds = signal<Set<string | number>>(
-    new Set(this.context.data?.hiddenRouteIds ?? []),
-  );
-
-  protected readonly routesWithVisibility = computed(() => {
-    const hidden = this.hiddenRouteIds();
-    return this.routes.map((r) => ({
-      ...r,
-      isVisible: !hidden.has(r.id),
-    }));
-  });
-
   protected readonly form = new FormGroup({
     gradeRange: new FormControl<[number, number]>(
       this.sanitizeGradeRange(
@@ -263,6 +198,10 @@ export class IndoorTopoFilterDialogComponent {
       this.sanitizeMovesRange(
         this.context.data?.movesRange ?? [0, this.maxPossibleMoves],
       ),
+      { nonNullable: true },
+    ),
+    showClimbed: new FormControl<boolean>(
+      this.context.data?.showClimbed ?? true,
       { nonNullable: true },
     ),
   });
@@ -295,13 +234,13 @@ export class IndoorTopoFilterDialogComponent {
     return ORDERED_GRADE_VALUES[hi] ?? '';
   });
 
-  protected readonly selectedMinMoves: Signal<number> = computed(() => {
-    return this.movesRangeSignal()[0];
-  });
+  protected readonly selectedMinMoves: Signal<number> = computed(
+    () => this.movesRangeSignal()[0],
+  );
 
-  protected readonly selectedMaxMoves: Signal<number> = computed(() => {
-    return this.movesRangeSignal()[1];
-  });
+  protected readonly selectedMaxMoves: Signal<number> = computed(
+    () => this.movesRangeSignal()[1],
+  );
 
   protected onGradeTickClick(targetIdx: number): void {
     const current = (this.form.controls.gradeRange.value ?? [
@@ -315,60 +254,27 @@ export class IndoorTopoFilterDialogComponent {
     this.form.controls.gradeRange.setValue(this.sanitizeGradeRange(next));
   }
 
-  protected onRouteVisibilityChange(
-    routeId: string | number,
-    visible: boolean,
-  ): void {
-    this.hiddenRouteIds.update((set) => {
-      const next = new Set(set);
-      if (visible) {
-        next.delete(routeId);
-      } else {
-        next.add(routeId);
-      }
-      return next;
-    });
-  }
-
-  protected toggleRoute(routeId: string | number): void {
-    this.hiddenRouteIds.update((set) => {
-      const next = new Set(set);
-      if (next.has(routeId)) {
-        next.delete(routeId);
-      } else {
-        next.add(routeId);
-      }
-      return next;
-    });
-  }
-
-  protected showAllRoutes(): void {
-    this.hiddenRouteIds.set(new Set());
-  }
-
-  protected hideAllRoutes(): void {
-    const allIds = this.routes.map((r) => r.id);
-    this.hiddenRouteIds.set(new Set(allIds));
-  }
-
   protected clear(): void {
     this.form.reset({
       gradeRange: [this.minGradeIndex, this.maxGradeIndex],
       movesRange: [0, this.maxPossibleMoves],
+      showClimbed: true,
     });
-    this.hiddenRouteIds.set(new Set());
     this.context.completeWith({
       gradeRange: [this.minGradeIndex, this.maxGradeIndex],
-      movesRange: [0, this.maxPossibleMoves],
-      hiddenRouteIds: [],
+      movesRange: [0, 100],
+      showClimbed: true,
+      cleared: true,
     });
   }
 
   protected apply(): void {
     this.context.completeWith({
       gradeRange: this.sanitizeGradeRange(this.form.controls.gradeRange.value),
-      movesRange: this.sanitizeMovesRange(this.form.controls.movesRange.value),
-      hiddenRouteIds: Array.from(this.hiddenRouteIds()),
+      movesRange: this.hasMovesData
+        ? this.sanitizeMovesRange(this.form.controls.movesRange.value)
+        : undefined,
+      showClimbed: this.form.controls.showClimbed.value,
     });
   }
 

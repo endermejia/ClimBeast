@@ -554,6 +554,7 @@
   "filters.shade.changeAt": "change at",
   "filters.shade.morning": "Morning shade",
   "filters.shade.noShade": "All day sun",
+  "filters.showClimbed": "Show climbed",
   "filters.toposOnly": "Topos only",
   "filters.types.boulder": "Boulder",
   "filters.types.multipitch": "Multipitch",

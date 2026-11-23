@@ -195,7 +195,7 @@ import { TopoPageBase } from './topo-page-base';
               />
             </div>
           }
-        } @else if (outdoorData.topoDetailResource.isLoading()) {
+        } @else if (isTopoLoading()) {
           <div class="flex items-center justify-center h-full">
             <tui-loader size="xxl" />
           </div>
@@ -223,31 +223,32 @@ export class OutdoorTopoComponent extends TopoPageBase {
     () => this.topo()?.crag?.area?.id ?? null,
   );
 
+  private readonly topoImageKey = computed(() => {
+    const t = this.topo();
+    if (!t?.photo) return null;
+    const area = t.crag?.area;
+    const isPublic = area?.is_public;
+    const purchased = area?.purchased;
+    const isCreator =
+      t.crag?.user_creator_id === this.authState.userProfile()?.id;
+    const canEditAsAdmin = this.authState.canEditAsAdmin();
+    const areaId = t.crag?.area_id ?? this.crag()?.area_id ?? -1;
+    const canAreaAdmin =
+      areaId !== -1 ? !!this.authState.areaAdminPermissions()[areaId] : false;
+    const hasAccess =
+      isPublic || purchased || canEditAsAdmin || canAreaAdmin || isCreator;
+    if (!hasAccess) return null;
+    return `${t.photo}\0${this.outdoorData.topoPhotoVersion()}`;
+  });
+
   protected readonly topoImageResource = resource({
-    params: () => {
-      const t = this.topo();
-      if (!t?.photo) return null;
-      const area = t.crag?.area;
-      const isPublic = area?.is_public;
-      const purchased = area?.purchased;
-      const isCreator =
-        t.crag?.user_creator_id === this.authState.userProfile()?.id;
-      const canEditAsAdmin = this.authState.canEditAsAdmin();
-      const crag = this.crag();
-      const canAreaAdmin = crag
-        ? this.authState.areaAdminPermissions()[crag.area_id || -1]
-        : false;
-      const hasAccess =
-        isPublic || purchased || canEditAsAdmin || canAreaAdmin || isCreator;
-      if (!hasAccess) return null;
-      return { path: t.photo, version: this.outdoorData.topoPhotoVersion() };
-    },
+    params: () => this.topoImageKey(),
     loader: async ({ params }) => {
       if (!params) return null;
-      const url = await this.supabase.getTopoSignedUrl(
-        params.path,
-        params.version,
-      );
+      const sep = params.lastIndexOf('\0');
+      const path = sep >= 0 ? params.slice(0, sep) : params;
+      const version = sep >= 0 ? Number(params.slice(sep + 1)) : 0;
+      const url = await this.supabase.getTopoSignedUrl(path, version);
       // Bytes cacheados: la imagen ya vista se muestra sin red (offline).
       // La versión (?v=) de la URL cambia al subir una foto nueva, por lo que
       // la copia antigua se descarta sola con el límite de entradas.

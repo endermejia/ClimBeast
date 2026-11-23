@@ -74,13 +74,16 @@ describe('FilterStateService', () => {
       ORDERED_GRADE_VALUES.length - 2,
     ]);
     expect(service.indoorTopoMovesRange()).toEqual([0, 100]);
+    expect(service.indoorTopoShowClimbed()).toBe(true);
   });
 
   it('should set indoor topo filters and reset them individually', () => {
     service.indoorTopoGradeRange.set([5, 20]);
     service.indoorTopoMovesRange.set([2, 15]);
+    service.indoorTopoShowClimbed.set(false);
     expect(service.indoorTopoGradeRange()).toEqual([5, 20]);
     expect(service.indoorTopoMovesRange()).toEqual([2, 15]);
+    expect(service.indoorTopoShowClimbed()).toBe(false);
 
     service.resetIndoorTopoGradeRange();
     expect(service.indoorTopoGradeRange()).toEqual([
@@ -88,17 +91,25 @@ describe('FilterStateService', () => {
       ORDERED_GRADE_VALUES.length - 2,
     ]);
     expect(service.indoorTopoMovesRange()).toEqual([2, 15]);
+    expect(service.indoorTopoShowClimbed()).toBe(false);
 
     service.resetIndoorTopoMovesRange();
     expect(service.indoorTopoMovesRange()).toEqual([0, 100]);
+    expect(service.indoorTopoShowClimbed()).toBe(false);
+
+    service.resetIndoorTopoShowClimbed();
+    expect(service.indoorTopoShowClimbed()).toBe(true);
 
     service.indoorTopoGradeRange.set([5, 20]);
+    service.indoorTopoMovesRange.set([2, 15]);
+    service.indoorTopoShowClimbed.set(false);
     service.resetIndoorTopoFilters();
     expect(service.indoorTopoGradeRange()).toEqual([
       0,
       ORDERED_GRADE_VALUES.length - 2,
     ]);
     expect(service.indoorTopoMovesRange()).toEqual([0, 100]);
+    expect(service.indoorTopoShowClimbed()).toBe(true);
   });
 
   it('should set grade range', () => {

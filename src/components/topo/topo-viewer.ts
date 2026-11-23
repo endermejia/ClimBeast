@@ -238,13 +238,22 @@ export class TopoViewerComponent {
 
   protected readonly displayedRoutes = computed(() => {
     const routes = this.renderedRoutes();
+    if (!this.hideUnselected()) {
+      return routes;
+    }
     const selId = this.selectedRouteId();
-    if (this.hideUnselected() && selId !== null && selId !== undefined) {
+    if (selId !== null && selId !== undefined) {
       return routes.filter(
         (r) => r.route_id === selId || String(r.route_id) === String(selId),
       );
     }
-    return routes;
+    const hovId = this.hoveredRouteId();
+    if (hovId !== null && hovId !== undefined) {
+      return routes.filter(
+        (r) => r.route_id === hovId || String(r.route_id) === String(hovId),
+      );
+    }
+    return [];
   });
 
   readonly selectedRouteIdChange = output<string | number | null>();

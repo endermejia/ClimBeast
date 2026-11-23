@@ -68,4 +68,5 @@ export const STORAGE_KEYS = {
   indoorRoutesToposOnly: 'indoor_routes_topos_only_v1',
   indoorTopoGradeRange: 'indoor_topo_grade_range_v1',
   indoorTopoMovesRange: 'indoor_topo_moves_range_v1',
+  indoorTopoShowClimbed: 'indoor_topo_show_climbed_v1',
 } as const;

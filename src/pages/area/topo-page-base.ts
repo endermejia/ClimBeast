@@ -68,15 +68,29 @@ export abstract class TopoPageBase {
   sectorSlug = input<string | undefined>();
 
   protected readonly topo = computed(() => {
-    return this.isIndoor()
-      ? this.indoorData.topoDetailResource.value()
-      : this.outdoorData.topoDetailResource.value();
+    const expectedId = this.id() ? String(this.id()) : null;
+    const detail = this.isIndoor()
+      ? this.indoorData.topoDetail()
+      : this.outdoorData.topoDetail();
+    if (!detail) return null;
+    if (expectedId && String(detail.id) !== expectedId) return null;
+    return detail;
   });
-  protected readonly crag = this.outdoorData.cragDetailResource.value;
+  protected readonly isTopoLoading = computed(() => {
+    const expectedId = this.id() ? String(this.id()) : null;
+    const selectedId = this.isIndoor()
+      ? this.indoorData.selectedTopoId()
+      : this.outdoorData.selectedTopoId();
+    if (expectedId && selectedId !== expectedId) return true;
+    return this.isIndoor()
+      ? this.indoorData.topoDetailResource.isLoading()
+      : this.outdoorData.topoDetailResource.isLoading();
+  });
+  protected readonly crag = this.outdoorData.cragDetail;
   protected readonly allAreaTopos = computed(() => {
     return this.isIndoor()
       ? this.indoorData.centerToposResource.value()
-      : this.outdoorData.areaToposResource.value();
+      : this.outdoorData.areaTopos();
   });
 
   protected readonly selectedRouteId = signal<string | number | null>(null);
@@ -186,10 +200,7 @@ export abstract class TopoPageBase {
 
     effect(() => {
       if (!this.isBrowser) return;
-      const isLoading = this.isIndoor()
-        ? this.indoorData.topoDetailResource.isLoading()
-        : this.outdoorData.topoDetailResource.isLoading();
-      if (isLoading) return;
+      if (this.isTopoLoading()) return;
       const t = this.topo();
       if (!t) {
         if (!navigator.onLine) return;

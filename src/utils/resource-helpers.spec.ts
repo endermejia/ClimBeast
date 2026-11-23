@@ -1,4 +1,4 @@
-import { ResourceRef } from '@angular/core';
+import { ResourceRef, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -53,6 +53,55 @@ describe('resource-helpers', () => {
 
       // Initially or after resolution signal provides fallback or value
       expect(signal()).toBeDefined();
+    });
+
+    it('returns cached data immediately while revalidating and swaps in fresh data when resolved', async () => {
+      cacheService.set('topo_42', { id: 42, name: 'Cached Topo' });
+      cacheService.set('topo_43', { id: 43, name: 'Cached Topo 43' });
+
+      let resolveFetch!: (val: { id: number; name: string }) => void;
+      const selectedId = signal<number | null>(42);
+
+      const cached = TestBed.runInInjectionContext(() =>
+        createCachedResource<
+          number | null,
+          { id: number; name: string } | null
+        >({
+          params: () => selectedId(),
+          isBrowser: true,
+          cacheKey: (id) => (id ? `topo_${id}` : null),
+          fetcher: () =>
+            new Promise((resolve) => {
+              resolveFetch = resolve;
+            }),
+          cache: cacheService,
+          fallbackValue: null,
+        }),
+      );
+
+      // Immediately returns cached topo without waiting for network
+      expect(cached.signal()).toEqual({ id: 42, name: 'Cached Topo' });
+      expect(cached.showSkeleton()).toBe(false);
+
+      // Flush resource effect so loader starts
+      TestBed.tick();
+      expect(cached.resource.isLoading()).toBe(true);
+      expect(cached.signal()).toEqual({ id: 42, name: 'Cached Topo' });
+
+      // Fresh data arrives from server -> signal updates reactively
+      resolveFetch({ id: 42, name: 'Fresh Topo' });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(cached.signal()).toEqual({ id: 42, name: 'Fresh Topo' });
+
+      // Switching to another cached topo immediately shows its cached data while loading
+      selectedId.set(43);
+      TestBed.tick();
+      expect(cached.resource.isLoading()).toBe(true);
+      expect(cached.signal()).toEqual({ id: 43, name: 'Cached Topo 43' });
+
+      resolveFetch({ id: 43, name: 'Fresh Topo 43' });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(cached.signal()).toEqual({ id: 43, name: 'Fresh Topo 43' });
     });
   });
 
