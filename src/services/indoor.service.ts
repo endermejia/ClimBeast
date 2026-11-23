@@ -12,6 +12,7 @@ import TopoFormComponent from '../components/forms/topo-form';
 
 import {
   EquipperDto,
+  EquipperWithAvatar,
   IndoorAscentDto,
   IndoorAscentInsertDto,
   IndoorAscentQueryRow,
@@ -833,60 +834,147 @@ export class IndoorService {
     } as IndoorRouteWithExtras;
   }
 
-  async getRouteEquippers(routeId: string): Promise<EquipperDto[]> {
+  /**
+   * Returns the equipper linked to `userId`, creating one (with `user_id` set)
+   * if none exists yet.
+   */
+  async ensureUserEquipper(
+    userId: string,
+    preferredName?: string | null,
+  ): Promise<EquipperDto | null> {
+    if (!this.isBrowser || !userId) return null;
+    await this.supabase.whenReady();
+
+    const { data: existing, error: findError } = await this.supabase.client
+      .from('equippers')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (findError) throw findError;
+    if (existing) return existing as EquipperDto;
+
+    let baseName = preferredName?.trim() || '';
+    if (!baseName) {
+      const { data: profile } = await this.supabase.client
+        .from('user_profiles')
+        .select('name')
+        .eq('id', userId)
+        .maybeSingle();
+      baseName =
+        profile?.name?.trim() ||
+        this.supabase.authUser()?.email?.split('@')[0]?.trim() ||
+        'Equipper';
+    }
+
+    const tryInsert = (name: string) =>
+      this.supabase.client
+        .from('equippers')
+        .insert({ name, user_id: userId })
+        .select('*')
+        .single();
+
+    let { data: created, error: createError } = await tryInsert(baseName);
+
+    if (createError?.code === '23505') {
+      const { data: raceExisting } = await this.supabase.client
+        .from('equippers')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (raceExisting) return raceExisting as EquipperDto;
+
+      let suffix = 2;
+      while (createError?.code === '23505' && suffix <= 10) {
+        ({ data: created, error: createError } = await tryInsert(
+          `${baseName} ${suffix}`,
+        ));
+        suffix++;
+      }
+
+      if (createError?.code === '23505') {
+        ({ data: created, error: createError } = await tryInsert(
+          `${baseName} (${userId.slice(0, 6)})`,
+        ));
+      }
+    }
+
+    if (createError) throw createError;
+    return (created as EquipperDto) ?? null;
+  }
+
+  async getRouteEquippers(routeId: string): Promise<EquipperWithAvatar[]> {
     if (!this.isBrowser) return [];
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('indoor_route_equippers')
-      .select('equipper:equippers(*)')
+      .select('equipper:equippers(*, user_profile:user_profiles(avatar))')
       .eq('route_id', routeId);
     if (error) throw error;
     return (data ?? [])
-      .map((item) => item.equipper)
-      .filter((equipper): equipper is EquipperDto => equipper !== null);
+      .map((item) => {
+        const eq = item.equipper as
+          | (EquipperDto & {
+              user_profile?: { avatar: string | null } | null;
+            })
+          | null;
+        if (!eq) return null;
+        const { user_profile, ...equipper } = eq;
+        return {
+          ...equipper,
+          avatar: user_profile?.avatar ?? null,
+        } as EquipperWithAvatar;
+      })
+      .filter((equipper): equipper is EquipperWithAvatar => equipper !== null);
   }
 
   async setRouteEquippers(
     routeId: string,
     equippers: readonly (EquipperDto | string)[],
-  ): Promise<void> {
-    if (!this.isBrowser) return;
+  ): Promise<EquipperDto[]> {
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
 
     try {
-      const equipperIds: number[] = [];
-      const stringEquippers = equippers
-        .filter((e): e is string => typeof e === 'string')
-        .map((e) => e.trim());
+      const normalizedInput: (EquipperDto | string)[] = equippers.map((e) =>
+        typeof e === 'string' ? e : Number(e.id) > 0 ? e : e.name,
+      );
 
-      const existingEquipperMap = new Map<string, number>();
+      const stringEquippers = normalizedInput
+        .filter((e): e is string => typeof e === 'string')
+        .map((e) => e.trim())
+        .filter(Boolean);
+
+      const existingEquipperMap = new Map<string, EquipperDto>();
 
       if (stringEquippers.length > 0) {
         const orQuery = stringEquippers
-          .map((name) => `name.ilike.${name.replace(/,/g, '\\,')}`)
+          .map((name) => {
+            const escaped = name.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+            return `name.ilike."${escaped}"`;
+          })
           .join(',');
 
         const { data: existing, error: existingError } =
-          await this.supabase.client
-            .from('equippers')
-            .select('id, name')
-            .or(orQuery);
+          await this.supabase.client.from('equippers').select('*').or(orQuery);
 
         if (existingError) throw existingError;
 
         if (existing) {
-          for (const eq of existing) {
-            existingEquipperMap.set(eq.name.toLowerCase(), eq.id);
+          for (const eq of existing as EquipperDto[]) {
+            existingEquipperMap.set(eq.name.toLowerCase(), eq);
           }
         }
 
-        const toCreateNames = Array.from(
-          new Set(
-            stringEquippers.filter(
-              (name) => !existingEquipperMap.has(name.toLowerCase()),
-            ),
-          ),
-        );
+        const seenCreateLower = new Set<string>();
+        const toCreateNames: string[] = [];
+        for (const name of stringEquippers) {
+          const lower = name.toLowerCase();
+          if (!existingEquipperMap.has(lower) && !seenCreateLower.has(lower)) {
+            seenCreateLower.add(lower);
+            toCreateNames.push(name);
+          }
+        }
 
         if (toCreateNames.length > 0) {
           const payloads = toCreateNames.map((name) => ({ name }));
@@ -894,42 +982,57 @@ export class IndoorService {
             await this.supabase.client
               .from('equippers')
               .insert(payloads)
-              .select('id, name');
+              .select('*');
 
           if (createError) throw createError;
 
           if (created) {
-            for (const eq of created) {
-              existingEquipperMap.set(eq.name.toLowerCase(), eq.id);
+            for (const eq of created as EquipperDto[]) {
+              existingEquipperMap.set(eq.name.toLowerCase(), eq);
             }
           }
         }
       }
 
-      for (const item of equippers) {
-        if (typeof item === 'string') {
-          const id = existingEquipperMap.get(item.trim().toLowerCase());
-          if (id !== undefined) equipperIds.push(id);
-        } else {
-          equipperIds.push(Number(item.id));
+      const resolvedEquippers: EquipperDto[] = [];
+      const seenIds = new Set<number>();
+
+      for (const item of normalizedInput) {
+        const resolved =
+          typeof item === 'string'
+            ? existingEquipperMap.get(item.trim().toLowerCase())
+            : item;
+        if (resolved && !seenIds.has(Number(resolved.id))) {
+          seenIds.add(Number(resolved.id));
+          resolvedEquippers.push(resolved);
         }
       }
 
       // Sync junction table
-      await this.supabase.client
+      const { error: deleteError } = await this.supabase.client
         .from('indoor_route_equippers')
         .delete()
         .eq('route_id', routeId);
 
-      if (equipperIds.length > 0) {
+      if (deleteError) throw deleteError;
+
+      if (resolvedEquippers.length > 0) {
         const { error: insertError } = await this.supabase.client
           .from('indoor_route_equippers')
           .insert(
-            equipperIds.map((id) => ({ route_id: routeId, equipper_id: id })),
+            resolvedEquippers.map((eq) => ({
+              route_id: routeId,
+              equipper_id: Number(eq.id),
+            })),
           );
 
         if (insertError) throw insertError;
       }
+
+      this.reloadCenterRoutes();
+      this.equipperService.equipperIndoorRoutesResource.reload();
+
+      return resolvedEquippers;
     } catch (e) {
       console.error('[IndoorService] setRouteEquippers error', e);
       throw e;

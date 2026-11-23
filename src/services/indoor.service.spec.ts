@@ -661,4 +661,98 @@ describe('IndoorService - Admin Requests', () => {
       expect(result).toBe(true);
     });
   });
+
+  describe('ensureUserEquipper', () => {
+    it('returns existing equipper when user is already linked', async () => {
+      const existing = {
+        id: 10,
+        name: 'Alice',
+        user_id: 'u-1',
+        description: null,
+        created_at: '2026-01-01',
+      };
+      vi.spyOn(mockSupabase.client, 'from').mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi
+              .fn()
+              .mockResolvedValue({ data: existing, error: null }),
+          }),
+        }),
+      } as unknown as ReturnType<typeof mockSupabase.client.from>);
+
+      const result = await service.ensureUserEquipper('u-1', 'Alice');
+      expect(result).toEqual(existing);
+    });
+
+    it('creates and links a new equipper when user has none', async () => {
+      const created = {
+        id: 25,
+        name: 'Bob',
+        user_id: 'u-2',
+        description: null,
+        created_at: '2026-01-01',
+      };
+      const insertSpy = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: created, error: null }),
+        }),
+      });
+      vi.spyOn(mockSupabase.client, 'from').mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+        insert: insertSpy,
+      } as unknown as ReturnType<typeof mockSupabase.client.from>);
+
+      const result = await service.ensureUserEquipper('u-2', 'Bob');
+      expect(insertSpy).toHaveBeenCalledWith({ name: 'Bob', user_id: 'u-2' });
+      expect(result).toEqual(created);
+    });
+
+    it('retries with suffixed name on unique name collision', async () => {
+      const created = {
+        id: 26,
+        name: 'Bob 2',
+        user_id: 'u-3',
+        description: null,
+        created_at: '2026-01-01',
+      };
+      const insertSpy = vi
+        .fn()
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnValue({
+            single: vi
+              .fn()
+              .mockResolvedValue({ data: null, error: { code: '23505' } }),
+          }),
+        })
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: created, error: null }),
+          }),
+        });
+      vi.spyOn(mockSupabase.client, 'from').mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+        insert: insertSpy,
+      } as unknown as ReturnType<typeof mockSupabase.client.from>);
+
+      const result = await service.ensureUserEquipper('u-3', 'Bob');
+      expect(insertSpy).toHaveBeenNthCalledWith(1, {
+        name: 'Bob',
+        user_id: 'u-3',
+      });
+      expect(insertSpy).toHaveBeenNthCalledWith(2, {
+        name: 'Bob 2',
+        user_id: 'u-3',
+      });
+      expect(result).toEqual(created);
+    });
+  });
 });

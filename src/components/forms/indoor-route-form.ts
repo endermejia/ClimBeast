@@ -6,6 +6,7 @@ import {
   inject,
   resource,
   signal,
+  untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { form, FormField, required, submit } from '@angular/forms/signals';
@@ -34,6 +35,7 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
+import { AuthStateService } from '../../services/auth-state.service';
 import { IndoorService } from '../../services/indoor.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -277,11 +279,16 @@ export interface IndoorRouteFormData {
   `,
 })
 export default class IndoorRouteFormComponent {
+  private static readonly DRAFT_SELF_EQUIPPER_ID = -1;
+
+  private readonly authState = inject(AuthStateService);
   private readonly indoor = inject(IndoorService);
   private readonly supabase = inject(SupabaseService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly toast = inject(ToastService);
   protected readonly translate = inject(TranslateService);
+
+  private equippersTouched = false;
 
   private readonly context =
     injectContext<
@@ -451,18 +458,70 @@ export default class IndoorRouteFormComponent {
       this.indoor.getRouteEquippers(data.id).then((equippers) => {
         this.model.update((m) => ({ ...m, equippers }));
       });
-    } else if (this.context.data.defaultTopoId) {
-      const defId = this.context.data.defaultTopoId;
+    } else {
+      // Pre-select creator as default equipper (editable before saving)
+      const initialDraft = this.buildDraftSelfEquipper();
+      if (initialDraft) {
+        this.model.update((m) => ({ ...m, equippers: [initialDraft] }));
+      }
+
       effect(() => {
-        const toposList = this.topos();
-        if (toposList.length > 0 && defId) {
-          const matched = toposList.find((t) => String(t.id) === String(defId));
-          if (matched) {
-            this.model.update((m) => ({ ...m, topo: matched }));
+        if (this.equippersTouched) return;
+        const userId = this.supabase.authUserId();
+        if (!userId) return;
+        const list = this.allEquippers.value();
+        const existing = list?.find((e) => e.user_id === userId);
+        const current = untracked(() => this.model().equippers);
+        if (existing) {
+          const alreadySet =
+            current.length === 1 &&
+            typeof current[0] !== 'string' &&
+            current[0].id === existing.id;
+          if (!alreadySet) {
+            this.model.update((m) => ({ ...m, equippers: [existing] }));
+          }
+          return;
+        }
+        if (current.length === 0) {
+          const draft = this.buildDraftSelfEquipper();
+          if (draft) {
+            this.model.update((m) => ({ ...m, equippers: [draft] }));
           }
         }
       });
+
+      if (this.context.data.defaultTopoId) {
+        const defId = this.context.data.defaultTopoId;
+        effect(() => {
+          const toposList = this.topos();
+          if (toposList.length > 0 && defId) {
+            const matched = toposList.find(
+              (t) => String(t.id) === String(defId),
+            );
+            if (matched) {
+              this.model.update((m) => ({ ...m, topo: matched }));
+            }
+          }
+        });
+      }
     }
+  }
+
+  private buildDraftSelfEquipper(): EquipperDto | null {
+    const userId = this.supabase.authUserId();
+    if (!userId) return null;
+    const name =
+      this.authState.userProfile()?.name?.trim() ||
+      this.supabase.authUser()?.email?.split('@')[0]?.trim() ||
+      '';
+    if (!name) return null;
+    return {
+      id: IndoorRouteFormComponent.DRAFT_SELF_EQUIPPER_ID,
+      name,
+      user_id: userId,
+      description: null,
+      created_at: '',
+    };
   }
 
   protected onCancel(): void {
@@ -470,6 +529,7 @@ export default class IndoorRouteFormComponent {
   }
 
   onEquippersChange(equippers: (EquipperDto | string)[]): void {
+    this.equippersTouched = true;
     this.model.update((m) => ({ ...m, equippers }));
   }
 
@@ -515,7 +575,25 @@ export default class IndoorRouteFormComponent {
         }
 
         if (savedRouteId) {
-          await this.indoor.setRouteEquippers(savedRouteId, m.equippers);
+          const resolvedEquippers: (EquipperDto | string)[] = [];
+          for (const item of m.equippers) {
+            if (
+              typeof item !== 'string' &&
+              item.id === IndoorRouteFormComponent.DRAFT_SELF_EQUIPPER_ID &&
+              item.user_id
+            ) {
+              const ensured = await this.indoor.ensureUserEquipper(
+                item.user_id,
+                item.name,
+              );
+              if (ensured) {
+                resolvedEquippers.push(ensured);
+              }
+            } else {
+              resolvedEquippers.push(item);
+            }
+          }
+          await this.indoor.setRouteEquippers(savedRouteId, resolvedEquippers);
           const oldTopoId = this.context.data.routeData?.topo_id;
           if (
             oldTopoId &&

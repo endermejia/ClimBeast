@@ -15,6 +15,9 @@ export type UserPyramidSlotInsertDto = TableInsert<'user_pyramid_slots'>;
 export type RouteDto = TableRow<'routes'>;
 export type RouteAscentDto = TableRow<'route_ascents'>;
 export type EquipperDto = TableRow<'equippers'>;
+export type EquipperWithAvatar = EquipperDto & {
+  avatar?: string | null;
+};
 export type ParkingDto = TableRow<'parkings'>;
 export type ParkingInsertDto = TableInsert<'parkings'>;
 export type ParkingUpdateDto = TableUpdate<'parkings'>;

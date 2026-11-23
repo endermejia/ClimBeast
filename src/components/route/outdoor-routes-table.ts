@@ -1,5 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, input, output } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
 import { TuiSortDirection } from '@taiga-ui/addon-table';
@@ -24,12 +32,13 @@ import { RouteEquippersInputComponent } from './route-equippers-input';
 import { RoutesTableComponent } from './routes-table';
 
 import {
-  RouteItem,
-  RoutesTableRow,
-  RouteAscentWithExtras,
   AscentType,
-  RoutesTableKey,
+  EquipperDto,
   IndoorRouteWithExtras,
+  RouteAscentWithExtras,
+  RouteItem,
+  RoutesTableKey,
+  RoutesTableRow,
 } from '../../models';
 
 import { mapRouteToTableRow, handleErrorToast } from '../../utils';
@@ -73,7 +82,11 @@ import { mapRouteToTableRow, handleErrorToast } from '../../utils';
 
     <ng-template #equippersTpl let-item let-isEditing="isEditing">
       @if (isEditing) {
-        <app-route-equippers-input [route]="outdoorRefMap()[item.id]" />
+        <app-route-equippers-input
+          [route]="outdoorRefMap()[item.id]"
+          [autoSave]="false"
+          (equippersChange)="onUpdateRouteEquippers(item, $event)"
+        />
       } @else {
         <div class="flex flex-wrap gap-x-1 gap-y-0.5 items-center min-w-0">
           @for (e of item.equippers; track e.id; let last = $last) {
@@ -81,7 +94,7 @@ import { mapRouteToTableRow, handleErrorToast } from '../../utils';
               <a
                 tuiLink
                 class="text-xs bg-(--tui-background-neutral-1) hover:bg-(--tui-background-neutral-1-hover) text-(--tui-text-primary) px-2 py-0.5 rounded-md transition-colors truncate max-w-full font-medium"
-                [routerLink]="['/equipper', e.id]"
+                [routerLink]="e.id > 0 ? ['/equipper', e.id] : null"
               >
                 {{ e.name }}
               </a>
@@ -125,12 +138,43 @@ export class OutdoorRoutesTableComponent {
   // Outputs
   routeUpdated = output<void>();
 
+  private readonly equippersOverrides = signal<Record<number, EquipperDto[]>>(
+    {},
+  );
+  private readonly equippersSaveSeq = new Map<number, number>();
+  private readonly equippersSaveChain = new Map<number, Promise<void>>();
+  private readonly inFlightEquipperRoutes = new Set<number>();
+
+  constructor() {
+    effect(() => {
+      this.data();
+      if (this.inFlightEquipperRoutes.size === 0) {
+        this.equippersOverrides.set({});
+      } else {
+        this.equippersOverrides.update((prev) => {
+          const next: Record<number, EquipperDto[]> = {};
+          for (const [idStr, list] of Object.entries(prev)) {
+            const id = Number(idStr);
+            if (this.inFlightEquipperRoutes.has(id)) {
+              next[id] = list;
+            }
+          }
+          return next;
+        });
+      }
+    });
+  }
+
   protected readonly mappedData = computed(() => {
     const isAsAdmin = this.authState.canEditAsAdmin();
     const areaAdminMap = this.authState.areaAdminPermissions();
+    const equipperOverrides = this.equippersOverrides();
 
     return this.data().map((r) => {
-      const row = mapRouteToTableRow(r);
+      const override = equipperOverrides[r.id];
+      const routeItem = override ? { ...r, equippers: override } : r;
+      const row = mapRouteToTableRow(routeItem);
+      row._ref = r;
       const canEdit = this.authState.checkRouteEditPermission(r);
       row.canEdit = canEdit;
       row.canDelete =
@@ -141,9 +185,11 @@ export class OutdoorRoutesTableComponent {
   });
 
   protected readonly outdoorRefMap = computed(() => {
+    const equipperOverrides = this.equippersOverrides();
     const map: Record<string | number, RouteItem> = {};
     for (const r of this.data()) {
-      map[r.id] = r;
+      const override = equipperOverrides[r.id];
+      map[r.id] = override ? { ...r, equippers: override } : r;
     }
     return map;
   });
@@ -241,6 +287,68 @@ export class OutdoorRoutesTableComponent {
     if (!crag || !crag.topos) return [];
     return crag.topos.map((t) => ({ id: t.id, name: t.name }));
   });
+
+  protected onUpdateRouteEquippers(
+    row: RoutesTableRow,
+    newEquippers: readonly (EquipperDto | string)[],
+  ): void {
+    const r = row._ref as RouteItem;
+    const routeId = r.id;
+    const seq = (this.equippersSaveSeq.get(routeId) ?? 0) + 1;
+    this.equippersSaveSeq.set(routeId, seq);
+    this.inFlightEquipperRoutes.add(routeId);
+
+    const optimisticEquippers: EquipperDto[] = newEquippers.map((item, idx) =>
+      typeof item === 'string'
+        ? {
+            id: -(idx + 1),
+            name: item,
+            created_at: '',
+            description: null,
+            user_id: null,
+          }
+        : item,
+    );
+
+    this.equippersOverrides.update((prev) => ({
+      ...prev,
+      [routeId]: optimisticEquippers,
+    }));
+
+    const payload: (EquipperDto | string)[] = newEquippers.map((item) =>
+      typeof item === 'string' ? item : item.id > 0 ? item : item.name,
+    );
+
+    const prev = this.equippersSaveChain.get(routeId) ?? Promise.resolve();
+    const nextTask = prev.then(async () => {
+      try {
+        const saved = await this.routesService.setRouteEquippers(
+          routeId,
+          payload,
+        );
+        if (this.equippersSaveSeq.get(routeId) === seq) {
+          r.equippers = saved;
+          this.equippersOverrides.update((curr) => ({
+            ...curr,
+            [routeId]: saved,
+          }));
+          this.inFlightEquipperRoutes.delete(routeId);
+          this.routeUpdated.emit();
+        }
+      } catch (err: unknown) {
+        if (this.equippersSaveSeq.get(routeId) === seq) {
+          this.inFlightEquipperRoutes.delete(routeId);
+          this.equippersOverrides.update((curr) => {
+            const copy = { ...curr };
+            delete copy[routeId];
+            return copy;
+          });
+        }
+        handleErrorToast(err, this.toast);
+      }
+    });
+    this.equippersSaveChain.set(routeId, nextTask);
+  }
 
   protected onUpdateRouteName(row: RoutesTableRow, name: string): void {
     const r = row._ref as RouteItem;

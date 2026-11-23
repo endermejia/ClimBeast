@@ -61,6 +61,7 @@ import {
   IndoorCenterDto,
 } from '../../models';
 
+import { AvatarUrlPipe } from '../../pipes';
 import { inputValueOrUndefined, safeResourceValue } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
@@ -71,6 +72,7 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
   standalone: true,
   imports: [
     AscentCountDirective,
+    AvatarUrlPipe,
     CommonModule,
     OfflineNotCachedComponent,
     RouterLink,
@@ -295,6 +297,14 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
                               class="min-w-fit!"
                               [routerLink]="['/equipper', e.id]"
                             >
+                              @if (e.avatar; as avatar) {
+                                <span tuiAvatar size="xs" class="shrink-0">
+                                  <img
+                                    [src]="avatar | avatarUrl"
+                                    [alt]="e.name"
+                                  />
+                                </span>
+                              }
                               {{ e.name }}
                             </a>
                           }

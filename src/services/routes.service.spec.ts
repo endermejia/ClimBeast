@@ -240,4 +240,84 @@ describe('RoutesService', () => {
       expect(await svc.unify(1, [2, 3], 'merged')).toBe(false);
     });
   });
+
+  describe('setRouteEquippers', () => {
+    it('resolves existing and newly created equippers, quotes PostgREST filters, deduplicates, and returns resolved DTOs', async () => {
+      let capturedOr = '';
+      let insertedJoinRows: unknown[] = [];
+
+      mockSupabase.client.from = ((table: string) => {
+        if (table === 'equippers') {
+          return {
+            select: () => ({
+              or: (query: string) => {
+                capturedOr = query;
+                return Promise.resolve({
+                  data: [
+                    {
+                      id: 10,
+                      name: 'Juan (Pro)',
+                      created_at: '',
+                      description: null,
+                      user_id: null,
+                    },
+                  ],
+                  error: null,
+                });
+              },
+            }),
+            insert: (payloads: { name: string }[]) => ({
+              select: () =>
+                Promise.resolve({
+                  data: payloads.map((p, idx) => ({
+                    id: 20 + idx,
+                    name: p.name,
+                    created_at: '',
+                    description: null,
+                    user_id: null,
+                  })),
+                  error: null,
+                }),
+            }),
+          };
+        }
+        if (table === 'route_equippers') {
+          return {
+            delete: () => ({
+              eq: () => Promise.resolve({ data: null, error: null }),
+            }),
+            insert: (rows: unknown[]) => {
+              insertedJoinRows = rows;
+              return Promise.resolve({ data: null, error: null });
+            },
+          };
+        }
+        return {};
+      }) as unknown as typeof mockSupabase.client.from;
+
+      const resolved = await service.setRouteEquippers(42, [
+        'Juan (Pro)',
+        'Nueva Equipadora',
+        {
+          id: 10,
+          name: 'Juan (Pro)',
+          created_at: '',
+          description: null,
+          user_id: null,
+        },
+      ]);
+
+      expect(capturedOr).toBe(
+        'name.ilike."Juan (Pro)",name.ilike."Nueva Equipadora"',
+      );
+      expect(resolved.map((e) => ({ id: e.id, name: e.name }))).toEqual([
+        { id: 10, name: 'Juan (Pro)' },
+        { id: 20, name: 'Nueva Equipadora' },
+      ]);
+      expect(insertedJoinRows).toEqual([
+        { route_id: 42, equipper_id: 10 },
+        { route_id: 42, equipper_id: 20 },
+      ]);
+    });
+  });
 });

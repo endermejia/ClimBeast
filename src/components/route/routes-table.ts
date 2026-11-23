@@ -1243,6 +1243,7 @@ export class RoutesTableComponent {
     this.openActionId.set(null);
     this.openDropdownId.set(null);
     if (this.isEditing()) {
+      this.blurActiveCellElement();
       this.isEditing.set(false);
       this.selectedCell.set(null);
     } else {
@@ -1263,9 +1264,25 @@ export class RoutesTableComponent {
 
     event.preventDefault();
     event.stopPropagation();
+    this.blurActiveCellElement();
     this.openDropdownId.set(null);
     this.selectedCell.set({ rowKey: item.key, col });
     this.focusSelectedCell();
+  }
+
+  private blurActiveCellElement(): void {
+    if (
+      typeof document !== 'undefined' &&
+      document.activeElement instanceof HTMLElement
+    ) {
+      const tableEl = this.table()?.nativeElement;
+      if (
+        tableEl?.contains(document.activeElement) ||
+        document.activeElement.closest('tui-dropdown, [role="listbox"]')
+      ) {
+        document.activeElement.blur();
+      }
+    }
   }
 
   protected focusSelectedCell(): void {
@@ -1574,18 +1591,7 @@ export class RoutesTableComponent {
     }
 
     if (nextTarget) {
-      if (
-        typeof document !== 'undefined' &&
-        document.activeElement instanceof HTMLElement
-      ) {
-        const tableEl = this.table()?.nativeElement;
-        if (
-          tableEl?.contains(document.activeElement) ||
-          document.activeElement.closest('tui-dropdown, [role="listbox"]')
-        ) {
-          document.activeElement.blur();
-        }
-      }
+      this.blurActiveCellElement();
       this.openDropdownId.set(null);
       this.selectedCell.set(nextTarget);
       this.focusSelectedCell();

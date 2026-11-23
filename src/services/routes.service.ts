@@ -23,6 +23,7 @@ import { RouteUnifyComponent } from '../components/forms/route-unify';
 
 import type {
   EquipperDto,
+  EquipperWithAvatar,
   RouteDto,
   RouteInsertDto,
   RouteSearchResult,
@@ -593,71 +594,86 @@ export class RoutesService {
     }
   }
 
-  async getRouteEquippers(routeId: number): Promise<EquipperDto[]> {
+  async getRouteEquippers(routeId: number): Promise<EquipperWithAvatar[]> {
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('route_equippers')
-      .select('equipper:equippers(*)')
+      .select('equipper:equippers(*, user_profile:user_profiles(avatar))')
       .eq('route_id', routeId);
     if (error) {
       console.error('[RoutesService] getRouteEquippers error', error);
       return [];
     }
-    return (data || []).map((d) => {
-      const item = d as { equipper: EquipperDto };
-      return item.equipper;
-    });
+    return (data || [])
+      .map((d) => {
+        const item = d as {
+          equipper:
+            | (EquipperDto & {
+                user_profile?: { avatar: string | null } | null;
+              })
+            | null;
+        };
+        if (!item.equipper) return null;
+        const { user_profile, ...equipper } = item.equipper;
+        return {
+          ...equipper,
+          avatar: user_profile?.avatar ?? null,
+        } as EquipperWithAvatar;
+      })
+      .filter((e): e is EquipperWithAvatar => e !== null);
   }
 
   async setRouteEquippers(
     routeId: number,
     equippers: readonly (EquipperDto | string)[],
-  ): Promise<void> {
-    if (!this.isBrowser) return;
+  ): Promise<EquipperDto[]> {
+    if (!this.isBrowser) return [];
     await this.supabase.whenReady();
 
     try {
       // 1. Get or create all equippers to get their IDs
-      const equipperIds: number[] = [];
+      const normalizedInput: (EquipperDto | string)[] = equippers.map((e) =>
+        typeof e === 'string' ? e : e.id > 0 ? e : e.name,
+      );
 
-      // Extract string equippers to query/create in bulk
-      const stringEquippers = equippers
+      const stringEquippers = normalizedInput
         .filter((e): e is string => typeof e === 'string')
-        .map((e) => e.trim());
+        .map((e) => e.trim())
+        .filter(Boolean);
 
-      const existingEquipperMap = new Map<string, number>();
+      const existingEquipperMap = new Map<string, EquipperDto>();
 
       if (stringEquippers.length > 0) {
         // Build an "or" query to find exact matches case-insensitively
-        // e.g. name.ilike.name1,name.ilike.name2
-        // If the list is large, we might need to batch this, but equippers per route is typically a small number.
-        // To be safe with PostgREST syntax for exact ilike matching, we format the query string:
+        // Quote values so commas, spaces, dots, or parentheses don't break PostgREST syntax.
         const orQuery = stringEquippers
-          .map((name) => `name.ilike.${name.replace(/,/g, '\\,')}`)
+          .map((name) => {
+            const escaped = name.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+            return `name.ilike."${escaped}"`;
+          })
           .join(',');
 
         const { data: existing, error: existingError } =
-          await this.supabase.client
-            .from('equippers')
-            .select('id, name')
-            .or(orQuery);
+          await this.supabase.client.from('equippers').select('*').or(orQuery);
 
         if (existingError) throw existingError;
 
         if (existing) {
-          for (const eq of existing) {
-            existingEquipperMap.set(eq.name.toLowerCase(), eq.id);
+          for (const eq of existing as EquipperDto[]) {
+            existingEquipperMap.set(eq.name.toLowerCase(), eq);
           }
         }
 
-        // Determine which equippers need to be created
-        const toCreateNames = Array.from(
-          new Set(
-            stringEquippers.filter(
-              (name) => !existingEquipperMap.has(name.toLowerCase()),
-            ),
-          ),
-        );
+        // Determine which equippers need to be created (case-insensitively deduplicated)
+        const seenCreateLower = new Set<string>();
+        const toCreateNames: string[] = [];
+        for (const name of stringEquippers) {
+          const lower = name.toLowerCase();
+          if (!existingEquipperMap.has(lower) && !seenCreateLower.has(lower)) {
+            seenCreateLower.add(lower);
+            toCreateNames.push(name);
+          }
+        }
 
         if (toCreateNames.length > 0) {
           const payloads = toCreateNames.map((name) => ({ name }));
@@ -665,45 +681,60 @@ export class RoutesService {
             await this.supabase.client
               .from('equippers')
               .insert(payloads)
-              .select('id, name');
+              .select('*');
 
           if (createError) throw createError;
 
           if (created) {
-            for (const eq of created) {
-              existingEquipperMap.set(eq.name.toLowerCase(), eq.id);
+            for (const eq of created as EquipperDto[]) {
+              existingEquipperMap.set(eq.name.toLowerCase(), eq);
             }
           }
         }
       }
 
-      // Preserve original order and map everything to IDs
-      for (const item of equippers) {
-        if (typeof item === 'string') {
-          const id = existingEquipperMap.get(item.trim().toLowerCase());
-          if (id !== undefined) equipperIds.push(id);
-        } else {
-          equipperIds.push(item.id);
+      // Preserve original order and deduplicate by ID
+      const resolvedEquippers: EquipperDto[] = [];
+      const seenIds = new Set<number>();
+
+      for (const item of normalizedInput) {
+        const resolved =
+          typeof item === 'string'
+            ? existingEquipperMap.get(item.trim().toLowerCase())
+            : item;
+        if (resolved && !seenIds.has(resolved.id)) {
+          seenIds.add(resolved.id);
+          resolvedEquippers.push(resolved);
         }
       }
 
       // 2. Sync junction table
-      // Remove all first (simplest approach)
-      await this.supabase.client
+      const { error: deleteError } = await this.supabase.client
         .from('route_equippers')
         .delete()
         .eq('route_id', routeId);
 
+      if (deleteError) throw deleteError;
+
       // Insert new ones
-      if (equipperIds.length > 0) {
+      if (resolvedEquippers.length > 0) {
         const { error: insertError } = await this.supabase.client
           .from('route_equippers')
           .insert(
-            equipperIds.map((id) => ({ route_id: routeId, equipper_id: id })),
+            resolvedEquippers.map((eq) => ({
+              route_id: routeId,
+              equipper_id: eq.id,
+            })),
           );
 
         if (insertError) throw insertError;
       }
+
+      this.cragRoutesData.cragRoutesResource.reload();
+      this.outdoorData.routeDetailResource.reload();
+      this.equipperService.equipperRoutesResource.reload();
+
+      return resolvedEquippers;
     } catch (e) {
       console.error('[RoutesService] setRouteEquippers error', e);
       throw e;

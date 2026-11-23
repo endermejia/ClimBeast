@@ -4,7 +4,7 @@ import {
   TableInsert,
   TableRow,
   TableUpdate,
-  EquipperDto,
+  EquipperWithAvatar,
   UserProfileDto,
 } from './supabase-interfaces';
 
@@ -197,7 +197,7 @@ export interface IndoorVoucherPurchaseWithDetails extends IndoorVoucherPurchaseD
 }
 
 export interface IndoorRouteWithExtras extends IndoorRouteDto {
-  equippers?: EquipperDto[];
+  equippers?: EquipperWithAvatar[];
   center_name?: string;
   center_slug?: string;
   own_ascent?: { id: string; type: AscentType | null } | null;
