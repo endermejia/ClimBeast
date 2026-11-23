@@ -649,6 +649,30 @@ app-undo-toast {
   pointer-events: auto !important;
 }
 
+@keyframes userHintFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+tui-hint:has(app-user-info-hint[data-hint-loading]),
+.mention-hint-overlay-panel:has(app-user-info-hint[data-hint-loading]) {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  animation: none !important;
+  transition: none !important;
+}
+
+tui-hint:has(app-user-info-hint[data-hint-ready]):not(.tui-leave),
+.mention-hint-overlay-panel:has(app-user-info-hint[data-hint-ready]) {
+  animation: userHintFadeIn var(--tui-duration, 200ms)
+    var(--tui-curve-expressive-standard, ease-out) !important;
+}
+
 /* Theme transition effect using View Transitions API */
 .theme-transitioning *,
 .theme-transitioning *::before,

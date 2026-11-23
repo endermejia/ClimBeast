@@ -24,6 +24,7 @@ export class MentionHintDirective implements OnDestroy {
   private componentRef: ComponentRef<UserInfoHintComponent> | null = null;
   private currentMentionEl: HTMLElement | null = null;
   private hideTimeout: ReturnType<typeof setTimeout> | null = null;
+  private resizeObserver: ResizeObserver | null = null;
 
   ngOnDestroy(): void {
     this.closeHint();
@@ -156,6 +157,13 @@ export class MentionHintDirective implements OnDestroy {
       .nativeElement as HTMLElement;
     hintNativeEl.addEventListener('mouseenter', () => this.cancelHide());
     hintNativeEl.addEventListener('mouseleave', () => this.scheduleHide());
+
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.overlayRef?.updatePosition();
+      });
+      this.resizeObserver.observe(hintNativeEl);
+    }
   }
 
   private scheduleHide(): void {
@@ -183,6 +191,10 @@ export class MentionHintDirective implements OnDestroy {
 
   private closeHint(): void {
     this.cancelHide();
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
     if (this.overlayRef) {
       this.overlayRef.dispose();
       this.overlayRef = null;

@@ -2,10 +2,12 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   computed,
+  effect,
   forwardRef,
   inject,
   input,
   resource,
+  signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
 
@@ -30,10 +32,12 @@ import {
   getMaxGrade,
   mapAscentRouteToExtras,
   openPhotoViewer,
+  safeResourceValue,
 } from '../../utils';
 
+import { IS_BROWSER } from '../../app/is-browser';
+
 import { AscentCardComponent } from '../ascent/ascent-card';
-import { AscentCardSkeletonComponent } from '../ascent/ascent-card-skeleton';
 import { UserProfileStatsScoreComponent } from '../user-profile/statistics/score-card';
 import { UserInfoComponent } from './user-info';
 
@@ -41,20 +45,23 @@ import { UserInfoComponent } from './user-info';
   selector: 'app-user-info-hint',
   standalone: true,
   imports: [
-    AscentCardSkeletonComponent,
     CommonModule,
     TranslatePipe,
     UserInfoComponent,
     UserProfileStatsScoreComponent,
     forwardRef(() => AscentCardComponent),
   ],
+  host: {
+    class: 'block w-80 max-w-full',
+    '[attr.data-hint-loading]': 'isReady() ? null : ""',
+    '[attr.data-hint-ready]': 'isReady() ? "" : null',
+  },
   template: `
-    <div
-      class="w-80 max-w-full p-1 text-(--tui-text-primary) overflow-hidden min-w-0"
-    >
-      @let profile = userProfileResource.value();
+    <div class="w-full p-1 text-(--tui-text-primary) overflow-hidden min-w-0">
+      @let profile = userProfile();
       <app-user-info
-        [loading]="userProfileResource.isLoading()"
+        [loading]="false"
+        [showBio]="false"
         [name]="userName()"
         [avatar]="userAvatar()"
         [city]="profile?.city"
@@ -71,26 +78,22 @@ import { UserInfoComponent } from './user-info';
 
       <!-- Bio (full width, below image/name, above follows) -->
       @if (profile?.bio) {
-        <p class="text-sm opacity-80 py-1.5 w-full">
+        <p class="text-sm opacity-80 py-1.5 w-full wrap-anywhere">
           {{ profile.bio }}
         </p>
       }
 
       <!-- Followers/Following/Equipped Routes -->
-      <div class="flex items-center gap-3 text-xs py-1.5">
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs py-1.5">
         <span class="flex items-center gap-1">
-          <span class="font-bold">{{
-            followersCountResource.value() ?? 0
-          }}</span>
+          <span class="font-bold">{{ followersCount() }}</span>
           <span>{{ 'followers' | translate }}</span>
         </span>
         <span class="flex items-center gap-1">
-          <span class="font-bold">{{
-            followingCountResource.value() ?? 0
-          }}</span>
+          <span class="font-bold">{{ followingCount() }}</span>
           <span>{{ 'following' | translate }}</span>
         </span>
-        @if (equippedRoutesResource.value(); as equippedCount) {
+        @if (equippedRoutesCount(); as equippedCount) {
           <span class="flex items-center gap-1">
             <span class="font-bold">{{ equippedCount }}</span>
             <span>{{ 'equippedRoutes' | translate }}</span>
@@ -109,14 +112,7 @@ import { UserInfoComponent } from './user-info';
       />
 
       <!-- User Latest Ascent -->
-      @if (latestAscentResource.isLoading()) {
-        <div class="mt-3 border-t border-(--tui-border-normal) pt-2">
-          <span class="text-xs font-semibold opacity-70 block mb-1">
-            {{ 'ascent.latestAscent' | translate }}
-          </span>
-          <app-ascent-card-skeleton [showUser]="false" [hasPhoto]="false" />
-        </div>
-      } @else if (latestAscentResource.value(); as ascent) {
+      @if (latestAscent(); as ascent) {
         <div class="mt-3 border-t border-(--tui-border-normal) pt-2">
           <span class="text-xs font-semibold opacity-70 block mb-1">
             {{ 'ascent.latestAscent' | translate }}
@@ -143,6 +139,7 @@ export class UserInfoHintComponent {
   private readonly followsService = inject(FollowsService);
   private readonly router = inject(Router);
   private readonly dialogs = inject(TuiDialogService);
+  private readonly isBrowser = inject(IS_BROWSER);
 
   protected readonly userProfileResource = resource({
     params: () => this.userId(),
@@ -158,22 +155,26 @@ export class UserInfoHintComponent {
     },
   });
 
+  protected readonly userProfile = computed(() =>
+    safeResourceValue(this.userProfileResource, null),
+  );
+
   protected readonly userName = computed(
-    () => this.userProfileResource.value()?.name || this.fallbackName(),
+    () => this.userProfile()?.name || this.fallbackName(),
   );
 
   protected readonly userAvatar = computed(
-    () => this.userProfileResource.value()?.avatar || this.fallbackAvatar(),
+    () => this.userProfile()?.avatar || this.fallbackAvatar(),
   );
 
   protected readonly userCountry = computed(
     () =>
-      (this.userProfileResource.value()?.country as
-        TuiCountryIsoCode | null | undefined) ?? null,
+      (this.userProfile()?.country as TuiCountryIsoCode | null | undefined) ??
+      null,
   );
 
   protected readonly userAge = computed(() => {
-    const bd = this.userProfileResource.value()?.birth_date;
+    const bd = this.userProfile()?.birth_date;
     if (!bd) return null;
     const d = new Date(bd);
     if (Number.isNaN(d.getTime())) return null;
@@ -196,6 +197,10 @@ export class UserInfoHintComponent {
     },
   });
 
+  protected readonly followersCount = computed(
+    () => safeResourceValue(this.followersCountResource, 0) ?? 0,
+  );
+
   protected readonly followingCountResource = resource({
     params: () => ({
       userId: this.userId(),
@@ -206,6 +211,10 @@ export class UserInfoHintComponent {
       return await this.followsService.getFollowingCount(params.userId);
     },
   });
+
+  protected readonly followingCount = computed(
+    () => safeResourceValue(this.followingCountResource, 0) ?? 0,
+  );
 
   // --- Equipped Routes ---
   protected readonly equippedRoutesResource = resource({
@@ -227,6 +236,10 @@ export class UserInfoHintComponent {
     },
   });
 
+  protected readonly equippedRoutesCount = computed(
+    () => safeResourceValue(this.equippedRoutesResource, 0) ?? 0,
+  );
+
   // --- Statistics ---
   protected readonly statsResource = resource({
     params: () => this.userId(),
@@ -237,7 +250,9 @@ export class UserInfoHintComponent {
   });
 
   protected readonly rawStats = computed(() => {
-    const data = (this.statsResource.value() as UserAscentStatRecord[]) ?? [];
+    const data =
+      (safeResourceValue(this.statsResource, []) as UserAscentStatRecord[]) ??
+      [];
     return data.filter((a) => a.ascent_type !== 'attempt');
   });
 
@@ -302,6 +317,52 @@ export class UserInfoHintComponent {
       } as RouteAscentWithExtras;
     },
   });
+
+  protected readonly latestAscent = computed(() =>
+    safeResourceValue(this.latestAscentResource, null),
+  );
+
+  protected readonly isDataLoading = computed(
+    () =>
+      this.userProfileResource.isLoading() ||
+      this.followersCountResource.isLoading() ||
+      this.followingCountResource.isLoading() ||
+      this.equippedRoutesResource.isLoading() ||
+      this.statsResource.isLoading() ||
+      this.latestAscentResource.isLoading(),
+  );
+
+  protected readonly isReady = signal(false);
+
+  constructor() {
+    effect((onCleanup) => {
+      if (this.isDataLoading()) {
+        this.isReady.set(false);
+        return;
+      }
+
+      if (!this.isBrowser || typeof requestAnimationFrame === 'undefined') {
+        this.isReady.set(true);
+        return;
+      }
+
+      let frame1: number | null = null;
+      let frame2: number | null = null;
+
+      frame1 = requestAnimationFrame(() => {
+        frame1 = null;
+        frame2 = requestAnimationFrame(() => {
+          frame2 = null;
+          this.isReady.set(true);
+        });
+      });
+
+      onCleanup(() => {
+        if (frame1 !== null) cancelAnimationFrame(frame1);
+        if (frame2 !== null) cancelAnimationFrame(frame2);
+      });
+    });
+  }
 
   protected navigateToProfile(event?: Event): void {
     event?.stopPropagation();

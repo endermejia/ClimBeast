@@ -112,31 +112,34 @@ import { AvatarUrlPipe, InitialsPipe } from '../../pipes';
         <ng-content select="[extraInfo]" />
       </div>
 
-      <div class="col-span-full mt-2 sm:col-[2_/_3]">
-        @if (bio() || loading()) {
-          <span
-            class="wrap-anywhere opacity-80 block mb-1"
-            [tuiSkeleton]="
-              loading()
-                ? 'This text serves as the content behind the skeleton and adjusts the width.'
-                : false
-            "
-          >
-            {{ bio() }}
-          </span>
-        }
+      @if ((showBio() && (bio() || loading())) || hasActions()) {
+        <div class="col-span-full mt-2 sm:col-[2_/_3]">
+          @if (showBio() && (bio() || loading())) {
+            <span
+              class="wrap-anywhere opacity-80 block mb-1"
+              [tuiSkeleton]="
+                loading()
+                  ? 'This text serves as the content behind the skeleton and adjusts the width.'
+                  : false
+              "
+            >
+              {{ bio() }}
+            </span>
+          }
 
-        @if (hasActions()) {
-          <div class="mt-3 min-w-0 max-w-full">
-            <ng-content select="[actions]" />
-          </div>
-        }
-      </div>
+          @if (hasActions()) {
+            <div class="mt-3 min-w-0 max-w-full">
+              <ng-content select="[actions]" />
+            </div>
+          }
+        </div>
+      }
     </div>
   `,
 })
 export class UserInfoComponent {
   hasActions = input<boolean>(false);
+  showBio = input<boolean>(true);
   loading = input<boolean>(false);
   compact = input<boolean>(false);
   avatarSize = input<'m' | 'l' | 'xl' | 'xxl'>('xxl');
