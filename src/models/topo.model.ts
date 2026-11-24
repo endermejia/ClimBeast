@@ -80,7 +80,7 @@ export interface TopoPathEditorResult {
   saved?: boolean;
   paths?: {
     routeId: string | number;
-    path: TopoPath;
+    path: TopoPath | null;
   }[];
   routeIds?: (string | number)[];
   newIndoorRoutes?: IndoorRouteDto[];

@@ -66,6 +66,7 @@ import {
   TopoDto,
   TopoInsertDto,
   TopoPath,
+  topoPathToJson,
   TopoRouteWithRoute,
   TopoUpdateDto,
   VERTICAL_LIFE_GRADES,
@@ -593,7 +594,7 @@ export class TopoFormComponent {
   protected pendingPaths = signal<
     {
       routeId: number | string;
-      path: { points: { x: number; y: number }[]; color?: string };
+      path: TopoPath | null;
     }[]
   >([]);
   protected readonly pendingNewIndoorRouteIds = signal<string[]>([]);
@@ -928,18 +929,20 @@ export class TopoFormComponent {
 
             // 2. Add or update route associations
             const upsertPromises = selectedRoutes.map((r, idx) => {
-              const pendingPath =
-                this.pendingPaths().find((p) => p.routeId === r.id)?.path ||
-                null;
+              const pendingEntry = this.pendingPaths().find(
+                (p) => String(p.routeId) === String(r.id),
+              );
               const existingPath =
                 'path' in r
                   ? (r as { path?: TopoPath | null }).path || null
                   : null;
+              const finalPath =
+                pendingEntry !== undefined ? pendingEntry.path : existingPath;
               return this.supabase.client.from('indoor_topo_routes').upsert({
                 topo_id: String(topoId),
                 route_id: String(r.id),
                 number: idx,
-                path: pendingPath || existingPath,
+                path: finalPath ? topoPathToJson(finalPath) : null,
                 user_creator_id: this.supabase.authUserId(),
               });
             });
@@ -1098,7 +1101,7 @@ export class TopoFormComponent {
       topo.id,
       paths.map((p) => ({
         routeId: Number(p.routeId),
-        path: p.path as TopoPath,
+        path: p.path,
       })),
     );
     this.pendingPaths.set([]);
@@ -1275,15 +1278,18 @@ export class TopoFormComponent {
       }
 
       const topo_id = this.isIndoor() ? topoId || '' : topo?.id || 0;
+      const pendingEntry = this.pendingPaths().find(
+        (p) => String(p.routeId) === String(r.id),
+      );
       return {
         topo_id,
         route_id: this.isIndoor() ? r.id : Number(r.id),
         number: existing?.number ?? i,
         route: { ...r, own_ascent: null, project: false },
         path:
-          this.pendingPaths().find((p) => p.routeId === r.id)?.path ||
-          existing?.path ||
-          null,
+          pendingEntry !== undefined
+            ? pendingEntry.path
+            : (existing?.path ?? null),
       };
     });
 

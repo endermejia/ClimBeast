@@ -2686,8 +2686,8 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   }
 
   removePoint(event: Event, routeId: string | number, index: number): void {
+    const route = this.topoRoutes.find((r) => r.route_id === routeId);
     if (this.context.data.isIndoor) {
-      const route = this.topoRoutes.find((r) => r.route_id === routeId);
       if (route?.path) {
         const center = this.context.data.center;
         const canEdit = center
@@ -2697,6 +2697,14 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       }
     }
     removePoint(event, routeId, index, this.pathsMap);
+    const updated = this.pathsMap.get(routeId);
+    if (updated && updated.points.length === 0) {
+      this.pathsMap.delete(routeId);
+      this.pathsMap = new Map(this.pathsMap);
+      if (route) {
+        route.path = null;
+      }
+    }
     this.pathsVersion.update((v) => v + 1);
     this.cdr.markForCheck();
   }
@@ -2728,6 +2736,11 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     if (confirmed) {
       this.pathsMap.delete(tr.route_id);
       this.pathsMap = new Map(this.pathsMap);
+      tr.path = null;
+      const matching = this.topoRoutes.find((r) => r.route_id === tr.route_id);
+      if (matching) {
+        matching.path = null;
+      }
       this.pathsVersion.update((v) => v + 1);
       this.selectedRoute.set(null);
       this.cdr.markForCheck();
@@ -2753,20 +2766,27 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   async saveAll(): Promise<void> {
     this.loading.set(true);
     try {
-      const pathsToUpdate = Array.from(this.pathsMap.entries()).map(
-        ([routeId, path]) => ({
-          routeId,
-          path: {
-            points: path.points,
-            color: this.context.data.isIndoor
-              ? (path._ref?.route?.color ?? path.color)
-              : path.color,
-            width: this.lineWidth(),
-            type: path.type || 'line',
-            isTraverse: path.isTraverse || false,
-          } as TopoPath,
-        }),
-      );
+      const pathsToUpdate: {
+        routeId: string | number;
+        path: TopoPath | null;
+      }[] = this.topoRoutes.map((tr) => {
+        const path = this.pathsMap.get(tr.route_id);
+        const hasPoints = !!path?.points && path.points.length > 0;
+        return {
+          routeId: tr.route_id,
+          path: hasPoints
+            ? ({
+                points: path.points,
+                color: this.context.data.isIndoor
+                  ? (path._ref?.route?.color ?? path.color)
+                  : path.color,
+                width: this.lineWidth(),
+                type: path.type || 'line',
+                isTraverse: path.isTraverse || false,
+              } as TopoPath)
+            : null,
+        };
+      });
 
       if (!this.context.data.standalone) {
         // Return paths to caller

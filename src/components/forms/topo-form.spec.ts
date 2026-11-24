@@ -327,4 +327,75 @@ describe('TopoFormComponent - Indoor Permissions & Route Creation', () => {
       'pending-route-2',
     );
   });
+
+  it('keeps deleted path as null instead of falling back to existing path when reopening editor', async () => {
+    const existingPath = {
+      points: [
+        { x: 0.1, y: 0.9 },
+        { x: 0.2, y: 0.2 },
+      ],
+    };
+    componentRef.setInput('topoData', {
+      id: 10,
+      name: 'Wall A',
+      slug: 'wall-a',
+      crag_id: 5,
+      photo: 'photo.jpg',
+      shade_morning: false,
+      shade_afternoon: false,
+      shade_change_hour: null,
+      topo_routes: [
+        {
+          topo_id: 10,
+          route_id: 42,
+          number: 0,
+          path: existingPath,
+          route: {
+            id: 42,
+            name: 'Via 1',
+            slug: 'via-1',
+            grade: 14,
+            climbing_kind: 'sport',
+            height: 20,
+            own_ascent: null,
+            project: false,
+          },
+        },
+      ],
+    } as never);
+    fixture.detectChanges();
+
+    component.model.update((m) => ({
+      ...m,
+      selectedRoutes: [
+        { id: 42, name: 'Via 1', grade: 14, climbing_kind: 'sport' } as never,
+      ],
+    }));
+
+    mockToposService.openTopoPathEditor.mockResolvedValueOnce({
+      saved: true,
+      paths: [{ routeId: 42, path: null }],
+    });
+
+    await (
+      component as unknown as { openPathEditor: (url: string) => Promise<void> }
+    ).openPathEditor('https://example.com/photo.jpg');
+
+    mockToposService.openTopoPathEditor.mockResolvedValueOnce({ saved: false });
+
+    await (
+      component as unknown as { openPathEditor: (url: string) => Promise<void> }
+    ).openPathEditor('https://example.com/photo.jpg');
+
+    expect(mockToposService.openTopoPathEditor).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        topoRoutes: [
+          expect.objectContaining({
+            route_id: 42,
+            path: null,
+          }),
+        ],
+      }),
+    );
+  });
 });

@@ -323,7 +323,7 @@ export class ToposService {
   async updateRoutePath(
     topoId: string | number,
     routeId: string | number,
-    path: TopoPath,
+    path: TopoPath | null,
     reload = true,
   ): Promise<void> {
     if (!this.isBrowser) return;
@@ -345,7 +345,7 @@ export class ToposService {
 
   async bulkUpdateRoutePaths(
     topoId: string | number,
-    paths: { routeId: string | number; path: TopoPath }[],
+    paths: { routeId: string | number; path: TopoPath | null }[],
     reload = true,
   ): Promise<void> {
     if (!this.isBrowser || !paths.length) return;
