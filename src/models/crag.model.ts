@@ -28,6 +28,8 @@ export interface AdditionalCragData {
 export interface CragDetail extends CragListItem, AdditionalCragData {
   area_name: string;
   area_slug: string;
+  area_warning_es?: string;
+  area_warning_en?: string;
   parkings: ParkingDto[];
   topos: TopoListItem[];
   eight_anu_crag_slugs?: string[] | null;
@@ -61,6 +63,8 @@ export interface CragWithJoins extends CragDto {
     is_public: boolean | null;
     price: number | null;
     stripe_account_id: string | null;
+    warning_es?: string | null;
+    warning_en?: string | null;
     purchased: { id: string }[];
   } | null;
   crag_parkings: { parking: ParkingDto }[] | null;

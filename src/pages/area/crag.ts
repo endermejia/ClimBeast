@@ -178,7 +178,6 @@ const PAGE_SIZE = 20;
 
                 @let lang = languageService.selectedLanguage();
                 @let desc = lang === 'es' ? c.description_es : c.description_en;
-                @let warn = lang === 'es' ? c.warning_es : c.warning_en;
 
                 @if (desc) {
                   <p class="text-lg">{{ desc }}</p>
@@ -243,7 +242,13 @@ const PAGE_SIZE = 20;
                   }
                 </div>
 
-                @if (warn) {
+                @if (areaWarning(); as areaWarn) {
+                  <div tuiNotification appearance="warning">
+                    {{ areaWarn }}
+                  </div>
+                }
+
+                @if (cragWarning(); as warn) {
                   <div tuiNotification appearance="warning">
                     {{ warn }}
                   </div>
@@ -668,6 +673,24 @@ export class CragComponent {
 
   protected readonly areaToposCount = computed(() => {
     return this.outdoorData.selectedArea()?.topos_count ?? 0;
+  });
+
+  protected readonly areaWarning = computed(() => {
+    const c = this.cragDetail();
+    if (!c) return '';
+    const lang = this.languageService.selectedLanguage();
+    const primary = lang === 'es' ? c.area_warning_es : c.area_warning_en;
+    const fallback = lang === 'es' ? c.area_warning_en : c.area_warning_es;
+    return primary?.trim() || fallback?.trim() || '';
+  });
+
+  protected readonly cragWarning = computed(() => {
+    const c = this.cragDetail();
+    if (!c) return '';
+    const lang = this.languageService.selectedLanguage();
+    const primary = lang === 'es' ? c.warning_es : c.warning_en;
+    const fallback = lang === 'es' ? c.warning_en : c.warning_es;
+    return primary?.trim() || fallback?.trim() || '';
   });
 
   constructor() {

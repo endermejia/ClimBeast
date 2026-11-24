@@ -20,8 +20,9 @@ import {
   TuiIcon,
   TuiInput,
   TuiLabel,
+  TuiTextfield,
 } from '@taiga-ui/core';
-import { TuiInputChip, TuiInputNumber } from '@taiga-ui/kit';
+import { TuiInputChip, TuiInputNumber, TuiTextarea } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
@@ -39,6 +40,8 @@ interface MinimalArea {
   id?: number;
   name: string;
   slug?: string;
+  warning_es?: string | null;
+  warning_en?: string | null;
   eight_anu_crag_slugs?: string[];
 }
 
@@ -57,6 +60,8 @@ interface MinimalArea {
     TuiInputChip,
     TuiInputNumber,
     TuiLabel,
+    TuiTextarea,
+    TuiTextfield,
   ],
   styles: `
     .visibility-card {
@@ -187,6 +192,32 @@ interface MinimalArea {
 
       <!-- Admin Settings / Payments Section -->
       @if (canEditAdminSettings()) {
+        <tui-textfield [tuiTextfieldCleaner]="false" class="block">
+          <label tuiLabel for="area-warn-es">{{
+            'warning_es' | translate
+          }}</label>
+          <textarea
+            tuiTextarea
+            id="area-warn-es"
+            [ngModel]="model().warning_es"
+            (ngModelChange)="onWarningEsChange($event)"
+            name="warning_es"
+          ></textarea>
+        </tui-textfield>
+
+        <tui-textfield [tuiTextfieldCleaner]="false" class="block">
+          <label tuiLabel for="area-warn-en">{{
+            'warning_en' | translate
+          }}</label>
+          <textarea
+            tuiTextarea
+            id="area-warn-en"
+            [ngModel]="model().warning_en"
+            (ngModelChange)="onWarningEnChange($event)"
+            name="warning_en"
+          ></textarea>
+        </tui-textfield>
+
         <div class="flex flex-col gap-4 pt-2">
           <!-- Visibility cards — full width, 1 col mobile / 3 col desktop -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -396,12 +427,16 @@ export class AreaFormComponent {
   model = signal<{
     name: string;
     slug: string;
+    warning_es: string;
+    warning_en: string;
     eight_anu_crag_slugs: string[];
     is_public: boolean;
     price: number | null;
   }>({
     name: '',
     slug: '',
+    warning_es: '',
+    warning_en: '',
     eight_anu_crag_slugs: [],
     is_public: true,
     price: 0,
@@ -445,6 +480,8 @@ export class AreaFormComponent {
         ...m,
         name: data.name,
         slug: data.slug || '',
+        warning_es: data.warning_es ?? m.warning_es,
+        warning_en: data.warning_en ?? m.warning_en,
         eight_anu_crag_slugs:
           data.eight_anu_crag_slugs || m.eight_anu_crag_slugs,
       }));
@@ -479,6 +516,8 @@ export class AreaFormComponent {
         eight_anu_crag_slugs: data.eight_anu_crag_slugs || [],
         is_public: data.is_public ?? true,
         price: data.price ?? 0,
+        warning_es: data.warning_es ?? '',
+        warning_en: data.warning_en ?? '',
       }));
       this.areaForm().reset();
     }
@@ -504,6 +543,12 @@ export class AreaFormComponent {
         is_public: model.is_public,
         price: model.is_public ? null : model.price,
         eight_anu_crag_slugs: model.eight_anu_crag_slugs,
+        ...(this.canEditAdminSettings()
+          ? {
+              warning_es: model.warning_es.trim() || null,
+              warning_en: model.warning_en.trim() || null,
+            }
+          : {}),
       };
 
       try {
@@ -555,5 +600,13 @@ export class AreaFormComponent {
 
   onPriceChange(value: number | null): void {
     this.model.update((m) => ({ ...m, price: value }));
+  }
+
+  onWarningEsChange(value: string): void {
+    this.model.update((m) => ({ ...m, warning_es: value }));
+  }
+
+  onWarningEnChange(value: string): void {
+    this.model.update((m) => ({ ...m, warning_en: value }));
   }
 }

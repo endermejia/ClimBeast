@@ -1609,6 +1609,8 @@ export type Database = {
           price: number | null;
           slug: string;
           user_creator_id: string | null;
+          warning_en: string | null;
+          warning_es: string | null;
         };
         Insert: {
           created_at?: string;
@@ -1619,6 +1621,8 @@ export type Database = {
           price?: number | null;
           slug: string;
           user_creator_id?: string | null;
+          warning_en?: string | null;
+          warning_es?: string | null;
         };
         Update: {
           created_at?: string;
@@ -1629,6 +1633,8 @@ export type Database = {
           price?: number | null;
           slug?: string;
           user_creator_id?: string | null;
+          warning_en?: string | null;
+          warning_es?: string | null;
         };
         Relationships: [];
       };

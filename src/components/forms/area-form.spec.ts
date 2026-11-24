@@ -78,10 +78,14 @@ describe('AreaFormComponent', () => {
     const el: HTMLElement = fixture.nativeElement;
     const nameInput = el.querySelector('#area-name');
     const slugInput = el.querySelector('#area-slug');
+    const warnEsInput = el.querySelector('#area-warn-es');
+    const warnEnInput = el.querySelector('#area-warn-en');
     const visibilityCard = el.querySelector('.visibility-card');
 
     expect(nameInput).not.toBeNull();
     expect(slugInput).toBeNull();
+    expect(warnEsInput).toBeNull();
+    expect(warnEnInput).toBeNull();
     expect(visibilityCard).toBeNull();
   });
 
@@ -99,10 +103,14 @@ describe('AreaFormComponent', () => {
     const el: HTMLElement = fixture.nativeElement;
     const nameInput = el.querySelector('#area-name');
     const slugInput = el.querySelector('#area-slug');
+    const warnEsInput = el.querySelector('#area-warn-es');
+    const warnEnInput = el.querySelector('#area-warn-en');
     const visibilityCard = el.querySelector('.visibility-card');
 
     expect(nameInput).not.toBeNull();
     expect(slugInput).not.toBeNull();
+    expect(warnEsInput).not.toBeNull();
+    expect(warnEnInput).not.toBeNull();
     expect(visibilityCard).not.toBeNull();
   });
 
@@ -122,10 +130,14 @@ describe('AreaFormComponent', () => {
     const el: HTMLElement = fixture.nativeElement;
     const nameInput = el.querySelector('#area-name');
     const slugInput = el.querySelector('#area-slug');
+    const warnEsInput = el.querySelector('#area-warn-es');
+    const warnEnInput = el.querySelector('#area-warn-en');
     const visibilityCard = el.querySelector('.visibility-card');
 
     expect(nameInput).not.toBeNull();
     expect(slugInput).not.toBeNull();
+    expect(warnEsInput).not.toBeNull();
+    expect(warnEnInput).not.toBeNull();
     expect(visibilityCard).not.toBeNull();
   });
 });

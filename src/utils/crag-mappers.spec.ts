@@ -234,6 +234,20 @@ describe('mapCragToDetail', () => {
     expect(result.is_public).toBe(true);
   });
 
+  it('maps area warnings onto CragDetail', () => {
+    const data = {
+      ...baseRawData,
+      area: {
+        ...baseRawData.area,
+        warning_es: 'Cerrado por nidificación',
+        warning_en: 'Closed for nesting',
+      },
+    };
+    const result = mapCragToDetail(data as never);
+    expect(result.area_warning_es).toBe('Cerrado por nidificación');
+    expect(result.area_warning_en).toBe('Closed for nesting');
+  });
+
   it('includes route_ids in topos', () => {
     const data = {
       ...baseRawData,

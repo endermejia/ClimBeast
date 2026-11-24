@@ -59,6 +59,8 @@ export function mapCragToDetail(rawData: CragWithJoins): CragDetail {
 
     area_name: rawData.area?.name ?? '',
     area_slug: rawData.area?.slug ?? '',
+    area_warning_en: rawData.area?.warning_en ?? undefined,
+    area_warning_es: rawData.area?.warning_es ?? undefined,
     grades: {},
     liked: (rawData.liked?.length ?? 0) > 0,
     purchased: (rawData.area?.purchased?.length ?? 0) > 0,

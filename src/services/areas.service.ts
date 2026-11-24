@@ -50,12 +50,15 @@ export class AreasService {
 
   readonly loading = signal(false);
   readonly error: WritableSignal<string | null> = signal<string | null>(null);
+  readonly areaUpdatedVersion = signal(0);
 
   openAreaForm(data?: {
     areaData?: {
       id?: number;
       name: string;
       slug?: string;
+      warning_es?: string | null;
+      warning_en?: string | null;
       eight_anu_crag_slugs?: string[];
     };
   }): void {
@@ -167,7 +170,10 @@ export class AreasService {
       console.error('[AreasService] update error', error);
       throw error;
     }
+    this.cache.remove(CACHE_KEYS.areaDetail(id));
+    this.areaUpdatedVersion.update((v) => v + 1);
     this.outdoorData.areasListResource.reload();
+    this.outdoorData.cragDetailResource.reload();
     this.toast.success('messages.toasts.areaUpdated');
     return data as AreaDto;
   }

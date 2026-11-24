@@ -26,6 +26,7 @@ import {
   TuiInput,
   TuiLabel,
   TuiLoader,
+  TuiNotification,
   TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
@@ -52,6 +53,7 @@ import { CragsService } from '../../services/crags.service';
 import { EightAnuService } from '../../services/eight-anu.service';
 import { FilterStateService } from '../../services/filter-state.service';
 import { FiltersService } from '../../services/filters.service';
+import { LanguageService } from '../../services/language.service';
 import { LayoutService } from '../../services/layout.service';
 import { MapDataService } from '../../services/map-data.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
@@ -151,6 +153,7 @@ const PAGE_SIZE = 20;
     TuiInput,
     TuiLabel,
     TuiLoader,
+    TuiNotification,
     TuiScrollbar,
     TuiSegmented,
     TuiTextfield,
@@ -300,6 +303,12 @@ const PAGE_SIZE = 20;
                     </div>
                   }
                 </div>
+
+                @if (areaWarning(); as warn) {
+                  <div tuiNotification appearance="warning">
+                    {{ warn }}
+                  </div>
+                }
 
                 @if (layoutService.isNotDesktop()) {
                   <app-area-revenue-panel
@@ -821,6 +830,7 @@ export class AreaComponent {
   protected readonly authState = inject(AuthStateService);
   protected readonly outdoorData = inject(OutdoorDataService);
   protected readonly filterState = inject(FilterStateService);
+  protected readonly languageService = inject(LanguageService);
   protected readonly layoutService = inject(LayoutService);
   protected readonly mapData = inject(MapDataService);
   protected readonly router = inject(Router);
@@ -1009,6 +1019,15 @@ export class AreaComponent {
   protected readonly isPublic = computed(
     () => this.areaDetail()?.is_public ?? true,
   );
+
+  protected readonly areaWarning = computed(() => {
+    const detail = this.areaDetail();
+    if (!detail) return '';
+    const lang = this.languageService.selectedLanguage();
+    const primary = lang === 'es' ? detail.warning_es : detail.warning_en;
+    const fallback = lang === 'es' ? detail.warning_en : detail.warning_es;
+    return primary?.trim() || fallback?.trim() || '';
+  });
 
   protected readonly headerActions = computed<SectionHeaderAction[]>(() => {
     const area = this.outdoorData.selectedArea();
@@ -1440,6 +1459,12 @@ export class AreaComponent {
     });
 
     effect(() => {
+      if (this.areas.areaUpdatedVersion() > 0) {
+        untracked(() => this.areaDetailResource.reload());
+      }
+    });
+
+    effect(() => {
       const crags = this.outdoorData.cragsList();
       untracked(() => {
         this.hasAnyCrags.set(crags.length > 0);
@@ -1681,8 +1706,15 @@ export class AreaComponent {
   openEditArea(): void {
     const area = this.outdoorData.selectedArea();
     if (!area) return;
+    const detail = this.areaDetail();
     this.areas.openAreaForm({
-      areaData: { id: area.id, name: area.name, slug: area.slug },
+      areaData: {
+        id: area.id,
+        name: area.name,
+        slug: area.slug,
+        warning_es: detail?.warning_es,
+        warning_en: detail?.warning_en,
+      },
     });
   }
 

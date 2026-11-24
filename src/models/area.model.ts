@@ -63,6 +63,8 @@ export interface AreaDetail extends Omit<AreaListItem, 'user_creator_id'> {
   purchased?: boolean;
   user_creator_id: string | null;
   eight_anu_crag_slugs: string[] | null;
+  warning_es: string | null;
+  warning_en: string | null;
   created_at: string;
   slug: string;
 }
