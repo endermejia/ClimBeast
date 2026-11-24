@@ -320,4 +320,118 @@ describe('RoutesService', () => {
       ]);
     });
   });
+
+  describe('getRoutesByAreaWithDetails', () => {
+    it('maps topos, equippers, and user-specific ascent/like/project fields', async () => {
+      let capturedSelect = '';
+
+      mockSupabase.client.from = ((table: string) => {
+        if (table === 'routes') {
+          return {
+            select: (cols: string) => {
+              capturedSelect = cols;
+              return {
+                eq: () => ({
+                  range: () =>
+                    Promise.resolve({
+                      data: [
+                        {
+                          id: 101,
+                          name: 'Vía Otro Sector',
+                          slug: 'via-otro-sector',
+                          grade: 14,
+                          climbing_kind: 'sport',
+                          height: 22,
+                          crag_id: 20,
+                          eight_anu_route_slugs: null,
+                          liked: [
+                            { id: 1, user_id: 'user-1' },
+                            { id: 2, user_id: 'other-user' },
+                          ],
+                          project: [{ id: 3, user_id: 'other-user' }],
+                          ascents: [
+                            { rate: 4, type: 'rp' },
+                            { rate: 5, type: 'os' },
+                            { rate: null, type: 'attempt' },
+                          ],
+                          own_ascent: [
+                            {
+                              id: 9,
+                              user_id: 'user-1',
+                              type: 'rp',
+                              rate: 4,
+                              date: '2026-01-01',
+                            },
+                            {
+                              id: 10,
+                              user_id: 'other-user',
+                              type: 'os',
+                              rate: 5,
+                              date: '2026-01-02',
+                            },
+                          ],
+                          topo_routes: [
+                            {
+                              topo: {
+                                id: 50,
+                                name: 'Muro Sur',
+                                slug: 'muro-sur',
+                              },
+                            },
+                          ],
+                          route_equippers: [
+                            {
+                              equipper: {
+                                id: 7,
+                                name: 'Equi Pador',
+                                created_at: '',
+                                description: null,
+                                user_id: null,
+                              },
+                            },
+                          ],
+                          crag: {
+                            id: 20,
+                            name: 'Otro Sector',
+                            slug: 'otro-sector',
+                            area_id: 5,
+                            area: { id: 5, name: 'Mi Area', slug: 'mi-area' },
+                          },
+                        },
+                      ],
+                      error: null,
+                    }),
+                }),
+              };
+            },
+          };
+        }
+        return {};
+      }) as unknown as typeof mockSupabase.client.from;
+
+      const routes = await service.getRoutesByAreaWithDetails(5);
+
+      expect(capturedSelect).toContain(
+        'topo_routes(topo:topos(id, name, slug))',
+      );
+      expect(capturedSelect).toContain(
+        'route_equippers(equipper:equippers(*))',
+      );
+      expect(routes).toHaveLength(1);
+      expect(routes[0].topos).toEqual([
+        { id: 50, name: 'Muro Sur', slug: 'muro-sur' },
+      ]);
+      expect(routes[0].equippers?.map((e) => e.name)).toEqual(['Equi Pador']);
+      expect(routes[0].liked).toBe(true);
+      expect(routes[0].project).toBe(false);
+      expect(routes[0].climbed).toBe(true);
+      expect(routes[0].ascent_count).toBe(2);
+      expect(routes[0].rating).toBe(4.5);
+
+      const filtered = await service.getRoutesByAreaWithDetails(5, {
+        filterTopos: true,
+      });
+      expect(filtered[0].topos).toEqual([]);
+    });
+  });
 });

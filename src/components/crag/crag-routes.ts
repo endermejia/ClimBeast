@@ -33,7 +33,6 @@ import {
   CragDetail,
   ORDERED_GRADE_VALUES,
   RouteDto,
-  RouteWithExtras,
   SearchRouteItem,
 } from '../../models';
 
@@ -123,6 +122,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
           [data]="routesList"
           [showAddRouteToTopo]="true"
           [showLocation]="query().trim().length >= 2"
+          (routeUpdated)="onRouteUpdated()"
         />
       }
 
@@ -235,11 +235,26 @@ export class CragRoutesComponent {
   });
 
   protected readonly areaRoutesResource = resource({
-    params: () =>
-      this.query().trim().length >= 2 ? this.crag()?.area_id : null,
-    loader: async ({ params: areaId }) => {
-      if (!areaId) return [];
-      return this.routesService.getRoutesByAreaWithDetails(areaId);
+    params: () => {
+      if (this.query().trim().length < 2) return null;
+      const crag = this.crag();
+      if (!crag) return null;
+      const hasAccess =
+        crag.is_public ||
+        crag.purchased ||
+        this.canEditAsAdmin() ||
+        this.canAreaAdmin();
+      const filterTopos =
+        !crag.is_public &&
+        (crag.price === null || crag.price === 0) &&
+        !hasAccess;
+      return { areaId: crag.area_id, filterTopos };
+    },
+    loader: async ({ params }) => {
+      if (!params) return [];
+      return this.routesService.getRoutesByAreaWithDetails(params.areaId, {
+        filterTopos: params.filterTopos,
+      });
     },
   });
 
@@ -256,9 +271,7 @@ export class CragRoutesComponent {
     if (query.trim().length >= 2 && crag) {
       const otherCragsRoutes = this.areaRoutesResource.value() ?? [];
       const filteredOthers = filterRoutes(
-        otherCragsRoutes
-          .filter((r) => r.crag_id !== crag.id)
-          .map((r) => ({ ...r }) as RouteWithExtras),
+        otherCragsRoutes.filter((r) => r.crag_id !== crag.id),
         filterOpts,
       );
 
@@ -386,6 +399,12 @@ export class CragRoutesComponent {
         eight_anu_route_slugs: [slugify(item.zlaggableName)],
       },
     });
+  }
+
+  protected onRouteUpdated(): void {
+    if (this.query().trim().length >= 2) {
+      this.areaRoutesResource.reload();
+    }
   }
 
   openFilters(): void {

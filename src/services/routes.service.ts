@@ -34,7 +34,12 @@ import type {
 
 import { CACHE_KEYS } from '../constants/cache-keys';
 
-import { normalizeNameStrict, slugify } from '../utils';
+import {
+  mapRouteToExtras,
+  normalizeNameStrict,
+  RawRouteData,
+  slugify,
+} from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 
@@ -204,11 +209,15 @@ export class RoutesService {
 
   async getRoutesByAreaWithDetails(
     areaId: number,
-  ): Promise<Partial<RouteWithExtras>[]> {
+    options?: { filterTopos?: boolean },
+  ): Promise<RouteWithExtras[]> {
     if (!this.isBrowser) return [];
     await this.supabase.whenReady();
 
-    let allRoutes: Partial<RouteWithExtras>[] = [];
+    const userId = this.supabase.authUserId();
+    const filterTopos = options?.filterTopos ?? false;
+
+    let allRoutes: RouteWithExtras[] = [];
     let from = 0;
     const step = 1000;
     let hasMore = true;
@@ -218,8 +227,14 @@ export class RoutesService {
         .from('routes')
         .select(
           `
-          id, name, slug, grade, climbing_kind, height, eight_anu_route_slugs,
-          crag:crags!inner(id, name, slug, area:areas(id, name, slug))
+          *,
+          liked:route_likes(id, user_id),
+          project:route_projects(id, user_id),
+          ascents:route_ascents(rate, type),
+          own_ascent:route_ascents(*),
+          topo_routes(topo:topos(id, name, slug)),
+          route_equippers(equipper:equippers(*)),
+          crag:crags!inner(id, name, slug, area_id, area:areas(id, name, slug))
         `,
         )
         .eq('crag.area_id', areaId)
@@ -234,24 +249,33 @@ export class RoutesService {
       }
 
       if (data && data.length > 0) {
-        const mapped = data.map(
-          (r) =>
-            ({
-              id: r.id,
-              name: r.name,
-              slug: r.slug,
-              grade: r.grade,
-              climbing_kind: r.climbing_kind,
-              height: r.height,
-              eight_anu_route_slugs: r.eight_anu_route_slugs,
-              crag_id: r.crag.id,
-              crag_name: r.crag.name,
-              crag_slug: r.crag.slug,
-              area_id: r.crag.area.id,
-              area_name: r.crag.area.name,
-              area_slug: r.crag.area.slug,
-            }) as Partial<RouteWithExtras>,
-        );
+        const mapped = data.map((r) => {
+          const userOwnAscents = userId
+            ? (r.own_ascent ?? []).filter((a) => a.user_id === userId)
+            : [];
+          const userLiked = userId
+            ? (r.liked ?? []).filter((l) => l.user_id === userId)
+            : [];
+          const userProject = userId
+            ? (r.project ?? []).filter((pr) => pr.user_id === userId)
+            : [];
+
+          return mapRouteToExtras(
+            {
+              ...r,
+              own_ascent: userOwnAscents,
+              liked: userLiked,
+              project: userProject,
+            } as RawRouteData,
+            {
+              areaIdSource: 'crag.area_id',
+              ratingFallback: filterTopos ? null : 0,
+              includeEquippers: true,
+              includeTopos: true,
+              filterTopos,
+            },
+          );
+        });
         allRoutes = [...allRoutes, ...mapped];
         if (data.length < step) {
           hasMore = false;
