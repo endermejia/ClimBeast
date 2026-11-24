@@ -35,7 +35,7 @@ import {
 import type { TopoPath } from '../models/topo.model';
 
 import { CACHE_KEYS } from '../constants';
-import { handleErrorToast, slugify } from '../utils';
+import { handleErrorToast, mapRouteTopos, slugify } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 
@@ -53,7 +53,10 @@ import { ToastService } from './toast.service';
 type CenterRouteQuery = IndoorRouteDto & {
   ascents: Pick<IndoorAscentDto, 'id' | 'type' | 'user_id' | 'rate'>[];
   equippers: { equipper: EquipperDto | null }[];
-  topo_routes: { topo: Pick<IndoorTopoDto, 'id' | 'name' | 'legacy'> | null }[];
+  topo_routes: {
+    path?: unknown;
+    topo: Pick<IndoorTopoDto, 'id' | 'name' | 'legacy'> | null;
+  }[];
 };
 
 @Injectable({
@@ -272,7 +275,7 @@ export class IndoorService {
     let query = this.supabase.client
       .from('indoor_routes')
       .select(
-        '*, equippers:indoor_route_equippers(equipper:equippers(*)), ascents:indoor_ascents(id, type, user_id, rate), topo_routes:indoor_topo_routes(topo:indoor_topos(id, name, legacy))',
+        '*, equippers:indoor_route_equippers(equipper:equippers(*)), ascents:indoor_ascents(id, type, user_id, rate), topo_routes:indoor_topo_routes(path, topo:indoor_topos(id, name, legacy))',
       )
       .eq('center_id', centerId);
 
@@ -303,12 +306,7 @@ export class IndoorService {
         equippers: route.equippers
           .map((entry) => entry.equipper)
           .filter((equipper): equipper is EquipperDto => equipper !== null),
-        topos: route.topo_routes
-          .map((entry) => entry.topo)
-          .filter(
-            (topo): topo is Pick<IndoorTopoDto, 'id' | 'name' | 'legacy'> =>
-              topo !== null,
-          ),
+        topos: mapRouteTopos(route.topo_routes),
         own_ascent: userId
           ? (route.ascents.find((ascent) => ascent.user_id === userId) ?? null)
           : null,
@@ -803,7 +801,7 @@ export class IndoorService {
     const { data, error } = await this.supabase.client
       .from('indoor_routes')
       .select(
-        '*, center:indoor_centers!inner(name, slug), topo_routes:indoor_topo_routes(topo:indoor_topos(id, name, legacy))',
+        '*, center:indoor_centers!inner(name, slug), topo_routes:indoor_topo_routes(path, topo:indoor_topos(id, name, legacy))',
       )
       .eq('slug', routeSlug)
       .eq('center.slug', centerSlug)
@@ -815,16 +813,12 @@ export class IndoorService {
     const route = data as IndoorRouteDto & {
       center?: { name: string; slug: string } | null;
       topo_routes?: {
+        path?: unknown;
         topo: Pick<IndoorTopoDto, 'id' | 'name' | 'legacy'> | null;
       }[];
     };
     const equippers = await this.getRouteEquippers(route.id);
-    const topos = (route.topo_routes ?? [])
-      .map((entry) => entry.topo)
-      .filter(
-        (topo): topo is Pick<IndoorTopoDto, 'id' | 'name' | 'legacy'> =>
-          topo !== null,
-      );
+    const topos = mapRouteTopos(route.topo_routes);
     return {
       ...route,
       center_name: route.center?.name,

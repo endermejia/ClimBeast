@@ -7,6 +7,7 @@ import {
   input,
   signal,
   Signal,
+  untracked,
 } from '@angular/core';
 import { Router } from '@angular/router';
 
@@ -66,6 +67,10 @@ export abstract class TopoPageBase {
   centerSlug = input<string | undefined>(undefined);
   id = input<string | undefined>();
   sectorSlug = input<string | undefined>();
+  route = input<string | undefined>(undefined);
+
+  private lastTopoIdForSelection: string | null = null;
+  private lastAppliedRouteQueryKey: string | null = null;
 
   protected readonly topo = computed(() => {
     const expectedId = this.id() ? String(this.id()) : null;
@@ -102,7 +107,8 @@ export abstract class TopoPageBase {
     if (!routeId || !topo || !topo.topo_routes) return null;
     return (
       topo.topo_routes.find(
-        (r: TopoRouteWithRoute) => r?.route_id === routeId,
+        (r: TopoRouteWithRoute) =>
+          r?.route_id === routeId || String(r?.route_id) === String(routeId),
       ) || null
     );
   });
@@ -199,6 +205,37 @@ export abstract class TopoPageBase {
     });
 
     effect(() => {
+      const t = this.topo();
+      const requestedRoute = this.route();
+      if (!t) return;
+
+      const topoId = String(t.id);
+      if (this.lastTopoIdForSelection !== topoId) {
+        this.lastTopoIdForSelection = topoId;
+        this.lastAppliedRouteQueryKey = null;
+        if (!requestedRoute) {
+          this.selectedRouteId.set(null);
+          return;
+        }
+      }
+
+      if (!requestedRoute) return;
+
+      const key = `${topoId}:${requestedRoute}`;
+      if (this.lastAppliedRouteQueryKey === key) return;
+
+      const match = t.topo_routes?.find(
+        (tr: TopoRouteWithRoute) =>
+          String(tr.route_id) === String(requestedRoute),
+      );
+      if (match) {
+        this.lastAppliedRouteQueryKey = key;
+        untracked(() => this.onRouteParamSelected(match.route_id));
+        this.selectedRouteId.set(match.route_id);
+      }
+    });
+
+    effect(() => {
       if (!this.isBrowser) return;
       if (this.isTopoLoading()) return;
       const t = this.topo();
@@ -207,6 +244,10 @@ export abstract class TopoPageBase {
         this.router.navigateByUrl('/page-not-found');
       }
     });
+  }
+
+  protected onRouteParamSelected(_routeId: string | number): void {
+    // Hook for subclasses (e.g. indoor topo filter reset)
   }
 
   protected onSortChange(sort: TuiTableSortChange<TopoRouteRow>): void {

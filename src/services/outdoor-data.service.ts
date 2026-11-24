@@ -396,7 +396,7 @@ export class OutdoorDataService {
           ),
           ascents:route_ascents(rate, type),
           own_ascent:route_ascents(*),
-          topo_routes(topo:topos(id, name, slug))
+          topo_routes(path, topo:topos(id, name, slug))
         `,
         )
         .eq('crag_id', cragId)

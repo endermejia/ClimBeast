@@ -146,7 +146,8 @@ export interface EquipperRouteWithJoins {
         } | null;
         route_equippers: { equipper: { id: number; name: string }[] }[];
         topo_routes: {
-          topo: { id: number; name: string; slug: string };
+          path?: unknown;
+          topo: { id: number; name: string; slug: string } | null;
         }[];
       })
     | null;
@@ -171,7 +172,8 @@ export interface CragRouteWithJoins extends RouteDto {
   ascents: { rate: number | null; type: string }[];
   own_ascent: RouteAscentDto[];
   topo_routes: {
-    topo: { id: number; name: string; slug: string };
+    path?: unknown;
+    topo: { id: number; name: string; slug: string } | null;
   }[];
   route_equippers: { equipper: { id: number; name: string }[] }[];
   crag: {

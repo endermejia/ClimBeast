@@ -120,8 +120,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
             #table
             tuiTable
             [size]="isMobile ? 's' : 'm'"
-            class="w-full"
-            [class.table-fixed]="isMobile"
+            class="w-full table-fixed"
             [columns]="visibleColumns()"
             [direction]="currentDirection"
             [sorter]="currentSorter"
@@ -137,14 +136,19 @@ import { EmptyStateComponent } from '../ui/empty-state';
                     [sorter]="sorters[col]"
                     [style.top.px]="stickyTopOffset()"
                     [class.text-center]="col === 'actions' || col === 'ascents'"
-                    [class.w-12!]="col === 'actions'"
+                    [class.w-12!]="isMobile && col === 'actions'"
                     [class.w-14!]="
-                      col === 'grade' || col === 'height' || col === 'ascents'
+                      isMobile && (col === 'grade' || col === 'ascents')
                     "
-                    [class.w-20!]="col === 'color'"
+                    [class.w-16!]="!isMobile && col === 'ascents'"
+                    [class.w-18!]="
+                      !isMobile && (col === 'grade' || col === 'actions')
+                    "
+                    [class.w-22!]="col === 'height'"
+                    [class.w-28!]="col === 'color'"
                   >
                     <div
-                      class="flex items-center gap-1 w-full"
+                      class="flex items-center gap-1 min-w-0 max-w-full"
                       [class.justify-center]="
                         col === 'actions' || col === 'ascents'
                       "
@@ -171,17 +175,19 @@ import { EmptyStateComponent } from '../ui/empty-state';
                           </button>
                         }
                       } @else if (col === 'grade') {
-                        {{ 'gradeShort' | translate }}
+                        <span class="truncate">{{
+                          'gradeShort' | translate
+                        }}</span>
                       } @else if (col === 'ascents') {
                         <tui-icon
                           icon="@tui.circle-check"
-                          class="w-4! h-4!"
+                          class="w-4! h-4! shrink-0"
                           [style.font-size.rem]="1"
                           [tuiHint]="'ascents' | translate"
                           [attr.aria-label]="'ascents' | translate"
                         />
                       } @else {
-                        {{ col | translate }}
+                        <span class="truncate">{{ col | translate }}</span>
                       }
                     </div>
                   </th>
@@ -371,9 +377,16 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                           class="inline-flex flex-wrap items-center gap-1 min-w-0 max-w-full"
                                         >
                                           @for (t of item.topos; track t.id) {
+                                            @let missingPath =
+                                              t.has_path === false;
                                             @if (isEditing() || !t.link) {
                                               <span
-                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-(--tui-background-neutral-1) text-(--tui-text-secondary) text-[11px] leading-[1.2] min-w-0 max-w-full"
+                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] leading-[1.2] min-w-0 max-w-full"
+                                                [class]="
+                                                  missingPath
+                                                    ? 'bg-(--tui-status-warning-pale) text-(--tui-status-warning)'
+                                                    : 'bg-(--tui-status-info-pale) text-(--tui-status-info)'
+                                                "
                                               >
                                                 <tui-icon
                                                   icon="/image/topo.svg"
@@ -389,7 +402,15 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                             } @else {
                                               <a
                                                 [routerLink]="t.link"
-                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-(--tui-background-neutral-1) hover:bg-(--tui-background-neutral-1-hover) text-(--tui-text-action) text-[11px] leading-[1.2] min-w-0 max-w-full no-underline"
+                                                [queryParams]="{
+                                                  route: item.id,
+                                                }"
+                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] leading-[1.2] min-w-0 max-w-full no-underline"
+                                                [class]="
+                                                  missingPath
+                                                    ? 'bg-(--tui-status-warning-pale) hover:bg-(--tui-status-warning-pale-hover) text-(--tui-status-warning)'
+                                                    : 'bg-(--tui-status-info-pale) hover:bg-(--tui-status-info-pale-hover) text-(--tui-status-info)'
+                                                "
                                               >
                                                 <tui-icon
                                                   icon="/image/topo.svg"
@@ -456,7 +477,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                           </div>
                         }
                         @case ('crag') {
-                          <div tuiCell size="m" class="h-full">
+                          <div tuiCell size="m" class="h-full min-w-0 w-full">
                             @if (
                               isCellActive &&
                               canEditRoute &&
@@ -495,7 +516,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                           item.crag_slug || 'general',
                                         ]
                                   "
-                                  class="text-sm max-w-full break-words"
+                                  class="text-sm min-w-0 max-w-full break-words"
                                 >
                                   {{ item.crag_name }}
                                 </a>
@@ -506,7 +527,11 @@ import { EmptyStateComponent } from '../ui/empty-state';
                           </div>
                         }
                         @case ('height') {
-                          <div tuiCell size="m" class="justify-center h-full">
+                          <div
+                            tuiCell
+                            size="m"
+                            class="justify-center h-full min-w-0 w-full"
+                          >
                             @if (isCellActive && canEditRoute) {
                               <tui-textfield
                                 [tuiTextfieldCleaner]="false"
@@ -532,8 +557,10 @@ import { EmptyStateComponent } from '../ui/empty-state';
                           </div>
                         }
                         @case ('color') {
-                          <div tuiCell size="m">
-                            <div class="flex items-center gap-2 min-w-0">
+                          <div tuiCell size="m" class="min-w-0 w-full">
+                            <div
+                              class="flex items-center gap-2 min-w-0 w-full max-w-full"
+                            >
                               @if (item.color) {
                                 <div
                                   tuiPin
@@ -541,7 +568,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                   style="position: static; transform: scale(0.75); margin: 0;"
                                   class="shrink-0"
                                 ></div>
-                                <span class="text-sm truncate">
+                                <span class="text-sm truncate min-w-0">
                                   @let colorName =
                                     item.color
                                       ? indoorRouteColors[item.color] || ''
@@ -559,12 +586,16 @@ import { EmptyStateComponent } from '../ui/empty-state';
                           </div>
                         }
                         @case ('ascents') {
-                          <div tuiCell size="m" class="justify-center">
+                          <div
+                            tuiCell
+                            size="m"
+                            class="justify-center min-w-0 w-full"
+                          >
                             <span [appAscentCount]="item.ascents"></span>
                           </div>
                         }
                         @case ('topo') {
-                          <div tuiCell size="m" class="h-full">
+                          <div tuiCell size="m" class="h-full min-w-0 w-full">
                             @let toposForCrag = toposByRow[item.key] || [];
                             @if (isCellActive && canEditRoute) {
                               <tui-textfield
@@ -608,47 +639,50 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                 </tui-data-list>
                               </tui-textfield>
                             } @else {
+                              @let displayTopos =
+                                isEditing()
+                                  ? selectedToposMap[item.key] || item.topos
+                                  : item.topos;
                               <div
-                                class="flex flex-wrap gap-1 min-w-0 max-w-full"
+                                class="flex flex-wrap gap-1 min-w-0 w-full max-w-full"
                               >
-                                <div
-                                  class="flex flex-wrap gap-x-1 gap-y-0 min-w-0 max-w-full"
-                                >
-                                  @let displayTopos =
-                                    isEditing()
-                                      ? selectedToposMap[item.key] || item.topos
-                                      : item.topos;
-                                  @if (displayTopos.length > 0) {
-                                    <div
-                                      class="flex flex-wrap gap-1 min-w-0 max-w-full"
-                                    >
-                                      @for (t of displayTopos; track t.id) {
-                                        @if (isEditing() || !t.link) {
-                                          <span
-                                            tuiButton
-                                            appearance="secondary"
-                                            class="min-w-fit!"
-                                            size="xs"
-                                          >
-                                            {{ t.name }}
-                                          </span>
-                                        } @else {
-                                          <a
-                                            tuiButton
-                                            appearance="secondary"
-                                            class="min-w-fit!"
-                                            size="xs"
-                                            [routerLink]="t.link"
-                                          >
-                                            {{ t.name }}
-                                          </a>
-                                        }
-                                      }
-                                    </div>
-                                  } @else {
-                                    <span class="opacity-50 text-xs">-</span>
+                                @if (displayTopos.length > 0) {
+                                  @for (t of displayTopos; track t.id) {
+                                    @let topoAppearance =
+                                      t.has_path === false ? 'warning' : 'info';
+                                    @if (isEditing() || !t.link) {
+                                      <button
+                                        type="button"
+                                        tuiButton
+                                        [appearance]="topoAppearance"
+                                        class="max-w-full min-w-0 pointer-events-none"
+                                        size="xs"
+                                        tabindex="-1"
+                                        [title]="t.name"
+                                      >
+                                        <span class="truncate">{{
+                                          t.name
+                                        }}</span>
+                                      </button>
+                                    } @else {
+                                      <a
+                                        tuiButton
+                                        [appearance]="topoAppearance"
+                                        class="max-w-full min-w-0"
+                                        size="xs"
+                                        [routerLink]="t.link"
+                                        [queryParams]="{ route: item.id }"
+                                        [title]="t.name"
+                                      >
+                                        <span class="truncate">{{
+                                          t.name
+                                        }}</span>
+                                      </a>
+                                    }
                                   }
-                                </div>
+                                } @else {
+                                  <span class="opacity-50 text-xs">-</span>
+                                }
                               </div>
                             }
                           </div>
@@ -657,7 +691,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                           <div
                             tuiCell
                             size="m"
-                            class="h-full py-0 grow min-w-0"
+                            class="h-full py-0 grow min-w-0 w-full"
                           >
                             @if (equippersTemplate(); as tpl) {
                               <ng-container
@@ -671,7 +705,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                               />
                             } @else {
                               <div
-                                class="flex flex-wrap gap-x-1 gap-y-0.5 items-center min-w-0"
+                                class="flex flex-wrap gap-x-1 gap-y-0.5 items-center min-w-0 w-full max-w-full"
                               >
                                 @for (
                                   e of item.equippers;
@@ -899,6 +933,10 @@ import { EmptyStateComponent } from '../ui/empty-state';
       z-index: 30;
       background: var(--tui-background-base);
     }
+    thead[tuiThead] th ::ng-deep .t-sort {
+      max-width: 100%;
+      min-width: 0;
+    }
     td.cell-selected {
       padding: 0 !important;
       vertical-align: middle;
@@ -991,7 +1029,15 @@ export class RoutesTableComponent {
   readonly selectedCell = signal<{ rowKey: string; col: string } | null>(null);
   private readonly cragIdOverrides = signal<Record<string, number>>({});
   private readonly topoOverrides = signal<
-    Record<string, { id: number | string; name: string; link?: string[] }[]>
+    Record<
+      string,
+      {
+        id: number | string;
+        name: string;
+        link?: string[];
+        has_path?: boolean;
+      }[]
+    >
   >({});
   protected readonly strings = tuiIsString;
 
@@ -1111,7 +1157,12 @@ export class RoutesTableComponent {
     const overrides = this.topoOverrides();
     const map: Record<
       string,
-      { id: number | string; name: string; link?: string[] }[]
+      {
+        id: number | string;
+        name: string;
+        link?: string[];
+        has_path?: boolean;
+      }[]
     > = {};
     for (const item of this.data()) {
       if (overrides[item.key]) {
@@ -1121,6 +1172,7 @@ export class RoutesTableComponent {
           id: t.id,
           name: t.name,
           link: t.link,
+          has_path: t.has_path,
         }));
       }
     }
@@ -1188,15 +1240,27 @@ export class RoutesTableComponent {
 
   protected onToposChange(
     item: RoutesTableRow,
-    newTopos: readonly { id: number | string; name: string; link?: string[] }[],
+    newTopos: readonly {
+      id: number | string;
+      name: string;
+      link?: string[];
+      has_path?: boolean;
+    }[],
   ): void {
     const currentTopos = this.selectedToposByRowKey()[item.key] ?? [];
-    const currentIds = new Set(currentTopos.map((t) => String(t.id)));
+    const currentById = new Map(currentTopos.map((t) => [String(t.id), t]));
+    const currentIds = new Set(currentById.keys());
     const nextIds = new Set(newTopos.map((t) => String(t.id)));
+
+    const normalizedTopos = newTopos.map((t) => {
+      const existing = currentById.get(String(t.id));
+      if (existing) return existing;
+      return { ...t, has_path: t.has_path ?? false };
+    });
 
     this.topoOverrides.update((prev) => ({
       ...prev,
-      [item.key]: [...newTopos],
+      [item.key]: normalizedTopos,
     }));
 
     for (const t of newTopos) {

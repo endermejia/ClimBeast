@@ -54,6 +54,7 @@ export function mapRouteToTableRow(
       id: t.id,
       name: t.name,
       legacy: t.legacy,
+      has_path: t.has_path,
       link: ['/indoor', indoor.center_slug || 'unknown', 'topo', t.id],
     }));
     const equippers = indoor.equippers || [];
@@ -109,6 +110,7 @@ export function mapRouteToTableRow(
       uniqueOutdoorTopos.map((t) => ({
         id: t.id,
         name: t.name,
+        has_path: t.has_path,
         link: [
           '/area',
           outdoor.area_slug || 'unknown',

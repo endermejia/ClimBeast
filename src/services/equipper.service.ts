@@ -14,7 +14,7 @@ import {
   UserProfileDto,
 } from '../models';
 
-import { mapRouteToExtras, RawRouteData } from '../utils';
+import { mapRouteToExtras, mapRouteTopos, RawRouteData } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 
@@ -73,7 +73,7 @@ export class EquipperService {
               area:areas (*)
             ),
             route_equippers(equipper:equippers(*)),
-            topo_routes(topo:topos(id, name, slug))
+            topo_routes(path, topo:topos(id, name, slug))
           )
         `,
       );
@@ -106,7 +106,8 @@ export class EquipperService {
                   | null;
                 route_equippers: { equipper: EquipperDto }[];
                 topo_routes: {
-                  topo: { id: number; name: string; slug: string };
+                  path?: unknown;
+                  topo: { id: number; name: string; slug: string } | null;
                 }[];
               })
             | null;
@@ -140,7 +141,7 @@ export class EquipperService {
               ),
               equippers:indoor_route_equippers(equipper:equippers(*)),
               ascents:indoor_ascents(id, type, user_id, rate),
-              topo_routes:indoor_topo_routes(topo:indoor_topos(id, name, legacy))
+              topo_routes:indoor_topo_routes(path, topo:indoor_topos(id, name, legacy))
             )
           `,
           )
@@ -163,6 +164,7 @@ export class EquipperService {
                     rate: number | null;
                   }[];
                   topo_routes?: {
+                    path?: unknown;
                     topo: Pick<IndoorTopoDto, 'id' | 'name' | 'legacy'> | null;
                   }[];
                 })
@@ -191,14 +193,7 @@ export class EquipperService {
               equippers: (r.equippers || [])
                 .map((e) => e.equipper)
                 .filter((e): e is EquipperDto => e !== null),
-              topos: (r.topo_routes || [])
-                .map((tr) => tr.topo)
-                .filter(
-                  (
-                    topo,
-                  ): topo is Pick<IndoorTopoDto, 'id' | 'name' | 'legacy'> =>
-                    topo !== null,
-                ),
+              topos: mapRouteTopos(r.topo_routes),
               own_ascent: ownAscent
                 ? { id: String(ownAscent.id), type: ownAscent.type }
                 : null,

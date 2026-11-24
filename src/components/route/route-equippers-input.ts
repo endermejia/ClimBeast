@@ -77,7 +77,7 @@ import { IS_BROWSER } from '../../app/is-browser';
       </tui-data-list>
     </tui-textfield>
   `,
-  host: { class: 'block min-w-40 w-full h-full' },
+  host: { class: 'block min-w-0 w-full h-full' },
 })
 export class RouteEquippersInputComponent {
   private readonly routes = inject(RoutesService);

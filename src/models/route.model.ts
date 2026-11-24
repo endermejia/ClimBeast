@@ -32,7 +32,7 @@ export interface RouteWithExtras extends RouteDto {
   ascent_count?: number;
   climbed?: boolean;
   own_ascent?: RouteAscentDto | null;
-  topos?: { id: number; name: string; slug: string }[];
+  topos?: { id: number; name: string; slug: string; has_path?: boolean }[];
   equippers?: EquipperDto[];
 }
 
@@ -48,7 +48,10 @@ export interface RouteWithJoins extends RouteDto {
       })
     | null;
   route_equippers?: { equipper: EquipperDto }[];
-  topo_routes?: { topo: { id: number; name: string; slug: string } }[];
+  topo_routes?: {
+    path?: unknown;
+    topo: { id: number; name: string; slug: string } | null;
+  }[];
 }
 
 /** Route query result for profile ascents (uses 'crags' alias instead of 'crag') */
@@ -121,6 +124,7 @@ export interface RoutesTableRow {
     id: number | string;
     name: string;
     legacy?: boolean;
+    has_path?: boolean;
     link: string[];
   }[];
   equippers: EquipperDto[];

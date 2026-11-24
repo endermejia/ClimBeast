@@ -78,7 +78,9 @@ import { RoutesTableComponent } from './routes-table';
           (equippersChange)="onUpdateRouteEquippers(item, $event)"
         />
       } @else {
-        <div class="flex flex-wrap gap-x-1 gap-y-0.5 items-center min-w-0">
+        <div
+          class="flex flex-wrap gap-x-1 gap-y-0.5 items-center min-w-0 w-full max-w-full"
+        >
           @for (e of item.equippers; track e.id; let last = $last) {
             <span class="inline-flex items-center min-w-0 max-w-full">
               <a

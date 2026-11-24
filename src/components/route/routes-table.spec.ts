@@ -1184,7 +1184,7 @@ describe('RoutesTableComponent focused edit mode', () => {
     expect(theadEl.style.transform).toBe('');
     expect(hostEl.querySelectorAll('thead th').length).toBe(5);
     const tableEl = hostEl.querySelector('table') as HTMLTableElement;
-    expect(tableEl.classList.contains('table-fixed')).toBe(false);
+    expect(tableEl.classList.contains('table-fixed')).toBe(true);
 
     fixture.componentRef.setInput('isMobile', true);
     fixture.detectChanges();
@@ -1193,6 +1193,61 @@ describe('RoutesTableComponent focused edit mode', () => {
       (th) => th.getAttribute('data-col'),
     );
     expect(mobileHeaders).toEqual(['grade', 'route', 'ascents', 'actions']);
+  });
+
+  it('prevents desktop horizontal overflow with fixed table layout and constrained topo pills', () => {
+    const fixture = TestBed.createComponent(RoutesTableComponent);
+    const row = createMockRow(1, 25, false);
+    row.topos = [
+      {
+        id: 1,
+        name: 'A very long topo name that should truncate instead of overflowing the table',
+        link: ['/area', 'a', 'c', 'topo'],
+      },
+    ];
+    fixture.componentRef.setInput('data', [row]);
+    fixture.componentRef.setInput('columns', [
+      'grade',
+      'route',
+      'crag',
+      'topo',
+      'equippers',
+      'height',
+      'ascents',
+      'actions',
+    ]);
+    fixture.componentRef.setInput('isMobile', false);
+    fixture.detectChanges();
+
+    const hostEl = fixture.nativeElement as HTMLElement;
+    const tableEl = hostEl.querySelector('table') as HTMLTableElement;
+    expect(tableEl.classList.contains('table-fixed')).toBe(true);
+
+    const topoLink = hostEl.querySelector(
+      'td[data-col="topo"] a[tuiButton]',
+    ) as HTMLAnchorElement;
+    expect(topoLink).toBeTruthy();
+    expect(topoLink.classList.contains('min-w-fit!')).toBe(false);
+    expect(topoLink.classList.contains('max-w-full')).toBe(true);
+    expect(topoLink.getAttribute('href')).toContain('?route=1');
+    expect(topoLink.querySelector('span.truncate')?.textContent?.trim()).toBe(
+      row.topos[0].name,
+    );
+
+    const gradeTh = hostEl.querySelector('th[data-col="grade"]') as HTMLElement;
+    const heightTh = hostEl.querySelector(
+      'th[data-col="height"]',
+    ) as HTMLElement;
+    const ascentsTh = hostEl.querySelector(
+      'th[data-col="ascents"]',
+    ) as HTMLElement;
+    const actionsTh = hostEl.querySelector(
+      'th[data-col="actions"]',
+    ) as HTMLElement;
+    expect(gradeTh.classList.contains('w-18!')).toBe(true);
+    expect(heightTh.classList.contains('w-22!')).toBe(true);
+    expect(ascentsTh.classList.contains('w-16!')).toBe(true);
+    expect(actionsTh.classList.contains('w-18!')).toBe(true);
   });
 
   it('renders rating under route name and omits area name when showLocation is true', () => {
@@ -1313,6 +1368,61 @@ describe('RoutesTableComponent focused edit mode', () => {
     expect(routeCell.textContent).toContain('(Sector Norte)');
     expect(routeCell.textContent).toContain('Placa Principal');
     expect(routeCell.textContent).toContain('Ana');
+    const mobileTopoLink = Array.from(routeCell.querySelectorAll('a')).find(
+      (a) => a.textContent?.includes('Placa Principal'),
+    );
+    expect(mobileTopoLink?.getAttribute('href')).toContain('?route=1');
+  });
+
+  it('highlights assigned topos without a drawn path in warning color on desktop and mobile', () => {
+    const fixture = TestBed.createComponent(RoutesTableComponent);
+    const row = createMockRow(1, 20, false);
+    row.topos = [
+      {
+        id: 10,
+        name: 'Topo Dibujado',
+        has_path: true,
+        link: ['/area', 'a', 'c', 'topo', '10'],
+      },
+      {
+        id: 11,
+        name: 'Topo Sin Linea',
+        has_path: false,
+        link: ['/area', 'a', 'c', 'topo', '11'],
+      },
+    ];
+
+    fixture.componentRef.setInput('data', [row]);
+    fixture.componentRef.setInput('columns', ['grade', 'route', 'topo']);
+    fixture.componentRef.setInput('isMobile', false);
+    fixture.detectChanges();
+
+    const hostEl = fixture.nativeElement as HTMLElement;
+    const desktopLinks = Array.from(
+      hostEl.querySelectorAll('td[data-col="topo"] a[tuiButton]'),
+    );
+    expect(desktopLinks).toHaveLength(2);
+    expect(desktopLinks[0].getAttribute('data-appearance')).toBe('info');
+    expect(desktopLinks[1].getAttribute('data-appearance')).toBe('warning');
+
+    fixture.componentRef.setInput('isMobile', true);
+    fixture.detectChanges();
+
+    const routeCell = hostEl.querySelector(
+      'td[data-col="route"]',
+    ) as HTMLElement;
+    const mobileDrawn = Array.from(routeCell.querySelectorAll('a')).find((a) =>
+      a.textContent?.includes('Topo Dibujado'),
+    );
+    const mobileMissing = Array.from(routeCell.querySelectorAll('a')).find(
+      (a) => a.textContent?.includes('Topo Sin Linea'),
+    );
+    expect(mobileDrawn?.className).toContain('bg-(--tui-status-info-pale)');
+    expect(mobileDrawn?.className).toContain('text-(--tui-status-info)');
+    expect(mobileMissing?.className).toContain(
+      'bg-(--tui-status-warning-pale)',
+    );
+    expect(mobileMissing?.className).toContain('text-(--tui-status-warning)');
   });
 
   it('ignores tui-scroll-controls sticky sibling when calculating stickyTopOffset inside tui-scrollbar', async () => {

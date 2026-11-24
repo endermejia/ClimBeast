@@ -412,7 +412,7 @@ describe('RoutesService', () => {
       const routes = await service.getRoutesByAreaWithDetails(5);
 
       expect(capturedSelect).toContain(
-        'topo_routes(topo:topos(id, name, slug))',
+        'topo_routes(path, topo:topos(id, name, slug))',
       );
       expect(capturedSelect).toContain(
         'route_equippers(equipper:equippers(*))',

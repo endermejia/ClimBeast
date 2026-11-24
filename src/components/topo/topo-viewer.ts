@@ -388,6 +388,9 @@ export class TopoViewerComponent {
       const ratio = img.naturalWidth / img.naturalHeight;
       this.imageRatio.set(ratio);
       this.imageRatioChange.emit(ratio);
+      if (this.selectedRouteId()) {
+        queueMicrotask(() => this.centerOnRoute());
+      }
     }
   }
 

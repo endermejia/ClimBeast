@@ -37,7 +37,41 @@ export interface RawRouteData {
     } | null;
   } | null;
   route_equippers?: { equipper: EquipperDto }[];
-  topo_routes?: { topo: { id: number; name: string; slug: string } }[];
+  topo_routes?: {
+    path?: unknown;
+    topo: { id: number; name: string; slug: string } | null;
+  }[];
+}
+
+export function hasTopoPath(path: unknown): boolean {
+  if (!path || typeof path !== 'object') return false;
+  const points = (path as { points?: unknown }).points;
+  return Array.isArray(points) && points.length > 0;
+}
+
+export function mapRouteTopos<T extends { id: string | number }>(
+  entries: readonly { path?: unknown; topo: T | null }[] | null | undefined,
+): (T & { has_path?: boolean })[] {
+  const byId = new Map<string | number, T & { has_path?: boolean }>();
+  for (const entry of entries ?? []) {
+    if (!entry?.topo) continue;
+    const hasPathField = 'path' in entry && entry.path !== undefined;
+    const drawn = hasPathField ? hasTopoPath(entry.path) : undefined;
+    const existing = byId.get(entry.topo.id);
+    if (existing) {
+      if (drawn !== undefined) {
+        existing.has_path = existing.has_path === true || drawn;
+      }
+    } else {
+      byId.set(
+        entry.topo.id,
+        drawn !== undefined
+          ? { ...entry.topo, has_path: drawn }
+          : { ...entry.topo },
+      );
+    }
+  }
+  return Array.from(byId.values());
 }
 
 export interface RouteMapperOptions {
@@ -116,16 +150,7 @@ export function mapRouteToExtras(
   const topos = opts.includeTopos
     ? opts.filterTopos
       ? []
-      : Array.from(
-          new Map(
-            (raw.topo_routes ?? [])
-              .map((tr) => tr.topo)
-              .filter(
-                (t): t is { id: number; name: string; slug: string } => !!t,
-              )
-              .map((t) => [t.id, t]),
-          ).values(),
-        )
+      : mapRouteTopos(raw.topo_routes)
     : undefined;
 
   const result: Record<string, unknown> = {

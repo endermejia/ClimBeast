@@ -257,7 +257,11 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                     @for (t of toposList; track t.id) {
                                       <a
                                         tuiButton
-                                        appearance="secondary"
+                                        [appearance]="
+                                          t.has_path === false
+                                            ? 'warning'
+                                            : 'info'
+                                        "
                                         class="min-w-fit!"
                                         size="xs"
                                         [routerLink]="[
@@ -266,6 +270,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                           'topo',
                                           t.id,
                                         ]"
+                                        [queryParams]="{ route: item.id }"
                                       >
                                         {{ t.name }}
                                       </a>

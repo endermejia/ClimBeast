@@ -327,7 +327,9 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
                           @for (t of r.topos; track t.id) {
                             <a
                               tuiButton
-                              appearance="secondary"
+                              [appearance]="
+                                t.has_path === false ? 'warning' : 'info'
+                              "
                               size="s"
                               class="min-w-fit!"
                               [routerLink]="[
@@ -336,6 +338,7 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
                                 'topo',
                                 t.id,
                               ]"
+                              [queryParams]="{ route: r.id }"
                             >
                               {{ t.name }}
                             </a>

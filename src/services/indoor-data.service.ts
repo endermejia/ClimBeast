@@ -23,7 +23,7 @@ import {
 
 import { CACHE_KEYS } from '../constants';
 
-import { createCachedResource } from '../utils';
+import { createCachedResource, mapRouteTopos } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 import { CacheService } from './cache.service';
@@ -200,7 +200,7 @@ export class IndoorDataService {
           ),
           ascents:indoor_ascents(rate, type),
           own_ascent:indoor_ascents(*),
-          topo_routes:indoor_topo_routes(topo:indoor_topos(id, name, legacy))
+          topo_routes:indoor_topo_routes(path, topo:indoor_topos(id, name, legacy))
         `,
         )
         .eq('slug', routeSlug)
@@ -224,13 +224,12 @@ export class IndoorDataService {
         center_name: data.center.name,
         center_slug: data.center.slug,
         own_ascent: (data.own_ascent as IndoorAscentDto[])?.[0] || null,
-        topos: (
+        topos: mapRouteTopos(
           data.topo_routes as {
-            topo: { id: string; name: string; legacy: boolean };
-          }[]
-        )
-          .map((tr) => tr.topo)
-          .filter(Boolean),
+            path?: unknown;
+            topo: { id: string; name: string; legacy: boolean } | null;
+          }[],
+        ),
         ascent_count:
           (data.ascents as { rate: number | null; type: string }[])?.length ||
           0,

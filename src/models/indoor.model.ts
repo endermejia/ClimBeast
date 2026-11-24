@@ -201,7 +201,7 @@ export interface IndoorRouteWithExtras extends IndoorRouteDto {
   center_name?: string;
   center_slug?: string;
   own_ascent?: { id: string; type: AscentType | null } | null;
-  topos?: { id: string; name: string; legacy?: boolean }[];
+  topos?: { id: string; name: string; legacy?: boolean; has_path?: boolean }[];
   rating?: number | null;
   ascent_count?: number | null;
 }

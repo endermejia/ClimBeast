@@ -199,6 +199,17 @@ export class IndoorTopoComponent extends TopoPageBase {
 
   override isIndoor = computed(() => true);
 
+  protected override onRouteParamSelected(routeId: string | number): void {
+    const isVisible = this.filteredTableData().some(
+      (row) =>
+        row._ref.route_id === routeId ||
+        String(row._ref.route_id) === String(routeId),
+    );
+    if (!isVisible && this.hasActiveFilters()) {
+      this.filterState.resetIndoorTopoFilters();
+    }
+  }
+
   protected readonly topoImageResource = resource({
     params: () => this.topo()?.photo ?? null,
     loader: async ({ params: photo }) => {

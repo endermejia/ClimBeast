@@ -1106,7 +1106,7 @@ export class AreaComponent {
           project:route_projects(id, user_id),
           ascents:route_ascents(rate, type),
           own_ascent:route_ascents(*),
-          topo_routes(topo:topos(id, name, slug)),
+          topo_routes(path, topo:topos(id, name, slug)),
           route_equippers(equipper:equippers(*)),
           crag:crags!inner(id, slug, name, area_id, area:areas(slug, name))
         `,
