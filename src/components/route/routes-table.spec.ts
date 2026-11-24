@@ -1274,6 +1274,47 @@ describe('RoutesTableComponent focused edit mode', () => {
     expect(routeLink.classList.contains('break-words')).toBe(false);
   });
 
+  it('distinguishes crag in parentheses beside route name and topo/equipper links with icons on mobile', () => {
+    const fixture = TestBed.createComponent(RoutesTableComponent);
+    const row = createMockRow(1, 20, false);
+    row.crag_name = 'Sector Norte';
+    row.crag_slug = 'sector-norte';
+    row.area_slug = 'agujas-rojas';
+    row.topos = [
+      {
+        id: 10,
+        name: 'Placa Principal',
+        link: ['/area', 'agujas-rojas', 'sector-norte', 'topo', '10'],
+      },
+    ];
+    row.equippers = [
+      { id: 7, name: 'Ana', created_at: '', description: null, user_id: null },
+    ];
+
+    fixture.componentRef.setInput('data', [row]);
+    fixture.componentRef.setInput('columns', ['grade', 'route', 'ascents']);
+    fixture.componentRef.setInput('showLocation', true);
+    fixture.componentRef.setInput('isMobile', true);
+    fixture.detectChanges();
+
+    const routeCell = (fixture.nativeElement as HTMLElement).querySelector(
+      'td[data-col="route"]',
+    ) as HTMLElement;
+
+    expect(
+      routeCell.querySelector('tui-icon[icon="@tui.mountain"]'),
+    ).toBeNull();
+    expect(
+      routeCell.querySelector('tui-icon[icon="/image/topo.svg"]'),
+    ).not.toBeNull();
+    expect(
+      routeCell.querySelector('tui-icon[icon="@tui.hammer"]'),
+    ).not.toBeNull();
+    expect(routeCell.textContent).toContain('(Sector Norte)');
+    expect(routeCell.textContent).toContain('Placa Principal');
+    expect(routeCell.textContent).toContain('Ana');
+  });
+
   it('ignores tui-scroll-controls sticky sibling when calculating stickyTopOffset inside tui-scrollbar', async () => {
     @Component({
       standalone: true,

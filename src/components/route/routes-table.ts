@@ -259,9 +259,14 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                 />
                               </tui-textfield>
                             } @else {
+                              @let showMobileCrag =
+                                isMobile &&
+                                showLocation() &&
+                                !!item.crag_name &&
+                                !item.isIndoor;
                               <div class="flex flex-col min-w-0 w-full flex-1">
                                 <div
-                                  class="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 max-w-full"
+                                  class="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 min-w-0 max-w-full"
                                 >
                                   <a
                                     tuiLink
@@ -279,124 +284,125 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                   >
                                     {{ item.route || ('route' | translate) }}
                                   </a>
+                                  @if (showMobileCrag) {
+                                    <a
+                                      tuiLink
+                                      class="truncate max-w-full min-w-0 text-xs! opacity-75 font-normal!"
+                                      [routerLink]="
+                                        isEditing()
+                                          ? null
+                                          : [
+                                              '/area',
+                                              item.area_slug,
+                                              item.crag_slug || 'general',
+                                            ]
+                                      "
+                                    >
+                                      ({{ item.crag_name }})
+                                    </a>
+                                  }
                                   @if (item.legacy) {
                                     <span
                                       tuiBadge
                                       size="s"
                                       appearance="neutral"
-                                      class="uppercase text-[10px] shrink-0"
+                                      class="uppercase text-[10px] shrink-0 self-center"
                                     >
                                       {{ 'indoor.legacy' | translate }}
                                     </span>
                                   }
                                 </div>
                                 @if (item.rating > 0 || isMobile) {
-                                  <div
-                                    class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs opacity-75 mt-0.5 min-w-0"
-                                  >
-                                    @if (isMobile) {
-                                      @if (
-                                        showLocation() &&
-                                        item.crag_name &&
-                                        !item.isIndoor
-                                      ) {
-                                        <a
-                                          tuiLink
-                                          class="truncate max-w-full min-w-0"
-                                          [routerLink]="
-                                            isEditing()
-                                              ? null
-                                              : [
-                                                  '/area',
-                                                  item.area_slug,
-                                                  item.crag_slug || 'general',
-                                                ]
-                                          "
-                                        >
-                                          {{ item.crag_name }}
-                                        </a>
-                                      }
-                                      @if (item.isIndoor && item.color) {
+                                  @let showMobileColor =
+                                    isMobile && !!item.isIndoor && !!item.color;
+                                  @let showMobileHeight =
+                                    isMobile && !!item.height;
+                                  @if (
+                                    showMobileColor ||
+                                    showMobileHeight ||
+                                    item.rating > 0
+                                  ) {
+                                    <div
+                                      class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs opacity-75 mt-0.5 min-w-0"
+                                    >
+                                      @if (showMobileColor) {
                                         <span
                                           class="inline-block w-2.5 h-2.5 rounded-full shrink-0"
                                           [style.backgroundColor]="item.color"
                                         ></span>
                                       }
-                                      @if (item.height) {
-                                        @if (
-                                          (showLocation() &&
-                                            item.crag_name &&
-                                            !item.isIndoor) ||
-                                          (item.isIndoor && item.color)
-                                        ) {
+                                      @if (showMobileHeight) {
+                                        @if (showMobileColor) {
                                           <span class="opacity-50">·</span>
                                         }
                                         <span>{{ item.height }}m</span>
                                       }
-                                    }
-                                    @if (item.rating > 0) {
-                                      @if (
-                                        isMobile &&
-                                        ((showLocation() &&
-                                          item.crag_name &&
-                                          !item.isIndoor) ||
-                                          (item.isIndoor && item.color) ||
-                                          item.height)
-                                      ) {
-                                        <span class="opacity-50">·</span>
+                                      @if (item.rating > 0) {
+                                        @if (
+                                          showMobileColor || showMobileHeight
+                                        ) {
+                                          <span class="opacity-50">·</span>
+                                        }
+                                        <span
+                                          class="inline-flex items-center gap-0.5 font-medium"
+                                        >
+                                          <span>{{
+                                            item.rating | number: '1.0-1'
+                                          }}</span>
+                                          <tui-icon
+                                            icon="@tui.star"
+                                            class="w-3! h-3! text-amber-500"
+                                            [style.font-size.rem]="0.75"
+                                          />
+                                        </span>
                                       }
-                                      <span
-                                        class="inline-flex items-center gap-0.5 font-medium"
-                                      >
-                                        <span>{{
-                                          item.rating | number: '1.0-1'
-                                        }}</span>
-                                        <tui-icon
-                                          icon="@tui.star"
-                                          class="w-3! h-3! text-amber-500"
-                                          [style.font-size.rem]="0.75"
-                                        />
-                                      </span>
-                                    }
-                                  </div>
+                                    </div>
+                                  }
                                   @if (
                                     isMobile &&
                                     (item.topos.length > 0 ||
                                       item.equippers.length > 0)
                                   ) {
                                     <div
-                                      class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs opacity-65 mt-0.5 min-w-0"
+                                      class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs mt-1 min-w-0"
                                     >
                                       @if (item.topos.length > 0) {
                                         <span
-                                          class="inline-flex flex-wrap items-center gap-x-1 min-w-0 max-w-full"
+                                          class="inline-flex flex-wrap items-center gap-1 min-w-0 max-w-full"
                                         >
-                                          @for (
-                                            t of item.topos;
-                                            track t.id;
-                                            let last = $last
-                                          ) {
-                                            <span
-                                              class="inline-flex items-center min-w-0 max-w-full"
-                                            >
-                                              @if (isEditing() || !t.link) {
+                                          @for (t of item.topos; track t.id) {
+                                            @if (isEditing() || !t.link) {
+                                              <span
+                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-(--tui-background-neutral-1) text-(--tui-text-secondary) text-[11px] leading-[1.2] min-w-0 max-w-full"
+                                              >
+                                                <tui-icon
+                                                  icon="/image/topo.svg"
+                                                  class="block! w-3! h-3! shrink-0 opacity-80"
+                                                  [style.font-size.rem]="0.75"
+                                                  aria-hidden="true"
+                                                />
                                                 <span
-                                                  class="truncate max-w-full"
+                                                  class="truncate leading-[1.2]"
                                                   >{{ t.name }}</span
                                                 >
-                                              } @else {
-                                                <a
-                                                  tuiLink
-                                                  [routerLink]="t.link"
-                                                  class="truncate max-w-full min-w-0"
+                                              </span>
+                                            } @else {
+                                              <a
+                                                [routerLink]="t.link"
+                                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-(--tui-background-neutral-1) hover:bg-(--tui-background-neutral-1-hover) text-(--tui-text-action) text-[11px] leading-[1.2] min-w-0 max-w-full no-underline"
+                                              >
+                                                <tui-icon
+                                                  icon="/image/topo.svg"
+                                                  class="block! w-3! h-3! shrink-0 opacity-80"
+                                                  [style.font-size.rem]="0.75"
+                                                  aria-hidden="true"
+                                                />
+                                                <span
+                                                  class="truncate leading-[1.2]"
+                                                  >{{ t.name }}</span
                                                 >
-                                                  {{ t.name }}
-                                                </a>
-                                              }
-                                              @if (!last) {
-                                                <span>,</span>
-                                              }
-                                            </span>
+                                              </a>
+                                            }
                                           }
                                         </span>
                                       }
@@ -404,12 +410,18 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                         item.topos.length > 0 &&
                                         item.equippers.length > 0
                                       ) {
-                                        <span class="opacity-50">·</span>
+                                        <span class="opacity-40">·</span>
                                       }
                                       @if (item.equippers.length > 0) {
                                         <span
-                                          class="inline-flex flex-wrap items-center gap-x-1 min-w-0 max-w-full"
+                                          class="inline-flex flex-wrap items-center gap-x-1 min-w-0 max-w-full opacity-70"
                                         >
+                                          <tui-icon
+                                            icon="@tui.hammer"
+                                            class="w-3! h-3! shrink-0 opacity-75"
+                                            [style.font-size.rem]="0.75"
+                                            aria-hidden="true"
+                                          />
                                           @for (
                                             e of item.equippers;
                                             track e.id;
