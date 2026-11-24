@@ -1244,6 +1244,8 @@
   "routes.targetRoute": "Voie de destination (sera conservée)",
   "routes.unifyDescription": "Sélectionnez les voies à unifier en une seule. Tous les slugs 8a.nu seront conservés et les ascensions/favoris/projets seront combinés dans la voie de destination.",
   "routes.unifyTitle": "Unifier les voies",
+  "routes.unifyTopoDuplicateDrawnWarning": "La voie cible et une voie source ont toutes deux un tracé dessiné sur le même topo ; le tracé de la voie cible sera conservé.",
+  "routes.unifyToposPreserved": "Topos qui seront conservés sur la voie unifiée",
   "routesetters": "Ouvreurs",
   "routesetting.empty": "Vous n'avez aucune salle d'escalade assignée en tant qu'ouvreur",
   "routesetting.notification": "Salles d'escalade où vous êtes ouvreur. Vous pouvez créer et modifier des blocs, des voies et des topos.",

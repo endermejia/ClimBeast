@@ -24,6 +24,7 @@ import { RouteUnifyComponent } from '../components/forms/route-unify';
 import type {
   EquipperDto,
   EquipperWithAvatar,
+  Json,
   RouteDto,
   RouteInsertDto,
   RouteSearchResult,
@@ -35,6 +36,7 @@ import type {
 import { CACHE_KEYS } from '../constants/cache-keys';
 
 import {
+  hasTopoPath,
   mapRouteToExtras,
   normalizeNameStrict,
   RawRouteData,
@@ -589,6 +591,133 @@ export class RoutesService {
     );
   }
 
+  async getToposForRoutes(routeIds: number[]): Promise<
+    {
+      id: number;
+      topo_id: number;
+      route_id: number;
+      topo_name: string;
+      has_path: boolean;
+    }[]
+  > {
+    if (!this.isBrowser || routeIds.length === 0) return [];
+    await this.supabase.whenReady();
+    const { data, error } = await this.supabase.client
+      .from('topo_routes')
+      .select('id, topo_id, route_id, path, topo:topos(id, name)')
+      .in('route_id', routeIds);
+
+    if (error || !data) return [];
+
+    return (
+      data as {
+        id: number;
+        topo_id: number;
+        route_id: number;
+        path: Json | null;
+        topo: { id: number; name: string } | null;
+      }[]
+    )
+      .filter((row) => !!row.topo)
+      .map((row) => ({
+        id: row.id,
+        topo_id: row.topo_id,
+        route_id: row.route_id,
+        topo_name: row.topo!.name,
+        has_path: hasTopoPath(row.path),
+      }));
+  }
+
+  private async preserveTopoLinesBeforeUnify(
+    targetRouteId: number,
+    sourceRouteIds: number[],
+  ): Promise<void> {
+    const cleanSources = sourceRouteIds.filter((id) => id !== targetRouteId);
+    if (cleanSources.length === 0) return;
+
+    const allRouteIds = [targetRouteId, ...cleanSources];
+    const { data, error } = await this.supabase.client
+      .from('topo_routes')
+      .select('id, topo_id, route_id, number, path')
+      .in('route_id', allRouteIds);
+
+    if (error) throw error;
+    if (!data || data.length === 0) return;
+
+    interface TopoRouteUnifyRow {
+      id: number;
+      topo_id: number;
+      route_id: number;
+      number: number;
+      path: Json | null;
+    }
+
+    const byTopo = new Map<number, TopoRouteUnifyRow[]>();
+    for (const row of data as TopoRouteUnifyRow[]) {
+      const list = byTopo.get(row.topo_id);
+      if (list) {
+        list.push(row);
+      } else {
+        byTopo.set(row.topo_id, [row]);
+      }
+    }
+
+    const idsToDelete: number[] = [];
+
+    for (const rows of byTopo.values()) {
+      if (rows.length <= 1) continue;
+
+      const targetRows = rows.filter((r) => r.route_id === targetRouteId);
+      const sourceRows = rows.filter((r) => r.route_id !== targetRouteId);
+
+      if (targetRows.length > 0) {
+        const drawnTarget = targetRows.find((r) => hasTopoPath(r.path));
+        const keptTarget =
+          drawnTarget ?? [...targetRows].sort((a, b) => a.id - b.id)[0];
+
+        for (const tr of targetRows) {
+          if (tr.id !== keptTarget.id) {
+            idsToDelete.push(tr.id);
+          }
+        }
+
+        if (!drawnTarget) {
+          const drawnSource = [...sourceRows]
+            .filter((r) => hasTopoPath(r.path))
+            .sort((a, b) => a.id - b.id)[0];
+          if (drawnSource) {
+            const { error: updateError } = await this.supabase.client
+              .from('topo_routes')
+              .update({
+                path: drawnSource.path,
+                number: drawnSource.number,
+              })
+              .eq('id', keptTarget.id);
+            if (updateError) throw updateError;
+          }
+        }
+      } else {
+        const sortedSources = [...sourceRows].sort((a, b) => {
+          const aDrawn = hasTopoPath(a.path) ? 0 : 1;
+          const bDrawn = hasTopoPath(b.path) ? 0 : 1;
+          if (aDrawn !== bDrawn) return aDrawn - bDrawn;
+          return a.id - b.id;
+        });
+        for (const loser of sortedSources.slice(1)) {
+          idsToDelete.push(loser.id);
+        }
+      }
+    }
+
+    if (idsToDelete.length > 0) {
+      const { error: deleteError } = await this.supabase.client
+        .from('topo_routes')
+        .delete()
+        .in('id', idsToDelete);
+      if (deleteError) throw deleteError;
+    }
+  }
+
   async unify(
     targetRouteId: number,
     sourceRouteIds: number[],
@@ -598,6 +727,8 @@ export class RoutesService {
     await this.supabase.whenReady();
     this.loading.set(true);
     try {
+      await this.preserveTopoLinesBeforeUnify(targetRouteId, sourceRouteIds);
+
       const { error } = await this.supabase.client.rpc('unify_routes', {
         p_target_route_id: targetRouteId,
         p_source_route_ids: sourceRouteIds,
@@ -607,6 +738,11 @@ export class RoutesService {
       if (error) throw error;
 
       this.cragRoutesData.cragRoutesResource.reload();
+      this.outdoorData.cragDetailResource.reload();
+      this.outdoorData.areaToposResource.reload();
+      this.outdoorData.topoDetailResource.reload();
+      this.outdoorData.routeDetailResource.reload();
+      this.equipperService.equipperRoutesResource.reload();
       this.toast.success('messages.toasts.routesUnified');
       return true;
     } catch (e) {

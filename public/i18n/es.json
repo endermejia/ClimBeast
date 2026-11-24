@@ -1244,6 +1244,8 @@
   "routes.targetRoute": "Vía de destino (se mantendrá)",
   "routes.unifyDescription": "Selecciona las vías que quieres unificar en una sola. Se conservarán todos los slugs de 8a.nu y los encadenes/likes/proyectos se combinarán en la vía de destino.",
   "routes.unifyTitle": "Unificar vías",
+  "routes.unifyTopoDuplicateDrawnWarning": "Tanto la vía de destino como una de origen tienen línea dibujada en el mismo croquis; se conservará la línea de la vía de destino.",
+  "routes.unifyToposPreserved": "Croquis que se conservarán en la vía unificada",
   "routesetters": "Equipadores",
   "routesetting.empty": "No tienes rocódromos asignados como routesetter",
   "routesetting.notification": "Rocódromos en los que eres routesetter. Puedes crear y editar bloques, vías y croquis.",

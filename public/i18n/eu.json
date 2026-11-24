@@ -1244,6 +1244,8 @@
   "routes.targetRoute": "Helburuko bidea (mantenduko da)",
   "routes.unifyDescription": "Hautatu bakarrean bateratu nahi dituzun bideak. 8a.nu-ko slug guztiak mantenduko dira eta igoerak/gogokoak/proiektuak helburuko bidean konbinatuko dira.",
   "routes.unifyTitle": "Bateratu bideak",
+  "routes.unifyTopoDuplicateDrawnWarning": "Bai helmugako bideak bai jatorrizko bide batek lerro marraztua dute krokis berean; helmugako bidearen lerroa mantenduko da.",
+  "routes.unifyToposPreserved": "Bateratutako bidean mantenduko diren krokisak",
   "routesetters": "Routesetterrak",
   "routesetting.empty": "Ez duzu rokodromorik esleituta routesetter gisa",
   "routesetting.notification": "Routesetter zaren rokodromoak. Blokeak, bideak eta krokisak sortu eta edita ditzakezu.",

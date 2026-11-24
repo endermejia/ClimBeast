@@ -1244,6 +1244,8 @@
   "routes.targetRoute": "Tiro di destinazione (verrà mantenuto)",
   "routes.unifyDescription": "Seleziona i tiri che vuoi unificare in uno solo. Verranno conservati tutti gli slug di 8a.nu e le salite/preferiti/progetti verranno combinati nel tiro di destinazione.",
   "routes.unifyTitle": "Unifica tiri",
+  "routes.unifyTopoDuplicateDrawnWarning": "Sia la via di destinazione che una via di origine hanno una linea disegnata sullo stesso topo; verrà mantenuta la linea della via di destinazione.",
+  "routes.unifyToposPreserved": "Topo che verranno mantenuti nella via unificata",
   "routesetters": "Tracciatori",
   "routesetting.empty": "Non hai palestre assegnate come tracciatore",
   "routesetting.notification": "Palestre in cui sei tracciatore. Puoi creare e modificare blocchi, vie e topos.",

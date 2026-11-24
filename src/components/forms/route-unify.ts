@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { form, FormField, required } from '@angular/forms/signals';
 
@@ -8,12 +8,15 @@ import {
   TuiButton,
   TuiDataList,
   TuiError,
+  TuiIcon,
   TuiLabel,
+  TuiNotification,
   TuiOptGroup,
   TuiInput,
   TuiFilterByInputPipe,
 } from '@taiga-ui/core';
 import {
+  TuiBadge,
   TuiChevron,
   TuiInputChip,
   TuiComboBox,
@@ -35,16 +38,19 @@ import { RouteDto } from '../../models';
     FormField,
     FormsModule,
     TranslatePipe,
+    TuiBadge,
     TuiButton,
     TuiChevron,
     TuiComboBox,
     TuiDataList,
     TuiError,
     TuiFilterByInputPipe,
+    TuiIcon,
     TuiInput,
     TuiInputChip,
     TuiLabel,
     TuiMultiSelect,
+    TuiNotification,
     TuiOptGroup,
   ],
   template: `
@@ -133,6 +139,37 @@ import { RouteDto } from '../../models';
         />
       </tui-textfield>
 
+      @if (affectedTopos().length > 0) {
+        <div class="flex flex-col gap-2">
+          <span class="text-xs font-medium opacity-75">
+            {{ 'routes.unifyToposPreserved' | translate }}
+          </span>
+          <div class="flex flex-wrap gap-1.5">
+            @for (topo of affectedTopos(); track topo.topo_id) {
+              <span
+                tuiBadge
+                size="m"
+                [appearance]="topo.has_path ? 'info' : 'warning'"
+                class="inline-flex items-center gap-1"
+              >
+                <tui-icon
+                  icon="/image/topo.svg"
+                  class="w-3.5! h-3.5! shrink-0"
+                  [style.font-size.rem]="0.875"
+                  aria-hidden="true"
+                />
+                <span>{{ topo.topo_name }}</span>
+              </span>
+            }
+          </div>
+          @if (hasDuplicateDrawnTopo()) {
+            <div tuiNotification appearance="warning" size="s">
+              {{ 'routes.unifyTopoDuplicateDrawnWarning' | translate }}
+            </div>
+          }
+        </div>
+      }
+
       <div class="flex justify-end gap-2 mt-4">
         <button
           tuiButton
@@ -209,6 +246,65 @@ export class RouteUnifyComponent {
   protected readonly availableSources = computed(() => {
     const targetId = this.model().targetRoute?.id;
     return this.cragRoutes().filter((a) => a.id !== targetId);
+  });
+
+  private readonly selectedRouteIds = computed(() => {
+    const m = this.model();
+    const ids = new Set<number>();
+    if (m.targetRoute?.id != null) ids.add(m.targetRoute.id);
+    for (const src of m.sourceRoutes) {
+      if (src?.id != null) ids.add(src.id);
+    }
+    return Array.from(ids).sort((a, b) => a - b);
+  });
+
+  protected readonly toposResource = resource({
+    params: () => this.selectedRouteIds(),
+    loader: async ({ params: ids }) => {
+      if (ids.length === 0) return [];
+      return this.routesService.getToposForRoutes(ids);
+    },
+  });
+
+  protected readonly affectedTopos = computed(() => {
+    const entries = this.toposResource.value() ?? [];
+    const byTopo = new Map<
+      number,
+      { topo_id: number; topo_name: string; has_path: boolean }
+    >();
+    for (const entry of entries) {
+      const existing = byTopo.get(entry.topo_id);
+      if (existing) {
+        existing.has_path = existing.has_path || entry.has_path;
+      } else {
+        byTopo.set(entry.topo_id, {
+          topo_id: entry.topo_id,
+          topo_name: entry.topo_name,
+          has_path: entry.has_path,
+        });
+      }
+    }
+    return Array.from(byTopo.values()).sort((a, b) =>
+      a.topo_name.localeCompare(b.topo_name),
+    );
+  });
+
+  protected readonly hasDuplicateDrawnTopo = computed(() => {
+    const targetId = this.model().targetRoute?.id;
+    if (targetId == null) return false;
+    const entries = this.toposResource.value() ?? [];
+    const targetDrawnTopos = new Set<number>();
+    for (const entry of entries) {
+      if (entry.route_id === targetId && entry.has_path) {
+        targetDrawnTopos.add(entry.topo_id);
+      }
+    }
+    return entries.some(
+      (entry) =>
+        entry.route_id !== targetId &&
+        entry.has_path &&
+        targetDrawnTopos.has(entry.topo_id),
+    );
   });
 
   onTargetRouteChange(route: RouteDto | null): void {

@@ -1244,6 +1244,8 @@
   "routes.targetRoute": "Target route (will be kept)",
   "routes.unifyDescription": "Select routes to unify into one. All 8a.nu slugs will be preserved and ascents/likes/projects will be merged into the target route.",
   "routes.unifyTitle": "Unify routes",
+  "routes.unifyTopoDuplicateDrawnWarning": "Both target and source routes have a drawn line on the same topo; the target route's line will be kept.",
+  "routes.unifyToposPreserved": "Topos that will be preserved on the unified route",
   "routesetters": "Routesetters",
   "routesetting.empty": "You have no climbing gyms assigned as routesetter",
   "routesetting.notification": "Climbing gyms where you are a routesetter. You can create and edit boulders, routes, and topos.",

@@ -1244,6 +1244,8 @@
   "routes.targetRoute": "Zielroute (bleibt erhalten)",
   "routes.unifyDescription": "Wählen Sie die Routen aus, die Sie zu einer einzigen zusammenführen möchten. Alle 8a.nu Slugs bleiben erhalten und Begehungen/Likes/Projekte werden in der Zielroute kombiniert.",
   "routes.unifyTitle": "Routen zusammenführen",
+  "routes.unifyTopoDuplicateDrawnWarning": "Sowohl die Zielroute als auch eine Quellroute haben eine gezeichnete Linie im selben Topo; die Linie der Zielroute wird beibehalten.",
+  "routes.unifyToposPreserved": "Topos, die in der zusammengeführten Route erhalten bleiben",
   "routesetters": "Routesetter",
   "routesetting.empty": "Dir sind keine Kletterhallen als Routesetter zugewiesen",
   "routesetting.notification": "Kletterhallen, in denen du Routesetter bist. Du kannst Boulder, Routen und Topos erstellen und bearbeiten.",

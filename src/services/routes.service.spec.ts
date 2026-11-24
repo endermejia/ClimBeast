@@ -434,4 +434,207 @@ describe('RoutesService', () => {
       expect(filtered[0].topos).toEqual([]);
     });
   });
+
+  describe('unify', () => {
+    it('copies drawn topo path from source route to target route when target has no line on the same topo', async () => {
+      const drawnPath = {
+        points: [
+          { x: 0.2, y: 0.8 },
+          { x: 0.4, y: 0.2 },
+        ],
+      };
+      const updateCalls: { payload: unknown; id: number }[] = [];
+      const deletedIds: number[][] = [];
+      const rpcCalls: { fn: string; params: unknown }[] = [];
+
+      mockSupabase.client.from = vi.fn((table: string) => {
+        if (table === 'topo_routes') {
+          return {
+            select: () => ({
+              in: () =>
+                Promise.resolve({
+                  data: [
+                    {
+                      id: 100,
+                      topo_id: 10,
+                      route_id: 1,
+                      number: 0,
+                      path: null,
+                    },
+                    {
+                      id: 101,
+                      topo_id: 10,
+                      route_id: 2,
+                      number: 3,
+                      path: drawnPath,
+                    },
+                  ],
+                  error: null,
+                }),
+            }),
+            update: (payload: unknown) => ({
+              eq: (_col: string, id: number) => {
+                updateCalls.push({ payload, id });
+                return Promise.resolve({ error: null });
+              },
+            }),
+            delete: () => ({
+              in: (_col: string, ids: number[]) => {
+                deletedIds.push(ids);
+                return Promise.resolve({ error: null });
+              },
+            }),
+          };
+        }
+        return {};
+      }) as unknown as typeof mockSupabase.client.from;
+
+      mockSupabase.client.rpc = vi.fn((fn: string, params: unknown) => {
+        rpcCalls.push({ fn, params });
+        return Promise.resolve({ data: null, error: null });
+      }) as unknown as typeof mockSupabase.client.rpc;
+
+      const ok = await service.unify(1, [2], 'Unified Route');
+
+      expect(ok).toBe(true);
+      expect(updateCalls).toEqual([
+        { id: 100, payload: { path: drawnPath, number: 3 } },
+      ]);
+      expect(deletedIds).toEqual([]);
+      expect(rpcCalls).toEqual([
+        {
+          fn: 'unify_routes',
+          params: {
+            p_target_route_id: 1,
+            p_source_route_ids: [2],
+            p_new_name: 'Unified Route',
+          },
+        },
+      ]);
+    });
+
+    it('deduplicates multiple source routes in the same topo by keeping the drawn line', async () => {
+      const drawnPath = {
+        points: [
+          { x: 0.5, y: 0.9 },
+          { x: 0.5, y: 0.1 },
+        ],
+      };
+      const updateCalls: { payload: unknown; id: number }[] = [];
+      const deletedIds: number[][] = [];
+
+      mockSupabase.client.from = vi.fn((table: string) => {
+        if (table === 'topo_routes') {
+          return {
+            select: () => ({
+              in: () =>
+                Promise.resolve({
+                  data: [
+                    {
+                      id: 200,
+                      topo_id: 20,
+                      route_id: 2,
+                      number: 0,
+                      path: { points: [] },
+                    },
+                    {
+                      id: 201,
+                      topo_id: 20,
+                      route_id: 3,
+                      number: 4,
+                      path: drawnPath,
+                    },
+                  ],
+                  error: null,
+                }),
+            }),
+            update: (payload: unknown) => ({
+              eq: (_col: string, id: number) => {
+                updateCalls.push({ payload, id });
+                return Promise.resolve({ error: null });
+              },
+            }),
+            delete: () => ({
+              in: (_col: string, ids: number[]) => {
+                deletedIds.push(ids);
+                return Promise.resolve({ error: null });
+              },
+            }),
+          };
+        }
+        return {};
+      }) as unknown as typeof mockSupabase.client.from;
+
+      mockSupabase.client.rpc = vi.fn(() =>
+        Promise.resolve({ data: null, error: null }),
+      ) as unknown as typeof mockSupabase.client.rpc;
+
+      const ok = await service.unify(1, [2, 3], 'Unified Route');
+
+      expect(ok).toBe(true);
+      expect(updateCalls).toEqual([]);
+      expect(deletedIds).toEqual([[200]]);
+    });
+
+    it('keeps target drawn line untouched when both target and source have drawn paths on the same topo', async () => {
+      const targetPath = {
+        points: [
+          { x: 0.1, y: 0.9 },
+          { x: 0.1, y: 0.1 },
+        ],
+      };
+      const sourcePath = {
+        points: [
+          { x: 0.8, y: 0.9 },
+          { x: 0.8, y: 0.1 },
+        ],
+      };
+      const updateCalls: unknown[] = [];
+
+      mockSupabase.client.from = vi.fn((table: string) => {
+        if (table === 'topo_routes') {
+          return {
+            select: () => ({
+              in: () =>
+                Promise.resolve({
+                  data: [
+                    {
+                      id: 300,
+                      topo_id: 30,
+                      route_id: 1,
+                      number: 1,
+                      path: targetPath,
+                    },
+                    {
+                      id: 301,
+                      topo_id: 30,
+                      route_id: 2,
+                      number: 2,
+                      path: sourcePath,
+                    },
+                  ],
+                  error: null,
+                }),
+            }),
+            update: (payload: unknown) => ({
+              eq: () => {
+                updateCalls.push(payload);
+                return Promise.resolve({ error: null });
+              },
+            }),
+          };
+        }
+        return {};
+      }) as unknown as typeof mockSupabase.client.from;
+
+      mockSupabase.client.rpc = vi.fn(() =>
+        Promise.resolve({ data: null, error: null }),
+      ) as unknown as typeof mockSupabase.client.rpc;
+
+      const ok = await service.unify(1, [2], 'Unified Route');
+
+      expect(ok).toBe(true);
+      expect(updateCalls).toEqual([]);
+    });
+  });
 });
