@@ -66,6 +66,10 @@ export class MapBuilder {
   private rafId1: number | null = null;
   private rafId2: number | null = null;
   private mapCragItems: readonly MapCragItem[] = [];
+  private selectedMapCragItem: MapCragItem | null = null;
+  private mapParkingItems: readonly ParkingDto[] = [];
+  private selectedMapParkingItem: ParkingDto | null = null;
+  private mapAreaItems: readonly MapAreaItem[] = [];
   private mapIndoorItems: readonly MapIndoorCenterItem[] = [];
   private markers: Marker[] = [];
   private parkingMarkers: Marker[] = [];
@@ -123,12 +127,17 @@ export class MapBuilder {
 
     if (this.currentSession !== session || !this.map) return;
 
-    new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    new L.TileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: options.maxZoom ?? 22,
+      maxNativeZoom: 19,
       minZoom: options.minZoom ?? 4,
     }).addTo(this.map);
 
     this.mapCragItems = mapCragItems;
+    this.selectedMapCragItem = selectedMapCragItem;
+    this.mapParkingItems = mapParkingItems;
+    this.selectedMapParkingItem = selectedMapParkingItem;
+    this.mapAreaItems = mapAreaItems;
     this.mapIndoorItems = mapIndoorItems;
 
     // Restore the last saved viewport (bounds and zoom) if available
@@ -192,8 +201,9 @@ export class MapBuilder {
             ]);
             this.map.fitBounds(bounds, {
               animate: false,
-              padding: [24, 24],
-              maxZoom: 15,
+              paddingTopLeft: [48, 64],
+              paddingBottomRight: [48, 112],
+              maxZoom: 18,
             });
           }
           viewportRestored = true;
@@ -296,10 +306,10 @@ export class MapBuilder {
       this.animateClustersOnNextBuild = false;
       await this.rebuildMarkers(
         this.mapCragItems,
-        selectedMapCragItem,
-        mapParkingItems,
-        selectedMapParkingItem,
-        mapAreaItems,
+        this.selectedMapCragItem,
+        this.mapParkingItems,
+        this.selectedMapParkingItem,
+        this.mapAreaItems,
         this.mapIndoorItems,
         cb,
       );
@@ -310,10 +320,10 @@ export class MapBuilder {
       this.animateClustersOnNextBuild = false;
       await this.rebuildMarkers(
         this.mapCragItems,
-        selectedMapCragItem,
-        mapParkingItems,
-        selectedMapParkingItem,
-        mapAreaItems,
+        this.selectedMapCragItem,
+        this.mapParkingItems,
+        this.selectedMapParkingItem,
+        this.mapAreaItems,
         this.mapIndoorItems,
         cb,
       );
@@ -370,6 +380,10 @@ export class MapBuilder {
     if (!this.map || !this.initialized) return;
     const session = this.currentSession;
     this.mapCragItems = mapCragItems;
+    this.selectedMapCragItem = selectedMapCragItem;
+    this.mapParkingItems = mapParkingItems;
+    this.selectedMapParkingItem = selectedMapParkingItem;
+    this.mapAreaItems = mapAreaItems;
     this.mapIndoorItems = mapIndoorItems;
 
     try {

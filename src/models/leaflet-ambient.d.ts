@@ -41,6 +41,18 @@ declare module 'leaflet' {
     setIcon(icon: Icon): this;
     getElement(): HTMLElement | null;
   }
+  export interface TileLayerOptions {
+    minZoom?: number;
+    maxZoom?: number;
+    minNativeZoom?: number;
+    maxNativeZoom?: number;
+    attribution?: string;
+    keepBuffer?: number;
+    updateWhenIdle?: boolean;
+    updateInterval?: number;
+    crossOrigin?: boolean | string;
+    referrerPolicy?: boolean | string;
+  }
   export type TileLayer = Layer;
 
   export interface Map {
@@ -54,6 +66,8 @@ declare module 'leaflet' {
       bounds: LatLngBounds,
       options?: {
         padding?: [number, number];
+        paddingTopLeft?: [number, number];
+        paddingBottomRight?: [number, number];
         maxZoom?: number;
         animate?: boolean;
       },
@@ -89,7 +103,7 @@ declare module 'leaflet' {
 
   export interface LeafletNamespace {
     Map: new (el: string | HTMLElement, opts?: object) => Map;
-    TileLayer: new (url: string, opts?: object) => TileLayer;
+    TileLayer: new (url: string, opts?: TileLayerOptions) => TileLayer;
     Marker: new (latlng: LatLng | [number, number], opts?: object) => Marker;
     DivIcon: new (opts?: DivIconOptions) => DivIcon;
     LatLng: new (lat: number, lng: number) => LatLng;

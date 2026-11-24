@@ -1742,12 +1742,25 @@ export class AreaComponent {
     await this.supabase.whenReady();
     const { data, error } = await this.supabase.client
       .from('crags')
-      .select('latitude, longitude')
-      .eq('area_id', area.id)
-      .not('latitude', 'is', null)
-      .not('longitude', 'is', null);
+      .select(
+        'latitude, longitude, crag_parkings(parking:parkings(latitude, longitude))',
+      )
+      .eq('area_id', area.id);
 
-    if (error || !data || data.length === 0) {
+    const points: [number, number][] = [];
+    for (const c of data ?? []) {
+      if (c.latitude != null && c.longitude != null) {
+        points.push([c.latitude, c.longitude]);
+      }
+      for (const cp of c.crag_parkings ?? []) {
+        const p = cp.parking;
+        if (p && p.latitude != null && p.longitude != null) {
+          points.push([p.latitude, p.longitude]);
+        }
+      }
+    }
+
+    if (error || points.length === 0) {
       void this.router.navigateByUrl('/explore');
       return;
     }
@@ -1757,13 +1770,16 @@ export class AreaComponent {
     let minLng = Infinity;
     let maxLng = -Infinity;
 
-    data.forEach((c) => {
-      if (c.latitude! < minLat) minLat = c.latitude!;
-      if (c.latitude! > maxLat) maxLat = c.latitude!;
-      if (c.longitude! < minLng) minLng = c.longitude!;
-      if (c.longitude! > maxLng) maxLng = c.longitude!;
-    });
+    for (const [lat, lng] of points) {
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+      if (lng < minLng) minLng = lng;
+      if (lng > maxLng) maxLng = lng;
+    }
 
+    this.mapData.selectedMapCragItem.set(null);
+    this.mapData.selectedMapParkingItem.set(null);
+    this.mapData.selectedMapIndoorItem.set(null);
     this.mapData.mapBounds.set({
       south_west_latitude: minLat,
       south_west_longitude: minLng,

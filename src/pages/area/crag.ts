@@ -819,21 +819,33 @@ export class CragComponent {
       await this.supabase.whenReady();
       const { data } = await this.supabase.client
         .from('crags')
-        .select('latitude, longitude')
-        .eq('area_id', area.id)
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null);
+        .select(
+          'latitude, longitude, crag_parkings(parking:parkings(latitude, longitude))',
+        )
+        .eq('area_id', area.id);
 
-      if (data) {
-        data.forEach((c) => {
-          if (c.latitude! < minLat) minLat = c.latitude!;
-          if (c.latitude! > maxLat) maxLat = c.latitude!;
-          if (c.longitude! < minLng) minLng = c.longitude!;
-          if (c.longitude! > maxLng) maxLng = c.longitude!;
-        });
+      for (const c of data ?? []) {
+        if (c.latitude != null && c.longitude != null) {
+          if (c.latitude < minLat) minLat = c.latitude;
+          if (c.latitude > maxLat) maxLat = c.latitude;
+          if (c.longitude < minLng) minLng = c.longitude;
+          if (c.longitude > maxLng) maxLng = c.longitude;
+        }
+        for (const cp of c.crag_parkings ?? []) {
+          const p = cp.parking;
+          if (p && p.latitude != null && p.longitude != null) {
+            if (p.latitude < minLat) minLat = p.latitude;
+            if (p.latitude > maxLat) maxLat = p.latitude;
+            if (p.longitude < minLng) minLng = p.longitude;
+            if (p.longitude > maxLng) maxLng = p.longitude;
+          }
+        }
       }
     }
 
+    this.mapData.selectedMapCragItem.set(null);
+    this.mapData.selectedMapParkingItem.set(null);
+    this.mapData.selectedMapIndoorItem.set(null);
     this.mapData.mapBounds.set({
       south_west_latitude: minLat,
       south_west_longitude: minLng,
