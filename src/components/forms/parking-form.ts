@@ -21,19 +21,11 @@ import {
 } from '@angular/forms/signals';
 
 import { type TuiDialogContext } from '@taiga-ui/core';
-import {
-  TuiButton,
-  TuiError,
-  TuiLabel,
-  TuiNumberFormat,
-  TuiInput,
-} from '@taiga-ui/core';
-import { TuiInputNumber } from '@taiga-ui/kit';
+import { TuiButton, TuiError, TuiInput, TuiLabel } from '@taiga-ui/core';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { MapService } from '../../services/map.service';
 import { ParkingsService } from '../../services/parkings.service';
 import { ToastService } from '../../services/toast.service';
 
@@ -41,6 +33,10 @@ import { ParkingDto } from '../../models';
 
 import { handleErrorToast } from '../../utils';
 
+import {
+  CoordinatesFieldsComponent,
+  CoordinatesValue,
+} from '../location/coordinates-fields';
 import { CounterComponent } from '../ui/counter';
 
 interface MinimalParking {
@@ -55,6 +51,7 @@ interface MinimalParking {
   selector: 'app-parking-form',
   imports: [
     CommonModule,
+    CoordinatesFieldsComponent,
     CounterComponent,
     FormField,
     FormsModule,
@@ -62,9 +59,7 @@ interface MinimalParking {
     TuiButton,
     TuiError,
     TuiInput,
-    TuiInputNumber,
     TuiLabel,
-    TuiNumberFormat,
   ],
   template: `
     <form class="grid gap-4 w-full" (submit.zoneless)="onSubmit($event)">
@@ -82,58 +77,19 @@ interface MinimalParking {
         <tui-error [error]="'errors.required' | translate" />
       }
 
-      <div class="flex flex-wrap items-center gap-4">
-        <h3 class="font-bold text-lg">{{ 'location' | translate }}</h3>
-        <button
-          tuiButton
-          appearance="secondary-grayscale"
-          size="s"
-          type="button"
-          iconStart="@tui.map-pin"
-          (click.zoneless)="pickLocation()"
-        >
-          {{ 'pickOnMap' | translate }}
-        </button>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-        <div class="grid grid-cols-2 gap-4">
-          <tui-textfield [tuiTextfieldCleaner]="false">
-            <label tuiLabel for="lat">{{ 'lat' | translate }}</label>
-            <input
-              tuiInputNumber
-              id="lat"
-              [ngModel]="model().latitude"
-              (ngModelChange)="onLatChange($event)"
-              name="latitude"
-              [tuiNumberFormat]="{ precision: 6 }"
-              (paste)="onPasteLocation($event)"
-              (change.zoneless)="sanitizeCoordinates()"
-              autocomplete="off"
-            />
-          </tui-textfield>
-          <tui-textfield [tuiTextfieldCleaner]="false">
-            <label tuiLabel for="lng">{{ 'lng' | translate }}</label>
-            <input
-              tuiInputNumber
-              id="lng"
-              [tuiNumberFormat]="{ precision: 6 }"
-              [ngModel]="model().longitude"
-              (ngModelChange)="onLngChange($event)"
-              name="longitude"
-              (change.zoneless)="sanitizeCoordinates()"
-              autocomplete="off"
-            />
-          </tui-textfield>
-        </div>
-
+      <app-coordinates-fields
+        [latitude]="model().latitude"
+        [longitude]="model().longitude"
+        (coordinatesChange)="onCoordinatesChange($event)"
+        rowClass="grid grid-cols-1 md:grid-cols-2 gap-4 items-end"
+      >
         <app-counter
           [ngModel]="model().size"
           (ngModelChange)="onSizeChange($event)"
           name="size"
           label="capacity"
         />
-      </div>
+      </app-coordinates-fields>
 
       <div class="flex flex-wrap gap-2 justify-end">
         <button
@@ -163,7 +119,6 @@ interface MinimalParking {
   host: { class: 'flex grow min-h-0' },
 })
 export class ParkingFormComponent {
-  protected readonly mapService = inject(MapService);
   private readonly parkings = inject(ParkingsService);
   private readonly location = inject(Location);
   private readonly toast = inject(ToastService);
@@ -320,56 +275,8 @@ export class ParkingFormComponent {
     }
   }
 
-  async pickLocation(): Promise<void> {
-    const result = await import('rxjs').then((m) =>
-      m.firstValueFrom(
-        this.mapService.pickLocation(
-          this.model().latitude,
-          this.model().longitude,
-        ),
-        { defaultValue: null },
-      ),
-    );
-    if (result) {
-      this.model.update((m) => ({
-        ...m,
-        latitude: result.lat,
-        longitude: result.lng,
-      }));
-    }
-  }
-
-  onPasteLocation(event: ClipboardEvent): void {
-    const text = event.clipboardData?.getData('text');
-    if (!text) return;
-
-    const coords = this.mapService.parseCoordinates(text);
-    if (coords) {
-      event.preventDefault();
-      this.model.update((m) => ({
-        ...m,
-        latitude: coords.lat,
-        longitude: coords.lng,
-      }));
-    }
-  }
-
-  sanitizeCoordinates(): void {
-    const lat = this.model().latitude;
-    const lng = this.model().longitude;
-    this.model.update((m) => ({
-      ...m,
-      latitude: lat != null ? parseFloat(lat.toFixed(6)) : null,
-      longitude: lng != null ? parseFloat(lng.toFixed(6)) : null,
-    }));
-  }
-
-  onLatChange(value: number | null): void {
-    this.model.update((m) => ({ ...m, latitude: value }));
-  }
-
-  onLngChange(value: number | null): void {
-    this.model.update((m) => ({ ...m, longitude: value }));
+  onCoordinatesChange({ latitude, longitude }: CoordinatesValue): void {
+    this.model.update((m) => ({ ...m, latitude, longitude }));
   }
 
   onSizeChange(value: number | null): void {

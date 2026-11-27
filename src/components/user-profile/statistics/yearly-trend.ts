@@ -1,30 +1,28 @@
-import { CommonModule, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { Component, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
 
 import {
   TuiAxes,
   TuiLineChart,
   TuiLineChartHint,
 } from '@taiga-ui/addon-charts';
-import { TuiScrollbar } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { AscentTypes, TrendData, TrendDetail } from '../../../models';
+import { TrendData, TrendDetail } from '../../../models';
+
+import { StatsRouteHintComponent } from './stats-route-hint';
 
 @Component({
   selector: 'app-user-profile-stats-trends',
   standalone: true,
   imports: [
-    CommonModule,
     DecimalPipe,
-    RouterLink,
+    StatsRouteHintComponent,
     TranslatePipe,
     TuiAxes,
     TuiLineChart,
     TuiLineChartHint,
-    TuiScrollbar,
   ],
   template: `
     <div
@@ -64,59 +62,15 @@ import { AscentTypes, TrendData, TrendDetail } from '../../../models';
 
     <!-- Hint content for Line Chart -->
     <ng-template #trendHintContent let-points let-index="index">
-      <div class="trend-hint">
-        @let i = index?.index ?? index?.$implicit ?? index ?? 0;
-        @let details = trendDetails()[i];
-
-        <div class="trend-hint-header">
-          <span class="trend-hint-year">{{ trendData().years[i] }}</span>
-          <span class="trend-hint-score">
-            {{ (details?.totalScore | number) || 0 }} {{ 'points' | translate }}
-          </span>
-        </div>
-
-        @if (details) {
-          <tui-scrollbar class="trend-scroll">
-            <div class="trend-routes">
-              @for (route of details.topRoutes; track $index) {
-                <div class="trend-route-row">
-                  <a
-                    class="route-name"
-                    [routerLink]="
-                      route.isIndoor
-                        ? [
-                            '/indoor',
-                            route.centerSlug,
-                            'route',
-                            route.routeSlug,
-                          ]
-                        : [
-                            '/area',
-                            route.areaSlug,
-                            route.cragSlug,
-                            route.routeSlug,
-                          ]
-                    "
-                    [class.onsight]="route.type === AscentTypes.OS"
-                    [class.flash]="route.type === AscentTypes.F"
-                    [class.redpoint]="
-                      route.type === AscentTypes.RP || !route.type
-                    "
-                  >
-                    {{ route.name || ('anonymous' | translate) }}
-                  </a>
-                  <span class="route-score">
-                    <span class="route-score-grade">
-                      {{ route.gradeLabel }}
-                    </span>
-                    <span class="route-score-val">{{ route.score }}</span>
-                  </span>
-                </div>
-              }
-            </div>
-          </tui-scrollbar>
-        }
-      </div>
+      @let i = index?.index ?? index?.$implicit ?? index ?? 0;
+      @let details = trendDetails()[i];
+      <app-stats-route-hint
+        [title]="trendData().years[i]"
+        [value]="
+          ((details?.totalScore | number) || 0) + ' ' + ('points' | translate)
+        "
+        [routes]="details?.topRoutes"
+      />
     </ng-template>
   `,
   styles: `
@@ -125,88 +79,12 @@ import { AscentTypes, TrendData, TrendDetail } from '../../../models';
       min-width: 0;
       height: 200px;
     }
-    .trend-hint {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      min-width: 240px;
-      padding: 0.5rem 0;
-    }
-    .trend-hint-header {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.25rem;
-      border-bottom: 1px solid var(--tui-border-normal);
-      padding-bottom: 0.75rem;
-      margin-bottom: 0.25rem;
-    }
-    .trend-hint-year {
-      font: var(--tui-typography-body-s);
-      opacity: 0.5;
-      font-weight: bold;
-    }
-    .trend-hint-score {
-      font: var(--tui-typography-heading-h4);
-      font-weight: 900;
-    }
-    .trend-routes {
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-      padding-right: 1.25rem;
-    }
-    .trend-route-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      font-size: var(--tui-typography-body-s);
-    }
-    .route-name {
-      font-weight: 500;
-      color: var(--tui-text-primary);
-      text-decoration: none;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 130px;
-    }
-    .route-name:hover {
-      text-decoration: underline;
-    }
-    .route-name.onsight {
-      color: var(--tui-status-positive);
-    }
-    .route-name.flash {
-      color: var(--tui-status-warning);
-    }
-    .route-name.redpoint {
-      color: var(--tui-status-negative);
-    }
-    .route-score {
-      font-family: monospace;
-      text-align: right;
-    }
-    .route-score-grade {
-      font: var(--tui-typography-body-m);
-      opacity: 0.8;
-      margin-right: 0.5rem;
-    }
-    .route-score-val {
-      opacity: 0.6;
-    }
-    .trend-scroll {
-      max-height: 250px;
-    }
   `,
   host: {
     class: 'block w-full min-w-0',
   },
 })
 export class UserProfileStatsTrendsComponent {
-  protected readonly AscentTypes = AscentTypes;
-
   trendData = input.required<TrendData>();
   trendDetails = input.required<TrendDetail[]>();
   trendXLabels = input.required<string[]>();

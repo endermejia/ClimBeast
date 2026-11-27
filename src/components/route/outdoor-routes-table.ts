@@ -6,7 +6,6 @@ import {
   inject,
   input,
   output,
-  signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
@@ -26,11 +25,6 @@ import { RoutesService } from '../../services/routes.service';
 import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
 
-import { IS_BROWSER } from '../../app/is-browser';
-
-import { RouteEquippersInputComponent } from './route-equippers-input';
-import { RoutesTableComponent } from './routes-table';
-
 import {
   AscentType,
   EquipperDto,
@@ -41,7 +35,12 @@ import {
   RoutesTableRow,
 } from '../../models';
 
-import { mapRouteToTableRow, handleErrorToast } from '../../utils';
+import { handleErrorToast, mapRouteToTableRow } from '../../utils';
+
+import { IS_BROWSER } from '../../app/is-browser';
+import { RouteEquippersInputComponent } from './route-equippers-input';
+import { RouteEquippersQueue } from './route-equippers-queue';
+import { RoutesTableComponent } from './routes-table';
 
 @Component({
   selector: 'app-outdoor-routes-table',
@@ -140,40 +139,22 @@ export class OutdoorRoutesTableComponent {
   // Outputs
   routeUpdated = output<void>();
 
-  private readonly equippersOverrides = signal<Record<number, EquipperDto[]>>(
-    {},
-  );
-  private readonly equippersSaveSeq = new Map<number, number>();
-  private readonly equippersSaveChain = new Map<number, Promise<void>>();
-  private readonly inFlightEquipperRoutes = new Set<number>();
+  private readonly equippersQueue = new RouteEquippersQueue();
 
   constructor() {
     effect(() => {
       this.data();
-      if (this.inFlightEquipperRoutes.size === 0) {
-        this.equippersOverrides.set({});
-      } else {
-        this.equippersOverrides.update((prev) => {
-          const next: Record<number, EquipperDto[]> = {};
-          for (const [idStr, list] of Object.entries(prev)) {
-            const id = Number(idStr);
-            if (this.inFlightEquipperRoutes.has(id)) {
-              next[id] = list;
-            }
-          }
-          return next;
-        });
-      }
+      this.equippersQueue.reconcileWithData();
     });
   }
 
   protected readonly mappedData = computed(() => {
     const isAsAdmin = this.authState.canEditAsAdmin();
     const areaAdminMap = this.authState.areaAdminPermissions();
-    const equipperOverrides = this.equippersOverrides();
+    const equipperOverrides = this.equippersQueue.overrides();
 
     return this.data().map((r) => {
-      const override = equipperOverrides[r.id];
+      const override = equipperOverrides[String(r.id)];
       const routeItem = override ? { ...r, equippers: override } : r;
       const row = mapRouteToTableRow(routeItem);
       row._ref = r;
@@ -187,10 +168,10 @@ export class OutdoorRoutesTableComponent {
   });
 
   protected readonly outdoorRefMap = computed(() => {
-    const equipperOverrides = this.equippersOverrides();
+    const equipperOverrides = this.equippersQueue.overrides();
     const map: Record<string | number, RouteItem> = {};
     for (const r of this.data()) {
-      const override = equipperOverrides[r.id];
+      const override = equipperOverrides[String(r.id)];
       map[r.id] = override ? { ...r, equippers: override } : r;
     }
     return map;
@@ -296,60 +277,16 @@ export class OutdoorRoutesTableComponent {
   ): void {
     const r = row._ref as RouteItem;
     const routeId = r.id;
-    const seq = (this.equippersSaveSeq.get(routeId) ?? 0) + 1;
-    this.equippersSaveSeq.set(routeId, seq);
-    this.inFlightEquipperRoutes.add(routeId);
-
-    const optimisticEquippers: EquipperDto[] = newEquippers.map((item, idx) =>
-      typeof item === 'string'
-        ? {
-            id: -(idx + 1),
-            name: item,
-            created_at: '',
-            description: null,
-            user_id: null,
-          }
-        : item,
-    );
-
-    this.equippersOverrides.update((prev) => ({
-      ...prev,
-      [routeId]: optimisticEquippers,
-    }));
-
-    const payload: (EquipperDto | string)[] = newEquippers.map((item) =>
-      typeof item === 'string' ? item : item.id > 0 ? item : item.name,
-    );
-
-    const prev = this.equippersSaveChain.get(routeId) ?? Promise.resolve();
-    const nextTask = prev.then(async () => {
-      try {
-        const saved = await this.routesService.setRouteEquippers(
-          routeId,
-          payload,
-        );
-        if (this.equippersSaveSeq.get(routeId) === seq) {
-          r.equippers = saved;
-          this.equippersOverrides.update((curr) => ({
-            ...curr,
-            [routeId]: saved,
-          }));
-          this.inFlightEquipperRoutes.delete(routeId);
-          this.routeUpdated.emit();
-        }
-      } catch (err: unknown) {
-        if (this.equippersSaveSeq.get(routeId) === seq) {
-          this.inFlightEquipperRoutes.delete(routeId);
-          this.equippersOverrides.update((curr) => {
-            const copy = { ...curr };
-            delete copy[routeId];
-            return copy;
-          });
-        }
-        handleErrorToast(err, this.toast);
-      }
+    void this.equippersQueue.enqueue({
+      routeId,
+      equippers: newEquippers,
+      save: (payload) => this.routesService.setRouteEquippers(routeId, payload),
+      onSaved: (saved) => {
+        r.equippers = saved;
+        this.routeUpdated.emit();
+      },
+      onError: (err) => handleErrorToast(err, this.toast),
     });
-    this.equippersSaveChain.set(routeId, nextTask);
   }
 
   protected onUpdateRouteName(row: RoutesTableRow, name: string): void {

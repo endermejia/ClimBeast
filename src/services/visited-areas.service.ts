@@ -1,8 +1,8 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { Injectable } from '@angular/core';
 
 import { STORAGE_KEYS } from '../constants';
 
-import { LocalStorage } from './local-storage';
+import { VisitedItemsBase } from './visited-items.base';
 
 export interface VisitedArea {
   id: number;
@@ -14,36 +14,14 @@ export interface VisitedArea {
 @Injectable({
   providedIn: 'root',
 })
-export class VisitedAreasService {
-  private readonly storage = inject(LocalStorage);
-  private readonly STORAGE_KEY = STORAGE_KEYS.visitedAreas;
-  private readonly MAX_AREAS = 10;
+export class VisitedAreasService extends VisitedItemsBase<VisitedArea> {
+  readonly visitedAreas = this.items;
 
-  private readonly _visitedAreas = signal<VisitedArea[]>(
-    this.loadVisitedAreas(),
-  );
-  readonly visitedAreas = this._visitedAreas.asReadonly();
-
-  private loadVisitedAreas(): VisitedArea[] {
-    const data = this.storage.getItem(this.STORAGE_KEY);
-    if (!data) return [];
-    try {
-      return JSON.parse(data);
-    } catch {
-      return [];
-    }
+  constructor() {
+    super(STORAGE_KEYS.visitedAreas);
   }
 
-  addVisitedArea(area: VisitedArea) {
-    const current = this.loadVisitedAreas();
-    // Remove if already exists to move it to the front
-    const filtered = current.filter((a) => a.id !== area.id);
-    const updated = [{ ...area, visitedAt: Date.now() }, ...filtered].slice(
-      0,
-      this.MAX_AREAS,
-    );
-
-    this.storage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
-    this._visitedAreas.set(updated);
+  addVisitedArea(area: VisitedArea): void {
+    this.addItem(area);
   }
 }

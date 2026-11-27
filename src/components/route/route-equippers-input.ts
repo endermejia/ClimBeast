@@ -1,6 +1,7 @@
 import {
   Component,
   ElementRef,
+  Injector,
   inject,
   input,
   linkedSignal,
@@ -16,11 +17,12 @@ import { TuiChevron, TuiHideSelectedPipe, TuiInputChip } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { IndoorService } from '../../services/indoor.service';
 import { RoutesService } from '../../services/routes.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 
-import { EquipperDto, RouteWithExtras } from '../../models';
+import { EquipperDto } from '../../models';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -80,20 +82,24 @@ import { IS_BROWSER } from '../../app/is-browser';
   host: { class: 'block min-w-0 w-full h-full' },
 })
 export class RouteEquippersInputComponent {
-  private readonly routes = inject(RoutesService);
+  private readonly injector = inject(Injector);
   private readonly supabase = inject(SupabaseService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly toast = inject(ToastService);
   private readonly hostEl = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  route = input.required<RouteWithExtras>();
+  route = input.required<{
+    id: number | string;
+    equippers?: EquipperDto[] | null;
+  }>();
+  mode = input<'outdoor' | 'indoor'>('outdoor');
   autoSave = input(true);
 
   equippersChange = output<readonly (EquipperDto | string)[]>();
   equippersChanged = output<EquipperDto[]>();
 
   equippers = linkedSignal<readonly (EquipperDto | string)[]>(
-    () => (this.route()?.equippers as EquipperDto[]) || [],
+    () => this.route()?.equippers ?? [],
   );
   searchQuery = signal('');
 
@@ -183,7 +189,14 @@ export class RouteEquippersInputComponent {
     const r = this.route();
     if (!r) return;
     try {
-      const saved = await this.routes.setRouteEquippers(r.id, normalized);
+      const saved =
+        this.mode() === 'indoor'
+          ? await this.injector
+              .get(IndoorService)
+              .setRouteEquippers(String(r.id), normalized)
+          : await this.injector
+              .get(RoutesService)
+              .setRouteEquippers(Number(r.id), normalized);
       this.equippers.set(saved);
       this.equippersChanged.emit(saved);
     } catch (e) {

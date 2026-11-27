@@ -1,27 +1,11 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, inject, resource, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { form, FormField, required } from '@angular/forms/signals';
 
-import { type TuiDialogContext } from '@taiga-ui/core';
 import {
-  TuiButton,
-  TuiDataList,
-  TuiError,
+  type TuiDialogContext,
   TuiIcon,
-  TuiLabel,
   TuiNotification,
-  TuiOptGroup,
-  TuiInput,
-  TuiFilterByInputPipe,
 } from '@taiga-ui/core';
-import {
-  TuiBadge,
-  TuiChevron,
-  TuiInputChip,
-  TuiComboBox,
-  TuiMultiSelect,
-} from '@taiga-ui/kit';
+import { TuiBadge } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
@@ -29,116 +13,40 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { CragRoutesDataService } from '../../services/crag-routes-data.service';
 import { RoutesService } from '../../services/routes.service';
 
+import {
+  EntityUnifyFormComponent,
+  type EntityUnifyPayload,
+  type EntityUnifySelection,
+  type UnifyEntityItem,
+} from '../../components/forms/entity-unify-form';
+
 import { RouteDto } from '../../models';
 
 @Component({
   selector: 'app-route-unify',
   imports: [
-    CommonModule,
-    FormField,
-    FormsModule,
+    EntityUnifyFormComponent,
     TranslatePipe,
     TuiBadge,
-    TuiButton,
-    TuiChevron,
-    TuiComboBox,
-    TuiDataList,
-    TuiError,
-    TuiFilterByInputPipe,
     TuiIcon,
-    TuiInput,
-    TuiInputChip,
-    TuiLabel,
-    TuiMultiSelect,
     TuiNotification,
-    TuiOptGroup,
   ],
   template: `
-    <div class="flex flex-col gap-4">
-      <p class="text-sm opacity-70">
-        {{ 'routes.unifyDescription' | translate }}
-      </p>
-
-      <tui-textfield tuiChevron class="block" [stringify]="stringify">
-        <label tuiLabel for="target-route">{{
-          'routes.targetRoute' | translate
-        }}</label>
-        <input
-          tuiComboBox
-          id="target-route"
-          autocomplete="off"
-          [ngModel]="model().targetRoute"
-          (ngModelChange)="onTargetRouteChange($event)"
-          name="targetRoute"
-          [placeholder]="'select' | translate"
-        />
-        <tui-data-list *tuiDropdown>
-          @for (route of cragRoutes() | tuiFilterByInput; track route.id) {
-            <button tuiOption new [value]="route">
-              {{ route.name }}
-            </button>
-          }
-        </tui-data-list>
-      </tui-textfield>
-      @if (
-        unifyForm.targetRoute().invalid() && unifyForm.targetRoute().touched()
-      ) {
-        <tui-error [error]="'errors.required' | translate" />
-      }
-
-      <tui-textfield
-        tuiChevron
-        multi
-        class="block"
-        [stringify]="stringify"
-        [disabledItemHandler]="isInvalidRoute"
-      >
-        <label tuiLabel for="source-routes">{{
-          'routes.sourceRoutes' | translate
-        }}</label>
-        <input
-          tuiInputChip
-          id="source-routes"
-          autocomplete="off"
-          [ngModel]="model().sourceRoutes"
-          (ngModelChange)="onSourceRoutesChange($event)"
-          name="sourceRoutes"
-          [placeholder]="'select' | translate"
-        />
-        <tui-input-chip *tuiItem />
-        <tui-data-list *tuiDropdown>
-          <tui-opt-group tuiMultiSelectGroup>
-            @for (
-              route of availableSources() | tuiFilterByInput;
-              track route.id
-            ) {
-              <button tuiOption new [value]="route">
-                {{ route.name }}
-              </button>
-            }
-          </tui-opt-group>
-        </tui-data-list>
-      </tui-textfield>
-      @if (
-        unifyForm.sourceRoutes().invalid() && unifyForm.sourceRoutes().touched()
-      ) {
-        <tui-error [error]="'errors.required' | translate" />
-      }
-
-      <tui-textfield class="block">
-        <label tuiLabel for="new-name">{{
-          'routes.newName' | translate
-        }}</label>
-        <input
-          tuiInput
-          id="new-name"
-          autocomplete="off"
-          [formField]="unifyForm.newName"
-          type="text"
-          [placeholder]="model().targetRoute?.name || ''"
-        />
-      </tui-textfield>
-
+    <app-entity-unify-form
+      [items]="cragRoutes()"
+      [initialTarget]="initialTarget"
+      [initialSources]="initialSources"
+      [loading]="loading()"
+      descriptionKey="routes.unifyDescription"
+      targetLabelKey="routes.targetRoute"
+      sourcesLabelKey="routes.sourceRoutes"
+      newNameLabelKey="routes.newName"
+      targetInputId="target-route"
+      sourcesInputId="source-routes"
+      (selectionChange)="onSelectionChange($event)"
+      (unify)="onUnify($event)"
+      (cancelled)="context.completeWith(false)"
+    >
       @if (affectedTopos().length > 0) {
         <div class="flex flex-col gap-2">
           <span class="text-xs font-medium opacity-75">
@@ -169,30 +77,7 @@ import { RouteDto } from '../../models';
           }
         </div>
       }
-
-      <div class="flex justify-end gap-2 mt-4">
-        <button
-          tuiButton
-          appearance="flat"
-          type="button"
-          (click)="context.completeWith(false)"
-        >
-          {{ 'cancel' | translate }}
-        </button>
-        <button
-          tuiButton
-          appearance="primary"
-          [disabled]="
-            unifyForm.targetRoute().invalid() ||
-            model().sourceRoutes.length === 0 ||
-            loading()
-          "
-          (click)="onUnify()"
-        >
-          {{ 'unify' | translate }}
-        </button>
-      </div>
-    </div>
+    </app-entity-unify-form>
   `,
   host: { class: 'block w-full' },
 })
@@ -204,33 +89,26 @@ export class RouteUnifyComponent {
 
   protected readonly loading = signal(false);
 
-  model = signal<{
-    targetRoute: RouteDto | null;
-    sourceRoutes: RouteDto[];
-    newName: string;
-  }>({
-    targetRoute: null,
-    sourceRoutes: [],
-    newName: '',
-  });
+  protected readonly initialTarget: UnifyEntityItem | null;
+  protected readonly initialSources: UnifyEntityItem[];
 
-  unifyForm = form(this.model, (schemaPath) => {
-    required(schemaPath.targetRoute);
-    required(schemaPath.sourceRoutes);
+  private readonly selection = signal<EntityUnifySelection>({
+    target: null,
+    sources: [],
   });
 
   constructor() {
     const candidates = this.context.data?.candidates;
-    if (candidates && candidates.length > 0) {
-      this.model.update((m) => ({
-        ...m,
-        targetRoute: candidates[0],
-        sourceRoutes: candidates.length > 1 ? candidates.slice(1) : [],
-      }));
-    }
+    this.initialTarget = candidates?.[0] ?? null;
+    this.initialSources =
+      candidates && candidates.length > 1 ? candidates.slice(1) : [];
+    this.selection.set({
+      target: this.initialTarget,
+      sources: this.initialSources,
+    });
   }
 
-  protected readonly cragRoutes = computed(() => {
+  protected readonly cragRoutes = computed<UnifyEntityItem[]>(() => {
     const candidates = this.context.data?.candidates;
     if (candidates && candidates.length > 0) {
       return candidates;
@@ -238,21 +116,11 @@ export class RouteUnifyComponent {
     return this.cragRoutesData.cragRoutes() ?? [];
   });
 
-  protected readonly isInvalidRoute = (item: RouteDto): boolean =>
-    !this.cragRoutes().some((a) => a.id === item.id);
-
-  protected readonly stringify = (route: RouteDto) => route.name;
-
-  protected readonly availableSources = computed(() => {
-    const targetId = this.model().targetRoute?.id;
-    return this.cragRoutes().filter((a) => a.id !== targetId);
-  });
-
   private readonly selectedRouteIds = computed(() => {
-    const m = this.model();
+    const { target, sources } = this.selection();
     const ids = new Set<number>();
-    if (m.targetRoute?.id != null) ids.add(m.targetRoute.id);
-    for (const src of m.sourceRoutes) {
+    if (target?.id != null) ids.add(target.id);
+    for (const src of sources) {
       if (src?.id != null) ids.add(src.id);
     }
     return Array.from(ids).sort((a, b) => a - b);
@@ -290,7 +158,7 @@ export class RouteUnifyComponent {
   });
 
   protected readonly hasDuplicateDrawnTopo = computed(() => {
-    const targetId = this.model().targetRoute?.id;
+    const targetId = this.selection().target?.id;
     if (targetId == null) return false;
     const entries = this.toposResource.value() ?? [];
     const targetDrawnTopos = new Set<number>();
@@ -307,24 +175,16 @@ export class RouteUnifyComponent {
     );
   });
 
-  onTargetRouteChange(route: RouteDto | null): void {
-    this.model.update((m) => ({ ...m, targetRoute: route }));
+  protected onSelectionChange(selection: EntityUnifySelection): void {
+    this.selection.set(selection);
   }
 
-  onSourceRoutesChange(routes: RouteDto[]): void {
-    this.model.update((m) => ({ ...m, sourceRoutes: routes }));
-  }
-
-  async onUnify() {
-    const target = this.model().targetRoute;
-    const sources = this.model().sourceRoutes;
-    if (!target || !sources || sources.length === 0) return;
-
+  protected async onUnify(payload: EntityUnifyPayload): Promise<void> {
     this.loading.set(true);
     const success = await this.routesService.unify(
-      target.id,
-      sources.map((s) => s.id),
-      this.model().newName || target.name,
+      payload.targetId,
+      payload.sourceIds,
+      payload.newName,
     );
     this.loading.set(false);
 

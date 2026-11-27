@@ -1,158 +1,37 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { form, FormField, required } from '@angular/forms/signals';
 
 import { type TuiDialogContext } from '@taiga-ui/core';
-import {
-  TuiButton,
-  TuiDataList,
-  TuiError,
-  TuiLabel,
-  TuiOptGroup,
-  TuiInput,
-  TuiFilterByInputPipe,
-} from '@taiga-ui/core';
-import {
-  TuiChevron,
-  TuiInputChip,
-  TuiComboBox,
-  TuiMultiSelect,
-} from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
-
-import { TranslatePipe } from '@ngx-translate/core';
 
 import { CragsService } from '../../services/crags.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
+
+import {
+  EntityUnifyFormComponent,
+  type EntityUnifyPayload,
+  type UnifyEntityItem,
+} from '../../components/forms/entity-unify-form';
 
 import { CragDto } from '../../models';
 
 @Component({
   selector: 'app-crag-unify',
-  imports: [
-    CommonModule,
-    FormField,
-    FormsModule,
-    TranslatePipe,
-    TuiButton,
-    TuiChevron,
-    TuiComboBox,
-    TuiDataList,
-    TuiError,
-    TuiFilterByInputPipe,
-    TuiInput,
-    TuiInputChip,
-    TuiLabel,
-    TuiMultiSelect,
-    TuiOptGroup,
-  ],
+  imports: [EntityUnifyFormComponent],
   template: `
-    <div class="flex flex-col gap-4">
-      <p class="text-sm opacity-70">
-        {{ 'crags.unifyDescription' | translate }}
-      </p>
-
-      <tui-textfield tuiChevron class="block" [stringify]="stringify">
-        <label tuiLabel for="target-crag">{{
-          'crags.targetCrag' | translate
-        }}</label>
-        <input
-          tuiComboBox
-          id="target-crag"
-          autocomplete="off"
-          [ngModel]="model().targetCrag"
-          (ngModelChange)="onTargetCragChange($event)"
-          name="targetCrag"
-          [placeholder]="'select' | translate"
-        />
-        <tui-data-list *tuiDropdown>
-          @for (crag of availableCrags() | tuiFilterByInput; track crag.id) {
-            <button tuiOption new [value]="crag">
-              {{ crag.name }}
-            </button>
-          }
-        </tui-data-list>
-      </tui-textfield>
-      @if (
-        unifyForm.targetCrag().invalid() && unifyForm.targetCrag().touched()
-      ) {
-        <tui-error [error]="'errors.required' | translate" />
-      }
-
-      <tui-textfield
-        tuiChevron
-        multi
-        class="block"
-        [stringify]="stringify"
-        [disabledItemHandler]="isInvalidCrag"
-      >
-        <label tuiLabel for="source-crags">{{
-          'crags.sourceCrags' | translate
-        }}</label>
-        <input
-          tuiInputChip
-          id="source-crags"
-          autocomplete="off"
-          [ngModel]="model().sourceCrags"
-          (ngModelChange)="onSourceCragsChange($event)"
-          name="sourceCrags"
-          [placeholder]="'select' | translate"
-        />
-        <tui-data-list *tuiDropdown>
-          <tui-opt-group tuiMultiSelectGroup>
-            @for (
-              crag of availableSources() | tuiFilterByInput;
-              track crag.id
-            ) {
-              <button tuiOption new [value]="crag">
-                {{ crag.name }}
-              </button>
-            }
-          </tui-opt-group>
-        </tui-data-list>
-      </tui-textfield>
-      @if (
-        unifyForm.sourceCrags().invalid() && unifyForm.sourceCrags().touched()
-      ) {
-        <tui-error [error]="'errors.required' | translate" />
-      }
-
-      <tui-textfield class="block">
-        <label tuiLabel for="new-name">{{ 'crags.newName' | translate }}</label>
-        <input
-          tuiInput
-          id="new-name"
-          autocomplete="off"
-          [formField]="unifyForm.newName"
-          type="text"
-          [placeholder]="model().targetCrag?.name || ''"
-        />
-      </tui-textfield>
-
-      <div class="flex justify-end gap-2 mt-4">
-        <button
-          tuiButton
-          appearance="flat"
-          type="button"
-          (click)="context.completeWith(false)"
-        >
-          {{ 'cancel' | translate }}
-        </button>
-        <button
-          tuiButton
-          appearance="primary"
-          [disabled]="
-            unifyForm.targetCrag().invalid() ||
-            model().sourceCrags.length === 0 ||
-            loading()
-          "
-          (click)="onUnify()"
-        >
-          {{ 'unify' | translate }}
-        </button>
-      </div>
-    </div>
+    <app-entity-unify-form
+      [items]="availableCrags()"
+      [initialTarget]="initialTarget"
+      [initialSources]="initialSources"
+      [loading]="loading()"
+      descriptionKey="crags.unifyDescription"
+      targetLabelKey="crags.targetCrag"
+      sourcesLabelKey="crags.sourceCrags"
+      newNameLabelKey="crags.newName"
+      targetInputId="target-crag"
+      sourcesInputId="source-crags"
+      (unify)="onUnify($event)"
+      (cancelled)="context.completeWith(false)"
+    />
   `,
   host: { class: 'block w-full' },
 })
@@ -164,73 +43,35 @@ export class CragUnifyComponent {
 
   protected readonly loading = signal(false);
 
-  model = signal<{
-    targetCrag: CragDto | null;
-    sourceCrags: CragDto[];
-    newName: string;
-  }>({
-    targetCrag: null,
-    sourceCrags: [],
-    newName: '',
-  });
-
-  unifyForm = form(this.model, (schemaPath) => {
-    required(schemaPath.targetCrag);
-    required(schemaPath.sourceCrags);
-  });
+  protected readonly initialTarget: UnifyEntityItem | null;
+  protected readonly initialSources: UnifyEntityItem[];
 
   constructor() {
     const candidates = this.context.data?.candidates;
-    if (candidates && candidates.length > 0) {
-      this.model.update((m) => ({
-        ...m,
-        targetCrag: candidates[0],
-        sourceCrags: candidates.length > 1 ? candidates.slice(1) : [],
-      }));
-    }
+    this.initialTarget = candidates?.[0] ?? null;
+    this.initialSources =
+      candidates && candidates.length > 1 ? candidates.slice(1) : [];
   }
 
-  protected readonly availableCrags = computed(() => {
+  protected readonly availableCrags = computed<UnifyEntityItem[]>(() => {
     const candidates = this.context.data?.candidates ?? [];
     const globalList = this.outdoorData.cragsList();
-    const map = new Map();
+    const map = new Map<number, UnifyEntityItem>();
     // Prioritize candidates
     candidates.forEach((c) => map.set(c.id, c));
     // Add global items if not present
     globalList.forEach((c) => {
       if (!map.has(c.id)) map.set(c.id, c);
     });
-    return Array.from(map.values()) as CragDto[];
+    return Array.from(map.values());
   });
 
-  protected readonly isInvalidCrag = (item: CragDto): boolean =>
-    !this.availableCrags().some((a) => a.id === item.id);
-
-  protected readonly stringify = (crag: CragDto) => crag.name;
-
-  protected readonly availableSources = computed(() => {
-    const targetId = this.model().targetCrag?.id;
-    return this.availableCrags().filter((a) => a.id !== targetId);
-  });
-
-  onTargetCragChange(crag: CragDto | null): void {
-    this.model.update((m) => ({ ...m, targetCrag: crag }));
-  }
-
-  onSourceCragsChange(crags: CragDto[]): void {
-    this.model.update((m) => ({ ...m, sourceCrags: crags }));
-  }
-
-  async onUnify() {
-    const target = this.model().targetCrag;
-    const sources = this.model().sourceCrags;
-    if (!target || !sources || sources.length === 0) return;
-
+  protected async onUnify(payload: EntityUnifyPayload): Promise<void> {
     this.loading.set(true);
     const success = await this.cragsService.unify(
-      target.id,
-      sources.map((s) => s.id),
-      this.model().newName || target.name,
+      payload.targetId,
+      payload.sourceIds,
+      payload.newName,
     );
     this.loading.set(false);
 

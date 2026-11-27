@@ -370,4 +370,62 @@ describe('AuthStateService', () => {
       );
     });
   });
+
+  describe('indoor route and topo permissions', () => {
+    const center = {
+      id: 'center-1',
+      name: 'Gym',
+      permissions: {
+        can_edit_routes: 'routesetters_and_creator',
+        can_archive_routes: 'all',
+        can_create_topos: 'all',
+        can_edit_topos: 'routesetters_and_creator',
+        can_archive_topos: 'routesetters_and_creator',
+      },
+    };
+
+    beforeEach(() => {
+      mockSupabase.setUserProfile({ id: 'u1', is_admin: false } as never);
+      mockSupabase.setSession({ user: { id: 'u1' } } as never);
+    });
+
+    it('allows creator to edit/archive own route and topo, blocks non-creator when restricted', () => {
+      expect(
+        service.canEditIndoorRoute(center as never, { user_creator_id: 'u1' }),
+      ).toBe(true);
+      expect(
+        service.canEditIndoorRoute(center as never, {
+          user_creator_id: 'other',
+        }),
+      ).toBe(false);
+      expect(
+        service.canArchiveIndoorRoute(center as never, {
+          user_creator_id: 'other',
+        }),
+      ).toBe(true);
+      expect(service.canCreateIndoorTopo(center as never)).toBe(true);
+      expect(
+        service.canEditIndoorTopo(center as never, { user_creator_id: 'u1' }),
+      ).toBe(true);
+      expect(
+        service.canArchiveIndoorTopo(center as never, {
+          user_creator_id: 'other',
+        }),
+      ).toBe(false);
+    });
+
+    it('allows staff (routesetter) regardless of creator or permission setting', () => {
+      mockSupabase.setRoutesetterIndoorCenters(['center-1']);
+      expect(
+        service.canEditIndoorRoute(center as never, {
+          user_creator_id: 'other',
+        }),
+      ).toBe(true);
+      expect(
+        service.canArchiveIndoorTopo(center as never, {
+          user_creator_id: 'other',
+        }),
+      ).toBe(true);
+    });
+  });
 });

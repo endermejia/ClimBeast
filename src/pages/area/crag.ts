@@ -62,12 +62,18 @@ import {
   ClimbingKinds,
   type CragDetail,
   type FeedItem,
-  type UserProfileBasicDto,
   VERTICAL_LIFE_GRADES,
 } from '../../models';
 
 import { CACHE_KEYS } from '../../constants';
-import { createCachedResource, handleErrorToast, slugify } from '../../utils';
+import {
+  addLoadedTab,
+  createCachedResource,
+  handleErrorToast,
+  hydrateOutdoorAscentsFeed,
+  mergePaginatedItems,
+  slugify,
+} from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
 import { AscentCountDirective } from '../../directives/ascent-count.directive';
@@ -451,43 +457,8 @@ export class CragComponent {
         console.error('[CragComponent] Error fetching ascents:', error);
         throw error;
       }
-      if (!data || data.length === 0) return [];
 
-      const userIds = [...new Set(data.map((a) => a.user_id).filter(Boolean))];
-      let profileMap = new Map<string, UserProfileBasicDto>();
-      if (userIds.length > 0) {
-        const { data: profiles } = await this.supabase.client
-          .from('user_profiles')
-          .select('id, name, avatar')
-          .in('id', userIds);
-        if (profiles) {
-          profileMap = new Map(profiles.map((p) => [p.id, p]));
-        }
-      }
-
-      return data.map((a) => {
-        const { route, user_id, ...ascentRest } = a;
-        const cragData = route?.crag;
-        const cragArea = (
-          cragData as { area?: { slug?: string; name?: string } } | null
-        )?.area;
-        const mappedRoute = route
-          ? {
-              ...route,
-              crag_slug: cragData?.slug,
-              crag_name: cragData?.name,
-              area_slug: cragArea?.slug,
-              area_name: cragArea?.name,
-            }
-          : undefined;
-        return {
-          ...ascentRest,
-          user_id,
-          kind: 'ascent' as const,
-          user: profileMap.get(user_id) ?? undefined,
-          route: mappedRoute,
-        } as FeedItem;
-      });
+      return hydrateOutdoorAscentsFeed(this.supabase.client, data);
     },
     cache: this.cache,
     fallbackValue: [],
@@ -709,29 +680,17 @@ export class CragComponent {
     effect(() => {
       const newItems = this.ascentsSignal();
       untracked(() => {
-        if (this.ascentsPage() === 0) {
-          this.accumulatedAscents.set(newItems);
-        } else if (newItems.length) {
-          this.accumulatedAscents.update((prev) => {
-            const existingIds = new Set(prev.map((a) => String(a.id)));
-            const fresh = newItems.filter(
-              (item) => !existingIds.has(String(item.id)),
-            );
-            return fresh.length ? [...prev, ...fresh] : prev;
-          });
-        }
+        const page = this.ascentsPage();
+        this.accumulatedAscents.update((prev) =>
+          mergePaginatedItems(prev, newItems, page),
+        );
       });
     });
 
     effect(() => {
       const currentTab = this.segmentedTabs()[this.activeTabIndex()];
       if (currentTab !== undefined) {
-        this.loadedTabs.update((set) => {
-          if (set.has(currentTab)) return set;
-          const next = new Set(set);
-          next.add(currentTab);
-          return next;
-        });
+        this.loadedTabs.update((set) => addLoadedTab(set, currentTab));
       }
     });
 

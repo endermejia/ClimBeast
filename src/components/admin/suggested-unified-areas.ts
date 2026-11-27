@@ -1,69 +1,43 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, inject, resource } from '@angular/core';
-import { RouterLink } from '@angular/router';
-
-import { TuiButton, TuiLoader } from '@taiga-ui/core';
-
-import { TranslatePipe } from '@ngx-translate/core';
 
 import { AreasService } from '../../services/areas.service';
+
+import {
+  SuggestedDuplicateCardComponent,
+  type SuggestedDuplicateItem,
+  SuggestedDuplicatesSectionComponent,
+} from '../../components/admin/suggested-duplicate-card';
 
 import { AreaDto } from '../../models';
 
 import { normalizeName } from '../../utils';
 
+interface AreaDuplicateGroup {
+  areas: AreaDto[];
+  cardItems: SuggestedDuplicateItem[];
+}
+
 @Component({
   selector: 'app-suggested-unified-areas',
-  imports: [CommonModule, TranslatePipe, TuiButton, TuiLoader, RouterLink],
+  imports: [
+    SuggestedDuplicateCardComponent,
+    SuggestedDuplicatesSectionComponent,
+  ],
   template: `
-    <div class="flex flex-col gap-4">
-      <h3 class="font-bold text-lg">
-        {{ 'areas.suggestedDuplicates' | translate }}
-      </h3>
-
-      @if (areasResource.isLoading()) {
-        <div class="flex justify-center p-4">
-          <tui-loader class="m-auto" />
-        </div>
-      } @else if (duplicates().length === 0) {
-        <p class="opacity-70">{{ 'admin.noDuplicatesFound' | translate }}</p>
-      } @else {
-        <div class="grid gap-2">
-          @for (group of duplicates(); track $index) {
-            <div
-              class="border border-(--tui-border-normal) p-4 rounded-xl flex items-center justify-between gap-4"
-            >
-              <div class="flex-1 min-w-0">
-                <div class="flex flex-col gap-1">
-                  @for (area of group; track area.id) {
-                    <div class="text-sm">
-                      @if (area.slug) {
-                        <a
-                          [routerLink]="['/area', area.slug]"
-                          target="_blank"
-                          class="font-medium underline underline-offset-2 hover:opacity-70"
-                          >{{ area.name }}</a
-                        >
-                      } @else {
-                        <span class="font-medium">{{ area.name }}</span>
-                      }
-                    </div>
-                  }
-                </div>
-              </div>
-              <button
-                tuiButton
-                size="m"
-                appearance="primary"
-                (click)="onUnify(group)"
-              >
-                {{ 'unify' | translate }}
-              </button>
-            </div>
-          }
-        </div>
-      }
-    </div>
+    <app-suggested-duplicates-section
+      titleKey="areas.suggestedDuplicates"
+      [loading]="areasResource.isLoading()"
+      [empty]="duplicates().length === 0"
+    >
+      <div class="grid gap-2">
+        @for (group of duplicates(); track $index) {
+          <app-suggested-duplicate-card
+            [items]="group.cardItems"
+            (unify)="onUnify(group.areas)"
+          />
+        }
+      </div>
+    </app-suggested-duplicates-section>
   `,
 })
 export class SuggestedUnifiedAreasComponent {
@@ -73,7 +47,7 @@ export class SuggestedUnifiedAreasComponent {
     loader: () => this.areasService.getAllAreasSimple(),
   });
 
-  protected readonly duplicates = computed(() => {
+  protected readonly duplicates = computed<AreaDuplicateGroup[]>(() => {
     const areas = this.areasResource.value() ?? [];
     const groups = new Map<string, AreaDto[]>();
 
@@ -85,10 +59,19 @@ export class SuggestedUnifiedAreasComponent {
       groups.get(key)!.push(area as AreaDto);
     }
 
-    return Array.from(groups.values()).filter((g) => g.length > 1);
+    return Array.from(groups.values())
+      .filter((g) => g.length > 1)
+      .map((group) => ({
+        areas: group,
+        cardItems: group.map((area) => ({
+          id: area.id,
+          label: area.name,
+          link: area.slug ? ['/area', area.slug] : null,
+        })),
+      }));
   });
 
-  protected async onUnify(group: AreaDto[]) {
+  protected async onUnify(group: AreaDto[]): Promise<void> {
     const success = await this.areasService.openUnifyAreas(group);
     if (success) {
       this.areasResource.reload();

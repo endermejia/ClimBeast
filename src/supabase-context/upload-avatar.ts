@@ -1,4 +1,12 @@
-import { createClient } from 'npm:@supabase/supabase-js@2.33.0';
+import {
+  buildCorsHeaders,
+  jsonResponse,
+  R2_STORAGE_URL,
+} from './_shared/edge-http.ts';
+import {
+  authenticateBearerRequest,
+  createR2SupabaseClients,
+} from './_shared/r2-supabase-clients.ts';
 
 interface Payload {
   file_name: string;
@@ -6,103 +14,24 @@ interface Payload {
   base64: string;
 }
 
-const R2_STORAGE_URL = 'https://climbeast-storage.climbeast.workers.dev';
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('Missing SUPABASE_URL or keys');
-}
-
-// Client to validate token / get user
-const supabaseAuthClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: false },
-});
-
-// Admin client with service role to bypass RLS for DB writes/storage
-const supabaseAdminClient = createClient(
-  SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
-  {
-    auth: { persistSession: false },
-    global: {
-      fetch: (reqUrl, options) => {
-        const urlStr = reqUrl.toString();
-        const storagePrefix = `${SUPABASE_URL.replace(/\/$/, '')}/storage/v1`;
-        if (urlStr.startsWith(storagePrefix)) {
-          return fetch(
-            `${R2_STORAGE_URL}/storage/v1${urlStr.slice(storagePrefix.length)}`,
-            options,
-          );
-        }
-        return fetch(reqUrl, options);
-      },
-    },
-  },
-);
+const { supabaseAuthClient, supabaseAdminClient } = createR2SupabaseClients();
 
 console.info('Upload-avatar function started');
 
 Deno.serve(async (req: Request) => {
-  /**
-   * CORS configuration
-   * Usa '*' solo si no envías cookies.
-   * Para producción, reemplaza por tu dominio.
-   */
-  const ALLOWED_ORIGINS = ['http://localhost:4200', 'https://climbeast.com'];
-  const origin = req.headers.get('origin') ?? '';
-  const corsHeaders: Record<string, string> = {};
-
-  if (ALLOWED_ORIGINS.includes(origin)) {
-    corsHeaders['Access-Control-Allow-Origin'] = origin;
-    corsHeaders['Access-Control-Allow-Headers'] =
-      'authorization, x-client-info, apikey, content-type, ngsw-bypass';
-    corsHeaders['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
-  }
-
-  // ---- CORS preflight ----
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders,
-    });
-  }
+  const corsHeaders = buildCorsHeaders(req.headers.get('origin') ?? '');
 
   try {
-    if (req.method !== 'POST') {
-      return new Response('Method not allowed', {
-        status: 405,
-        headers: corsHeaders,
-      });
+    const auth = await authenticateBearerRequest(
+      req,
+      supabaseAuthClient,
+      corsHeaders,
+    );
+    if ('response' in auth) {
+      return auth.response;
     }
 
-    // ---- Auth via Bearer token ----
-    const authHeader = req.headers.get('authorization') || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '');
-    if (!token) {
-      return new Response(JSON.stringify({ error: 'Missing auth token' }), {
-        status: 401,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      });
-    }
-
-    const { data: userResult, error: userErr } =
-      await supabaseAuthClient.auth.getUser(token);
-    if (userErr || !userResult.user) {
-      return new Response(JSON.stringify({ error: 'Invalid token' }), {
-        status: 401,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      });
-    }
-
-    const userId = userResult.user.id;
+    const { userId } = auth;
 
     // ---- Body (safe parse) ----
     const raw = await req.text();
@@ -111,29 +40,18 @@ Deno.serve(async (req: Request) => {
       payload = raw ? JSON.parse(raw) : ({} as Payload);
     } catch (e) {
       console.error('[upload-avatar] invalid JSON body', e);
-      return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return jsonResponse({ error: 'Invalid JSON body' }, 400, corsHeaders);
     }
 
     if (!payload?.base64) {
-      return new Response(JSON.stringify({ error: 'Missing base64' }), {
-        status: 400,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      });
+      return jsonResponse({ error: 'Missing base64' }, 400, corsHeaders);
     }
 
     if (payload.base64.length > 10 * 1024 * 1024) {
-      return new Response(
-        JSON.stringify({ error: 'File size exceeds 10MB limit' }),
-        {
-          status: 413,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        },
+      return jsonResponse(
+        { error: 'File size exceeds 10MB limit' },
+        413,
+        corsHeaders,
       );
     }
 
@@ -181,18 +99,13 @@ Deno.serve(async (req: Request) => {
       });
 
     if (uploadError) {
-      return new Response(
-        JSON.stringify({
+      return jsonResponse(
+        {
           error: 'Upload failed',
           details: uploadError.message,
-        }),
-        {
-          status: 500,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json',
-          },
         },
+        500,
+        corsHeaders,
       );
     }
 
@@ -204,15 +117,10 @@ Deno.serve(async (req: Request) => {
       .eq('id', userId);
 
     if (dbErr) {
-      return new Response(
-        JSON.stringify({ error: 'DB update failed', details: dbErr.message }),
-        {
-          status: 500,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json',
-          },
-        },
+      return jsonResponse(
+        { error: 'DB update failed', details: dbErr.message },
+        500,
+        corsHeaders,
       );
     }
 
@@ -233,20 +141,9 @@ Deno.serve(async (req: Request) => {
     // ---- Public URL ----
     const publicUrl = `${R2_STORAGE_URL}/storage/v1/object/public/${bucket}/${encodeURIComponent(path)}`;
 
-    return new Response(JSON.stringify({ path, publicUrl, deletedOld }), {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json',
-      },
-    });
+    return jsonResponse({ path, publicUrl, deletedOld }, 200, corsHeaders);
   } catch (err) {
     console.error(err);
-    return new Response(JSON.stringify({ error: 'Server error' }), {
-      status: 500,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json',
-      },
-    });
+    return jsonResponse({ error: 'Server error' }, 500, corsHeaders);
   }
 });

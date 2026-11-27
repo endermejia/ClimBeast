@@ -788,107 +788,13 @@ export class RoutesService {
     equippers: readonly (EquipperDto | string)[],
   ): Promise<EquipperDto[]> {
     if (!this.isBrowser) return [];
-    await this.supabase.whenReady();
 
     try {
-      // 1. Get or create all equippers to get their IDs
-      const normalizedInput: (EquipperDto | string)[] = equippers.map((e) =>
-        typeof e === 'string' ? e : e.id > 0 ? e : e.name,
+      const resolvedEquippers = await this.equipperService.syncRouteEquippers(
+        'route_equippers',
+        routeId,
+        equippers,
       );
-
-      const stringEquippers = normalizedInput
-        .filter((e): e is string => typeof e === 'string')
-        .map((e) => e.trim())
-        .filter(Boolean);
-
-      const existingEquipperMap = new Map<string, EquipperDto>();
-
-      if (stringEquippers.length > 0) {
-        // Build an "or" query to find exact matches case-insensitively
-        // Quote values so commas, spaces, dots, or parentheses don't break PostgREST syntax.
-        const orQuery = stringEquippers
-          .map((name) => {
-            const escaped = name.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-            return `name.ilike."${escaped}"`;
-          })
-          .join(',');
-
-        const { data: existing, error: existingError } =
-          await this.supabase.client.from('equippers').select('*').or(orQuery);
-
-        if (existingError) throw existingError;
-
-        if (existing) {
-          for (const eq of existing as EquipperDto[]) {
-            existingEquipperMap.set(eq.name.toLowerCase(), eq);
-          }
-        }
-
-        // Determine which equippers need to be created (case-insensitively deduplicated)
-        const seenCreateLower = new Set<string>();
-        const toCreateNames: string[] = [];
-        for (const name of stringEquippers) {
-          const lower = name.toLowerCase();
-          if (!existingEquipperMap.has(lower) && !seenCreateLower.has(lower)) {
-            seenCreateLower.add(lower);
-            toCreateNames.push(name);
-          }
-        }
-
-        if (toCreateNames.length > 0) {
-          const payloads = toCreateNames.map((name) => ({ name }));
-          const { data: created, error: createError } =
-            await this.supabase.client
-              .from('equippers')
-              .insert(payloads)
-              .select('*');
-
-          if (createError) throw createError;
-
-          if (created) {
-            for (const eq of created as EquipperDto[]) {
-              existingEquipperMap.set(eq.name.toLowerCase(), eq);
-            }
-          }
-        }
-      }
-
-      // Preserve original order and deduplicate by ID
-      const resolvedEquippers: EquipperDto[] = [];
-      const seenIds = new Set<number>();
-
-      for (const item of normalizedInput) {
-        const resolved =
-          typeof item === 'string'
-            ? existingEquipperMap.get(item.trim().toLowerCase())
-            : item;
-        if (resolved && !seenIds.has(resolved.id)) {
-          seenIds.add(resolved.id);
-          resolvedEquippers.push(resolved);
-        }
-      }
-
-      // 2. Sync junction table
-      const { error: deleteError } = await this.supabase.client
-        .from('route_equippers')
-        .delete()
-        .eq('route_id', routeId);
-
-      if (deleteError) throw deleteError;
-
-      // Insert new ones
-      if (resolvedEquippers.length > 0) {
-        const { error: insertError } = await this.supabase.client
-          .from('route_equippers')
-          .insert(
-            resolvedEquippers.map((eq) => ({
-              route_id: routeId,
-              equipper_id: eq.id,
-            })),
-          );
-
-        if (insertError) throw insertError;
-      }
 
       this.cragRoutesData.cragRoutesResource.reload();
       this.outdoorData.routeDetailResource.reload();

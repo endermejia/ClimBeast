@@ -10,12 +10,11 @@ import { Router } from '@angular/router';
 
 import {
   TuiAppearance,
-  TuiButton,
+  TuiInput,
   TuiLoader,
   TuiNotification,
   TuiScrollbar,
   TuiTitle,
-  TuiInput,
 } from '@taiga-ui/core';
 import {
   TuiAvatar,
@@ -35,22 +34,18 @@ import { OutdoorDataService } from '../../services/outdoor-data.service';
 
 import { ChartRoutesByGradeComponent } from '../../components/charts/chart-routes-by-grade';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
+import { FilterButtonComponent } from '../../components/ui/filter-button';
 import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 
-import {
-  ClimbingKinds,
-  normalizeRoutesByGrade,
-  ORDERED_GRADE_VALUES,
-} from '../../models';
-
 import { IconSrcPipe } from '../../pipes';
-import { matchesQuery } from '../../utils';
+import { filterAreas, hasActiveAreaFilters } from '../../utils';
 
 @Component({
   selector: 'app-my-areas',
   imports: [
     ChartRoutesByGradeComponent,
     EmptyStateComponent,
+    FilterButtonComponent,
     IconSrcPipe,
     LowerCasePipe,
     OfflineNotCachedComponent,
@@ -59,7 +54,6 @@ import { matchesQuery } from '../../utils';
     TuiAvatar,
     TuiBadgedContent,
     TuiBadgeNotification,
-    TuiButton,
     TuiHeader,
     TuiInput,
     TuiLoader,
@@ -118,24 +112,11 @@ import { matchesQuery } from '../../utils';
               (input.zoneless)="onQuery(areasSearch.value)"
             />
           </tui-textfield>
-          <tui-badged-content class="bg-(--tui-background-base) rounded-2xl">
-            @if (hasActiveFilters()) {
-              <tui-badge-notification
-                tuiAppearance="accent"
-                size="s"
-                tuiSlot="top"
-              />
-            }
-            <button
-              tuiButton
-              appearance="textfield"
-              size="l"
-              type="button"
-              iconStart="@tui.sliders-horizontal"
-              [attr.aria-label]="'filters' | translate"
-              (click.zoneless)="openFilters()"
-            ></button>
-          </tui-badged-content>
+          <app-filter-button
+            class="bg-(--tui-background-base) rounded-2xl"
+            [hasActiveFilters]="hasActiveFilters()"
+            (clicked)="openFilters()"
+          />
         </div>
 
         <!-- Areas list -->
@@ -224,77 +205,23 @@ export class MyAreasComponent {
   readonly selectedCategories = this.filterState.areaListCategories;
   readonly selectedShade = this.filterState.areaListShade;
 
-  readonly hasActiveFilters = computed(() => {
-    const [lo, hi] = this.selectedGradeRange();
-    const gradeActive = !(lo === 0 && hi === ORDERED_GRADE_VALUES.length - 1);
-    return (
-      gradeActive ||
-      this.selectedCategories().length > 0 ||
-      this.selectedShade().length > 0 ||
-      this.filterState.areaListToposOnly()
-    );
-  });
-  readonly filtered = computed(() => {
-    const query = this.query();
-    const [minIdx, maxIdx] = this.selectedGradeRange();
-    const allowedLabels = ORDERED_GRADE_VALUES.slice(minIdx, maxIdx + 1);
-    const list = this.areas();
-    const textMatches = (a: (typeof list)[number]) =>
-      matchesQuery(a.name, query) || matchesQuery(a.slug, query);
-    const gradeMatches = (a: (typeof list)[number]) => {
-      const grades = normalizeRoutesByGrade(a.grades);
-      for (const label of allowedLabels) {
-        if (grades[label] && Number(grades[label]) > 0) {
-          return true;
-        }
-      }
-      // Allow all if no grades data
-      return allowedLabels.length === ORDERED_GRADE_VALUES.length;
-    };
-    const categories = this.selectedCategories();
-    const shadeKeys = this.selectedShade();
-    const kindMatches = (a: (typeof list)[number]) => {
-      if (!categories.length) return true;
-      const idxToKind: Record<number, string> = {
-        0: ClimbingKinds.SPORT,
-        1: ClimbingKinds.BOULDER,
-        2: ClimbingKinds.MULTIPITCH,
-      };
-      const allowedKinds = categories.map((i) => idxToKind[i]).filter(Boolean);
-      return a.climbing_kind?.some((k) => allowedKinds.includes(k));
-    };
-    const shadeMatches = (a: (typeof list)[number]) => {
-      if (!shadeKeys.length) return true;
-      // Matches if ANY of the selected shades is present in the area
-      return shadeKeys.some((key) => {
-        switch (key) {
-          case 'shade_morning':
-            return a.shade_morning;
-          case 'shade_afternoon':
-            return a.shade_afternoon;
-          case 'shade_all_day':
-            return a.shade_all_day;
-          case 'sun_all_day':
-            return a.sun_all_day;
-          default:
-            return true;
-        }
-      });
-    };
-    const toposOnly = this.filterState.areaListToposOnly();
-    const toposMatches = (a: (typeof list)[number]) => {
-      if (!toposOnly) return true;
-      return (a.topos_count || 0) > 0;
-    };
-    return list.filter(
-      (a) =>
-        textMatches(a) &&
-        gradeMatches(a) &&
-        kindMatches(a) &&
-        shadeMatches(a) &&
-        toposMatches(a),
-    );
-  });
+  readonly hasActiveFilters = computed(() =>
+    hasActiveAreaFilters({
+      gradeRange: this.selectedGradeRange(),
+      categories: this.selectedCategories(),
+      shade: this.selectedShade(),
+      toposOnly: this.filterState.areaListToposOnly(),
+    }),
+  );
+  readonly filtered = computed(() =>
+    filterAreas(this.areas(), {
+      query: this.query(),
+      gradeRange: this.selectedGradeRange(),
+      categories: this.selectedCategories(),
+      shade: this.selectedShade(),
+      toposOnly: this.filterState.areaListToposOnly(),
+    }),
+  );
 
   onQuery(v: string) {
     this.query.set(v);

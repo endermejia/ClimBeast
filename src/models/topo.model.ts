@@ -52,6 +52,19 @@ export interface TopoRouteWithRoute {
   user_creator_id?: string | null;
 }
 
+export interface TopoRouteRow {
+  index: number;
+  name: string;
+  grade: number;
+  height: number | null;
+  slug: string;
+  link: string[];
+  climbed: boolean;
+  project: boolean;
+  moves?: number;
+  _ref: TopoRouteWithRoute;
+}
+
 export interface TopoDetail extends Omit<TopoDto, 'id'> {
   id: string | number;
   topo_routes: TopoRouteWithRoute[];

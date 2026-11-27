@@ -1,199 +1,52 @@
-import { Component, inject, signal, WritableSignal } from '@angular/core';
-import { RouterLink } from '@angular/router';
-
-import { TuiTable } from '@taiga-ui/addon-table';
 import {
-  TuiAppearance,
-  TuiButton,
-  TuiDialogService,
-  TuiIcon,
-  TuiLink,
-  TuiScrollbar,
-} from '@taiga-ui/core';
-import {
-  TUI_CONFIRM,
-  TuiAvatar,
-  TuiBadgeNotification,
-  TuiBadgedContentComponent,
-  TuiBadgedContentDirective,
-  TuiSkeleton,
-  type TuiConfirmData,
-} from '@taiga-ui/kit';
+  Component,
+  computed,
+  inject,
+  signal,
+  WritableSignal,
+} from '@angular/core';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TuiDialogService } from '@taiga-ui/core';
+import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit';
+
+import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
 import { EquipperRequestsService } from '../../services/equipper-requests.service';
 
-import { EmptyStateComponent } from '../../components/ui/empty-state';
+import {
+  AdminRequestRow,
+  AdminRequestsTableComponent,
+} from '../../components/admin/admin-requests-table';
 
 import { EquipperRequestWithDetails } from '../../models';
-
-import { AvatarUrlPipe } from '../../pipes';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-admin-equipper-requests',
   standalone: true,
-  imports: [
-    AvatarUrlPipe,
-    EmptyStateComponent,
-    RouterLink,
-    TranslatePipe,
-    TuiAppearance,
-    TuiAvatar,
-    TuiBadgedContentComponent,
-    TuiBadgedContentDirective,
-    TuiBadgeNotification,
-    TuiButton,
-    TuiIcon,
-    TuiLink,
-    TuiScrollbar,
-    TuiSkeleton,
-    TuiTable,
-  ],
+  imports: [AdminRequestsTableComponent],
   template: `
-    <section class="flex flex-col w-full max-w-7xl mx-auto p-4 grow min-h-0">
-      <header class="mb-4 flex items-center justify-between gap-2">
-        <h1 class="text-2xl font-bold">
-          <a
-            routerLink="/admin"
-            class="no-underline text-inherit flex items-center gap-2"
-          >
-            <tui-icon icon="@tui.arrow-left" />
-            <tui-badged-content [style.--tui-radius.%]="50">
-              @if (requests().length; as requestsCount) {
-                <ng-container tuiSlot="top">
-                  <tui-badge-notification tuiAppearance="accent" size="s">
-                    {{ requestsCount }}
-                  </tui-badge-notification>
-                </ng-container>
-              }
-              <div
-                class="w-11 h-11 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0"
-              >
-                <tui-icon icon="@tui.user-check" />
-              </div>
-            </tui-badged-content>
-
-            {{ 'adminEquipperRequests.title' | translate }}
-          </a>
-        </h1>
-      </header>
-
-      <p class="mb-6 text-tui-text-secondary opacity-60">
-        {{ 'adminEquipperRequests.description' | translate }}
-      </p>
-
-      <tui-scrollbar class="grow min-h-0">
-        @if (loading() || requests().length > 0) {
-          <table tuiTable [columns]="columns">
-            <thead tuiThead>
-              <tr tuiThGroup>
-                <th *tuiHead="'user'" tuiTh class="min-w-[240px]">
-                  {{ 'adminEquipperRequests.user' | translate }}
-                </th>
-                <th *tuiHead="'equipper'" tuiTh class="min-w-[240px]">
-                  {{ 'adminEquipperRequests.equipper' | translate }}
-                </th>
-                <th *tuiHead="'actions'" tuiTh class="w-48 text-right">
-                  {{ 'actions' | translate }}
-                </th>
-              </tr>
-            </thead>
-
-            <tbody tuiTbody [data]="requests()">
-              @if (loading()) {
-                @for (_item of skeletons; track $index) {
-                  <tr tuiTr>
-                    <td *tuiCell="'user'" tuiTd>
-                      <div [tuiSkeleton]="true" class="w-40 h-8"></div>
-                    </td>
-                    <td *tuiCell="'equipper'" tuiTd>
-                      <div [tuiSkeleton]="true" class="w-40 h-8"></div>
-                    </td>
-                    <td *tuiCell="'actions'" tuiTd>
-                      <div [tuiSkeleton]="true" class="w-24 h-8 ml-auto"></div>
-                    </td>
-                  </tr>
-                }
-              } @else {
-                @for (req of requests(); track req.id) {
-                  <tr tuiTr>
-                    <td *tuiCell="'user'" tuiTd>
-                      <div class="flex items-center gap-3">
-                        <a [routerLink]="['/profile', req.user.id]">
-                          <span tuiAvatar size="s">
-                            @if (req.user.avatar; as avatar) {
-                              <img [src]="avatar | avatarUrl" alt="avatar" />
-                            } @else {
-                              <tui-icon icon="@tui.user" />
-                            }
-                          </span>
-                        </a>
-                        <a
-                          tuiLink
-                          [routerLink]="['/profile', req.user.id]"
-                          class="font-medium"
-                        >
-                          {{ req.user.name || ('anonymous' | translate) }}
-                        </a>
-                      </div>
-                    </td>
-
-                    <td *tuiCell="'equipper'" tuiTd>
-                      <a
-                        tuiLink
-                        [routerLink]="['/equipper', req.equipper.id]"
-                        class="font-medium"
-                      >
-                        {{ req.equipper.name }}
-                      </a>
-                    </td>
-
-                    <td *tuiCell="'actions'" tuiTd class="text-right">
-                      <div class="flex items-center justify-end gap-2">
-                        <button
-                          tuiButton
-                          size="s"
-                          appearance="primary"
-                          (click.zoneless)="approve(req)"
-                          class="rounded-xl!"
-                        >
-                          {{ 'adminEquipperRequests.approve' | translate }}
-                        </button>
-                        <button
-                          tuiButton
-                          size="s"
-                          appearance="secondary"
-                          (click.zoneless)="reject(req)"
-                          class="rounded-xl!"
-                        >
-                          {{ 'adminEquipperRequests.reject' | translate }}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                }
-              }
-            </tbody>
-          </table>
-        } @else {
-          <app-empty-state icon="@tui.users" />
-        }
-      </tui-scrollbar>
-    </section>
+    <app-admin-requests-table
+      [rows]="rows()"
+      [loading]="loading()"
+      headerIcon="@tui.user-check"
+      iconBgClass="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
+      titleKey="adminEquipperRequests.title"
+      descriptionKey="adminEquipperRequests.description"
+      userColumnKey="adminEquipperRequests.user"
+      targetColumnKey="adminEquipperRequests.equipper"
+      emptyIcon="@tui.users"
+      [sortable]="false"
+      approveLabelKey="adminEquipperRequests.approve"
+      rejectLabelKey="adminEquipperRequests.reject"
+      rejectAppearance="secondary"
+      (approve)="approve($event)"
+      (reject)="reject($event)"
+    />
   `,
-  styles: [
-    `
-      :host {
-        display: flex;
-        flex-grow: 1;
-        min-height: 0;
-      }
-    `,
-  ],
+  host: { class: 'flex grow min-h-0' },
 })
 export class AdminEquipperRequestsComponent {
   private readonly equipperRequests = inject(EquipperRequestsService);
@@ -201,11 +54,19 @@ export class AdminEquipperRequestsComponent {
   private readonly translate = inject(TranslateService);
   private readonly isBrowser = inject(IS_BROWSER);
 
-  protected readonly columns = ['user', 'equipper', 'actions'];
   protected readonly requests: WritableSignal<EquipperRequestWithDetails[]> =
     signal([]);
   protected readonly loading = signal(true);
-  protected readonly skeletons = Array(5).fill(0);
+
+  protected readonly rows = computed<AdminRequestRow[]>(() =>
+    this.requests().map((req) => ({
+      id: req.id,
+      createdAt: req.created_at,
+      user: req.user,
+      targetName: req.equipper.name,
+      targetLink: ['/equipper', req.equipper.id],
+    })),
+  );
 
   constructor() {
     if (this.isBrowser) {
@@ -223,7 +84,10 @@ export class AdminEquipperRequestsComponent {
     }
   }
 
-  protected async approve(req: EquipperRequestWithDetails): Promise<void> {
+  protected async approve(row: AdminRequestRow): Promise<void> {
+    const req = this.requests().find((r) => r.id === row.id);
+    if (!req) return;
+
     const confirmed = await firstValueFrom(
       this.dialogs.open<boolean>(TUI_CONFIRM, {
         label: this.translate.instant(
@@ -258,7 +122,10 @@ export class AdminEquipperRequestsComponent {
     }
   }
 
-  protected async reject(req: EquipperRequestWithDetails): Promise<void> {
+  protected async reject(row: AdminRequestRow): Promise<void> {
+    const req = this.requests().find((r) => r.id === row.id);
+    if (!req) return;
+
     const confirmed = await firstValueFrom(
       this.dialogs.open<boolean>(TUI_CONFIRM, {
         label: this.translate.instant(

@@ -2,7 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 
 import type { OrderDetail } from '../models';
 
-import { extractErrorMessage } from '../utils';
+import { extractErrorMessage, resolveEdgeFunctionError } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 import { CartService } from './cart.service';
@@ -69,31 +69,7 @@ export class CheckoutService {
       );
 
       if (error) {
-        if (
-          typeof error === 'object' &&
-          error !== null &&
-          'context' in error &&
-          typeof (error as { context?: { json?: () => Promise<unknown> } })
-            .context?.json === 'function'
-        ) {
-          try {
-            const body = (await (
-              error as { context: { json: () => Promise<unknown> } }
-            ).context.json()) as { error?: string } | null;
-            if (body?.error) {
-              throw new Error(body.error);
-            }
-          } catch (jsonErr: unknown) {
-            if (
-              jsonErr instanceof Error &&
-              jsonErr.message &&
-              jsonErr.message !== error.message
-            ) {
-              throw jsonErr;
-            }
-          }
-        }
-        throw error;
+        throw await resolveEdgeFunctionError(error);
       }
 
       if (data?.url) {

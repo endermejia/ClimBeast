@@ -1,16 +1,8 @@
 import { CommonModule } from '@angular/common';
-import {
-  Component,
-  computed,
-  effect,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
+import { Component, computed, effect, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TuiDialogService } from '@taiga-ui/core';
-import { TuiLink } from '@taiga-ui/core';
+import { TuiDialogService, TuiLink } from '@taiga-ui/core';
 import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit';
 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -21,7 +13,6 @@ import { AuthStateService } from '../../services/auth-state.service';
 import { IndoorService } from '../../services/indoor.service';
 import { LayoutService } from '../../services/layout.service';
 import { SupabaseService } from '../../services/supabase.service';
-
 import { ToastService } from '../../services/toast.service';
 
 import {
@@ -34,12 +25,11 @@ import {
   RoutesTableRow,
 } from '../../models';
 
-import { mapRouteToTableRow, handleErrorToast } from '../../utils';
+import { handleErrorToast, mapRouteToTableRow } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
-
-import { IndoorRouteEquippersInputComponent } from './indoor-route-equippers-input';
-
+import { RouteEquippersInputComponent } from './route-equippers-input';
+import { RouteEquippersQueue } from './route-equippers-queue';
 import { RoutesTableComponent } from './routes-table';
 
 @Component({
@@ -48,7 +38,7 @@ import { RoutesTableComponent } from './routes-table';
     CommonModule,
     TranslateModule,
     RoutesTableComponent,
-    IndoorRouteEquippersInputComponent,
+    RouteEquippersInputComponent,
     RouterLink,
     TuiLink,
   ],
@@ -72,7 +62,8 @@ import { RoutesTableComponent } from './routes-table';
 
     <ng-template #equippersTpl let-item let-isEditing="isEditing">
       @if (isEditing) {
-        <app-indoor-route-equippers-input
+        <app-route-equippers-input
+          mode="indoor"
           [route]="indoorRefMap()[item.id]"
           [autoSave]="false"
           (equippersChange)="onUpdateRouteEquippers(item, $event)"
@@ -119,29 +110,12 @@ export class IndoorRoutesTableComponent {
   centerSlug = input<string | undefined>();
   availableTopos = input<{ id: number | string; name: string }[]>([]);
 
-  private readonly equippersOverrides = signal<Record<string, EquipperDto[]>>(
-    {},
-  );
-  private readonly equippersSaveSeq = new Map<string, number>();
-  private readonly equippersSaveChain = new Map<string, Promise<void>>();
-  private readonly inFlightEquipperRoutes = new Set<string>();
+  private readonly equippersQueue = new RouteEquippersQueue();
 
   constructor() {
     effect(() => {
       this.data();
-      if (this.inFlightEquipperRoutes.size === 0) {
-        this.equippersOverrides.set({});
-      } else {
-        this.equippersOverrides.update((prev) => {
-          const next: Record<string, EquipperDto[]> = {};
-          for (const [id, list] of Object.entries(prev)) {
-            if (this.inFlightEquipperRoutes.has(id)) {
-              next[id] = list;
-            }
-          }
-          return next;
-        });
-      }
+      this.equippersQueue.reconcileWithData();
     });
   }
 
@@ -154,7 +128,7 @@ export class IndoorRoutesTableComponent {
   protected readonly mappedData = computed(() => {
     const isEdit = this.canEditIndoor();
     const slug = this.centerSlug();
-    const equipperOverrides = this.equippersOverrides();
+    const equipperOverrides = this.equippersQueue.overrides();
     return this.data().map((r) => {
       const override = equipperOverrides[String(r.id)];
       const withEquippers = override ? { ...r, equippers: override } : r;
@@ -171,7 +145,7 @@ export class IndoorRoutesTableComponent {
   });
 
   protected readonly indoorRefMap = computed(() => {
-    const equipperOverrides = this.equippersOverrides();
+    const equipperOverrides = this.equippersQueue.overrides();
     const map: Record<string, IndoorRouteWithExtras> = {};
     for (const r of this.data()) {
       const id = String(r.id);
@@ -248,61 +222,17 @@ export class IndoorRoutesTableComponent {
   ): void {
     const r = row._ref as IndoorRouteWithExtras | undefined;
     const routeId = String(row.id);
-    const seq = (this.equippersSaveSeq.get(routeId) ?? 0) + 1;
-    this.equippersSaveSeq.set(routeId, seq);
-    this.inFlightEquipperRoutes.add(routeId);
-
-    const optimisticEquippers: EquipperDto[] = newEquippers.map((item, idx) =>
-      typeof item === 'string'
-        ? {
-            id: -(idx + 1),
-            name: item,
-            created_at: '',
-            description: null,
-            user_id: null,
-          }
-        : item,
-    );
-
-    this.equippersOverrides.update((prev) => ({
-      ...prev,
-      [routeId]: optimisticEquippers,
-    }));
-
-    const payload: (EquipperDto | string)[] = newEquippers.map((item) =>
-      typeof item === 'string' ? item : item.id > 0 ? item : item.name,
-    );
-
-    const prev = this.equippersSaveChain.get(routeId) ?? Promise.resolve();
-    const nextTask = prev.then(async () => {
-      try {
-        const saved = await this.indoorService.setRouteEquippers(
-          routeId,
-          payload,
-        );
-        if (this.equippersSaveSeq.get(routeId) === seq) {
-          if (r) {
-            r.equippers = saved;
-          }
-          this.equippersOverrides.update((curr) => ({
-            ...curr,
-            [routeId]: saved,
-          }));
-          this.inFlightEquipperRoutes.delete(routeId);
+    void this.equippersQueue.enqueue({
+      routeId,
+      equippers: newEquippers,
+      save: (payload) => this.indoorService.setRouteEquippers(routeId, payload),
+      onSaved: (saved) => {
+        if (r) {
+          r.equippers = saved;
         }
-      } catch (err: unknown) {
-        if (this.equippersSaveSeq.get(routeId) === seq) {
-          this.inFlightEquipperRoutes.delete(routeId);
-          this.equippersOverrides.update((curr) => {
-            const copy = { ...curr };
-            delete copy[routeId];
-            return copy;
-          });
-        }
-        handleErrorToast(err, this.toast);
-      }
+      },
+      onError: (err) => handleErrorToast(err, this.toast),
     });
-    this.equippersSaveChain.set(routeId, nextTask);
   }
 
   protected async onUpdateRouteName(

@@ -80,6 +80,7 @@ import {
 
 import {
   GradeLabelPipe,
+  TopoPointPillGeometryPipe,
   TopoPointStateBadgePipe,
   TopoPointStateColorPipe,
   TopoPointStateLabelPipe,
@@ -130,6 +131,7 @@ export interface TopoPathEditorConfig {
     CdkDragHandle,
     CdkDragPlaceholder,
     CdkDropList,
+    TopoPointPillGeometryPipe,
     TopoPointStateBadgePipe,
     TopoPointStateColorPipe,
     TopoPointStateLabelPipe,
@@ -651,45 +653,20 @@ export interface TopoPathEditorConfig {
                         </text>
                       }
                       @if (badge) {
-                        @let label = pt.state | topoPointStateLabel;
-                        @let pillW =
-                          strokeW *
-                          (pt.state === 'match'
-                            ? 5.8
-                            : pt.state === 'start'
-                              ? 5.5
-                              : pt.state === 'foot'
-                                ? 5.0
-                                : 4.2);
-                        @let pillH = strokeW * 2.1;
-                        @let pillY = pt.y * height() + circleR + pillH * 0.45;
-                        <g
-                          class="pointer-events-none"
-                          style="user-select: none"
-                        >
-                          <rect
-                            [attr.x]="pt.x * width() - pillW / 2"
-                            [attr.y]="pillY - pillH / 2"
-                            [attr.width]="pillW"
-                            [attr.height]="pillH"
-                            [attr.rx]="pillH / 2"
-                            [attr.fill]="ptColor"
-                            stroke="white"
-                            stroke-width="0.75"
-                          />
-                          <text
-                            [attr.x]="pt.x * width()"
-                            [attr.y]="pillY + pillH * 0.32"
-                            text-anchor="middle"
-                            fill="white"
-                            font-weight="bold"
-                            [attr.font-size]="strokeW * 1.5"
-                            font-family="sans-serif"
-                            style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                          >
-                            {{ label }}
-                          </text>
-                        </g>
+                        <ng-container
+                          *ngTemplateOutlet="
+                            pointStatePill;
+                            context: {
+                              state: pt.state,
+                              cx: pt.x * width(),
+                              cy: pt.y * height(),
+                              radius: circleR,
+                              strokeW: strokeW,
+                              fill: ptColor,
+                              label: pt.state | topoPointStateLabel,
+                            }
+                          "
+                        />
                       }
                     }
                   } @else {
@@ -766,45 +743,20 @@ export interface TopoPathEditorConfig {
                             {{ $index + 1 }}
                           </text>
                           @if (badge) {
-                            @let label = pt.state | topoPointStateLabel;
-                            @let pillW =
-                              strokeW *
-                              (pt.state === 'match'
-                                ? 5.8
-                                : pt.state === 'start'
-                                  ? 5.5
-                                  : pt.state === 'foot'
-                                    ? 5.0
-                                    : 4.2);
-                            @let pillH = strokeW * 2.1;
-                            @let pillY = pt.y * height() + ptR + pillH * 0.45;
-                            <g
-                              class="pointer-events-none"
-                              style="user-select: none"
-                            >
-                              <rect
-                                [attr.x]="pt.x * width() - pillW / 2"
-                                [attr.y]="pillY - pillH / 2"
-                                [attr.width]="pillW"
-                                [attr.height]="pillH"
-                                [attr.rx]="pillH / 2"
-                                [attr.fill]="ptColor"
-                                stroke="white"
-                                stroke-width="0.75"
-                              />
-                              <text
-                                [attr.x]="pt.x * width()"
-                                [attr.y]="pillY + pillH * 0.32"
-                                text-anchor="middle"
-                                fill="white"
-                                font-weight="bold"
-                                [attr.font-size]="strokeW * 1.5"
-                                font-family="sans-serif"
-                                style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                              >
-                                {{ label }}
-                              </text>
-                            </g>
+                            <ng-container
+                              *ngTemplateOutlet="
+                                pointStatePill;
+                                context: {
+                                  state: pt.state,
+                                  cx: pt.x * width(),
+                                  cy: pt.y * height(),
+                                  radius: ptR,
+                                  strokeW: strokeW,
+                                  fill: ptColor,
+                                  label: pt.state | topoPointStateLabel,
+                                }
+                              "
+                            />
                           }
                         }
                       } @else {
@@ -819,19 +771,7 @@ export interface TopoPathEditorConfig {
                             @let strokeW = strokeWidthFactor * width();
                             @let ptColor =
                               pt.state | topoPointStateColor: style.stroke;
-                            @let label = pt.state | topoPointStateLabel;
                             @let ptR = strokeW * 1.4;
-                            @let pillW =
-                              strokeW *
-                              (pt.state === 'match'
-                                ? 5.8
-                                : pt.state === 'start'
-                                  ? 5.5
-                                  : pt.state === 'foot'
-                                    ? 5.0
-                                    : 4.2);
-                            @let pillH = strokeW * 2.1;
-                            @let pillY = pt.y * height() + ptR + pillH * 0.45;
                             <circle
                               [attr.cx]="pt.x * width()"
                               [attr.cy]="pt.y * height()"
@@ -840,33 +780,20 @@ export interface TopoPathEditorConfig {
                               [attr.stroke]="style.stroke"
                               stroke-width="1.5"
                             />
-                            <g
-                              class="pointer-events-none"
-                              style="user-select: none"
-                            >
-                              <rect
-                                [attr.x]="pt.x * width() - pillW / 2"
-                                [attr.y]="pillY - pillH / 2"
-                                [attr.width]="pillW"
-                                [attr.height]="pillH"
-                                [attr.rx]="pillH / 2"
-                                [attr.fill]="ptColor"
-                                stroke="white"
-                                stroke-width="0.75"
-                              />
-                              <text
-                                [attr.x]="pt.x * width()"
-                                [attr.y]="pillY + pillH * 0.32"
-                                text-anchor="middle"
-                                fill="white"
-                                font-weight="bold"
-                                [attr.font-size]="strokeW * 1.5"
-                                font-family="sans-serif"
-                                style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                              >
-                                {{ label }}
-                              </text>
-                            </g>
+                            <ng-container
+                              *ngTemplateOutlet="
+                                pointStatePill;
+                                context: {
+                                  state: pt.state,
+                                  cx: pt.x * width(),
+                                  cy: pt.y * height(),
+                                  radius: ptR,
+                                  strokeW: strokeW,
+                                  fill: ptColor,
+                                  label: pt.state | topoPointStateLabel,
+                                }
+                              "
+                            />
                           }
                         }
 
@@ -888,37 +815,21 @@ export interface TopoPathEditorConfig {
                             [attr.stroke-width]="isTop ? 1 : 0.5"
                           />
                           @if (isTop) {
-                            @let pillW = strokeW * 4.2;
-                            @let pillH = strokeW * 2.1;
-                            @let pillY =
-                              last.y * height() - endR - pillH * 0.45;
-                            <g
-                              class="pointer-events-none"
-                              style="user-select: none"
-                            >
-                              <rect
-                                [attr.x]="last.x * width() - pillW / 2"
-                                [attr.y]="pillY - pillH / 2"
-                                [attr.width]="pillW"
-                                [attr.height]="pillH"
-                                [attr.rx]="pillH / 2"
-                                fill="#EF4444"
-                                stroke="white"
-                                stroke-width="0.75"
-                              />
-                              <text
-                                [attr.x]="last.x * width()"
-                                [attr.y]="pillY + pillH * 0.32"
-                                text-anchor="middle"
-                                fill="white"
-                                font-weight="bold"
-                                [attr.font-size]="strokeW * 1.5"
-                                font-family="sans-serif"
-                                style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                              >
-                                TOP
-                              </text>
-                            </g>
+                            <ng-container
+                              *ngTemplateOutlet="
+                                pointStatePill;
+                                context: {
+                                  state: 'top',
+                                  cx: last.x * width(),
+                                  cy: last.y * height(),
+                                  radius: endR,
+                                  strokeW: strokeW,
+                                  fill: '#EF4444',
+                                  label: 'TOP',
+                                  position: 'above',
+                                }
+                              "
+                            />
                           }
                         }
                       }
@@ -1035,51 +946,71 @@ export interface TopoPathEditorConfig {
                           </text>
                         }
                         @if (badge) {
-                          @let label = pt.state | topoPointStateLabel;
-                          @let pillW =
-                            strokeW *
-                            (pt.state === 'match'
-                              ? 5.8
-                              : pt.state === 'start'
-                                ? 5.5
-                                : pt.state === 'foot'
-                                  ? 5.0
-                                  : 4.2);
-                          @let pillH = strokeW * 2.1;
-                          @let pillY = pt.y * height() + ptR + pillH * 0.45;
-                          <g
-                            class="pointer-events-none"
-                            style="user-select: none"
-                          >
-                            <rect
-                              [attr.x]="pt.x * width() - pillW / 2"
-                              [attr.y]="pillY - pillH / 2"
-                              [attr.width]="pillW"
-                              [attr.height]="pillH"
-                              [attr.rx]="pillH / 2"
-                              [attr.fill]="ptColor"
-                              stroke="white"
-                              stroke-width="0.75"
-                            />
-                            <text
-                              [attr.x]="pt.x * width()"
-                              [attr.y]="pillY + pillH * 0.32"
-                              text-anchor="middle"
-                              fill="white"
-                              font-weight="bold"
-                              [attr.font-size]="strokeW * 1.5"
-                              font-family="sans-serif"
-                              style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                            >
-                              {{ label }}
-                            </text>
-                          </g>
+                          <ng-container
+                            *ngTemplateOutlet="
+                              pointStatePill;
+                              context: {
+                                state: pt.state,
+                                cx: pt.x * width(),
+                                cy: pt.y * height(),
+                                radius: ptR,
+                                strokeW: strokeW,
+                                fill: ptColor,
+                                label: pt.state | topoPointStateLabel,
+                              }
+                            "
+                          />
                         }
                       }
                     </g>
                   }
                 }
               }
+
+              <ng-template
+                #pointStatePill
+                let-state="state"
+                let-cx="cx"
+                let-cy="cy"
+                let-radius="radius"
+                let-strokeW="strokeW"
+                let-fill="fill"
+                let-label="label"
+                let-position="position"
+              >
+                @let pill =
+                  state
+                    | topoPointPillGeometry
+                      : cx
+                      : cy
+                      : radius
+                      : strokeW
+                      : position;
+                <svg:g class="pointer-events-none" style="user-select: none">
+                  <svg:rect
+                    [attr.x]="pill.x"
+                    [attr.y]="pill.y"
+                    [attr.width]="pill.width"
+                    [attr.height]="pill.height"
+                    [attr.rx]="pill.rx"
+                    [attr.fill]="fill"
+                    stroke="white"
+                    stroke-width="0.75"
+                  />
+                  <svg:text
+                    [attr.x]="pill.textX"
+                    [attr.y]="pill.textY"
+                    text-anchor="middle"
+                    fill="white"
+                    font-weight="bold"
+                    [attr.font-size]="pill.fontSize"
+                    font-family="sans-serif"
+                    style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
+                  >
+                    {{ label }}
+                  </svg:text>
+                </svg:g>
+              </ng-template>
             </svg>
           </div>
 

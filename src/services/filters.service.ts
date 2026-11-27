@@ -47,30 +47,8 @@ export class FiltersService {
       showToposOnly: options.showToposOnly ?? false,
     };
 
-    void firstValueFrom(
-      this.dialogs.open<FilterDialog>(
-        new PolymorpheusComponent(FilterDialogComponent),
-        {
-          label: this.translate.instant('filters'),
-          size: 'l',
-          data,
-          dismissible: false,
-        },
-      ),
-      { defaultValue: null },
-    ).then((result) => {
-      if (!result) return;
-
-      const [a, b] = result.gradeRange ?? [0, ORDERED_GRADE_VALUES.length - 1];
-
-      const lo = clamp(Math.round(a), 0, ORDERED_GRADE_VALUES.length - 1);
-      const hi = clamp(Math.round(b), 0, ORDERED_GRADE_VALUES.length - 1);
-
-      this.filterState.areaListGradeRange.set([
-        Math.min(lo, hi),
-        Math.max(lo, hi),
-      ]);
-
+    this.openFilterDialog(data, (result, gradeRange) => {
+      this.filterState.areaListGradeRange.set(gradeRange);
       this.filterState.areaListCategories.set(result.categories ?? []);
       this.filterState.areaListShade.set(result.selectedShade ?? []);
 
@@ -98,29 +76,8 @@ export class FiltersService {
       showToposOnly: true,
     };
 
-    void firstValueFrom(
-      this.dialogs.open<FilterDialog>(
-        new PolymorpheusComponent(FilterDialogComponent),
-        {
-          label: this.translate.instant('filters'),
-          size: 'l',
-          data,
-          dismissible: false,
-        },
-      ),
-      { defaultValue: null },
-    ).then((result) => {
-      if (!result) return;
-
-      const [a, b] = result.gradeRange ?? [0, ORDERED_GRADE_VALUES.length - 1];
-
-      const lo = clamp(Math.round(a), 0, ORDERED_GRADE_VALUES.length - 1);
-      const hi = clamp(Math.round(b), 0, ORDERED_GRADE_VALUES.length - 1);
-
-      this.filterState.indoorListGradeRange.set([
-        Math.min(lo, hi),
-        Math.max(lo, hi),
-      ]);
+    this.openFilterDialog(data, (result, gradeRange) => {
+      this.filterState.indoorListGradeRange.set(gradeRange);
 
       if (result.toposOnly !== undefined) {
         this.filterState.indoorListToposOnly.set(result.toposOnly);
@@ -140,6 +97,20 @@ export class FiltersService {
       showToposOnly: true,
     };
 
+    this.openFilterDialog(data, (result, gradeRange) => {
+      this.filterState.indoorRoutesGradeRange.set(gradeRange);
+      this.filterState.indoorRoutesCategories.set(result.categories ?? []);
+
+      if (result.toposOnly !== undefined) {
+        this.filterState.indoorRoutesToposOnly.set(result.toposOnly);
+      }
+    });
+  }
+
+  private openFilterDialog(
+    data: FilterDialog,
+    onResult: (result: FilterDialog, gradeRange: [number, number]) => void,
+  ): void {
     void firstValueFrom(
       this.dialogs.open<FilterDialog>(
         new PolymorpheusComponent(FilterDialogComponent),
@@ -153,22 +124,15 @@ export class FiltersService {
       { defaultValue: null },
     ).then((result) => {
       if (!result) return;
-
-      const [a, b] = result.gradeRange ?? [0, ORDERED_GRADE_VALUES.length - 1];
-
-      const lo = clamp(Math.round(a), 0, ORDERED_GRADE_VALUES.length - 1);
-      const hi = clamp(Math.round(b), 0, ORDERED_GRADE_VALUES.length - 1);
-
-      this.filterState.indoorRoutesGradeRange.set([
-        Math.min(lo, hi),
-        Math.max(lo, hi),
-      ]);
-
-      this.filterState.indoorRoutesCategories.set(result.categories ?? []);
-
-      if (result.toposOnly !== undefined) {
-        this.filterState.indoorRoutesToposOnly.set(result.toposOnly);
-      }
+      onResult(result, this.clampGradeRange(result.gradeRange));
     });
+  }
+
+  private clampGradeRange(range?: [number, number]): [number, number] {
+    const maxIndex = ORDERED_GRADE_VALUES.length - 1;
+    const [a, b] = range ?? [0, maxIndex];
+    const lo = clamp(Math.round(a), 0, maxIndex);
+    const hi = clamp(Math.round(b), 0, maxIndex);
+    return [Math.min(lo, hi), Math.max(lo, hi)];
   }
 }

@@ -18,20 +18,8 @@ import {
   RouterLinkActive,
 } from '@angular/router';
 
-import {
-  TuiAppearance,
-  TuiButton,
-  TuiDropdown,
-  TuiIcon,
-  TuiInput,
-  TuiScrollbar,
-} from '@taiga-ui/core';
-import {
-  TuiBadgedContent,
-  TuiBadgeNotification,
-  TuiPulse,
-  TuiSegmented,
-} from '@taiga-ui/kit';
+import { TuiButton, TuiIcon, TuiInput, TuiScrollbar } from '@taiga-ui/core';
+import { TuiSegmented } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -44,14 +32,14 @@ import { LayoutService } from '../../services/layout.service';
 import { OnlineStatusService } from '../../services/online-status.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { ScrollService } from '../../services/scroll.service';
-import { TourService, TourStep } from '../../services/tour.service';
 
 import { AreaCardSkeletonComponent } from '../../components/area/area-card-skeleton';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
+import { ExploreMapFabComponent } from '../../components/ui/explore-map-fab';
+import { FilterButtonComponent } from '../../components/ui/filter-button';
 import { InfiniteScrollTriggerComponent } from '../../components/ui/infinite-scroll-trigger';
 import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import { PlaceCardComponent } from '../../components/ui/place-card';
-import { TourHintComponent } from '../../components/ui/tour-hint';
 
 import {
   isGradeRangeOverlap,
@@ -74,22 +62,18 @@ const CARD_WINDOW = 24;
   imports: [
     AreaCardSkeletonComponent,
     EmptyStateComponent,
+    ExploreMapFabComponent,
+    FilterButtonComponent,
     InfiniteScrollTriggerComponent,
     LowerCasePipe,
     OfflineNotCachedComponent,
     PlaceCardComponent,
     RouterLink,
     RouterLinkActive,
-    TourHintComponent,
     TranslatePipe,
-    TuiAppearance,
-    TuiBadgedContent,
-    TuiBadgeNotification,
     TuiButton,
-    TuiDropdown,
     TuiIcon,
     TuiInput,
-    TuiPulse,
     TuiScrollbar,
     TuiSegmented,
   ],
@@ -162,24 +146,10 @@ const CARD_WINDOW = 24;
                 (input.zoneless)="query.set(indoorSearch.value)"
               />
             </tui-textfield>
-            <tui-badged-content class="rounded-2xl">
-              @if (hasActiveFilters()) {
-                <tui-badge-notification
-                  tuiAppearance="accent"
-                  size="s"
-                  tuiSlot="top"
-                />
-              }
-              <button
-                tuiButton
-                appearance="textfield"
-                size="l"
-                type="button"
-                iconStart="@tui.sliders-horizontal"
-                [attr.aria-label]="'filters' | translate"
-                (click.zoneless)="openFilters()"
-              ></button>
-            </tui-badged-content>
+            <app-filter-button
+              [hasActiveFilters]="hasActiveFilters()"
+              (clicked)="openFilters()"
+            />
           </div>
 
           <!-- Indoor list -->
@@ -217,43 +187,7 @@ const CARD_WINDOW = 24;
         </section>
       </tui-scrollbar>
 
-      @let isExploreMapTourStep =
-        tourService.isActive() && tourService.step() === TourStep.EXPLORE_MAP;
-
-      <div
-        class="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-none w-full flex justify-center z-20"
-      >
-        <button
-          tuiButton
-          size="m"
-          appearance="primary-grayscale"
-          iconStart="@tui.map"
-          routerLink="/explore"
-          class="pointer-events-auto shadow-xl relative"
-          [tuiDropdown]="tourHint"
-          [tuiDropdownManual]="isExploreMapTourStep"
-          tuiDropdownDirection="top"
-          (click)="onMapClick()"
-        >
-          @if (isExploreMapTourStep) {
-            <span
-              class="absolute bottom-2 left-2 pointer-events-none z-10 size-0"
-            >
-              <tui-pulse />
-            </span>
-          }
-          {{ 'map' | translate }}
-        </button>
-      </div>
-
-      <ng-template #tourHint>
-        <app-tour-hint
-          class="w-72 max-w-[calc(100vw-2rem)] block"
-          [description]="'tour.explore.mapButtonDescription' | translate"
-          (next)="tourService.next()"
-          (skip)="tourService.finish()"
-        />
-      </ng-template>
+      <app-explore-map-fab />
     </div>
   `,
   host: { class: 'flex grow min-h-0' },
@@ -263,18 +197,7 @@ export class IndoorListComponent {
   protected readonly skeletons = Array.from({ length: 16 }, (_, i) => i);
   protected readonly layoutService = inject(LayoutService);
   protected readonly onlineStatus = inject(OnlineStatusService);
-  protected readonly tourService = inject(TourService);
-  protected readonly TourStep = TourStep;
   private readonly scrollService = inject(ScrollService);
-
-  protected onMapClick(): void {
-    if (
-      this.tourService.isActive() &&
-      this.tourService.step() === TourStep.EXPLORE_MAP
-    ) {
-      void this.tourService.next();
-    }
-  }
 
   protected readonly authState = inject(AuthStateService);
   protected readonly filtersService = inject(FiltersService);

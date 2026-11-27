@@ -541,7 +541,7 @@ describe('RoutesTableComponent actions column (project vs ascent)', () => {
       'app-button-ascent-type',
     );
     const actionBtn = fixture.nativeElement.querySelector(
-      'td[data-col="actions"] > div > button',
+      'td[data-col="actions"] app-route-ascent-action-menu button',
     );
 
     expect(ascentBtn).toBeNull();
@@ -569,7 +569,7 @@ describe('RoutesTableComponent actions column (project vs ascent)', () => {
       'app-button-ascent-type',
     );
     const actionBtn = fixture.nativeElement.querySelector(
-      'td[data-col="actions"] > div > button',
+      'td[data-col="actions"] app-route-ascent-action-menu button',
     );
 
     expect(ascentBtn).not.toBeNull();
@@ -593,7 +593,7 @@ describe('RoutesTableComponent actions column (project vs ascent)', () => {
       'app-button-ascent-type',
     );
     const actionBtn = fixture.nativeElement.querySelector(
-      'td[data-col="actions"] > div > button',
+      'td[data-col="actions"] app-route-ascent-action-menu button',
     );
 
     expect(ascentBtn).not.toBeNull();

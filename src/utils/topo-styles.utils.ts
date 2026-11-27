@@ -58,6 +58,59 @@ export function getPointStateLabel(state?: PointState): string {
   }
 }
 
+export interface TopoPointPillGeometry {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rx: number;
+  textX: number;
+  textY: number;
+  fontSize: number;
+}
+
+export const TOPO_POINT_PILL_HEIGHT_FACTOR = 2.1;
+export const TOPO_POINT_PILL_OFFSET_FACTOR = 0.45;
+export const TOPO_POINT_PILL_FONT_FACTOR = 1.5;
+export const TOPO_POINT_PILL_TEXT_Y_FACTOR = 0.32;
+
+export function getTopoPointPillWidthMultiplier(state?: PointState): number {
+  switch (state) {
+    case 'match':
+      return 5.8;
+    case 'start':
+      return 5.5;
+    case 'foot':
+      return 5.0;
+    default:
+      return 4.2;
+  }
+}
+
+export function computeTopoPointPillRect(
+  cx: number,
+  cy: number,
+  anchorRadius: number,
+  strokeWidth: number,
+  state?: PointState,
+  position: 'below' | 'above' = 'below',
+): TopoPointPillGeometry {
+  const width = strokeWidth * getTopoPointPillWidthMultiplier(state);
+  const height = strokeWidth * TOPO_POINT_PILL_HEIGHT_FACTOR;
+  const offset = anchorRadius + height * TOPO_POINT_PILL_OFFSET_FACTOR;
+  const pillY = position === 'above' ? cy - offset : cy + offset;
+  return {
+    x: cx - width / 2,
+    y: pillY - height / 2,
+    width,
+    height,
+    rx: height / 2,
+    textX: cx,
+    textY: pillY + height * TOPO_POINT_PILL_TEXT_Y_FACTOR,
+    fontSize: strokeWidth * TOPO_POINT_PILL_FONT_FACTOR,
+  };
+}
+
 export function cyclePointState(currentState?: PointState): PointState {
   switch (currentState) {
     case 'start':

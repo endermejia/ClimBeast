@@ -12,20 +12,8 @@ import {
 } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
-import {
-  TuiAppearance,
-  TuiButton,
-  TuiDropdown,
-  TuiIcon,
-  TuiInput,
-  TuiScrollbar,
-} from '@taiga-ui/core';
-import {
-  TuiBadgedContent,
-  TuiBadgeNotification,
-  TuiPulse,
-  TuiSegmented,
-} from '@taiga-ui/kit';
+import { TuiButton, TuiIcon, TuiInput, TuiScrollbar } from '@taiga-ui/core';
+import { TuiSegmented } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -37,22 +25,20 @@ import { LayoutService } from '../../services/layout.service';
 import { OnlineStatusService } from '../../services/online-status.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { ScrollService } from '../../services/scroll.service';
-import { TourService, TourStep } from '../../services/tour.service';
 
 import { AreaCardSkeletonComponent } from '../../components/area/area-card-skeleton';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
+import { ExploreMapFabComponent } from '../../components/ui/explore-map-fab';
+import { FilterButtonComponent } from '../../components/ui/filter-button';
 import { InfiniteScrollTriggerComponent } from '../../components/ui/infinite-scroll-trigger';
 import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import { PlaceCardComponent } from '../../components/ui/place-card';
-import { TourHintComponent } from '../../components/ui/tour-hint';
 
 import {
-  ClimbingKinds,
-  normalizeRoutesByGrade,
-  ORDERED_GRADE_VALUES,
-} from '../../models';
-
-import { matchesQuery, reactToObservable } from '../../utils';
+  filterAreas,
+  hasActiveAreaFilters,
+  reactToObservable,
+} from '../../utils';
 
 /**
  * Tarjetas pintadas por lote. La primera render solo construye esta ventana
@@ -66,22 +52,18 @@ const CARD_WINDOW = 24;
   imports: [
     AreaCardSkeletonComponent,
     EmptyStateComponent,
+    ExploreMapFabComponent,
+    FilterButtonComponent,
     InfiniteScrollTriggerComponent,
     LowerCasePipe,
     OfflineNotCachedComponent,
     PlaceCardComponent,
     RouterLink,
     RouterLinkActive,
-    TourHintComponent,
     TranslatePipe,
-    TuiAppearance,
-    TuiBadgedContent,
-    TuiBadgeNotification,
     TuiButton,
-    TuiDropdown,
     TuiIcon,
     TuiInput,
-    TuiPulse,
     TuiScrollbar,
     TuiSegmented,
   ],
@@ -152,24 +134,10 @@ const CARD_WINDOW = 24;
                 (input.zoneless)="onQuery(areasSearch.value)"
               />
             </tui-textfield>
-            <tui-badged-content class="rounded-2xl">
-              @if (hasActiveFilters()) {
-                <tui-badge-notification
-                  tuiAppearance="accent"
-                  size="s"
-                  tuiSlot="top"
-                />
-              }
-              <button
-                tuiButton
-                appearance="textfield"
-                size="l"
-                type="button"
-                iconStart="@tui.sliders-horizontal"
-                [attr.aria-label]="'filters' | translate"
-                (click.zoneless)="openFilters()"
-              ></button>
-            </tui-badged-content>
+            <app-filter-button
+              [hasActiveFilters]="hasActiveFilters()"
+              (clicked)="openFilters()"
+            />
           </div>
 
           <!-- Areas list -->
@@ -207,43 +175,7 @@ const CARD_WINDOW = 24;
         </section>
       </tui-scrollbar>
 
-      @let isExploreMapTourStep =
-        tourService.isActive() && tourService.step() === TourStep.EXPLORE_MAP;
-
-      <div
-        class="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-none w-full flex justify-center z-20"
-      >
-        <button
-          tuiButton
-          size="m"
-          appearance="primary-grayscale"
-          iconStart="@tui.map"
-          routerLink="/explore"
-          class="pointer-events-auto shadow-xl relative"
-          [tuiDropdown]="tourHint"
-          [tuiDropdownManual]="isExploreMapTourStep"
-          tuiDropdownDirection="top"
-          (click)="onMapClick()"
-        >
-          @if (isExploreMapTourStep) {
-            <span
-              class="absolute bottom-2 left-2 pointer-events-none z-10 size-0"
-            >
-              <tui-pulse />
-            </span>
-          }
-          {{ 'map' | translate }}
-        </button>
-      </div>
-
-      <ng-template #tourHint>
-        <app-tour-hint
-          class="w-72 max-w-[calc(100vw-2rem)] block"
-          [description]="'tour.explore.mapButtonDescription' | translate"
-          (next)="tourService.next()"
-          (skip)="tourService.finish()"
-        />
-      </ng-template>
+      <app-explore-map-fab />
     </div>
   `,
   host: { class: 'flex grow min-h-0' },
@@ -254,18 +186,7 @@ export class AreaListComponent {
   protected readonly layoutService = inject(LayoutService);
   protected readonly onlineStatus = inject(OnlineStatusService);
   protected readonly router = inject(Router);
-  protected readonly tourService = inject(TourService);
-  protected readonly TourStep = TourStep;
   private readonly scrollService = inject(ScrollService);
-
-  protected onMapClick(): void {
-    if (
-      this.tourService.isActive() &&
-      this.tourService.step() === TourStep.EXPLORE_MAP
-    ) {
-      void this.tourService.next();
-    }
-  }
 
   protected readonly areasService = inject(AreasService);
   protected readonly filtersService = inject(FiltersService);
@@ -286,78 +207,23 @@ export class AreaListComponent {
   readonly selectedCategories = this.filterState.areaListCategories;
   readonly selectedShade = this.filterState.areaListShade;
 
-  readonly hasActiveFilters = computed(() => {
-    const [lo, hi] = this.selectedGradeRange();
-    const gradeActive = !(lo === 0 && hi === ORDERED_GRADE_VALUES.length - 1);
-    return (
-      gradeActive ||
-      this.selectedCategories().length > 0 ||
-      this.selectedShade().length > 0 ||
-      this.filterState.areaListToposOnly()
-    );
-  });
-  readonly filtered = computed(() => {
-    const query = this.query();
-    const [minIdx, maxIdx] = this.selectedGradeRange();
-    const allowedLabels = ORDERED_GRADE_VALUES.slice(minIdx, maxIdx + 1);
-    const list = this.areas();
-
-    const textMatches = (a: (typeof list)[number]) =>
-      matchesQuery(a.name, query) || matchesQuery(a.slug, query);
-    const gradeMatches = (a: (typeof list)[number]) => {
-      const grades = normalizeRoutesByGrade(a.grades);
-      for (const label of allowedLabels) {
-        if (grades[label] && Number(grades[label]) > 0) {
-          return true;
-        }
-      }
-      // Allow all if no grades data
-      return allowedLabels.length === ORDERED_GRADE_VALUES.length;
-    };
-    const categories = this.selectedCategories();
-    const shadeKeys = this.selectedShade();
-    const kindMatches = (a: (typeof list)[number]) => {
-      if (!categories.length) return true;
-      const idxToKind: Record<number, string> = {
-        0: ClimbingKinds.SPORT,
-        1: ClimbingKinds.BOULDER,
-        2: ClimbingKinds.MULTIPITCH,
-      };
-      const allowedKinds = categories.map((i) => idxToKind[i]).filter(Boolean);
-      return a.climbing_kind?.some((k) => allowedKinds.includes(k));
-    };
-    const shadeMatches = (a: (typeof list)[number]) => {
-      if (!shadeKeys.length) return true;
-      // Matches if ANY of the selected shades is present in the area
-      return shadeKeys.some((key) => {
-        switch (key) {
-          case 'shade_morning':
-            return a.shade_morning;
-          case 'shade_afternoon':
-            return a.shade_afternoon;
-          case 'shade_all_day':
-            return a.shade_all_day;
-          case 'sun_all_day':
-            return a.sun_all_day;
-          default:
-            return true;
-        }
-      });
-    };
-    const toposOnly = this.filterState.areaListToposOnly();
-    const toposMatches = (a: (typeof list)[number]) => {
-      if (!toposOnly) return true;
-      return (a.topos_count || 0) > 0;
-    };
-    return list.filter(
-      (a) =>
-        textMatches(a) &&
-        gradeMatches(a) &&
-        kindMatches(a) &&
-        shadeMatches(a) &&
-        toposMatches(a),
-    );
-  });
+  readonly hasActiveFilters = computed(() =>
+    hasActiveAreaFilters({
+      gradeRange: this.selectedGradeRange(),
+      categories: this.selectedCategories(),
+      shade: this.selectedShade(),
+      toposOnly: this.filterState.areaListToposOnly(),
+    }),
+  );
+  readonly filtered = computed(() =>
+    filterAreas(this.areas(), {
+      query: this.query(),
+      gradeRange: this.selectedGradeRange(),
+      categories: this.selectedCategories(),
+      shade: this.selectedShade(),
+      toposOnly: this.filterState.areaListToposOnly(),
+    }),
+  );
 
   /**
    * Ventana de tarjetas efectivamente pintadas: `filtered()` completo solo se

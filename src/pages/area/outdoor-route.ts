@@ -1,4 +1,9 @@
-import { DecimalPipe, Location, LowerCasePipe } from '@angular/common';
+import {
+  DecimalPipe,
+  Location,
+  LowerCasePipe,
+  NgTemplateOutlet,
+} from '@angular/common';
 import {
   Component,
   computed,
@@ -79,6 +84,7 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
     FormsModule,
     GradeComponent,
     LowerCasePipe,
+    NgTemplateOutlet,
     OfflineNotCachedComponent,
     RouterLink,
     SectionHeaderComponent,
@@ -360,22 +366,7 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
 
                 <!-- Ascents Section (Mobile only) -->
                 <div class="lg:hidden mt-6">
-                  <h2 class="text-2xl font-bold mb-4">
-                    <span [appAscentCount]="totalAscents()"></span>
-                    {{
-                      (totalAscents() === 1 ? 'ascent' : 'ascents')
-                        | translate
-                        | lowercase
-                    }}
-                  </h2>
-                  <app-ascents-feed
-                    [ascents]="accumulatedAscents()"
-                    [isLoading]="isLoading()"
-                    [hasMore]="hasMore()"
-                    [showRoute]="false"
-                    [highlightOwn]="true"
-                    (loadMore)="loadMore()"
-                  />
+                  <ng-container *ngTemplateOutlet="ascentsSection" />
                 </div>
               </div>
             </tui-scrollbar>
@@ -388,26 +379,30 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
             <div class="flex flex-col w-full lg:h-full min-w-0 lg:min-h-0">
               <tui-scrollbar class="w-full lg:flex-1 lg:min-h-0">
                 <div class="w-full min-w-0 px-4 lg:px-0 lg:pr-4 pb-6">
-                  <h2 class="text-2xl font-bold mb-4">
-                    <span [appAscentCount]="totalAscents()"></span>
-                    {{
-                      (totalAscents() === 1 ? 'ascent' : 'ascents')
-                        | translate
-                        | lowercase
-                    }}
-                  </h2>
-                  <app-ascents-feed
-                    [ascents]="accumulatedAscents()"
-                    [isLoading]="isLoading()"
-                    [hasMore]="hasMore()"
-                    [showRoute]="false"
-                    [highlightOwn]="true"
-                    (loadMore)="loadMore()"
-                  />
+                  <ng-container *ngTemplateOutlet="ascentsSection" />
                 </div>
               </tui-scrollbar>
             </div>
           </div>
+
+          <ng-template #ascentsSection>
+            <h2 class="text-2xl font-bold mb-4">
+              <span [appAscentCount]="totalAscents()"></span>
+              {{
+                (totalAscents() === 1 ? 'ascent' : 'ascents')
+                  | translate
+                  | lowercase
+              }}
+            </h2>
+            <app-ascents-feed
+              [ascents]="accumulatedAscents()"
+              [isLoading]="isLoading()"
+              [hasMore]="hasMore()"
+              [showRoute]="false"
+              [highlightOwn]="true"
+              (loadMore)="loadMore()"
+            />
+          </ng-template>
         } @else if (
           outdoorData.areasListResource.isLoading() ||
           outdoorData.cragDetailResource.isLoading() ||

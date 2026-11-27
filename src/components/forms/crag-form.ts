@@ -29,12 +29,10 @@ import {
   TuiFilterByInputPipe,
   TuiInput,
   TuiLabel,
-  TuiNumberFormat,
   TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
 import {
-  TuiInputNumber,
   TuiTextarea,
   TuiInputChip,
   TuiChevron,
@@ -48,8 +46,6 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { AuthStateService } from '../../services/auth-state.service';
 import { CragsService } from '../../services/crags.service';
-import { MapService } from '../../services/map.service';
-
 import { SlugService } from '../../services/slug.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -59,7 +55,10 @@ import { AreaDto } from '../../models';
 import { handleErrorToast, slugify } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
-
+import {
+  CoordinatesFieldsComponent,
+  CoordinatesValue,
+} from '../location/coordinates-fields';
 import { CounterComponent } from '../ui/counter';
 
 interface MinimalCrag {
@@ -95,6 +94,7 @@ interface CragFormModel {
   selector: 'app-crag-form',
   imports: [
     CommonModule,
+    CoordinatesFieldsComponent,
     CounterComponent,
     FormField,
     FormsModule,
@@ -107,9 +107,7 @@ interface CragFormModel {
     TuiFilterByInputPipe,
     TuiInput,
     TuiInputChip,
-    TuiInputNumber,
     TuiLabel,
-    TuiNumberFormat,
     TuiScrollbar,
     TuiSelect,
     TuiTextarea,
@@ -176,50 +174,12 @@ interface CragFormModel {
             }
           }
 
-          <div class="flex flex-wrap items-center gap-4">
-            <h3 class="font-bold text-lg">{{ 'location' | translate }}</h3>
-            <button
-              tuiButton
-              appearance="secondary-grayscale"
-              size="s"
-              type="button"
-              iconStart="@tui.map-pin"
-              (click.zoneless)="pickLocation()"
-            >
-              {{ 'pickOnMap' | translate }}
-            </button>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="grid grid-cols-2 gap-4">
-              <tui-textfield [tuiTextfieldCleaner]="false">
-                <label tuiLabel for="lat">{{ 'lat' | translate }}</label>
-                <input
-                  tuiInputNumber
-                  id="lat"
-                  [ngModel]="model().latitude"
-                  (ngModelChange)="onLatChange($event)"
-                  name="latitude"
-                  [tuiNumberFormat]="{ precision: 6 }"
-                  (paste)="onPasteLocation($event)"
-                  (change.zoneless)="sanitizeCoordinates()"
-                  autocomplete="off"
-                />
-              </tui-textfield>
-              <tui-textfield [tuiTextfieldCleaner]="false">
-                <label tuiLabel for="lng">{{ 'lng' | translate }}</label>
-                <input
-                  tuiInputNumber
-                  id="lng"
-                  [tuiNumberFormat]="{ precision: 6 }"
-                  [ngModel]="model().longitude"
-                  (ngModelChange)="onLngChange($event)"
-                  name="longitude"
-                  (change.zoneless)="sanitizeCoordinates()"
-                  autocomplete="off"
-                />
-              </tui-textfield>
-            </div>
+          <app-coordinates-fields
+            [latitude]="model().latitude"
+            [longitude]="model().longitude"
+            (coordinatesChange)="onCoordinatesChange($event)"
+            rowClass="grid grid-cols-1 md:grid-cols-2 gap-4"
+          >
             <app-counter
               [ngModel]="model().approach"
               (ngModelChange)="onApproachChange($event)"
@@ -227,7 +187,7 @@ interface CragFormModel {
               label="approach"
               suffix="min."
             />
-          </div>
+          </app-coordinates-fields>
 
           <tui-textfield [tuiTextfieldCleaner]="false">
             <label tuiLabel for="desc-es">{{
@@ -325,7 +285,6 @@ interface CragFormModel {
   host: { class: 'flex flex-col max-h-[70dvh] min-h-0 w-full overflow-hidden' },
 })
 export class CragFormComponent {
-  protected readonly mapService = inject(MapService);
   protected readonly authState = inject(AuthStateService);
   private readonly crags = inject(CragsService);
 
@@ -591,59 +550,11 @@ export class CragFormComponent {
     this.model.update((m) => ({ ...m, eight_anu_sector_slugs: slugs }));
   }
 
-  onLatChange(value: number | null): void {
-    this.model.update((m) => ({ ...m, latitude: value }));
-  }
-
-  onLngChange(value: number | null): void {
-    this.model.update((m) => ({ ...m, longitude: value }));
+  onCoordinatesChange({ latitude, longitude }: CoordinatesValue): void {
+    this.model.update((m) => ({ ...m, latitude, longitude }));
   }
 
   onApproachChange(value: number | null): void {
     this.model.update((m) => ({ ...m, approach: value }));
-  }
-
-  async pickLocation(): Promise<void> {
-    const result = await import('rxjs').then((m) =>
-      m.firstValueFrom(
-        this.mapService.pickLocation(
-          this.model().latitude,
-          this.model().longitude,
-        ),
-        { defaultValue: null },
-      ),
-    );
-    if (result) {
-      this.model.update((m) => ({
-        ...m,
-        latitude: result.lat,
-        longitude: result.lng,
-      }));
-    }
-  }
-
-  onPasteLocation(event: ClipboardEvent): void {
-    const text = event.clipboardData?.getData('text');
-    if (!text) return;
-
-    const coords = this.mapService.parseCoordinates(text);
-    if (coords) {
-      event.preventDefault();
-      this.model.update((m) => ({
-        ...m,
-        latitude: coords.lat,
-        longitude: coords.lng,
-      }));
-    }
-  }
-
-  sanitizeCoordinates(): void {
-    const lat = this.model().latitude;
-    const lng = this.model().longitude;
-    this.model.update((m) => ({
-      ...m,
-      latitude: lat != null ? parseFloat(lat.toFixed(6)) : null,
-      longitude: lng != null ? parseFloat(lng.toFixed(6)) : null,
-    }));
   }
 }

@@ -1,17 +1,16 @@
-import { CommonModule, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { Component, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
 
-import { TuiHint, TuiScrollbar } from '@taiga-ui/core';
+import { TuiHint } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { AscentTypes, RouteScore } from '../../../models';
+import { RouteScore } from '../../../models';
 
 import { AscentCountDirective } from '../../../directives/ascent-count.directive';
 import { CountUpDirective } from '../../../directives/count-up.directive';
-
 import { ChartAscentsByStyleComponent } from '../../charts/chart-ascents-by-style';
+import { StatsRouteHintComponent } from './stats-route-hint';
 
 @Component({
   selector: 'app-user-profile-stats-score',
@@ -19,13 +18,11 @@ import { ChartAscentsByStyleComponent } from '../../charts/chart-ascents-by-styl
   imports: [
     AscentCountDirective,
     ChartAscentsByStyleComponent,
-    CommonModule,
     CountUpDirective,
     DecimalPipe,
-    RouterLink,
+    StatsRouteHintComponent,
     TranslatePipe,
     TuiHint,
-    TuiScrollbar,
   ],
   template: `
     @if (!compact()) {
@@ -260,58 +257,11 @@ import { ChartAscentsByStyleComponent } from '../../charts/chart-ascents-by-styl
 
     <!-- Hint content for Top 10 Routes -->
     <ng-template #scoreHintTemplate>
-      <div class="trend-hint">
-        <div class="trend-hint-header">
-          <span class="trend-hint-title">
-            {{ 'statistics.top10Ascents' | translate }}
-          </span>
-          <span class="trend-hint-score">
-            {{ (totalScore() | number) || 0 }} {{ 'points' | translate }}
-          </span>
-        </div>
-
-        @if (topRoutes().length > 0) {
-          <tui-scrollbar class="trend-scroll">
-            <div class="trend-routes">
-              @for (route of topRoutes(); track $index) {
-                <div class="trend-route-row">
-                  <a
-                    class="route-name"
-                    [routerLink]="
-                      route.isIndoor
-                        ? [
-                            '/indoor',
-                            route.centerSlug,
-                            'route',
-                            route.routeSlug,
-                          ]
-                        : [
-                            '/area',
-                            route.areaSlug,
-                            route.cragSlug,
-                            route.routeSlug,
-                          ]
-                    "
-                    [class.onsight]="route.type === AscentTypes.OS"
-                    [class.flash]="route.type === AscentTypes.F"
-                    [class.redpoint]="
-                      route.type === AscentTypes.RP || !route.type
-                    "
-                  >
-                    {{ route.name || ('anonymous' | translate) }}
-                  </a>
-                  <span class="route-score">
-                    <span class="route-score-grade">
-                      {{ route.gradeLabel }}
-                    </span>
-                    <span class="route-score-val">{{ route.score }}</span>
-                  </span>
-                </div>
-              }
-            </div>
-          </tui-scrollbar>
-        }
-      </div>
+      <app-stats-route-hint
+        [title]="'statistics.top10Ascents' | translate"
+        [value]="((totalScore() | number) || 0) + ' ' + ('points' | translate)"
+        [routes]="topRoutes()"
+      />
     </ng-template>
 
     <!-- Hint content for Max Grade Routes -->
@@ -321,142 +271,14 @@ import { ChartAscentsByStyleComponent } from '../../charts/chart-ascents-by-styl
       let-grade="grade"
       let-routes="routes"
     >
-      <div class="trend-hint">
-        <div class="trend-hint-header">
-          <span class="trend-hint-title">
-            {{ title }}
-          </span>
-          <span class="trend-hint-score">
-            {{ grade }}
-          </span>
-        </div>
-
-        @if (routes?.length > 0) {
-          <tui-scrollbar class="trend-scroll">
-            <div class="trend-routes">
-              @for (route of routes; track $index) {
-                <div class="trend-route-row">
-                  <a
-                    class="route-name"
-                    [routerLink]="
-                      route.isIndoor
-                        ? [
-                            '/indoor',
-                            route.centerSlug,
-                            'route',
-                            route.routeSlug,
-                          ]
-                        : [
-                            '/area',
-                            route.areaSlug,
-                            route.cragSlug,
-                            route.routeSlug,
-                          ]
-                    "
-                    [class.onsight]="route.type === AscentTypes.OS"
-                    [class.flash]="route.type === AscentTypes.F"
-                    [class.redpoint]="
-                      route.type === AscentTypes.RP || !route.type
-                    "
-                  >
-                    {{ route.name || ('anonymous' | translate) }}
-                  </a>
-                  <span class="route-score">
-                    <span class="route-score-grade">
-                      {{ route.gradeLabel }}
-                    </span>
-                    <span class="route-score-val">{{ route.score }}</span>
-                  </span>
-                </div>
-              }
-            </div>
-          </tui-scrollbar>
-        }
-      </div>
+      <app-stats-route-hint [title]="title" [value]="grade" [routes]="routes" />
     </ng-template>
-  `,
-  styles: `
-    .trend-hint {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      min-width: 240px;
-      padding: 0.5rem 0;
-    }
-    .trend-hint-header {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.25rem;
-      border-bottom: 1px solid var(--tui-border-normal);
-      padding-bottom: 0.75rem;
-      margin-bottom: 0.25rem;
-    }
-    .trend-hint-title {
-      font: var(--tui-typography-body-s);
-      opacity: 0.5;
-      font-weight: bold;
-    }
-    .trend-hint-score {
-      font: var(--tui-typography-heading-h4);
-      font-weight: 900;
-    }
-    .trend-routes {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-      padding-right: 1.25rem;
-    }
-    .trend-route-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-    }
-    .route-name {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 130px;
-      text-decoration: none;
-      transition: opacity 0.2s;
-    }
-    .route-name:hover {
-      text-decoration: underline;
-      opacity: 0.8;
-    }
-    .route-name.onsight {
-      color: var(--tui-status-positive);
-    }
-    .route-name.flash {
-      color: var(--tui-status-warning);
-    }
-    .route-name.redpoint {
-      color: var(--tui-status-negative);
-    }
-    .route-score {
-      font-family: monospace;
-      text-align: right;
-    }
-    .route-score-grade {
-      font: var(--tui-typography-body-m);
-      opacity: 0.8;
-      margin-right: 0.5rem;
-    }
-    .route-score-val {
-      opacity: 0.6;
-    }
-    .trend-scroll {
-      max-height: 250px;
-    }
   `,
   host: {
     class: 'block w-full min-w-0',
   },
 })
 export class UserProfileStatsScoreComponent {
-  protected readonly AscentTypes = AscentTypes;
-
   totalScore = input.required<number>();
   topRoutes = input<RouteScore[]>([]);
   totalAscents = input.required<number>();

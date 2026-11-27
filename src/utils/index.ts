@@ -1,4 +1,6 @@
+export * from './area-filters';
 export * from './array.utils';
+export * from './ascent-feed-helpers';
 export * from './ascents.utils';
 export * from './auth.utils';
 export * from './crag-mappers';

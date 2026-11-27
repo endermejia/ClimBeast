@@ -68,8 +68,8 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
 
 import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
 import { GradeComponent } from '../ui/avatar-grade';
-
 import { EmptyStateComponent } from '../ui/empty-state';
+import { RouteAscentActionMenuComponent } from './route-ascent-action-menu';
 
 @Component({
   selector: 'app-routes-table',
@@ -82,6 +82,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
     FormsModule,
     GradeComponent,
     NgTemplateOutlet,
+    RouteAscentActionMenuComponent,
     RouterLink,
     TranslatePipe,
     TuiBadge,
@@ -785,127 +786,28 @@ import { EmptyStateComponent } from '../ui/empty-state';
                                   "
                                 />
                               } @else {
-                                <button
+                                <app-route-ascent-action-menu
                                   [size]="isMobile ? 's' : 'm'"
-                                  [appearance]="
-                                    isAttemptProject
-                                      ? 'none'
-                                      : item.project
-                                        ? 'info'
-                                        : 'neutral'
+                                  [isAttemptProject]="!!isAttemptProject"
+                                  [isProject]="!!item.project"
+                                  [hasOwnAscent]="!!item.own_ascent"
+                                  [canToggleProject]="
+                                    !item.isIndoor && !item.climbed
                                   "
-                                  [iconStart]="
-                                    isAttemptProject
-                                      ? '@tui.circle-dashed'
-                                      : item.project
-                                        ? '@tui.bookmark'
-                                        : '@tui.circle-plus'
-                                  "
-                                  [style.background]="
-                                    isAttemptProject
-                                      ? 'var(--tui-status-neutral)'
-                                      : null
-                                  "
-                                  [class.text-(--tui-text-primary-on-accent-1)!]="
-                                    isAttemptProject
-                                  "
-                                  [class.transition-transform]="
-                                    isAttemptProject
-                                  "
-                                  [class.active:scale-95]="isAttemptProject"
-                                  tuiIconButton
-                                  type="button"
-                                  class="rounded-full!"
-                                  [tuiDropdown]="actionMenu"
-                                  tuiDropdownAlign="end"
-                                  [tuiDropdownMinHeight]="140"
-                                  [tuiDropdownOpen]="
-                                    openActionId() === item.key
-                                  "
-                                  (tuiDropdownOpenChange)="
+                                  [open]="openActionId() === item.key"
+                                  (openChange)="
                                     openActionId.set($event ? item.key : null)
                                   "
-                                  (click.zoneless)="$event.stopPropagation()"
-                                >
-                                  {{
-                                    isAttemptProject
-                                      ? ('ascentTypes.attempt' | translate)
-                                      : item.project
-                                        ? ('project' | translate)
-                                        : ('ascent.new' | translate)
-                                  }}
-                                </button>
+                                  (viewAscent)="
+                                    viewAscent.emit({
+                                      row: item,
+                                      ascent: item.own_ascent!,
+                                    })
+                                  "
+                                  (logAscent)="logAscent.emit(item)"
+                                  (toggleProject)="toggleProject.emit(item)"
+                                />
                               }
-                              <ng-template #actionMenu>
-                                <tui-data-list size="m">
-                                  @if (item.own_ascent; as ascent) {
-                                    <button
-                                      tuiOption
-                                      class="whitespace-nowrap"
-                                      (click)="
-                                        viewAscent.emit({
-                                          row: item,
-                                          ascent: ascent,
-                                        });
-                                        openActionId.set(null)
-                                      "
-                                    >
-                                      <tui-icon icon="@tui.eye" class="mr-2" />
-                                      {{ 'ascent.view' | translate }}
-                                    </button>
-                                  }
-                                  <button
-                                    tuiOption
-                                    appearance="positive"
-                                    class="whitespace-nowrap"
-                                    (click)="
-                                      logAscent.emit(item);
-                                      openActionId.set(null)
-                                    "
-                                  >
-                                    <tui-icon
-                                      icon="@tui.square-check"
-                                      class="mr-2"
-                                    />
-                                    {{ 'ascent.new' | translate }}
-                                  </button>
-                                  @if (!item.isIndoor && !item.climbed) {
-                                    @if (item.project) {
-                                      <button
-                                        tuiOption
-                                        appearance="negative"
-                                        class="whitespace-nowrap"
-                                        (click)="
-                                          toggleProject.emit(item);
-                                          openActionId.set(null)
-                                        "
-                                      >
-                                        <tui-icon
-                                          icon="@tui.bookmark"
-                                          class="mr-2"
-                                        />
-                                        {{ 'project.remove' | translate }}
-                                      </button>
-                                    } @else {
-                                      <button
-                                        tuiOption
-                                        appearance="info"
-                                        class="whitespace-nowrap"
-                                        (click)="
-                                          toggleProject.emit(item);
-                                          openActionId.set(null)
-                                        "
-                                      >
-                                        <tui-icon
-                                          icon="@tui.bookmark"
-                                          class="mr-2"
-                                        />
-                                        {{ 'project.add' | translate }}
-                                      </button>
-                                    }
-                                  }
-                                </tui-data-list>
-                              </ng-template>
                             }
                           </div>
                         }

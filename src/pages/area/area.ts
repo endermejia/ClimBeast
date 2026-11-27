@@ -33,8 +33,6 @@ import {
 import {
   TUI_CONFIRM,
   TuiAvatar,
-  TuiBadgedContent,
-  TuiBadgeNotification,
   TuiChevron,
   TuiComboBox,
   type TuiConfirmData,
@@ -72,6 +70,7 @@ import { TopoCardComponent } from '../../components/topo/topo-card';
 import { ToposOfflineBarComponent } from '../../components/topo/topos-offline-bar';
 import { GradeComponent } from '../../components/ui/avatar-grade';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
+import { FilterButtonComponent } from '../../components/ui/filter-button';
 import { MeteoButtonComponent } from '../../components/ui/meteo-button';
 import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import { ParkingButtonComponent } from '../../components/ui/parking-button';
@@ -101,12 +100,16 @@ import {
 import { CACHE_KEYS } from '../../constants';
 import { AvatarUrlPipe, IconSrcPipe, InitialsPipe } from '../../pipes';
 import {
+  addLoadedTab,
   createCachedResource,
   filterRoutes,
   gradeToVerticalLife,
   handleErrorToast,
+  hasActiveAreaFilters,
+  hydrateOutdoorAscentsFeed,
   mapRouteToExtras,
   matchesQuery,
+  mergePaginatedItems,
   RawRouteData,
   slugify,
 } from '../../utils';
@@ -125,6 +128,7 @@ const PAGE_SIZE = 20;
     AvatarUrlPipe,
     ChartRoutesByGradeComponent,
     EmptyStateComponent,
+    FilterButtonComponent,
     GradeComponent,
     FormsModule,
     IconSrcPipe,
@@ -141,8 +145,6 @@ const PAGE_SIZE = 20;
     TranslatePipe,
     TuiAppearance,
     TuiAvatar,
-    TuiBadgedContent,
-    TuiBadgeNotification,
     TuiButton,
     TuiChevron,
     TuiComboBox,
@@ -490,24 +492,10 @@ const PAGE_SIZE = 20;
                             "
                           />
                         </tui-textfield>
-                        <tui-badged-content class="rounded-2xl">
-                          @if (hasActiveRouteFilters()) {
-                            <tui-badge-notification
-                              tuiAppearance="accent"
-                              size="s"
-                              tuiSlot="top"
-                            />
-                          }
-                          <button
-                            tuiButton
-                            appearance="textfield"
-                            size="l"
-                            type="button"
-                            iconStart="@tui.sliders-horizontal"
-                            [attr.aria-label]="'filters' | translate"
-                            (click.zoneless)="openRouteFilters()"
-                          ></button>
-                        </tui-badged-content>
+                        <app-filter-button
+                          [hasActiveFilters]="hasActiveRouteFilters()"
+                          (clicked)="openRouteFilters()"
+                        />
                       </div>
 
                       @let routesList = filteredAreaRoutes();
@@ -662,24 +650,10 @@ const PAGE_SIZE = 20;
                             (input.zoneless)="onQuery(cragsSearch.value)"
                           />
                         </tui-textfield>
-                        <tui-badged-content class="rounded-2xl">
-                          @if (hasActiveFilters()) {
-                            <tui-badge-notification
-                              tuiAppearance="accent"
-                              size="s"
-                              tuiSlot="top"
-                            />
-                          }
-                          <button
-                            tuiButton
-                            appearance="textfield"
-                            size="l"
-                            type="button"
-                            iconStart="@tui.sliders-horizontal"
-                            [attr.aria-label]="'filters' | translate"
-                            (click.zoneless)="openFilters()"
-                          ></button>
-                        </tui-badged-content>
+                        <app-filter-button
+                          [hasActiveFilters]="hasActiveFilters()"
+                          (clicked)="openFilters()"
+                        />
                       </div>
 
                       <div class="grid gap-2 grid-cols-1 xl:grid-cols-2">
@@ -910,43 +884,8 @@ export class AreaComponent {
         console.error('[AreaComponent] Error fetching ascents:', error);
         throw error;
       }
-      if (!data || data.length === 0) return [];
 
-      const userIds = [...new Set(data.map((a) => a.user_id).filter(Boolean))];
-      let profileMap = new Map<string, UserProfileBasicDto>();
-      if (userIds.length > 0) {
-        const { data: profiles } = await this.supabase.client
-          .from('user_profiles')
-          .select('id, name, avatar')
-          .in('id', userIds);
-        if (profiles) {
-          profileMap = new Map(profiles.map((p) => [p.id, p]));
-        }
-      }
-
-      return data.map((a) => {
-        const { route, user_id, ...ascentRest } = a;
-        const cragData = route?.crag;
-        const cragArea = (
-          cragData as { area?: { slug?: string; name?: string } } | null
-        )?.area;
-        const mappedRoute = route
-          ? {
-              ...route,
-              crag_slug: cragData?.slug,
-              crag_name: cragData?.name,
-              area_slug: cragArea?.slug,
-              area_name: cragArea?.name,
-            }
-          : undefined;
-        return {
-          ...ascentRest,
-          user_id,
-          kind: 'ascent' as const,
-          user: profileMap.get(user_id) ?? undefined,
-          route: mappedRoute,
-        } as FeedItem;
-      });
+      return hydrateOutdoorAscentsFeed(this.supabase.client, data);
     },
     cache: this.cache,
     fallbackValue: [],
@@ -967,15 +906,13 @@ export class AreaComponent {
     return this.ascentsSignal().length === PAGE_SIZE;
   });
 
-  readonly hasActiveFilters = computed(() => {
-    const [lo, hi] = this.selectedGradeRange();
-    const gradeActive = !(lo === 0 && hi === ORDERED_GRADE_VALUES.length - 1);
-    return (
-      gradeActive ||
-      this.selectedCategories().length > 0 ||
-      this.selectedShade().length > 0
-    );
-  });
+  readonly hasActiveFilters = computed(() =>
+    hasActiveAreaFilters({
+      gradeRange: this.selectedGradeRange(),
+      categories: this.selectedCategories(),
+      shade: this.selectedShade(),
+    }),
+  );
 
   protected readonly hasTopos = computed(() => {
     return (this.outdoorData.selectedArea()?.topos_count ?? 0) > 0;
@@ -1485,29 +1422,17 @@ export class AreaComponent {
     effect(() => {
       const newItems = this.ascentsSignal();
       untracked(() => {
-        if (this.ascentsPage() === 0) {
-          this.accumulatedAscents.set(newItems);
-        } else if (newItems.length) {
-          this.accumulatedAscents.update((prev) => {
-            const existingIds = new Set(prev.map((a) => String(a.id)));
-            const fresh = newItems.filter(
-              (item) => !existingIds.has(String(item.id)),
-            );
-            return fresh.length ? [...prev, ...fresh] : prev;
-          });
-        }
+        const page = this.ascentsPage();
+        this.accumulatedAscents.update((prev) =>
+          mergePaginatedItems(prev, newItems, page),
+        );
       });
     });
 
     effect(() => {
       const currentTab = this.segmentedTabs()[this.activeTabIndex()];
       if (currentTab !== undefined) {
-        this.loadedTabs.update((set) => {
-          if (set.has(currentTab)) return set;
-          const next = new Set(set);
-          next.add(currentTab);
-          return next;
-        });
+        this.loadedTabs.update((set) => addLoadedTab(set, currentTab));
       }
     });
 

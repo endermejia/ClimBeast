@@ -55,7 +55,6 @@ import { firstValueFrom } from 'rxjs';
 import { CacheService } from '../../services/cache.service';
 import { IndoorCentersDataService } from '../../services/indoor-centers-data.service';
 import { IndoorService } from '../../services/indoor.service';
-import { MapService } from '../../services/map.service';
 import { SlugService } from '../../services/slug.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
@@ -88,6 +87,10 @@ import {
 import { openImageEditor } from '../../utils/open-image-editor';
 
 import { IS_BROWSER } from '../../app/is-browser';
+import {
+  CoordinatesFieldsComponent,
+  CoordinatesValue,
+} from '../location/coordinates-fields';
 
 @Component({
   selector: 'app-indoor-center-form',
@@ -97,6 +100,7 @@ import { IS_BROWSER } from '../../app/is-browser';
     CdkDrag,
     CdkDropList,
     CommonModule,
+    CoordinatesFieldsComponent,
     FormField,
     FormsModule,
     InitialsPipe,
@@ -264,51 +268,11 @@ import { IS_BROWSER } from '../../app/is-browser';
                   ></textarea>
                 </tui-textfield>
 
-                <div class="flex flex-wrap items-center gap-4">
-                  <h3 class="font-bold text-lg">
-                    {{ 'location' | translate }}
-                  </h3>
-                  <button
-                    tuiButton
-                    appearance="secondary-grayscale"
-                    size="s"
-                    type="button"
-                    iconStart="@tui.map-pin"
-                    (click.zoneless)="pickLocation()"
-                  >
-                    {{ 'pickOnMap' | translate }}
-                  </button>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                  <tui-textfield [tuiTextfieldCleaner]="false">
-                    <label tuiLabel for="lat">{{ 'lat' | translate }}</label>
-                    <input
-                      tuiInputNumber
-                      id="lat"
-                      [ngModel]="model().latitude"
-                      (ngModelChange)="onLatChange($event)"
-                      name="latitude"
-                      [tuiNumberFormat]="{ precision: 6 }"
-                      (paste)="onPasteLocation($event)"
-                      (change.zoneless)="sanitizeCoordinates()"
-                      autocomplete="off"
-                    />
-                  </tui-textfield>
-                  <tui-textfield [tuiTextfieldCleaner]="false">
-                    <label tuiLabel for="lng">{{ 'lng' | translate }}</label>
-                    <input
-                      tuiInputNumber
-                      id="lng"
-                      [tuiNumberFormat]="{ precision: 6 }"
-                      [ngModel]="model().longitude"
-                      (ngModelChange)="onLngChange($event)"
-                      name="longitude"
-                      (change.zoneless)="sanitizeCoordinates()"
-                      autocomplete="off"
-                    />
-                  </tui-textfield>
-                </div>
+                <app-coordinates-fields
+                  [latitude]="model().latitude"
+                  [longitude]="model().longitude"
+                  (coordinatesChange)="onCoordinatesChange($event)"
+                />
 
                 <!-- Gallery -->
                 <div class="flex flex-col gap-3">
@@ -1340,7 +1304,6 @@ export class IndoorCenterFormComponent {
   protected readonly supabase = inject(SupabaseService);
   private readonly slugService = inject(SlugService);
   private readonly toast = inject(ToastService);
-  protected readonly mapService = inject(MapService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly userProfiles = inject(UserProfilesService);
   private readonly isBrowser = inject(IS_BROWSER);
@@ -2111,31 +2074,8 @@ export class IndoorCenterFormComponent {
     }
   }
 
-  async pickLocation(): Promise<void> {
-    const result = await import('rxjs').then((m) =>
-      m.firstValueFrom(
-        this.mapService.pickLocation(
-          this.model().latitude,
-          this.model().longitude,
-        ),
-        { defaultValue: null },
-      ),
-    );
-    if (result) {
-      this.model.update((m) => ({
-        ...m,
-        latitude: result.lat,
-        longitude: result.lng,
-      }));
-    }
-  }
-
-  onLatChange(value: number | null): void {
-    this.model.update((m) => ({ ...m, latitude: value }));
-  }
-
-  onLngChange(value: number | null): void {
-    this.model.update((m) => ({ ...m, longitude: value }));
+  onCoordinatesChange({ latitude, longitude }: CoordinatesValue): void {
+    this.model.update((m) => ({ ...m, latitude, longitude }));
   }
 
   onDescriptionChange(value: string): void {
@@ -2144,31 +2084,6 @@ export class IndoorCenterFormComponent {
 
   onWarningChange(value: string): void {
     this.model.update((m) => ({ ...m, warning: value }));
-  }
-
-  onPasteLocation(event: ClipboardEvent): void {
-    const text = event.clipboardData?.getData('text');
-    if (!text) return;
-
-    const coords = this.mapService.parseCoordinates(text);
-    if (coords) {
-      event.preventDefault();
-      this.model.update((m) => ({
-        ...m,
-        latitude: coords.lat,
-        longitude: coords.lng,
-      }));
-    }
-  }
-
-  sanitizeCoordinates(): void {
-    const lat = this.model().latitude;
-    const lng = this.model().longitude;
-    this.model.update((m) => ({
-      ...m,
-      latitude: lat != null ? parseFloat(lat.toFixed(6)) : null,
-      longitude: lng != null ? parseFloat(lng.toFixed(6)) : null,
-    }));
   }
 
   protected async approveRoutesetter(

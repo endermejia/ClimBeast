@@ -60,7 +60,7 @@ import { STORAGE_KEYS } from '../../constants';
 import { IS_BROWSER } from '../../app/is-browser';
 
 import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
-import { IndoorRouteEquippersInputComponent } from '../route/indoor-route-equippers-input';
+import { RouteEquippersInputComponent } from '../route/route-equippers-input';
 import { GradeComponent } from '../ui/avatar-grade';
 import { EmptyStateComponent } from '../ui/empty-state';
 
@@ -89,7 +89,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
     TuiTableHead,
     GradeComponent,
     EmptyStateComponent,
-    IndoorRouteEquippersInputComponent,
+    RouteEquippersInputComponent,
     ButtonAscentTypeComponent,
     TuiCheckbox,
     TuiPin,
@@ -306,7 +306,8 @@ import { EmptyStateComponent } from '../ui/empty-state';
                           <div tuiCell size="m" class="grow min-w-0">
                             <div class="flex flex-col gap-1 w-full">
                               @if (canEdit()) {
-                                <app-indoor-route-equippers-input
+                                <app-route-equippers-input
+                                  mode="indoor"
                                   [route]="item"
                                   (equippersChanged)="routesResource.reload()"
                                 />

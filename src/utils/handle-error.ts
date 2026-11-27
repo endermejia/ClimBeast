@@ -198,3 +198,32 @@ export function extractErrorMessage(error: unknown, depth = 0): string {
   const str = String(error ?? '');
   return str === '[object Object]' ? '' : str;
 }
+
+/**
+ * Extracts a structured `{ error: string }` message from a Supabase Edge Function
+ * error response (`error.context.json()`), returning a normalized `Error` when
+ * available or falling back to the original error.
+ */
+export async function resolveEdgeFunctionError(
+  error: unknown,
+): Promise<unknown> {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'context' in error &&
+    typeof (error as { context?: { json?: () => Promise<unknown> } }).context
+      ?.json === 'function'
+  ) {
+    try {
+      const body = (await (
+        error as { context: { json: () => Promise<unknown> } }
+      ).context.json()) as { error?: unknown } | null;
+      if (typeof body?.error === 'string' && body.error) {
+        return new Error(body.error);
+      }
+    } catch {
+      // Response body is not valid JSON; fall back to the original error
+    }
+  }
+  return error;
+}

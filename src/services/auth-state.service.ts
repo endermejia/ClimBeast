@@ -161,141 +161,95 @@ export class AuthStateService {
     );
   };
 
-  readonly canCreateIndoorRoute = (
-    center: IndoorCenterDto | null | undefined,
-  ): boolean => {
-    if (this.isAdmin()) return true;
-    if (!center) return false;
-    const centerId = String(center.id);
-    if (
+  private isIndoorCenterStaff(centerId: string): boolean {
+    return (
       this.adminIndoorCenters().includes(centerId) ||
       this.routesetterIndoorCenters().includes(centerId)
-    ) {
-      return true;
-    }
+    );
+  }
+
+  private checkIndoorCreatePermission(
+    center: IndoorCenterDto | null | undefined,
+    permKey: 'can_create_routes' | 'can_create_topos' | 'can_create_lines',
+  ): boolean {
+    if (this.isAdmin()) return true;
+    if (!center) return false;
+    if (this.isIndoorCenterStaff(String(center.id))) return true;
     const perms = parseIndoorCenterPermissions(center.permissions);
-    return perms.can_create_routes === 'all' && !!this.supabase.authUserId();
-  };
+    return perms[permKey] === 'all' && !!this.supabase.authUserId();
+  }
+
+  private checkIndoorModifyPermission(
+    center: IndoorCenterDto | null | undefined,
+    permKey:
+      | 'can_edit_routes'
+      | 'can_archive_routes'
+      | 'can_edit_topos'
+      | 'can_archive_topos'
+      | 'can_edit_lines',
+    creatorId: string | null | undefined,
+  ): boolean {
+    if (this.isAdmin()) return true;
+    if (!center) return false;
+    if (this.isIndoorCenterStaff(String(center.id))) return true;
+    const currentUserId = this.supabase.authUserId();
+    if (!currentUserId) return false;
+    if (creatorId && creatorId === currentUserId) return true;
+    const perms = parseIndoorCenterPermissions(center.permissions);
+    return perms[permKey] === 'all';
+  }
+
+  readonly canCreateIndoorRoute = (
+    center: IndoorCenterDto | null | undefined,
+  ): boolean => this.checkIndoorCreatePermission(center, 'can_create_routes');
 
   readonly canEditIndoorRoute = (
     center: IndoorCenterDto | null | undefined,
     route?: { user_creator_id?: string | null } | null,
-  ): boolean => {
-    if (this.isAdmin()) return true;
-    if (!center) return false;
-    const centerId = String(center.id);
-    if (
-      this.adminIndoorCenters().includes(centerId) ||
-      this.routesetterIndoorCenters().includes(centerId)
-    ) {
-      return true;
-    }
-    const currentUserId = this.supabase.authUserId();
-    if (!currentUserId) return false;
-    if (route?.user_creator_id && route.user_creator_id === currentUserId) {
-      return true;
-    }
-    const perms = parseIndoorCenterPermissions(center.permissions);
-    return perms.can_edit_routes === 'all';
-  };
+  ): boolean =>
+    this.checkIndoorModifyPermission(
+      center,
+      'can_edit_routes',
+      route?.user_creator_id,
+    );
 
   readonly canArchiveIndoorRoute = (
     center: IndoorCenterDto | null | undefined,
     route?: { user_creator_id?: string | null } | null,
-  ): boolean => {
-    if (this.isAdmin()) return true;
-    if (!center) return false;
-    const centerId = String(center.id);
-    if (
-      this.adminIndoorCenters().includes(centerId) ||
-      this.routesetterIndoorCenters().includes(centerId)
-    ) {
-      return true;
-    }
-    const currentUserId = this.supabase.authUserId();
-    if (!currentUserId) return false;
-    if (route?.user_creator_id && route.user_creator_id === currentUserId) {
-      return true;
-    }
-    const perms = parseIndoorCenterPermissions(center.permissions);
-    return perms.can_archive_routes === 'all';
-  };
+  ): boolean =>
+    this.checkIndoorModifyPermission(
+      center,
+      'can_archive_routes',
+      route?.user_creator_id,
+    );
 
   readonly canCreateIndoorTopo = (
     center: IndoorCenterDto | null | undefined,
-  ): boolean => {
-    if (this.isAdmin()) return true;
-    if (!center) return false;
-    const centerId = String(center.id);
-    if (
-      this.adminIndoorCenters().includes(centerId) ||
-      this.routesetterIndoorCenters().includes(centerId)
-    ) {
-      return true;
-    }
-    const perms = parseIndoorCenterPermissions(center.permissions);
-    return perms.can_create_topos === 'all' && !!this.supabase.authUserId();
-  };
+  ): boolean => this.checkIndoorCreatePermission(center, 'can_create_topos');
 
   readonly canEditIndoorTopo = (
     center: IndoorCenterDto | null | undefined,
     topo?: { user_creator_id?: string | null } | null,
-  ): boolean => {
-    if (this.isAdmin()) return true;
-    if (!center) return false;
-    const centerId = String(center.id);
-    if (
-      this.adminIndoorCenters().includes(centerId) ||
-      this.routesetterIndoorCenters().includes(centerId)
-    ) {
-      return true;
-    }
-    const currentUserId = this.supabase.authUserId();
-    if (!currentUserId) return false;
-    if (topo?.user_creator_id && topo.user_creator_id === currentUserId) {
-      return true;
-    }
-    const perms = parseIndoorCenterPermissions(center.permissions);
-    return perms.can_edit_topos === 'all';
-  };
+  ): boolean =>
+    this.checkIndoorModifyPermission(
+      center,
+      'can_edit_topos',
+      topo?.user_creator_id,
+    );
 
   readonly canArchiveIndoorTopo = (
     center: IndoorCenterDto | null | undefined,
     topo?: { user_creator_id?: string | null } | null,
-  ): boolean => {
-    if (this.isAdmin()) return true;
-    if (!center) return false;
-    const centerId = String(center.id);
-    if (
-      this.adminIndoorCenters().includes(centerId) ||
-      this.routesetterIndoorCenters().includes(centerId)
-    ) {
-      return true;
-    }
-    const currentUserId = this.supabase.authUserId();
-    if (!currentUserId) return false;
-    if (topo?.user_creator_id && topo.user_creator_id === currentUserId) {
-      return true;
-    }
-    const perms = parseIndoorCenterPermissions(center.permissions);
-    return perms.can_archive_topos === 'all';
-  };
+  ): boolean =>
+    this.checkIndoorModifyPermission(
+      center,
+      'can_archive_topos',
+      topo?.user_creator_id,
+    );
 
   readonly canCreateIndoorLine = (
     center: IndoorCenterDto | null | undefined,
-  ): boolean => {
-    if (this.isAdmin()) return true;
-    if (!center) return false;
-    const centerId = String(center.id);
-    if (
-      this.adminIndoorCenters().includes(centerId) ||
-      this.routesetterIndoorCenters().includes(centerId)
-    ) {
-      return true;
-    }
-    const perms = parseIndoorCenterPermissions(center.permissions);
-    return perms.can_create_lines === 'all' && !!this.supabase.authUserId();
-  };
+  ): boolean => this.checkIndoorCreatePermission(center, 'can_create_lines');
 
   readonly canEditIndoorLine = (
     center: IndoorCenterDto | null | undefined,
@@ -303,25 +257,34 @@ export class AuthStateService {
       user_creator_id?: string | null;
       route?: { user_creator_id?: string | null };
     } | null,
-  ): boolean => {
-    if (this.isAdmin()) return true;
-    if (!center) return false;
-    const centerId = String(center.id);
-    if (
-      this.adminIndoorCenters().includes(centerId) ||
-      this.routesetterIndoorCenters().includes(centerId)
-    ) {
+  ): boolean =>
+    this.checkIndoorModifyPermission(
+      center,
+      'can_edit_lines',
+      line?.user_creator_id || line?.route?.user_creator_id,
+    );
+
+  private checkOutdoorEditPermission(
+    entity:
+      | { user_creator_id?: string | null; created_at?: string | null }
+      | null
+      | undefined,
+    areaId: number,
+    direct: boolean,
+  ): boolean {
+    if (direct) {
+      if (!entity) return false;
+      if (this.isAdmin() || this.adminAreas().includes(areaId)) return true;
+    } else if (this.canEditAsAdmin() || this.areaAdminPermissions()[areaId]) {
       return true;
     }
-    const currentUserId = this.supabase.authUserId();
-    if (!currentUserId) return false;
-    const creatorId = line?.user_creator_id || line?.route?.user_creator_id;
-    if (creatorId && creatorId === currentUserId) {
-      return true;
-    }
-    const perms = parseIndoorCenterPermissions(center.permissions);
-    return perms.can_edit_lines === 'all';
-  };
+    const userId = this.userProfile()?.id;
+    if (!entity || !userId) return false;
+    return (
+      entity.user_creator_id === userId &&
+      this.isWithinOneWeek(entity.created_at)
+    );
+  }
 
   readonly checkAreaEditPermission = (
     area:
@@ -333,14 +296,7 @@ export class AuthStateService {
         }
       | null
       | undefined,
-  ): boolean => {
-    if (this.canEditAsAdmin() || this.areaAdminPermissions()[area?.id ?? -1])
-      return true;
-    const userId = this.userProfile()?.id;
-    if (!area || !userId) return false;
-    const isCreator = area.user_creator_id === userId;
-    return isCreator && this.isWithinOneWeek(area.created_at);
-  };
+  ): boolean => this.checkOutdoorEditPermission(area, area?.id ?? -1, false);
 
   readonly isAreaAdminOf = (areaId: number | null | undefined): boolean => {
     if (this.isAdmin()) return true;
@@ -366,28 +322,12 @@ export class AuthStateService {
         }
       | null
       | undefined,
-  ): boolean => {
-    if (!area) return false;
-    if (this.isAdmin() || this.adminAreas().includes(area.id)) return true;
-    const userId = this.userProfile()?.id;
-    if (!userId) return false;
-    const isCreator = area.user_creator_id === userId;
-    return isCreator && this.isWithinOneWeek(area.created_at);
-  };
+  ): boolean => this.checkOutdoorEditPermission(area, area?.id ?? -1, true);
 
   readonly checkCragEditPermission = (
     crag: CragListItem | CragDetail | null | undefined,
-  ): boolean => {
-    if (
-      this.canEditAsAdmin() ||
-      this.areaAdminPermissions()[crag?.area_id ?? -1]
-    )
-      return true;
-    const userId = this.userProfile()?.id;
-    if (!crag || !userId) return false;
-    const isCreator = crag.user_creator_id === userId;
-    return isCreator && this.isWithinOneWeek(crag.created_at);
-  };
+  ): boolean =>
+    this.checkOutdoorEditPermission(crag, crag?.area_id ?? -1, false);
 
   readonly checkCragEditPermissionDirect = (
     crag:
@@ -401,15 +341,8 @@ export class AuthStateService {
         }
       | null
       | undefined,
-  ): boolean => {
-    if (!crag) return false;
-    const areaId = crag.area_id ?? -1;
-    if (this.isAdmin() || this.adminAreas().includes(areaId)) return true;
-    const userId = this.userProfile()?.id;
-    if (!userId) return false;
-    const isCreator = crag.user_creator_id === userId;
-    return isCreator && this.isWithinOneWeek(crag.created_at);
-  };
+  ): boolean =>
+    this.checkOutdoorEditPermission(crag, crag?.area_id ?? -1, true);
 
   readonly canEditArea = computed(() =>
     this.checkAreaEditPermission(this.outdoorData.selectedArea()),
@@ -423,29 +356,13 @@ export class AuthStateService {
 
   readonly checkRouteEditPermission = (
     route: RouteWithExtras | null | undefined,
-  ): boolean => {
-    if (
-      this.canEditAsAdmin() ||
-      this.areaAdminPermissions()[route?.area_id ?? -1]
-    )
-      return true;
-    const userId = this.userProfile()?.id;
-    if (!route || !userId) return false;
-    const isCreator = route.user_creator_id === userId;
-    return isCreator && this.isWithinOneWeek(route.created_at);
-  };
+  ): boolean =>
+    this.checkOutdoorEditPermission(route, route?.area_id ?? -1, false);
 
   readonly checkRouteEditPermissionDirect = (
     route: RouteWithExtras | null | undefined,
-  ): boolean => {
-    if (!route) return false;
-    const areaId = route.area_id ?? -1;
-    if (this.isAdmin() || this.adminAreas().includes(areaId)) return true;
-    const userId = this.userProfile()?.id;
-    if (!userId) return false;
-    const isCreator = route.user_creator_id === userId;
-    return isCreator && this.isWithinOneWeek(route.created_at);
-  };
+  ): boolean =>
+    this.checkOutdoorEditPermission(route, route?.area_id ?? -1, true);
 
   readonly isWithinOneWeek = (
     createdAt: string | null | undefined,

@@ -1,75 +1,48 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, inject, resource } from '@angular/core';
-import { RouterLink } from '@angular/router';
-
-import { TuiButton, TuiLoader } from '@taiga-ui/core';
-
-import { TranslatePipe } from '@ngx-translate/core';
 
 import { CragSimple, CragsService } from '../../services/crags.service';
+
+import {
+  SuggestedDuplicateCardComponent,
+  type SuggestedDuplicateItem,
+  SuggestedDuplicatesSectionComponent,
+} from '../../components/admin/suggested-duplicate-card';
 
 import { CragDto } from '../../models';
 
 import { normalizeNameStrict } from '../../utils';
 
+interface CragDuplicateGroup {
+  items: CragSimple[];
+  title: string;
+  areaName: string;
+  cardItems: SuggestedDuplicateItem[];
+}
+
 @Component({
   selector: 'app-suggested-unified-crags',
-  imports: [CommonModule, TranslatePipe, TuiButton, TuiLoader, RouterLink],
+  imports: [
+    SuggestedDuplicateCardComponent,
+    SuggestedDuplicatesSectionComponent,
+  ],
   template: `
-    <div class="flex flex-col gap-4">
-      <h3 class="font-bold text-lg">
-        {{ 'crags.suggestedDuplicates' | translate }}
-      </h3>
-
-      @if (cragsResource.isLoading()) {
-        <div class="flex justify-center p-4">
-          <tui-loader class="m-auto" />
-        </div>
-      } @else if (duplicates().length === 0) {
-        <p class="opacity-70">{{ 'admin.noDuplicatesFound' | translate }}</p>
-      } @else {
-        <div class="grid gap-2">
-          @for (group of duplicates(); track $index) {
-            <div
-              class="border border-(--tui-border-normal) p-4 rounded-xl flex items-center justify-between gap-4"
-            >
-              <div class="flex-1 min-w-0">
-                <div class="font-bold">
-                  {{ group.items[0].name }}
-                  <span class="font-normal opacity-70 text-sm">
-                    ({{ group.areaName }})
-                  </span>
-                </div>
-                <div class="flex flex-col gap-1 mt-1">
-                  @for (crag of group.items; track crag.id) {
-                    <div class="text-sm opacity-70">
-                      @if (crag.area?.slug && crag.slug) {
-                        <a
-                          [routerLink]="['/area', crag.area!.slug, crag.slug]"
-                          target="_blank"
-                          class="underline underline-offset-2 hover:opacity-100"
-                          >{{ crag.name }}</a
-                        >
-                      } @else {
-                        {{ crag.name }}
-                      }
-                    </div>
-                  }
-                </div>
-              </div>
-              <button
-                tuiButton
-                size="m"
-                appearance="primary"
-                (click)="onUnify(group.items)"
-              >
-                {{ 'unify' | translate }}
-              </button>
-            </div>
-          }
-        </div>
-      }
-    </div>
+    <app-suggested-duplicates-section
+      titleKey="crags.suggestedDuplicates"
+      [loading]="cragsResource.isLoading()"
+      [empty]="duplicates().length === 0"
+    >
+      <div class="grid gap-2">
+        @for (group of duplicates(); track $index) {
+          <app-suggested-duplicate-card
+            [title]="group.title"
+            [subtitle]="group.areaName"
+            [items]="group.cardItems"
+            [mutedItems]="true"
+            (unify)="onUnify(group.items)"
+          />
+        }
+      </div>
+    </app-suggested-duplicates-section>
   `,
 })
 export class SuggestedUnifiedCragsComponent {
@@ -79,7 +52,7 @@ export class SuggestedUnifiedCragsComponent {
     loader: () => this.cragsService.getAllCragsSimple(),
   });
 
-  protected readonly duplicates = computed(() => {
+  protected readonly duplicates = computed<CragDuplicateGroup[]>(() => {
     const crags = this.cragsResource.value() ?? [];
     const groups = new Map<string, CragSimple[]>();
 
@@ -96,11 +69,20 @@ export class SuggestedUnifiedCragsComponent {
       .filter((g) => g.length > 1)
       .map((group) => ({
         items: group,
+        title: group[0].name,
         areaName: group[0]?.area?.name || '',
+        cardItems: group.map((crag) => ({
+          id: crag.id,
+          label: crag.name,
+          link:
+            crag.area?.slug && crag.slug
+              ? ['/area', crag.area.slug, crag.slug]
+              : null,
+        })),
       }));
   });
 
-  protected async onUnify(group: CragSimple[]) {
+  protected async onUnify(group: CragSimple[]): Promise<void> {
     // Cast to CragDto[] for the service call
     const success = await this.cragsService.openUnifyCrags(
       group as unknown as CragDto[],

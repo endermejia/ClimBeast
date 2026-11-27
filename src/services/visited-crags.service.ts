@@ -1,8 +1,8 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { Injectable } from '@angular/core';
 
 import { STORAGE_KEYS } from '../constants';
 
-import { LocalStorage } from './local-storage';
+import { VisitedItemsBase } from './visited-items.base';
 
 export interface VisitedCrag {
   id: number;
@@ -15,36 +15,14 @@ export interface VisitedCrag {
 @Injectable({
   providedIn: 'root',
 })
-export class VisitedCragsService {
-  private readonly storage = inject(LocalStorage);
-  private readonly STORAGE_KEY = STORAGE_KEYS.visitedCrags;
-  private readonly MAX_CRAGS = 10;
+export class VisitedCragsService extends VisitedItemsBase<VisitedCrag> {
+  readonly visitedCrags = this.items;
 
-  private readonly _visitedCrags = signal<VisitedCrag[]>(
-    this.loadVisitedCrags(),
-  );
-  readonly visitedCrags = this._visitedCrags.asReadonly();
-
-  private loadVisitedCrags(): VisitedCrag[] {
-    const data = this.storage.getItem(this.STORAGE_KEY);
-    if (!data) return [];
-    try {
-      return JSON.parse(data);
-    } catch {
-      return [];
-    }
+  constructor() {
+    super(STORAGE_KEYS.visitedCrags);
   }
 
-  addVisitedCrag(crag: VisitedCrag) {
-    const current = this.loadVisitedCrags();
-    // Remove if already exists to move it to the front
-    const filtered = current.filter((c) => c.id !== crag.id);
-    const updated = [{ ...crag, visitedAt: Date.now() }, ...filtered].slice(
-      0,
-      this.MAX_CRAGS,
-    );
-
-    this.storage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
-    this._visitedCrags.set(updated);
+  addVisitedCrag(crag: VisitedCrag): void {
+    this.addItem(crag);
   }
 }

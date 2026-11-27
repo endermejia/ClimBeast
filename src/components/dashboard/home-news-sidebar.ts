@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, input, output } from '@angular/core';
 
 import { TuiScrollbar } from '@taiga-ui/core';
@@ -7,22 +6,12 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { NewsItem } from '../../models';
 
-import { InfiniteScrollTriggerComponent } from '../ui/infinite-scroll-trigger';
-import { NewsCardComponent } from '../ui/news-card';
-
-import { NewsCardSkeletonComponent } from '../ui/news-card-skeleton';
+import { HomeNewsListComponent } from './home-news-list';
 
 @Component({
   selector: 'app-home-news-sidebar',
   standalone: true,
-  imports: [
-    CommonModule,
-    InfiniteScrollTriggerComponent,
-    NewsCardComponent,
-    NewsCardSkeletonComponent,
-    TranslatePipe,
-    TuiScrollbar,
-  ],
+  imports: [HomeNewsListComponent, TranslatePipe, TuiScrollbar],
   template: `
     <aside
       class="hidden xl:flex xl:w-[420px] flex-col gap-4 py-4 px-4 h-full shrink-0"
@@ -38,33 +27,14 @@ import { NewsCardSkeletonComponent } from '../ui/news-card-skeleton';
       </div>
 
       <tui-scrollbar class="flex-1 min-h-0 w-full">
-        <div class="flex flex-col gap-4 w-full pr-2">
-          @if (newsLoading()) {
-            @for (_ of [1, 2, 3, 4, 5, 6, 7, 8]; track $index) {
-              <app-news-card-skeleton />
-            }
-          } @else if (newsItems().length > 0) {
-            @for (news of newsItems(); track news.id) {
-              <app-news-card [item]="news" />
-            }
-
-            @if (newsHasMore()) {
-              <div class="flex justify-center py-2">
-                @if (newsLoadingMore()) {
-                  <app-news-card-skeleton />
-                } @else {
-                  <app-infinite-scroll-trigger
-                    (intersect)="loadMoreNews.emit()"
-                  />
-                }
-              </div>
-            }
-          } @else {
-            <div class="text-xs text-center py-6 opacity-60">
-              {{ 'noNewsAvailable' | translate }}
-            </div>
-          }
-        </div>
+        <app-home-news-list
+          variant="sidebar"
+          [newsLoading]="newsLoading()"
+          [newsItems]="newsItems()"
+          [newsHasMore]="newsHasMore()"
+          [newsLoadingMore]="newsLoadingMore()"
+          (loadMoreNews)="loadMoreNews.emit()"
+        />
       </tui-scrollbar>
     </aside>
   `,

@@ -10,7 +10,7 @@ import { AscentCardComponent } from '../ascent/ascent-card';
 import { AscentCardSkeletonComponent } from '../ascent/ascent-card-skeleton';
 import { EmptyStateComponent } from '../ui/empty-state';
 
-export interface AscentDialogData {
+export interface AscentViewDialogData {
   ascentId: number | string;
 }
 
@@ -44,7 +44,7 @@ export interface AscentDialogData {
 export class AscentDialogComponent {
   private readonly ascentsService = inject(AscentsService);
   protected readonly context =
-    injectContext<TuiDialogContext<void, AscentDialogData>>();
+    injectContext<TuiDialogContext<void, AscentViewDialogData>>();
 
   private readonly ascentId = this.context.data?.ascentId ?? 0;
   private readonly deletedAscentId = toSignal(

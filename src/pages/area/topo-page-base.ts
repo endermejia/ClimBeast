@@ -30,10 +30,12 @@ import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
 
-import { TopoRouteWithRoute } from '../../models';
-import type { TopoDetail, TopoListItem } from '../../models';
-
-import { TopoRouteRow } from '../../pipes/table-sorter.pipe';
+import type {
+  TopoDetail,
+  TopoListItem,
+  TopoRouteRow,
+  TopoRouteWithRoute,
+} from '../../models';
 
 import {
   getRouteStyleProperties,

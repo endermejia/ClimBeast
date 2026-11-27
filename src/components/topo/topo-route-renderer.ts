@@ -1,9 +1,11 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, input, output } from '@angular/core';
 
 import type { TopoRouteWithRoute } from '../../models';
 
 import {
   GradeLabelPipe,
+  TopoPointPillGeometryPipe,
   TopoPointStateBadgePipe,
   TopoPointStateColorPipe,
   TopoPointStateLabelPipe,
@@ -19,6 +21,8 @@ export interface RenderedRoute extends TopoRouteWithRoute {
   selector: 'app-topo-route-renderer',
   imports: [
     GradeLabelPipe,
+    NgTemplateOutlet,
+    TopoPointPillGeometryPipe,
     TopoPointStateBadgePipe,
     TopoPointStateColorPipe,
     TopoPointStateLabelPipe,
@@ -131,42 +135,20 @@ export interface RenderedRoute extends TopoRouteWithRoute {
                     </text>
                   }
                   @if (badge) {
-                    @let label = pt.state | topoPointStateLabel;
-                    @let pillW =
-                      tr.width *
-                      (pt.state === 'match'
-                        ? 5800
-                        : pt.state === 'start'
-                          ? 5500
-                          : pt.state === 'foot'
-                            ? 5000
-                            : 4200);
-                    @let pillH = tr.width * 2100;
-                    @let pillY = pt.y * hScale + circleR + pillH * 0.45;
-                    <g class="pointer-events-none" style="user-select: none">
-                      <rect
-                        [attr.x]="pt.x * 1000 - pillW / 2"
-                        [attr.y]="pillY - pillH / 2"
-                        [attr.width]="pillW"
-                        [attr.height]="pillH"
-                        [attr.rx]="pillH / 2"
-                        [attr.fill]="ptColor"
-                        stroke="white"
-                        stroke-width="0.75"
-                      />
-                      <text
-                        [attr.x]="pt.x * 1000"
-                        [attr.y]="pillY + pillH * 0.32"
-                        text-anchor="middle"
-                        fill="white"
-                        font-weight="bold"
-                        [attr.font-size]="tr.width * 1500"
-                        font-family="sans-serif"
-                        style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                      >
-                        {{ label }}
-                      </text>
-                    </g>
+                    <ng-container
+                      *ngTemplateOutlet="
+                        pointStatePill;
+                        context: {
+                          state: pt.state,
+                          cx: pt.x * 1000,
+                          cy: pt.y * hScale,
+                          radius: circleR,
+                          strokeW: tr.width * 1000,
+                          fill: ptColor,
+                          label: pt.state | topoPointStateLabel,
+                        }
+                      "
+                    />
                   }
                 }
               } @else {
@@ -225,42 +207,20 @@ export interface RenderedRoute extends TopoRouteWithRoute {
                       {{ $index + 1 }}
                     </text>
                     @if (badge) {
-                      @let label = pt.state | topoPointStateLabel;
-                      @let pillW =
-                        tr.width *
-                        (pt.state === 'match'
-                          ? 5800
-                          : pt.state === 'start'
-                            ? 5500
-                            : pt.state === 'foot'
-                              ? 5000
-                              : 4200);
-                      @let pillH = tr.width * 2100;
-                      @let pillY = pt.y * hScale + ptR + pillH * 0.45;
-                      <g class="pointer-events-none" style="user-select: none">
-                        <rect
-                          [attr.x]="pt.x * 1000 - pillW / 2"
-                          [attr.y]="pillY - pillH / 2"
-                          [attr.width]="pillW"
-                          [attr.height]="pillH"
-                          [attr.rx]="pillH / 2"
-                          [attr.fill]="ptColor"
-                          stroke="white"
-                          stroke-width="0.75"
-                        />
-                        <text
-                          [attr.x]="pt.x * 1000"
-                          [attr.y]="pillY + pillH * 0.32"
-                          text-anchor="middle"
-                          fill="white"
-                          font-weight="bold"
-                          [attr.font-size]="tr.width * 1500"
-                          font-family="sans-serif"
-                          style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                        >
-                          {{ label }}
-                        </text>
-                      </g>
+                      <ng-container
+                        *ngTemplateOutlet="
+                          pointStatePill;
+                          context: {
+                            state: pt.state,
+                            cx: pt.x * 1000,
+                            cy: pt.y * hScale,
+                            radius: ptR,
+                            strokeW: tr.width * 1000,
+                            fill: ptColor,
+                            label: pt.state | topoPointStateLabel,
+                          }
+                        "
+                      />
                     }
                   }
                 } @else {
@@ -274,19 +234,7 @@ export interface RenderedRoute extends TopoRouteWithRoute {
                     ) {
                       @let ptColor =
                         pt.state | topoPointStateColor: tr.style.stroke;
-                      @let label = pt.state | topoPointStateLabel;
                       @let ptR = tr.width * 1400;
-                      @let pillW =
-                        tr.width *
-                        (pt.state === 'match'
-                          ? 5800
-                          : pt.state === 'start'
-                            ? 5500
-                            : pt.state === 'foot'
-                              ? 5000
-                              : 4200);
-                      @let pillH = tr.width * 2100;
-                      @let pillY = pt.y * hScale + ptR + pillH * 0.45;
                       <circle
                         [attr.cx]="pt.x * 1000"
                         [attr.cy]="pt.y * hScale"
@@ -295,30 +243,20 @@ export interface RenderedRoute extends TopoRouteWithRoute {
                         [attr.stroke]="tr.style.stroke"
                         stroke-width="1.5"
                       />
-                      <g class="pointer-events-none" style="user-select: none">
-                        <rect
-                          [attr.x]="pt.x * 1000 - pillW / 2"
-                          [attr.y]="pillY - pillH / 2"
-                          [attr.width]="pillW"
-                          [attr.height]="pillH"
-                          [attr.rx]="pillH / 2"
-                          [attr.fill]="ptColor"
-                          stroke="white"
-                          stroke-width="0.75"
-                        />
-                        <text
-                          [attr.x]="pt.x * 1000"
-                          [attr.y]="pillY + pillH * 0.32"
-                          text-anchor="middle"
-                          fill="white"
-                          font-weight="bold"
-                          [attr.font-size]="tr.width * 1500"
-                          font-family="sans-serif"
-                          style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                        >
-                          {{ label }}
-                        </text>
-                      </g>
+                      <ng-container
+                        *ngTemplateOutlet="
+                          pointStatePill;
+                          context: {
+                            state: pt.state,
+                            cx: pt.x * 1000,
+                            cy: pt.y * hScale,
+                            radius: ptR,
+                            strokeW: tr.width * 1000,
+                            fill: ptColor,
+                            label: pt.state | topoPointStateLabel,
+                          }
+                        "
+                      />
                     }
                   }
                   <!-- Last point / end dot -->
@@ -336,33 +274,21 @@ export interface RenderedRoute extends TopoRouteWithRoute {
                       [class.selected-circle-pulse]="!isGlowActive() && isSel"
                     />
                     @if (isTop) {
-                      @let pillW = tr.width * 4200;
-                      @let pillH = tr.width * 2100;
-                      @let pillY = last.y * hScale - endR - pillH * 0.45;
-                      <g class="pointer-events-none" style="user-select: none">
-                        <rect
-                          [attr.x]="last.x * 1000 - pillW / 2"
-                          [attr.y]="pillY - pillH / 2"
-                          [attr.width]="pillW"
-                          [attr.height]="pillH"
-                          [attr.rx]="pillH / 2"
-                          fill="#EF4444"
-                          stroke="white"
-                          stroke-width="0.75"
-                        />
-                        <text
-                          [attr.x]="last.x * 1000"
-                          [attr.y]="pillY + pillH * 0.32"
-                          text-anchor="middle"
-                          fill="white"
-                          font-weight="bold"
-                          [attr.font-size]="tr.width * 1500"
-                          font-family="sans-serif"
-                          style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                        >
-                          TOP
-                        </text>
-                      </g>
+                      <ng-container
+                        *ngTemplateOutlet="
+                          pointStatePill;
+                          context: {
+                            state: 'top',
+                            cx: last.x * 1000,
+                            cy: last.y * hScale,
+                            radius: endR,
+                            strokeW: tr.width * 1000,
+                            fill: '#EF4444',
+                            label: 'TOP',
+                            position: 'above',
+                          }
+                        "
+                      />
                     }
                   }
                 }
@@ -445,6 +371,46 @@ export interface RenderedRoute extends TopoRouteWithRoute {
             }
           }
         }
+
+        <ng-template
+          #pointStatePill
+          let-state="state"
+          let-cx="cx"
+          let-cy="cy"
+          let-radius="radius"
+          let-strokeW="strokeW"
+          let-fill="fill"
+          let-label="label"
+          let-position="position"
+        >
+          @let pill =
+            state
+              | topoPointPillGeometry: cx : cy : radius : strokeW : position;
+          <svg:g class="pointer-events-none" style="user-select: none">
+            <svg:rect
+              [attr.x]="pill.x"
+              [attr.y]="pill.y"
+              [attr.width]="pill.width"
+              [attr.height]="pill.height"
+              [attr.rx]="pill.rx"
+              [attr.fill]="fill"
+              stroke="white"
+              stroke-width="0.75"
+            />
+            <svg:text
+              [attr.x]="pill.textX"
+              [attr.y]="pill.textY"
+              text-anchor="middle"
+              fill="white"
+              font-weight="bold"
+              [attr.font-size]="pill.fontSize"
+              font-family="sans-serif"
+              style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
+            >
+              {{ label }}
+            </svg:text>
+          </svg:g>
+        </ng-template>
       </svg>
     }
   `,

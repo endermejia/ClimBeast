@@ -2,12 +2,14 @@ import { describe, it, expect } from 'vitest';
 
 import {
   calculateRouteMoves,
+  computeTopoPointPillRect,
   cyclePointState,
   getPointStateBadge,
   getPointStateColor,
   getPointStateLabel,
   getPointsString,
   getRouteStyleProperties,
+  getTopoPointPillWidthMultiplier,
   hasPath,
 } from './topo-styles.utils';
 
@@ -167,6 +169,46 @@ describe('topo-styles.utils', () => {
       const style = getRouteStyleProperties(false, true, '6a', null, true);
       expect(style.opacity).toBe(1);
       expect(style.isDashed).toBe(false);
+    });
+  });
+
+  describe('getTopoPointPillWidthMultiplier', () => {
+    it('returns state-specific width multipliers', () => {
+      expect(getTopoPointPillWidthMultiplier('match')).toBe(5.8);
+      expect(getTopoPointPillWidthMultiplier('start')).toBe(5.5);
+      expect(getTopoPointPillWidthMultiplier('foot')).toBe(5.0);
+      expect(getTopoPointPillWidthMultiplier('top')).toBe(4.2);
+      expect(getTopoPointPillWidthMultiplier('neutral')).toBe(4.2);
+      expect(getTopoPointPillWidthMultiplier(undefined)).toBe(4.2);
+    });
+  });
+
+  describe('computeTopoPointPillRect', () => {
+    it('computes pill geometry positioned below anchor by default', () => {
+      const rect = computeTopoPointPillRect(100, 200, 10, 5, 'start');
+      // width = 5 * 5.5 = 27.5, height = 5 * 2.1 = 10.5
+      // pillY = 200 + 10 + 10.5 * 0.45 = 214.725
+      expect(rect.width).toBeCloseTo(27.5);
+      expect(rect.height).toBeCloseTo(10.5);
+      expect(rect.rx).toBeCloseTo(5.25);
+      expect(rect.x).toBeCloseTo(100 - 27.5 / 2);
+      expect(rect.y).toBeCloseTo(214.725 - 10.5 / 2);
+      expect(rect.textX).toBe(100);
+      expect(rect.textY).toBeCloseTo(214.725 + 10.5 * 0.32);
+      expect(rect.fontSize).toBeCloseTo(7.5);
+    });
+
+    it('computes pill geometry positioned above anchor when position is above', () => {
+      const rect = computeTopoPointPillRect(50, 80, 6, 4, 'top', 'above');
+      // width = 4 * 4.2 = 16.8, height = 4 * 2.1 = 8.4
+      // pillY = 80 - 6 - 8.4 * 0.45 = 70.22
+      expect(rect.width).toBeCloseTo(16.8);
+      expect(rect.height).toBeCloseTo(8.4);
+      expect(rect.x).toBeCloseTo(50 - 16.8 / 2);
+      expect(rect.y).toBeCloseTo(70.22 - 8.4 / 2);
+      expect(rect.textX).toBe(50);
+      expect(rect.textY).toBeCloseTo(70.22 + 8.4 * 0.32);
+      expect(rect.fontSize).toBeCloseTo(6);
     });
   });
 });
