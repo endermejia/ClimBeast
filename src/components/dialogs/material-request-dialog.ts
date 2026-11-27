@@ -8,7 +8,6 @@ import {
   TuiDialogContext,
   TuiIcon,
   TuiLabel,
-  TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
 import { TuiInputNumber, TuiSkeleton } from '@taiga-ui/kit';
@@ -38,54 +37,55 @@ export interface MaterialRequestDialogData {
     TuiIcon,
     TuiInputNumber,
     TuiLabel,
-    TuiScrollbar,
     TuiSkeleton,
     TuiTextfield,
   ],
   template: `
-    <div class="flex flex-col gap-6 p-1 max-h-[80vh]">
-      <!-- Header -->
-      <div class="flex items-start justify-between gap-4 border-b pb-4">
-        <div class="flex items-center gap-3">
-          <div
-            class="w-12 h-12 rounded-2xl bg-(--tui-background-accent-1) text-(--tui-background-base) flex items-center justify-center shrink-0 shadow-lg shadow-(--tui-background-accent-1)/20"
-          >
-            <tui-icon icon="@tui.package" class="w-6 h-6" />
-          </div>
-          <div class="flex flex-col">
-            <h3 class="text-xl font-black tracking-tight m-0">
-              {{ 'materialRequest.title' | translate }}
-            </h3>
-            <p class="text-xs text-(--tui-text-secondary) m-0">
-              {{ context.data.areaName }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Available Balance Badge -->
+    <div class="lw-form-sheet">
+      <div class="lw-form-sheet-body flex flex-col gap-5">
+        <!-- Header -->
         <div
-          class="flex flex-col items-end px-3.5 py-2 rounded-2xl bg-(--tui-background-accent-1)/10 border border-(--tui-background-accent-1)/20"
+          class="flex items-start justify-between gap-4 border-b border-(--tui-border-normal) pb-4"
         >
-          <span
-            class="text-[10px] font-black uppercase tracking-wider text-(--tui-text-secondary)"
+          <div class="flex items-center gap-3">
+            <div
+              class="w-12 h-12 rounded-2xl bg-(--tui-background-accent-1) text-(--tui-background-base) flex items-center justify-center shrink-0 shadow-lg shadow-(--tui-background-accent-1)/20"
+            >
+              <tui-icon icon="@tui.package" class="w-6 h-6" />
+            </div>
+            <div class="flex flex-col">
+              <h3 class="text-xl font-black tracking-tight m-0">
+                {{ 'materialRequest.title' | translate }}
+              </h3>
+              <p class="text-xs text-(--tui-text-secondary) m-0">
+                {{ context.data.areaName }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Available Balance Badge -->
+          <div
+            class="flex flex-col items-end px-3.5 py-2 rounded-2xl bg-(--tui-background-accent-1)/10 border border-(--tui-background-accent-1)/20"
           >
-            {{ 'materialRequest.availablePot' | translate }}
-          </span>
-          <span class="text-base font-black tabular-nums">
-            {{ context.data.availableBalance | number: '1.2-2' }}€
-          </span>
+            <span
+              class="text-[10px] font-black uppercase tracking-wider text-(--tui-text-secondary)"
+            >
+              {{ 'materialRequest.availablePot' | translate }}
+            </span>
+            <span class="text-base font-black tabular-nums">
+              {{ context.data.availableBalance | number: '1.2-2' }}€
+            </span>
+          </div>
         </div>
-      </div>
 
-      <!-- Catalog List -->
-      <div class="flex flex-col gap-3">
-        <span
-          class="text-xs font-black uppercase tracking-wider text-(--tui-text-secondary)"
-        >
-          {{ 'materialRequest.selectMaterials' | translate }}
-        </span>
+        <!-- Catalog List -->
+        <div class="flex flex-col gap-3">
+          <span
+            class="text-xs font-black uppercase tracking-wider text-(--tui-text-secondary)"
+          >
+            {{ 'materialRequest.selectMaterials' | translate }}
+          </span>
 
-        <tui-scrollbar class="max-h-72 sm:max-h-80 pr-2">
           <div class="flex flex-col gap-2.5">
             @if (catalogResource.isLoading()) {
               @for (_ of [1, 2, 3]; track $index) {
@@ -176,28 +176,28 @@ export interface MaterialRequestDialogData {
               }
             }
           </div>
-        </tui-scrollbar>
+        </div>
+
+        <!-- Notes / Shipping info -->
+        <div class="flex flex-col gap-2">
+          <tui-textfield>
+            <label tuiLabel for="material-request-notes-textarea">{{
+              'materialRequest.notesLabel' | translate
+            }}</label>
+            <textarea
+              id="material-request-notes-textarea"
+              tuiTextfield
+              rows="2"
+              [(ngModel)]="notes"
+              [placeholder]="'materialRequest.notesPlaceholder' | translate"
+            ></textarea>
+          </tui-textfield>
+        </div>
       </div>
 
-      <!-- Notes / Shipping info -->
-      <div class="flex flex-col gap-2">
-        <tui-textfield>
-          <label tuiLabel for="material-request-notes-textarea">{{
-            'materialRequest.notesLabel' | translate
-          }}</label>
-          <textarea
-            id="material-request-notes-textarea"
-            tuiTextfield
-            rows="2"
-            [(ngModel)]="notes"
-            [placeholder]="'materialRequest.notesPlaceholder' | translate"
-          ></textarea>
-        </tui-textfield>
-      </div>
-
-      <!-- Cost & Validation Summary -->
-      <div class="flex flex-col gap-3 pt-2 border-t">
-        <div class="flex items-center justify-between text-sm">
+      <!-- Cost & Validation Summary + Actions -->
+      <div class="lw-form-sheet-footer flex-col items-stretch gap-3">
+        <div class="flex items-center justify-between text-sm w-full">
           <span class="font-bold text-(--tui-text-secondary)">
             {{ 'materialRequest.totalCost' | translate }}
           </span>
@@ -212,7 +212,7 @@ export interface MaterialRequestDialogData {
 
         @if (isOverBudget()) {
           <div
-            class="flex items-center gap-2 p-3 rounded-xl bg-(--tui-background-negative-neutral) text-(--tui-status-negative) text-xs font-semibold"
+            class="flex items-center gap-2 p-3 rounded-xl bg-(--tui-background-negative-neutral) text-(--tui-status-negative) text-xs font-semibold w-full"
           >
             <tui-icon icon="@tui.triangle-alert" class="w-4 h-4 shrink-0" />
             <span>{{ 'materialRequest.overBudgetError' | translate }}</span>
@@ -220,10 +220,11 @@ export interface MaterialRequestDialogData {
         }
 
         <!-- Action buttons -->
-        <div class="flex items-center justify-end gap-3 pt-2">
+        <div class="flex items-center justify-end gap-2 w-full">
           <button
             tuiButton
             appearance="flat"
+            size="m"
             type="button"
             (click)="context.completeWith(false)"
           >
@@ -233,6 +234,7 @@ export interface MaterialRequestDialogData {
           <button
             tuiButton
             appearance="accent"
+            size="m"
             type="button"
             [disabled]="!canSubmit()"
             (click)="submitRequest()"

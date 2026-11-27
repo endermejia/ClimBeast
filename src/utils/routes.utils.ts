@@ -66,6 +66,8 @@ export function mapRouteToTableRow(
       gradeValue: indoor.grade || 0,
       climbing_kind: indoor.climbing_kind || null,
       route: indoor.name || '',
+      center_name: indoor.center_name || undefined,
+      center_slug: indoor.center_slug || undefined,
       height: null,
       color: indoor.color || null,
       legacy: indoor.legacy || false,
@@ -167,7 +169,9 @@ export const ROUTE_TABLE_SORTERS: Record<
 > = {
   grade: (a, b) => tuiDefaultSort(a.gradeValue, b.gradeValue),
   route: (a, b) => tuiDefaultSort(a.route, b.route),
+  area: (a, b) => tuiDefaultSort(a.area_name || '', b.area_name || ''),
   crag: (a, b) => tuiDefaultSort(a.crag_name || '', b.crag_name || ''),
+  center: (a, b) => tuiDefaultSort(a.center_name || '', b.center_name || ''),
   height: (a, b) => tuiDefaultSort(a.height ?? 0, b.height ?? 0),
   rating: (a, b) => tuiDefaultSort(a.rating, b.rating),
   ascents: (a, b) => tuiDefaultSort(a.ascents, b.ascents),

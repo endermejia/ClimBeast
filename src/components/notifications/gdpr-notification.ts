@@ -2,7 +2,7 @@ import { Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
-import { TuiButton, TuiDialogContext, TuiIcon } from '@taiga-ui/core';
+import { TuiButton, TuiDialogContext } from '@taiga-ui/core';
 import { TuiSwitch } from '@taiga-ui/kit';
 import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 
@@ -12,14 +12,7 @@ import { ConsentService } from '../../services/consent.service';
 
 @Component({
   selector: 'app-gdpr-notification',
-  imports: [
-    FormsModule,
-    RouterLink,
-    TranslatePipe,
-    TuiButton,
-    TuiIcon,
-    TuiSwitch,
-  ],
+  imports: [FormsModule, RouterLink, TranslatePipe, TuiButton, TuiSwitch],
   template: `
     <div class="flex flex-col gap-3 max-w-full overflow-hidden">
       <p
@@ -142,7 +135,7 @@ import { ConsentService } from '../../services/consent.service';
               type="button"
               size="s"
               appearance="flat"
-              class="text-xs! font-medium! w-full"
+              class="w-full"
               (click)="toggleSettings()"
             >
               {{ 'back' | translate }}
@@ -152,7 +145,7 @@ import { ConsentService } from '../../services/consent.service';
               type="button"
               size="s"
               appearance="primary"
-              class="text-xs! font-semibold! w-full"
+              class="w-full"
               (click)="saveSelection()"
             >
               {{ 'cookies.banner.saveSelection' | translate }}
@@ -165,7 +158,7 @@ import { ConsentService } from '../../services/consent.service';
               type="button"
               size="s"
               appearance="secondary"
-              class="text-xs! font-semibold! w-full"
+              class="w-full"
               (click)="reject()"
             >
               {{ 'cookies.banner.reject' | translate }}
@@ -175,7 +168,7 @@ import { ConsentService } from '../../services/consent.service';
               type="button"
               size="s"
               appearance="secondary"
-              class="text-xs! font-semibold! w-full"
+              class="w-full"
               (click)="acceptAll()"
             >
               {{ 'cookies.banner.acceptAll' | translate }}
@@ -186,10 +179,10 @@ import { ConsentService } from '../../services/consent.service';
             type="button"
             size="xs"
             appearance="flat"
-            class="text-xs! font-medium! w-full"
+            iconStart="@tui.sliders-horizontal"
+            class="w-full"
             (click)="toggleSettings()"
           >
-            <tui-icon icon="@tui.sliders-horizontal" class="text-xs mr-1" />
             {{ 'cookies.banner.configure' | translate }}
           </button>
         }

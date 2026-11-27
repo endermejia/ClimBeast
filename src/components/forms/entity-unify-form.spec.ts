@@ -178,5 +178,30 @@ describe('EntityUnifyFormComponent', () => {
     ) as HTMLElement | null;
     expect(projected).not.toBeNull();
     expect(projected?.textContent).toContain('Extra topo warning');
+    expect(
+      hostFixture.nativeElement.querySelector(
+        '.lw-form-sheet .lw-form-sheet-body .projected-extra',
+      ),
+    ).not.toBeNull();
+  });
+
+  it('uses form-sheet layout with scrollable body and pinned footer actions', () => {
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    const sheetEl = el.querySelector('.lw-form-sheet');
+    const bodyEl = sheetEl?.querySelector('.lw-form-sheet-body');
+    const footerEl = sheetEl?.querySelector('.lw-form-sheet-footer');
+    const footerButtons = Array.from(
+      footerEl?.querySelectorAll('button[tuiButton]') ?? [],
+    );
+
+    expect(sheetEl).not.toBeNull();
+    expect(bodyEl?.querySelector('#new-name')).not.toBeNull();
+    expect(footerEl).not.toBeNull();
+    expect(footerButtons.length).toBe(2);
+    expect(
+      footerButtons.every((btn) => btn.getAttribute('data-size') === 'm'),
+    ).toBe(true);
   });
 });

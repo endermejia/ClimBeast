@@ -47,50 +47,55 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiTitle,
   ],
   template: `
-    <form class="grid gap-4 w-full" (submit.zoneless)="onSubmit($event)">
-      <tui-textfield
-        multi
-        tuiChevron
-        [tuiTextfieldCleaner]="true"
-        [stringify]="parkingStringify"
-        [disabledItemHandler]="strings"
-        [identityMatcher]="parkingIdentityMatcher"
-      >
-        <label tuiLabel for="parkings">
-          {{ 'parkings' | translate }}
-        </label>
-        <input
-          tuiInputChip
-          id="parkings"
-          [ngModel]="model().selectedParkings"
-          (ngModelChange)="onParkingsChange($event)"
-          name="selectedParkings"
-          [placeholder]="'select' | translate"
-          autocomplete="off"
-        />
-        <tui-input-chip *tuiItem />
-        <tui-data-list *tuiDropdown>
-          <tui-opt-group label="Parkings" tuiMultiSelectGroup>
-            @for (
-              parking of availableParkings() | tuiFilterByInput;
-              track parking.id
-            ) {
-              <button type="button" new tuiOption [value]="parking">
-                <div tuiCell size="s">
-                  <tui-icon icon="@tui.parking-square" />
-                  <div tuiTitle>
-                    {{ parking.name }}
-                  </div>
-                </div>
-              </button>
-            }
-          </tui-opt-group>
-        </tui-data-list>
-      </tui-textfield>
+    <form class="lw-form-sheet" (submit.zoneless)="onSubmit($event)">
+      <div class="lw-form-sheet-body">
+        <div class="flex flex-col gap-4">
+          <tui-textfield
+            multi
+            tuiChevron
+            [tuiTextfieldCleaner]="true"
+            [stringify]="parkingStringify"
+            [disabledItemHandler]="strings"
+            [identityMatcher]="parkingIdentityMatcher"
+          >
+            <label tuiLabel for="parkings">
+              {{ 'parkings' | translate }}
+            </label>
+            <input
+              tuiInputChip
+              id="parkings"
+              [ngModel]="model().selectedParkings"
+              (ngModelChange)="onParkingsChange($event)"
+              name="selectedParkings"
+              [placeholder]="'select' | translate"
+              autocomplete="off"
+            />
+            <tui-input-chip *tuiItem />
+            <tui-data-list *tuiDropdown>
+              <tui-opt-group label="Parkings" tuiMultiSelectGroup>
+                @for (
+                  parking of availableParkings() | tuiFilterByInput;
+                  track parking.id
+                ) {
+                  <button type="button" new tuiOption [value]="parking">
+                    <div tuiCell size="s">
+                      <tui-icon icon="@tui.parking-square" />
+                      <div tuiTitle>
+                        {{ parking.name }}
+                      </div>
+                    </div>
+                  </button>
+                }
+              </tui-opt-group>
+            </tui-data-list>
+          </tui-textfield>
+        </div>
+      </div>
 
-      <div class="flex flex-wrap gap-2 justify-end mt-4">
+      <div class="lw-form-sheet-footer">
         <button
           tuiButton
+          size="m"
           appearance="flat"
           type="button"
           (click.zoneless)="close()"
@@ -100,6 +105,7 @@ import { IS_BROWSER } from '../../app/is-browser';
         <button
           [disabled]="model().selectedParkings.length === 0"
           tuiButton
+          size="m"
           appearance="primary"
           type="submit"
         >

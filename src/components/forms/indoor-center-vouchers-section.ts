@@ -134,9 +134,10 @@ export interface IndoorCenterLocalVoucher {
           <!-- Add Button -->
           <button
             tuiButton
+            size="m"
             type="button"
             appearance="primary"
-            class="w-full font-bold"
+            class="w-full"
             [disabled]="!newVoucherName()"
             (click.zoneless)="addLocalVoucher($event)"
           >

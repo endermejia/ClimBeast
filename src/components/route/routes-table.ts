@@ -126,7 +126,9 @@ import {
     @if (data(); as d) {
       @if (d.length > 0) {
         @let isMobile = this.isMobile();
-        <div class="w-full min-w-0 max-w-full overflow-x-clip">
+        <div
+          class="lw-table-mobile-bleed w-full min-w-0 max-w-full overflow-x-clip"
+        >
           <table
             #table
             tuiTable
@@ -147,13 +149,11 @@ import {
                     [sorter]="sorters[col]"
                     [style.top.px]="stickyTopOffset()"
                     [class.text-center]="col === 'actions' || col === 'ascents'"
-                    [class.w-12!]="isMobile && col === 'actions'"
-                    [class.w-14!]="
-                      isMobile && (col === 'grade' || col === 'ascents')
-                    "
+                    [class.w-13!]="isMobile && col === 'actions'"
+                    [class.w-14!]="isMobile && col === 'ascents'"
                     [class.w-16!]="!isMobile && col === 'ascents'"
                     [class.w-18!]="
-                      !isMobile && (col === 'grade' || col === 'actions')
+                      col === 'grade' || (!isMobile && col === 'actions')
                     "
                     [class.w-22!]="col === 'height'"
                     [class.w-28!]="col === 'color'"
@@ -186,7 +186,7 @@ import {
                           </button>
                         }
                       } @else if (col === 'grade') {
-                        <span class="truncate">{{
+                        <span class="whitespace-nowrap shrink-0">{{
                           'gradeShort' | translate
                         }}</span>
                       } @else if (col === 'ascents') {
@@ -197,6 +197,10 @@ import {
                           [tuiHint]="'ascents' | translate"
                           [attr.aria-label]="'ascents' | translate"
                         />
+                      } @else if (col === 'center') {
+                        <span class="truncate">{{
+                          'indoor.singular' | translate
+                        }}</span>
                       } @else {
                         <span class="truncate">{{ col | translate }}</span>
                       }
@@ -276,11 +280,23 @@ import {
                                 />
                               </tui-textfield>
                             } @else {
-                              @let showMobileCrag =
+                              @let showMobileCragInline =
                                 isMobile &&
+                                !showArea() &&
                                 showLocation() &&
                                 !!item.crag_name &&
                                 !item.isIndoor;
+                              @let showMobileAreaLine =
+                                isMobile &&
+                                !item.isIndoor &&
+                                showArea() &&
+                                (!!item.area_name ||
+                                  (showLocation() && !!item.crag_name));
+                              @let showMobileCenterLine =
+                                isMobile &&
+                                item.isIndoor &&
+                                showLocation() &&
+                                !!item.center_name;
                               <div class="flex flex-col min-w-0 w-full flex-1">
                                 <div
                                   class="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 min-w-0 max-w-full"
@@ -301,7 +317,7 @@ import {
                                   >
                                     {{ item.route || ('route' | translate) }}
                                   </a>
-                                  @if (showMobileCrag) {
+                                  @if (showMobileCragInline) {
                                     <a
                                       tuiLink
                                       class="truncate max-w-full min-w-0 text-xs! opacity-75 font-normal!"
@@ -329,6 +345,71 @@ import {
                                     </span>
                                   }
                                 </div>
+                                @if (
+                                  showMobileAreaLine || showMobileCenterLine
+                                ) {
+                                  <div
+                                    class="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs opacity-75 mt-0.5 min-w-0"
+                                  >
+                                    <tui-icon
+                                      icon="@tui.map-pin"
+                                      class="w-3! h-3! shrink-0 opacity-75"
+                                      [style.font-size.rem]="0.75"
+                                      aria-hidden="true"
+                                    />
+                                    @if (showMobileAreaLine) {
+                                      @if (item.area_name) {
+                                        <a
+                                          tuiLink
+                                          class="truncate max-w-full min-w-0 font-normal!"
+                                          [routerLink]="
+                                            isEditing() || !item.area_slug
+                                              ? null
+                                              : ['/area', item.area_slug]
+                                          "
+                                        >
+                                          {{ item.area_name }}
+                                        </a>
+                                      }
+                                      @if (
+                                        item.area_name &&
+                                        showLocation() &&
+                                        item.crag_name
+                                      ) {
+                                        <span class="opacity-50">·</span>
+                                      }
+                                      @if (showLocation() && item.crag_name) {
+                                        <a
+                                          tuiLink
+                                          class="truncate max-w-full min-w-0 font-normal!"
+                                          [routerLink]="
+                                            isEditing()
+                                              ? null
+                                              : [
+                                                  '/area',
+                                                  item.area_slug,
+                                                  item.crag_slug || 'general',
+                                                ]
+                                          "
+                                        >
+                                          {{ item.crag_name }}
+                                        </a>
+                                      }
+                                    } @else if (showMobileCenterLine) {
+                                      <a
+                                        tuiLink
+                                        class="truncate max-w-full min-w-0 font-normal!"
+                                        [routerLink]="
+                                          isEditing() || !item.center_slug
+                                            ? null
+                                            : ['/indoor', item.center_slug]
+                                        "
+                                      >
+                                        {{ item.center_name }}
+                                      </a>
+                                    }
+                                  </div>
+                                }
                                 @if (item.rating > 0 || isMobile) {
                                   @let showMobileColor =
                                     isMobile && !!item.isIndoor && !!item.color;
@@ -487,6 +568,25 @@ import {
                             }
                           </div>
                         }
+                        @case ('area') {
+                          <div tuiCell size="m" class="h-full min-w-0 w-full">
+                            @if (item.area_name) {
+                              <a
+                                tuiLink
+                                [routerLink]="
+                                  isEditing() || !item.area_slug
+                                    ? null
+                                    : ['/area', item.area_slug]
+                                "
+                                class="text-sm min-w-0 max-w-full break-words"
+                              >
+                                {{ item.area_name }}
+                              </a>
+                            } @else {
+                              <span class="opacity-50 text-xs">-</span>
+                            }
+                          </div>
+                        }
                         @case ('crag') {
                           <div tuiCell size="m" class="h-full min-w-0 w-full">
                             @if (
@@ -534,6 +634,25 @@ import {
                               } @else {
                                 <span class="opacity-50 text-xs">-</span>
                               }
+                            }
+                          </div>
+                        }
+                        @case ('center') {
+                          <div tuiCell size="m" class="h-full min-w-0 w-full">
+                            @if (item.center_name) {
+                              <a
+                                tuiLink
+                                [routerLink]="
+                                  isEditing() || !item.center_slug
+                                    ? null
+                                    : ['/indoor', item.center_slug]
+                                "
+                                class="text-sm min-w-0 max-w-full break-words"
+                              >
+                                {{ item.center_name }}
+                              </a>
+                            } @else {
+                              <span class="opacity-50 text-xs">-</span>
                             }
                           </div>
                         }
@@ -849,6 +968,39 @@ import {
       max-width: 100%;
       min-width: 0;
     }
+    @media (max-width: 767.98px) {
+      table[tuiTable] {
+        border-inline: none;
+        border-radius: 0;
+      }
+      table[tuiTable] th[tuiTh],
+      table[tuiTable] td[tuiTd] {
+        border-inline: none;
+        border-radius: 0;
+      }
+      table[tuiTable] th[tuiTh]:first-child,
+      table[tuiTable] td[tuiTd]:first-child {
+        padding-inline-start: 0.75rem;
+      }
+      table[tuiTable] th[tuiTh]:last-child,
+      table[tuiTable] td[tuiTd]:last-child {
+        padding-inline-end: 0.75rem;
+      }
+      table[tuiTable] th[data-col='grade'],
+      table[tuiTable] td[data-col='grade'] {
+        padding-inline: 0.375rem;
+      }
+      table[tuiTable] th[data-col='grade']:first-child,
+      table[tuiTable] td[data-col='grade']:first-child {
+        padding-inline-start: 0.75rem;
+        padding-inline-end: 0.375rem;
+      }
+      table[tuiTable] th[data-col='actions']:last-child,
+      table[tuiTable] td[data-col='actions']:last-child {
+        padding-inline-start: 0.25rem;
+        padding-inline-end: 0.75rem;
+      }
+    }
     td.cell-selected {
       padding: 0 !important;
       vertical-align: middle;
@@ -895,6 +1047,7 @@ export class RoutesTableComponent {
   activeCol = input<RoutesTableKey>('ascents');
   showRowColors = input(true);
   showAddRouteToTopo = input(false);
+  showArea = input(false);
   showLocation = input(false);
   isMobile = input(false);
   availableTopos = input<{ id: number | string; name: string }[]>([]);

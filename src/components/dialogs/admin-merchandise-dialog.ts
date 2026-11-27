@@ -79,8 +79,8 @@ const MERCHANDISE_CATEGORIES = [
     TuiTextarea,
   ],
   template: `
-    <div class="flex flex-col gap-6">
-      <div class="grid grid-cols-1 gap-4">
+    <div class="lw-form-sheet">
+      <div class="lw-form-sheet-body flex flex-col gap-4">
         <!-- Name -->
         <tui-textfield class="w-full">
           <label tuiLabel for="name">{{ 'userName' | translate }}</label>
@@ -323,17 +323,24 @@ const MERCHANDISE_CATEGORIES = [
         </div>
       </div>
 
-      <div class="flex justify-end gap-3 px-1 mt-4">
+      <div class="lw-form-sheet-footer">
         <button
           tuiButton
           appearance="flat"
+          size="m"
           type="button"
           (click)="context.completeWith(null)"
         >
           {{ 'cancel' | translate }}
         </button>
         <tui-loader [loading]="isSaving() || isUploading()" [overlay]="true">
-          <button tuiButton appearance="primary" type="button" (click)="save()">
+          <button
+            tuiButton
+            appearance="primary"
+            size="m"
+            type="button"
+            (click)="save()"
+          >
             {{ 'save' | translate }}
           </button>
         </tui-loader>

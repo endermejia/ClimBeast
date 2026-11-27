@@ -84,181 +84,191 @@ export interface IndoorRouteFormData {
     FormField,
   ],
   template: `
-    <form class="grid gap-4" (submit.zoneless)="onSubmit()">
-      <tui-textfield [tuiTextfieldCleaner]="false">
-        <label tuiLabel for="name">{{ 'name' | translate }}</label>
-        <input tuiInput id="name" [formField]="rForm.name" autocomplete="off" />
-      </tui-textfield>
-      @if (rForm.name().invalid() && rForm.name().touched()) {
-        <tui-error [error]="'errors.required' | translate" />
-      }
+    <form class="lw-form-sheet" (submit.zoneless)="onSubmit()">
+      <div class="lw-form-sheet-body">
+        <div class="flex flex-col gap-4">
+          <tui-textfield [tuiTextfieldCleaner]="false">
+            <label tuiLabel for="name">{{ 'name' | translate }}</label>
+            <input
+              tuiInput
+              id="name"
+              [formField]="rForm.name"
+              autocomplete="off"
+            />
+          </tui-textfield>
+          @if (rForm.name().invalid() && rForm.name().touched()) {
+            <tui-error [error]="'errors.required' | translate" />
+          }
 
-      <tui-textfield
-        tuiChevron
-        [tuiTextfieldCleaner]="false"
-        [stringify]="kindStringify"
-      >
-        <label tuiLabel for="climbing_kind">
-          {{ 'climbing_kind' | translate }}
-        </label>
-        <input
-          tuiSelect
-          id="climbing_kind"
-          [ngModel]="model().climbing_kind"
-          (ngModelChange)="updateModel('climbing_kind', $event)"
-          name="climbing_kind"
-          autocomplete="off"
-        />
-        <tui-data-list-wrapper *tuiDropdown new [items]="kindOptions" />
-      </tui-textfield>
+          <tui-textfield
+            tuiChevron
+            [tuiTextfieldCleaner]="false"
+            [stringify]="kindStringify"
+          >
+            <label tuiLabel for="climbing_kind">
+              {{ 'climbing_kind' | translate }}
+            </label>
+            <input
+              tuiSelect
+              id="climbing_kind"
+              [ngModel]="model().climbing_kind"
+              (ngModelChange)="updateModel('climbing_kind', $event)"
+              name="climbing_kind"
+              autocomplete="off"
+            />
+            <tui-data-list-wrapper *tuiDropdown new [items]="kindOptions" />
+          </tui-textfield>
 
-      <div class="flex items-center gap-2">
-        <button
-          tuiIconButton
-          type="button"
-          size="m"
-          appearance="secondary"
-          iconStart="@tui.minus"
-          class="rounded-full! shrink-0"
-          (click)="changeGrade(-1)"
-        >
-          -
-        </button>
-        <tui-textfield
-          tuiChevron
-          [tuiTextfieldCleaner]="false"
-          [stringify]="gradeStringify"
-          class="grow min-w-0"
-        >
-          <label tuiLabel for="grade">
-            {{ 'grade' | translate }}
+          <div class="flex items-center gap-2">
+            <button
+              tuiIconButton
+              type="button"
+              size="m"
+              appearance="secondary"
+              iconStart="@tui.minus"
+              class="rounded-full! shrink-0"
+              (click)="changeGrade(-1)"
+            >
+              -
+            </button>
+            <tui-textfield
+              tuiChevron
+              [tuiTextfieldCleaner]="false"
+              [stringify]="gradeStringify"
+              class="grow min-w-0"
+            >
+              <label tuiLabel for="grade">
+                {{ 'grade' | translate }}
+              </label>
+              <input
+                tuiSelect
+                id="grade"
+                [ngModel]="model().grade"
+                (ngModelChange)="updateModel('grade', $event)"
+                name="grade"
+                autocomplete="off"
+              />
+              <tui-data-list-wrapper *tuiDropdown new [items]="gradeOptions" />
+            </tui-textfield>
+            <button
+              tuiIconButton
+              type="button"
+              size="m"
+              appearance="secondary"
+              iconStart="@tui.plus"
+              class="rounded-full! shrink-0"
+              (click)="changeGrade(1)"
+            >
+              +
+            </button>
+          </div>
+
+          <tui-textfield
+            tuiChevron
+            [tuiTextfieldCleaner]="false"
+            [stringify]="colorStringify"
+          >
+            <label tuiLabel for="color">
+              {{ 'color' | translate }}
+            </label>
+            <input
+              tuiSelect
+              id="color"
+              [ngModel]="model().color"
+              (ngModelChange)="updateModel('color', $event)"
+              name="color"
+              autocomplete="off"
+            />
+            <tui-data-list *tuiDropdown>
+              @for (color of routeColorsList; track color.value) {
+                <button tuiOption [value]="color.value">
+                  <div class="flex items-center gap-2">
+                    <div
+                      tuiPin
+                      [style.backgroundColor]="color.value"
+                      style="position: static; transform: scale(0.75); margin: 0;"
+                      class="shrink-0"
+                    ></div>
+                    <span>{{ 'colors.' + color.name | translate }}</span>
+                  </div>
+                </button>
+              }
+            </tui-data-list>
+          </tui-textfield>
+
+          @if (!hideTopo() && topos().length > 0) {
+            <tui-textfield
+              tuiChevron
+              [tuiTextfieldCleaner]="true"
+              [stringify]="stringifyTopo"
+              [identityMatcher]="topoIdentityMatcher"
+            >
+              <label tuiLabel for="topo">{{ 'topo' | translate }}</label>
+              <input
+                tuiSelect
+                id="topo"
+                [ngModel]="model().topo"
+                (ngModelChange)="updateModel('topo', $event)"
+                name="topo"
+                autocomplete="off"
+              />
+              <tui-data-list-wrapper *tuiDropdown new [items]="topos()" />
+            </tui-textfield>
+          }
+
+          <tui-textfield
+            multi
+            tuiChevron
+            [tuiTextfieldCleaner]="true"
+            [stringify]="equipperStringify"
+            [identityMatcher]="equipperIdentityMatcher"
+            size="s"
+          >
+            <label tuiLabel for="equippers">
+              {{ 'equippers' | translate }}
+            </label>
+            <input
+              tuiInputChip
+              id="equippers"
+              [ngModel]="model().equippers"
+              (ngModelChange)="onEquippersChange($event)"
+              name="equippers"
+              [placeholder]="'select' | translate"
+              autocomplete="off"
+            />
+            <tui-input-chip *tuiItem />
+            <tui-data-list *tuiDropdown>
+              @for (
+                item of allEquippers.value() || []
+                  | tuiHideSelected
+                  | tuiFilterByInput: equipperFilter;
+                track item.id
+              ) {
+                <button tuiOption [value]="item">
+                  {{ item.name }}
+                </button>
+              }
+            </tui-data-list>
+          </tui-textfield>
+
+          <label class="flex items-center gap-2 mt-2">
+            <input
+              tuiCheckbox
+              type="checkbox"
+              [ngModel]="model().legacy"
+              (ngModelChange)="updateModel('legacy', $event)"
+              name="legacy"
+            />
+            <span>{{ 'indoor.legacy' | translate }}</span>
           </label>
-          <input
-            tuiSelect
-            id="grade"
-            [ngModel]="model().grade"
-            (ngModelChange)="updateModel('grade', $event)"
-            name="grade"
-            autocomplete="off"
-          />
-          <tui-data-list-wrapper *tuiDropdown new [items]="gradeOptions" />
-        </tui-textfield>
-        <button
-          tuiIconButton
-          type="button"
-          size="m"
-          appearance="secondary"
-          iconStart="@tui.plus"
-          class="rounded-full! shrink-0"
-          (click)="changeGrade(1)"
-        >
-          +
-        </button>
+        </div>
       </div>
 
-      <tui-textfield
-        tuiChevron
-        [tuiTextfieldCleaner]="false"
-        [stringify]="colorStringify"
-      >
-        <label tuiLabel for="color">
-          {{ 'color' | translate }}
-        </label>
-        <input
-          tuiSelect
-          id="color"
-          [ngModel]="model().color"
-          (ngModelChange)="updateModel('color', $event)"
-          name="color"
-          autocomplete="off"
-        />
-        <tui-data-list *tuiDropdown>
-          @for (color of routeColorsList; track color.value) {
-            <button tuiOption [value]="color.value">
-              <div class="flex items-center gap-2">
-                <div
-                  tuiPin
-                  [style.backgroundColor]="color.value"
-                  style="position: static; transform: scale(0.75); margin: 0;"
-                  class="shrink-0"
-                ></div>
-                <span>{{ 'colors.' + color.name | translate }}</span>
-              </div>
-            </button>
-          }
-        </tui-data-list>
-      </tui-textfield>
-
-      @if (!hideTopo() && topos().length > 0) {
-        <tui-textfield
-          tuiChevron
-          [tuiTextfieldCleaner]="true"
-          [stringify]="stringifyTopo"
-          [identityMatcher]="topoIdentityMatcher"
-        >
-          <label tuiLabel for="topo">{{ 'topo' | translate }}</label>
-          <input
-            tuiSelect
-            id="topo"
-            [ngModel]="model().topo"
-            (ngModelChange)="updateModel('topo', $event)"
-            name="topo"
-            autocomplete="off"
-          />
-          <tui-data-list-wrapper *tuiDropdown new [items]="topos()" />
-        </tui-textfield>
-      }
-
-      <tui-textfield
-        multi
-        tuiChevron
-        [tuiTextfieldCleaner]="true"
-        [stringify]="equipperStringify"
-        [identityMatcher]="equipperIdentityMatcher"
-        size="s"
-      >
-        <label tuiLabel for="equippers">
-          {{ 'equippers' | translate }}
-        </label>
-        <input
-          tuiInputChip
-          id="equippers"
-          [ngModel]="model().equippers"
-          (ngModelChange)="onEquippersChange($event)"
-          name="equippers"
-          [placeholder]="'select' | translate"
-          autocomplete="off"
-        />
-        <tui-input-chip *tuiItem />
-        <tui-data-list *tuiDropdown>
-          @for (
-            item of allEquippers.value() || []
-              | tuiHideSelected
-              | tuiFilterByInput: equipperFilter;
-            track item.id
-          ) {
-            <button tuiOption [value]="item">
-              {{ item.name }}
-            </button>
-          }
-        </tui-data-list>
-      </tui-textfield>
-
-      <label class="flex items-center gap-2 mt-2">
-        <input
-          tuiCheckbox
-          type="checkbox"
-          [ngModel]="model().legacy"
-          (ngModelChange)="updateModel('legacy', $event)"
-          name="legacy"
-        />
-        <span>{{ 'indoor.legacy' | translate }}</span>
-      </label>
-
-      <footer class="flex flex-wrap gap-2 justify-end items-center mt-4">
+      <div class="lw-form-sheet-footer">
         <button
           appearance="flat"
           tuiButton
+          size="m"
           type="button"
           (click.zoneless)="onCancel()"
         >
@@ -266,12 +276,13 @@ export interface IndoorRouteFormData {
         </button>
         <button
           tuiButton
+          size="m"
           type="submit"
           [disabled]="rForm.name().invalid() || isSaving()"
         >
           {{ 'save' | translate }}
         </button>
-      </footer>
+      </div>
     </form>
   `,
 })

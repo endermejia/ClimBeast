@@ -398,4 +398,47 @@ describe('TopoFormComponent - Indoor Permissions & Route Creation', () => {
       }),
     );
   });
+
+  it('uses form-sheet layout with scrollable body and pinned footer actions inside the form', () => {
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    const formEl = el.querySelector('form.lw-form-sheet');
+    const bodyEl = formEl?.querySelector('.lw-form-sheet-body');
+    const footerEl = formEl?.querySelector('.lw-form-sheet-footer');
+    const footerButtons = Array.from(
+      footerEl?.querySelectorAll('button[tuiButton]') ?? [],
+    );
+
+    expect(formEl).not.toBeNull();
+    expect(bodyEl?.querySelector('#name')).not.toBeNull();
+    expect(footerEl).not.toBeNull();
+    expect(footerButtons.length).toBe(2);
+    expect(
+      footerButtons.every((btn) => btn.getAttribute('data-size') === 'm'),
+    ).toBe(true);
+    expect(footerEl?.querySelector('button[type="submit"]')).not.toBeNull();
+  });
+
+  it('renders draw button with size m and without rounded-xl! override', () => {
+    componentRef.setInput('typeInput', 'indoor');
+    componentRef.setInput('centerIdInput', 'center-1');
+    fixture.detectChanges();
+
+    (
+      component as unknown as {
+        previewUrl: { set: (val: string | null) => void };
+      }
+    ).previewUrl.set('data:image/png;base64,abc');
+    fixture.detectChanges();
+
+    const drawBtn = fixture.nativeElement.querySelector(
+      'button[tuiButton][appearance="accent"]',
+    ) as HTMLButtonElement | null;
+
+    expect(drawBtn).not.toBeNull();
+    expect(drawBtn?.getAttribute('data-size')).toBe('m');
+    expect(drawBtn?.classList.contains('rounded-xl!')).toBe(false);
+    expect(drawBtn?.classList.contains('w-full')).toBe(true);
+  });
 });

@@ -35,6 +35,7 @@ import { TUI_PLATFORM } from '@taiga-ui/cdk';
 import {
   provideTaiga,
   TUI_DARK_MODE,
+  tuiButtonOptionsProvider,
   tuiHintOptionsProvider,
 } from '@taiga-ui/core';
 import { provideEventPlugins } from '@taiga-ui/event-plugins';
@@ -133,6 +134,9 @@ export const appConfig: ApplicationConfig = {
         deps: [HttpClient],
       },
       defaultLanguage: 'es',
+    }),
+    tuiButtonOptionsProvider({
+      size: 'm',
     }),
     tuiHintOptionsProvider({
       appearance: 'floating',

@@ -58,6 +58,7 @@ import { RoutesTableComponent } from './routes-table';
       [activeCol]="activeCol()"
       [showRowColors]="showRowColors()"
       [showAddRouteToTopo]="showAddRouteToTopo()"
+      [showArea]="showArea()"
       [showLocation]="showLocation()"
       [availableTopos]="availableTopos()"
       [toposByCrag]="toposByCrag()"
@@ -126,6 +127,7 @@ export class OutdoorRoutesTableComponent {
 
   // Inputs
   data = input<RouteItem[]>([]);
+  showArea = input(false);
   showLocation = input(false);
   showAdminActions = input(true);
   showRowColors = input(true);
@@ -179,6 +181,7 @@ export class OutdoorRoutesTableComponent {
     const cols = [
       'grade',
       'route',
+      ...(this.showArea() ? ['area'] : []),
       ...(this.showLocation() ? ['crag'] : []),
       'topo',
       'equippers',

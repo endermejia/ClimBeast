@@ -173,9 +173,10 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
           <button
             tuiButton
             appearance="primary"
-            size="l"
+            size="m"
             type="button"
-            class="w-full rounded-2xl! shadow-2xl shadow-black/5 transform transition-all active:scale-[0.98]"
+            iconStart="@tui.shopping-bag"
+            class="w-full"
             (click)="addToCart()"
             [disabled]="
               (item.available_sizes?.length &&
@@ -184,8 +185,7 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
               !canAddMore()
             "
           >
-            <tui-icon icon="@tui.shopping-bag" />
-            <span class="ml-3">{{ 'merchandising.buy' | translate }}</span>
+            {{ 'merchandising.buy' | translate }}
           </button>
         </div>
       </div>

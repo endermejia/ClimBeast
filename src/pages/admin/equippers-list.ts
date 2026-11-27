@@ -298,31 +298,33 @@ import { IS_BROWSER } from '../../app/is-browser';
     <!-- Modal dialog for adding a new equipper -->
     <ng-template #addEquipperDialog let-observer>
       <form
-        class="flex flex-col gap-4 p-4"
+        class="lw-form-sheet"
         (submit.zoneless)="
           $event.preventDefault();
           observer.next(equipperName());
           observer.complete()
         "
       >
-        <tui-textfield>
-          <label tuiLabel for="new-equipper-name">{{
-            'name' | translate
-          }}</label>
-          <input
-            id="new-equipper-name"
-            name="equipperName"
-            tuiInput
-            type="text"
-            [ngModel]="equipperName()"
-            (ngModelChange)="equipperName.set($event)"
-            [placeholder]="'name' | translate"
-            autocomplete="off"
-            required
-          />
-        </tui-textfield>
+        <div class="lw-form-sheet-body flex flex-col gap-4">
+          <tui-textfield>
+            <label tuiLabel for="new-equipper-name">{{
+              'name' | translate
+            }}</label>
+            <input
+              id="new-equipper-name"
+              name="equipperName"
+              tuiInput
+              type="text"
+              [ngModel]="equipperName()"
+              (ngModelChange)="equipperName.set($event)"
+              [placeholder]="'name' | translate"
+              autocomplete="off"
+              required
+            />
+          </tui-textfield>
+        </div>
 
-        <div class="flex justify-end gap-2 mt-2">
+        <div class="lw-form-sheet-footer">
           <button
             tuiButton
             type="button"

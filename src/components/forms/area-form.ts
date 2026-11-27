@@ -143,218 +143,227 @@ interface MinimalArea {
     }
   `,
   template: `
-    <form class="grid gap-4" (submit.zoneless)="onSubmit($event)">
-      <tui-textfield class="block">
-        <label tuiLabel for="area-name">{{ 'name' | translate }}</label>
-        <input
-          tuiInput
-          id="area-name"
-          [formField]="areaForm.name"
-          type="text"
-          autocomplete="off"
-        />
-      </tui-textfield>
-      @if (areaForm.name().invalid() && areaForm.name().touched()) {
-        <tui-error [error]="'errors.required' | translate" />
-      }
-
-      @if (isEdit() && canEditAdminSettings()) {
-        <tui-textfield class="block">
-          <label tuiLabel for="area-slug">{{ 'slug' | translate }}</label>
-          <input
-            tuiInput
-            id="area-slug"
-            [formField]="areaForm.slug"
-            type="text"
-            autocomplete="off"
-          />
-        </tui-textfield>
-        @if (areaForm.slug().invalid() && areaForm.slug().touched()) {
-          <tui-error [error]="'errors.required' | translate" />
-        }
-
-        <tui-textfield multi class="block">
-          <label tuiLabel for="eight-anu-slugs">
-            {{ 'import8a.slugs' | translate }}
-          </label>
-          <input
-            tuiInputChip
-            id="eight-anu-slugs"
-            [ngModel]="model().eight_anu_crag_slugs"
-            (ngModelChange)="onSlugsChange($event)"
-            name="eight_anu_crag_slugs"
-            autocomplete="off"
-          />
-          <tui-input-chip *tuiItem />
-        </tui-textfield>
-      }
-
-      <!-- Admin Settings / Payments Section -->
-      @if (canEditAdminSettings()) {
-        <tui-textfield [tuiTextfieldCleaner]="false" class="block">
-          <label tuiLabel for="area-warn-es">{{
-            'warning_es' | translate
-          }}</label>
-          <textarea
-            tuiTextarea
-            id="area-warn-es"
-            [ngModel]="model().warning_es"
-            (ngModelChange)="onWarningEsChange($event)"
-            name="warning_es"
-          ></textarea>
-        </tui-textfield>
-
-        <tui-textfield [tuiTextfieldCleaner]="false" class="block">
-          <label tuiLabel for="area-warn-en">{{
-            'warning_en' | translate
-          }}</label>
-          <textarea
-            tuiTextarea
-            id="area-warn-en"
-            [ngModel]="model().warning_en"
-            (ngModelChange)="onWarningEnChange($event)"
-            name="warning_en"
-          ></textarea>
-        </tui-textfield>
-
-        <div class="flex flex-col gap-4 pt-2">
-          <!-- Visibility cards — full width, 1 col mobile / 3 col desktop -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <!-- Public Option -->
-            <button
-              type="button"
-              class="visibility-card"
-              [class.visibility-card--selected]="visibilityMode() === 'public'"
-              (click.zoneless)="onVisibilityModeChange('public')"
-            >
-              <div
-                class="visibility-card__icon"
-                [class.visibility-card__icon--selected]="
-                  visibilityMode() === 'public'
-                "
-              >
-                <tui-icon icon="@tui.globe" />
-              </div>
-              <div class="visibility-card__body">
-                <span class="visibility-card__title">{{
-                  'payments.isPublic' | translate
-                }}</span>
-                <span class="visibility-card__desc">{{
-                  'payments.isPublic.desc' | translate
-                }}</span>
-              </div>
-              @if (visibilityMode() === 'public') {
-                <tui-icon
-                  icon="@tui.circle-check"
-                  class="visibility-card__check"
-                />
-              }
-            </button>
-
-            <!-- Secret Option -->
-            <button
-              type="button"
-              class="visibility-card"
-              [class.visibility-card--selected]="visibilityMode() === 'secret'"
-              (click.zoneless)="onVisibilityModeChange('secret')"
-            >
-              <div
-                class="visibility-card__icon"
-                [class.visibility-card__icon--selected]="
-                  visibilityMode() === 'secret'
-                "
-              >
-                <tui-icon icon="@tui.mail" />
-              </div>
-              <div class="visibility-card__body">
-                <span class="visibility-card__title">{{
-                  'payments.isSecret' | translate
-                }}</span>
-                <span class="visibility-card__desc">{{
-                  'payments.isSecret.desc' | translate
-                }}</span>
-              </div>
-              @if (visibilityMode() === 'secret') {
-                <tui-icon
-                  icon="@tui.circle-check"
-                  class="visibility-card__check"
-                />
-              }
-            </button>
-
-            <!-- Paywalled Option -->
-            <button
-              type="button"
-              class="visibility-card"
-              [class.visibility-card--selected]="
-                visibilityMode() === 'paywalled'
-              "
-              (click.zoneless)="onVisibilityModeChange('paywalled')"
-            >
-              <div
-                class="visibility-card__icon"
-                [class.visibility-card__icon--selected]="
-                  visibilityMode() === 'paywalled'
-                "
-              >
-                <tui-icon icon="@tui.coins" />
-              </div>
-              <div class="visibility-card__body">
-                <span class="visibility-card__title">{{
-                  'payments.isPaywalled' | translate
-                }}</span>
-                <span class="visibility-card__desc">{{
-                  'payments.isPaywalled.desc' | translate
-                }}</span>
-              </div>
-              @if (visibilityMode() === 'paywalled') {
-                <tui-icon
-                  icon="@tui.circle-check"
-                  class="visibility-card__check"
-                />
-              }
-            </button>
-          </div>
-
-          <!-- Secret mode notice -->
-          @if (visibilityMode() === 'secret') {
-            <div
-              class="flex items-start gap-3 px-4 py-3 rounded-xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
-            >
-              <tui-icon
-                icon="@tui.info"
-                class="text-(--tui-text-action) shrink-0 mt-0.5"
-              />
-              <p class="text-sm opacity-80 leading-relaxed">
-                {{ 'payments.isSecret.notice' | translate }}
-              </p>
-            </div>
+    <form class="lw-form-sheet" (submit.zoneless)="onSubmit($event)">
+      <div class="lw-form-sheet-body">
+        <div class="flex flex-col gap-4">
+          <tui-textfield class="block">
+            <label tuiLabel for="area-name">{{ 'name' | translate }}</label>
+            <input
+              tuiInput
+              id="area-name"
+              [formField]="areaForm.name"
+              type="text"
+              autocomplete="off"
+            />
+          </tui-textfield>
+          @if (areaForm.name().invalid() && areaForm.name().touched()) {
+            <tui-error [error]="'errors.required' | translate" />
           }
 
-          <!-- Paywalled settings -->
-          @if (visibilityMode() === 'paywalled') {
-            <div class="flex flex-col gap-4 max-w-md">
-              <app-counter
-                label="payments.price"
-                suffix="€"
-                [step]="0.5"
-                [min]="2"
-                [max]="20"
-                [ngModel]="model().price || 2"
-                (ngModelChange)="onPriceChange($event)"
-                name="price"
+          @if (isEdit() && canEditAdminSettings()) {
+            <tui-textfield class="block">
+              <label tuiLabel for="area-slug">{{ 'slug' | translate }}</label>
+              <input
+                tuiInput
+                id="area-slug"
+                [formField]="areaForm.slug"
+                type="text"
+                autocomplete="off"
               />
-              <p class="text-xs opacity-60 mt-1">
-                {{ 'payments.priceHelp' | translate }}
-              </p>
+            </tui-textfield>
+            @if (areaForm.slug().invalid() && areaForm.slug().touched()) {
+              <tui-error [error]="'errors.required' | translate" />
+            }
+
+            <tui-textfield multi class="block">
+              <label tuiLabel for="eight-anu-slugs">
+                {{ 'import8a.slugs' | translate }}
+              </label>
+              <input
+                tuiInputChip
+                id="eight-anu-slugs"
+                [ngModel]="model().eight_anu_crag_slugs"
+                (ngModelChange)="onSlugsChange($event)"
+                name="eight_anu_crag_slugs"
+                autocomplete="off"
+              />
+              <tui-input-chip *tuiItem />
+            </tui-textfield>
+          }
+
+          <!-- Admin Settings / Payments Section -->
+          @if (canEditAdminSettings()) {
+            <tui-textfield [tuiTextfieldCleaner]="false" class="block">
+              <label tuiLabel for="area-warn-es">{{
+                'warning_es' | translate
+              }}</label>
+              <textarea
+                tuiTextarea
+                id="area-warn-es"
+                [ngModel]="model().warning_es"
+                (ngModelChange)="onWarningEsChange($event)"
+                name="warning_es"
+              ></textarea>
+            </tui-textfield>
+
+            <tui-textfield [tuiTextfieldCleaner]="false" class="block">
+              <label tuiLabel for="area-warn-en">{{
+                'warning_en' | translate
+              }}</label>
+              <textarea
+                tuiTextarea
+                id="area-warn-en"
+                [ngModel]="model().warning_en"
+                (ngModelChange)="onWarningEnChange($event)"
+                name="warning_en"
+              ></textarea>
+            </tui-textfield>
+
+            <div class="flex flex-col gap-4 pt-2">
+              <!-- Visibility cards — full width, 1 col mobile / 3 col desktop -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <!-- Public Option -->
+                <button
+                  type="button"
+                  class="visibility-card"
+                  [class.visibility-card--selected]="
+                    visibilityMode() === 'public'
+                  "
+                  (click.zoneless)="onVisibilityModeChange('public')"
+                >
+                  <div
+                    class="visibility-card__icon"
+                    [class.visibility-card__icon--selected]="
+                      visibilityMode() === 'public'
+                    "
+                  >
+                    <tui-icon icon="@tui.globe" />
+                  </div>
+                  <div class="visibility-card__body">
+                    <span class="visibility-card__title">{{
+                      'payments.isPublic' | translate
+                    }}</span>
+                    <span class="visibility-card__desc">{{
+                      'payments.isPublic.desc' | translate
+                    }}</span>
+                  </div>
+                  @if (visibilityMode() === 'public') {
+                    <tui-icon
+                      icon="@tui.circle-check"
+                      class="visibility-card__check"
+                    />
+                  }
+                </button>
+
+                <!-- Secret Option -->
+                <button
+                  type="button"
+                  class="visibility-card"
+                  [class.visibility-card--selected]="
+                    visibilityMode() === 'secret'
+                  "
+                  (click.zoneless)="onVisibilityModeChange('secret')"
+                >
+                  <div
+                    class="visibility-card__icon"
+                    [class.visibility-card__icon--selected]="
+                      visibilityMode() === 'secret'
+                    "
+                  >
+                    <tui-icon icon="@tui.mail" />
+                  </div>
+                  <div class="visibility-card__body">
+                    <span class="visibility-card__title">{{
+                      'payments.isSecret' | translate
+                    }}</span>
+                    <span class="visibility-card__desc">{{
+                      'payments.isSecret.desc' | translate
+                    }}</span>
+                  </div>
+                  @if (visibilityMode() === 'secret') {
+                    <tui-icon
+                      icon="@tui.circle-check"
+                      class="visibility-card__check"
+                    />
+                  }
+                </button>
+
+                <!-- Paywalled Option -->
+                <button
+                  type="button"
+                  class="visibility-card"
+                  [class.visibility-card--selected]="
+                    visibilityMode() === 'paywalled'
+                  "
+                  (click.zoneless)="onVisibilityModeChange('paywalled')"
+                >
+                  <div
+                    class="visibility-card__icon"
+                    [class.visibility-card__icon--selected]="
+                      visibilityMode() === 'paywalled'
+                    "
+                  >
+                    <tui-icon icon="@tui.coins" />
+                  </div>
+                  <div class="visibility-card__body">
+                    <span class="visibility-card__title">{{
+                      'payments.isPaywalled' | translate
+                    }}</span>
+                    <span class="visibility-card__desc">{{
+                      'payments.isPaywalled.desc' | translate
+                    }}</span>
+                  </div>
+                  @if (visibilityMode() === 'paywalled') {
+                    <tui-icon
+                      icon="@tui.circle-check"
+                      class="visibility-card__check"
+                    />
+                  }
+                </button>
+              </div>
+
+              <!-- Secret mode notice -->
+              @if (visibilityMode() === 'secret') {
+                <div
+                  class="flex items-start gap-3 px-4 py-3 rounded-xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+                >
+                  <tui-icon
+                    icon="@tui.info"
+                    class="text-(--tui-text-action) shrink-0 mt-0.5"
+                  />
+                  <p class="text-sm opacity-80 leading-relaxed">
+                    {{ 'payments.isSecret.notice' | translate }}
+                  </p>
+                </div>
+              }
+
+              <!-- Paywalled settings -->
+              @if (visibilityMode() === 'paywalled') {
+                <div class="flex flex-col gap-4 max-w-md">
+                  <app-counter
+                    label="payments.price"
+                    suffix="€"
+                    [step]="0.5"
+                    [min]="2"
+                    [max]="20"
+                    [ngModel]="model().price || 2"
+                    (ngModelChange)="onPriceChange($event)"
+                    name="price"
+                  />
+                  <p class="text-xs opacity-60 mt-1">
+                    {{ 'payments.priceHelp' | translate }}
+                  </p>
+                </div>
+              }
             </div>
           }
         </div>
-      }
+      </div>
 
-      <div class="flex flex-wrap gap-2 justify-end">
+      <div class="lw-form-sheet-footer">
         <button
           tuiButton
+          size="m"
           appearance="flat"
           type="button"
           (click.zoneless)="goBack()"
@@ -367,6 +376,7 @@ interface MinimalArea {
             (isEdit() && canEditAdminSettings() && areaForm.slug().invalid())
           "
           tuiButton
+          size="m"
           appearance="primary"
           type="submit"
         >

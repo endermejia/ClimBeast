@@ -61,38 +61,43 @@ interface MinimalParking {
     TuiLabel,
   ],
   template: `
-    <form class="grid gap-4 w-full" (submit.zoneless)="onSubmit($event)">
-      <tui-textfield [tuiTextfieldCleaner]="false">
-        <label tuiLabel for="parking-name">{{ 'name' | translate }}</label>
-        <input
-          tuiInput
-          id="parking-name"
-          [formField]="parkingForm.name"
-          type="text"
-          autocomplete="off"
-        />
-      </tui-textfield>
-      @if (parkingForm.name().invalid() && parkingForm.name().touched()) {
-        <tui-error [error]="'errors.required' | translate" />
-      }
+    <form class="lw-form-sheet" (submit.zoneless)="onSubmit($event)">
+      <div class="lw-form-sheet-body">
+        <div class="flex flex-col gap-4">
+          <tui-textfield [tuiTextfieldCleaner]="false">
+            <label tuiLabel for="parking-name">{{ 'name' | translate }}</label>
+            <input
+              tuiInput
+              id="parking-name"
+              [formField]="parkingForm.name"
+              type="text"
+              autocomplete="off"
+            />
+          </tui-textfield>
+          @if (parkingForm.name().invalid() && parkingForm.name().touched()) {
+            <tui-error [error]="'errors.required' | translate" />
+          }
 
-      <app-coordinates-fields
-        [latitude]="model().latitude"
-        [longitude]="model().longitude"
-        (coordinatesChange)="onCoordinatesChange($event)"
-        rowClass="grid grid-cols-1 md:grid-cols-2 gap-4 items-end"
-      >
-        <app-counter
-          [ngModel]="model().size"
-          (ngModelChange)="onSizeChange($event)"
-          name="size"
-          label="capacity"
-        />
-      </app-coordinates-fields>
+          <app-coordinates-fields
+            [latitude]="model().latitude"
+            [longitude]="model().longitude"
+            (coordinatesChange)="onCoordinatesChange($event)"
+            rowClass="grid grid-cols-1 md:grid-cols-2 gap-4 items-end"
+          >
+            <app-counter
+              [ngModel]="model().size"
+              (ngModelChange)="onSizeChange($event)"
+              name="size"
+              label="capacity"
+            />
+          </app-coordinates-fields>
+        </div>
+      </div>
 
-      <div class="flex flex-wrap gap-2 justify-end">
+      <div class="lw-form-sheet-footer">
         <button
           tuiButton
+          size="m"
           appearance="flat"
           type="button"
           (click.zoneless)="goBack()"
@@ -107,6 +112,7 @@ interface MinimalParking {
             (!parkingForm.name().dirty() && !isEdit())
           "
           tuiButton
+          size="m"
           appearance="primary"
           type="submit"
         >

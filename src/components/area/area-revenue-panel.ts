@@ -146,10 +146,11 @@ import { EmptyStateComponent } from '../ui/empty-state';
         <!-- Botón de contribución con icono de mano y corazón -->
         <button
           tuiButton
+          appearance="accent"
+          size="m"
           type="button"
           iconStart="@tui.hand-heart"
-          class="w-full rounded-xl !whitespace-normal !h-auto min-h-11 py-2.5 px-3 text-xs sm:text-sm md:text-base font-bold text-white shadow-xs transition-transform active:scale-[0.99] flex items-center justify-center text-center leading-snug cursor-pointer"
-          style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);"
+          class="w-full lw-button-wrap"
           (click)="openDonationDialog()"
         >
           {{

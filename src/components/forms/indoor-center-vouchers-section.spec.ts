@@ -36,6 +36,8 @@ describe('IndoorCenterVouchersSectionComponent', () => {
       'button[appearance="primary"]',
     ) as HTMLButtonElement;
     expect(addButton.disabled).toBe(true);
+    expect(addButton.getAttribute('data-size')).toBe('m');
+    expect(addButton.classList.contains('font-bold')).toBe(false);
 
     component.newVoucherName.set('Day pass');
     fixture.detectChanges();

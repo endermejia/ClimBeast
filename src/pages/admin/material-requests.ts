@@ -253,13 +253,10 @@ import { AvatarUrlPipe } from '../../pipes';
                     appearance="negative"
                     size="s"
                     type="button"
-                    class="rounded-xl!"
+                    iconStart="@tui.x"
                     (click)="openRejectModal(req)"
                   >
-                    <tui-icon icon="@tui.x" class="w-4 h-4" />
-                    <span>{{
-                      'admin.materialRequests.reject' | translate
-                    }}</span>
+                    {{ 'admin.materialRequests.reject' | translate }}
                   </button>
 
                   <button
@@ -267,13 +264,10 @@ import { AvatarUrlPipe } from '../../pipes';
                     appearance="accent"
                     size="s"
                     type="button"
-                    class="rounded-xl!"
+                    iconStart="@tui.check"
                     (click)="updateStatus(req.id, 'approved')"
                   >
-                    <tui-icon icon="@tui.check" class="w-4 h-4" />
-                    <span>{{
-                      'admin.materialRequests.approve' | translate
-                    }}</span>
+                    {{ 'admin.materialRequests.approve' | translate }}
                   </button>
                 }
 
@@ -283,13 +277,10 @@ import { AvatarUrlPipe } from '../../pipes';
                     appearance="accent"
                     size="s"
                     type="button"
-                    class="rounded-xl!"
+                    iconStart="@tui.check-check"
                     (click)="updateStatus(req.id, 'disposed')"
                   >
-                    <tui-icon icon="@tui.check-check" class="w-4 h-4" />
-                    <span>{{
-                      'admin.materialRequests.markDelivered' | translate
-                    }}</span>
+                    {{ 'admin.materialRequests.markDelivered' | translate }}
                   </button>
                 }
               </div>
@@ -353,6 +344,7 @@ import { AvatarUrlPipe } from '../../pipes';
               <button
                 tuiButton
                 appearance="flat"
+                size="m"
                 type="button"
                 (click)="rejectModalOpen.set(false)"
               >
@@ -362,6 +354,7 @@ import { AvatarUrlPipe } from '../../pipes';
               <button
                 tuiButton
                 appearance="negative"
+                size="m"
                 type="button"
                 [disabled]="isRejectDisabled()"
                 (click)="confirmReject()"

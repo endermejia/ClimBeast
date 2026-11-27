@@ -71,7 +71,7 @@ import {
                 size="l"
                 appearance="primary"
                 iconEnd="@tui.arrow-right"
-                class="w-full sm:w-auto shadow-sm"
+                class="w-full sm:w-auto"
               >
                 {{ 'landing.getStarted' | translate }}
               </a>

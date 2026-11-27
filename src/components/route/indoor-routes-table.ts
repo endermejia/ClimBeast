@@ -1,4 +1,11 @@
-import { Component, computed, effect, inject, input } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { TuiLink } from '@taiga-ui/core';
@@ -44,7 +51,9 @@ import { RoutesTableComponent } from './routes-table';
     <app-routes-table
       [data]="mappedData()"
       [columns]="columns()"
-      [showAddRouteToTopo]="true"
+      [showRowColors]="showRowColors()"
+      [showAddRouteToTopo]="showAddRouteToTopo()"
+      [showLocation]="showLocation()"
       [availableTopos]="availableTopos()"
       [ascentInfo]="ascentsService.ascentInfo()"
       [isMobile]="layoutService.isMobile()"
@@ -107,6 +116,11 @@ export class IndoorRoutesTableComponent {
   centerId = input<string | undefined>();
   centerSlug = input<string | undefined>();
   availableTopos = input<{ id: number | string; name: string }[]>([]);
+  showRowColors = input<boolean>(true);
+  showAddRouteToTopo = input<boolean>(true);
+  showLocation = input<boolean>(false);
+
+  routeUpdated = output<void>();
 
   private readonly equippersQueue = new RouteEquippersQueue();
 
@@ -117,16 +131,24 @@ export class IndoorRoutesTableComponent {
     });
   }
 
-  protected canEditIndoor(): boolean {
-    const cid = this.centerId();
+  protected canEditIndoor(route?: IndoorRouteWithExtras): boolean {
+    const cid =
+      this.centerId() || (route?.center_id ? String(route.center_id) : '');
     if (!cid) return false;
-    return !!this.authState.indoorAdminPermissions()[cid];
+    return (
+      !!this.authState.indoorAdminPermissions()[cid] ||
+      this.authState.canEditAsAdmin()
+    );
   }
 
   protected readonly mappedData = computed(() => {
-    const isEdit = this.canEditIndoor();
+    const cid = this.centerId();
     const slug = this.centerSlug();
+    const perms = this.authState.indoorAdminPermissions();
+    const isAdmin = this.authState.canEditAsAdmin();
+    const allowAddTopo = this.showAddRouteToTopo();
     const equipperOverrides = this.equippersQueue.overrides();
+
     return this.data().map((r) => {
       const override = equipperOverrides[String(r.id)];
       const withEquippers = override ? { ...r, equippers: override } : r;
@@ -135,9 +157,12 @@ export class IndoorRoutesTableComponent {
         : withEquippers;
       const row = mapRouteToTableRow(route);
       row._ref = r;
-      row.canEdit = isEdit;
-      row.canDelete = isEdit && !row.hasAscents;
-      row.canAddTopo = isEdit;
+      const effectiveCenterId = cid || (r.center_id ? String(r.center_id) : '');
+      const canEdit =
+        !!effectiveCenterId && (!!perms[effectiveCenterId] || isAdmin);
+      row.canEdit = canEdit;
+      row.canDelete = canEdit && !row.hasAscents;
+      row.canAddTopo = canEdit && allowAddTopo;
       return row;
     });
   });
@@ -157,6 +182,7 @@ export class IndoorRoutesTableComponent {
     return [
       'grade',
       'route',
+      ...(this.showLocation() ? ['center'] : []),
       'topo',
       'color',
       'equippers',
@@ -187,7 +213,10 @@ export class IndoorRoutesTableComponent {
       { defaultValue: false },
     );
     if (success) {
-      this.indoorService.reloadCenterRoutes();
+      if (this.centerId()) {
+        this.indoorService.reloadCenterRoutes();
+      }
+      this.routeUpdated.emit();
     }
   }
 
@@ -206,11 +235,15 @@ export class IndoorRoutesTableComponent {
       '_ref' in item
         ? (item._ref as IndoorRouteWithExtras)
         : (item as IndoorRouteWithExtras);
-    const id = this.centerId();
+    const id =
+      this.centerId() || (r.center_id ? String(r.center_id) : undefined);
     if (!id) return;
     const success = await this.indoorService.openIndoorRouteForm(id, r);
     if (success) {
-      this.indoorService.reloadCenterRoutes();
+      if (this.centerId()) {
+        this.indoorService.reloadCenterRoutes();
+      }
+      this.routeUpdated.emit();
     }
   }
 
@@ -228,6 +261,7 @@ export class IndoorRoutesTableComponent {
         if (r) {
           r.equippers = saved;
         }
+        this.routeUpdated.emit();
       },
       onError: (err) => handleErrorToast(err, this.toast),
     });
@@ -240,13 +274,20 @@ export class IndoorRoutesTableComponent {
     const r = row._ref as IndoorRouteWithExtras | undefined;
     const trimmed = newName.trim();
     if (!trimmed || (r && trimmed === r.name)) return;
+    const prevName = r?.name;
     try {
       if (r) {
         r.name = trimmed;
       }
       await this.indoorService.updateRoute(String(row.id), { name: trimmed });
-      this.indoorService.reloadCenterRoutes();
+      if (this.centerId()) {
+        this.indoorService.reloadCenterRoutes();
+      }
+      this.routeUpdated.emit();
     } catch (err: unknown) {
+      if (r && prevName !== undefined) {
+        r.name = prevName;
+      }
       handleErrorToast(err, this.toast);
     }
   }
@@ -278,7 +319,10 @@ export class IndoorRoutesTableComponent {
     if (!confirmed) return;
     try {
       await this.indoorService.deleteRoute(r.id);
-      this.indoorService.reloadCenterRoutes();
+      if (this.centerId()) {
+        this.indoorService.reloadCenterRoutes();
+      }
+      this.routeUpdated.emit();
     } catch (e: unknown) {
       console.error('[IndoorRoutesTable] error deleting route', e);
       handleErrorToast(e, this.toast);
@@ -311,7 +355,10 @@ export class IndoorRoutesTableComponent {
         });
         if (error) throw error;
       }
-      this.indoorService.reloadCenterRoutes();
+      if (this.centerId()) {
+        this.indoorService.reloadCenterRoutes();
+      }
+      this.routeUpdated.emit();
     } catch (e: unknown) {
       console.error('[IndoorRoutesTable] error toggling route on topo', e);
       handleErrorToast(e, this.toast);

@@ -15,7 +15,6 @@ import {
   TuiIcon,
   TuiInput,
   TuiLoader,
-  TuiScrollbar,
 } from '@taiga-ui/core';
 import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 
@@ -64,75 +63,74 @@ export interface PyramidSlotDialogData {
     TuiIcon,
     TuiInput,
     TuiLoader,
-    TuiScrollbar,
   ],
   template: `
-    <div class="flex flex-col gap-4 p-4 min-w-[320px] max-w-[400px]">
-      <div class="flex flex-col gap-1">
-        <span class="text-sm opacity-60 uppercase font-bold tracking-wider">
-          {{ 'pyramid.level' | translate }} {{ data.level }}
-        </span>
-        @if (data.expectedGrade) {
-          <div class="flex items-center gap-2">
-            <span class="text-xs"
-              >{{ 'pyramid.requiredGrade' | translate }}:</span
-            >
-            <app-grade
-              [grade]="data.expectedGrade"
-              [kind]="data.kind || ClimbingKinds.SPORT"
-            />
-          </div>
-        }
-      </div>
-
-      @if (data.currentRouteId && data.currentRoute) {
-        <div
-          class="flex flex-col items-center gap-2 p-4 rounded-2xl border cursor-pointer transition-transform hover:scale-105"
-          [class.bg-(--tui-status-positive-pale)]="data.isCompleted"
-          [class.border-(--tui-status-positive)]="data.isCompleted"
-          [class.bg-(--tui-background-neutral-1)]="!data.isCompleted"
-          [class.border-transparent]="!data.isCompleted"
-          tabindex="0"
-          (click)="goToRoute(data.currentRoute)"
-          (keydown.enter)="goToRoute(data.currentRoute)"
-        >
-          <div class="flex items-center gap-3 w-full justify-center">
-            <app-grade
-              [grade]="data.currentRoute.grade"
-              [kind]="data.currentRoute.climbing_kind"
-            />
-            <span
-              class="font-bold text-lg truncate max-w-[200px] hover:underline"
-              >{{ data.currentRoute.name }}</span
-            >
-          </div>
-
-          @if (data.isCompleted && data.ascent) {
-            <div class="flex items-center gap-2 mt-2">
-              <app-ascent-type [type]="data.ascent.type" />
-              <span class="font-bold text-(--tui-status-positive) text-sm">
-                +{{ data.ascent.score }} {{ 'points' | translate }}
-              </span>
+    <div class="lw-form-sheet">
+      <div class="lw-form-sheet-body flex flex-col gap-4">
+        <div class="flex flex-col gap-1">
+          <span class="text-sm opacity-60 uppercase font-bold tracking-wider">
+            {{ 'pyramid.level' | translate }} {{ data.level }}
+          </span>
+          @if (data.expectedGrade) {
+            <div class="flex items-center gap-2">
+              <span class="text-xs"
+                >{{ 'pyramid.requiredGrade' | translate }}:</span
+              >
+              <app-grade
+                [grade]="data.expectedGrade"
+                [kind]="data.kind || ClimbingKinds.SPORT"
+              />
             </div>
           }
         </div>
-      } @else {
-        <!-- Search Field -->
-        <tui-textfield tuiTextfieldSize="m" [tuiTextfieldCleaner]="true">
-          <tui-icon tuiIconStart icon="@tui.search" />
-          <input
-            tuiInput
-            [ngModel]="searchQuery()"
-            (ngModelChange)="onSearchChange($event)"
-            [placeholder]="'search' | translate"
-            autocomplete="off"
-          />
-        </tui-textfield>
 
-        <!-- Results List -->
-        <tui-loader [overlay]="true" [loading]="loading()">
-          <tui-scrollbar class="max-h-[300px] -mx-2 px-2">
-            <div class="flex flex-col gap-2 mt-2">
+        @if (data.currentRouteId && data.currentRoute) {
+          <div
+            class="flex flex-col items-center gap-2 p-4 rounded-2xl border cursor-pointer transition-transform hover:scale-105"
+            [class.bg-(--tui-status-positive-pale)]="data.isCompleted"
+            [class.border-(--tui-status-positive)]="data.isCompleted"
+            [class.bg-(--tui-background-neutral-1)]="!data.isCompleted"
+            [class.border-transparent]="!data.isCompleted"
+            tabindex="0"
+            (click)="goToRoute(data.currentRoute)"
+            (keydown.enter)="goToRoute(data.currentRoute)"
+          >
+            <div class="flex items-center gap-3 w-full justify-center">
+              <app-grade
+                [grade]="data.currentRoute.grade"
+                [kind]="data.currentRoute.climbing_kind"
+              />
+              <span
+                class="font-bold text-lg truncate max-w-[200px] hover:underline"
+                >{{ data.currentRoute.name }}</span
+              >
+            </div>
+
+            @if (data.isCompleted && data.ascent) {
+              <div class="flex items-center gap-2 mt-2">
+                <app-ascent-type [type]="data.ascent.type" />
+                <span class="font-bold text-(--tui-status-positive) text-sm">
+                  +{{ data.ascent.score }} {{ 'points' | translate }}
+                </span>
+              </div>
+            }
+          </div>
+        } @else {
+          <!-- Search Field -->
+          <tui-textfield tuiTextfieldSize="m" [tuiTextfieldCleaner]="true">
+            <tui-icon tuiIconStart icon="@tui.search" />
+            <input
+              tuiInput
+              [ngModel]="searchQuery()"
+              (ngModelChange)="onSearchChange($event)"
+              [placeholder]="'search' | translate"
+              autocomplete="off"
+            />
+          </tui-textfield>
+
+          <!-- Results List -->
+          <tui-loader [overlay]="true" [loading]="loading()">
+            <div class="flex flex-col gap-2">
               @for (route of results(); track route.id) {
                 <div
                   class="flex items-center justify-between p-3 rounded-2xl bg-(--tui-background-neutral-1) hover:bg-(--tui-background-neutral-2) cursor-pointer transition-colors border border-transparent hover:border-(--tui-border-normal)"
@@ -169,19 +167,18 @@ export interface PyramidSlotDialogData {
                 }
               }
             </div>
-          </tui-scrollbar>
-        </tui-loader>
-      }
+          </tui-loader>
+        }
+      </div>
 
       <!-- Actions -->
       @if (data.currentRouteId) {
-        <div
-          class="flex justify-center mt-2 border-t border-(--tui-border-normal) pt-4"
-        >
+        <div class="lw-form-sheet-footer">
           <button
             tuiButton
             appearance="flat-destructive"
             size="m"
+            type="button"
             class="w-full"
             [disabled]="data.canDelete === false"
             (click)="removeRoute()"
@@ -191,11 +188,6 @@ export interface PyramidSlotDialogData {
         </div>
       }
     </div>
-  `,
-  styles: `
-    :host {
-      display: block;
-    }
   `,
 })
 export class PyramidSlotDialogComponent {

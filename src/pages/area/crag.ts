@@ -105,7 +105,7 @@ const PAGE_SIZE = 20;
   template: `
     <tui-scrollbar class="w-full h-full min-h-0 min-w-0">
       <section
-        class="w-full min-w-0 max-w-[1600px] mx-auto pt-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden pb-2"
+        class="w-full min-w-0 max-w-[1600px] mx-auto pt-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden overflow-x-clip pb-2"
       >
         @if (cragDetail(); as c) {
           <!-- Left Column: Info + Segmented Tabs -->
@@ -114,7 +114,7 @@ const PAGE_SIZE = 20;
           >
             <tui-scrollbar class="column-scrollbar w-full h-full min-h-0">
               <div
-                class="flex flex-col gap-4 w-full min-w-0 px-4 lg:px-0 lg:pr-4"
+                class="flex flex-col gap-4 w-full min-w-0 px-4 lg:px-0 lg:pr-4 sm:[--lw-table-bleed:2.5rem]"
               >
                 <ng-template #cragSwitcher>
                   <tui-data-list>

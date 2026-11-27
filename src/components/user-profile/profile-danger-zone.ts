@@ -79,46 +79,51 @@ import { Observer } from 'rxjs';
 
     <!-- Change Password Dialog Template -->
     <ng-template #changePasswordDialog let-observer>
-      <div class="flex flex-col gap-4">
-        <tui-textfield class="block">
-          <label tuiLabel for="newPasswordInput">{{
-            'newPassword' | translate
-          }}</label>
-          <input
-            id="newPasswordInput"
-            tuiInput
-            type="password"
-            [ngModel]="passwordModel().newPassword"
-            (ngModelChange)="onPasswordModelChange('newPassword', $event)"
-            autocomplete="new-password"
-          />
-          <tui-icon tuiPassword />
-        </tui-textfield>
+      <form class="lw-form-sheet" (ngSubmit)="onSubmitChangePassword(observer)">
+        <div class="lw-form-sheet-body flex flex-col gap-4">
+          <tui-textfield class="block">
+            <label tuiLabel for="newPasswordInput">{{
+              'newPassword' | translate
+            }}</label>
+            <input
+              id="newPasswordInput"
+              name="newPassword"
+              tuiInput
+              type="password"
+              [ngModel]="passwordModel().newPassword"
+              (ngModelChange)="onPasswordModelChange('newPassword', $event)"
+              autocomplete="new-password"
+            />
+            <tui-icon tuiPassword />
+          </tui-textfield>
 
-        <tui-textfield class="block">
-          <label tuiLabel for="confirmPasswordInput">{{
-            'confirmPassword' | translate
-          }}</label>
-          <input
-            id="confirmPasswordInput"
-            tuiInput
-            type="password"
-            [ngModel]="passwordModel().confirmPassword"
-            (ngModelChange)="onPasswordModelChange('confirmPassword', $event)"
-            autocomplete="new-password"
-          />
-          <tui-icon tuiPassword />
-        </tui-textfield>
+          <tui-textfield class="block">
+            <label tuiLabel for="confirmPasswordInput">{{
+              'confirmPassword' | translate
+            }}</label>
+            <input
+              id="confirmPasswordInput"
+              name="confirmPassword"
+              tuiInput
+              type="password"
+              [ngModel]="passwordModel().confirmPassword"
+              (ngModelChange)="onPasswordModelChange('confirmPassword', $event)"
+              autocomplete="new-password"
+            />
+            <tui-icon tuiPassword />
+          </tui-textfield>
 
-        @if (passwordError(); as errorMsg) {
-          <div tuiNotification appearance="negative">
-            {{ errorMsg }}
-          </div>
-        }
+          @if (passwordError(); as errorMsg) {
+            <div tuiNotification appearance="negative">
+              {{ errorMsg }}
+            </div>
+          }
+        </div>
 
-        <div class="flex justify-end gap-2">
+        <div class="lw-form-sheet-footer">
           <button
             tuiButton
+            size="m"
             appearance="flat"
             type="button"
             (click)="observer.complete()"
@@ -127,68 +132,78 @@ import { Observer } from 'rxjs';
           </button>
           <button
             tuiButton
+            size="m"
             appearance="primary"
-            type="button"
+            type="submit"
             [disabled]="
               isUpdatingPassword() ||
               !passwordModel().newPassword ||
               !passwordModel().confirmPassword ||
               !!passwordError()
             "
-            (click)="confirmChangePassword.emit(observer)"
           >
             {{ 'accept' | translate }}
           </button>
         </div>
-      </div>
+      </form>
     </ng-template>
 
     <!-- Delete Account Dialog Template -->
     <ng-template #deleteDialog let-observer>
-      <div class="flex flex-col gap-4">
-        <p class="text-(--tui-text-negative) font-bold">
-          {{ 'profile.deleteAccount.warning' | translate }}
-        </p>
-        <p>
-          {{ 'profile.deleteAccount.instruction_prefix' | translate }}
-          <strong>{{ userEmail() }}</strong>
-          {{ 'profile.deleteAccount.instruction_suffix' | translate }}
-        </p>
+      <form class="lw-form-sheet" (ngSubmit)="onSubmitDeleteAccount(observer)">
+        <div class="lw-form-sheet-body flex flex-col gap-4">
+          <p class="text-(--tui-text-negative) font-bold">
+            {{ 'profile.deleteAccount.warning' | translate }}
+          </p>
+          <p>
+            {{ 'profile.deleteAccount.instruction_prefix' | translate }}
+            <strong>{{ userEmail() }}</strong>
+            {{ 'profile.deleteAccount.instruction_suffix' | translate }}
+          </p>
 
-        <tui-textfield class="block">
-          <label tuiLabel for="deleteEmailInput">{{
-            'email' | translate
-          }}</label>
-          <input
-            id="deleteEmailInput"
-            tuiInput
-            type="email"
-            [ngModel]="deleteEmail()"
-            (ngModelChange)="updateDeleteEmail.emit($event)"
-            (paste)="$event.preventDefault()"
-            [invalid]="deleteEmailInvalid()"
-            autocomplete="off"
-            placeholder="email@example.com"
-          />
-        </tui-textfield>
-        @if (deleteEmailError(); as err) {
-          <tui-error [error]="err" />
-        }
+          <tui-textfield class="block">
+            <label tuiLabel for="deleteEmailInput">{{
+              'email' | translate
+            }}</label>
+            <input
+              id="deleteEmailInput"
+              name="deleteEmail"
+              tuiInput
+              type="email"
+              [ngModel]="deleteEmail()"
+              (ngModelChange)="updateDeleteEmail.emit($event)"
+              (paste)="$event.preventDefault()"
+              [invalid]="deleteEmailInvalid()"
+              autocomplete="off"
+              placeholder="email@example.com"
+            />
+          </tui-textfield>
+          @if (deleteEmailError(); as err) {
+            <tui-error [error]="err" />
+          }
+        </div>
 
-        <div class="flex justify-end gap-2">
-          <button tuiButton appearance="flat" (click)="observer.complete()">
+        <div class="lw-form-sheet-footer">
+          <button
+            tuiButton
+            size="m"
+            appearance="flat"
+            type="button"
+            (click)="observer.complete()"
+          >
             {{ 'cancel' | translate }}
           </button>
           <button
             tuiButton
+            size="m"
             appearance="primary-destructive"
+            type="submit"
             [disabled]="deleteEmail() !== userEmail()"
-            (click)="confirmDeleteAccount.emit(observer)"
           >
             {{ 'profile.deleteAccount.button' | translate }}
           </button>
         </div>
-      </div>
+      </form>
     </ng-template>
   `,
 })
@@ -214,5 +229,24 @@ export class ProfileDangerZoneComponent {
 
   protected onPasswordModelChange(field: string, value: string): void {
     this.updatePasswordModel.emit({ field, value });
+  }
+
+  protected onSubmitChangePassword(observer: Observer<void>): void {
+    if (
+      this.isUpdatingPassword() ||
+      !this.passwordModel().newPassword ||
+      !this.passwordModel().confirmPassword ||
+      !!this.passwordError()
+    ) {
+      return;
+    }
+    this.confirmChangePassword.emit(observer);
+  }
+
+  protected onSubmitDeleteAccount(observer: Observer<void>): void {
+    if (this.deleteEmail() !== this.userEmail()) {
+      return;
+    }
+    this.confirmDeleteAccount.emit(observer);
   }
 }

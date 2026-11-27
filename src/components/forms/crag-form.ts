@@ -29,7 +29,6 @@ import {
   TuiFilterByInputPipe,
   TuiInput,
   TuiLabel,
-  TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
 import {
@@ -107,18 +106,14 @@ interface CragFormModel {
     TuiInput,
     TuiInputChip,
     TuiLabel,
-    TuiScrollbar,
     TuiSelect,
     TuiTextarea,
     TuiTextfield,
   ],
   template: `
-    <form
-      class="flex flex-col grow max-h-[70dvh] min-h-0 w-full overflow-hidden"
-      (submit.zoneless)="onSubmit($event)"
-    >
-      <tui-scrollbar class="grow min-h-0 overflow-x-hidden!">
-        <div class="grid gap-4 pt-1 pr-2 pb-2">
+    <form class="lw-form-sheet" (submit.zoneless)="onSubmit($event)">
+      <div class="lw-form-sheet-body">
+        <div class="flex flex-col gap-4">
           <tui-textfield
             tuiChevron
             [tuiTextfieldCleaner]="false"
@@ -253,13 +248,12 @@ interface CragFormModel {
             </tui-textfield>
           }
         </div>
-      </tui-scrollbar>
+      </div>
 
-      <div
-        class="flex flex-wrap gap-2 justify-end pt-4 border-t border-(--tui-border-normal) shrink-0"
-      >
+      <div class="lw-form-sheet-footer">
         <button
           tuiButton
+          size="m"
           appearance="flat"
           type="button"
           (click.zoneless)="goBack()"
@@ -273,6 +267,7 @@ interface CragFormModel {
             (!cragForm.name().dirty() && !isEdit())
           "
           tuiButton
+          size="m"
           appearance="primary"
           type="submit"
         >
@@ -281,7 +276,7 @@ interface CragFormModel {
       </div>
     </form>
   `,
-  host: { class: 'flex flex-col max-h-[70dvh] min-h-0 w-full overflow-hidden' },
+  host: { class: 'block w-full' },
 })
 export class CragFormComponent {
   protected readonly authState = inject(AuthStateService);

@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TuiButton, TuiLoader, TuiScrollbar, TuiIcon } from '@taiga-ui/core';
+import { TuiButton, TuiLoader, TuiIcon } from '@taiga-ui/core';
 import { TuiDialogContext } from '@taiga-ui/core';
 import { TuiAvatar } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
@@ -38,80 +38,89 @@ import { EmptyStateComponent } from '../ui/empty-state';
     TuiButton,
     TuiIcon,
     TuiLoader,
-    TuiScrollbar,
   ],
   template: `
-    <div class="flex flex-col h-[60dvh] min-h-[400px] -m-4">
-      <tui-scrollbar class="grow min-h-0">
-        <div class="flex flex-col gap-1 p-4">
-          @for (request of requests(); track request.id) {
-            <a
-              class="flex items-center gap-3 p-3 hover:bg-(--tui-background-neutral-1) transition-colors rounded-xl cursor-pointer"
-              [routerLink]="['/profile', request.follower_id]"
-              (click)="context.completeWith(true)"
-            >
-              <span tuiAvatar size="m">
-                @if (request.follower.avatar; as avatar) {
-                  <img [src]="avatar | avatarUrl" alt="avatar" />
-                } @else {
-                  <tui-icon icon="@tui.user" />
-                }
-              </span>
-              <div class="flex flex-col grow min-w-0">
-                <span class="font-bold text-text truncate">{{
-                  request.follower.name
+    <div class="lw-form-sheet">
+      <div class="lw-form-sheet-body flex flex-col gap-1">
+        @for (request of requests(); track request.id) {
+          <a
+            class="flex items-center gap-3 p-3 hover:bg-(--tui-background-neutral-1) transition-colors rounded-xl cursor-pointer"
+            [routerLink]="['/profile', request.follower_id]"
+            (click)="context.completeWith(true)"
+          >
+            <span tuiAvatar size="m">
+              @if (request.follower.avatar; as avatar) {
+                <img [src]="avatar | avatarUrl" alt="avatar" />
+              } @else {
+                <tui-icon icon="@tui.user" />
+              }
+            </span>
+            <div class="flex flex-col grow min-w-0">
+              <span class="font-bold text-text truncate">{{
+                request.follower.name
+              }}</span>
+              @if (request.follower.city) {
+                <span class="text-xs opacity-50 truncate">{{
+                  request.follower.city
                 }}</span>
-                @if (request.follower.city) {
-                  <span class="text-xs opacity-50 truncate">{{
-                    request.follower.city
-                  }}</span>
-                }
-              </div>
+              }
+            </div>
 
-              <div class="flex gap-2">
-                <button
-                  tuiButton
-                  appearance="primary"
-                  size="s"
-                  type="button"
-                  [disabled]="loadingAction() === 'accept-' + request.id"
-                  (click)="onAccept(request, $event)"
-                >
-                  {{ 'accept' | translate }}
-                </button>
-                <button
-                  tuiButton
-                  appearance="secondary-destructive"
-                  size="s"
-                  type="button"
-                  [disabled]="loadingAction() === 'reject-' + request.id"
-                  (click)="onReject(request, $event)"
-                >
-                  {{ 'reject' | translate }}
-                </button>
-              </div>
-            </a>
-          } @empty {
-            @if (!loading()) {
-              <div class="py-12">
-                <app-empty-state icon="@tui.users" />
-              </div>
-            }
-          }
-
-          @if (loading()) {
-            <div class="py-12 flex justify-center">
-              <tui-loader />
+            <div class="flex gap-2">
+              <button
+                tuiButton
+                appearance="primary"
+                size="s"
+                type="button"
+                [disabled]="loadingAction() === 'accept-' + request.id"
+                (click)="onAccept(request, $event)"
+              >
+                {{ 'accept' | translate }}
+              </button>
+              <button
+                tuiButton
+                appearance="secondary-destructive"
+                size="s"
+                type="button"
+                [disabled]="loadingAction() === 'reject-' + request.id"
+                (click)="onReject(request, $event)"
+              >
+                {{ 'reject' | translate }}
+              </button>
+            </div>
+          </a>
+        } @empty {
+          @if (!loading()) {
+            <div class="py-12">
+              <app-empty-state icon="@tui.users" />
             </div>
           }
+        }
 
-          @if (hasMore() && !loading()) {
-            <div class="py-4 flex justify-center">
-              <tui-loader size="s" />
-            </div>
-          }
-        </div>
-      </tui-scrollbar>
+        @if (loading()) {
+          <div class="py-12 flex justify-center">
+            <tui-loader />
+          </div>
+        }
+
+        @if (hasMore() && !loading()) {
+          <div class="py-4 flex justify-center">
+            <tui-loader size="s" />
+          </div>
+        }
+      </div>
+
+      <div class="lw-form-sheet-footer">
+        <button
+          tuiButton
+          appearance="flat"
+          size="m"
+          type="button"
+          (click)="context.completeWith(false)"
+        >
+          {{ 'close' | translate }}
+        </button>
+      </div>
     </div>
   `,
 })

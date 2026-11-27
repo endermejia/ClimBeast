@@ -456,7 +456,6 @@ interface UserWithRole {
                           ? ('admin.users.revokeAdmin' | translate)
                           : ('admin.users.makeAdmin' | translate)
                     "
-                    class="rounded-xl"
                   >
                     <tui-icon
                       [icon]="user.is_admin ? '@tui.shield' : '@tui.shield-off'"
@@ -653,77 +652,79 @@ interface UserWithRole {
     <ng-template #editPermissionsDialog let-observer>
       @if (editingUser(); as user) {
         <form
-          class="flex flex-col gap-4 p-1"
+          class="lw-form-sheet"
           (submit.zoneless)="
             $event.preventDefault(); submitPermissions(observer)
           "
         >
-          <div
-            class="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl"
-          >
-            <span tuiAvatar size="m">
-              @if (user.avatar; as avatar) {
-                <img [src]="avatar | avatarUrl" alt="avatar" />
-              } @else {
-                <tui-icon icon="@tui.user" />
-              }
-            </span>
-            <div class="flex flex-col min-w-0">
-              <span class="font-semibold truncate">
-                {{ user.name || ('anonymous' | translate) }}
+          <div class="lw-form-sheet-body flex flex-col gap-4">
+            <div
+              class="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl"
+            >
+              <span tuiAvatar size="m">
+                @if (user.avatar; as avatar) {
+                  <img [src]="avatar | avatarUrl" alt="avatar" />
+                } @else {
+                  <tui-icon icon="@tui.user" />
+                }
               </span>
-              <span class="text-xs text-neutral-500 font-mono truncate">
-                {{ user.email || '-' }}
-              </span>
+              <div class="flex flex-col min-w-0">
+                <span class="font-semibold truncate">
+                  {{ user.name || ('anonymous' | translate) }}
+                </span>
+                <span class="text-xs text-neutral-500 font-mono truncate">
+                  {{ user.email || '-' }}
+                </span>
+              </div>
             </div>
+
+            <ng-container
+              *ngTemplateOutlet="
+                permissionsMultiSelect;
+                context: {
+                  id: 'edit-areas-select',
+                  labelKey: 'admin.users.adminInArea',
+                  groupLabelKey: 'areas',
+                  control: editAreasControl,
+                  kind: 'areas',
+                  stringify: stringifyArea,
+                  identityMatcher: areaIdentityMatcher,
+                }
+              "
+            />
+
+            <ng-container
+              *ngTemplateOutlet="
+                permissionsMultiSelect;
+                context: {
+                  id: 'edit-centers-select',
+                  labelKey: 'admin.users.adminInCenter',
+                  groupLabelKey: 'indoor.title',
+                  control: editCentersControl,
+                  kind: 'centers',
+                  stringify: stringifyCenter,
+                  identityMatcher: centerIdentityMatcher,
+                }
+              "
+            />
+
+            <ng-container
+              *ngTemplateOutlet="
+                permissionsMultiSelect;
+                context: {
+                  id: 'edit-routesetters-select',
+                  labelKey: 'admin.users.routesetterIn',
+                  groupLabelKey: 'indoor.title',
+                  control: editRoutesettersControl,
+                  kind: 'centers',
+                  stringify: stringifyCenter,
+                  identityMatcher: centerIdentityMatcher,
+                }
+              "
+            />
           </div>
 
-          <ng-container
-            *ngTemplateOutlet="
-              permissionsMultiSelect;
-              context: {
-                id: 'edit-areas-select',
-                labelKey: 'admin.users.adminInArea',
-                groupLabelKey: 'areas',
-                control: editAreasControl,
-                kind: 'areas',
-                stringify: stringifyArea,
-                identityMatcher: areaIdentityMatcher,
-              }
-            "
-          />
-
-          <ng-container
-            *ngTemplateOutlet="
-              permissionsMultiSelect;
-              context: {
-                id: 'edit-centers-select',
-                labelKey: 'admin.users.adminInCenter',
-                groupLabelKey: 'indoor.title',
-                control: editCentersControl,
-                kind: 'centers',
-                stringify: stringifyCenter,
-                identityMatcher: centerIdentityMatcher,
-              }
-            "
-          />
-
-          <ng-container
-            *ngTemplateOutlet="
-              permissionsMultiSelect;
-              context: {
-                id: 'edit-routesetters-select',
-                labelKey: 'admin.users.routesetterIn',
-                groupLabelKey: 'indoor.title',
-                control: editRoutesettersControl,
-                kind: 'centers',
-                stringify: stringifyCenter,
-                identityMatcher: centerIdentityMatcher,
-              }
-            "
-          />
-
-          <div class="flex justify-end gap-2 mt-4">
+          <div class="lw-form-sheet-footer">
             <button
               tuiButton
               type="button"

@@ -79,7 +79,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                   tuiButton
                   size="s"
                   appearance="primary"
-                  class="mt-3 rounded-xl! z-10 self-start"
+                  class="mt-3 z-10 self-start"
                   (click)="onCheckIn(p.id)"
                 >
                   Check-in

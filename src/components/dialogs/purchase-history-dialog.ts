@@ -222,7 +222,6 @@ interface PurchaseRecord {
                       appearance="flat"
                       size="s"
                       type="button"
-                      class="rounded-xl!"
                       (click)="navigateToArea(p.slug)"
                     >
                       {{ 'view' | translate }}
@@ -235,7 +234,6 @@ interface PurchaseRecord {
                       appearance="flat"
                       size="s"
                       type="button"
-                      class="rounded-xl!"
                       (click)="viewOrderDetails(p.order)"
                     >
                       {{ 'merchandising.order.details' | translate }}
@@ -254,7 +252,6 @@ interface PurchaseRecord {
                       appearance="action-destructive"
                       size="s"
                       type="button"
-                      class="rounded-xl!"
                       (click)="cancelOrder(p.id)"
                     >
                       {{ 'merchandising.order.cancel' | translate }}

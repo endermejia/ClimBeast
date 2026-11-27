@@ -62,92 +62,97 @@ export interface EntityUnifySelection {
     TuiOptGroup,
   ],
   template: `
-    <div class="flex flex-col gap-4">
-      <p class="text-sm opacity-70">
-        {{ descriptionKey() | translate }}
-      </p>
+    <div class="lw-form-sheet">
+      <div class="lw-form-sheet-body">
+        <div class="flex flex-col gap-4">
+          <p class="text-sm opacity-70">
+            {{ descriptionKey() | translate }}
+          </p>
 
-      <tui-textfield tuiChevron class="block" [stringify]="stringify">
-        <label tuiLabel [for]="targetInputId()">{{
-          targetLabelKey() | translate
-        }}</label>
-        <input
-          tuiComboBox
-          [id]="targetInputId()"
-          autocomplete="off"
-          [ngModel]="model().target"
-          (ngModelChange)="onTargetChange($event)"
-          name="targetEntity"
-          [placeholder]="'select' | translate"
-        />
-        <tui-data-list *tuiDropdown>
-          @for (item of items() | tuiFilterByInput; track item.id) {
-            <button tuiOption new [value]="item">
-              {{ item.name }}
-            </button>
+          <tui-textfield tuiChevron class="block" [stringify]="stringify">
+            <label tuiLabel [for]="targetInputId()">{{
+              targetLabelKey() | translate
+            }}</label>
+            <input
+              tuiComboBox
+              [id]="targetInputId()"
+              autocomplete="off"
+              [ngModel]="model().target"
+              (ngModelChange)="onTargetChange($event)"
+              name="targetEntity"
+              [placeholder]="'select' | translate"
+            />
+            <tui-data-list *tuiDropdown>
+              @for (item of items() | tuiFilterByInput; track item.id) {
+                <button tuiOption new [value]="item">
+                  {{ item.name }}
+                </button>
+              }
+            </tui-data-list>
+          </tui-textfield>
+          @if (showTargetError()) {
+            <tui-error [error]="'errors.required' | translate" />
           }
-        </tui-data-list>
-      </tui-textfield>
-      @if (showTargetError()) {
-        <tui-error [error]="'errors.required' | translate" />
-      }
 
-      <tui-textfield
-        tuiChevron
-        multi
-        class="block"
-        [stringify]="stringify"
-        [disabledItemHandler]="isInvalidItem"
-      >
-        <label tuiLabel [for]="sourcesInputId()">{{
-          sourcesLabelKey() | translate
-        }}</label>
-        <input
-          tuiInputChip
-          [id]="sourcesInputId()"
-          autocomplete="off"
-          [ngModel]="model().sources"
-          (ngModelChange)="onSourcesChange($event)"
-          name="sourceEntities"
-          [placeholder]="'select' | translate"
-        />
-        <tui-input-chip *tuiItem />
-        <tui-data-list *tuiDropdown>
-          <tui-opt-group tuiMultiSelectGroup>
-            @for (
-              item of availableSources() | tuiFilterByInput;
-              track item.id
-            ) {
-              <button tuiOption new [value]="item">
-                {{ item.name }}
-              </button>
-            }
-          </tui-opt-group>
-        </tui-data-list>
-      </tui-textfield>
-      @if (showSourcesError()) {
-        <tui-error [error]="'errors.required' | translate" />
-      }
+          <tui-textfield
+            tuiChevron
+            multi
+            class="block"
+            [stringify]="stringify"
+            [disabledItemHandler]="isInvalidItem"
+          >
+            <label tuiLabel [for]="sourcesInputId()">{{
+              sourcesLabelKey() | translate
+            }}</label>
+            <input
+              tuiInputChip
+              [id]="sourcesInputId()"
+              autocomplete="off"
+              [ngModel]="model().sources"
+              (ngModelChange)="onSourcesChange($event)"
+              name="sourceEntities"
+              [placeholder]="'select' | translate"
+            />
+            <tui-input-chip *tuiItem />
+            <tui-data-list *tuiDropdown>
+              <tui-opt-group tuiMultiSelectGroup>
+                @for (
+                  item of availableSources() | tuiFilterByInput;
+                  track item.id
+                ) {
+                  <button tuiOption new [value]="item">
+                    {{ item.name }}
+                  </button>
+                }
+              </tui-opt-group>
+            </tui-data-list>
+          </tui-textfield>
+          @if (showSourcesError()) {
+            <tui-error [error]="'errors.required' | translate" />
+          }
 
-      <tui-textfield class="block">
-        <label tuiLabel for="new-name">{{
-          newNameLabelKey() | translate
-        }}</label>
-        <input
-          tuiInput
-          id="new-name"
-          autocomplete="off"
-          [formField]="unifyForm.newName"
-          type="text"
-          [placeholder]="newNamePlaceholder()"
-        />
-      </tui-textfield>
+          <tui-textfield class="block">
+            <label tuiLabel for="new-name">{{
+              newNameLabelKey() | translate
+            }}</label>
+            <input
+              tuiInput
+              id="new-name"
+              autocomplete="off"
+              [formField]="unifyForm.newName"
+              type="text"
+              [placeholder]="newNamePlaceholder()"
+            />
+          </tui-textfield>
 
-      <ng-content />
+          <ng-content />
+        </div>
+      </div>
 
-      <div class="flex justify-end gap-2 mt-4">
+      <div class="lw-form-sheet-footer">
         <button
           tuiButton
+          size="m"
           appearance="flat"
           type="button"
           (click)="cancelled.emit()"
@@ -156,6 +161,7 @@ export interface EntityUnifySelection {
         </button>
         <button
           tuiButton
+          size="m"
           appearance="primary"
           type="button"
           [disabled]="isUnifyDisabled()"

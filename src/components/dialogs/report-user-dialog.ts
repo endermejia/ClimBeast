@@ -12,6 +12,7 @@ import { ReportUserFormComponent } from '../forms/report-user-form';
   imports: [ReportUserFormComponent],
   template: `
     <app-report-user-form
+      class="flex flex-col flex-1 min-h-0"
       [targetUser]="context.data"
       (submitted)="context.completeWith($event)"
       (cancelled)="context.completeWith(false)"

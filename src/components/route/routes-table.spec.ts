@@ -1474,4 +1474,144 @@ describe('RoutesTableComponent focused edit mode', () => {
     const th = hostEl.querySelector('thead th') as HTMLTableCellElement;
     expect(th.style.top).toBe('0px');
   });
+
+  it('renders gradeShort header without truncation and with widened width on mobile and desktop', () => {
+    const fixture = TestBed.createComponent(RoutesTableComponent);
+    fixture.componentRef.setInput('data', [createMockRow(1, 15, false)]);
+    fixture.componentRef.setInput('columns', [
+      'grade',
+      'route',
+      'ascents',
+      'actions',
+    ]);
+    fixture.componentRef.setInput('isMobile', true);
+    fixture.detectChanges();
+
+    const hostEl = fixture.nativeElement as HTMLElement;
+    const gradeTh = hostEl.querySelector('th[data-col="grade"]') as HTMLElement;
+    const gradeSpan = gradeTh.querySelector('span') as HTMLSpanElement;
+
+    expect(gradeSpan.textContent?.trim()).toBe('gradeShort');
+    expect(gradeSpan.classList.contains('truncate')).toBe(false);
+    expect(gradeSpan.classList.contains('whitespace-nowrap')).toBe(true);
+    expect(gradeSpan.classList.contains('shrink-0')).toBe(true);
+    expect(gradeTh.classList.contains('w-14!')).toBe(false);
+    expect(gradeTh.classList.contains('w-18!')).toBe(true);
+
+    fixture.componentRef.setInput('isMobile', false);
+    fixture.detectChanges();
+
+    expect(gradeSpan.classList.contains('truncate')).toBe(false);
+    expect(gradeSpan.classList.contains('whitespace-nowrap')).toBe(true);
+    expect(gradeTh.classList.contains('w-18!')).toBe(true);
+  });
+
+  it('applies lw-table-mobile-bleed class to the outer table wrapper', () => {
+    const fixture = TestBed.createComponent(RoutesTableComponent);
+    fixture.componentRef.setInput('data', [createMockRow(1, 15, false)]);
+    fixture.componentRef.setInput('columns', ['grade', 'route', 'actions']);
+    fixture.componentRef.setInput('isMobile', true);
+    fixture.detectChanges();
+
+    const hostEl = fixture.nativeElement as HTMLElement;
+    const wrapper = hostEl.querySelector('table')?.parentElement as HTMLElement;
+    expect(wrapper).toBeTruthy();
+    expect(wrapper.classList.contains('lw-table-mobile-bleed')).toBe(true);
+  });
+
+  it('renders area and crag links on desktop and in mobile subtitle when showArea and showLocation are true', () => {
+    const row: RoutesTableRow = {
+      ...createMockRow(1, 15, false),
+      area_name: 'Chulilla',
+      area_slug: 'chulilla',
+      crag_name: 'El Oasis',
+      crag_slug: 'el-oasis',
+    };
+    const fixture = TestBed.createComponent(RoutesTableComponent);
+    fixture.componentRef.setInput('data', [row]);
+    fixture.componentRef.setInput('columns', [
+      'grade',
+      'route',
+      'area',
+      'crag',
+      'ascents',
+      'actions',
+    ]);
+    fixture.componentRef.setInput('showArea', true);
+    fixture.componentRef.setInput('showLocation', true);
+    fixture.componentRef.setInput('isMobile', false);
+    fixture.detectChanges();
+
+    const hostEl = fixture.nativeElement as HTMLElement;
+    const areaLink = hostEl.querySelector(
+      'td[data-col="area"] a',
+    ) as HTMLAnchorElement | null;
+    const cragLink = hostEl.querySelector(
+      'td[data-col="crag"] a',
+    ) as HTMLAnchorElement | null;
+    expect(areaLink?.textContent?.trim()).toBe('Chulilla');
+    expect(areaLink?.getAttribute('href')).toBe('/area/chulilla');
+    expect(cragLink?.textContent?.trim()).toBe('El Oasis');
+    expect(cragLink?.getAttribute('href')).toBe('/area/chulilla/el-oasis');
+
+    fixture.componentRef.setInput('isMobile', true);
+    fixture.detectChanges();
+
+    const routeCell = hostEl.querySelector(
+      'td[data-col="route"]',
+    ) as HTMLElement;
+    const mobileLinks = Array.from(routeCell.querySelectorAll('a'));
+    const mobileArea = mobileLinks.find(
+      (a) => a.textContent?.trim() === 'Chulilla',
+    );
+    const mobileCrag = mobileLinks.find(
+      (a) => a.textContent?.trim() === 'El Oasis',
+    );
+    expect(mobileArea?.getAttribute('href')).toBe('/area/chulilla');
+    expect(mobileCrag?.getAttribute('href')).toBe('/area/chulilla/el-oasis');
+  });
+
+  it('renders indoor center column on desktop and center link in mobile subtitle when showLocation is true', () => {
+    const row: RoutesTableRow = {
+      ...createMockRow(2, null, false),
+      id: 'indoor-1',
+      key: 'indoor-1',
+      isIndoor: true,
+      center_name: 'Sharma Climbing',
+      center_slug: 'sharma-climbing',
+      link: ['/indoor', 'sharma-climbing', 'route', 'bloq-1'],
+    };
+    const fixture = TestBed.createComponent(RoutesTableComponent);
+    fixture.componentRef.setInput('data', [row]);
+    fixture.componentRef.setInput('columns', [
+      'grade',
+      'route',
+      'center',
+      'ascents',
+      'actions',
+    ]);
+    fixture.componentRef.setInput('showLocation', true);
+    fixture.componentRef.setInput('isMobile', false);
+    fixture.detectChanges();
+
+    const hostEl = fixture.nativeElement as HTMLElement;
+    const centerTh = hostEl.querySelector('th[data-col="center"]');
+    expect(centerTh?.textContent?.trim()).toBe('indoor.singular');
+    const centerLink = hostEl.querySelector(
+      'td[data-col="center"] a',
+    ) as HTMLAnchorElement | null;
+    expect(centerLink?.textContent?.trim()).toBe('Sharma Climbing');
+    expect(centerLink?.getAttribute('href')).toBe('/indoor/sharma-climbing');
+
+    fixture.componentRef.setInput('isMobile', true);
+    fixture.detectChanges();
+
+    const routeCell = hostEl.querySelector(
+      'td[data-col="route"]',
+    ) as HTMLElement;
+    const mobileCenter = Array.from(routeCell.querySelectorAll('a')).find(
+      (a) => a.textContent?.trim() === 'Sharma Climbing',
+    );
+    expect(mobileCenter?.getAttribute('href')).toBe('/indoor/sharma-climbing');
+  });
 });

@@ -212,7 +212,7 @@ import { IS_BROWSER } from '../../app/is-browser';
                 tuiButton
                 type="submit"
                 class="w-full mt-2"
-                size="l"
+                size="m"
                 [disabled]="
                   shippingForm.invalid || loading() || hasOutOfStockItems()
                 "

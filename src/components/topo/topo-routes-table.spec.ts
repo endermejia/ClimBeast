@@ -245,4 +245,37 @@ describe('TopoRoutesTableComponent', () => {
     expect(nameCell.textContent).toContain('12m');
     expect(nameCell.textContent).toContain('20');
   });
+
+  it('renders gradeShort header without truncation and with widened width on mobile and desktop', async () => {
+    const fixture = TestBed.createComponent(TestHostComponent);
+    fixture.componentInstance.columns.set([
+      'index',
+      'grade',
+      'name',
+      'actions',
+    ]);
+    fixture.componentInstance.isMobile.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const hostEl = fixture.nativeElement as HTMLElement;
+    const gradeTh = hostEl.querySelector('th[data-col="grade"]') as HTMLElement;
+    const gradeSpan = gradeTh.querySelector('span') as HTMLSpanElement;
+
+    expect(gradeSpan.textContent?.trim()).toBe('gradeShort');
+    expect(gradeSpan.classList.contains('truncate')).toBe(false);
+    expect(gradeSpan.classList.contains('whitespace-nowrap')).toBe(true);
+    expect(gradeSpan.classList.contains('shrink-0')).toBe(true);
+    expect(gradeTh.classList.contains('w-14!')).toBe(false);
+    expect(gradeTh.classList.contains('w-18!')).toBe(true);
+
+    fixture.componentInstance.isMobile.set(false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(gradeSpan.classList.contains('truncate')).toBe(false);
+    expect(gradeSpan.classList.contains('whitespace-nowrap')).toBe(true);
+    expect(gradeTh.classList.contains('w-14!')).toBe(false);
+    expect(gradeTh.classList.contains('w-20!')).toBe(true);
+  });
 });

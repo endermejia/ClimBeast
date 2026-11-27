@@ -67,117 +67,115 @@ export interface AscentCommentsDialogData {
     UserInfoHintComponent,
   ],
   template: `
-    <div class="flex flex-col h-[60dvh] min-h-[400px] -m-4">
-      <tui-scrollbar class="grow min-h-0">
-        <div class="flex flex-col gap-4 p-4">
-          @for (comment of comments(); track comment.id) {
-            <div class="flex gap-3 items-start">
-              <a
-                [routerLink]="['/profile', comment.user_id]"
-                (click)="context.completeWith()"
-                [tuiHint]="commentUserHint"
-                (contextmenu.zoneless)="$event.preventDefault()"
-                class="flex-none no-underline text-inherit cursor-pointer select-none"
-              >
-                <span tuiAvatar size="s">
-                  @if (comment.user_profiles.avatar) {
-                    <img
-                      [src]="comment.user_profiles.avatar | avatarUrl"
-                      [alt]="comment.user_profiles.name"
-                    />
-                  } @else {
-                    <tui-icon icon="@tui.user" />
-                  }
+    <div class="lw-form-sheet">
+      <div class="lw-form-sheet-body flex flex-col gap-4 min-h-56">
+        @for (comment of comments(); track comment.id) {
+          <div class="flex gap-3 items-start">
+            <a
+              [routerLink]="['/profile', comment.user_id]"
+              (click)="context.completeWith()"
+              [tuiHint]="commentUserHint"
+              (contextmenu.zoneless)="$event.preventDefault()"
+              class="flex-none no-underline text-inherit cursor-pointer select-none"
+            >
+              <span tuiAvatar size="s">
+                @if (comment.user_profiles.avatar) {
+                  <img
+                    [src]="comment.user_profiles.avatar | avatarUrl"
+                    [alt]="comment.user_profiles.name"
+                  />
+                } @else {
+                  <tui-icon icon="@tui.user" />
+                }
+              </span>
+            </a>
+            <ng-template #commentUserHint>
+              <app-user-info-hint
+                [userId]="comment.user_id"
+                [fallbackName]="comment.user_profiles.name"
+                [fallbackAvatar]="comment.user_profiles.avatar"
+              />
+            </ng-template>
+            <div class="flex flex-col grow min-w-0">
+              <div class="flex justify-between items-center gap-2">
+                <a
+                  [routerLink]="['/profile', comment.user_id]"
+                  (click)="context.completeWith()"
+                  [tuiHint]="commentUserHint"
+                  (contextmenu.zoneless)="$event.preventDefault()"
+                  class="font-bold text-sm truncate hover:underline text-(--tui-text-primary) no-underline cursor-pointer select-none"
+                >
+                  {{ comment.user_profiles.name }}
+                </a>
+                <span
+                  class="text-[10px] opacity-50 whitespace-nowrap flex-none"
+                >
+                  {{ comment.created_at | date: 'd/M/yy, HH:mm' }}
                 </span>
-              </a>
-              <ng-template #commentUserHint>
-                <app-user-info-hint
-                  [userId]="comment.user_id"
-                  [fallbackName]="comment.user_profiles.name"
-                  [fallbackAvatar]="comment.user_profiles.avatar"
-                />
-              </ng-template>
-              <div class="flex flex-col grow min-w-0">
-                <div class="flex justify-between items-center gap-2">
-                  <a
-                    [routerLink]="['/profile', comment.user_id]"
-                    (click)="context.completeWith()"
-                    [tuiHint]="commentUserHint"
-                    (contextmenu.zoneless)="$event.preventDefault()"
-                    class="font-bold text-sm truncate hover:underline text-(--tui-text-primary) no-underline cursor-pointer select-none"
-                  >
-                    {{ comment.user_profiles.name }}
-                  </a>
-                  <span
-                    class="text-[10px] opacity-50 whitespace-nowrap flex-none"
-                  >
-                    {{ comment.created_at | date: 'd/M/yy, HH:mm' }}
-                  </span>
-                </div>
-                <p
-                  appMentionHint
-                  class="text-sm whitespace-pre-wrap wrap-break-word"
-                  [innerHTML]="comment.comment | mentionLink"
-                ></p>
-                <div class="flex items-center justify-end mt-1">
+              </div>
+              <p
+                appMentionHint
+                class="text-sm whitespace-pre-wrap wrap-break-word"
+                [innerHTML]="comment.comment | mentionLink"
+              ></p>
+              <div class="flex items-center justify-end mt-1">
+                <button
+                  tuiButton
+                  type="button"
+                  appearance="action-grayscale"
+                  size="xs"
+                  (click)="onReply(comment.user_profiles)"
+                >
+                  {{ 'reply' | translate }}
+                </button>
+                @if (comment.user_id === supabase.authUserId()) {
                   <button
                     tuiButton
                     type="button"
-                    appearance="action-grayscale"
+                    appearance="action-destructive"
                     size="xs"
-                    (click)="onReply(comment.user_profiles)"
+                    class="ml-2"
+                    (click)="onDeleteComment(comment.id)"
                   >
-                    {{ 'reply' | translate }}
+                    {{ 'delete' | translate }}
                   </button>
-                  @if (comment.user_id === supabase.authUserId()) {
-                    <button
-                      tuiButton
-                      type="button"
-                      appearance="action-destructive"
-                      size="xs"
-                      class="ml-2"
-                      (click)="onDeleteComment(comment.id)"
-                    >
-                      {{ 'delete' | translate }}
-                    </button>
-                  }
-                </div>
-              </div>
-
-              <div class="flex flex-col items-center self-start pt-1">
-                <app-comment-likes
-                  [commentId]="comment.id"
-                  [(likesCount)]="comment.likes_count"
-                  [(userLiked)]="comment.user_liked"
-                />
+                }
               </div>
             </div>
-          } @empty {
-            @if (!loading()) {
-              <div class="py-12">
-                <app-empty-state icon="@tui.message-circle" />
-              </div>
-            }
-          }
 
-          @if (loading()) {
-            <div class="py-12 flex justify-center">
-              <tui-loader />
+            <div class="flex flex-col items-center self-start pt-1">
+              <app-comment-likes
+                [commentId]="comment.id"
+                [(likesCount)]="comment.likes_count"
+                [(userLiked)]="comment.user_liked"
+              />
+            </div>
+          </div>
+        } @empty {
+          @if (!loading()) {
+            <div class="py-12">
+              <app-empty-state icon="@tui.message-circle" />
             </div>
           }
-        </div>
-      </tui-scrollbar>
+        }
+
+        @if (loading()) {
+          <div class="py-12 flex justify-center">
+            <tui-loader />
+          </div>
+        }
+      </div>
 
       <div
         #container
-        class="p-4 border-t border-(--tui-border-normal) relative"
+        class="lw-form-sheet-footer flex-col items-stretch gap-2 relative"
       >
-        <span class="text-[13px] font-bold opacity-70 mb-2 block">
+        <span class="text-[13px] font-bold opacity-70 block w-full">
           {{ 'addComment' | translate }}
         </span>
 
         <div
-          class="relative bg-(--tui-background-base) border border-(--tui-border-normal) rounded-xl flex items-end p-2 gap-2 focus-within:ring-2 focus-within:ring-(--tui-text-action) transition-shadow"
+          class="relative w-full bg-(--tui-background-base) border border-(--tui-border-normal) rounded-xl flex items-end p-2 gap-2 focus-within:ring-2 focus-within:ring-(--tui-text-action) transition-shadow"
         >
           <div
             #editor

@@ -78,7 +78,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
         </div>
       }
       <div
-        class="sticky top-0 z-10 flex items-end gap-2 bg-(--tui-background-base) py-2"
+        class="lw-sticky-bar-mobile-bleed sticky top-0 z-10 flex items-end gap-2 bg-(--tui-background-base) py-2"
       >
         <tui-textfield class="grow block min-w-0" tuiTextfieldSize="l">
           <label tuiLabel for="routes-search">{{

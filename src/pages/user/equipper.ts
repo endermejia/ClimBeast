@@ -6,9 +6,16 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
-import { TuiButton, TuiHint, TuiLink, TuiScrollbar } from '@taiga-ui/core';
+import {
+  TuiButton,
+  TuiCheckbox,
+  TuiHint,
+  TuiLink,
+  TuiScrollbar,
+} from '@taiga-ui/core';
 import { TuiCountryIsoCode } from '@taiga-ui/i18n';
 import { TuiSkeleton } from '@taiga-ui/kit';
 
@@ -22,24 +29,27 @@ import { OnlineStatusService } from '../../services/online-status.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 
-import { IndoorRoutesComponent } from '../../components/indoor/indoor-routes';
+import { IndoorRoutesTableComponent } from '../../components/route/indoor-routes-table';
 import { OutdoorRoutesTableComponent } from '../../components/route/outdoor-routes-table';
 import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import { UserInfoComponent } from '../../components/ui/user-info';
 
 import { EquipperRequestDto } from '../../models';
 
+import { STORAGE_KEYS } from '../../constants';
 import { safeResourceValue } from '../../utils';
 
 @Component({
   selector: 'app-equipper',
   imports: [
-    IndoorRoutesComponent,
+    FormsModule,
+    IndoorRoutesTableComponent,
     OfflineNotCachedComponent,
     OutdoorRoutesTableComponent,
     RouterLink,
     TranslatePipe,
     TuiButton,
+    TuiCheckbox,
     TuiHint,
     TuiLink,
     TuiScrollbar,
@@ -59,7 +69,7 @@ import { safeResourceValue } from '../../utils';
   template: `
     <tui-scrollbar class="w-full h-full min-h-0 min-w-0">
       <section
-        class="w-full min-w-0 max-w-[1600px] mx-auto grid grid-cols-1 gap-6 px-4 py-4 pb-6 sm:px-6 lg:px-8 lg:pb-2"
+        class="w-full min-w-0 max-w-[1600px] mx-auto grid grid-cols-1 gap-6 px-4 py-4 pb-6 sm:px-6 lg:px-8 lg:pb-2 overflow-x-clip sm:[--lw-table-bleed:1.5rem]"
       >
         @if (showOfflineFallback()) {
           <app-offline-not-cached fallbackUrl="/home" class="w-full" />
@@ -146,22 +156,43 @@ import { safeResourceValue } from '../../utils';
             </h2>
             <app-outdoor-routes-table
               [data]="equipperService.equipperRoutesResource.value() || []"
+              [showArea]="true"
+              [showLocation]="true"
+              (routeUpdated)="equipperService.equipperRoutesResource.reload()"
             />
           </section>
 
           <!-- Equipper Indoor Routes -->
-          @let indoorRoutes =
-            equipperService.equipperIndoorRoutesResource.value() || [];
-          @if (indoorRoutes.length > 0) {
+          @if (indoorRoutes().length > 0) {
             <section class="min-w-0">
-              <h2 class="text-xl font-bold mb-4">
-                {{ 'equipper.indoorRoutes' | translate }} ({{
-                  indoorRoutes.length
-                }})
-              </h2>
-              <app-indoor-routes
-                [customRoutes]="indoorRoutes"
-                [showStats]="false"
+              <div
+                class="flex flex-wrap items-center justify-between gap-2 mb-4"
+              >
+                <h2 class="text-xl font-bold">
+                  {{ 'equipper.indoorRoutes' | translate }} ({{
+                    visibleIndoorRoutes().length
+                  }})
+                </h2>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    tuiCheckbox
+                    type="checkbox"
+                    [ngModel]="showLegacyRoutes()"
+                    (ngModelChange)="showLegacyRoutes.set($event)"
+                    autocomplete="off"
+                  />
+                  <span class="text-xs opacity-75 select-none">{{
+                    'indoor.showLegacyRoutes' | translate
+                  }}</span>
+                </label>
+              </div>
+              <app-indoor-routes-table
+                [data]="visibleIndoorRoutes()"
+                [showLocation]="true"
+                [showAddRouteToTopo]="false"
+                (routeUpdated)="
+                  equipperService.equipperIndoorRoutesResource.reload()
+                "
               />
             </section>
           }
@@ -186,6 +217,28 @@ export class EquipperComponent {
 
   protected readonly myRequest = signal<EquipperRequestDto | null>(null);
   protected readonly requesting = signal(false);
+
+  protected readonly showLegacyRoutes = signal<boolean>(
+    (() => {
+      try {
+        return (
+          typeof window !== 'undefined' &&
+          localStorage.getItem(STORAGE_KEYS.showLegacyRoutes) === 'true'
+        );
+      } catch {
+        return false;
+      }
+    })(),
+  );
+
+  protected readonly indoorRoutes = computed(
+    () => this.equipperService.equipperIndoorRoutesResource.value() ?? [],
+  );
+
+  protected readonly visibleIndoorRoutes = computed(() => {
+    const routes = this.indoorRoutes();
+    return this.showLegacyRoutes() ? routes : routes.filter((r) => !r.legacy);
+  });
 
   readonly profileCountry = computed(
     () =>
@@ -244,6 +297,19 @@ export class EquipperComponent {
         void this.loadMyRequest(equipper.id);
       } else {
         this.myRequest.set(null);
+      }
+    });
+
+    effect(() => {
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(
+            STORAGE_KEYS.showLegacyRoutes,
+            String(this.showLegacyRoutes()),
+          );
+        }
+      } catch {
+        // localStorage can be unavailable (SSR or privacy-restricted browsers).
       }
     });
   }

@@ -60,82 +60,88 @@ import { Import8aStepUploadComponent } from './import-8a-step-upload';
     TuiStepper,
   ],
   template: `
-    <div class="flex justify-center">
-      <div class="w-full max-w-2xl">
-        <tui-stepper
-          [activeItemIndex]="index"
-          (activeItemIndexChange)="onStep($event)"
-          class="mb-4"
-        >
-          <button tuiStep>{{ 'import8a.steps.uploadCSV' | translate }}</button>
-          <button tuiStep [disabled]="!control.value">
-            {{ 'import8a.steps.confirmAscents' | translate }}
+    <div class="lw-form-sheet">
+      <div class="lw-form-sheet-body flex flex-col gap-4">
+        <div class="w-full max-w-2xl mx-auto flex flex-col gap-6">
+          <tui-stepper
+            [activeItemIndex]="index"
+            (activeItemIndexChange)="onStep($event)"
+          >
+            <button tuiStep>
+              {{ 'import8a.steps.uploadCSV' | translate }}
+            </button>
+            <button tuiStep [disabled]="!control.value">
+              {{ 'import8a.steps.confirmAscents' | translate }}
+            </button>
+          </tui-stepper>
+
+          <section [tuiSlides]="direction">
+            <!-- Step 0: Upload CSV -->
+            @if (index === 0) {
+              <app-import-8a-step-upload
+                [control]="control"
+                [loadedFile]="loadedFile()"
+                [failedFiles]="failedFiles$"
+                [loadingFiles]="loadingFiles$"
+                (removeFile)="removeFile()"
+              />
+            }
+
+            <!-- Step 1: Preview & Confirm -->
+            @if (index === 1) {
+              <app-import-8a-step-confirm
+                [ascentsWithResolved]="ascentsWithResolved()"
+                [ascentsCount]="ascents().length"
+                [selectedCount]="selectedIndices().size"
+                [isAllSelected]="
+                  selectedIndices().size === ascents().length &&
+                  ascents().length > 0
+                "
+                [newAreasCount]="newAreasCount()"
+                [newCragsCount]="newCragsCount()"
+                [selectedMap]="selectedMap()"
+                (toggleSelect)="toggleSelect($event.index, $event.checked)"
+                (toggleAll)="toggleAll($event)"
+              />
+            }
+          </section>
+        </div>
+      </div>
+
+      <div class="lw-form-sheet-footer" [class.justify-between]="index > 0">
+        @if (index) {
+          <button
+            appearance="secondary"
+            size="m"
+            tuiButton
+            type="button"
+            (click)="onStep(index - 1)"
+          >
+            {{ 'back' | translate }}
           </button>
-        </tui-stepper>
-
-        <section [tuiSlides]="direction" class="mt-6">
-          <!-- Step 0: Upload CSV -->
-          @if (index === 0) {
-            <app-import-8a-step-upload
-              [control]="control"
-              [loadedFile]="loadedFile()"
-              [failedFiles]="failedFiles$"
-              [loadingFiles]="loadingFiles$"
-              (removeFile)="removeFile()"
-            />
-          }
-
-          <!-- Step 1: Preview & Confirm -->
-          @if (index === 1) {
-            <app-import-8a-step-confirm
-              [ascentsWithResolved]="ascentsWithResolved()"
-              [ascentsCount]="ascents().length"
-              [selectedCount]="selectedIndices().size"
-              [isAllSelected]="
-                selectedIndices().size === ascents().length &&
-                ascents().length > 0
-              "
-              [newAreasCount]="newAreasCount()"
-              [newCragsCount]="newCragsCount()"
-              [selectedMap]="selectedMap()"
-              (toggleSelect)="toggleSelect($event.index, $event.checked)"
-              (toggleAll)="toggleAll($event)"
-            />
-          }
-        </section>
-
-        <footer class="mt-8 flex justify-end gap-2">
-          @if (index) {
-            <button
-              appearance="secondary"
-              tuiButton
-              type="button"
-              (click)="onStep(index - 1)"
-            >
-              {{ 'back' | translate }}
-            </button>
-          }
-          @if (index === 0) {
-            <button
-              tuiButton
-              type="button"
-              [disabled]="!control.value || searching()"
-              (click)="onStep(1)"
-            >
-              {{ 'next' | translate }}
-            </button>
-          }
-          @if (index === 1) {
-            <button
-              tuiButton
-              type="button"
-              [disabled]="importing() || ascents().length === 0"
-              (click)="onImport()"
-            >
-              {{ 'import' | translate }}
-            </button>
-          }
-        </footer>
+        }
+        @if (index === 0) {
+          <button
+            size="m"
+            tuiButton
+            type="button"
+            [disabled]="!control.value || searching()"
+            (click)="onStep(1)"
+          >
+            {{ 'next' | translate }}
+          </button>
+        }
+        @if (index === 1) {
+          <button
+            size="m"
+            tuiButton
+            type="button"
+            [disabled]="importing() || ascents().length === 0"
+            (click)="onImport()"
+          >
+            {{ 'import' | translate }}
+          </button>
+        }
       </div>
     </div>
   `,

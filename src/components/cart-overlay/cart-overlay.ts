@@ -282,7 +282,7 @@ import type { CartProduct } from '../../models';
             <button
               tuiButton
               class="w-full"
-              size="l"
+              size="m"
               [disabled]="hasOutOfStockItems()"
               (click)="checkout.emit()"
             >

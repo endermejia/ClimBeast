@@ -166,7 +166,6 @@ import { OrderDetail, OrderStatus } from '../../models';
                       tuiChevron
                       type="button"
                       size="xs"
-                      class="rounded-md! px-2!"
                       [appearance]="
                         status ? orderStatusAppearance[status] : 'neutral'
                       "

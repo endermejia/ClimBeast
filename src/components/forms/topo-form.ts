@@ -110,292 +110,309 @@ import { GradeComponent } from '../ui/avatar-grade';
     TuiLabel,
   ],
   template: `
-    <form
-      class="flex flex-col w-full gap-4"
-      (submit.zoneless)="onSubmit($event)"
-    >
-      <tui-textfield [tuiTextfieldCleaner]="false">
-        <label tuiLabel for="name">{{ 'topos.name' | translate }}</label>
-        <input
-          tuiInput
-          id="name"
-          [formField]="topoForm.name"
-          autocomplete="off"
-        />
-      </tui-textfield>
-
-      <!-- Visibility indicator -->
-      @let crag = outdoorDataService.cragDetail();
-      @if (!isIndoor() && crag) {
-        @let isSecret =
-          !crag.is_public && (crag.price === null || crag.price === 0);
-        <div class="flex items-center gap-2 px-1 text-xs opacity-75">
-          <tui-icon
-            [icon]="
-              isSecret
-                ? '@tui.lock'
-                : crag.is_public
-                  ? '@tui.globe'
-                  : '@tui.credit-card'
-            "
-          />
-          <span>
-            {{
-              (isSecret
-                ? 'topos.visibility.secret'
-                : crag.is_public
-                  ? 'topos.visibility.public'
-                  : 'topos.visibility.paywalled'
-              ) | translate
-            }}
-          </span>
-        </div>
-      }
-
-      @if (!isIndoor()) {
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input
-                tuiCheckbox
-                type="checkbox"
-                [formField]="topoForm.shade_morning"
-                autocomplete="off"
-              />
-              <tui-icon
-                [icon]="
-                  ({ shade_morning: true, shade_afternoon: false } | shadeInfo)
-                    ?.icon
-                "
-              />
-              {{ 'filters.shade.morning' | translate }}
-            </label>
-
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input
-                tuiCheckbox
-                type="checkbox"
-                [formField]="topoForm.shade_afternoon"
-                autocomplete="off"
-              />
-              <tui-icon
-                [icon]="
-                  ({ shade_morning: false, shade_afternoon: true } | shadeInfo)
-                    ?.icon
-                "
-              />
-              {{ 'filters.shade.afternoon' | translate }}
-            </label>
-          </div>
-
-          <tui-textfield [style.opacity]="showShadeChangeHour() ? '1' : '0.5'">
-            <label tuiLabel for="shade_change_hour">{{
-              'topos.shadeChangeHour' | translate
-            }}</label>
+    <form class="lw-form-sheet" (submit.zoneless)="onSubmit($event)">
+      <div class="lw-form-sheet-body">
+        <div class="flex flex-col gap-4">
+          <tui-textfield [tuiTextfieldCleaner]="false">
+            <label tuiLabel for="name">{{ 'topos.name' | translate }}</label>
             <input
-              tuiInputTime
-              id="shade_change_hour"
+              tuiInput
+              id="name"
+              [formField]="topoForm.name"
               autocomplete="off"
-              [ngModel]="shadeChangeHourTime()"
-              (ngModelChange)="onShadeChangeHourChange($event)"
-              name="shade_change_hour"
-              [disabled]="!showShadeChangeHour()"
             />
           </tui-textfield>
-        </div>
-      }
 
-      @if (isIndoor()) {
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input tuiCheckbox type="checkbox" [formField]="topoForm.legacy" />
-          <span>{{ 'topos.markAsLegacy' | translate }}</span>
-        </label>
-      }
-
-      <section class="grid gap-3">
-        <!-- Header -->
-        <div class="flex items-center justify-between px-1">
-          <p class="text-sm font-bold uppercase tracking-wider opacity-60">
-            {{ 'photo' | translate }}
-          </p>
-        </div>
-
-        <div class="grid gap-2">
-          @if (
-            !photoValue() &&
-            (!effectiveTopoData()?.photo || isExistingPhotoDeleted())
-          ) {
-            <label tuiInputFiles>
-              <input
-                accept="image/*"
-                tuiInputFiles
-                [ngModel]="model().photoControl"
-                (ngModelChange)="onPhotoControlChange($event)"
-                name="photoControl"
-                autocomplete="off"
+          <!-- Visibility indicator -->
+          @let crag = outdoorDataService.cragDetail();
+          @if (!isIndoor() && crag) {
+            @let isSecret =
+              !crag.is_public && (crag.price === null || crag.price === 0);
+            <div class="flex items-center gap-2 px-1 text-xs opacity-75">
+              <tui-icon
+                [icon]="
+                  isSecret
+                    ? '@tui.lock'
+                    : crag.is_public
+                      ? '@tui.globe'
+                      : '@tui.credit-card'
+                "
               />
+              <span>
+                {{
+                  (isSecret
+                    ? 'topos.visibility.secret'
+                    : crag.is_public
+                      ? 'topos.visibility.public'
+                      : 'topos.visibility.paywalled'
+                  ) | translate
+                }}
+              </span>
+            </div>
+          }
+
+          @if (!isIndoor()) {
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    tuiCheckbox
+                    type="checkbox"
+                    [formField]="topoForm.shade_morning"
+                    autocomplete="off"
+                  />
+                  <tui-icon
+                    [icon]="
+                      (
+                        { shade_morning: true, shade_afternoon: false }
+                        | shadeInfo
+                      )?.icon
+                    "
+                  />
+                  {{ 'filters.shade.morning' | translate }}
+                </label>
+
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    tuiCheckbox
+                    type="checkbox"
+                    [formField]="topoForm.shade_afternoon"
+                    autocomplete="off"
+                  />
+                  <tui-icon
+                    [icon]="
+                      (
+                        { shade_morning: false, shade_afternoon: true }
+                        | shadeInfo
+                      )?.icon
+                    "
+                  />
+                  {{ 'filters.shade.afternoon' | translate }}
+                </label>
+              </div>
+
+              <tui-textfield
+                [style.opacity]="showShadeChangeHour() ? '1' : '0.5'"
+              >
+                <label tuiLabel for="shade_change_hour">{{
+                  'topos.shadeChangeHour' | translate
+                }}</label>
+                <input
+                  tuiInputTime
+                  id="shade_change_hour"
+                  autocomplete="off"
+                  [ngModel]="shadeChangeHourTime()"
+                  (ngModelChange)="onShadeChangeHourChange($event)"
+                  name="shade_change_hour"
+                  [disabled]="!showShadeChangeHour()"
+                />
+              </tui-textfield>
+            </div>
+          }
+
+          @if (isIndoor()) {
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                tuiCheckbox
+                type="checkbox"
+                [formField]="topoForm.legacy"
+              />
+              <span>{{ 'topos.markAsLegacy' | translate }}</span>
             </label>
           }
 
-          <tui-files class="mt-2">
-            @if (photoValue(); as file) {
-              <div class="relative group">
-                <tui-file
-                  [file]="file"
-                  (remove)="removePhotoFile()"
-                  (click.zoneless)="editPhoto(file, undefined, $event)"
-                />
-                @if (previewUrl()) {
-                  <div
-                    class="mt-2 rounded-xl overflow-hidden relative group cursor-pointer"
-                    (click.zoneless)="editPhoto(file)"
-                  >
-                    <img
-                      [src]="previewUrl()"
-                      class="w-full h-auto max-h-48 object-cover"
-                      alt="Preview"
-                    />
-                    <div
-                      class="absolute inset-0 bg-(--tui-background-neutral-1)/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <tui-icon
-                        icon="@tui.pencil"
-                        class="text-(--tui-text-primary-on-accent-1) text-3xl"
-                      />
-                    </div>
-                  </div>
-                }
-              </div>
-            } @else if (effectiveTopoData()?.photo; as photoPath) {
-              @if (!isExistingPhotoDeleted()) {
-                <div class="relative group">
-                  <tui-file
-                    [file]="{ name: photoPath }"
-                    (remove)="onDeleteExistingPhoto()"
-                    (click.zoneless)="
-                      existingPhotoUrl()
-                        ? editPhoto(null, existingPhotoUrl()!, $event)
-                        : null
-                    "
-                  />
-                  @if (existingPhotoUrl(); as url) {
-                    <div
-                      class="mt-2 rounded-xl overflow-hidden relative group cursor-pointer"
-                      (click.zoneless)="editPhoto(null, url)"
-                    >
-                      <img
-                        [src]="url"
-                        class="w-full h-auto max-h-48 object-cover"
-                        alt="Existing photo"
-                      />
-                      <div
-                        class="absolute inset-0 bg-(--tui-background-neutral-1)/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <tui-icon
-                          icon="@tui.pencil"
-                          class="text-(--tui-text-primary-on-accent-1) text-3xl"
-                        />
-                      </div>
-                    </div>
-                  }
-                </div>
-              }
-            }
-          </tui-files>
-
-          <!-- Draw paths Button (Large and underneath) -->
-          @if (
-            (previewUrl() || existingPhotoUrl()) &&
-            (model().selectedRoutes.length > 0 || isIndoor())
-          ) {
-            <div class="mt-2">
-              <button
-                tuiButton
-                type="button"
-                appearance="accent"
-                size="m"
-                class="w-full rounded-xl!"
-                [iconStart]="'/image/topo.svg'"
-                (click)="openPathEditor()"
-              >
-                {{ 'draw' | translate }}
-              </button>
+          <section class="grid gap-3">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-1">
+              <p class="text-sm font-bold uppercase tracking-wider opacity-60">
+                {{ 'photo' | translate }}
+              </p>
             </div>
-          }
-        </div>
-      </section>
 
-      <div class="mt-4">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="text-lg font-semibold">
-            {{ 'topos.manageRoutes' | translate }}
-          </h3>
-          @if (isIndoor() && canCreateRoute()) {
-            <button
-              tuiButton
-              type="button"
-              appearance="flat"
-              size="s"
-              iconStart="@tui.plus"
-              class="rounded-full!"
-              (click)="createNewIndoorRoute()"
-            >
-              {{ 'routes.newTitle' | translate }}
-            </button>
-          }
-        </div>
-        <tui-textfield
-          multi
-          tuiChevron
-          [stringify]="stringifyRoute"
-          [disabledItemHandler]="strings"
-          [identityMatcher]="routeIdentityMatcher"
-          [tuiTextfieldCleaner]="true"
-        >
-          <label tuiLabel for="routes-select">{{ 'routes' | translate }}</label>
-          <input
-            tuiInputChip
-            id="routes-select"
-            autocomplete="off"
-            [ngModel]="model().selectedRoutes"
-            (ngModelChange)="onSelectedRoutesChange($event)"
-            name="selectedRoutes"
-            [placeholder]="'select' | translate"
-          />
-          <tui-input-chip *tuiItem />
-          <tui-data-list *tuiDropdown>
-            <tui-opt-group [label]="'routes' | translate" tuiMultiSelectGroup>
-              @for (
-                route of availableRoutes() | tuiFilterByInput;
-                track route.id
+            <div class="grid gap-2">
+              @if (
+                !photoValue() &&
+                (!effectiveTopoData()?.photo || isExistingPhotoDeleted())
               ) {
-                <button type="button" new tuiOption [value]="route">
-                  <div tuiCell size="s">
-                    <app-grade
-                      [grade]="route.grade ?? 0"
-                      [kind]="route.climbing_kind"
+                <label tuiInputFiles>
+                  <input
+                    accept="image/*"
+                    tuiInputFiles
+                    [ngModel]="model().photoControl"
+                    (ngModelChange)="onPhotoControlChange($event)"
+                    name="photoControl"
+                    autocomplete="off"
+                  />
+                </label>
+              }
+
+              <tui-files class="mt-2">
+                @if (photoValue(); as file) {
+                  <div class="relative group">
+                    <tui-file
+                      [file]="file"
+                      (remove)="removePhotoFile()"
+                      (click.zoneless)="editPhoto(file, undefined, $event)"
                     />
-                    <div tuiTitle>
-                      {{ route.name }}
-                      @if (routeIdsInOtherTopos().has(route.id)) {
-                        <tui-icon
-                          icon="@tui.image"
-                          class="text-xs opacity-50"
-                          style="font-size: 0.85rem"
+                    @if (previewUrl()) {
+                      <div
+                        class="mt-2 rounded-xl overflow-hidden relative group cursor-pointer"
+                        (click.zoneless)="editPhoto(file)"
+                      >
+                        <img
+                          [src]="previewUrl()"
+                          class="w-full h-auto max-h-48 object-cover"
+                          alt="Preview"
                         />
+                        <div
+                          class="absolute inset-0 bg-(--tui-background-neutral-1)/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <tui-icon
+                            icon="@tui.pencil"
+                            class="text-(--tui-text-primary-on-accent-1) text-3xl"
+                          />
+                        </div>
+                      </div>
+                    }
+                  </div>
+                } @else if (effectiveTopoData()?.photo; as photoPath) {
+                  @if (!isExistingPhotoDeleted()) {
+                    <div class="relative group">
+                      <tui-file
+                        [file]="{ name: photoPath }"
+                        (remove)="onDeleteExistingPhoto()"
+                        (click.zoneless)="
+                          existingPhotoUrl()
+                            ? editPhoto(null, existingPhotoUrl()!, $event)
+                            : null
+                        "
+                      />
+                      @if (existingPhotoUrl(); as url) {
+                        <div
+                          class="mt-2 rounded-xl overflow-hidden relative group cursor-pointer"
+                          (click.zoneless)="editPhoto(null, url)"
+                        >
+                          <img
+                            [src]="url"
+                            class="w-full h-auto max-h-48 object-cover"
+                            alt="Existing photo"
+                          />
+                          <div
+                            class="absolute inset-0 bg-(--tui-background-neutral-1)/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <tui-icon
+                              icon="@tui.pencil"
+                              class="text-(--tui-text-primary-on-accent-1) text-3xl"
+                            />
+                          </div>
+                        </div>
                       }
                     </div>
-                  </div>
+                  }
+                }
+              </tui-files>
+
+              <!-- Draw paths Button (Large and underneath) -->
+              @if (
+                (previewUrl() || existingPhotoUrl()) &&
+                (model().selectedRoutes.length > 0 || isIndoor())
+              ) {
+                <div class="mt-2">
+                  <button
+                    tuiButton
+                    type="button"
+                    appearance="accent"
+                    size="m"
+                    class="w-full"
+                    [iconStart]="'/image/topo.svg'"
+                    (click)="openPathEditor()"
+                  >
+                    {{ 'draw' | translate }}
+                  </button>
+                </div>
+              }
+            </div>
+          </section>
+
+          <div class="mt-4">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-lg font-semibold">
+                {{ 'topos.manageRoutes' | translate }}
+              </h3>
+              @if (isIndoor() && canCreateRoute()) {
+                <button
+                  tuiButton
+                  type="button"
+                  appearance="flat"
+                  size="s"
+                  iconStart="@tui.plus"
+                  class="rounded-full!"
+                  (click)="createNewIndoorRoute()"
+                >
+                  {{ 'routes.newTitle' | translate }}
                 </button>
               }
-            </tui-opt-group>
-          </tui-data-list>
-        </tui-textfield>
+            </div>
+            <tui-textfield
+              multi
+              tuiChevron
+              [stringify]="stringifyRoute"
+              [disabledItemHandler]="strings"
+              [identityMatcher]="routeIdentityMatcher"
+              [tuiTextfieldCleaner]="true"
+            >
+              <label tuiLabel for="routes-select">{{
+                'routes' | translate
+              }}</label>
+              <input
+                tuiInputChip
+                id="routes-select"
+                autocomplete="off"
+                [ngModel]="model().selectedRoutes"
+                (ngModelChange)="onSelectedRoutesChange($event)"
+                name="selectedRoutes"
+                [placeholder]="'select' | translate"
+              />
+              <tui-input-chip *tuiItem />
+              <tui-data-list *tuiDropdown>
+                <tui-opt-group
+                  [label]="'routes' | translate"
+                  tuiMultiSelectGroup
+                >
+                  @for (
+                    route of availableRoutes() | tuiFilterByInput;
+                    track route.id
+                  ) {
+                    <button type="button" new tuiOption [value]="route">
+                      <div tuiCell size="s">
+                        <app-grade
+                          [grade]="route.grade ?? 0"
+                          [kind]="route.climbing_kind"
+                        />
+                        <div tuiTitle>
+                          {{ route.name }}
+                          @if (routeIdsInOtherTopos().has(route.id)) {
+                            <tui-icon
+                              icon="@tui.image"
+                              class="text-xs opacity-50"
+                              style="font-size: 0.85rem"
+                            />
+                          }
+                        </div>
+                      </div>
+                    </button>
+                  }
+                </tui-opt-group>
+              </tui-data-list>
+            </tui-textfield>
+          </div>
+        </div>
       </div>
 
-      <div class="flex flex-wrap gap-2 justify-end mt-4">
+      <div class="lw-form-sheet-footer">
         <button
           tuiButton
+          size="m"
           appearance="flat"
           type="button"
           (click.zoneless)="goBack()"
@@ -407,6 +424,7 @@ import { GradeComponent } from '../ui/avatar-grade';
             topoForm.name().invalid() || topoForm.shade_change_hour().invalid()
           "
           tuiButton
+          size="m"
           appearance="primary"
           type="submit"
         >

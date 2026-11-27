@@ -105,208 +105,217 @@ interface RouteFormModel {
     TuiSelect,
   ],
   template: `
-    <form class="grid gap-4" (submit.zoneless)="onSubmit($event)">
-      <tui-textfield
-        tuiChevron
-        [tuiTextfieldCleaner]="false"
-        [stringify]="areaStringify"
-        [identityMatcher]="areaIdentityMatcher"
-      >
-        <label tuiLabel for="area">
-          {{ 'area' | translate }}
-        </label>
-        <input
-          tuiComboBox
-          id="area"
-          [ngModel]="model().area"
-          (ngModelChange)="onAreaChange($event)"
-          name="area"
-          autocomplete="off"
-        />
-        <tui-data-list-wrapper
-          *tuiDropdown
-          new
-          [items]="areaOptions.value() || [] | tuiFilterByInput"
-        />
-      </tui-textfield>
-
-      @if (cragOptions.value()?.length || model().crag) {
-        <tui-textfield
-          tuiChevron
-          [tuiTextfieldCleaner]="false"
-          [stringify]="cragStringify"
-          [identityMatcher]="cragIdentityMatcher"
-        >
-          <label tuiLabel for="crag">
-            {{ 'crag' | translate }}
-          </label>
-          <input
-            tuiComboBox
-            id="crag"
-            [ngModel]="model().crag"
-            (ngModelChange)="onCragChange($event)"
-            name="crag"
-            autocomplete="off"
-          />
-          <tui-data-list-wrapper
-            *tuiDropdown
-            new
-            [items]="cragOptions.value() || [] | tuiFilterByInput"
-          />
-        </tui-textfield>
-      }
-
-      <tui-textfield [tuiTextfieldCleaner]="false">
-        <label tuiLabel for="name">{{ 'routes.name' | translate }}</label>
-        <input
-          tuiInput
-          id="name"
-          [formField]="routeForm.name"
-          autocomplete="off"
-        />
-      </tui-textfield>
-
-      @if (authState.isAdmin()) {
-        <tui-textfield [tuiTextfieldCleaner]="false">
-          <label tuiLabel for="slug">{{ 'slug' | translate }}</label>
-          <input
-            tuiInput
-            id="slug"
-            [formField]="routeForm.slug"
-            type="text"
-            autocomplete="off"
-          />
-        </tui-textfield>
-        @if (routeForm.slug().invalid() && routeForm.slug().touched()) {
-          <tui-error [error]="'errors.required' | translate" />
-        }
-      }
-
-      <tui-textfield
-        multi
-        tuiChevron
-        [tuiTextfieldCleaner]="true"
-        [stringify]="equipperStringify"
-        [identityMatcher]="equipperIdentityMatcher"
-      >
-        <label tuiLabel for="equippers">
-          {{ 'equippers' | translate }}
-        </label>
-        <input
-          tuiInputChip
-          id="equippers"
-          [ngModel]="model().equippers"
-          (ngModelChange)="onEquippersChange($event)"
-          name="equippers"
-          [placeholder]="'select' | translate"
-          autocomplete="off"
-        />
-        <tui-input-chip *tuiItem />
-        <tui-data-list *tuiDropdown>
-          @for (
-            item of allEquippers.value() || []
-              | tuiHideSelected
-              | tuiFilterByInput;
-            track item.name
-          ) {
-            <button tuiOption new [value]="item">
-              {{ item.name }}
-            </button>
-          }
-        </tui-data-list>
-      </tui-textfield>
-
-      <tui-textfield
-        tuiChevron
-        [tuiTextfieldCleaner]="false"
-        [stringify]="kindStringify"
-      >
-        <label tuiLabel for="kind">
-          {{ 'climbing_kind' | translate }}
-        </label>
-        <input
-          tuiSelect
-          id="kind"
-          [ngModel]="model().climbing_kind"
-          (ngModelChange)="onKindChange($event)"
-          name="climbing_kind"
-          autocomplete="off"
-        />
-        <tui-data-list-wrapper *tuiDropdown new [items]="kindOptions" />
-      </tui-textfield>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="flex items-center gap-2">
-          <button
-            tuiIconButton
-            type="button"
-            size="m"
-            appearance="secondary"
-            iconStart="@tui.minus"
-            class="rounded-full! shrink-0"
-            (click)="changeGrade(-1)"
-          >
-            -
-          </button>
+    <form class="lw-form-sheet" (submit.zoneless)="onSubmit($event)">
+      <div class="lw-form-sheet-body">
+        <div class="flex flex-col gap-4">
           <tui-textfield
             tuiChevron
             [tuiTextfieldCleaner]="false"
-            [stringify]="gradeStringify"
-            class="grow min-w-0"
+            [stringify]="areaStringify"
+            [identityMatcher]="areaIdentityMatcher"
           >
-            <label tuiLabel for="grade">{{ 'grade' | translate }}</label>
+            <label tuiLabel for="area">
+              {{ 'area' | translate }}
+            </label>
             <input
-              tuiSelect
-              id="grade"
-              [ngModel]="model().grade"
-              (ngModelChange)="onGradeChange($event)"
-              name="grade"
+              tuiComboBox
+              id="area"
+              [ngModel]="model().area"
+              (ngModelChange)="onAreaChange($event)"
+              name="area"
               autocomplete="off"
             />
-            <tui-data-list-wrapper *tuiDropdown new [items]="gradeOptions" />
+            <tui-data-list-wrapper
+              *tuiDropdown
+              new
+              [items]="areaOptions.value() || [] | tuiFilterByInput"
+            />
           </tui-textfield>
-          <button
-            tuiIconButton
-            type="button"
-            size="m"
-            appearance="secondary"
-            iconStart="@tui.plus"
-            class="rounded-full! shrink-0"
-            (click)="changeGrade(1)"
-          >
-            +
-          </button>
-        </div>
 
-        <app-counter
-          [ngModel]="model().height"
-          (ngModelChange)="onHeightChange($event)"
-          name="height"
-          label="routes.height"
-          suffix="m"
-        />
+          @if (cragOptions.value()?.length || model().crag) {
+            <tui-textfield
+              tuiChevron
+              [tuiTextfieldCleaner]="false"
+              [stringify]="cragStringify"
+              [identityMatcher]="cragIdentityMatcher"
+            >
+              <label tuiLabel for="crag">
+                {{ 'crag' | translate }}
+              </label>
+              <input
+                tuiComboBox
+                id="crag"
+                [ngModel]="model().crag"
+                (ngModelChange)="onCragChange($event)"
+                name="crag"
+                autocomplete="off"
+              />
+              <tui-data-list-wrapper
+                *tuiDropdown
+                new
+                [items]="cragOptions.value() || [] | tuiFilterByInput"
+              />
+            </tui-textfield>
+          }
+
+          <tui-textfield [tuiTextfieldCleaner]="false">
+            <label tuiLabel for="name">{{ 'routes.name' | translate }}</label>
+            <input
+              tuiInput
+              id="name"
+              [formField]="routeForm.name"
+              autocomplete="off"
+            />
+          </tui-textfield>
+
+          @if (authState.isAdmin()) {
+            <tui-textfield [tuiTextfieldCleaner]="false">
+              <label tuiLabel for="slug">{{ 'slug' | translate }}</label>
+              <input
+                tuiInput
+                id="slug"
+                [formField]="routeForm.slug"
+                type="text"
+                autocomplete="off"
+              />
+            </tui-textfield>
+            @if (routeForm.slug().invalid() && routeForm.slug().touched()) {
+              <tui-error [error]="'errors.required' | translate" />
+            }
+          }
+
+          <tui-textfield
+            multi
+            tuiChevron
+            [tuiTextfieldCleaner]="true"
+            [stringify]="equipperStringify"
+            [identityMatcher]="equipperIdentityMatcher"
+          >
+            <label tuiLabel for="equippers">
+              {{ 'equippers' | translate }}
+            </label>
+            <input
+              tuiInputChip
+              id="equippers"
+              [ngModel]="model().equippers"
+              (ngModelChange)="onEquippersChange($event)"
+              name="equippers"
+              [placeholder]="'select' | translate"
+              autocomplete="off"
+            />
+            <tui-input-chip *tuiItem />
+            <tui-data-list *tuiDropdown>
+              @for (
+                item of allEquippers.value() || []
+                  | tuiHideSelected
+                  | tuiFilterByInput;
+                track item.name
+              ) {
+                <button tuiOption new [value]="item">
+                  {{ item.name }}
+                </button>
+              }
+            </tui-data-list>
+          </tui-textfield>
+
+          <tui-textfield
+            tuiChevron
+            [tuiTextfieldCleaner]="false"
+            [stringify]="kindStringify"
+          >
+            <label tuiLabel for="kind">
+              {{ 'climbing_kind' | translate }}
+            </label>
+            <input
+              tuiSelect
+              id="kind"
+              [ngModel]="model().climbing_kind"
+              (ngModelChange)="onKindChange($event)"
+              name="climbing_kind"
+              autocomplete="off"
+            />
+            <tui-data-list-wrapper *tuiDropdown new [items]="kindOptions" />
+          </tui-textfield>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex items-center gap-2">
+              <button
+                tuiIconButton
+                type="button"
+                size="m"
+                appearance="secondary"
+                iconStart="@tui.minus"
+                class="rounded-full! shrink-0"
+                (click)="changeGrade(-1)"
+              >
+                -
+              </button>
+              <tui-textfield
+                tuiChevron
+                [tuiTextfieldCleaner]="false"
+                [stringify]="gradeStringify"
+                class="grow min-w-0"
+              >
+                <label tuiLabel for="grade">{{ 'grade' | translate }}</label>
+                <input
+                  tuiSelect
+                  id="grade"
+                  [ngModel]="model().grade"
+                  (ngModelChange)="onGradeChange($event)"
+                  name="grade"
+                  autocomplete="off"
+                />
+                <tui-data-list-wrapper
+                  *tuiDropdown
+                  new
+                  [items]="gradeOptions"
+                />
+              </tui-textfield>
+              <button
+                tuiIconButton
+                type="button"
+                size="m"
+                appearance="secondary"
+                iconStart="@tui.plus"
+                class="rounded-full! shrink-0"
+                (click)="changeGrade(1)"
+              >
+                +
+              </button>
+            </div>
+
+            <app-counter
+              [ngModel]="model().height"
+              (ngModelChange)="onHeightChange($event)"
+              name="height"
+              label="routes.height"
+              suffix="m"
+            />
+          </div>
+
+          @if (isEdit()) {
+            <tui-textfield multi class="block">
+              <label tuiLabel for="eight-anu-slugs">
+                {{ 'import8a.slugs' | translate }}
+              </label>
+              <input
+                tuiInputChip
+                id="eight-anu-slugs"
+                [ngModel]="model().eight_anu_route_slugs"
+                (ngModelChange)="onRouteSlugsChange($event)"
+                name="eight_anu_route_slugs"
+                autocomplete="off"
+              />
+              <tui-input-chip *tuiItem />
+            </tui-textfield>
+          }
+        </div>
       </div>
 
-      @if (isEdit()) {
-        <tui-textfield multi class="block">
-          <label tuiLabel for="eight-anu-slugs">
-            {{ 'import8a.slugs' | translate }}
-          </label>
-          <input
-            tuiInputChip
-            id="eight-anu-slugs"
-            [ngModel]="model().eight_anu_route_slugs"
-            (ngModelChange)="onRouteSlugsChange($event)"
-            name="eight_anu_route_slugs"
-            autocomplete="off"
-          />
-          <tui-input-chip *tuiItem />
-        </tui-textfield>
-      }
-
-      <div class="flex flex-wrap gap-2 justify-end">
+      <div class="lw-form-sheet-footer">
         <button
           tuiButton
+          size="m"
           appearance="flat"
           type="button"
           (click.zoneless)="goBack()"
@@ -316,6 +325,7 @@ interface RouteFormModel {
         <button
           [disabled]="routeForm.name().invalid() || !model().crag"
           tuiButton
+          size="m"
           appearance="primary"
           type="submit"
         >

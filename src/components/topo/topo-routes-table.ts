@@ -67,6 +67,43 @@ import type { TopoRouteRow } from './topo.types';
       z-index: 30;
       background: var(--tui-background-base);
     }
+    thead[tuiThead] th ::ng-deep .t-sort {
+      max-width: 100%;
+      min-width: 0;
+    }
+    @media (max-width: 767.98px) {
+      table[tuiTable] {
+        border-inline: none;
+        border-radius: 0;
+      }
+      table[tuiTable] th[tuiTh],
+      table[tuiTable] td[tuiTd] {
+        border-inline: none;
+        border-radius: 0;
+      }
+      table[tuiTable] th[tuiTh]:first-child,
+      table[tuiTable] td[tuiTd]:first-child {
+        padding-inline-start: 0.75rem;
+      }
+      table[tuiTable] th[tuiTh]:last-child,
+      table[tuiTable] td[tuiTd]:last-child {
+        padding-inline-end: 0.75rem;
+      }
+      table[tuiTable] th[data-col='grade'],
+      table[tuiTable] td[data-col='grade'] {
+        padding-inline: 0.375rem;
+      }
+      table[tuiTable] th[data-col='grade']:first-child,
+      table[tuiTable] td[data-col='grade']:first-child {
+        padding-inline-start: 0.75rem;
+        padding-inline-end: 0.375rem;
+      }
+      table[tuiTable] th[data-col='actions']:last-child,
+      table[tuiTable] td[data-col='actions']:last-child {
+        padding-inline-start: 0.25rem;
+        padding-inline-end: 0.75rem;
+      }
+    }
   `,
   imports: [
     ButtonAscentTypeComponent,
@@ -91,7 +128,7 @@ import type { TopoRouteRow } from './topo.types';
   ],
   template: `
     <div
-      class="w-full h-full min-w-0 min-h-0 overflow-hidden px-1 sm:px-4 md:px-0 focus:outline-none"
+      class="w-full h-full min-w-0 min-h-0 overflow-hidden focus:outline-none"
       tabindex="0"
       (keydown)="onTableKeyDown($event)"
     >
@@ -101,7 +138,7 @@ import type { TopoRouteRow } from './topo.types';
           @let visibleCols = visibleColumns();
           @let mobile = isMobile();
           @if (sortedData.length > 0) {
-            <div class="w-full min-w-0 max-w-full overflow-x-clip pr-3">
+            <div class="w-full min-w-0 max-w-full overflow-x-clip md:pr-3">
               <table
                 tuiTable
                 [size]="mobile ? 's' : 'm'"
@@ -122,14 +159,14 @@ import type { TopoRouteRow } from './topo.types';
                         [class.text-center]="
                           col === 'actions' || col === 'index'
                         "
-                        [class.w-12!]="
-                          col === 'index' || (col === 'actions' && mobile)
-                        "
-                        [class.w-14!]="col === 'grade'"
+                        [class.w-12!]="col === 'index'"
+                        [class.w-13!]="col === 'actions' && mobile"
                         [class.w-16!]="col === 'actions' && !mobile"
+                        [class.w-18!]="col === 'grade' && mobile"
+                        [class.w-20!]="col === 'grade' && !mobile"
                       >
                         <div
-                          class="flex items-center gap-1 w-full"
+                          class="flex items-center gap-1 w-full min-w-0"
                           [class.justify-center]="
                             col === 'actions' || col === 'index'
                           "
@@ -142,7 +179,9 @@ import type { TopoRouteRow } from './topo.types';
                               {{ 'routes.name' | translate }}
                             }
                             @case ('grade') {
-                              {{ 'gradeShort' | translate }}
+                              <span class="whitespace-nowrap shrink-0">{{
+                                'gradeShort' | translate
+                              }}</span>
                             }
                             @case ('height') {
                               {{ 'routes.height' | translate }}

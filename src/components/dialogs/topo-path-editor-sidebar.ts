@@ -369,27 +369,27 @@ import { RoutePathMeta } from './topo-path-editor.utils';
                 tuiButton
                 type="button"
                 size="s"
+                iconStart="@tui.minus"
                 [appearance]="
                   selectedRoutePathType() === 'line' ? 'primary' : 'secondary'
                 "
-                class="flex-1 rounded-xl!"
+                class="flex-1"
                 (click)="pathTypeChange.emit('line')"
               >
-                <tui-icon icon="@tui.minus" class="mr-1" />
-                <span>{{ 'topos.editor.pathTypeLine' | translate }}</span>
+                {{ 'topos.editor.pathTypeLine' | translate }}
               </button>
               <button
                 tuiButton
                 type="button"
                 size="s"
+                iconStart="@tui.circle"
                 [appearance]="
                   selectedRoutePathType() === 'circle' ? 'primary' : 'secondary'
                 "
-                class="flex-1 rounded-xl!"
+                class="flex-1"
                 (click)="pathTypeChange.emit('circle')"
               >
-                <tui-icon icon="@tui.circle" class="mr-1" />
-                <span>{{ 'topos.editor.pathTypeCircle' | translate }}</span>
+                {{ 'topos.editor.pathTypeCircle' | translate }}
               </button>
             </div>
 
@@ -398,12 +398,12 @@ import { RoutePathMeta } from './topo-path-editor.utils';
               tuiButton
               type="button"
               size="s"
+              iconStart="@tui.arrow-right-left"
               [appearance]="selectedRouteIsTraverse() ? 'primary' : 'secondary'"
-              class="w-full rounded-xl! mt-2"
+              class="w-full mt-2"
               (click)="traverseToggle.emit()"
             >
-              <tui-icon icon="@tui.arrow-right-left" class="mr-1" />
-              <span>{{ 'topos.editor.traverse' | translate }}</span>
+              {{ 'topos.editor.traverse' | translate }}
             </button>
           </div>
         }

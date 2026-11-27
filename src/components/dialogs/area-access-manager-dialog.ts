@@ -9,7 +9,6 @@ import {
   TuiInput,
   TuiLabel,
   TuiLoader,
-  TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
 import { TuiAvatar } from '@taiga-ui/kit';
@@ -54,94 +53,90 @@ interface ProfileSearchResult {
     TuiInput,
     TuiLabel,
     TuiLoader,
-    TuiScrollbar,
     TuiTextfield,
   ],
   template: `
-    <div class="flex flex-col h-[70dvh] min-h-[450px] -m-4">
-      <!-- Search Input Section -->
-      <div
-        class="p-4 border-b border-(--tui-border-normal) bg-(--tui-background-neutral-1) flex flex-col gap-2"
-      >
-        <tui-textfield
-          [tuiTextfieldCleaner]="true"
-          tuiTextfieldSize="m"
-          class="w-full bg-(--tui-background-base)"
+    <div class="lw-form-sheet">
+      <div class="lw-form-sheet-body flex flex-col gap-4">
+        <!-- Search Input Section -->
+        <div
+          class="pb-4 border-b border-(--tui-border-normal) flex flex-col gap-2"
         >
-          <label tuiLabel for="user-grant-search">
-            {{ 'areas.searchUser' | translate }}
-          </label>
-          <input
-            tuiInput
-            #grantSearch
-            id="user-grant-search"
-            autocomplete="off"
-            [value]="searchQuery()"
-            (input)="searchQuery.set(grantSearch.value)"
-          />
-        </tui-textfield>
+          <tui-textfield
+            [tuiTextfieldCleaner]="true"
+            tuiTextfieldSize="m"
+            class="w-full bg-(--tui-background-base)"
+          >
+            <label tuiLabel for="user-grant-search">
+              {{ 'areas.searchUser' | translate }}
+            </label>
+            <input
+              tuiInput
+              #grantSearch
+              id="user-grant-search"
+              autocomplete="off"
+              [value]="searchQuery()"
+              (input)="searchQuery.set(grantSearch.value)"
+            />
+          </tui-textfield>
 
-        <!-- Search Results List -->
-        @if (isSearching()) {
-          <div class="flex items-center justify-center p-4">
-            <tui-loader size="m" />
-          </div>
-        } @else if (searchResults(); as results) {
-          @if (results.length > 0) {
-            <div
-              class="max-h-40 overflow-y-auto bg-(--tui-background-base) rounded-xl border border-(--tui-border-normal) shadow-sm flex flex-col p-1 gap-1"
-            >
-              @for (user of results; track user.id) {
-                <div
-                  class="flex items-center justify-between p-2 hover:bg-(--tui-background-neutral-1) rounded-lg transition-colors"
-                >
-                  <div class="flex items-center gap-2">
-                    <span
-                      tuiAvatar
-                      size="s"
-                      class="rounded-full overflow-hidden"
-                      [attr.aria-label]="user.name || ''"
-                    >
-                      @if (user.avatar) {
-                        <img
-                          [src]="user.avatar | avatarUrl"
-                          [alt]="user.name || ''"
-                        />
-                      } @else {
-                        <tui-icon icon="@tui.user" />
-                      }
-                    </span>
-                    <span class="text-sm font-semibold">{{
-                      user.name || 'Anonymous'
-                    }}</span>
-                  </div>
-                  <button
-                    tuiButton
-                    size="xs"
-                    appearance="primary"
-                    type="button"
-                    (click)="grantAccess(user)"
+          <!-- Search Results List -->
+          @if (isSearching()) {
+            <div class="flex items-center justify-center p-4">
+              <tui-loader size="m" />
+            </div>
+          } @else if (searchResults(); as results) {
+            @if (results.length > 0) {
+              <div
+                class="max-h-40 overflow-y-auto bg-(--tui-background-base) rounded-xl border border-(--tui-border-normal) shadow-sm flex flex-col p-1 gap-1"
+              >
+                @for (user of results; track user.id) {
+                  <div
+                    class="flex items-center justify-between p-2 hover:bg-(--tui-background-neutral-1) rounded-lg transition-colors"
                   >
-                    {{ 'areas.grantAccess' | translate }}
-                  </button>
-                </div>
-              }
+                    <div class="flex items-center gap-2">
+                      <span
+                        tuiAvatar
+                        size="s"
+                        class="rounded-full overflow-hidden"
+                        [attr.aria-label]="user.name || ''"
+                      >
+                        @if (user.avatar) {
+                          <img
+                            [src]="user.avatar | avatarUrl"
+                            [alt]="user.name || ''"
+                          />
+                        } @else {
+                          <tui-icon icon="@tui.user" />
+                        }
+                      </span>
+                      <span class="text-sm font-semibold">{{
+                        user.name || 'Anonymous'
+                      }}</span>
+                    </div>
+                    <button
+                      tuiButton
+                      size="xs"
+                      appearance="primary"
+                      type="button"
+                      (click)="grantAccess(user)"
+                    >
+                      {{ 'areas.grantAccess' | translate }}
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          } @else if (searchQuery().trim().length >= 2) {
+            <div class="text-xs opacity-60 text-center p-2">
+              {{ 'areas.noUsersFound' | translate }}
             </div>
           }
-        } @else if (searchQuery().trim().length >= 2) {
-          <div class="text-xs opacity-60 text-center p-2">
-            {{ 'areas.noUsersFound' | translate }}
-          </div>
-        }
-      </div>
+        </div>
 
-      <!-- Access List Section -->
-      <tui-loader
-        [loading]="accessListResource.isLoading()"
-        class="grow min-h-0"
-      >
-        <tui-scrollbar class="h-full">
-          <div class="p-4 flex flex-col gap-2">
+        <!-- Access List Section -->
+        <tui-loader [loading]="accessListResource.isLoading()">
+          <div class="flex flex-col gap-2">
             @for (user of accessList(); track user.purchaseId) {
               <div
                 class="flex items-center justify-between p-3 bg-(--tui-background-base) border border-(--tui-border-normal) rounded-2xl"
@@ -189,8 +184,20 @@ interface ProfileSearchResult {
               </div>
             }
           </div>
-        </tui-scrollbar>
-      </tui-loader>
+        </tui-loader>
+      </div>
+
+      <div class="lw-form-sheet-footer">
+        <button
+          tuiButton
+          appearance="flat"
+          size="m"
+          type="button"
+          (click)="context.completeWith(false)"
+        >
+          {{ 'close' | translate }}
+        </button>
+      </div>
     </div>
   `,
 })

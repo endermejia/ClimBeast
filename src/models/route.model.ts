@@ -87,7 +87,9 @@ export type RouteItem = RouteWithExtras;
 export type RoutesTableKey =
   | 'grade'
   | 'route'
+  | 'area'
   | 'crag'
+  | 'center'
   | 'topo'
   | 'height'
   | 'rating'
@@ -110,6 +112,8 @@ export interface RoutesTableRow {
   area_slug?: string;
   crag_slug?: string;
   crag_id?: number;
+  center_name?: string;
+  center_slug?: string;
   height: number | null;
   color: string | null;
   legacy?: boolean;

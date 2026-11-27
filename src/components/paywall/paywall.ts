@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, inject, input } from '@angular/core';
 
-import { TuiButton, TuiIcon } from '@taiga-ui/core';
+import { TuiButton } from '@taiga-ui/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -9,7 +9,7 @@ import { AreaDonationsService } from '../../services/area-donations.service';
 
 @Component({
   selector: 'app-paywall',
-  imports: [DecimalPipe, TranslatePipe, TuiButton, TuiIcon],
+  imports: [DecimalPipe, TranslatePipe, TuiButton],
   template: `
     <div
       class="relative overflow-hidden flex flex-col items-center justify-center p-5 sm:p-8 md:p-10 rounded-3xl sm:rounded-4xl border border-(--tui-border-normal) text-center gap-6 shadow-xl bg-(--tui-background-elevated)"
@@ -47,14 +47,13 @@ import { AreaDonationsService } from '../../services/area-donations.service';
         <button
           tuiButton
           appearance="primary"
+          size="m"
           type="button"
-          class="w-full rounded-2xl! shadow-lg shadow-black/5 hover:scale-[1.02] transition-transform font-bold !whitespace-normal !h-auto min-h-12 py-3 px-4 text-xs sm:text-sm md:text-base text-center leading-snug flex items-center justify-center gap-2 cursor-pointer"
+          iconStart="@tui.hand-heart"
+          class="w-full lw-button-wrap"
           (click)="openDonationDialog()"
         >
-          <tui-icon icon="@tui.hand-heart" class="w-5 h-5 shrink-0" />
-          <span class="whitespace-normal leading-snug">
-            {{ 'payments.paywall.contributeAndUnlock' | translate }}
-          </span>
+          {{ 'payments.paywall.contributeAndUnlock' | translate }}
         </button>
 
         <p class="text-[10px] sm:text-xs leading-relaxed opacity-50 px-4 m-0">

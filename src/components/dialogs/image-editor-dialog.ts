@@ -81,7 +81,6 @@ export interface ImageEditorConfig {
                       : 'flat'
                   "
                   (click)="setAspectRatio(ratio.ratio)"
-                  class="rounded-lg!"
                 >
                   {{ ratio.titleKey }}
                 </button>
@@ -92,7 +91,6 @@ export interface ImageEditorConfig {
                   size="s"
                   [appearance]="!maintainAspectRatio ? 'primary' : 'flat'"
                   (click)="toggleMaintainAspectRatio()"
-                  class="rounded-lg!"
                 >
                   {{ 'free' | translate }}
                 </button>
@@ -111,7 +109,6 @@ export interface ImageEditorConfig {
                 appearance="flat"
                 size="s"
                 (click)="rotateLeft()"
-                class="rounded-lg!"
                 [title]="'rotate' | translate"
                 [attr.aria-label]="'rotate' | translate"
               >
@@ -122,7 +119,6 @@ export interface ImageEditorConfig {
                 appearance="flat"
                 size="s"
                 (click)="rotateRight()"
-                class="rounded-lg!"
                 [title]="'rotate' | translate"
                 [attr.aria-label]="'rotate' | translate"
               >
@@ -139,7 +135,6 @@ export interface ImageEditorConfig {
                 appearance="flat"
                 size="s"
                 (click)="flipHorizontal()"
-                class="rounded-lg!"
                 [title]="'flipX' | translate"
                 [attr.aria-label]="'flipX' | translate"
               >
@@ -150,7 +145,6 @@ export interface ImageEditorConfig {
                 appearance="flat"
                 size="s"
                 (click)="flipVertical()"
-                class="rounded-lg!"
                 [title]="'flipY' | translate"
                 [attr.aria-label]="'flipY' | translate"
               >
@@ -167,7 +161,6 @@ export interface ImageEditorConfig {
                 appearance="flat"
                 size="s"
                 (click)="zoomOut()"
-                class="rounded-lg!"
                 [title]="'zoomOut' | translate"
                 [attr.aria-label]="'zoomOut' | translate"
               >
@@ -178,7 +171,6 @@ export interface ImageEditorConfig {
                 appearance="flat"
                 size="s"
                 (click)="zoomIn()"
-                class="rounded-lg!"
                 [title]="'zoomIn' | translate"
                 [attr.aria-label]="'zoomIn' | translate"
               >
@@ -232,14 +224,15 @@ export interface ImageEditorConfig {
         class="shrink-0 border-t bg-(--tui-background-base) z-20 flex flex-col"
         style="border-color: var(--tui-border-normal)"
       >
-        <div class="px-4 py-2 flex justify-between items-center">
+        <div
+          class="px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex justify-between items-center"
+        >
           <button
             tuiButton
             appearance="flat"
             size="m"
             (click)="close()"
             type="button"
-            class="rounded-xl!"
           >
             {{ 'cancel' | translate }}
           </button>
@@ -251,7 +244,6 @@ export interface ImageEditorConfig {
               loading() || (!croppedImageBlob && !imageFile && !imageBase64())
             "
             (click)="save()"
-            class="rounded-xl! px-8!"
           >
             {{ 'save' | translate }}
           </button>

@@ -157,7 +157,7 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
   template: `
     <tui-scrollbar class="w-full h-full min-h-0 min-w-0">
       <section
-        class="w-full max-w-[1600px] mx-auto pt-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden pb-2"
+        class="w-full min-w-0 max-w-[1600px] mx-auto pt-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden overflow-x-clip pb-2"
       >
         @if (center(); as c) {
           <!-- Left Column -->
@@ -166,7 +166,7 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
           >
             <tui-scrollbar class="column-scrollbar w-full h-full min-h-0">
               <div
-                class="flex flex-col gap-4 w-full min-w-0 px-4 lg:px-0 lg:pr-4"
+                class="flex flex-col gap-4 w-full min-w-0 px-4 lg:px-0 lg:pr-4 sm:[--lw-table-bleed:2.5rem]"
               >
                 <div class="mb-2">
                   <app-section-header
@@ -393,7 +393,7 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
                         </div>
 
                         <div
-                          class="sticky top-0 z-10 flex items-end gap-2 bg-(--tui-background-base) py-2"
+                          class="lw-sticky-bar-mobile-bleed sticky top-0 z-10 flex items-end gap-2 bg-(--tui-background-base) py-2"
                         >
                           <tui-textfield
                             class="grow block"

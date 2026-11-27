@@ -56,190 +56,204 @@ export interface MaterialCatalogFormData {
     TuiTextfield,
   ],
   template: `
-    <div class="flex flex-col gap-6">
-      <div class="grid grid-cols-1 gap-4">
-        <!-- Name -->
-        <tui-textfield class="w-full">
-          <label tuiLabel for="material-name">
-            {{ 'admin.materialCatalog.nameLabel' | translate }} *
-          </label>
-          <input
-            id="material-name"
-            tuiInput
-            type="text"
-            [ngModel]="model().name"
-            (ngModelChange)="updateModel('name', $event)"
-            name="name"
-            autocomplete="off"
-          />
-        </tui-textfield>
-
-        <!-- Price -->
-        <tui-textfield class="w-full">
-          <label tuiLabel for="material-price">
-            {{ 'admin.materialCatalog.priceLabel' | translate }} *
-          </label>
-          <input
-            id="material-price"
-            tuiInputNumber
-            [min]="0.01"
-            [step]="0.1"
-            [ngModel]="model().price"
-            (ngModelChange)="updateModel('price', $event)"
-            name="price"
-            autocomplete="off"
-          />
-          <span class="tui-textfield__suffix">€</span>
-        </tui-textfield>
-
-        <!-- Description -->
-        <tui-textfield class="w-full">
-          <label tuiLabel for="material-description">
-            {{ 'admin.materialCatalog.descriptionLabel' | translate }}
-          </label>
-          <textarea
-            id="material-description"
-            tuiTextarea
-            [rows]="3"
-            [ngModel]="model().description"
-            (ngModelChange)="updateModel('description', $event)"
-            name="description"
-            [placeholder]="
-              'admin.materialCatalog.descriptionPlaceholder' | translate
-            "
-          ></textarea>
-        </tui-textfield>
-
-        <!-- Image Gallery / Photo -->
-        <div class="flex flex-col gap-3">
-          <div class="flex items-center justify-between px-1">
-            <span class="text-xs font-bold opacity-60 uppercase">
-              {{ 'admin.materialCatalog.photo' | translate }}
-            </span>
-            <label tuiInputFiles>
-              <input
-                accept="image/*"
-                tuiInputFiles
-                multiple
-                [ngModel]="fileInputModel()"
-                (ngModelChange)="onPhotoFileChange($event)"
-              />
-              <button
-                tuiButton
-                type="button"
-                appearance="flat"
-                size="s"
-                iconStart="@tui.plus"
-              >
-                {{ 'admin.materialCatalog.addImage' | translate }}
-              </button>
+    <div class="lw-form-sheet">
+      <div class="lw-form-sheet-body">
+        <div class="flex flex-col gap-4">
+          <!-- Name -->
+          <tui-textfield class="w-full">
+            <label tuiLabel for="material-name">
+              {{ 'admin.materialCatalog.nameLabel' | translate }} *
             </label>
-          </div>
+            <input
+              id="material-name"
+              tuiInput
+              type="text"
+              [ngModel]="model().name"
+              (ngModelChange)="updateModel('name', $event)"
+              name="name"
+              autocomplete="off"
+            />
+          </tui-textfield>
 
-          @if (newPhoto(); as photo) {
-            <div
-              class="relative aspect-square w-36 rounded-xl overflow-hidden border border-accent border-dashed group"
-            >
-              <img
-                [src]="photo.preview"
-                alt="Preview"
-                class="w-full h-full object-cover"
-              />
-              <div
-                class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <div
-                  class="bg-(--tui-background-base) rounded-xl p-0.5 flex gap-1"
+          <!-- Price -->
+          <tui-textfield class="w-full">
+            <label tuiLabel for="material-price">
+              {{ 'admin.materialCatalog.priceLabel' | translate }} *
+            </label>
+            <input
+              id="material-price"
+              tuiInputNumber
+              [min]="0.01"
+              [step]="0.1"
+              [ngModel]="model().price"
+              (ngModelChange)="updateModel('price', $event)"
+              name="price"
+              autocomplete="off"
+            />
+            <span class="tui-textfield__suffix">€</span>
+          </tui-textfield>
+
+          <!-- Description -->
+          <tui-textfield class="w-full">
+            <label tuiLabel for="material-description">
+              {{ 'admin.materialCatalog.descriptionLabel' | translate }}
+            </label>
+            <textarea
+              id="material-description"
+              tuiTextarea
+              [rows]="3"
+              [ngModel]="model().description"
+              (ngModelChange)="updateModel('description', $event)"
+              name="description"
+              [placeholder]="
+                'admin.materialCatalog.descriptionPlaceholder' | translate
+              "
+            ></textarea>
+          </tui-textfield>
+
+          <!-- Image Gallery / Photo -->
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center justify-between px-1">
+              <span class="text-xs font-bold opacity-60 uppercase">
+                {{ 'admin.materialCatalog.photo' | translate }}
+              </span>
+              <label tuiInputFiles>
+                <input
+                  accept="image/*"
+                  tuiInputFiles
+                  multiple
+                  [ngModel]="fileInputModel()"
+                  (ngModelChange)="onPhotoFileChange($event)"
+                />
+                <button
+                  tuiButton
+                  type="button"
+                  appearance="flat"
+                  size="s"
+                  iconStart="@tui.plus"
                 >
-                  <button
-                    tuiButton
-                    type="button"
-                    appearance="flat"
-                    size="xs"
-                    (click)="editPhoto(photo.file)"
-                  >
-                    <tui-icon icon="@tui.pencil" />
-                  </button>
-                  <button
-                    tuiButton
-                    type="button"
-                    appearance="destructive"
-                    size="xs"
-                    (click)="removeNewPhoto()"
-                  >
-                    <tui-icon icon="@tui.trash" />
-                  </button>
-                </div>
-              </div>
+                  {{ 'admin.materialCatalog.addImage' | translate }}
+                </button>
+              </label>
             </div>
-          } @else if (model().image_url) {
-            <div
-              class="relative aspect-square w-36 rounded-xl overflow-hidden border border-(--tui-border-normal) group"
-            >
-              <img
-                [src]="model().image_url"
-                [alt]="model().name"
-                class="w-full h-full object-cover"
-              />
+
+            @if (newPhoto(); as photo) {
               <div
-                class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                class="relative aspect-square w-36 rounded-xl overflow-hidden border border-accent border-dashed group"
               >
+                <img
+                  [src]="photo.preview"
+                  alt="Preview"
+                  class="w-full h-full object-cover"
+                />
                 <div
-                  class="bg-(--tui-background-base) rounded-xl p-0.5 flex gap-1"
+                  class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <label tuiInputFiles>
-                    <input
-                      accept="image/*"
-                      tuiInputFiles
-                      multiple
-                      [ngModel]="fileInputModel()"
-                      (ngModelChange)="onPhotoFileChange($event)"
-                    />
-                    <button tuiButton type="button" appearance="flat" size="xs">
+                  <div
+                    class="bg-(--tui-background-base) rounded-xl p-0.5 flex gap-1"
+                  >
+                    <button
+                      tuiButton
+                      type="button"
+                      appearance="flat"
+                      size="xs"
+                      (click)="editPhoto(photo.file)"
+                    >
                       <tui-icon icon="@tui.pencil" />
                     </button>
-                  </label>
-                  <button
-                    tuiButton
-                    type="button"
-                    appearance="destructive"
-                    size="xs"
-                    (click)="removeExistingPhoto()"
-                  >
-                    <tui-icon icon="@tui.trash" />
-                  </button>
+                    <button
+                      tuiButton
+                      type="button"
+                      appearance="destructive"
+                      size="xs"
+                      (click)="removeNewPhoto()"
+                    >
+                      <tui-icon icon="@tui.trash" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          }
-        </div>
+            } @else if (model().image_url) {
+              <div
+                class="relative aspect-square w-36 rounded-xl overflow-hidden border border-(--tui-border-normal) group"
+              >
+                <img
+                  [src]="model().image_url"
+                  [alt]="model().name"
+                  class="w-full h-full object-cover"
+                />
+                <div
+                  class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <div
+                    class="bg-(--tui-background-base) rounded-xl p-0.5 flex gap-1"
+                  >
+                    <label tuiInputFiles>
+                      <input
+                        accept="image/*"
+                        tuiInputFiles
+                        multiple
+                        [ngModel]="fileInputModel()"
+                        (ngModelChange)="onPhotoFileChange($event)"
+                      />
+                      <button
+                        tuiButton
+                        type="button"
+                        appearance="flat"
+                        size="xs"
+                      >
+                        <tui-icon icon="@tui.pencil" />
+                      </button>
+                    </label>
+                    <button
+                      tuiButton
+                      type="button"
+                      appearance="destructive"
+                      size="xs"
+                      (click)="removeExistingPhoto()"
+                    >
+                      <tui-icon icon="@tui.trash" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
 
-        <!-- Active Switch -->
-        <div
-          class="flex items-center justify-between gap-4 p-4 rounded-xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
-        >
-          <span class="font-semibold">
-            {{ 'admin.materialCatalog.active' | translate }}
-          </span>
-          <input
-            tuiSwitch
-            type="checkbox"
-            [ngModel]="model().active"
-            (ngModelChange)="updateModel('active', $event)"
-            name="active"
-            size="m"
-          />
+          <!-- Active Switch -->
+          <div
+            class="flex items-center justify-between gap-4 p-4 rounded-xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+          >
+            <span class="font-semibold">
+              {{ 'admin.materialCatalog.active' | translate }}
+            </span>
+            <input
+              tuiSwitch
+              type="checkbox"
+              [ngModel]="model().active"
+              (ngModelChange)="updateModel('active', $event)"
+              name="active"
+              size="m"
+            />
+          </div>
         </div>
       </div>
 
       <!-- Actions -->
-      <div class="flex justify-end gap-3 px-1 mt-4">
-        <button tuiButton appearance="flat" type="button" (click)="onCancel()">
+      <div class="lw-form-sheet-footer">
+        <button
+          tuiButton
+          size="m"
+          appearance="flat"
+          type="button"
+          (click)="onCancel()"
+        >
           {{ 'cancel' | translate }}
         </button>
         <tui-loader [loading]="isSaving() || isUploading()" [overlay]="true">
           <button
             tuiButton
+            size="m"
             appearance="primary"
             type="button"
             (click)="save()"

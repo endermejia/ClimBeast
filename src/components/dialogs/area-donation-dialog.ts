@@ -9,7 +9,6 @@ import {
   TuiExpand,
   TuiIcon,
   TuiLabel,
-  TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
 import { TuiSwitch, TuiTextarea } from '@taiga-ui/kit';
@@ -47,325 +46,305 @@ export interface AreaDonationDialogData {
     TuiExpand,
     TuiIcon,
     TuiLabel,
-    TuiScrollbar,
     TuiSwitch,
     TuiTextarea,
     TuiTextfield,
   ],
-  host: { class: 'block' },
   template: `
-    <div class="flex flex-col h-[70dvh] max-h-[700px] min-h-[420px] -m-4">
-      <tui-scrollbar class="grow min-h-0 overflow-x-hidden!">
-        <div class="p-4 flex flex-col gap-5">
-          <!-- Explanatory note -->
-          <div
-            class="flex flex-col gap-1.5 p-3.5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal) text-xs"
-          >
-            <span class="font-bold text-(--tui-text-primary)">
-              {{
-                'donations.subtitle'
-                  | translate: { name: context.data.areaName || '' }
-              }}
-            </span>
-            <span class="text-[11px] text-(--tui-text-secondary)">
-              {{ 'donations.transparencyNotice' | translate }}
-            </span>
-          </div>
+    <div class="lw-form-sheet">
+      <div class="lw-form-sheet-body flex flex-col gap-5">
+        <!-- Explanatory note -->
+        <div
+          class="flex flex-col gap-1.5 p-3.5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal) text-xs"
+        >
+          <span class="font-bold text-(--tui-text-primary)">
+            {{
+              'donations.subtitle'
+                | translate: { name: context.data.areaName || '' }
+            }}
+          </span>
+          <span class="text-[11px] text-(--tui-text-secondary)">
+            {{ 'donations.transparencyNotice' | translate }}
+          </span>
+        </div>
 
-          <!-- Reactive topos unlock indicator -->
-          @if (canUnlockTopos()) {
-            @if (canClaimFromPreviousDonations()) {
-              <div
-                class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-(--tui-background-positive-neutral) border border-(--tui-status-positive) text-(--tui-text-primary) transition-all duration-300"
+        <!-- Reactive topos unlock indicator -->
+        @if (canUnlockTopos()) {
+          @if (canClaimFromPreviousDonations()) {
+            <div
+              class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-(--tui-background-positive-neutral) border border-(--tui-status-positive) text-(--tui-text-primary) transition-all duration-300"
+            >
+              <div class="flex items-center gap-3 min-w-0">
+                <div
+                  class="flex items-center justify-center w-8 h-8 rounded-xl bg-(--tui-status-positive-pale) text-(--tui-status-positive) shrink-0 text-lg"
+                >
+                  <tui-icon icon="@tui.circle-check" />
+                </div>
+                <span class="text-xs font-bold leading-snug">
+                  {{
+                    'donations.alreadyDonatedUnlockHint'
+                      | translate
+                        : {
+                            amount: (previousDonatedTotal() | number: '1.0-2'),
+                          }
+                  }}
+                </span>
+              </div>
+              <button
+                tuiButton
+                appearance="positive"
+                size="s"
+                type="button"
+                class="shrink-0"
+                iconStart="@tui.lock-open"
+                [disabled]="donationsService.loading()"
+                (click.zoneless)="claimFromPreviousDonations()"
               >
+                {{ 'donations.unlocksTopos' | translate }}
+              </button>
+            </div>
+          }
+
+          @if (unlocksTopos()) {
+            <div
+              class="flex flex-col gap-2 p-3.5 rounded-2xl bg-(--tui-background-positive-neutral) border border-(--tui-status-positive) text-(--tui-text-primary) transition-all duration-300"
+            >
+              <div class="flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
                   <div
                     class="flex items-center justify-center w-8 h-8 rounded-xl bg-(--tui-status-positive-pale) text-(--tui-status-positive) shrink-0 text-lg"
                   >
                     <tui-icon icon="@tui.circle-check" />
                   </div>
-                  <span class="text-xs font-bold leading-snug">
-                    {{
-                      'donations.alreadyDonatedUnlockHint'
-                        | translate
-                          : {
-                              amount:
-                                (previousDonatedTotal() | number: '1.0-2'),
-                            }
-                    }}
-                  </span>
-                </div>
-                <button
-                  tuiButton
-                  appearance="positive"
-                  size="s"
-                  type="button"
-                  class="shrink-0"
-                  iconStart="@tui.lock-open"
-                  [disabled]="donationsService.loading()"
-                  (click.zoneless)="claimFromPreviousDonations()"
-                >
-                  {{ 'donations.unlocksTopos' | translate }}
-                </button>
-              </div>
-            }
-
-            @if (unlocksTopos()) {
-              <div
-                class="flex flex-col gap-2 p-3.5 rounded-2xl bg-(--tui-background-positive-neutral) border border-(--tui-status-positive) text-(--tui-text-primary) transition-all duration-300"
-              >
-                <div class="flex items-center justify-between gap-3">
-                  <div class="flex items-center gap-3 min-w-0">
-                    <div
-                      class="flex items-center justify-center w-8 h-8 rounded-xl bg-(--tui-status-positive-pale) text-(--tui-status-positive) shrink-0 text-lg"
-                    >
-                      <tui-icon icon="@tui.circle-check" />
-                    </div>
-                    <div class="flex flex-col min-w-0">
-                      <span class="text-xs font-bold leading-snug">
-                        {{
-                          'donations.toposIncludedBanner'
-                            | translate: { name: context.data.areaName || '' }
-                        }}
-                      </span>
-                    </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="text-xs font-bold leading-snug">
+                      {{
+                        'donations.toposIncludedBanner'
+                          | translate: { name: context.data.areaName || '' }
+                      }}
+                    </span>
                   </div>
-                  @if (topos().length > 0) {
-                    <button
-                      appearance="flat"
-                      size="xs"
-                      tuiButton
-                      type="button"
-                      class="shrink-0 text-xs font-bold hover:underline cursor-pointer flex items-center gap-1"
-                      (click)="showTopos.set(!showTopos())"
-                    >
-                      <span>{{
-                        (showTopos()
-                          ? 'donations.hideTopos'
-                          : 'donations.viewTopos'
-                        ) | translate
-                      }}</span>
-                      <tui-icon
-                        [icon]="
-                          showTopos() ? '@tui.chevron-up' : '@tui.chevron-down'
-                        "
-                        class="w-3.5 h-3.5 transition-transform"
-                      />
-                    </button>
-                  }
                 </div>
-
                 @if (topos().length > 0) {
-                  <tui-expand [expanded]="showTopos()">
-                    <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 pt-2">
-                      @for (t of topos(); track t.id) {
-                        <app-topo-card [topo]="t" />
-                      }
-                    </div>
-                  </tui-expand>
+                  <button
+                    appearance="flat"
+                    size="xs"
+                    tuiButton
+                    type="button"
+                    class="shrink-0"
+                    [iconEnd]="
+                      showTopos() ? '@tui.chevron-up' : '@tui.chevron-down'
+                    "
+                    (click)="showTopos.set(!showTopos())"
+                  >
+                    {{
+                      (showTopos()
+                        ? 'donations.hideTopos'
+                        : 'donations.viewTopos'
+                      ) | translate
+                    }}
+                  </button>
                 }
               </div>
-            } @else {
-              <div
-                class="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal) text-xs transition-all duration-300"
-              >
-                <div class="flex items-center gap-2.5 min-w-0">
-                  <div
-                    class="flex items-center justify-center w-7 h-7 rounded-lg bg-(--tui-background-neutral-2) text-(--tui-text-secondary) shrink-0"
-                  >
-                    <tui-icon icon="@tui.info" class="w-4 h-4" />
-                  </div>
-                  <span
-                    class="text-[11px] text-(--tui-text-secondary) leading-tight"
-                  >
-                    {{
-                      'donations.toposUnlockHint'
-                        | translate: { price: areaPrice() }
-                    }}
-                  </span>
-                </div>
-                <button
-                  appearance="flat"
-                  size="xs"
-                  tuiButton
-                  type="button"
-                  class="shrink-0 text-xs font-bold text-(--tui-text-primary) hover:underline cursor-pointer"
-                  (click)="selectPreset(areaPrice())"
-                >
-                  {{
-                    'donations.setAmountToUnlock'
-                      | translate: { price: areaPrice() }
-                  }}
-                </button>
-              </div>
-            }
-          }
 
-          <!-- Preset amounts -->
-          <div class="flex flex-col gap-2.5">
-            <span
-              class="text-xs font-black uppercase tracking-wider text-(--tui-text-secondary)"
-            >
-              {{ 'donations.selectAmount' | translate }}
-            </span>
-            <div class="grid grid-cols-4 gap-2.5">
-              @for (preset of presets(); track preset) {
-                <button
-                  tuiButton
-                  type="button"
-                  [appearance]="selectedAmount() === preset ? 'accent' : 'flat'"
-                  size="m"
-                  class="font-black text-base"
-                  (click)="selectPreset(preset)"
-                >
-                  {{ preset }}€
-                </button>
+              @if (topos().length > 0) {
+                <tui-expand [expanded]="showTopos()">
+                  <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 pt-2">
+                    @for (t of topos(); track t.id) {
+                      <app-topo-card [topo]="t" />
+                    }
+                  </div>
+                </tui-expand>
               }
             </div>
-          </div>
-
-          <!-- Donor Message -->
-          <div class="flex flex-col gap-2">
-            <tui-textfield
-              [tuiTextfieldCleaner]="false"
-              class="max-w-full overflow-hidden"
+          } @else {
+            <div
+              class="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal) text-xs transition-all duration-300"
             >
-              <label tuiLabel for="donation-donor-message-input">{{
-                'donations.messageOptional' | translate
-              }}</label>
-              <textarea
-                id="donation-donor-message-input"
-                tuiTextarea
-                maxlength="200"
-                [(ngModel)]="donorMessage"
-                [placeholder]="'donations.messagePlaceholder' | translate"
-                class="h-20"
-              ></textarea>
-            </tui-textfield>
-          </div>
-
-          <!-- Anonymous switch -->
-          <label class="flex items-center gap-3 cursor-pointer select-none">
-            <input
-              tuiSwitch
-              type="checkbox"
-              [(ngModel)]="isAnonymous"
-              size="m"
-            />
-            <div class="flex flex-col">
-              <span class="text-xs font-bold">{{
-                'donations.makeAnonymous' | translate
-              }}</span>
-              <span class="text-[11px] text-(--tui-text-secondary)">{{
-                'donations.makeAnonymousHelp' | translate
-              }}</span>
-            </div>
-          </label>
-
-          <!-- Transparency breakdown -->
-          <div
-            class="flex flex-col gap-2 p-3.5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
-          >
-            <div class="flex items-center justify-between text-xs">
-              <span
-                class="font-bold text-(--tui-text-primary) flex items-center gap-1.5"
-              >
-                <tui-icon
-                  icon="@tui.shield-check"
-                  class="text-emerald-500 w-4 h-4"
-                />
-                {{ 'donations.breakdownTitle' | translate }}
-              </span>
-              <span class="font-mono font-bold text-xs">
-                {{ effectiveAmount() | number: '1.2-2' }} €
-              </span>
-            </div>
-
-            <div class="flex flex-col gap-1.5 pt-1 text-xs">
-              <div class="flex items-center justify-between">
-                <span
-                  class="text-(--tui-text-secondary) flex items-center gap-1.5"
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div
+                  class="flex items-center justify-center w-7 h-7 rounded-lg bg-(--tui-background-neutral-2) text-(--tui-text-secondary) shrink-0"
                 >
-                  <tui-icon
-                    icon="@tui.heart"
-                    class="text-emerald-500 w-3.5 h-3.5"
-                  />
-                  {{ 'donations.breakdownDirectToPot' | translate }}
-                </span>
+                  <tui-icon icon="@tui.info" class="w-4 h-4" />
+                </div>
                 <span
-                  class="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums"
+                  class="text-[11px] text-(--tui-text-secondary) leading-tight"
                 >
-                  +{{ estimatedNet() | number: '1.2-2' }} €
-                </span>
-              </div>
-
-              <div class="flex items-center justify-between">
-                <span
-                  class="text-(--tui-text-secondary) flex items-center gap-1.5"
-                >
-                  <tui-icon
-                    icon="@tui.credit-card"
-                    class="text-(--tui-text-tertiary) w-3.5 h-3.5"
-                  />
                   {{
-                    'donations.breakdownStripeFee'
-                      | translate
-                        : { fee: estimatedStripeFee() | number: '1.2-2' }
+                    'donations.toposUnlockHint'
+                      | translate: { price: areaPrice() }
                   }}
                 </span>
-                <span class="text-(--tui-text-secondary) tabular-nums">
-                  -{{ estimatedStripeFee() | number: '1.2-2' }} €
-                </span>
               </div>
-
-              <div
-                class="flex items-center justify-between pt-1 border-t border-(--tui-border-normal)/60 text-[11px]"
+              <button
+                appearance="flat"
+                size="xs"
+                tuiButton
+                type="button"
+                class="shrink-0"
+                (click)="selectPreset(areaPrice())"
               >
-                <span
-                  class="text-(--tui-text-secondary) flex items-center gap-1.5"
-                >
-                  <tui-icon
-                    icon="@tui.check"
-                    class="text-emerald-500 w-3 h-3"
-                  />
-                  {{ 'donations.breakdownClimbeastFee' | translate }}
-                </span>
-                <span
-                  class="font-semibold text-emerald-600 dark:text-emerald-400"
-                >
-                  0,00 €
-                </span>
-              </div>
+                {{
+                  'donations.setAmountToUnlock'
+                    | translate: { price: areaPrice() }
+                }}
+              </button>
+            </div>
+          }
+        }
+
+        <!-- Preset amounts -->
+        <div class="flex flex-col gap-2.5">
+          <span
+            class="text-xs font-black uppercase tracking-wider text-(--tui-text-secondary)"
+          >
+            {{ 'donations.selectAmount' | translate }}
+          </span>
+          <div class="grid grid-cols-4 gap-2.5">
+            @for (preset of presets(); track preset) {
+              <button
+                tuiButton
+                type="button"
+                [appearance]="selectedAmount() === preset ? 'accent' : 'flat'"
+                size="m"
+                (click)="selectPreset(preset)"
+              >
+                {{ preset }}€
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Donor Message -->
+        <div class="flex flex-col gap-2">
+          <tui-textfield
+            [tuiTextfieldCleaner]="false"
+            class="max-w-full overflow-hidden"
+          >
+            <label tuiLabel for="donation-donor-message-input">{{
+              'donations.messageOptional' | translate
+            }}</label>
+            <textarea
+              id="donation-donor-message-input"
+              tuiTextarea
+              maxlength="200"
+              [(ngModel)]="donorMessage"
+              [placeholder]="'donations.messagePlaceholder' | translate"
+              class="h-20"
+            ></textarea>
+          </tui-textfield>
+        </div>
+
+        <!-- Anonymous switch -->
+        <label class="flex items-center gap-3 cursor-pointer select-none">
+          <input tuiSwitch type="checkbox" [(ngModel)]="isAnonymous" size="m" />
+          <div class="flex flex-col">
+            <span class="text-xs font-bold">{{
+              'donations.makeAnonymous' | translate
+            }}</span>
+            <span class="text-[11px] text-(--tui-text-secondary)">{{
+              'donations.makeAnonymousHelp' | translate
+            }}</span>
+          </div>
+        </label>
+
+        <!-- Transparency breakdown -->
+        <div
+          class="flex flex-col gap-2 p-3.5 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+        >
+          <div class="flex items-center justify-between text-xs">
+            <span
+              class="font-bold text-(--tui-text-primary) flex items-center gap-1.5"
+            >
+              <tui-icon
+                icon="@tui.shield-check"
+                class="text-emerald-500 w-4 h-4"
+              />
+              {{ 'donations.breakdownTitle' | translate }}
+            </span>
+            <span class="font-mono font-bold text-xs">
+              {{ effectiveAmount() | number: '1.2-2' }} €
+            </span>
+          </div>
+
+          <div class="flex flex-col gap-1.5 pt-1 text-xs">
+            <div class="flex items-center justify-between">
+              <span
+                class="text-(--tui-text-secondary) flex items-center gap-1.5"
+              >
+                <tui-icon
+                  icon="@tui.heart"
+                  class="text-emerald-500 w-3.5 h-3.5"
+                />
+                {{ 'donations.breakdownDirectToPot' | translate }}
+              </span>
+              <span
+                class="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums"
+              >
+                +{{ estimatedNet() | number: '1.2-2' }} €
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span
+                class="text-(--tui-text-secondary) flex items-center gap-1.5"
+              >
+                <tui-icon
+                  icon="@tui.credit-card"
+                  class="text-(--tui-text-tertiary) w-3.5 h-3.5"
+                />
+                {{
+                  'donations.breakdownStripeFee'
+                    | translate: { fee: estimatedStripeFee() | number: '1.2-2' }
+                }}
+              </span>
+              <span class="text-(--tui-text-secondary) tabular-nums">
+                -{{ estimatedStripeFee() | number: '1.2-2' }} €
+              </span>
+            </div>
+
+            <div
+              class="flex items-center justify-between pt-1 border-t border-(--tui-border-normal)/60 text-[11px]"
+            >
+              <span
+                class="text-(--tui-text-secondary) flex items-center gap-1.5"
+              >
+                <tui-icon icon="@tui.check" class="text-emerald-500 w-3 h-3" />
+                {{ 'donations.breakdownClimbeastFee' | translate }}
+              </span>
+              <span
+                class="font-semibold text-emerald-600 dark:text-emerald-400"
+              >
+                0,00 €
+              </span>
             </div>
           </div>
         </div>
-      </tui-scrollbar>
+      </div>
 
       <!-- Actions -->
-      <div class="p-4 pt-2 shrink-0 flex items-center justify-end">
+      <div class="lw-form-sheet-footer">
         <button
           tuiButton
           appearance="accent"
-          size="l"
+          size="m"
           type="button"
-          class="w-full rounded-2xl! font-bold !whitespace-normal !h-auto min-h-12 sm:min-h-14 py-3.5 px-5 text-sm sm:text-base text-center leading-snug flex items-center justify-center gap-2.5 cursor-pointer"
+          iconStart="@tui.heart"
+          class="w-full lw-button-wrap"
           [disabled]="effectiveAmount() < 2 || donationsService.loading()"
           (click)="submitDonation()"
         >
-          <tui-icon icon="@tui.heart" class="w-5 h-5 shrink-0" />
-          <span class="whitespace-normal leading-snug">
-            @if (unlocksTopos()) {
-              {{
-                'donations.contributeAndUnlockButton'
-                  | translate: { amount: effectiveAmount() | number: '1.0-2' }
-              }}
-            } @else {
-              {{
-                'donations.donateButton'
-                  | translate: { amount: effectiveAmount() | number: '1.0-2' }
-              }}
-            }
-          </span>
+          @if (unlocksTopos()) {
+            {{
+              'donations.contributeAndUnlockButton'
+                | translate: { amount: effectiveAmount() | number: '1.0-2' }
+            }}
+          } @else {
+            {{
+              'donations.donateButton'
+                | translate: { amount: effectiveAmount() | number: '1.0-2' }
+            }}
+          }
         </button>
       </div>
     </div>

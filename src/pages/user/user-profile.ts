@@ -94,14 +94,14 @@ import { IS_BROWSER } from '../../app/is-browser';
   template: `
     <tui-scrollbar class="w-full h-full min-h-0 min-w-0">
       <section
-        class="w-full max-w-[1600px] mx-auto py-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden pb-6 lg:pb-2"
+        class="w-full min-w-0 max-w-[1600px] mx-auto py-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden overflow-x-clip pb-6 lg:pb-2"
       >
         @if (showOfflineFallback()) {
           <app-offline-not-cached fallbackUrl="/home" class="w-full" />
         } @else {
           <!-- Left Column: User Info + Filters (mobile) + Statistics -->
           <div
-            class="flex flex-col gap-6 w-full px-4 lg:px-0 lg:flex-1 min-w-0 lg:h-full lg:overflow-hidden overflow-x-hidden"
+            class="flex flex-col gap-6 w-full px-4 lg:px-0 sm:[--lw-table-bleed:2.5rem] lg:flex-1 min-w-0 lg:h-full lg:overflow-hidden"
           >
             @let loading = !profile();
             <app-user-info
