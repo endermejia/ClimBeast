@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import { TuiButton, TuiDialogContext } from '@taiga-ui/core';
+import { TuiButton, TuiDialogContext, TuiScrollbar } from '@taiga-ui/core';
 import { type TuiFileLike, TuiStepper } from '@taiga-ui/kit';
 import { TuiSlides } from '@taiga-ui/layout';
 import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
@@ -56,57 +56,60 @@ import { Import8aStepUploadComponent } from './import-8a-step-upload';
     ReactiveFormsModule,
     TranslatePipe,
     TuiButton,
+    TuiScrollbar,
     TuiSlides,
     TuiStepper,
   ],
   template: `
     <div class="lw-form-sheet">
-      <div class="lw-form-sheet-body flex flex-col gap-4">
-        <div class="w-full max-w-2xl mx-auto flex flex-col gap-6">
-          <tui-stepper
-            [activeItemIndex]="index"
-            (activeItemIndexChange)="onStep($event)"
-          >
-            <button tuiStep>
-              {{ 'import8a.steps.uploadCSV' | translate }}
-            </button>
-            <button tuiStep [disabled]="!control.value">
-              {{ 'import8a.steps.confirmAscents' | translate }}
-            </button>
-          </tui-stepper>
+      <tui-scrollbar class="lw-form-sheet-body">
+        <div class="flex flex-col gap-4">
+          <div class="w-full max-w-2xl mx-auto flex flex-col gap-6">
+            <tui-stepper
+              [activeItemIndex]="index"
+              (activeItemIndexChange)="onStep($event)"
+            >
+              <button tuiStep>
+                {{ 'import8a.steps.uploadCSV' | translate }}
+              </button>
+              <button tuiStep [disabled]="!control.value">
+                {{ 'import8a.steps.confirmAscents' | translate }}
+              </button>
+            </tui-stepper>
 
-          <section [tuiSlides]="direction">
-            <!-- Step 0: Upload CSV -->
-            @if (index === 0) {
-              <app-import-8a-step-upload
-                [control]="control"
-                [loadedFile]="loadedFile()"
-                [failedFiles]="failedFiles$"
-                [loadingFiles]="loadingFiles$"
-                (removeFile)="removeFile()"
-              />
-            }
+            <section [tuiSlides]="direction">
+              <!-- Step 0: Upload CSV -->
+              @if (index === 0) {
+                <app-import-8a-step-upload
+                  [control]="control"
+                  [loadedFile]="loadedFile()"
+                  [failedFiles]="failedFiles$"
+                  [loadingFiles]="loadingFiles$"
+                  (removeFile)="removeFile()"
+                />
+              }
 
-            <!-- Step 1: Preview & Confirm -->
-            @if (index === 1) {
-              <app-import-8a-step-confirm
-                [ascentsWithResolved]="ascentsWithResolved()"
-                [ascentsCount]="ascents().length"
-                [selectedCount]="selectedIndices().size"
-                [isAllSelected]="
-                  selectedIndices().size === ascents().length &&
-                  ascents().length > 0
-                "
-                [newAreasCount]="newAreasCount()"
-                [newCragsCount]="newCragsCount()"
-                [selectedMap]="selectedMap()"
-                (toggleSelect)="toggleSelect($event.index, $event.checked)"
-                (toggleAll)="toggleAll($event)"
-              />
-            }
-          </section>
+              <!-- Step 1: Preview & Confirm -->
+              @if (index === 1) {
+                <app-import-8a-step-confirm
+                  [ascentsWithResolved]="ascentsWithResolved()"
+                  [ascentsCount]="ascents().length"
+                  [selectedCount]="selectedIndices().size"
+                  [isAllSelected]="
+                    selectedIndices().size === ascents().length &&
+                    ascents().length > 0
+                  "
+                  [newAreasCount]="newAreasCount()"
+                  [newCragsCount]="newCragsCount()"
+                  [selectedMap]="selectedMap()"
+                  (toggleSelect)="toggleSelect($event.index, $event.checked)"
+                  (toggleAll)="toggleAll($event)"
+                />
+              }
+            </section>
+          </div>
         </div>
-      </div>
+      </tui-scrollbar>
 
       <div class="lw-form-sheet-footer" [class.justify-between]="index > 0">
         @if (index) {

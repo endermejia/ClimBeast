@@ -47,7 +47,7 @@ describe('IndoorTopoFilterDialogComponent', () => {
 
     const el: HTMLElement = fixture.nativeElement;
     const form = el.querySelector('form.lw-form-sheet');
-    const body = form?.querySelector('.lw-form-sheet-body');
+    const body = form?.querySelector('tui-scrollbar.lw-form-sheet-body');
     const footer = form?.querySelector('.lw-form-sheet-footer');
     const buttons = footer?.querySelectorAll('button');
 

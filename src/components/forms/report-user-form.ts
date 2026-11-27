@@ -1,7 +1,13 @@
 import { Component, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { TuiButton, TuiIcon, TuiLabel, TuiTextfield } from '@taiga-ui/core';
+import {
+  TuiButton,
+  TuiIcon,
+  TuiLabel,
+  TuiScrollbar,
+  TuiTextfield,
+} from '@taiga-ui/core';
 import { TuiAvatar, TuiTextarea } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
@@ -29,12 +35,13 @@ interface ReportReasonOption {
     TuiButton,
     TuiIcon,
     TuiLabel,
+    TuiScrollbar,
     TuiTextarea,
     TuiTextfield,
   ],
   template: `
     <div class="lw-form-sheet">
-      <div class="lw-form-sheet-body">
+      <tui-scrollbar class="lw-form-sheet-body">
         <div class="flex flex-col gap-5">
           <!-- Target User Header -->
           <div
@@ -140,7 +147,7 @@ interface ReportReasonOption {
             <span>{{ 'reportConfidentialNotice' | translate }}</span>
           </div>
         </div>
-      </div>
+      </tui-scrollbar>
 
       <!-- Footer Actions -->
       <div class="lw-form-sheet-footer">

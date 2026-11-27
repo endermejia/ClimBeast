@@ -8,6 +8,7 @@ import {
   TuiInput,
   TuiLabel,
   TuiNotification,
+  TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
 import { TuiPassword } from '@taiga-ui/kit';
@@ -27,6 +28,7 @@ import { Observer } from 'rxjs';
     TuiLabel,
     TuiNotification,
     TuiPassword,
+    TuiScrollbar,
     TuiTextfield,
   ],
   template: `
@@ -80,45 +82,49 @@ import { Observer } from 'rxjs';
     <!-- Change Password Dialog Template -->
     <ng-template #changePasswordDialog let-observer>
       <form class="lw-form-sheet" (ngSubmit)="onSubmitChangePassword(observer)">
-        <div class="lw-form-sheet-body flex flex-col gap-4">
-          <tui-textfield class="block">
-            <label tuiLabel for="newPasswordInput">{{
-              'newPassword' | translate
-            }}</label>
-            <input
-              id="newPasswordInput"
-              name="newPassword"
-              tuiInput
-              type="password"
-              [ngModel]="passwordModel().newPassword"
-              (ngModelChange)="onPasswordModelChange('newPassword', $event)"
-              autocomplete="new-password"
-            />
-            <tui-icon tuiPassword />
-          </tui-textfield>
+        <tui-scrollbar class="lw-form-sheet-body">
+          <div class="flex flex-col gap-4">
+            <tui-textfield class="block">
+              <label tuiLabel for="newPasswordInput">{{
+                'newPassword' | translate
+              }}</label>
+              <input
+                id="newPasswordInput"
+                name="newPassword"
+                tuiInput
+                type="password"
+                [ngModel]="passwordModel().newPassword"
+                (ngModelChange)="onPasswordModelChange('newPassword', $event)"
+                autocomplete="new-password"
+              />
+              <tui-icon tuiPassword />
+            </tui-textfield>
 
-          <tui-textfield class="block">
-            <label tuiLabel for="confirmPasswordInput">{{
-              'confirmPassword' | translate
-            }}</label>
-            <input
-              id="confirmPasswordInput"
-              name="confirmPassword"
-              tuiInput
-              type="password"
-              [ngModel]="passwordModel().confirmPassword"
-              (ngModelChange)="onPasswordModelChange('confirmPassword', $event)"
-              autocomplete="new-password"
-            />
-            <tui-icon tuiPassword />
-          </tui-textfield>
+            <tui-textfield class="block">
+              <label tuiLabel for="confirmPasswordInput">{{
+                'confirmPassword' | translate
+              }}</label>
+              <input
+                id="confirmPasswordInput"
+                name="confirmPassword"
+                tuiInput
+                type="password"
+                [ngModel]="passwordModel().confirmPassword"
+                (ngModelChange)="
+                  onPasswordModelChange('confirmPassword', $event)
+                "
+                autocomplete="new-password"
+              />
+              <tui-icon tuiPassword />
+            </tui-textfield>
 
-          @if (passwordError(); as errorMsg) {
-            <div tuiNotification appearance="negative">
-              {{ errorMsg }}
-            </div>
-          }
-        </div>
+            @if (passwordError(); as errorMsg) {
+              <div tuiNotification appearance="negative">
+                {{ errorMsg }}
+              </div>
+            }
+          </div>
+        </tui-scrollbar>
 
         <div class="lw-form-sheet-footer">
           <button
@@ -151,37 +157,39 @@ import { Observer } from 'rxjs';
     <!-- Delete Account Dialog Template -->
     <ng-template #deleteDialog let-observer>
       <form class="lw-form-sheet" (ngSubmit)="onSubmitDeleteAccount(observer)">
-        <div class="lw-form-sheet-body flex flex-col gap-4">
-          <p class="text-(--tui-text-negative) font-bold">
-            {{ 'profile.deleteAccount.warning' | translate }}
-          </p>
-          <p>
-            {{ 'profile.deleteAccount.instruction_prefix' | translate }}
-            <strong>{{ userEmail() }}</strong>
-            {{ 'profile.deleteAccount.instruction_suffix' | translate }}
-          </p>
+        <tui-scrollbar class="lw-form-sheet-body">
+          <div class="flex flex-col gap-4">
+            <p class="text-(--tui-text-negative) font-bold">
+              {{ 'profile.deleteAccount.warning' | translate }}
+            </p>
+            <p>
+              {{ 'profile.deleteAccount.instruction_prefix' | translate }}
+              <strong>{{ userEmail() }}</strong>
+              {{ 'profile.deleteAccount.instruction_suffix' | translate }}
+            </p>
 
-          <tui-textfield class="block">
-            <label tuiLabel for="deleteEmailInput">{{
-              'email' | translate
-            }}</label>
-            <input
-              id="deleteEmailInput"
-              name="deleteEmail"
-              tuiInput
-              type="email"
-              [ngModel]="deleteEmail()"
-              (ngModelChange)="updateDeleteEmail.emit($event)"
-              (paste)="$event.preventDefault()"
-              [invalid]="deleteEmailInvalid()"
-              autocomplete="off"
-              placeholder="email@example.com"
-            />
-          </tui-textfield>
-          @if (deleteEmailError(); as err) {
-            <tui-error [error]="err" />
-          }
-        </div>
+            <tui-textfield class="block">
+              <label tuiLabel for="deleteEmailInput">{{
+                'email' | translate
+              }}</label>
+              <input
+                id="deleteEmailInput"
+                name="deleteEmail"
+                tuiInput
+                type="email"
+                [ngModel]="deleteEmail()"
+                (ngModelChange)="updateDeleteEmail.emit($event)"
+                (paste)="$event.preventDefault()"
+                [invalid]="deleteEmailInvalid()"
+                autocomplete="off"
+                placeholder="email@example.com"
+              />
+            </tui-textfield>
+            @if (deleteEmailError(); as err) {
+              <tui-error [error]="err" />
+            }
+          </div>
+        </tui-scrollbar>
 
         <div class="lw-form-sheet-footer">
           <button

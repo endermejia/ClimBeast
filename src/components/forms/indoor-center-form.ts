@@ -25,6 +25,7 @@ import {
   TuiInput,
   TuiLabel,
   TuiLoader,
+  TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
 import {
@@ -108,6 +109,7 @@ import {
     TuiInput,
     TuiLabel,
     TuiLoader,
+    TuiScrollbar,
     TuiTabs,
     TuiTextarea,
     TuiTextfield,
@@ -145,235 +147,241 @@ import {
         </div>
       }
 
-      <div class="lw-form-sheet-body" [class.pt-4]="isEdit()">
-        @switch (activeTabIndex()) {
-          @case (0) {
-            <div class="grid gap-4">
-              <div
-                class="flex flex-wrap items-center gap-4 rounded-2xl bg-(--tui-background-neutral-1) p-4"
-              >
+      <tui-scrollbar class="lw-form-sheet-body">
+        <div [class.pt-4]="isEdit()">
+          @switch (activeTabIndex()) {
+            @case (0) {
+              <div class="grid gap-4">
                 <div
-                  class="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-(--tui-border-normal) bg-(--tui-background-base)"
+                  class="flex flex-wrap items-center gap-4 rounded-2xl bg-(--tui-background-neutral-1) p-4"
                 >
-                  @if (avatarPreviewUrl(); as avatarUrl) {
-                    <img
-                      [src]="avatarUrl"
-                      [alt]="model().name || ('indoor.avatar' | translate)"
-                      class="size-full object-cover"
-                    />
-                  } @else {
-                    <tui-icon icon="@tui.image" class="text-2xl opacity-50" />
-                  }
+                  <div
+                    class="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-(--tui-border-normal) bg-(--tui-background-base)"
+                  >
+                    @if (avatarPreviewUrl(); as avatarUrl) {
+                      <img
+                        [src]="avatarUrl"
+                        [alt]="model().name || ('indoor.avatar' | translate)"
+                        class="size-full object-cover"
+                      />
+                    } @else {
+                      <tui-icon icon="@tui.image" class="text-2xl opacity-50" />
+                    }
+                  </div>
+                  <div class="flex min-w-0 flex-col gap-2">
+                    <h3 class="font-bold text-lg">
+                      {{ 'indoor.avatar' | translate }}
+                    </h3>
+                    <label tuiInputFiles>
+                      <input
+                        accept="image/*"
+                        type="file"
+                        tuiInputFiles
+                        [ngModel]="null"
+                        [ngModelOptions]="{ standalone: true }"
+                        (change)="onAvatarFileChange($event)"
+                      />
+                      <button
+                        tuiButton
+                        type="button"
+                        appearance="secondary-grayscale"
+                        size="s"
+                        iconStart="@tui.pencil"
+                      >
+                        {{ 'indoor.changeAvatar' | translate }}
+                      </button>
+                    </label>
+                  </div>
                 </div>
-                <div class="flex min-w-0 flex-col gap-2">
-                  <h3 class="font-bold text-lg">
-                    {{ 'indoor.avatar' | translate }}
-                  </h3>
-                  <label tuiInputFiles>
-                    <input
-                      accept="image/*"
-                      type="file"
-                      tuiInputFiles
-                      [ngModel]="null"
-                      [ngModelOptions]="{ standalone: true }"
-                      (change)="onAvatarFileChange($event)"
-                    />
-                    <button
-                      tuiButton
-                      type="button"
-                      appearance="secondary-grayscale"
-                      size="s"
-                      iconStart="@tui.pencil"
-                    >
-                      {{ 'indoor.changeAvatar' | translate }}
-                    </button>
-                  </label>
+
+                <tui-textfield class="block" [tuiTextfieldCleaner]="false">
+                  <label tuiLabel for="center-name">{{
+                    'name' | translate
+                  }}</label>
+                  <input
+                    tuiInput
+                    id="center-name"
+                    [formField]="centerForm.name"
+                    type="text"
+                    autocomplete="off"
+                  />
+                </tui-textfield>
+                @if (
+                  centerForm.name().invalid() && centerForm.name().touched()
+                ) {
+                  <tui-error [error]="'errors.required' | translate" />
+                }
+
+                <tui-textfield class="block" [tuiTextfieldCleaner]="false">
+                  <label tuiLabel for="center-city">{{
+                    'city' | translate
+                  }}</label>
+                  <input
+                    tuiInput
+                    id="center-city"
+                    [formField]="centerForm.city"
+                    type="text"
+                    autocomplete="off"
+                  />
+                </tui-textfield>
+
+                <tui-textfield class="block" [tuiTextfieldCleaner]="false">
+                  <label tuiLabel for="center-desc">{{
+                    'description' | translate
+                  }}</label>
+                  <textarea
+                    tuiTextarea
+                    id="center-desc"
+                    [ngModel]="model().description"
+                    (ngModelChange)="onDescriptionChange($event)"
+                    name="description"
+                  ></textarea>
+                </tui-textfield>
+
+                <tui-textfield class="block">
+                  <label tuiLabel for="center-warning">{{
+                    'indoor.warning' | translate
+                  }}</label>
+                  <textarea
+                    tuiTextarea
+                    id="center-warning"
+                    [ngModel]="model().warning"
+                    (ngModelChange)="onWarningChange($event)"
+                    name="warning"
+                  ></textarea>
+                </tui-textfield>
+
+                <app-coordinates-fields
+                  [latitude]="model().latitude"
+                  [longitude]="model().longitude"
+                  (coordinatesChange)="onCoordinatesChange($event)"
+                />
+
+                <!-- Gallery -->
+                <div class="flex flex-col gap-3">
+                  <div class="flex items-center justify-between px-1">
+                    <h3 class="font-bold text-lg">
+                      {{ 'merchandising.items.gallery' | translate }}
+                    </h3>
+                    <label tuiInputFiles>
+                      <input
+                        accept="image/*"
+                        type="file"
+                        tuiInputFiles
+                        multiple
+                        [ngModel]="null"
+                        [ngModelOptions]="{ standalone: true }"
+                        (change)="onFilesChange($event)"
+                      />
+                      <button
+                        tuiButton
+                        type="button"
+                        appearance="secondary-grayscale"
+                        size="s"
+                        iconStart="@tui.plus"
+                      >
+                        {{ 'merchandising.items.addImage' | translate }}
+                      </button>
+                    </label>
+                  </div>
+
+                  <div
+                    class="grid grid-cols-2 sm:grid-cols-4 gap-3"
+                    cdkDropList
+                    cdkDropListOrientation="mixed"
+                    (cdkDropListDropped)="dropImage($event)"
+                  >
+                    @for (img of galleryUrls(); track img) {
+                      <div
+                        cdkDrag
+                        class="relative aspect-square rounded-xl overflow-hidden border border-(--tui-border-normal) group cursor-grab active:cursor-grabbing"
+                      >
+                        <img
+                          [src]="img"
+                          class="w-full h-full object-cover"
+                          alt="Gallery image"
+                        />
+                        <div
+                          class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <div
+                            class="bg-(--tui-background-base) rounded-xl p-0.5"
+                          >
+                            <button
+                              tuiButton
+                              type="button"
+                              appearance="destructive"
+                              size="s"
+                              (click)="removeExistingImage(img)"
+                            >
+                              <tui-icon icon="@tui.trash" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    }
+
+                    @for (item of newPhotos(); track item.id) {
+                      <div
+                        cdkDrag
+                        class="relative aspect-square rounded-xl overflow-hidden border border-accent border-dashed group cursor-grab active:cursor-grabbing"
+                      >
+                        <img
+                          [src]="item.preview"
+                          class="w-full h-full object-cover"
+                          alt="New photo"
+                        />
+                        <div
+                          class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <div
+                            class="bg-(--tui-background-base) rounded-xl p-0.5"
+                          >
+                            <button
+                              tuiButton
+                              type="button"
+                              appearance="destructive"
+                              size="s"
+                              (click)="removeNewPhoto(item.id)"
+                            >
+                              <tui-icon icon="@tui.trash" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
                 </div>
               </div>
+            }
 
-              <tui-textfield class="block" [tuiTextfieldCleaner]="false">
-                <label tuiLabel for="center-name">{{
-                  'name' | translate
-                }}</label>
-                <input
-                  tuiInput
-                  id="center-name"
-                  [formField]="centerForm.name"
-                  type="text"
-                  autocomplete="off"
-                />
-              </tui-textfield>
-              @if (centerForm.name().invalid() && centerForm.name().touched()) {
-                <tui-error [error]="'errors.required' | translate" />
-              }
+            @case (1) {
+              <app-indoor-center-schedule-section [(schedule)]="scheduleForm" />
+            }
 
-              <tui-textfield class="block" [tuiTextfieldCleaner]="false">
-                <label tuiLabel for="center-city">{{
-                  'city' | translate
-                }}</label>
-                <input
-                  tuiInput
-                  id="center-city"
-                  [formField]="centerForm.city"
-                  type="text"
-                  autocomplete="off"
-                />
-              </tui-textfield>
-
-              <tui-textfield class="block" [tuiTextfieldCleaner]="false">
-                <label tuiLabel for="center-desc">{{
-                  'description' | translate
-                }}</label>
-                <textarea
-                  tuiTextarea
-                  id="center-desc"
-                  [ngModel]="model().description"
-                  (ngModelChange)="onDescriptionChange($event)"
-                  name="description"
-                ></textarea>
-              </tui-textfield>
-
-              <tui-textfield class="block">
-                <label tuiLabel for="center-warning">{{
-                  'indoor.warning' | translate
-                }}</label>
-                <textarea
-                  tuiTextarea
-                  id="center-warning"
-                  [ngModel]="model().warning"
-                  (ngModelChange)="onWarningChange($event)"
-                  name="warning"
-                ></textarea>
-              </tui-textfield>
-
-              <app-coordinates-fields
-                [latitude]="model().latitude"
-                [longitude]="model().longitude"
-                (coordinatesChange)="onCoordinatesChange($event)"
+            @case (2) {
+              <app-indoor-center-vouchers-section
+                [(vouchers)]="localVouchers"
               />
+            }
 
-              <!-- Gallery -->
-              <div class="flex flex-col gap-3">
-                <div class="flex items-center justify-between px-1">
-                  <h3 class="font-bold text-lg">
-                    {{ 'merchandising.items.gallery' | translate }}
-                  </h3>
-                  <label tuiInputFiles>
-                    <input
-                      accept="image/*"
-                      type="file"
-                      tuiInputFiles
-                      multiple
-                      [ngModel]="null"
-                      [ngModelOptions]="{ standalone: true }"
-                      (change)="onFilesChange($event)"
-                    />
-                    <button
-                      tuiButton
-                      type="button"
-                      appearance="secondary-grayscale"
-                      size="s"
-                      iconStart="@tui.plus"
-                    >
-                      {{ 'merchandising.items.addImage' | translate }}
-                    </button>
-                  </label>
-                </div>
+            @case (3) {
+              <app-indoor-center-staff-section
+                [centerId]="centerId()"
+                [pendingRequests]="centerRoutesetterRequests()"
+                (pendingRequestsChanged)="onPendingRequestsChanged()"
+              />
+            }
 
-                <div
-                  class="grid grid-cols-2 sm:grid-cols-4 gap-3"
-                  cdkDropList
-                  cdkDropListOrientation="mixed"
-                  (cdkDropListDropped)="dropImage($event)"
-                >
-                  @for (img of galleryUrls(); track img) {
-                    <div
-                      cdkDrag
-                      class="relative aspect-square rounded-xl overflow-hidden border border-(--tui-border-normal) group cursor-grab active:cursor-grabbing"
-                    >
-                      <img
-                        [src]="img"
-                        class="w-full h-full object-cover"
-                        alt="Gallery image"
-                      />
-                      <div
-                        class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <div
-                          class="bg-(--tui-background-base) rounded-xl p-0.5"
-                        >
-                          <button
-                            tuiButton
-                            type="button"
-                            appearance="destructive"
-                            size="s"
-                            (click)="removeExistingImage(img)"
-                          >
-                            <tui-icon icon="@tui.trash" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  }
-
-                  @for (item of newPhotos(); track item.id) {
-                    <div
-                      cdkDrag
-                      class="relative aspect-square rounded-xl overflow-hidden border border-accent border-dashed group cursor-grab active:cursor-grabbing"
-                    >
-                      <img
-                        [src]="item.preview"
-                        class="w-full h-full object-cover"
-                        alt="New photo"
-                      />
-                      <div
-                        class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <div
-                          class="bg-(--tui-background-base) rounded-xl p-0.5"
-                        >
-                          <button
-                            tuiButton
-                            type="button"
-                            appearance="destructive"
-                            size="s"
-                            (click)="removeNewPhoto(item.id)"
-                          >
-                            <tui-icon icon="@tui.trash" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  }
-                </div>
-              </div>
-            </div>
+            @case (4) {
+              <app-indoor-center-permissions-section
+                [permissions]="model().permissions"
+                (permissionChange)="onPermissionChange($event)"
+              />
+            }
           }
-
-          @case (1) {
-            <app-indoor-center-schedule-section [(schedule)]="scheduleForm" />
-          }
-
-          @case (2) {
-            <app-indoor-center-vouchers-section [(vouchers)]="localVouchers" />
-          }
-
-          @case (3) {
-            <app-indoor-center-staff-section
-              [centerId]="centerId()"
-              [pendingRequests]="centerRoutesetterRequests()"
-              (pendingRequestsChanged)="onPendingRequestsChanged()"
-            />
-          }
-
-          @case (4) {
-            <app-indoor-center-permissions-section
-              [permissions]="model().permissions"
-              (permissionChange)="onPermissionChange($event)"
-            />
-          }
-        }
-      </div>
+        </div>
+      </tui-scrollbar>
 
       <!-- Unified Footer Action Buttons -->
       <div class="lw-form-sheet-footer">

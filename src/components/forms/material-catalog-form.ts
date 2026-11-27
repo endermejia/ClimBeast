@@ -9,6 +9,7 @@ import {
   TuiInput,
   TuiLabel,
   TuiLoader,
+  TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
 import {
@@ -51,13 +52,14 @@ export interface MaterialCatalogFormData {
     TuiInputNumber,
     TuiLabel,
     TuiLoader,
+    TuiScrollbar,
     TuiSwitch,
     TuiTextarea,
     TuiTextfield,
   ],
   template: `
     <div class="lw-form-sheet">
-      <div class="lw-form-sheet-body">
+      <tui-scrollbar class="lw-form-sheet-body">
         <div class="flex flex-col gap-4">
           <!-- Name -->
           <tui-textfield class="w-full">
@@ -237,7 +239,7 @@ export interface MaterialCatalogFormData {
             />
           </div>
         </div>
-      </div>
+      </tui-scrollbar>
 
       <!-- Actions -->
       <div class="lw-form-sheet-footer">

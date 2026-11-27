@@ -6,14 +6,15 @@ import { TuiIdentityMatcher, tuiIsString } from '@taiga-ui/cdk';
 import { type TuiDialogContext } from '@taiga-ui/core';
 import {
   TuiButton,
+  TuiCell,
   TuiDataList,
+  TuiFilterByInputPipe,
   TuiIcon,
+  TuiInput,
   TuiLabel,
   TuiOptGroup,
+  TuiScrollbar,
   TuiTitle,
-  TuiCell,
-  TuiInput,
-  TuiFilterByInputPipe,
 } from '@taiga-ui/core';
 import { TuiChevron, TuiInputChip, TuiMultiSelect } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
@@ -44,11 +45,12 @@ import { IS_BROWSER } from '../../app/is-browser';
     TuiLabel,
     TuiMultiSelect,
     TuiOptGroup,
+    TuiScrollbar,
     TuiTitle,
   ],
   template: `
     <form class="lw-form-sheet" (submit.zoneless)="onSubmit($event)">
-      <div class="lw-form-sheet-body">
+      <tui-scrollbar class="lw-form-sheet-body">
         <div class="flex flex-col gap-4">
           <tui-textfield
             multi
@@ -90,7 +92,7 @@ import { IS_BROWSER } from '../../app/is-browser';
             </tui-data-list>
           </tui-textfield>
         </div>
-      </div>
+      </tui-scrollbar>
 
       <div class="lw-form-sheet-footer">
         <button

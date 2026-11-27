@@ -8,6 +8,7 @@ import {
   TuiDialogContext,
   TuiIcon,
   TuiLabel,
+  TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
 import { TuiInputNumber, TuiSkeleton } from '@taiga-ui/kit';
@@ -37,163 +38,166 @@ export interface MaterialRequestDialogData {
     TuiIcon,
     TuiInputNumber,
     TuiLabel,
+    TuiScrollbar,
     TuiSkeleton,
     TuiTextfield,
   ],
   template: `
     <div class="lw-form-sheet">
-      <div class="lw-form-sheet-body flex flex-col gap-5">
-        <!-- Header -->
-        <div
-          class="flex items-start justify-between gap-4 border-b border-(--tui-border-normal) pb-4"
-        >
-          <div class="flex items-center gap-3">
-            <div
-              class="w-12 h-12 rounded-2xl bg-(--tui-background-accent-1) text-(--tui-background-base) flex items-center justify-center shrink-0 shadow-lg shadow-(--tui-background-accent-1)/20"
-            >
-              <tui-icon icon="@tui.package" class="w-6 h-6" />
-            </div>
-            <div class="flex flex-col">
-              <h3 class="text-xl font-black tracking-tight m-0">
-                {{ 'materialRequest.title' | translate }}
-              </h3>
-              <p class="text-xs text-(--tui-text-secondary) m-0">
-                {{ context.data.areaName }}
-              </p>
-            </div>
-          </div>
-
-          <!-- Available Balance Badge -->
+      <tui-scrollbar class="lw-form-sheet-body">
+        <div class="flex flex-col gap-5">
+          <!-- Header -->
           <div
-            class="flex flex-col items-end px-3.5 py-2 rounded-2xl bg-(--tui-background-accent-1)/10 border border-(--tui-background-accent-1)/20"
+            class="flex items-start justify-between gap-4 border-b border-(--tui-border-normal) pb-4"
           >
-            <span
-              class="text-[10px] font-black uppercase tracking-wider text-(--tui-text-secondary)"
+            <div class="flex items-center gap-3">
+              <div
+                class="w-12 h-12 rounded-2xl bg-(--tui-background-accent-1) text-(--tui-background-base) flex items-center justify-center shrink-0 shadow-lg shadow-(--tui-background-accent-1)/20"
+              >
+                <tui-icon icon="@tui.package" class="w-6 h-6" />
+              </div>
+              <div class="flex flex-col">
+                <h3 class="text-xl font-black tracking-tight m-0">
+                  {{ 'materialRequest.title' | translate }}
+                </h3>
+                <p class="text-xs text-(--tui-text-secondary) m-0">
+                  {{ context.data.areaName }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Available Balance Badge -->
+            <div
+              class="flex flex-col items-end px-3.5 py-2 rounded-2xl bg-(--tui-background-accent-1)/10 border border-(--tui-background-accent-1)/20"
             >
-              {{ 'materialRequest.availablePot' | translate }}
-            </span>
-            <span class="text-base font-black tabular-nums">
-              {{ context.data.availableBalance | number: '1.2-2' }}€
-            </span>
+              <span
+                class="text-[10px] font-black uppercase tracking-wider text-(--tui-text-secondary)"
+              >
+                {{ 'materialRequest.availablePot' | translate }}
+              </span>
+              <span class="text-base font-black tabular-nums">
+                {{ context.data.availableBalance | number: '1.2-2' }}€
+              </span>
+            </div>
           </div>
-        </div>
 
-        <!-- Catalog List -->
-        <div class="flex flex-col gap-3">
-          <span
-            class="text-xs font-black uppercase tracking-wider text-(--tui-text-secondary)"
-          >
-            {{ 'materialRequest.selectMaterials' | translate }}
-          </span>
+          <!-- Catalog List -->
+          <div class="flex flex-col gap-3">
+            <span
+              class="text-xs font-black uppercase tracking-wider text-(--tui-text-secondary)"
+            >
+              {{ 'materialRequest.selectMaterials' | translate }}
+            </span>
 
-          <div class="flex flex-col gap-2.5">
-            @if (catalogResource.isLoading()) {
-              @for (_ of [1, 2, 3]; track $index) {
-                <div [tuiSkeleton]="true" class="h-16 rounded-2xl"></div>
-              }
-            } @else {
-              @for (item of catalogItems(); track item.id) {
-                @let qty = quantities()[item.id] ?? 0;
-                <div
-                  class="flex items-center justify-between gap-4 p-3 rounded-2xl border bg-(--tui-background-neutral-1) hover:bg-(--tui-background-neutral-1-hover) transition-all"
-                  [class.border-(--tui-border-focus)]="qty > 0"
-                  [class.border-(--tui-border-normal)]="qty === 0"
-                >
-                  <!-- Item image & info -->
-                  <div class="flex items-center gap-3 min-w-0">
-                    @if (item.image_url) {
-                      <img
-                        [src]="item.image_url"
-                        [alt]="item.name"
-                        class="w-10 h-10 rounded-xl object-cover shrink-0 border"
-                      />
-                    } @else {
-                      <div
-                        class="w-10 h-10 rounded-xl bg-(--tui-background-neutral-2) flex items-center justify-center shrink-0"
-                      >
-                        <tui-icon
-                          icon="@tui.hammer"
-                          class="w-5 h-5 text-(--tui-text-secondary)"
+            <div class="flex flex-col gap-2.5">
+              @if (catalogResource.isLoading()) {
+                @for (_ of [1, 2, 3]; track $index) {
+                  <div [tuiSkeleton]="true" class="h-16 rounded-2xl"></div>
+                }
+              } @else {
+                @for (item of catalogItems(); track item.id) {
+                  @let qty = quantities()[item.id] ?? 0;
+                  <div
+                    class="flex items-center justify-between gap-4 p-3 rounded-2xl border bg-(--tui-background-neutral-1) hover:bg-(--tui-background-neutral-1-hover) transition-all"
+                    [class.border-(--tui-border-focus)]="qty > 0"
+                    [class.border-(--tui-border-normal)]="qty === 0"
+                  >
+                    <!-- Item image & info -->
+                    <div class="flex items-center gap-3 min-w-0">
+                      @if (item.image_url) {
+                        <img
+                          [src]="item.image_url"
+                          [alt]="item.name"
+                          class="w-10 h-10 rounded-xl object-cover shrink-0 border"
                         />
-                      </div>
-                    }
-                    <div class="flex flex-col min-w-0">
-                      <span class="font-bold text-xs sm:text-sm truncate">
-                        {{ item.name }}
-                      </span>
-                      <div
-                        class="flex items-center gap-2 text-[11px] text-(--tui-text-secondary)"
-                      >
-                        @if (item.description) {
-                          <span class="truncate">{{ item.description }}</span>
-                          <span>•</span>
-                        }
-                        <span
-                          class="font-bold text-(--tui-text-primary) tabular-nums"
+                      } @else {
+                        <div
+                          class="w-10 h-10 rounded-xl bg-(--tui-background-neutral-2) flex items-center justify-center shrink-0"
                         >
-                          {{ item.price | number: '1.2-2' }}€/{{
-                            item.unit || 'ud'
-                          }}
+                          <tui-icon
+                            icon="@tui.hammer"
+                            class="w-5 h-5 text-(--tui-text-secondary)"
+                          />
+                        </div>
+                      }
+                      <div class="flex flex-col min-w-0">
+                        <span class="font-bold text-xs sm:text-sm truncate">
+                          {{ item.name }}
                         </span>
+                        <div
+                          class="flex items-center gap-2 text-[11px] text-(--tui-text-secondary)"
+                        >
+                          @if (item.description) {
+                            <span class="truncate">{{ item.description }}</span>
+                            <span>•</span>
+                          }
+                          <span
+                            class="font-bold text-(--tui-text-primary) tabular-nums"
+                          >
+                            {{ item.price | number: '1.2-2' }}€/{{
+                              item.unit || 'ud'
+                            }}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <!-- Quantity controls -->
-                  <div class="flex items-center gap-1 shrink-0">
-                    <button
-                      tuiButton
-                      appearance="secondary"
-                      size="xs"
-                      type="button"
-                      [disabled]="qty <= 0"
-                      (click)="decrementItem(item.id)"
-                    >
-                      <tui-icon icon="@tui.minus" class="w-3 h-3" />
-                    </button>
-                    <span
-                      class="w-8 text-center text-xs font-black tabular-nums"
-                    >
-                      {{ qty }}
-                    </span>
-                    <button
-                      tuiButton
-                      appearance="secondary"
-                      size="xs"
-                      type="button"
-                      (click)="incrementItem(item.id)"
-                    >
-                      <tui-icon icon="@tui.plus" class="w-3 h-3" />
-                    </button>
+                    <!-- Quantity controls -->
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button
+                        tuiButton
+                        appearance="secondary"
+                        size="xs"
+                        type="button"
+                        [disabled]="qty <= 0"
+                        (click)="decrementItem(item.id)"
+                      >
+                        <tui-icon icon="@tui.minus" class="w-3 h-3" />
+                      </button>
+                      <span
+                        class="w-8 text-center text-xs font-black tabular-nums"
+                      >
+                        {{ qty }}
+                      </span>
+                      <button
+                        tuiButton
+                        appearance="secondary"
+                        size="xs"
+                        type="button"
+                        (click)="incrementItem(item.id)"
+                      >
+                        <tui-icon icon="@tui.plus" class="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              } @empty {
-                <div
-                  class="text-center py-6 text-xs text-(--tui-text-secondary)"
-                >
-                  {{ 'materialRequest.noCatalogItems' | translate }}
-                </div>
+                } @empty {
+                  <div
+                    class="text-center py-6 text-xs text-(--tui-text-secondary)"
+                  >
+                    {{ 'materialRequest.noCatalogItems' | translate }}
+                  </div>
+                }
               }
-            }
+            </div>
+          </div>
+
+          <!-- Notes / Shipping info -->
+          <div class="flex flex-col gap-2">
+            <tui-textfield>
+              <label tuiLabel for="material-request-notes-textarea">{{
+                'materialRequest.notesLabel' | translate
+              }}</label>
+              <textarea
+                id="material-request-notes-textarea"
+                tuiTextfield
+                rows="2"
+                [(ngModel)]="notes"
+                [placeholder]="'materialRequest.notesPlaceholder' | translate"
+              ></textarea>
+            </tui-textfield>
           </div>
         </div>
-
-        <!-- Notes / Shipping info -->
-        <div class="flex flex-col gap-2">
-          <tui-textfield>
-            <label tuiLabel for="material-request-notes-textarea">{{
-              'materialRequest.notesLabel' | translate
-            }}</label>
-            <textarea
-              id="material-request-notes-textarea"
-              tuiTextfield
-              rows="2"
-              [(ngModel)]="notes"
-              [placeholder]="'materialRequest.notesPlaceholder' | translate"
-            ></textarea>
-          </tui-textfield>
-        </div>
-      </div>
+      </tui-scrollbar>
 
       <!-- Cost & Validation Summary + Actions -->
       <div class="lw-form-sheet-footer flex-col items-stretch gap-3">

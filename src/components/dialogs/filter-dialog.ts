@@ -16,8 +16,14 @@ import {
 } from '@angular/forms';
 
 import { type TuiBooleanHandler } from '@taiga-ui/cdk';
-import { TuiButton, TuiLink, TuiKeySteps, TuiCheckbox } from '@taiga-ui/core';
-import { type TuiDialogContext } from '@taiga-ui/core';
+import {
+  TuiButton,
+  TuiCheckbox,
+  type TuiDialogContext,
+  type TuiKeySteps,
+  TuiLink,
+  TuiScrollbar,
+} from '@taiga-ui/core';
 import { TuiFilter, TuiRange } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
@@ -79,110 +85,117 @@ const CATEGORY_CONFIGS: readonly CategoryConfig[] = [
     ReactiveFormsModule,
     TranslatePipe,
     TuiButton,
-    TuiFilter,
     TuiCheckbox,
+    TuiFilter,
     TuiLink,
     TuiRange,
+    TuiScrollbar,
   ],
   template: `
     <form class="lw-form-sheet" [formGroup]="form">
-      <div class="lw-form-sheet-body flex flex-col gap-5">
-        @if (showIndoorOutdoor) {
-          <section>
-            <tui-filter
-              formControlName="indoorOutdoor"
-              size="l"
-              [items]="indoorOutdoorItems()"
-              [disabledItemHandler]="ioDisabledHandler"
-            />
-          </section>
-        }
-
-        @if (showCategories) {
-          <section>
-            <tui-filter
-              formControlName="filters"
-              size="l"
-              [items]="categoryIndices"
-              [content]="climbingKindContent"
-            />
-            <ng-template #climbingKindContent let-index>
-              <span class="inline-flex items-center gap-1.5">
-                <app-climbing-kind-icon
-                  [kind]="categoryKinds[index]"
-                  [showHint]="false"
-                />
-                <span>{{ categoryLabels()[index] }}</span>
-              </span>
-            </ng-template>
-          </section>
-        }
-
-        @if (showGradeRange) {
-          <section>
-            <div class="flex flex-wrap gap-2 justify-between">
-              <span class="font-medium">{{ selectedMinLabel() }}</span>
-              <span class="font-medium">{{ selectedMaxLabel() }}</span>
-            </div>
-            <tui-range
-              id="grade-range"
-              [style.--tui-thumb-size.rem]="0.75"
-              [min]="minIndex"
-              [max]="maxIndex"
-              [step]="1"
-              [segments]="segments"
-              [keySteps]="keySteps"
-              formControlName="gradeRange"
-            />
-
-            <div class="hidden sm:flex flex-wrap gap-2 justify-between">
-              @for (label of tickLabels; track label; let i = $index) {
-                <a
-                  tuiLink
-                  appearance="action-grayscale"
-                  role="button"
-                  tabindex="0"
-                  (click.zoneless)="onTickClick(keySteps[i][1])"
-                  (keydown.enter)="onTickClick(keySteps[i][1])"
-                  >{{ label }}</a
-                >
-              }
-            </div>
-          </section>
-        }
-
-        @if (showIndoorAscents) {
-          <section class="flex flex-col gap-3">
-            <label class="flex items-center gap-2">
-              <input
-                tuiCheckbox
-                type="checkbox"
-                formControlName="showIndoorAscents"
+      <tui-scrollbar class="lw-form-sheet-body">
+        <div class="flex flex-col gap-5">
+          @if (showIndoorOutdoor) {
+            <section>
+              <tui-filter
+                formControlName="indoorOutdoor"
+                size="l"
+                [items]="indoorOutdoorItems()"
+                [disabledItemHandler]="ioDisabledHandler"
               />
-              <span>{{ 'indoor.showIndoorAscents' | translate }}</span>
-            </label>
-          </section>
-        }
+            </section>
+          }
 
-        @if (showToposOnly) {
-          <section class="flex flex-col gap-3">
-            <label class="flex items-center gap-2">
-              <input tuiCheckbox type="checkbox" formControlName="toposOnly" />
-              <span>{{ 'filters.toposOnly' | translate }}</span>
-            </label>
-          </section>
-        }
+          @if (showCategories) {
+            <section>
+              <tui-filter
+                formControlName="filters"
+                size="l"
+                [items]="categoryIndices"
+                [content]="climbingKindContent"
+              />
+              <ng-template #climbingKindContent let-index>
+                <span class="inline-flex items-center gap-1.5">
+                  <app-climbing-kind-icon
+                    [kind]="categoryKinds[index]"
+                    [showHint]="false"
+                  />
+                  <span>{{ categoryLabels()[index] }}</span>
+                </span>
+              </ng-template>
+            </section>
+          }
 
-        @if (showShade) {
-          <section>
-            <tui-filter
-              formControlName="shade"
-              size="l"
-              [items]="shadeItems()"
-            />
-          </section>
-        }
-      </div>
+          @if (showGradeRange) {
+            <section>
+              <div class="flex flex-wrap gap-2 justify-between">
+                <span class="font-medium">{{ selectedMinLabel() }}</span>
+                <span class="font-medium">{{ selectedMaxLabel() }}</span>
+              </div>
+              <tui-range
+                id="grade-range"
+                [style.--tui-thumb-size.rem]="0.75"
+                [min]="minIndex"
+                [max]="maxIndex"
+                [step]="1"
+                [segments]="segments"
+                [keySteps]="keySteps"
+                formControlName="gradeRange"
+              />
+
+              <div class="hidden sm:flex flex-wrap gap-2 justify-between">
+                @for (label of tickLabels; track label; let i = $index) {
+                  <a
+                    tuiLink
+                    appearance="action-grayscale"
+                    role="button"
+                    tabindex="0"
+                    (click.zoneless)="onTickClick(keySteps[i][1])"
+                    (keydown.enter)="onTickClick(keySteps[i][1])"
+                    >{{ label }}</a
+                  >
+                }
+              </div>
+            </section>
+          }
+
+          @if (showIndoorAscents) {
+            <section class="flex flex-col gap-3">
+              <label class="flex items-center gap-2">
+                <input
+                  tuiCheckbox
+                  type="checkbox"
+                  formControlName="showIndoorAscents"
+                />
+                <span>{{ 'indoor.showIndoorAscents' | translate }}</span>
+              </label>
+            </section>
+          }
+
+          @if (showToposOnly) {
+            <section class="flex flex-col gap-3">
+              <label class="flex items-center gap-2">
+                <input
+                  tuiCheckbox
+                  type="checkbox"
+                  formControlName="toposOnly"
+                />
+                <span>{{ 'filters.toposOnly' | translate }}</span>
+              </label>
+            </section>
+          }
+
+          @if (showShade) {
+            <section>
+              <tui-filter
+                formControlName="shade"
+                size="l"
+                [items]="shadeItems()"
+              />
+            </section>
+          }
+        </div>
+      </tui-scrollbar>
 
       <div class="lw-form-sheet-footer justify-between">
         <button

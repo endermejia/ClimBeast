@@ -399,19 +399,21 @@ describe('TopoFormComponent - Indoor Permissions & Route Creation', () => {
     );
   });
 
-  it('uses form-sheet layout with scrollable body and pinned footer actions inside the form', () => {
+  it('uses form-sheet layout with tui-scrollbar body and pinned footer actions inside the form', () => {
     fixture.detectChanges();
 
     const el: HTMLElement = fixture.nativeElement;
     const formEl = el.querySelector('form.lw-form-sheet');
-    const bodyEl = formEl?.querySelector('.lw-form-sheet-body');
+    const bodyEl = formEl?.querySelector('tui-scrollbar.lw-form-sheet-body');
     const footerEl = formEl?.querySelector('.lw-form-sheet-footer');
     const footerButtons = Array.from(
       footerEl?.querySelectorAll('button[tuiButton]') ?? [],
     );
 
     expect(formEl).not.toBeNull();
+    expect(bodyEl).not.toBeNull();
     expect(bodyEl?.querySelector('#name')).not.toBeNull();
+    expect(el.querySelectorAll('tui-scrollbar').length).toBe(1);
     expect(footerEl).not.toBeNull();
     expect(footerButtons.length).toBe(2);
     expect(

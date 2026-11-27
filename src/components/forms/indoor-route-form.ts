@@ -12,15 +12,16 @@ import { form, FormField, required, submit } from '@angular/forms/signals';
 
 import { TuiIdentityMatcher } from '@taiga-ui/cdk';
 import {
-  type TuiDialogContext,
   TuiButton,
   TuiCheckbox,
   TuiDataList,
+  type TuiDialogContext,
   TuiDropdown,
   TuiError,
   TuiFilterByInputPipe,
   TuiInput,
   TuiLabel,
+  TuiScrollbar,
 } from '@taiga-ui/core';
 import {
   TuiChevron,
@@ -65,27 +66,28 @@ export interface IndoorRouteFormData {
 @Component({
   selector: 'app-indoor-route-form',
   imports: [
+    FormField,
     FormsModule,
     TranslatePipe,
     TuiButton,
-    TuiLabel,
-    TuiInput,
-    TuiError,
-    TuiSelect,
-    TuiChevron,
-    TuiDataListWrapper,
     TuiCheckbox,
-    TuiDropdown,
+    TuiChevron,
     TuiDataList,
+    TuiDataListWrapper,
+    TuiDropdown,
+    TuiError,
     TuiFilterByInputPipe,
     TuiHideSelectedPipe,
+    TuiInput,
     TuiInputChip,
+    TuiLabel,
     TuiPin,
-    FormField,
+    TuiScrollbar,
+    TuiSelect,
   ],
   template: `
     <form class="lw-form-sheet" (submit.zoneless)="onSubmit()">
-      <div class="lw-form-sheet-body">
+      <tui-scrollbar class="lw-form-sheet-body">
         <div class="flex flex-col gap-4">
           <tui-textfield [tuiTextfieldCleaner]="false">
             <label tuiLabel for="name">{{ 'name' | translate }}</label>
@@ -262,7 +264,7 @@ export interface IndoorRouteFormData {
             <span>{{ 'indoor.legacy' | translate }}</span>
           </label>
         </div>
-      </div>
+      </tui-scrollbar>
 
       <div class="lw-form-sheet-footer">
         <button

@@ -21,7 +21,13 @@ import {
 } from '@angular/forms/signals';
 
 import { type TuiDialogContext } from '@taiga-ui/core';
-import { TuiButton, TuiError, TuiInput, TuiLabel } from '@taiga-ui/core';
+import {
+  TuiButton,
+  TuiError,
+  TuiInput,
+  TuiLabel,
+  TuiScrollbar,
+} from '@taiga-ui/core';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe } from '@ngx-translate/core';
@@ -59,10 +65,11 @@ interface MinimalParking {
     TuiError,
     TuiInput,
     TuiLabel,
+    TuiScrollbar,
   ],
   template: `
     <form class="lw-form-sheet" (submit.zoneless)="onSubmit($event)">
-      <div class="lw-form-sheet-body">
+      <tui-scrollbar class="lw-form-sheet-body">
         <div class="flex flex-col gap-4">
           <tui-textfield [tuiTextfieldCleaner]="false">
             <label tuiLabel for="parking-name">{{ 'name' | translate }}</label>
@@ -92,7 +99,7 @@ interface MinimalParking {
             />
           </app-coordinates-fields>
         </div>
-      </div>
+      </tui-scrollbar>
 
       <div class="lw-form-sheet-footer">
         <button

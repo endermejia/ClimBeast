@@ -17,15 +17,16 @@ import { TuiDay } from '@taiga-ui/cdk';
 import {
   TuiAppearance,
   TuiButton,
-  tuiDateFormatProvider,
-  TuiError,
-  TuiIcon,
-  TuiLabel,
-  TuiInput,
   TuiCheckbox,
+  tuiDateFormatProvider,
   type TuiDialogContext,
   TuiDialogService,
+  TuiError,
+  TuiIcon,
+  TuiInput,
+  TuiLabel,
   TuiLoader,
+  TuiScrollbar,
 } from '@taiga-ui/core';
 import {
   TuiChevron,
@@ -99,13 +100,14 @@ import { CounterComponent } from '../ui/counter';
     TuiLabel,
     TuiLoader,
     TuiRating,
+    TuiScrollbar,
     TuiSelect,
     TuiTextarea,
   ],
   providers: [tuiDateFormatProvider({ mode: 'dd/mm/yyyy', separator: '/' })],
   template: `
     <form class="lw-form-sheet" (submit.zoneless)="onSubmit($event)">
-      <div class="lw-form-sheet-body">
+      <tui-scrollbar class="lw-form-sheet-body">
         <div class="flex flex-col gap-6">
           <!-- WHEN DID YOU CLIMB IT? -->
           <section class="grid gap-3">
@@ -595,7 +597,7 @@ import { CounterComponent } from '../ui/counter';
             }
           }
         </div>
-      </div>
+      </tui-scrollbar>
 
       <!-- FOOTER ACTIONS -->
       <div class="lw-form-sheet-footer">

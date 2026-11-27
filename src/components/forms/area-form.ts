@@ -20,6 +20,7 @@ import {
   TuiIcon,
   TuiInput,
   TuiLabel,
+  TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
 import { TuiInputChip, TuiInputNumber, TuiTextarea } from '@taiga-ui/kit';
@@ -59,6 +60,7 @@ interface MinimalArea {
     TuiInputChip,
     TuiInputNumber,
     TuiLabel,
+    TuiScrollbar,
     TuiTextarea,
     TuiTextfield,
   ],
@@ -144,7 +146,7 @@ interface MinimalArea {
   `,
   template: `
     <form class="lw-form-sheet" (submit.zoneless)="onSubmit($event)">
-      <div class="lw-form-sheet-body">
+      <tui-scrollbar class="lw-form-sheet-body">
         <div class="flex flex-col gap-4">
           <tui-textfield class="block">
             <label tuiLabel for="area-name">{{ 'name' | translate }}</label>
@@ -358,7 +360,7 @@ interface MinimalArea {
             </div>
           }
         </div>
-      </div>
+      </tui-scrollbar>
 
       <div class="lw-form-sheet-footer">
         <button

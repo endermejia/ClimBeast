@@ -18,17 +18,18 @@ import { TuiIdentityMatcher, tuiIsString, TuiTime } from '@taiga-ui/cdk';
 import { type TuiDialogContext } from '@taiga-ui/core';
 import {
   TuiButton,
+  TuiCell,
+  TuiCheckbox,
   TuiDataList,
   TuiDialogService,
+  TuiDropdown,
+  TuiFilterByInputPipe,
   TuiIcon,
+  TuiInput,
   TuiLabel,
   TuiOptGroup,
+  TuiScrollbar,
   TuiTitle,
-  TuiCell,
-  TuiInput,
-  TuiCheckbox,
-  TuiFilterByInputPipe,
-  TuiDropdown,
 } from '@taiga-ui/core';
 import {
   TuiChevron,
@@ -104,14 +105,15 @@ import { GradeComponent } from '../ui/avatar-grade';
     TuiInputChip,
     TuiInputFiles,
     TuiInputTime,
+    TuiLabel,
     TuiMultiSelect,
     TuiOptGroup,
+    TuiScrollbar,
     TuiTitle,
-    TuiLabel,
   ],
   template: `
     <form class="lw-form-sheet" (submit.zoneless)="onSubmit($event)">
-      <div class="lw-form-sheet-body">
+      <tui-scrollbar class="lw-form-sheet-body">
         <div class="flex flex-col gap-4">
           <tui-textfield [tuiTextfieldCleaner]="false">
             <label tuiLabel for="name">{{ 'topos.name' | translate }}</label>
@@ -407,7 +409,7 @@ import { GradeComponent } from '../ui/avatar-grade';
             </tui-textfield>
           </div>
         </div>
-      </div>
+      </tui-scrollbar>
 
       <div class="lw-form-sheet-footer">
         <button

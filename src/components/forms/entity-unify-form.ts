@@ -17,6 +17,7 @@ import {
   TuiInput,
   TuiLabel,
   TuiOptGroup,
+  TuiScrollbar,
 } from '@taiga-ui/core';
 import {
   TuiChevron,
@@ -60,10 +61,11 @@ export interface EntityUnifySelection {
     TuiLabel,
     TuiMultiSelect,
     TuiOptGroup,
+    TuiScrollbar,
   ],
   template: `
     <div class="lw-form-sheet">
-      <div class="lw-form-sheet-body">
+      <tui-scrollbar class="lw-form-sheet-body">
         <div class="flex flex-col gap-4">
           <p class="text-sm opacity-70">
             {{ descriptionKey() | translate }}
@@ -147,7 +149,7 @@ export interface EntityUnifySelection {
 
           <ng-content />
         </div>
-      </div>
+      </tui-scrollbar>
 
       <div class="lw-form-sheet-footer">
         <button

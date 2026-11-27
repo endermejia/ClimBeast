@@ -9,6 +9,7 @@ import {
   TuiInput,
   TuiLabel,
   TuiLoader,
+  TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
 import { TuiAvatar } from '@taiga-ui/kit';
@@ -53,139 +54,142 @@ interface ProfileSearchResult {
     TuiInput,
     TuiLabel,
     TuiLoader,
+    TuiScrollbar,
     TuiTextfield,
   ],
   template: `
     <div class="lw-form-sheet">
-      <div class="lw-form-sheet-body flex flex-col gap-4">
-        <!-- Search Input Section -->
-        <div
-          class="pb-4 border-b border-(--tui-border-normal) flex flex-col gap-2"
-        >
-          <tui-textfield
-            [tuiTextfieldCleaner]="true"
-            tuiTextfieldSize="m"
-            class="w-full bg-(--tui-background-base)"
+      <tui-scrollbar class="lw-form-sheet-body">
+        <div class="flex flex-col gap-4">
+          <!-- Search Input Section -->
+          <div
+            class="pb-4 border-b border-(--tui-border-normal) flex flex-col gap-2"
           >
-            <label tuiLabel for="user-grant-search">
-              {{ 'areas.searchUser' | translate }}
-            </label>
-            <input
-              tuiInput
-              #grantSearch
-              id="user-grant-search"
-              autocomplete="off"
-              [value]="searchQuery()"
-              (input)="searchQuery.set(grantSearch.value)"
-            />
-          </tui-textfield>
+            <tui-textfield
+              [tuiTextfieldCleaner]="true"
+              tuiTextfieldSize="m"
+              class="w-full bg-(--tui-background-base)"
+            >
+              <label tuiLabel for="user-grant-search">
+                {{ 'areas.searchUser' | translate }}
+              </label>
+              <input
+                tuiInput
+                #grantSearch
+                id="user-grant-search"
+                autocomplete="off"
+                [value]="searchQuery()"
+                (input)="searchQuery.set(grantSearch.value)"
+              />
+            </tui-textfield>
 
-          <!-- Search Results List -->
-          @if (isSearching()) {
-            <div class="flex items-center justify-center p-4">
-              <tui-loader size="m" />
-            </div>
-          } @else if (searchResults(); as results) {
-            @if (results.length > 0) {
-              <div
-                class="max-h-40 overflow-y-auto bg-(--tui-background-base) rounded-xl border border-(--tui-border-normal) shadow-sm flex flex-col p-1 gap-1"
-              >
-                @for (user of results; track user.id) {
-                  <div
-                    class="flex items-center justify-between p-2 hover:bg-(--tui-background-neutral-1) rounded-lg transition-colors"
-                  >
-                    <div class="flex items-center gap-2">
-                      <span
-                        tuiAvatar
-                        size="s"
-                        class="rounded-full overflow-hidden"
-                        [attr.aria-label]="user.name || ''"
-                      >
-                        @if (user.avatar) {
-                          <img
-                            [src]="user.avatar | avatarUrl"
-                            [alt]="user.name || ''"
-                          />
-                        } @else {
-                          <tui-icon icon="@tui.user" />
-                        }
-                      </span>
-                      <span class="text-sm font-semibold">{{
-                        user.name || 'Anonymous'
-                      }}</span>
-                    </div>
-                    <button
-                      tuiButton
-                      size="xs"
-                      appearance="primary"
-                      type="button"
-                      (click)="grantAccess(user)"
-                    >
-                      {{ 'areas.grantAccess' | translate }}
-                    </button>
-                  </div>
-                }
+            <!-- Search Results List -->
+            @if (isSearching()) {
+              <div class="flex items-center justify-center p-4">
+                <tui-loader size="m" />
               </div>
-            }
-          } @else if (searchQuery().trim().length >= 2) {
-            <div class="text-xs opacity-60 text-center p-2">
-              {{ 'areas.noUsersFound' | translate }}
-            </div>
-          }
-        </div>
-
-        <!-- Access List Section -->
-        <tui-loader [loading]="accessListResource.isLoading()">
-          <div class="flex flex-col gap-2">
-            @for (user of accessList(); track user.purchaseId) {
-              <div
-                class="flex items-center justify-between p-3 bg-(--tui-background-base) border border-(--tui-border-normal) rounded-2xl"
-              >
-                <div class="flex items-center gap-3">
-                  <span
-                    tuiAvatar
-                    size="m"
-                    class="rounded-full overflow-hidden"
-                    [attr.aria-label]="user.name || ''"
-                  >
-                    @if (user.avatar) {
-                      <img
-                        [src]="user.avatar | avatarUrl"
-                        [alt]="user.name || ''"
-                      />
-                    } @else {
-                      <tui-icon icon="@tui.user" />
-                    }
-                  </span>
-                  <div class="flex flex-col">
-                    <span class="font-bold text-sm leading-tight">{{
-                      user.name || 'Anonymous'
-                    }}</span>
-                    @if (user.createdAt) {
-                      <span class="text-[10px] opacity-50">{{
-                        user.createdAt | date: 'shortDate'
-                      }}</span>
-                    }
-                  </div>
-                </div>
-                <button
-                  tuiButton
-                  size="s"
-                  appearance="negative"
-                  type="button"
-                  (click)="revokeAccess(user)"
+            } @else if (searchResults(); as results) {
+              @if (results.length > 0) {
+                <div
+                  class="max-h-40 overflow-y-auto bg-(--tui-background-base) rounded-xl border border-(--tui-border-normal) shadow-sm flex flex-col p-1 gap-1"
                 >
-                  {{ 'areas.revokeAccess' | translate }}
-                </button>
-              </div>
-            } @empty {
-              <div class="py-8">
-                <app-empty-state icon="@tui.users" />
+                  @for (user of results; track user.id) {
+                    <div
+                      class="flex items-center justify-between p-2 hover:bg-(--tui-background-neutral-1) rounded-lg transition-colors"
+                    >
+                      <div class="flex items-center gap-2">
+                        <span
+                          tuiAvatar
+                          size="s"
+                          class="rounded-full overflow-hidden"
+                          [attr.aria-label]="user.name || ''"
+                        >
+                          @if (user.avatar) {
+                            <img
+                              [src]="user.avatar | avatarUrl"
+                              [alt]="user.name || ''"
+                            />
+                          } @else {
+                            <tui-icon icon="@tui.user" />
+                          }
+                        </span>
+                        <span class="text-sm font-semibold">{{
+                          user.name || 'Anonymous'
+                        }}</span>
+                      </div>
+                      <button
+                        tuiButton
+                        size="xs"
+                        appearance="primary"
+                        type="button"
+                        (click)="grantAccess(user)"
+                      >
+                        {{ 'areas.grantAccess' | translate }}
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+            } @else if (searchQuery().trim().length >= 2) {
+              <div class="text-xs opacity-60 text-center p-2">
+                {{ 'areas.noUsersFound' | translate }}
               </div>
             }
           </div>
-        </tui-loader>
-      </div>
+
+          <!-- Access List Section -->
+          <tui-loader [loading]="accessListResource.isLoading()">
+            <div class="flex flex-col gap-2">
+              @for (user of accessList(); track user.purchaseId) {
+                <div
+                  class="flex items-center justify-between p-3 bg-(--tui-background-base) border border-(--tui-border-normal) rounded-2xl"
+                >
+                  <div class="flex items-center gap-3">
+                    <span
+                      tuiAvatar
+                      size="m"
+                      class="rounded-full overflow-hidden"
+                      [attr.aria-label]="user.name || ''"
+                    >
+                      @if (user.avatar) {
+                        <img
+                          [src]="user.avatar | avatarUrl"
+                          [alt]="user.name || ''"
+                        />
+                      } @else {
+                        <tui-icon icon="@tui.user" />
+                      }
+                    </span>
+                    <div class="flex flex-col">
+                      <span class="font-bold text-sm leading-tight">{{
+                        user.name || 'Anonymous'
+                      }}</span>
+                      @if (user.createdAt) {
+                        <span class="text-[10px] opacity-50">{{
+                          user.createdAt | date: 'shortDate'
+                        }}</span>
+                      }
+                    </div>
+                  </div>
+                  <button
+                    tuiButton
+                    size="s"
+                    appearance="negative"
+                    type="button"
+                    (click)="revokeAccess(user)"
+                  >
+                    {{ 'areas.revokeAccess' | translate }}
+                  </button>
+                </div>
+              } @empty {
+                <div class="py-8">
+                  <app-empty-state icon="@tui.users" />
+                </div>
+              }
+            </div>
+          </tui-loader>
+        </div>
+      </tui-scrollbar>
 
       <div class="lw-form-sheet-footer">
         <button

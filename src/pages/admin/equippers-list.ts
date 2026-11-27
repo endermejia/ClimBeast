@@ -305,24 +305,26 @@ import { IS_BROWSER } from '../../app/is-browser';
           observer.complete()
         "
       >
-        <div class="lw-form-sheet-body flex flex-col gap-4">
-          <tui-textfield>
-            <label tuiLabel for="new-equipper-name">{{
-              'name' | translate
-            }}</label>
-            <input
-              id="new-equipper-name"
-              name="equipperName"
-              tuiInput
-              type="text"
-              [ngModel]="equipperName()"
-              (ngModelChange)="equipperName.set($event)"
-              [placeholder]="'name' | translate"
-              autocomplete="off"
-              required
-            />
-          </tui-textfield>
-        </div>
+        <tui-scrollbar class="lw-form-sheet-body">
+          <div class="flex flex-col gap-4">
+            <tui-textfield>
+              <label tuiLabel for="new-equipper-name">{{
+                'name' | translate
+              }}</label>
+              <input
+                id="new-equipper-name"
+                name="equipperName"
+                tuiInput
+                type="text"
+                [ngModel]="equipperName()"
+                (ngModelChange)="equipperName.set($event)"
+                [placeholder]="'name' | translate"
+                autocomplete="off"
+                required
+              />
+            </tui-textfield>
+          </div>
+        </tui-scrollbar>
 
         <div class="lw-form-sheet-footer">
           <button

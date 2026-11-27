@@ -185,19 +185,21 @@ describe('EntityUnifyFormComponent', () => {
     ).not.toBeNull();
   });
 
-  it('uses form-sheet layout with scrollable body and pinned footer actions', () => {
+  it('uses form-sheet layout with tui-scrollbar body and pinned footer actions', () => {
     fixture.detectChanges();
 
     const el: HTMLElement = fixture.nativeElement;
     const sheetEl = el.querySelector('.lw-form-sheet');
-    const bodyEl = sheetEl?.querySelector('.lw-form-sheet-body');
+    const bodyEl = sheetEl?.querySelector('tui-scrollbar.lw-form-sheet-body');
     const footerEl = sheetEl?.querySelector('.lw-form-sheet-footer');
     const footerButtons = Array.from(
       footerEl?.querySelectorAll('button[tuiButton]') ?? [],
     );
 
     expect(sheetEl).not.toBeNull();
+    expect(bodyEl).not.toBeNull();
     expect(bodyEl?.querySelector('#new-name')).not.toBeNull();
+    expect(el.querySelectorAll('tui-scrollbar').length).toBe(1);
     expect(footerEl).not.toBeNull();
     expect(footerButtons.length).toBe(2);
     expect(

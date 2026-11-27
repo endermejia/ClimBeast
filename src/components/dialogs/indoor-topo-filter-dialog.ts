@@ -3,11 +3,12 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 import {
-  type TuiDialogContext,
-  type TuiKeySteps,
   TuiButton,
   TuiCheckbox,
+  type TuiDialogContext,
+  type TuiKeySteps,
   TuiLink,
+  TuiScrollbar,
 } from '@taiga-ui/core';
 import { TuiRange } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
@@ -42,94 +43,103 @@ export interface IndoorTopoFilterDialogResult {
     TuiCheckbox,
     TuiLink,
     TuiRange,
+    TuiScrollbar,
   ],
   template: `
     <form class="lw-form-sheet" [formGroup]="form">
-      <div class="lw-form-sheet-body flex flex-col gap-4">
-        <!-- Grade Range -->
-        <section class="flex flex-col gap-2">
-          <div class="flex items-center justify-between gap-2">
-            <span class="font-semibold text-sm">{{ 'grade' | translate }}</span>
-            <span
-              class="text-xs font-semibold px-2 py-0.5 rounded-full bg-(--tui-background-neutral-1) tabular-nums"
-            >
-              {{ selectedMinGradeLabel() }} - {{ selectedMaxGradeLabel() }}
-            </span>
-          </div>
-          <tui-range
-            id="indoor-grade-range"
-            [style.--tui-thumb-size.rem]="0.75"
-            [min]="minGradeIndex"
-            [max]="maxGradeIndex"
-            [step]="1"
-            [segments]="gradeSegments"
-            [keySteps]="gradeKeySteps"
-            [attr.aria-label]="'grade' | translate"
-            formControlName="gradeRange"
-          />
-          <div
-            class="hidden sm:flex justify-between text-xs opacity-60 px-0.5 mt-0.5"
-          >
-            @for (label of gradeTickLabels; track label; let i = $index) {
-              <a
-                tuiLink
-                appearance="action-grayscale"
-                role="button"
-                tabindex="0"
-                (click.zoneless)="onGradeTickClick(gradeKeySteps[i][1])"
-                (keydown.enter)="onGradeTickClick(gradeKeySteps[i][1])"
-                >{{ label }}</a
-              >
-            }
-          </div>
-        </section>
-
-        <!-- Moves Range -->
-        @if (hasMovesData) {
-          <section
-            class="flex flex-col gap-2 pt-4 border-t border-(--tui-border-normal)"
-          >
+      <tui-scrollbar class="lw-form-sheet-body">
+        <div class="flex flex-col gap-4">
+          <!-- Grade Range -->
+          <section class="flex flex-col gap-2">
             <div class="flex items-center justify-between gap-2">
               <span class="font-semibold text-sm">{{
-                'moves' | translate
+                'grade' | translate
               }}</span>
               <span
                 class="text-xs font-semibold px-2 py-0.5 rounded-full bg-(--tui-background-neutral-1) tabular-nums"
               >
-                {{ selectedMinMoves() }} - {{ selectedMaxMoves() }}
+                {{ selectedMinGradeLabel() }} - {{ selectedMaxGradeLabel() }}
               </span>
             </div>
             <tui-range
-              id="indoor-moves-range"
+              id="indoor-grade-range"
               [style.--tui-thumb-size.rem]="0.75"
-              [min]="0"
-              [max]="maxPossibleMoves"
+              [min]="minGradeIndex"
+              [max]="maxGradeIndex"
               [step]="1"
-              [segments]="movesSegments"
-              [attr.aria-label]="'moves' | translate"
-              formControlName="movesRange"
+              [segments]="gradeSegments"
+              [keySteps]="gradeKeySteps"
+              [attr.aria-label]="'grade' | translate"
+              formControlName="gradeRange"
             />
             <div
-              class="flex justify-between text-xs opacity-50 px-0.5 tabular-nums"
+              class="hidden sm:flex justify-between text-xs opacity-60 px-0.5 mt-0.5"
             >
-              <span>0</span>
-              <span>{{ maxPossibleMoves }}</span>
+              @for (label of gradeTickLabels; track label; let i = $index) {
+                <a
+                  tuiLink
+                  appearance="action-grayscale"
+                  role="button"
+                  tabindex="0"
+                  (click.zoneless)="onGradeTickClick(gradeKeySteps[i][1])"
+                  (keydown.enter)="onGradeTickClick(gradeKeySteps[i][1])"
+                  >{{ label }}</a
+                >
+              }
             </div>
           </section>
-        }
 
-        <!-- Show Climbed -->
-        <section class="pt-4 border-t border-(--tui-border-normal)">
-          <label
-            class="flex items-center justify-between gap-3 cursor-pointer select-none"
-          >
-            <span class="text-sm font-medium">
-              {{ 'filters.showClimbed' | translate }}
-            </span>
-            <input tuiCheckbox type="checkbox" formControlName="showClimbed" />
-          </label>
-        </section>
-      </div>
+          <!-- Moves Range -->
+          @if (hasMovesData) {
+            <section
+              class="flex flex-col gap-2 pt-4 border-t border-(--tui-border-normal)"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-semibold text-sm">{{
+                  'moves' | translate
+                }}</span>
+                <span
+                  class="text-xs font-semibold px-2 py-0.5 rounded-full bg-(--tui-background-neutral-1) tabular-nums"
+                >
+                  {{ selectedMinMoves() }} - {{ selectedMaxMoves() }}
+                </span>
+              </div>
+              <tui-range
+                id="indoor-moves-range"
+                [style.--tui-thumb-size.rem]="0.75"
+                [min]="0"
+                [max]="maxPossibleMoves"
+                [step]="1"
+                [segments]="movesSegments"
+                [attr.aria-label]="'moves' | translate"
+                formControlName="movesRange"
+              />
+              <div
+                class="flex justify-between text-xs opacity-50 px-0.5 tabular-nums"
+              >
+                <span>0</span>
+                <span>{{ maxPossibleMoves }}</span>
+              </div>
+            </section>
+          }
+
+          <!-- Show Climbed -->
+          <section class="pt-4 border-t border-(--tui-border-normal)">
+            <label
+              class="flex items-center justify-between gap-3 cursor-pointer select-none"
+            >
+              <span class="text-sm font-medium">
+                {{ 'filters.showClimbed' | translate }}
+              </span>
+              <input
+                tuiCheckbox
+                type="checkbox"
+                formControlName="showClimbed"
+              />
+            </label>
+          </section>
+        </div>
+      </tui-scrollbar>
 
       <!-- Footer Buttons -->
       <div class="lw-form-sheet-footer justify-between">

@@ -36,6 +36,7 @@ import {
   TuiLabel,
   TuiLink,
   TuiOptGroup,
+  TuiScrollbar,
   TuiScrollControls,
   TuiScrollRef,
   TuiTextfield,
@@ -124,6 +125,7 @@ interface UserWithRole {
     TuiLink,
     TuiMultiSelect,
     TuiOptGroup,
+    TuiScrollbar,
     TuiScrollControls,
     TuiScrollRef,
     TuiSkeleton,
@@ -657,72 +659,74 @@ interface UserWithRole {
             $event.preventDefault(); submitPermissions(observer)
           "
         >
-          <div class="lw-form-sheet-body flex flex-col gap-4">
-            <div
-              class="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl"
-            >
-              <span tuiAvatar size="m">
-                @if (user.avatar; as avatar) {
-                  <img [src]="avatar | avatarUrl" alt="avatar" />
-                } @else {
-                  <tui-icon icon="@tui.user" />
-                }
-              </span>
-              <div class="flex flex-col min-w-0">
-                <span class="font-semibold truncate">
-                  {{ user.name || ('anonymous' | translate) }}
+          <tui-scrollbar class="lw-form-sheet-body">
+            <div class="flex flex-col gap-4">
+              <div
+                class="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl"
+              >
+                <span tuiAvatar size="m">
+                  @if (user.avatar; as avatar) {
+                    <img [src]="avatar | avatarUrl" alt="avatar" />
+                  } @else {
+                    <tui-icon icon="@tui.user" />
+                  }
                 </span>
-                <span class="text-xs text-neutral-500 font-mono truncate">
-                  {{ user.email || '-' }}
-                </span>
+                <div class="flex flex-col min-w-0">
+                  <span class="font-semibold truncate">
+                    {{ user.name || ('anonymous' | translate) }}
+                  </span>
+                  <span class="text-xs text-neutral-500 font-mono truncate">
+                    {{ user.email || '-' }}
+                  </span>
+                </div>
               </div>
+
+              <ng-container
+                *ngTemplateOutlet="
+                  permissionsMultiSelect;
+                  context: {
+                    id: 'edit-areas-select',
+                    labelKey: 'admin.users.adminInArea',
+                    groupLabelKey: 'areas',
+                    control: editAreasControl,
+                    kind: 'areas',
+                    stringify: stringifyArea,
+                    identityMatcher: areaIdentityMatcher,
+                  }
+                "
+              />
+
+              <ng-container
+                *ngTemplateOutlet="
+                  permissionsMultiSelect;
+                  context: {
+                    id: 'edit-centers-select',
+                    labelKey: 'admin.users.adminInCenter',
+                    groupLabelKey: 'indoor.title',
+                    control: editCentersControl,
+                    kind: 'centers',
+                    stringify: stringifyCenter,
+                    identityMatcher: centerIdentityMatcher,
+                  }
+                "
+              />
+
+              <ng-container
+                *ngTemplateOutlet="
+                  permissionsMultiSelect;
+                  context: {
+                    id: 'edit-routesetters-select',
+                    labelKey: 'admin.users.routesetterIn',
+                    groupLabelKey: 'indoor.title',
+                    control: editRoutesettersControl,
+                    kind: 'centers',
+                    stringify: stringifyCenter,
+                    identityMatcher: centerIdentityMatcher,
+                  }
+                "
+              />
             </div>
-
-            <ng-container
-              *ngTemplateOutlet="
-                permissionsMultiSelect;
-                context: {
-                  id: 'edit-areas-select',
-                  labelKey: 'admin.users.adminInArea',
-                  groupLabelKey: 'areas',
-                  control: editAreasControl,
-                  kind: 'areas',
-                  stringify: stringifyArea,
-                  identityMatcher: areaIdentityMatcher,
-                }
-              "
-            />
-
-            <ng-container
-              *ngTemplateOutlet="
-                permissionsMultiSelect;
-                context: {
-                  id: 'edit-centers-select',
-                  labelKey: 'admin.users.adminInCenter',
-                  groupLabelKey: 'indoor.title',
-                  control: editCentersControl,
-                  kind: 'centers',
-                  stringify: stringifyCenter,
-                  identityMatcher: centerIdentityMatcher,
-                }
-              "
-            />
-
-            <ng-container
-              *ngTemplateOutlet="
-                permissionsMultiSelect;
-                context: {
-                  id: 'edit-routesetters-select',
-                  labelKey: 'admin.users.routesetterIn',
-                  groupLabelKey: 'indoor.title',
-                  control: editRoutesettersControl,
-                  kind: 'centers',
-                  stringify: stringifyCenter,
-                  identityMatcher: centerIdentityMatcher,
-                }
-              "
-            />
-          </div>
+          </tui-scrollbar>
 
           <div class="lw-form-sheet-footer">
             <button

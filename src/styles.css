@@ -944,6 +944,22 @@ tui-dialog:has(.lw-form-sheet) :has(.lw-form-sheet) {
   }
 }
 
+tui-scrollbar.lw-form-sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow-x: hidden !important;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 !important;
+}
+
+tui-scrollbar.lw-form-sheet-body > .t-content {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
 @layer components {
   .lw-form-sheet {
     display: flex;
@@ -954,12 +970,16 @@ tui-dialog:has(.lw-form-sheet) :has(.lw-form-sheet) {
     width: 100%;
   }
 
-  .lw-form-sheet-body {
+  .lw-form-sheet-body:not(tui-scrollbar) {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .lw-form-sheet-body:not(tui-scrollbar),
+  tui-scrollbar.lw-form-sheet-body > .t-content {
     padding: 0.25rem 1.75rem 1.25rem;
   }
 
@@ -975,7 +995,11 @@ tui-dialog:has(.lw-form-sheet) :has(.lw-form-sheet) {
     background: var(--tui-background-elevation-1);
   }
 
-  tui-dialog[data-size="s"]:has(.lw-form-sheet) .lw-form-sheet-body {
+  tui-dialog[data-size="s"]:has(.lw-form-sheet)
+    .lw-form-sheet-body:not(tui-scrollbar),
+  tui-dialog[data-size="s"]:has(.lw-form-sheet)
+    tui-scrollbar.lw-form-sheet-body
+    > .t-content {
     padding: 0.25rem 1.5rem 1rem;
   }
 
@@ -983,21 +1007,42 @@ tui-dialog:has(.lw-form-sheet) :has(.lw-form-sheet) {
     padding: 0.75rem 1.5rem 1rem;
   }
 
-  tui-dialog:has(.lw-form-sheet):not(:has(> header)) .lw-form-sheet-body,
+  tui-dialog:has(.lw-form-sheet):not(:has(> header))
+    .lw-form-sheet-body:not(tui-scrollbar),
   tui-dialog[data-size]:has(.lw-form-sheet):not(:has(> header))
-    .lw-form-sheet-body {
+    .lw-form-sheet-body:not(tui-scrollbar),
+  tui-dialog:has(.lw-form-sheet):not(:has(> header))
+    tui-scrollbar.lw-form-sheet-body
+    > .t-content,
+  tui-dialog[data-size]:has(.lw-form-sheet):not(:has(> header))
+    tui-scrollbar.lw-form-sheet-body
+    > .t-content {
     padding-top: 1.5rem;
   }
 
   @media (max-width: 768px) {
-    tui-dialog:has(.lw-form-sheet) .lw-form-sheet-body,
-    tui-dialog[data-size="s"]:has(.lw-form-sheet) .lw-form-sheet-body {
+    tui-dialog:has(.lw-form-sheet) .lw-form-sheet-body:not(tui-scrollbar),
+    tui-dialog[data-size="s"]:has(.lw-form-sheet)
+      .lw-form-sheet-body:not(tui-scrollbar),
+    tui-dialog:has(.lw-form-sheet)
+      tui-scrollbar.lw-form-sheet-body
+      > .t-content,
+    tui-dialog[data-size="s"]:has(.lw-form-sheet)
+      tui-scrollbar.lw-form-sheet-body
+      > .t-content {
       padding: 1rem 1.25rem;
     }
 
-    tui-dialog:has(.lw-form-sheet):not(:has(> header)) .lw-form-sheet-body,
+    tui-dialog:has(.lw-form-sheet):not(:has(> header))
+      .lw-form-sheet-body:not(tui-scrollbar),
     tui-dialog[data-size]:has(.lw-form-sheet):not(:has(> header))
-      .lw-form-sheet-body {
+      .lw-form-sheet-body:not(tui-scrollbar),
+    tui-dialog:has(.lw-form-sheet):not(:has(> header))
+      tui-scrollbar.lw-form-sheet-body
+      > .t-content,
+    tui-dialog[data-size]:has(.lw-form-sheet):not(:has(> header))
+      tui-scrollbar.lw-form-sheet-body
+      > .t-content {
       padding-top: 0.75rem;
     }
 

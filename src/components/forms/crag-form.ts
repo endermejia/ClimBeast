@@ -29,6 +29,7 @@ import {
   TuiFilterByInputPipe,
   TuiInput,
   TuiLabel,
+  TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
 import {
@@ -106,13 +107,14 @@ interface CragFormModel {
     TuiInput,
     TuiInputChip,
     TuiLabel,
+    TuiScrollbar,
     TuiSelect,
     TuiTextarea,
     TuiTextfield,
   ],
   template: `
     <form class="lw-form-sheet" (submit.zoneless)="onSubmit($event)">
-      <div class="lw-form-sheet-body">
+      <tui-scrollbar class="lw-form-sheet-body">
         <div class="flex flex-col gap-4">
           <tui-textfield
             tuiChevron
@@ -248,7 +250,7 @@ interface CragFormModel {
             </tui-textfield>
           }
         </div>
-      </div>
+      </tui-scrollbar>
 
       <div class="lw-form-sheet-footer">
         <button

@@ -59,7 +59,7 @@ describe('CookieSettingsDialogComponent', () => {
 
     const el: HTMLElement = fixture.nativeElement;
     const sheet = el.querySelector('.lw-form-sheet');
-    const body = sheet?.querySelector('.lw-form-sheet-body');
+    const body = sheet?.querySelector('tui-scrollbar.lw-form-sheet-body');
     const footer = sheet?.querySelector('.lw-form-sheet-footer');
     const buttons = footer?.querySelectorAll('button');
 

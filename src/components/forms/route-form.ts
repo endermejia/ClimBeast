@@ -20,9 +20,10 @@ import {
   TuiButton,
   TuiDataList,
   TuiError,
-  TuiLabel,
-  TuiInput,
   TuiFilterByInputPipe,
+  TuiInput,
+  TuiLabel,
+  TuiScrollbar,
 } from '@taiga-ui/core';
 import {
   TuiChevron,
@@ -102,11 +103,12 @@ interface RouteFormModel {
     TuiInputChip,
     TuiInputNumber,
     TuiLabel,
+    TuiScrollbar,
     TuiSelect,
   ],
   template: `
     <form class="lw-form-sheet" (submit.zoneless)="onSubmit($event)">
-      <div class="lw-form-sheet-body">
+      <tui-scrollbar class="lw-form-sheet-body">
         <div class="flex flex-col gap-4">
           <tui-textfield
             tuiChevron
@@ -310,7 +312,7 @@ interface RouteFormModel {
             </tui-textfield>
           }
         </div>
-      </div>
+      </tui-scrollbar>
 
       <div class="lw-form-sheet-footer">
         <button

@@ -58,6 +58,23 @@ describe('AreaDonationDialogComponent', () => {
     TestBed.resetTestingModule();
   });
 
+  it('renders scrollable body with tui-scrollbar.lw-form-sheet-body', async () => {
+    const fixture = await setup({
+      areaId: 42,
+      areaName: 'La Pedriza',
+      areaPrice: 10,
+      isPurchased: false,
+      initialAmount: 10,
+    });
+
+    const el: HTMLElement = fixture.nativeElement;
+    const sheet = el.querySelector('.lw-form-sheet');
+    const body = sheet?.querySelector('tui-scrollbar.lw-form-sheet-body');
+
+    expect(sheet).not.toBeNull();
+    expect(body).not.toBeNull();
+  });
+
   it('renders native Taiga accent size-m donate CTA without Tailwind radius or inline background overrides', async () => {
     const fixture = await setup({
       areaId: 42,

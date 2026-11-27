@@ -3,15 +3,16 @@ import { Component, computed, inject, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 
-import { TuiDialogContext, TuiDialogService } from '@taiga-ui/core';
-
 import {
   TuiButton,
-  TuiLabel,
-  TuiIcon,
-  TuiLoader,
-  TuiInput,
+  TuiDialogContext,
+  TuiDialogService,
   TuiHint,
+  TuiIcon,
+  TuiInput,
+  TuiLabel,
+  TuiLoader,
+  TuiScrollbar,
 } from '@taiga-ui/core';
 import {
   TuiInputChip,
@@ -74,254 +75,259 @@ const MERCHANDISE_CATEGORIES = [
     TuiInputNumber,
     TuiLabel,
     TuiLoader,
+    TuiScrollbar,
     TuiSelect,
     TuiSwitch,
     TuiTextarea,
   ],
   template: `
     <div class="lw-form-sheet">
-      <div class="lw-form-sheet-body flex flex-col gap-4">
-        <!-- Name -->
-        <tui-textfield class="w-full">
-          <label tuiLabel for="name">{{ 'userName' | translate }}</label>
-          <input
-            id="name"
-            tuiInput
-            type="text"
-            [ngModel]="model().name"
-            (ngModelChange)="updateModel('name', $event)"
-            name="name"
-          />
-        </tui-textfield>
+      <tui-scrollbar class="lw-form-sheet-body">
+        <div class="flex flex-col gap-4">
+          <!-- Name -->
+          <tui-textfield class="w-full">
+            <label tuiLabel for="name">{{ 'userName' | translate }}</label>
+            <input
+              id="name"
+              tuiInput
+              type="text"
+              [ngModel]="model().name"
+              (ngModelChange)="updateModel('name', $event)"
+              name="name"
+            />
+          </tui-textfield>
 
-        <!-- Category + Price -->
-        <div class="grid grid-cols-2 gap-4">
-          <tui-textfield
-            tuiChevron
-            [stringify]="categoryStringify"
-            class="w-full"
-          >
-            <label tuiLabel for="category-select">{{
-              'merchandising.items.category' | translate
+          <!-- Category + Price -->
+          <div class="grid grid-cols-2 gap-4">
+            <tui-textfield
+              tuiChevron
+              [stringify]="categoryStringify"
+              class="w-full"
+            >
+              <label tuiLabel for="category-select">{{
+                'merchandising.items.category' | translate
+              }}</label>
+              <input
+                id="category-select"
+                tuiSelect
+                [placeholder]="'merchandising.packs.selectCategory' | translate"
+                [ngModel]="model().category"
+                (ngModelChange)="updateModel('category', $event)"
+                name="category"
+              />
+              <tui-data-list-wrapper *tuiDropdown [items]="categories" />
+            </tui-textfield>
+
+            <tui-textfield class="w-full">
+              <label tuiLabel for="price">{{ 'price' | translate }}</label>
+              <input
+                id="price"
+                tuiInputNumber
+                [min]="0"
+                [ngModel]="model().price"
+                (ngModelChange)="updateModel('price', $event)"
+                name="price"
+              />
+              <span class="tui-textfield__suffix">€</span>
+            </tui-textfield>
+          </div>
+
+          <!-- Sizes -->
+          <tui-textfield multi class="block">
+            <label tuiLabel for="sizes">{{
+              'merchandising.items.sizes' | translate
             }}</label>
             <input
-              id="category-select"
-              tuiSelect
-              [placeholder]="'merchandising.packs.selectCategory' | translate"
-              [ngModel]="model().category"
-              (ngModelChange)="updateModel('category', $event)"
-              name="category"
+              id="sizes"
+              tuiInputChip
+              [ngModel]="model().available_sizes"
+              (ngModelChange)="onSizesChange($event)"
+              name="available_sizes"
+              autocomplete="off"
             />
-            <tui-data-list-wrapper *tuiDropdown [items]="categories" />
+            <tui-input-chip *tuiItem />
           </tui-textfield>
 
-          <tui-textfield class="w-full">
-            <label tuiLabel for="price">{{ 'price' | translate }}</label>
+          <!-- Colors -->
+          <tui-textfield multi class="block">
+            <label tuiLabel for="colors">{{
+              'merchandising.items.colors' | translate
+            }}</label>
             <input
-              id="price"
-              tuiInputNumber
-              [min]="0"
-              [ngModel]="model().price"
-              (ngModelChange)="updateModel('price', $event)"
-              name="price"
+              id="colors"
+              tuiInputChip
+              [ngModel]="model().available_colors"
+              (ngModelChange)="updateModel('available_colors', $event)"
+              name="available_colors"
+              autocomplete="off"
             />
-            <span class="tui-textfield__suffix">€</span>
+            <tui-input-chip *tuiItem />
           </tui-textfield>
-        </div>
 
-        <!-- Sizes -->
-        <tui-textfield multi class="block">
-          <label tuiLabel for="sizes">{{
-            'merchandising.items.sizes' | translate
-          }}</label>
-          <input
-            id="sizes"
-            tuiInputChip
-            [ngModel]="model().available_sizes"
-            (ngModelChange)="onSizesChange($event)"
-            name="available_sizes"
-            autocomplete="off"
-          />
-          <tui-input-chip *tuiItem />
-        </tui-textfield>
+          <!-- Stock per Size -->
+          <div
+            class="flex flex-col gap-3 p-4 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
+          >
+            <span
+              class="text-xs font-bold uppercase tracking-widest opacity-60"
+            >
+              {{ 'merchandising.items.stock' | translate }}
+            </span>
 
-        <!-- Colors -->
-        <tui-textfield multi class="block">
-          <label tuiLabel for="colors">{{
-            'merchandising.items.colors' | translate
-          }}</label>
-          <input
-            id="colors"
-            tuiInputChip
-            [ngModel]="model().available_colors"
-            (ngModelChange)="updateModel('available_colors', $event)"
-            name="available_colors"
-            autocomplete="off"
-          />
-          <tui-input-chip *tuiItem />
-        </tui-textfield>
+            @if (model().available_sizes.length === 0) {
+              <div class="py-4 text-center text-xs opacity-50 italic">
+                {{ 'merchandising.items.noSizesForStock' | translate }}
+              </div>
+            } @else {
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                @for (size of model().available_sizes; track size) {
+                  <tui-textfield class="w-full" size="s">
+                    <label tuiLabel [for]="'stock-' + size">{{ size }}</label>
+                    <input
+                      [id]="'stock-' + size"
+                      tuiInputNumber
+                      [min]="0"
+                      [ngModel]="stockBySize()[size] || 0"
+                      (ngModelChange)="updateStockForSize(size, $event)"
+                    />
+                  </tui-textfield>
+                }
+              </div>
+            }
+          </div>
 
-        <!-- Stock per Size -->
-        <div
-          class="flex flex-col gap-3 p-4 rounded-2xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
-        >
-          <span class="text-xs font-bold uppercase tracking-widest opacity-60">
-            {{ 'merchandising.items.stock' | translate }}
-          </span>
+          <!-- Description -->
+          <tui-textfield class="w-full">
+            <label tuiLabel for="description">{{
+              'description' | translate
+            }}</label>
+            <textarea
+              id="description"
+              tuiTextarea
+              [rows]="3"
+              [ngModel]="model().description"
+              (ngModelChange)="updateModel('description', $event)"
+              name="description"
+            ></textarea>
+          </tui-textfield>
 
-          @if (model().available_sizes.length === 0) {
-            <div class="py-4 text-center text-xs opacity-50 italic">
-              {{ 'merchandising.items.noSizesForStock' | translate }}
+          <!-- Images Gallery -->
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center justify-between px-1">
+              <span class="text-xs font-bold opacity-60 uppercase">{{
+                'merchandising.items.gallery' | translate
+              }}</span>
+              <label tuiInputFiles>
+                <input
+                  accept="image/*"
+                  tuiInputFiles
+                  multiple
+                  [ngModel]="fileInputModel()"
+                  (ngModelChange)="onPhotoFileChange($event)"
+                />
+                <button
+                  tuiButton
+                  type="button"
+                  appearance="flat"
+                  size="s"
+                  iconStart="@tui.plus"
+                >
+                  {{ 'merchandising.items.addImage' | translate }}
+                </button>
+              </label>
             </div>
-          } @else {
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              @for (size of model().available_sizes; track size) {
-                <tui-textfield class="w-full" size="s">
-                  <label tuiLabel [for]="'stock-' + size">{{ size }}</label>
-                  <input
-                    [id]="'stock-' + size"
-                    tuiInputNumber
-                    [min]="0"
-                    [ngModel]="stockBySize()[size] || 0"
-                    (ngModelChange)="updateStockForSize(size, $event)"
+
+            <div
+              class="grid grid-cols-2 sm:grid-cols-3 gap-3"
+              cdkDropList
+              cdkDropListOrientation="mixed"
+              (cdkDropListDropped)="dropImage($event)"
+            >
+              @for (url of model().image_urls; track url) {
+                <div
+                  cdkDrag
+                  class="relative aspect-square rounded-xl overflow-hidden border border-(--tui-border-normal) group cursor-grab active:cursor-grabbing"
+                >
+                  <img
+                    [src]="url"
+                    [alt]="'merchandising.items.gallery' | translate"
+                    class="w-full h-full object-cover"
                   />
-                </tui-textfield>
+                  <div
+                    class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <div class="bg-(--tui-background-base) rounded-xl p-0.5">
+                      <button
+                        tuiButton
+                        type="button"
+                        appearance="destructive"
+                        size="s"
+                        (click)="removeExistingImage(url)"
+                      >
+                        <tui-icon icon="@tui.trash" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              @for (item of newPhotos(); track item.id) {
+                <div
+                  cdkDrag
+                  class="relative aspect-square rounded-xl overflow-hidden border border-accent border-dashed group cursor-grab active:cursor-grabbing"
+                >
+                  <img
+                    [src]="item.preview"
+                    [alt]="'merchandising.items.newPhoto' | translate"
+                    class="w-full h-full object-cover"
+                  />
+                  <div
+                    class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <div class="bg-(--tui-background-base) rounded-xl p-0.5">
+                      <button
+                        tuiButton
+                        type="button"
+                        appearance="destructive"
+                        size="s"
+                        (click)="removeNewPhoto(item.id)"
+                      >
+                        <tui-icon icon="@tui.trash" />
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    class="absolute top-1 right-1 bg-(--tui-background-base) rounded-full p-0.5"
+                    [tuiHint]="'merchandising.items.newPhoto' | translate"
+                  >
+                    <tui-icon
+                      icon="@tui.circle-check"
+                      class="text-sm"
+                      style="color: var(--tui-status-positive)"
+                    />
+                  </div>
+                </div>
               }
             </div>
-          }
-        </div>
-
-        <!-- Description -->
-        <tui-textfield class="w-full">
-          <label tuiLabel for="description">{{
-            'description' | translate
-          }}</label>
-          <textarea
-            id="description"
-            tuiTextarea
-            [rows]="3"
-            [ngModel]="model().description"
-            (ngModelChange)="updateModel('description', $event)"
-            name="description"
-          ></textarea>
-        </tui-textfield>
-
-        <!-- Images Gallery -->
-        <div class="flex flex-col gap-3">
-          <div class="flex items-center justify-between px-1">
-            <span class="text-xs font-bold opacity-60 uppercase">{{
-              'merchandising.items.gallery' | translate
-            }}</span>
-            <label tuiInputFiles>
-              <input
-                accept="image/*"
-                tuiInputFiles
-                multiple
-                [ngModel]="fileInputModel()"
-                (ngModelChange)="onPhotoFileChange($event)"
-              />
-              <button
-                tuiButton
-                type="button"
-                appearance="flat"
-                size="s"
-                iconStart="@tui.plus"
-              >
-                {{ 'merchandising.items.addImage' | translate }}
-              </button>
-            </label>
           </div>
 
+          <!-- Active -->
           <div
-            class="grid grid-cols-2 sm:grid-cols-3 gap-3"
-            cdkDropList
-            cdkDropListOrientation="mixed"
-            (cdkDropListDropped)="dropImage($event)"
+            class="flex items-center justify-between gap-4 p-4 rounded-xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
           >
-            @for (url of model().image_urls; track url) {
-              <div
-                cdkDrag
-                class="relative aspect-square rounded-xl overflow-hidden border border-(--tui-border-normal) group cursor-grab active:cursor-grabbing"
-              >
-                <img
-                  [src]="url"
-                  [alt]="'merchandising.items.gallery' | translate"
-                  class="w-full h-full object-cover"
-                />
-                <div
-                  class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <div class="bg-(--tui-background-base) rounded-xl p-0.5">
-                    <button
-                      tuiButton
-                      type="button"
-                      appearance="destructive"
-                      size="s"
-                      (click)="removeExistingImage(url)"
-                    >
-                      <tui-icon icon="@tui.trash" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            }
-
-            @for (item of newPhotos(); track item.id) {
-              <div
-                cdkDrag
-                class="relative aspect-square rounded-xl overflow-hidden border border-accent border-dashed group cursor-grab active:cursor-grabbing"
-              >
-                <img
-                  [src]="item.preview"
-                  [alt]="'merchandising.items.newPhoto' | translate"
-                  class="w-full h-full object-cover"
-                />
-                <div
-                  class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <div class="bg-(--tui-background-base) rounded-xl p-0.5">
-                    <button
-                      tuiButton
-                      type="button"
-                      appearance="destructive"
-                      size="s"
-                      (click)="removeNewPhoto(item.id)"
-                    >
-                      <tui-icon icon="@tui.trash" />
-                    </button>
-                  </div>
-                </div>
-                <div
-                  class="absolute top-1 right-1 bg-(--tui-background-base) rounded-full p-0.5"
-                  [tuiHint]="'merchandising.items.newPhoto' | translate"
-                >
-                  <tui-icon
-                    icon="@tui.circle-check"
-                    class="text-sm"
-                    style="color: var(--tui-status-positive)"
-                  />
-                </div>
-              </div>
-            }
+            <span class="font-semibold">{{
+              'merchandising.items.active' | translate
+            }}</span>
+            <input
+              tuiSwitch
+              type="checkbox"
+              [ngModel]="model().active"
+              (ngModelChange)="updateModel('active', $event)"
+              name="active"
+            />
           </div>
         </div>
-
-        <!-- Active -->
-        <div
-          class="flex items-center justify-between gap-4 p-4 rounded-xl bg-(--tui-background-neutral-1) border border-(--tui-border-normal)"
-        >
-          <span class="font-semibold">{{
-            'merchandising.items.active' | translate
-          }}</span>
-          <input
-            tuiSwitch
-            type="checkbox"
-            [ngModel]="model().active"
-            (ngModelChange)="updateModel('active', $event)"
-            name="active"
-          />
-        </div>
-      </div>
+      </tui-scrollbar>
 
       <div class="lw-form-sheet-footer">
         <button
