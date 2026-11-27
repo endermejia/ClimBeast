@@ -1,4 +1,4 @@
-import { CommonModule, DecimalPipe, UpperCasePipe } from '@angular/common';
+import { DecimalPipe, NgClass, UpperCasePipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
@@ -15,8 +15,7 @@ import { MerchandiseItemDetail, OrderDetail } from '../../models';
 
 @Component({
   selector: 'app-order-details-dialog',
-  standalone: true,
-  imports: [CommonModule, DecimalPipe, UpperCasePipe, TranslatePipe, TuiIcon],
+  imports: [NgClass, DecimalPipe, UpperCasePipe, TranslatePipe, TuiIcon],
   template: `
     <div class="flex flex-col gap-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">

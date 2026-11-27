@@ -9,7 +9,6 @@ import { ReportUserFormComponent } from '../forms/report-user-form';
 
 @Component({
   selector: 'app-report-user-dialog',
-  standalone: true,
   imports: [ReportUserFormComponent],
   template: `
     <app-report-user-form

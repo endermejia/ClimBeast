@@ -1,4 +1,4 @@
-import { DatePipe, CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import {
   Component,
   computed,
@@ -17,19 +17,17 @@ import { Router, RouterLink } from '@angular/router';
 import {
   TuiButton,
   TuiDialogContext,
-  TuiDialogService,
   TuiHint,
   TuiIcon,
   TuiLoader,
   TuiScrollbar,
 } from '@taiga-ui/core';
-import { TuiAvatar, TUI_CONFIRM, TuiConfirmData } from '@taiga-ui/kit';
+import { TuiAvatar } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 
-import { firstValueFrom } from 'rxjs';
-
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { AscentsService } from '../../services/ascents.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { UserProfilesService } from '../../services/user-profiles.service';
@@ -50,11 +48,9 @@ export interface AscentCommentsDialogData {
 
 @Component({
   selector: 'app-ascent-comments-dialog',
-  standalone: true,
   imports: [
     AvatarUrlPipe,
     CommentLikesComponent,
-    CommonModule,
     DatePipe,
     EmptyStateComponent,
     FormsModule,
@@ -277,8 +273,7 @@ export class AscentCommentsDialogComponent {
   protected readonly supabase = inject(SupabaseService);
   private readonly ascentsService = inject(AscentsService);
   private readonly userProfilesService = inject(UserProfilesService);
-  private readonly translate = inject(TranslateService);
-  private readonly dialogs = inject(TuiDialogService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly router = inject(Router);
   protected readonly context =
     injectContext<TuiDialogContext<void, AscentCommentsDialogData>>();
@@ -597,21 +592,13 @@ export class AscentCommentsDialogComponent {
   }
 
   protected async onDeleteComment(commentId: number) {
-    const data: TuiConfirmData = {
-      content: this.translate.instant('deleteCommentConfirm'),
-      yes: this.translate.instant('delete'),
-      no: this.translate.instant('cancel'),
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'deleteComment',
+      contentKey: 'deleteCommentConfirm',
+      yesKey: 'delete',
+      noKey: 'cancel',
       appearance: 'primary-destructive',
-    };
-
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('deleteComment'),
-        size: 's',
-        data,
-      }),
-      { defaultValue: false },
-    );
+    });
 
     if (confirmed) {
       const success = await this.ascentsService.deleteComment(

@@ -6,17 +6,11 @@ import {
   ElementRef,
   inject,
   signal,
-  untracked,
   viewChild,
   WritableSignal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import {
-  ActivatedRoute,
-  Router,
-  RouterLink,
-  RouterLinkActive,
-} from '@angular/router';
+import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
 
 import { TuiButton, TuiIcon, TuiInput, TuiScrollbar } from '@taiga-ui/core';
 import { TuiSegmented } from '@taiga-ui/kit';
@@ -31,9 +25,9 @@ import { IndoorService } from '../../services/indoor.service';
 import { LayoutService } from '../../services/layout.service';
 import { OnlineStatusService } from '../../services/online-status.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
-import { ScrollService } from '../../services/scroll.service';
 
 import { AreaCardSkeletonComponent } from '../../components/area/area-card-skeleton';
+import { createCardWindowController } from '../../components/ui/card-window.controller';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { ExploreMapFabComponent } from '../../components/ui/explore-map-fab';
 import { FilterButtonComponent } from '../../components/ui/filter-button';
@@ -47,18 +41,10 @@ import {
   ORDERED_GRADE_VALUES,
 } from '../../models';
 
-import { matchesQuery, reactToObservable } from '../../utils';
-
-/**
- * Tarjetas pintadas por lote. La primera render solo construye esta ventana
- * (unas pocas pantallas) y el resto entra al acercarse al final, así la
- * navegación no se bloquea creando decenas de tarjetas de golpe.
- */
-const CARD_WINDOW = 24;
+import { matchesQuery } from '../../utils';
 
 @Component({
   selector: 'app-indoor-list',
-  standalone: true,
   imports: [
     AreaCardSkeletonComponent,
     EmptyStateComponent,
@@ -197,14 +183,12 @@ export class IndoorListComponent {
   protected readonly skeletons = Array.from({ length: 16 }, (_, i) => i);
   protected readonly layoutService = inject(LayoutService);
   protected readonly onlineStatus = inject(OnlineStatusService);
-  private readonly scrollService = inject(ScrollService);
 
   protected readonly authState = inject(AuthStateService);
   protected readonly filtersService = inject(FiltersService);
   protected readonly indoor = inject(IndoorService);
   protected readonly indoorCentersData = inject(IndoorCentersDataService);
   protected readonly outdoorData = inject(OutdoorDataService);
-  protected readonly router = inject(Router);
   private readonly filterState = inject(FilterStateService);
   private readonly route = inject(ActivatedRoute);
   private readonly queryParams = toSignal(this.route.queryParams);
@@ -218,47 +202,6 @@ export class IndoorListComponent {
   );
 
   protected readonly query: WritableSignal<string> = signal('');
-
-  constructor() {
-    reactToObservable(this.scrollService.scrollToTop$, () => {
-      this.scrollToTop();
-    });
-
-    effect(() => {
-      const params = this.queryParams();
-      const qVal = params?.['q'] ?? params?.['city'] ?? params?.['search'];
-      if (qVal) {
-        this.query.set(qVal);
-      }
-    });
-
-    // Cambiar búsqueda o filtros vuelve la ventana de tarjetas a su tamaño inicial.
-    let initialRun = true;
-    effect(() => {
-      this.filterKey();
-      if (initialRun) {
-        initialRun = false;
-        return;
-      }
-      untracked(() => this.visibleCount.set(CARD_WINDOW));
-    });
-  }
-
-  protected onTabClick(event: MouseEvent, path: string): void {
-    const current = this.router.url.split('?')[0].split('#')[0];
-    if (current === path) {
-      event.preventDefault();
-      this.visibleCount.set(CARD_WINDOW);
-      this.scrollToTop();
-    }
-  }
-
-  private scrollToTop(): void {
-    this.visibleCount.set(CARD_WINDOW);
-    if (this.scrollbar()?.nativeElement) {
-      this.scrollbar()!.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }
 
   protected readonly hasActiveFilters = computed(() => {
     const [lo, hi] = this.filterState.indoorListGradeRange();
@@ -287,23 +230,6 @@ export class IndoorListComponent {
     });
   });
 
-  /**
-   * Ventana de tarjetas efectivamente pintadas: `filtered()` completo solo se
-   * recorre para el contador y los filtros, el DOM se queda en `CARD_WINDOW`
-   * unidades hasta que el usuario baja el scroll.
-   */
-  private readonly visibleCount = this.indoorCentersData.indoorListVisibleCount;
-  protected readonly visibleIndoor = computed(() =>
-    this.filtered().slice(0, this.visibleCount()),
-  );
-  protected readonly hasMoreIndoor = computed(
-    () => this.filtered().length > this.visibleCount(),
-  );
-
-  protected showMoreIndoor(): void {
-    this.visibleCount.update((count) => count + CARD_WINDOW);
-  }
-
   private readonly filterKey = computed(() =>
     JSON.stringify([
       this.query(),
@@ -311,6 +237,28 @@ export class IndoorListComponent {
       this.filterState.indoorListToposOnly(),
     ]),
   );
+
+  private readonly cardWindow = createCardWindowController({
+    items: this.filtered,
+    visibleCount: this.indoorCentersData.indoorListVisibleCount,
+    filterKey: this.filterKey,
+    scrollbar: this.scrollbar,
+  });
+
+  protected readonly visibleIndoor = this.cardWindow.visibleItems;
+  protected readonly hasMoreIndoor = this.cardWindow.hasMore;
+  protected readonly showMoreIndoor = this.cardWindow.showMore;
+  protected readonly onTabClick = this.cardWindow.onTabClick;
+
+  constructor() {
+    effect(() => {
+      const params = this.queryParams();
+      const qVal = params?.['q'] ?? params?.['city'] ?? params?.['search'];
+      if (qVal) {
+        this.query.set(qVal);
+      }
+    });
+  }
 
   protected openFilters(): void {
     this.filtersService.openIndoorListFilters();

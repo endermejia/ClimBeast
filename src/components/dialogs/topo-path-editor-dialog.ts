@@ -1,14 +1,5 @@
+import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import {
-  CdkDrag,
-  CdkDragDrop,
-  CdkDragHandle,
-  CdkDragPlaceholder,
-  CdkDropList,
-  moveItemInArray,
-} from '@angular/cdk/drag-drop';
-import { CommonModule } from '@angular/common';
-import {
-  afterNextRender,
   AfterViewInit,
   ChangeDetectorRef,
   Component,
@@ -16,43 +7,17 @@ import {
   DestroyRef,
   ElementRef,
   inject,
-  Injector,
   resource,
   signal,
   viewChild,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 
-import { TuiIdentityMatcher, tuiIsString } from '@taiga-ui/cdk';
-import {
-  TuiAppearance,
-  TuiButton,
-  TuiCell,
-  TuiDataList,
-  TuiDialogContext,
-  TuiDialogService,
-  TuiDropdown,
-  TuiFilterByInputPipe,
-  TuiIcon,
-  TuiLabel,
-  TuiLoader,
-  TuiOptGroup,
-  TuiScrollbar,
-  TuiSlider,
-  TuiTitle,
-} from '@taiga-ui/core';
-import {
-  TUI_CONFIRM,
-  TuiChevron,
-  type TuiConfirmData,
-  TuiInputChip,
-} from '@taiga-ui/kit';
+import { TuiButton, TuiDialogContext, TuiLoader } from '@taiga-ui/core';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslateModule } from '@ngx-translate/core';
 
-import { firstValueFrom } from 'rxjs';
-
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { IndoorDataService } from '../../services/indoor-data.service';
 import { IndoorService } from '../../services/indoor.service';
@@ -65,33 +30,20 @@ import { ToposService } from '../../services/topos.service';
 
 import {
   ClimbingKind,
-  GRADE_NUMBER_TO_LABEL,
   IndoorCenterDto,
   IndoorRouteDto,
   RouteBasicWithOwnData,
   SelectedRoute,
-  TopoPath,
   TopoPathEditorResult,
   topoPathToJson,
-  TopoPoint,
   TopoRouteWithRoute,
-  VERTICAL_LIFE_GRADES,
 } from '../../models';
-
-import {
-  GradeLabelPipe,
-  TopoPointPillGeometryPipe,
-  TopoPointStateBadgePipe,
-  TopoPointStateColorPipe,
-  TopoPointStateLabelPipe,
-} from '../../pipes';
 
 import {
   addPointToPath,
   attachWheelListener,
   constrainTranslation,
   cyclePointState,
-  getPointsString as getPointsStringUtil,
   getRouteStrokeWidth,
   getRouteStyleProperties,
   handleErrorToast,
@@ -103,7 +55,34 @@ import {
   startDragPointTouch,
 } from '../../utils';
 
-import { GradeComponent } from '../ui/avatar-grade';
+import {
+  applyPathsSnapshot,
+  arePathsSnapshotsEqual,
+  canRedo,
+  canUndo,
+  createHistoryState,
+  createPathsSnapshot,
+  pushHistory,
+  redoHistory,
+  type TopoPathHistorySnapshot,
+  type TopoPathHistoryState,
+  undoHistory,
+} from './topo-path-editor-history';
+import { TopoPathEditorSidebarComponent } from './topo-path-editor-sidebar';
+import { TopoPathEditorSvgComponent } from './topo-path-editor-svg';
+import {
+  buildPathsToUpdate,
+  buildRoutePathsMeta,
+  cloneTopoPoint,
+  computeCenteredTranslation,
+  computeFitScale,
+  computePathCentroid,
+  type EditorPathEntry,
+  filterModifiedIndoorRoutes,
+  formatSvgPoints,
+  parseRouteId,
+  serializeTopoPath,
+} from './topo-path-editor.utils';
 
 export interface TopoPathEditorConfig {
   imageUrl: string;
@@ -120,415 +99,48 @@ export interface TopoPathEditorConfig {
 
 @Component({
   selector: 'app-topo-path-editor-dialog',
-  standalone: true,
   imports: [
-    CommonModule,
-    FormsModule,
-
-    GradeComponent,
-    GradeLabelPipe,
-    CdkDrag,
-    CdkDragHandle,
-    CdkDragPlaceholder,
-    CdkDropList,
-    TopoPointPillGeometryPipe,
-    TopoPointStateBadgePipe,
-    TopoPointStateColorPipe,
-    TopoPointStateLabelPipe,
+    TopoPathEditorSidebarComponent,
+    TopoPathEditorSvgComponent,
     TranslateModule,
-    TuiAppearance,
     TuiButton,
-    TuiCell,
-    TuiChevron,
-    TuiDataList,
-    TuiDropdown,
-    TuiFilterByInputPipe,
-    TuiIcon,
-    TuiInputChip,
-    TuiLabel,
     TuiLoader,
-    TuiOptGroup,
-    TuiScrollbar,
-    TuiSlider,
-    TuiTitle,
   ],
-
   template: `
     <div class="editor-root">
       <!-- ═════════════════════ BODY (canvas + sidebar) ═════════════════════ -->
       <div class="editor-body">
         <!-- ── ROUTE SIDEBAR ── -->
-        <aside class="route-sidebar" [class.sidebar-open]="sidebarOpen()">
-          <div class="sidebar-inner">
-            <div
-              class="flex items-center justify-between px-5 pt-4 pb-2 shrink-0"
-            >
-              <div class="flex items-center gap-2">
-                <p class="sidebar-label m-0! p-0!">
-                  {{ 'routes' | translate }}
-                </p>
-              </div>
-              <div class="flex items-center gap-1">
-                <button
-                  tuiButton
-                  [appearance]="showRouteSelector() ? 'secondary' : 'flat'"
-                  size="s"
-                  iconStart="@tui.link"
-                  class="rounded-full!"
-                  [title]="'topos.manageRoutes' | translate"
-                  (click)="toggleRouteSelector()"
-                >
-                  {{ 'link' | translate }}
-                </button>
-                @if (canCreateRoute()) {
-                  <button
-                    tuiButton
-                    appearance="flat"
-                    size="s"
-                    iconStart="@tui.plus"
-                    class="rounded-full!"
-                    (click)="createNewIndoorRoute()"
-                  >
-                    {{ 'new' | translate }}
-                  </button>
-                }
-              </div>
-            </div>
-
-            <!-- Multiselect to select routes of the crag and link new routes -->
-            @if (showRouteSelector()) {
-              <div class="px-3 pb-2 shrink-0">
-                <tui-textfield
-                  multi
-                  tuiChevron
-                  [stringify]="stringifyRoute"
-                  [disabledItemHandler]="strings"
-                  [identityMatcher]="routeIdentityMatcher"
-                  [tuiTextfieldCleaner]="true"
-                  size="s"
-                  class="w-full"
-                >
-                  <label tuiLabel for="topo-multiselect-routes">{{
-                    'topos.manageRoutes' | translate
-                  }}</label>
-                  <input
-                    tuiInputChip
-                    id="topo-multiselect-routes"
-                    autocomplete="off"
-                    [ngModel]="selectedRoutesForMultiselect()"
-                    (ngModelChange)="onSelectedRoutesChange($event)"
-                    name="selectedRoutes"
-                    [placeholder]="'select' | translate"
-                  />
-                  <tui-input-chip *tuiItem />
-                  <tui-data-list *tuiDropdown>
-                    <tui-opt-group
-                      [label]="'routes' | translate"
-                      tuiMultiSelectGroup
-                    >
-                      @for (
-                        route of availableRoutes() | tuiFilterByInput;
-                        track route.id
-                      ) {
-                        <button type="button" new tuiOption [value]="route">
-                          <div tuiCell size="s">
-                            <app-grade
-                              [grade]="route.grade ?? 0"
-                              [kind]="route.climbing_kind"
-                            />
-                            <div tuiTitle>
-                              {{ route.name }}
-                            </div>
-                          </div>
-                        </button>
-                      }
-                    </tui-opt-group>
-                  </tui-data-list>
-                </tui-textfield>
-              </div>
-            }
-            <tui-scrollbar class="sidebar-scroll">
-              <!-- Selection guidance: changes once a route is selected -->
-              <div
-                class="mx-3 mt-1 flex items-center gap-2 rounded-xl bg-(--tui-background-neutral-2) px-3 py-2 text-xs leading-snug font-semibold text-(--tui-text-secondary)"
-                [tuiAppearance]="selectedRoute() ? 'accent' : 'none'"
-              >
-                <tui-icon
-                  [icon]="
-                    selectedRoute()
-                      ? '@tui.pen-tool'
-                      : '@tui.mouse-pointer-click'
-                  "
-                  class="shrink-0"
-                />
-                <span>{{
-                  (selectedRoute()
-                    ? 'topos.editor.hintDrawReady'
-                    : 'topos.editor.hintSelectRoute'
-                  ) | translate
-                }}</span>
-              </div>
-              <div
-                #routeList
-                class="route-list"
-                cdkDropList
-                [cdkDropListDisabled]="!canReorderRoutes()"
-                (cdkDropListDropped)="dropRoute($event)"
-              >
-                @for (tr of topoRoutes; track $index; let idx = $index) {
-                  @let isSelected = selectedRoute()?.route_id === tr.route_id;
-                  @let pathMeta = routePathsMeta().get(tr.route_id);
-                  @let hasPath = !!pathMeta?.hasPath;
-                  @let isTraverse = !!pathMeta?.isTraverse;
-                  <div
-                    cdkDrag
-                    class="route-item tui-interactive"
-                    role="button"
-                    tabindex="0"
-                    [attr.data-route-id]="tr.route_id"
-                    [class.route-item--active]="isSelected"
-                    [tuiAppearance]="isSelected ? 'accent' : 'none'"
-                    (click.zoneless)="selectRoute(tr, true)"
-                    (keydown.enter.zoneless)="selectRoute(tr, true)"
-                  >
-                    @if (canReorderRoutes()) {
-                      <tui-icon
-                        icon="@tui.grip-vertical"
-                        class="drag-handle opacity-30 shrink-0 cursor-grab active:cursor-grabbing"
-                        cdkDragHandle
-                        (click)="$event.stopPropagation()"
-                      />
-                    }
-                    @if (!context.data.isIndoor) {
-                      <div class="route-num">{{ idx + 1 }}</div>
-                    }
-                    <div class="route-info">
-                      <div class="route-name">{{ tr.route.name }}</div>
-                      @if (isTraverse) {
-                        <span
-                          class="text-[10px] text-(--tui-text-tertiary) flex items-center gap-0.5"
-                        >
-                          <tui-icon
-                            icon="@tui.arrow-right-left"
-                            class="text-[10px] scale-75"
-                          />
-                          {{ 'topos.editor.traverse' | translate }}
-                        </span>
-                      }
-                    </div>
-                    @if (isSelected && canEditSelectedRoute()) {
-                      <button
-                        tuiIconButton
-                        appearance="flat"
-                        size="s"
-                        iconStart="@tui.pencil"
-                        class="rounded-full! opacity-60 hover:opacity-100"
-                        [title]="'edit' | translate"
-                        (click)="editRoute(tr, $event)"
-                      >
-                        {{ 'edit' | translate }}
-                      </button>
-                    }
-                    <app-grade
-                      [grade]="tr.route.grade"
-                      [kind]="tr.route.climbing_kind"
-                      size="s"
-                    />
-
-                    <div class="flex items-center gap-1">
-                      @if (hasPath) {
-                        @if (isSelected && canEditSelectedLine()) {
-                          <button
-                            tuiIconButton
-                            appearance="flat"
-                            size="s"
-                            iconStart="@tui.trash"
-                            class="rounded-full!"
-                            [class.text-white!]="true"
-                            [title]="'delete' | translate"
-                            (click)="removePath(tr); $event.stopPropagation()"
-                          >
-                            {{ 'delete' | translate }}
-                          </button>
-                        } @else {
-                          <tui-icon icon="@tui.check" class="path-check" />
-                        }
-                      }
-                      @if (!hasPath || isSelected) {
-                        <button
-                          tuiIconButton
-                          appearance="flat"
-                          size="s"
-                          iconStart="@tui.unlink"
-                          class="rounded-full! opacity-60 hover:opacity-100"
-                          [title]="'unlink' | translate"
-                          (click)="unlinkRoute(tr, $event)"
-                        >
-                          {{ 'unlink' | translate }}
-                        </button>
-                      }
-                    </div>
-                    <div
-                      *cdkDragPlaceholder
-                      class="route-item route-item--placeholder"
-                    ></div>
-                  </div>
-                }
-              </div>
-
-              <!-- Tips inside scrollbar (only once a route is selected) -->
-              @if (selectedRoute()) {
-                <div class="tips">
-                  <p class="tip">
-                    <tui-icon icon="@tui.mouse-pointer-2" class="tip-icon" />
-                    {{ 'topos.editor.addPoint' | translate }}
-                  </p>
-                  <p class="tip">
-                    <tui-icon icon="@tui.move" class="tip-icon" />
-                    {{ 'topos.editor.movePoint' | translate }}
-                  </p>
-                  <p class="tip">
-                    <tui-icon icon="@tui.trash" class="tip-icon" />
-                    {{ deletePointTipKey() | translate }}
-                  </p>
-                  <div class="tip items-start!">
-                    <tui-icon
-                      icon="@tui.mouse-pointer-click"
-                      class="tip-icon mt-0.5 shrink-0"
-                    />
-                    <div class="flex-1 flex flex-col gap-1.5 min-w-0">
-                      <span>
-                        {{ 'topos.editor.cyclePointState' | translate }}:
-                      </span>
-                      <div
-                        class="flex items-center justify-between flex-wrap gap-x-1.5 gap-y-1"
-                      >
-                        <div class="flex items-center gap-1 shrink-0">
-                          <span
-                            class="w-2.5 h-2.5 rounded-full bg-[#22C55E] inline-block shrink-0 shadow-xs"
-                          ></span>
-                          <span>{{ 'topos.legend.start' | translate }}</span>
-                        </div>
-                        <tui-icon
-                          icon="@tui.chevron-right"
-                          class="text-[10px] opacity-35 shrink-0"
-                        />
-                        <div class="flex items-center gap-1 shrink-0">
-                          <span
-                            class="w-2.5 h-2.5 rounded-full bg-[#EF4444] inline-block shrink-0 shadow-xs"
-                          ></span>
-                          <span>{{ 'topos.legend.top' | translate }}</span>
-                        </div>
-                        <tui-icon
-                          icon="@tui.chevron-right"
-                          class="text-[10px] opacity-35 shrink-0"
-                        />
-                        <div class="flex items-center gap-1 shrink-0">
-                          <span
-                            class="w-2.5 h-2.5 rounded-full bg-[#3B82F6] inline-block shrink-0 shadow-xs"
-                          ></span>
-                          <span>{{ 'topos.legend.match' | translate }}</span>
-                        </div>
-                        <tui-icon
-                          icon="@tui.chevron-right"
-                          class="text-[10px] opacity-35 shrink-0"
-                        />
-                        <div class="flex items-center gap-1 shrink-0">
-                          <span
-                            class="w-2.5 h-2.5 rounded-full bg-[#EAB308] inline-block shrink-0 shadow-xs"
-                          ></span>
-                          <span>{{ 'topos.legend.foot' | translate }}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              }
-            </tui-scrollbar>
-
-            <!-- Compact Fixed Bottom Controls -->
-            <div class="sidebar-controls">
-              <!-- Path Type Selector & Traverse Toggle -->
-              @if (selectedRoute()) {
-                <div class="path-type-control">
-                  <div class="control-header">
-                    <span class="control-label">{{
-                      'topos.editor.pathType' | translate
-                    }}</span>
-                  </div>
-                  <div class="flex gap-2">
-                    <button
-                      tuiButton
-                      type="button"
-                      size="s"
-                      [appearance]="
-                        selectedRoutePathType() === 'line'
-                          ? 'primary'
-                          : 'secondary'
-                      "
-                      class="flex-1 rounded-xl!"
-                      (click)="setSelectedRoutePathType('line')"
-                    >
-                      <tui-icon icon="@tui.minus" class="mr-1" />
-                      <span>{{ 'topos.editor.pathTypeLine' | translate }}</span>
-                    </button>
-                    <button
-                      tuiButton
-                      type="button"
-                      size="s"
-                      [appearance]="
-                        selectedRoutePathType() === 'circle'
-                          ? 'primary'
-                          : 'secondary'
-                      "
-                      class="flex-1 rounded-xl!"
-                      (click)="setSelectedRoutePathType('circle')"
-                    >
-                      <tui-icon icon="@tui.circle" class="mr-1" />
-                      <span>{{
-                        'topos.editor.pathTypeCircle' | translate
-                      }}</span>
-                    </button>
-                  </div>
-
-                  <!-- Traverse toggle -->
-                  <button
-                    tuiButton
-                    type="button"
-                    size="s"
-                    [appearance]="
-                      selectedRouteIsTraverse() ? 'primary' : 'secondary'
-                    "
-                    class="w-full rounded-xl! mt-2"
-                    (click)="toggleSelectedRouteTraverse()"
-                  >
-                    <tui-icon icon="@tui.arrow-right-left" class="mr-1" />
-                    <span>{{ 'topos.editor.traverse' | translate }}</span>
-                  </button>
-                </div>
-              }
-
-              <!-- Line Width Slider -->
-              <div class="line-width-control">
-                <div class="control-header">
-                  <span class="control-label">{{
-                    'topos.editor.lineWidth' | translate
-                  }}</span>
-                  <span class="control-value">{{ lineWidth() }}</span>
-                </div>
-                <input
-                  tuiSlider
-                  type="range"
-                  [min]="1"
-                  [max]="15"
-                  [step]="0.5"
-                  [ngModel]="lineWidth()"
-                  (ngModelChange)="lineWidth.set($event)"
-                />
-              </div>
-            </div>
-          </div>
-        </aside>
+        <app-topo-path-editor-sidebar
+          #sidebar
+          [isOpen]="sidebarOpen()"
+          [isIndoor]="!!context.data.isIndoor"
+          [topoRoutes]="topoRoutesList()"
+          [selectedRoute]="selectedRoute()"
+          [routePathsMeta]="routePathsMeta()"
+          [showRouteSelector]="showRouteSelector()"
+          [availableRoutes]="availableRoutes()"
+          [selectedRoutesForMultiselect]="selectedRoutesForMultiselect()"
+          [canCreateRoute]="canCreateRoute()"
+          [canReorderRoutes]="canReorderRoutes()"
+          [canEditSelectedRoute]="canEditSelectedRoute()"
+          [canEditSelectedLine]="canEditSelectedLine()"
+          [deletePointTipKey]="deletePointTipKey()"
+          [selectedRoutePathType]="selectedRoutePathType()"
+          [selectedRouteIsTraverse]="selectedRouteIsTraverse()"
+          [lineWidth]="lineWidth()"
+          (toggleRouteSelector)="toggleRouteSelector()"
+          (createNewRoute)="createNewIndoorRoute()"
+          (selectedRoutesChange)="onSelectedRoutesChange($event)"
+          (routeDrop)="dropRoute($event)"
+          (routeSelect)="selectRoute($event, true)"
+          (routeEdit)="editRoute($event.route, $event.event)"
+          (pathRemove)="removePath($event)"
+          (routeUnlink)="unlinkRoute($event.route, $event.event)"
+          (pathTypeChange)="setSelectedRoutePathType($event)"
+          (traverseToggle)="toggleSelectedRouteTraverse()"
+          (lineWidthChange)="lineWidth.set($event)"
+        />
 
         <!-- Mobile backdrop -->
         @if (sidebarOpen()) {
@@ -561,457 +173,30 @@ export interface TopoPathEditorConfig {
             />
 
             <!-- SVG Paths Overlay -->
-            <svg
-              class="svg-overlay"
-              [attr.viewBox]="viewBox()"
-              preserveAspectRatio="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              @for (entry of visiblePathsEntries(); track entry[0]) {
-                @let routeId = entry[0];
-                @let pathData = entry[1];
-                @let isSelected = selectedRoute()?.route_id == routeId;
-                @let style =
-                  routeStyleMap()[routeId] || {
-                    stroke: '#22c55e',
-                    opacity: 0.8,
-                    isDashed: true,
-                  };
-                @let strokeWidthFactor =
-                  routeStrokeWidthMap()[routeId] ?? lineWidth() / 1000;
-                <g
-                  class="path-group"
-                  (click)="
-                    selectRoute(pathData._ref || { route_id: routeId });
-                    $event.stopPropagation()
-                  "
-                  (touchstart)="
-                    selectRoute(pathData._ref || { route_id: routeId });
-                    $event.stopPropagation()
-                  "
-                >
-                  @if (pathData.type === 'circle') {
-                    @let strokeW = strokeWidthFactor * width();
-                    @let circleR = strokeW * 3.5;
-                    @let isTraverse = pathData.isTraverse;
-                    @for (pt of pathData.points; track $index) {
-                      @let ptColor =
-                        pt.state | topoPointStateColor: style.stroke;
-                      @let badge = pt.state | topoPointStateBadge;
-                      <!-- Hit area circle -->
-                      <circle
-                        [attr.cx]="pt.x * width()"
-                        [attr.cy]="pt.y * height()"
-                        [attr.r]="circleR + strokeW * 2"
-                        fill="transparent"
-                      />
-                      <!-- Shadow circle -->
-                      <circle
-                        [attr.cx]="pt.x * width()"
-                        [attr.cy]="pt.y * height()"
-                        [attr.r]="circleR"
-                        fill="none"
-                        stroke="white"
-                        [style.opacity]="style.isDashed ? 1 : 0.7"
-                        [attr.stroke-width]="
-                          strokeW + (style.isDashed ? 2.5 : 1.5)
-                        "
-                        [attr.stroke-dasharray]="
-                          style.isDashed
-                            ? width() * 0.008 + ' ' + width() * 0.008
-                            : 'none'
-                        "
-                      />
-                      <!-- Main circle -->
-                      <circle
-                        [attr.cx]="pt.x * width()"
-                        [attr.cy]="pt.y * height()"
-                        [attr.r]="circleR"
-                        fill="rgba(0,0,0,0.05)"
-                        [attr.stroke]="style.stroke"
-                        [style.color]="style.stroke"
-                        [style.opacity]="style.opacity"
-                        [attr.stroke-width]="strokeW"
-                        [attr.stroke-dasharray]="
-                          style.isDashed
-                            ? width() * 0.008 + ' ' + width() * 0.008
-                            : 'none'
-                        "
-                        [class.selected-circle-pulse]="isSelected"
-                      />
-                      @if (isTraverse) {
-                        <text
-                          [attr.x]="pt.x * width()"
-                          [attr.y]="pt.y * height() + circleR * 0.35"
-                          text-anchor="middle"
-                          fill="white"
-                          font-weight="bold"
-                          [attr.font-size]="circleR * 0.85"
-                          style="pointer-events: none; user-select: none; text-shadow: 0 0 3px rgba(0,0,0,0.9)"
-                        >
-                          {{ $index + 1 }}
-                        </text>
-                      }
-                      @if (badge) {
-                        <ng-container
-                          *ngTemplateOutlet="
-                            pointStatePill;
-                            context: {
-                              state: pt.state,
-                              cx: pt.x * width(),
-                              cy: pt.y * height(),
-                              radius: circleR,
-                              strokeW: strokeW,
-                              fill: ptColor,
-                              label: pt.state | topoPointStateLabel,
-                            }
-                          "
-                        />
-                      }
-                    }
-                  } @else {
-                    @let isTraverse = pathData.isTraverse;
-                    <!-- Hit area -->
-                    <polyline
-                      [attr.points]="pointsStringMap()[routeId]"
-                      fill="none"
-                      stroke="transparent"
-                      [attr.stroke-width]="strokeWidthFactor * width() * 5"
-                      stroke-linejoin="round"
-                      stroke-linecap="round"
-                    />
-                    <!-- Shadow -->
-                    <polyline
-                      [attr.points]="pointsStringMap()[routeId]"
-                      fill="none"
-                      stroke="white"
-                      [style.opacity]="style.isDashed ? 1 : 0.7"
-                      [attr.stroke-width]="
-                        strokeWidthFactor * width() +
-                        (style.isDashed ? 2.5 : 1.5)
-                      "
-                      [attr.stroke-dasharray]="
-                        style.isDashed
-                          ? width() * 0.01 + ' ' + width() * 0.01
-                          : 'none'
-                      "
-                      stroke-linejoin="round"
-                      stroke-linecap="round"
-                    />
-                    <!-- Main line -->
-                    <polyline
-                      [attr.points]="pointsStringMap()[routeId]"
-                      fill="none"
-                      [attr.stroke]="style.stroke"
-                      [style.color]="style.stroke"
-                      [style.opacity]="style.opacity"
-                      [attr.stroke-width]="strokeWidthFactor * width()"
-                      [attr.stroke-dasharray]="
-                        style.isDashed
-                          ? width() * 0.01 + ' ' + width() * 0.01
-                          : 'none'
-                      "
-                      stroke-linejoin="round"
-                      stroke-linecap="round"
-                    />
-
-                    @if (!isSelected) {
-                      @if (isTraverse) {
-                        @for (pt of pathData.points; track $index) {
-                          @let strokeW = strokeWidthFactor * width();
-                          @let ptColor =
-                            pt.state | topoPointStateColor: style.stroke;
-                          @let badge = pt.state | topoPointStateBadge;
-                          @let ptR = strokeW * 1.8;
-                          <circle
-                            [attr.cx]="pt.x * width()"
-                            [attr.cy]="pt.y * height()"
-                            [attr.r]="ptR"
-                            [attr.fill]="style.stroke"
-                            stroke="white"
-                            stroke-width="1"
-                          />
-                          <text
-                            [attr.x]="pt.x * width()"
-                            [attr.y]="pt.y * height() + ptR * 0.35"
-                            text-anchor="middle"
-                            fill="white"
-                            font-weight="bold"
-                            [attr.font-size]="ptR * 0.85"
-                            style="pointer-events: none; user-select: none; text-shadow: 0 0 3px rgba(0,0,0,0.9)"
-                          >
-                            {{ $index + 1 }}
-                          </text>
-                          @if (badge) {
-                            <ng-container
-                              *ngTemplateOutlet="
-                                pointStatePill;
-                                context: {
-                                  state: pt.state,
-                                  cx: pt.x * width(),
-                                  cy: pt.y * height(),
-                                  radius: ptR,
-                                  strokeW: strokeW,
-                                  fill: ptColor,
-                                  label: pt.state | topoPointStateLabel,
-                                }
-                              "
-                            />
-                          }
-                        }
-                      } @else {
-                        <!-- Intermediate state points for polylines -->
-                        @for (pt of pathData.points; track $index) {
-                          @if (
-                            $index > 0 &&
-                            $index < pathData.points.length - 1 &&
-                            pt.state &&
-                            pt.state !== 'neutral'
-                          ) {
-                            @let strokeW = strokeWidthFactor * width();
-                            @let ptColor =
-                              pt.state | topoPointStateColor: style.stroke;
-                            @let ptR = strokeW * 1.4;
-                            <circle
-                              [attr.cx]="pt.x * width()"
-                              [attr.cy]="pt.y * height()"
-                              [attr.r]="ptR"
-                              fill="white"
-                              [attr.stroke]="style.stroke"
-                              stroke-width="1.5"
-                            />
-                            <ng-container
-                              *ngTemplateOutlet="
-                                pointStatePill;
-                                context: {
-                                  state: pt.state,
-                                  cx: pt.x * width(),
-                                  cy: pt.y * height(),
-                                  radius: ptR,
-                                  strokeW: strokeW,
-                                  fill: ptColor,
-                                  label: pt.state | topoPointStateLabel,
-                                }
-                              "
-                            />
-                          }
-                        }
-
-                        <!-- End dot -->
-                        @if (
-                          pathData.points[pathData.points.length - 1];
-                          as last
-                        ) {
-                          @let strokeW = strokeWidthFactor * width();
-                          @let isTop = last.state === 'top';
-                          @let endR = strokeW * (isTop ? 1.6 : 1.2);
-                          <circle
-                            [attr.cx]="last.x * width()"
-                            [attr.cy]="last.y * height()"
-                            [attr.r]="endR"
-                            [attr.fill]="isTop ? '#EF4444' : 'white'"
-                            [style.opacity]="style.opacity"
-                            [attr.stroke]="isTop ? 'white' : 'black'"
-                            [attr.stroke-width]="isTop ? 1 : 0.5"
-                          />
-                          @if (isTop) {
-                            <ng-container
-                              *ngTemplateOutlet="
-                                pointStatePill;
-                                context: {
-                                  state: 'top',
-                                  cx: last.x * width(),
-                                  cy: last.y * height(),
-                                  radius: endR,
-                                  strokeW: strokeW,
-                                  fill: '#EF4444',
-                                  label: 'TOP',
-                                  position: 'above',
-                                }
-                              "
-                            />
-                          }
-                        }
-                      }
-                    }
-                  }
-
-                  <!-- Traverse route grade pill at start point -->
-                  @if (pathData.isTraverse && pathData.points.length > 0) {
-                    @if (pathData.points[0]; as first) {
-                      @let strokeW = strokeWidthFactor * width();
-                      @let gradeStr = pathData._ref.route.grade | gradeLabel;
-                      @if (gradeStr) {
-                        <g
-                          class="pointer-events-none"
-                          style="user-select: none"
-                        >
-                          <rect
-                            [attr.x]="first.x * width() - strokeW * 2.2"
-                            [attr.y]="first.y * height() - strokeW * 3.8"
-                            [attr.width]="strokeW * 4.4"
-                            [attr.height]="strokeW * 1.8"
-                            [attr.rx]="strokeW * 0.9"
-                            [attr.fill]="style.stroke"
-                            stroke="white"
-                            stroke-width="1"
-                          />
-                          <text
-                            [attr.x]="first.x * width()"
-                            [attr.y]="first.y * height() - strokeW * 2.5"
-                            text-anchor="middle"
-                            fill="white"
-                            style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                            [attr.font-size]="strokeW * 1.3"
-                            font-weight="bold"
-                            font-family="sans-serif"
-                          >
-                            {{ gradeStr }}
-                          </text>
-                        </g>
-                      }
-                    }
-                  }
-                </g>
-
-                <!-- Control points (selected only) -->
-                @if (isSelected) {
-                  @let strokeW = strokeWidthFactor * width();
-                  @let isTraverse = pathData.isTraverse;
-                  @for (pt of pathData.points; track $index) {
-                    @let ptColor = pt.state | topoPointStateColor: style.stroke;
-                    @let badge = pt.state | topoPointStateBadge;
-                    <g
-                      class="control-point"
-                      (mousedown)="startDragging($event, routeId, $index)"
-                      (touchstart)="startDraggingTouch($event, routeId, $index)"
-                      (contextmenu)="removePoint($event, routeId, $index)"
-                      (dblclick)="cyclePointState($event, routeId, $index)"
-                    >
-                      @if (pathData.type === 'circle') {
-                        @let circleR = strokeW * 3.5;
-                        <!-- Circle mode control hit area -->
-                        <circle
-                          [attr.cx]="pt.x * width()"
-                          [attr.cy]="pt.y * height()"
-                          [attr.r]="circleR"
-                          fill="transparent"
-                        />
-                        @if (!isTraverse) {
-                          <circle
-                            [attr.cx]="pt.x * width()"
-                            [attr.cy]="pt.y * height()"
-                            [attr.r]="strokeW * 1.5"
-                            fill="rgba(0,0,0,0.4)"
-                          />
-                          <circle
-                            [attr.cx]="pt.x * width()"
-                            [attr.cy]="pt.y * height()"
-                            [attr.r]="strokeW * 0.9"
-                            [attr.fill]="style.stroke"
-                            stroke="white"
-                            stroke-width="1"
-                          />
-                        }
-                      } @else {
-                        <!-- Polyline mode control points -->
-                        @let ptR = isTraverse ? strokeW * 1.8 : strokeW * 0.9;
-                        @let haloR =
-                          isTraverse ? ptR + strokeW * 0.5 : strokeW * 1.5;
-                        <circle
-                          [attr.cx]="pt.x * width()"
-                          [attr.cy]="pt.y * height()"
-                          [attr.r]="haloR"
-                          fill="rgba(0,0,0,0.4)"
-                        />
-                        <circle
-                          [attr.cx]="pt.x * width()"
-                          [attr.cy]="pt.y * height()"
-                          [attr.r]="ptR"
-                          [attr.fill]="style.stroke"
-                          stroke="white"
-                          stroke-width="1"
-                        />
-                        @if (isTraverse) {
-                          <text
-                            [attr.x]="pt.x * width()"
-                            [attr.y]="pt.y * height() + ptR * 0.35"
-                            text-anchor="middle"
-                            fill="white"
-                            font-weight="bold"
-                            [attr.font-size]="ptR * 0.85"
-                            style="pointer-events: none; user-select: none; text-shadow: 0 0 3px rgba(0,0,0,0.9)"
-                          >
-                            {{ $index + 1 }}
-                          </text>
-                        }
-                        @if (badge) {
-                          <ng-container
-                            *ngTemplateOutlet="
-                              pointStatePill;
-                              context: {
-                                state: pt.state,
-                                cx: pt.x * width(),
-                                cy: pt.y * height(),
-                                radius: ptR,
-                                strokeW: strokeW,
-                                fill: ptColor,
-                                label: pt.state | topoPointStateLabel,
-                              }
-                            "
-                          />
-                        }
-                      }
-                    </g>
-                  }
-                }
-              }
-
-              <ng-template
-                #pointStatePill
-                let-state="state"
-                let-cx="cx"
-                let-cy="cy"
-                let-radius="radius"
-                let-strokeW="strokeW"
-                let-fill="fill"
-                let-label="label"
-                let-position="position"
-              >
-                @let pill =
-                  state
-                    | topoPointPillGeometry
-                      : cx
-                      : cy
-                      : radius
-                      : strokeW
-                      : position;
-                <svg:g class="pointer-events-none" style="user-select: none">
-                  <svg:rect
-                    [attr.x]="pill.x"
-                    [attr.y]="pill.y"
-                    [attr.width]="pill.width"
-                    [attr.height]="pill.height"
-                    [attr.rx]="pill.rx"
-                    [attr.fill]="fill"
-                    stroke="white"
-                    stroke-width="0.75"
-                  />
-                  <svg:text
-                    [attr.x]="pill.textX"
-                    [attr.y]="pill.textY"
-                    text-anchor="middle"
-                    fill="white"
-                    font-weight="bold"
-                    [attr.font-size]="pill.fontSize"
-                    font-family="sans-serif"
-                    style="text-shadow: 0 0 2px rgba(0,0,0,0.8)"
-                  >
-                    {{ label }}
-                  </svg:text>
-                </svg:g>
-              </ng-template>
-            </svg>
+            <app-topo-path-editor-svg
+              [viewBox]="viewBox()"
+              [width]="width()"
+              [height]="height()"
+              [lineWidth]="lineWidth()"
+              [visiblePathsEntries]="visiblePathsEntries()"
+              [selectedRouteId]="selectedRoute()?.route_id ?? null"
+              [routeStyleMap]="routeStyleMap()"
+              [routeStrokeWidthMap]="routeStrokeWidthMap()"
+              [pointsStringMap]="pointsStringMap()"
+              (routeSelect)="selectRoute($event)"
+              (pointDragStart)="
+                startDragging($event.event, $event.routeId, $event.index)
+              "
+              (pointTouchStart)="
+                startDraggingTouch($event.event, $event.routeId, $event.index)
+              "
+              (pointRemove)="
+                removePoint($event.event, $event.routeId, $event.index)
+              "
+              (pointStateCycle)="
+                cyclePointState($event.event, $event.routeId, $event.index)
+              "
+            />
           </div>
 
           <!-- Guidance shown while no route is selected -->
@@ -1132,247 +317,8 @@ export interface TopoPathEditorConfig {
       position: relative;
     }
 
-    /* ── Sidebar ── */
-    .route-sidebar {
-      width: 26rem;
-      flex-shrink: 0;
-      border-right: 1px solid var(--tui-border-normal);
-      background: var(--tui-background-base);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      z-index: 20;
-      transition: transform 0.2s ease;
-    }
-
-    .sidebar-inner {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      overflow: hidden;
-    }
-
-    .sidebar-label {
-      font-size: 0.75rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      opacity: 0.45;
-      padding: 1.25rem 1.25rem 0.5rem;
-      flex-shrink: 0;
-    }
-
-    .sidebar-scroll {
-      flex: 1 1 0%;
-      min-height: 0;
-      height: 0;
-    }
-
-    .route-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.375rem;
-      padding: 0.25rem 0.75rem 0.5rem;
-    }
-
-    /*
-     * Background/color are scoped to non-selected rows so the Taiga
-     * [tuiAppearance] accent style (same specificity, global stylesheet)
-     * is not overridden on the selected one.
-     */
-    .route-item:not([data-appearance='accent']) {
-      background: var(--tui-background-base);
-    }
-
-    .route-item {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      padding: 0.75rem 1rem;
-      border-radius: 1rem;
-      text-align: left;
-      width: 100%;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
-      border: 1px solid transparent;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    }
-
-    .route-item:hover {
-      background: var(--tui-background-neutral-1-hover);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      border-color: var(--tui-border-hover);
-    }
-
-    /* Selected rows get their colors from [tuiAppearance] accent */
-    .route-item[data-appearance='accent'] {
-      border-color: transparent;
-      box-shadow: 0 4px 15px var(--tui-background-accent-2-half);
-    }
-
-    .route-item--placeholder {
-      background: var(--tui-background-neutral-1) !important;
-      border: 1.5px dashed var(--tui-border-normal) !important;
-      box-shadow: none !important;
-      transform: none !important;
-      opacity: 0.5;
-    }
-
-    .cdk-drag-preview .route-item,
-    .cdk-drag-preview {
-      background: var(--tui-background-base);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-      border-radius: 1rem;
-      opacity: 0.95;
-    }
-
-    .route-num {
-      flex-shrink: 0;
-      width: 2rem;
-      height: 2rem;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 0.8rem;
-      background: var(--tui-background-neutral-2);
-      border: 1px solid var(--tui-border-normal);
-      transition: all 0.2s ease;
-    }
-
-    .route-item--active .route-num {
-      background: var(--tui-background-accent-1);
-      color: var(--tui-text-primary-on-accent-1);
-      border-color: transparent;
-    }
-
-    .route-info {
-      flex: 1;
-      min-width: 0;
-    }
-    .route-name {
-      font-weight: 700;
-      font-size: 0.875rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      letter-spacing: -0.01em;
-    }
-    .route-grade {
-      font-size: 0.75rem;
-      opacity: 0.55;
-      font-weight: 600;
-    }
-
-    .route-item--active .route-grade {
-      opacity: 0.85;
-    }
-
-    .route-action-slot {
-      width: var(--tui-height-s);
-      height: var(--tui-height-s);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .path-check {
-      color: var(--tui-text-positive);
-      font-size: 1rem;
-      flex-shrink: 0;
-      filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.1));
-    }
-
-    .tips {
-      padding: 0.5rem 1.25rem 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.375rem;
-      border-top: 1px solid var(--tui-border-normal);
-      margin-top: 0.5rem;
-    }
-
-    .tip,
-    .tip--danger {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.75rem;
-      opacity: 0.65;
-    }
-
-    .tip--danger {
-      opacity: 0.8;
-    }
-    .tip-icon {
-      font-size: 0.875rem;
-    }
-    .tip-icon--danger {
-      color: var(--tui-text-negative);
-      font-size: 0.875rem;
-    }
-
-    /* ── Controls Panel ── */
-    .sidebar-controls {
-      flex-shrink: 0;
-      border-top: 1px solid var(--tui-border-normal);
-      background: var(--tui-background-neutral-1);
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      padding: 0.875rem 1.25rem;
-    }
-
-    .line-width-control,
-    .path-type-control {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .path-type-control + .line-width-control {
-      border-top: 1px solid var(--tui-border-normal);
-      padding-top: 0.75rem;
-    }
-
-    .control-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .control-label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      opacity: 0.6;
-    }
-
-    .control-value {
-      font-size: 0.875rem;
-      font-weight: 800;
-    }
-
     /* ── Mobile/tablet sidebar overlay (below xl) ── */
     @media (max-width: 1279px) {
-      .route-sidebar {
-        position: absolute;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        width: 85vw;
-        max-width: 26rem;
-        transform: translateX(-100%);
-        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
-      }
-
-      .route-sidebar.sidebar-open {
-        transform: translateX(0);
-      }
-
       .footer-actions-left {
         display: flex;
         align-items: center;
@@ -1381,10 +327,6 @@ export interface TopoPathEditorConfig {
     }
 
     @media (min-width: 1280px) {
-      .route-sidebar {
-        transform: none !important;
-      }
-
       .mobile-backdrop {
         display: none !important;
       }
@@ -1437,23 +379,6 @@ export interface TopoPathEditorConfig {
       object-fit: cover;
     }
 
-    .svg-overlay {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-    }
-
-    .path-group {
-      pointer-events: auto;
-      cursor: pointer;
-    }
-    .control-point {
-      cursor: move;
-      pointer-events: auto;
-    }
-
     /* ── Loading overlay ── */
     .loading-overlay {
       position: absolute;
@@ -1466,6 +391,9 @@ export interface TopoPathEditorConfig {
       z-index: 50;
     }
   `,
+  host: {
+    '(window:keydown)': 'onKeyDown($event)',
+  },
 })
 export class TopoPathEditorDialogComponent implements AfterViewInit {
   protected readonly context =
@@ -1481,10 +409,9 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   private readonly routesService = inject(RoutesService);
   private readonly supabase = inject(SupabaseService);
   private readonly toast = inject(ToastService);
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly translate = inject(TranslateService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly cdr = inject(ChangeDetectorRef);
-  private readonly injector = inject(Injector);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly unlinkedRouteIds = new Set<string | number>();
   private readonly newlyLinkedRouteIds = new Set<string | number>();
@@ -1558,8 +485,8 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     viewChild.required<ElementRef<HTMLDivElement>>('container');
   protected readonly editorAreaElement =
     viewChild.required<ElementRef<HTMLDivElement>>('editorArea');
-  protected readonly routeListElement =
-    viewChild.required<ElementRef<HTMLDivElement>>('routeList');
+  protected readonly sidebarComponent =
+    viewChild<TopoPathEditorSidebarComponent>('sidebar');
 
   loading = signal(false);
   selectedRoute = signal<TopoRouteWithRoute | null>(null);
@@ -1573,36 +500,29 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   toggleRouteSelector(): void {
     this.showRouteSelector.update((v) => !v);
   }
+
   topoRoutes: TopoRouteWithRoute[] = [];
   newIndoorRoutes: IndoorRouteDto[] = [];
   hasRouteEdits = false;
-  pathsMap = new Map<
-    string | number,
-    {
-      points: TopoPoint[];
-      color?: string;
-      width?: number;
-      type?: 'line' | 'circle';
-      isTraverse?: boolean;
-      _ref: TopoRouteWithRoute;
-    }
-  >();
+  pathsMap = new Map<string | number, EditorPathEntry>();
   lineWidth = signal(1.5);
   protected pathsVersion = signal(0);
 
+  protected readonly historyState = signal<
+    TopoPathHistoryState<TopoPathHistorySnapshot>
+  >(createHistoryState(new Map()));
+
+  readonly canUndo = computed(() => canUndo(this.historyState()));
+  readonly canRedo = computed(() => canRedo(this.historyState()));
+
+  protected readonly topoRoutesList = computed(() => {
+    this.topoRoutesVersion();
+    return [...this.topoRoutes];
+  });
+
   protected readonly routePathsMeta = computed(() => {
     this.pathsVersion();
-    const meta = new Map<
-      string | number,
-      { hasPath: boolean; isTraverse: boolean }
-    >();
-    for (const [id, entry] of this.pathsMap) {
-      meta.set(id, {
-        hasPath: (entry.points?.length ?? 0) > 0,
-        isTraverse: !!entry.isTraverse,
-      });
-    }
-    return meta;
+    return buildRoutePathsMeta(this.pathsMap);
   });
 
   protected readonly selectedRoutePathType = computed<'line' | 'circle'>(() => {
@@ -1704,24 +624,6 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     return this.topoRoutes.map((tr) => tr.route as SelectedRoute);
   });
 
-  protected readonly stringifyRoute = (
-    item: RouteBasicWithOwnData | SelectedRoute,
-  ): string => `${item.name} (${this.gradeStringify(item.grade ?? 0)})`;
-
-  protected readonly routeIdentityMatcher: TuiIdentityMatcher<
-    RouteBasicWithOwnData | SelectedRoute
-  > = (a, b) => String(a.id) === String(b.id);
-
-  protected gradeStringify(grade: number): string {
-    return (
-      GRADE_NUMBER_TO_LABEL[grade as VERTICAL_LIFE_GRADES] ||
-      grade?.toString() ||
-      ''
-    );
-  }
-
-  protected readonly strings = tuiIsString;
-
   protected readonly canEditSelectedRoute = computed<boolean>(() => {
     const tr = this.selectedRoute();
     if (!tr) return false;
@@ -1805,6 +707,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     if (matchingTopoRoute?.path) {
       matchingTopoRoute.path.type = type;
     }
+    this.recordHistory();
     this.pathsVersion.update((v) => v + 1);
     this.cdr.markForCheck();
   }
@@ -1843,6 +746,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         matchingTopoRoute.path.isTraverse = nextVal;
       }
     }
+    this.recordHistory();
     this.pathsVersion.update((v) => v + 1);
     this.cdr.markForCheck();
   }
@@ -1915,7 +819,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     const h = this.height();
     const map: Record<string, string> = {};
     for (const [key, entry] of this.pathsMap) {
-      map[key] = getPointsStringUtil(entry.points, w, h);
+      map[String(key)] = formatSvgPoints(entry.points, w, h);
     }
     return map;
   });
@@ -1941,15 +845,6 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   routesReordered = false;
   private readonly initialPathsSerialized = new Map<string, string>();
 
-  private serializePath(p: TopoPath | null | undefined): string {
-    if (!p || !p.points || p.points.length === 0) return '';
-    return JSON.stringify({
-      pts: p.points.map((pt) => ({ x: pt.x, y: pt.y, s: pt.state })),
-      type: p.type || 'line',
-      t: !!p.isTraverse,
-    });
-  }
-
   constructor() {
     this.topoRoutes = [...this.context.data.topoRoutes];
     // Initialize paths from existing data
@@ -1959,7 +854,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
           this.lineWidth.set(tr.path.width);
         }
         this.pathsMap.set(tr.route_id, {
-          points: [...tr.path.points],
+          points: tr.path.points.map(cloneTopoPoint),
           color: tr.path.color,
           width: tr.path.width,
           type: tr.path.type || 'line',
@@ -1968,19 +863,74 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         });
         this.initialPathsSerialized.set(
           String(tr.route_id),
-          this.serializePath(tr.path),
+          serializeTopoPath(tr.path),
         );
       } else {
         this.initialPathsSerialized.set(String(tr.route_id), '');
       }
     });
+    this.historyState.set(
+      createHistoryState(createPathsSnapshot(this.pathsMap)),
+    );
+  }
+
+  private recordHistory(): void {
+    const snapshot = createPathsSnapshot(this.pathsMap);
+    this.historyState.update((state) =>
+      pushHistory(state, snapshot, arePathsSnapshotsEqual),
+    );
+  }
+
+  undo(): void {
+    const current = this.historyState();
+    if (!canUndo(current)) return;
+    const next = undoHistory(current);
+    this.historyState.set(next);
+    this.pathsMap = applyPathsSnapshot(next.present, this.topoRoutes);
+    this.pathsVersion.update((v) => v + 1);
+    this.cdr.markForCheck();
+  }
+
+  redo(): void {
+    const current = this.historyState();
+    if (!canRedo(current)) return;
+    const next = redoHistory(current);
+    this.historyState.set(next);
+    this.pathsMap = applyPathsSnapshot(next.present, this.topoRoutes);
+    this.pathsVersion.update((v) => v + 1);
+    this.cdr.markForCheck();
+  }
+
+  protected onKeyDown(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (
+      target &&
+      (target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable)
+    ) {
+      return;
+    }
+
+    if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+    const key = event.key.toLowerCase();
+    if (key === 'z') {
+      event.preventDefault();
+      if (event.shiftKey) {
+        this.redo();
+      } else {
+        this.undo();
+      }
+    } else if (key === 'y' && !event.shiftKey) {
+      event.preventDefault();
+      this.redo();
+    }
   }
 
   ngAfterViewInit(): void {
     this.doAttachWheelListener();
   }
-
-  private readonly destroyRef = inject(DestroyRef);
 
   private doAttachWheelListener(): void {
     const cleanup = attachWheelListener(
@@ -1998,10 +948,12 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     this.width.set(img.naturalWidth);
     this.height.set(img.naturalHeight);
 
-    // Calculate initial fit scale
-    const scaleX = area.clientWidth / img.naturalWidth;
-    const scaleY = area.clientHeight / img.naturalHeight;
-    const initialScale = Math.min(scaleX, scaleY, 1);
+    const initialScale = computeFitScale(
+      area.clientWidth,
+      area.clientHeight,
+      img.naturalWidth,
+      img.naturalHeight,
+    );
 
     this.scale.set(initialScale);
     this.translateX.set(0);
@@ -2054,6 +1006,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         this.newlyLinkedRouteIds.add(r.id);
         this.unlinkedRouteIds.delete(r.id);
       }
+      this.recordHistory();
       this.pathsVersion.update((v) => v + 1);
       this.topoRoutesVersion.update((v) => v + 1);
       this.routesReordered = true;
@@ -2064,7 +1017,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       );
       if (matching) {
         this.selectRoute(matching);
-        this.scrollRouteIntoView(matching.route_id);
+        this.sidebarComponent()?.scrollRouteIntoView(matching.route_id);
       }
     }
 
@@ -2084,21 +1037,13 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       event.stopPropagation();
     }
 
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('unlink'),
-        size: 's',
-        data: {
-          content: this.translate.instant('topos.removeRouteConfirm', {
-            name: tr.route.name,
-          }),
-          yes: this.translate.instant('unlink'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'unlink',
+      contentKey: 'topos.removeRouteConfirm',
+      contentParams: { name: tr.route.name },
+      yesKey: 'unlink',
+      appearance: 'primary-destructive',
+    });
 
     if (!confirmed) {
       this.topoRoutesVersion.update((v) => v + 1);
@@ -2135,6 +1080,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     }
 
     this.routesReordered = true;
+    this.recordHistory();
     this.pathsVersion.update((v) => v + 1);
     this.topoRoutesVersion.update((v) => v + 1);
     this.cdr.markForCheck();
@@ -2181,29 +1127,14 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         type: 'circle',
         _ref: newTopoRoute,
       });
+      this.recordHistory();
       this.pathsVersion.update((v) => v + 1);
       this.topoRoutesVersion.update((v) => v + 1);
       // A brand new route is always selected so it can be drawn right away
       this.selectedRoute.set(newTopoRoute);
-      this.scrollRouteIntoView(newRoute.id);
+      this.sidebarComponent()?.scrollRouteIntoView(newRoute.id);
       this.cdr.markForCheck();
     }
-  }
-
-  /** Brings the given route into view inside the sidebar list. */
-  private scrollRouteIntoView(routeId: string | number): void {
-    afterNextRender(
-      {
-        write: () => {
-          const list = this.routeListElement().nativeElement;
-          const target = Array.from(
-            list.querySelectorAll<HTMLElement>('[data-route-id]'),
-          ).find((el) => el.getAttribute('data-route-id') === String(routeId));
-          target?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        },
-      },
-      { injector: this.injector },
-    );
   }
 
   async editRoute(tr: TopoRouteWithRoute, event?: Event): Promise<void> {
@@ -2289,6 +1220,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         }
         this.topoRoutes = [...this.topoRoutes];
         this.pathsVersion.update((v) => v + 1);
+        this.topoRoutesVersion.update((v) => v + 1);
 
         if (this.selectedRoute()?.route_id === tr.route_id) {
           this.selectedRoute.set({ ...tr });
@@ -2329,6 +1261,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
           pathEntry._ref = tr;
         }
         this.pathsVersion.update((v) => v + 1);
+        this.topoRoutesVersion.update((v) => v + 1);
 
         if (this.selectedRoute()?.route_id === tr.route_id) {
           this.selectedRoute.set({ ...tr });
@@ -2374,14 +1307,8 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
 
   private centerOnRoute(tr: TopoRouteWithRoute): void {
     const path = this.pathsMap.get(tr.route_id);
-    if (!path || !path.points || path.points.length === 0) return;
-
-    const pts = path.points;
-    const minX = Math.min(...pts.map((p) => p.x));
-    const maxX = Math.max(...pts.map((p) => p.x));
-    const minY = Math.min(...pts.map((p) => p.y));
-    const maxY = Math.max(...pts.map((p) => p.y));
-    const center = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+    const center = path ? computePathCentroid(path.points) : null;
+    if (!center) return;
 
     // Center the view on the route keeping the current zoom level,
     // same behaviour as the topo viewer.
@@ -2394,40 +1321,18 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     if (!areaEl || !containerEl) return;
 
     const areaRect = areaEl.getBoundingClientRect();
-    const scale = this.scale();
-    const baseW = this.width();
-    const baseH = this.height();
+    const target = computeCenteredTranslation(point, {
+      areaWidth: areaRect.width,
+      areaHeight: areaRect.height,
+      contentWidth: this.width(),
+      contentHeight: this.height(),
+      scale: this.scale(),
+      restingLeft: containerEl.offsetLeft,
+      restingTop: containerEl.offsetTop,
+    });
 
-    // The container might have its own resting offset (though usually 0 in this editor)
-    const restingLeft = containerEl.offsetLeft;
-    const restingTop = containerEl.offsetTop;
-
-    // We want the point (point.x * baseW * scale) to be at areaRect.width / 2
-    let targetX = areaRect.width / 2 - restingLeft - point.x * baseW * scale;
-    let targetY = areaRect.height / 2 - restingTop - point.y * baseH * scale;
-
-    // Apply constraints similar to constrainTranslation util
-    const scaledW = baseW * scale;
-    const scaledH = baseH * scale;
-
-    if (scaledW > areaRect.width) {
-      const minX = -restingLeft - (scaledW - areaRect.width);
-      const maxX = -restingLeft;
-      targetX = Math.max(minX, Math.min(targetX, maxX));
-    } else {
-      targetX = (areaRect.width - scaledW) / 2 - restingLeft;
-    }
-
-    if (scaledH > areaRect.height) {
-      const minY = -restingTop - (scaledH - areaRect.height);
-      const maxY = -restingTop;
-      targetY = Math.max(minY, Math.min(targetY, maxY));
-    } else {
-      targetY = (areaRect.height - scaledH) / 2 - restingTop;
-    }
-
-    this.translateX.set(targetX);
-    this.translateY.set(targetY);
+    this.translateX.set(target.x);
+    this.translateY.set(target.y);
     this.cdr.markForCheck();
   }
 
@@ -2453,7 +1358,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   cyclePointState(event: Event, routeId: string | number, index: number): void {
     event.stopPropagation();
     event.preventDefault();
-    const parsedRouteId = isNaN(Number(routeId)) ? routeId : Number(routeId);
+    const parsedRouteId = parseRouteId(routeId);
 
     if (this.context.data.isIndoor) {
       const route = this.topoRoutes.find((r) => r.route_id === parsedRouteId);
@@ -2473,6 +1378,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       pathData.points[index].state,
     );
     this.pathsMap.set(parsedRouteId, { ...pathData });
+    this.recordHistory();
     this.pathsVersion.update((v) => v + 1);
     this.cdr.markForCheck();
   }
@@ -2500,6 +1406,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       this.pathsMap,
       { _ref: route, type: defaultType },
     );
+    this.recordHistory();
     this.pathsVersion.update((v) => v + 1);
     this.cdr.markForCheck();
   }
@@ -2509,7 +1416,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     routeId: string | number,
     index: number,
   ): void {
-    const parsedRouteId = isNaN(Number(routeId)) ? routeId : Number(routeId);
+    const parsedRouteId = parseRouteId(routeId);
 
     if (this.context.data.isIndoor) {
       const route = this.topoRoutes.find((r) => r.route_id === parsedRouteId);
@@ -2537,6 +1444,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         },
         onEnd: () => {
           this.draggingPoint = null;
+          this.recordHistory();
           this.pathsVersion.update((v) => v + 1);
           this.cdr.markForCheck();
         },
@@ -2549,7 +1457,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
     routeId: string | number,
     index: number,
   ): void {
-    const parsedRouteId = isNaN(Number(routeId)) ? routeId : Number(routeId);
+    const parsedRouteId = parseRouteId(routeId);
     const now = Date.now();
     if (
       this.lastTapRouteId === parsedRouteId &&
@@ -2585,6 +1493,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         },
         onEnd: () => {
           this.draggingPoint = null;
+          this.recordHistory();
           this.pathsVersion.update((v) => v + 1);
         },
       },
@@ -2636,6 +1545,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         route.path = null;
       }
     }
+    this.recordHistory();
     this.pathsVersion.update((v) => v + 1);
     this.cdr.markForCheck();
   }
@@ -2651,19 +1561,12 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
         return;
       }
     }
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('delete'),
-        size: 's',
-        data: {
-          content: this.translate.instant('topos.editor.removePathConfirm'),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        },
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'delete',
+      contentKey: 'topos.editor.removePathConfirm',
+      yesKey: 'delete',
+      appearance: 'primary-destructive',
+    });
     if (confirmed) {
       this.pathsMap.delete(tr.route_id);
       this.pathsMap = new Map(this.pathsMap);
@@ -2672,6 +1575,7 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
       if (matching) {
         matching.path = null;
       }
+      this.recordHistory();
       this.pathsVersion.update((v) => v + 1);
       this.selectedRoute.set(null);
       this.cdr.markForCheck();
@@ -2697,27 +1601,12 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
   async saveAll(): Promise<void> {
     this.loading.set(true);
     try {
-      const pathsToUpdate: {
-        routeId: string | number;
-        path: TopoPath | null;
-      }[] = this.topoRoutes.map((tr) => {
-        const path = this.pathsMap.get(tr.route_id);
-        const hasPoints = !!path?.points && path.points.length > 0;
-        return {
-          routeId: tr.route_id,
-          path: hasPoints
-            ? ({
-                points: path.points,
-                color: this.context.data.isIndoor
-                  ? (path._ref?.route?.color ?? path.color)
-                  : path.color,
-                width: this.lineWidth(),
-                type: path.type || 'line',
-                isTraverse: path.isTraverse || false,
-              } as TopoPath)
-            : null,
-        };
-      });
+      const pathsToUpdate = buildPathsToUpdate(
+        this.topoRoutes,
+        this.pathsMap,
+        this.lineWidth(),
+        !!this.context.data.isIndoor,
+      );
 
       if (!this.context.data.standalone) {
         // Return paths to caller
@@ -2752,20 +1641,16 @@ export class TopoPathEditorDialogComponent implements AfterViewInit {
           this.newIndoorRoutes.map((r) => String(r.id)),
         );
 
-        // Only upsert routes that were actually modified, newly created, newly linked, or if routes were reordered
-        const routesToUpsert = this.topoRoutes.filter((tr) => {
-          if (this.routesReordered) return true;
-          if (newRouteIdSet.has(String(tr.route_id))) return true;
-          if (this.newlyLinkedRouteIds.has(tr.route_id)) return true;
-
-          const path = pathsMap.get(String(tr.route_id));
-          const currentSerialized = this.serializePath(
-            path && path.points && path.points.length > 0 ? path : null,
-          );
-          const initialSerialized =
-            this.initialPathsSerialized.get(String(tr.route_id)) ?? '';
-          return currentSerialized !== initialSerialized;
-        });
+        const routesToUpsert = filterModifiedIndoorRoutes(
+          this.topoRoutes,
+          pathsToUpdate,
+          this.initialPathsSerialized,
+          {
+            routesReordered: this.routesReordered,
+            newRouteIds: newRouteIdSet,
+            newlyLinkedRouteIds: this.newlyLinkedRouteIds,
+          },
+        );
 
         if (routesToUpsert.length > 0) {
           const upsertPromises = routesToUpsert.map((tr) => {

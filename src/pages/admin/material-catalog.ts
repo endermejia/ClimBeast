@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, inject, resource } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -17,9 +16,7 @@ import type { MaterialCatalogItem } from '../../models';
 
 @Component({
   selector: 'app-admin-material-catalog',
-  standalone: true,
   imports: [
-    CommonModule,
     EmptyStateComponent,
     FormsModule,
     MaterialCatalogCardComponent,

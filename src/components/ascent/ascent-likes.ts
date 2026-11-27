@@ -14,7 +14,6 @@ import { LikesComponent } from '../social/likes';
 
 @Component({
   selector: 'app-ascent-likes',
-  standalone: true,
   imports: [LikesComponent],
   template: `
     @if (!isHidden()) {

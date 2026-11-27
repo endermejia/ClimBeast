@@ -6,7 +6,6 @@ import { MENTION_PATTERN } from '../utils';
 
 @Pipe({
   name: 'mentionLink',
-  standalone: true,
 })
 export class MentionLinkPipe implements PipeTransform {
   private readonly sanitizer = inject(DomSanitizer);

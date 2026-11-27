@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
@@ -16,14 +15,7 @@ export interface UnifiedActiveItem {
 
 @Component({
   selector: 'app-home-recent-places',
-  standalone: true,
-  imports: [
-    CommonModule,
-    RouterLink,
-    TranslatePipe,
-    TuiAppearance,
-    TuiSkeleton,
-  ],
+  imports: [RouterLink, TranslatePipe, TuiAppearance, TuiSkeleton],
   template: `
     @if (!followsLoaded() || isLoading()) {
       <div class="flex flex-col gap-2 pb-3">

@@ -1,13 +1,12 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TuiDialogService, TuiLink } from '@taiga-ui/core';
-import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit';
+import { TuiLink } from '@taiga-ui/core';
 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { AscentsService } from '../../services/ascents.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { IndoorService } from '../../services/indoor.service';
@@ -35,7 +34,6 @@ import { RoutesTableComponent } from './routes-table';
 @Component({
   selector: 'app-indoor-routes-table',
   imports: [
-    CommonModule,
     TranslateModule,
     RoutesTableComponent,
     RouteEquippersInputComponent,
@@ -101,7 +99,7 @@ export class IndoorRoutesTableComponent {
   protected readonly ascentsService = inject(AscentsService);
   private readonly supabaseService = inject(SupabaseService);
   private readonly isBrowser = inject(IS_BROWSER);
-  private readonly dialogs = inject(TuiDialogService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
 
@@ -267,21 +265,16 @@ export class IndoorRoutesTableComponent {
         ? (item._ref as IndoorRouteWithExtras)
         : (item as IndoorRouteWithExtras);
     if (!this.isBrowser) return;
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('routes.deleteTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('routes.deleteConfirm', {
-            name: r.name || this.translate.instant('route'),
-          }),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'routes.deleteTitle',
+      contentKey: 'routes.deleteConfirm',
+      contentParams: {
+        name: r.name || this.translate.instant('route'),
+      },
+      yesKey: 'delete',
+      noKey: 'cancel',
+      appearance: 'primary-destructive',
+    });
     if (!confirmed) return;
     try {
       await this.indoorService.deleteRoute(r.id);

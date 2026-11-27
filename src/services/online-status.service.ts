@@ -5,23 +5,27 @@ import { IS_BROWSER } from '../app/is-browser';
 @Injectable({ providedIn: 'root' })
 export class OnlineStatusService {
   private readonly isBrowser = inject(IS_BROWSER);
-  readonly isOffline = signal(
-    typeof navigator !== 'undefined' ? !navigator.onLine : false,
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly _isOffline = signal(
+    this.isBrowser && typeof navigator !== 'undefined'
+      ? !navigator.onLine
+      : false,
   );
 
+  readonly isOffline = this._isOffline.asReadonly();
+
   constructor() {
-    if (this.isBrowser) {
-      const destroyRef = inject(DestroyRef);
-      const onlineHandler = () => this.isOffline.set(false);
-      const offlineHandler = () => this.isOffline.set(true);
+    if (!this.isBrowser || typeof window === 'undefined') return;
 
-      window.addEventListener('online', onlineHandler);
-      window.addEventListener('offline', offlineHandler);
+    const onlineHandler = () => this._isOffline.set(false);
+    const offlineHandler = () => this._isOffline.set(true);
 
-      destroyRef.onDestroy(() => {
-        window.removeEventListener('online', onlineHandler);
-        window.removeEventListener('offline', offlineHandler);
-      });
-    }
+    window.addEventListener('online', onlineHandler);
+    window.addEventListener('offline', offlineHandler);
+
+    this.destroyRef.onDestroy(() => {
+      window.removeEventListener('online', onlineHandler);
+      window.removeEventListener('offline', offlineHandler);
+    });
   }
 }

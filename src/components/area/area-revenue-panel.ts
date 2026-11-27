@@ -1,4 +1,4 @@
-import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import {
   Component,
   computed,
@@ -38,10 +38,8 @@ import { EmptyStateComponent } from '../ui/empty-state';
 
 @Component({
   selector: 'app-area-revenue-panel',
-  standalone: true,
   imports: [
     AvatarUrlPipe,
-    CommonModule,
     CountUpDirective,
     DatePipe,
     DecimalPipe,

@@ -10,7 +10,6 @@ import { EmptyStateComponent } from '../../components/ui/empty-state';
 
 @Component({
   selector: 'app-admin-comment-reports',
-  standalone: true,
   imports: [
     EmptyStateComponent,
     RouterLink,

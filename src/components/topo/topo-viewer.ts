@@ -33,7 +33,6 @@ import {
 
 @Component({
   selector: 'app-topo-viewer',
-  standalone: true,
   imports: [
     GradeComponent,
     IconSrcPipe,

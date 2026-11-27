@@ -35,7 +35,6 @@ import {
 
 import {
   extractMentionIds,
-  extractPhotoMetadata,
   getPaginatedProfilesFromJunction,
   handleErrorToast,
   PhotoMetadata,
@@ -44,6 +43,7 @@ import {
 import { IS_BROWSER } from '../app/is-browser';
 
 import { AppNotificationsService } from './app-notifications.service';
+import { AscentMediaService } from './ascent-media.service';
 import { CragRoutesDataService } from './crag-routes-data.service';
 import { EquipperService } from './equipper.service';
 import { OutdoorDataService } from './outdoor-data.service';
@@ -63,6 +63,7 @@ export class AscentsService {
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
   private readonly notificationsService = inject(AppNotificationsService);
+  private readonly ascentMedia = inject(AscentMediaService);
 
   readonly ascentInfo = computed<
     Record<
@@ -518,142 +519,45 @@ export class AscentsService {
     });
   }
 
-  private readonly backfilledAscentKeys = new Set<string>();
-
   async uploadPhoto(
     ascentId: number | string,
     file: File,
     isIndoor = false,
   ): Promise<void> {
-    if (!this.isBrowser) return;
+    const changes = await this.ascentMedia.uploadPhoto(
+      ascentId,
+      file,
+      isIndoor,
+    );
+    if (!changes) return;
 
-    const toBase64 = (f: File) =>
-      new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(f);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = (error) => reject(error);
-      });
-
-    try {
-      const [base64, metadata] = await Promise.all([
-        toBase64(file),
-        extractPhotoMetadata(file),
-      ]);
-      await this.supabase.whenReady();
-      const headers: Record<string, string> = {
-        'ascent-id': ascentId.toString(),
-        'ngsw-bypass': 'true',
-      };
-      if (isIndoor || typeof ascentId === 'string') {
-        headers['is-indoor'] = 'true';
-      }
-      const { data: uploadRes, error } =
-        await this.supabase.client.functions.invoke<{
-          path?: string;
-          photo_width?: number | null;
-          photo_height?: number | null;
-          photo_lqip?: string | null;
-        }>('upload-route-ascent-photo', {
-          body: {
-            file_name: file.name,
-            content_type: file.type,
-            base64,
-            width: metadata?.width,
-            height: metadata?.height,
-            lqip: metadata?.lqip,
-          },
-          headers,
-        });
-
-      if (error) throw error;
-
-      const changes: Partial<RouteAscentWithExtras> = {
-        ...(uploadRes?.path ? { photo_path: uploadRes.path } : {}),
-        photo_width: uploadRes?.photo_width ?? metadata?.width ?? null,
-        photo_height: uploadRes?.photo_height ?? metadata?.height ?? null,
-        photo_lqip: uploadRes?.photo_lqip ?? metadata?.lqip ?? null,
-      };
-
-      this.toast.success('messages.toasts.ascentUpdated');
-      this.refreshResources(ascentId, changes);
-      this.ascentUpdated$.next({ id: ascentId, changes });
-    } catch (e) {
-      console.error('[AscentsService] uploadPhoto error', e);
-      throw e;
-    }
+    this.toast.success('messages.toasts.ascentUpdated');
+    this.refreshResources(ascentId, changes);
+    this.ascentUpdated$.next({ id: ascentId, changes });
   }
 
   async deletePhoto(
     ascentId: number | string,
     isIndoor = false,
   ): Promise<void> {
-    if (!this.isBrowser) return;
-    await this.supabase.whenReady();
-
-    const headers: Record<string, string> = {
-      'ascent-id': ascentId.toString(),
-      'ngsw-bypass': 'true',
-    };
-    if (isIndoor || typeof ascentId === 'string') {
-      headers['is-indoor'] = 'true';
-    }
-
-    const { error } = await this.supabase.client.functions.invoke(
-      'delete-route-ascent-photo',
-      {
-        headers,
-      },
-    );
-
-    if (error) {
-      console.error('[AscentsService] deletePhoto error', error);
-      throw error;
-    }
-
-    const changes: Partial<RouteAscentWithExtras> = {
-      photo_path: null,
-      photo_width: null,
-      photo_height: null,
-      photo_lqip: null,
-    };
+    const changes = await this.ascentMedia.deletePhoto(ascentId, isIndoor);
+    if (!changes) return;
 
     this.toast.success('messages.toasts.photoDeleted');
     this.refreshResources(ascentId, changes);
     this.ascentUpdated$.next({ id: ascentId, changes });
   }
 
-  async backfillPhotoMetadata(
+  backfillPhotoMetadata(
     ascentId: number | string,
     isIndoor: boolean,
     signedUrl: string,
   ): Promise<PhotoMetadata | null> {
-    if (!this.isBrowser || !ascentId || !signedUrl) return null;
-
-    const key = `${isIndoor ? 'indoor' : 'outdoor'}-${ascentId}`;
-    if (this.backfilledAscentKeys.has(key)) return null;
-    this.backfilledAscentKeys.add(key);
-
-    try {
-      const response = await fetch(signedUrl);
-      if (!response.ok) return null;
-      const blob = await response.blob();
-      const meta = await extractPhotoMetadata(blob);
-      if (!meta || !meta.width || !meta.height) return null;
-
-      await this.supabase.whenReady();
-      await this.supabase.client.rpc('backfill_ascent_photo_metadata', {
-        p_ascent_id: String(ascentId),
-        p_is_indoor: isIndoor,
-        p_width: meta.width,
-        p_height: meta.height,
-        p_lqip: meta.lqip || '',
-      });
-
-      return meta;
-    } catch {
-      return null;
-    }
+    return this.ascentMedia.backfillPhotoMetadata(
+      ascentId,
+      isIndoor,
+      signedUrl,
+    );
   }
 
   openAscentDialog(ascentId: number | string): Observable<void> {
@@ -834,28 +738,12 @@ export class AscentsService {
     return true;
   }
 
-  async deleteOrphanedPhoto(
+  deleteOrphanedPhoto(
     ascentId: number | string,
     photoPath: string,
     isIndoor = false,
   ): Promise<void> {
-    if (!this.isBrowser || !photoPath) return;
-    try {
-      await this.supabase.whenReady();
-      const headers: Record<string, string> = {
-        'ascent-id': ascentId.toString(),
-        'ngsw-bypass': 'true',
-      };
-      if (isIndoor || typeof ascentId === 'string') {
-        headers['is-indoor'] = 'true';
-      }
-      await this.supabase.client.functions.invoke('delete-route-ascent-photo', {
-        body: { photo_path: photoPath },
-        headers,
-      });
-    } catch (e) {
-      console.warn('[AscentsService] deleteOrphanedPhoto error', e);
-    }
+    return this.ascentMedia.deleteOrphanedPhoto(ascentId, photoPath, isIndoor);
   }
 
   private readonly ascentLikesUpdate$ = new Subject<{

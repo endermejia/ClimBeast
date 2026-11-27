@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   Component,
   computed,
@@ -43,8 +42,7 @@ interface ProcessedCarouselSlide {
 
 @Component({
   selector: 'app-custom-carousel',
-  standalone: true,
-  imports: [CommonModule, TranslatePipe, TuiButton, TuiIcon, TuiSkeleton],
+  imports: [TranslatePipe, TuiButton, TuiIcon, TuiSkeleton],
   template: `
     <div
       class="relative w-full h-full overflow-hidden group rounded-inherit touch-pan-y"

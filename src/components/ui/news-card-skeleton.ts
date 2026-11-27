@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 
 import { TuiAppearance } from '@taiga-ui/core';
@@ -6,8 +5,7 @@ import { TuiSkeleton } from '@taiga-ui/kit';
 
 @Component({
   selector: 'app-news-card-skeleton',
-  standalone: true,
-  imports: [CommonModule, TuiAppearance, TuiSkeleton],
+  imports: [TuiAppearance, TuiSkeleton],
   template: `
     <div
       tuiAppearance="flat-grayscale"

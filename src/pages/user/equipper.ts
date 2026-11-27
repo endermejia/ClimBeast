@@ -8,19 +8,13 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
-import {
-  TuiButton,
-  TuiDialogService,
-  TuiHint,
-  TuiLink,
-  TuiScrollbar,
-} from '@taiga-ui/core';
+import { TuiButton, TuiHint, TuiLink, TuiScrollbar } from '@taiga-ui/core';
 import { TuiCountryIsoCode } from '@taiga-ui/i18n';
-import { TUI_CONFIRM, type TuiConfirmData, TuiSkeleton } from '@taiga-ui/kit';
+import { TuiSkeleton } from '@taiga-ui/kit';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
+import { TranslatePipe } from '@ngx-translate/core';
 
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { EquipperRequestsService } from '../../services/equipper-requests.service';
 import { EquipperService } from '../../services/equipper.service';
 import { LayoutService } from '../../services/layout.service';
@@ -39,7 +33,6 @@ import { safeResourceValue } from '../../utils';
 
 @Component({
   selector: 'app-equipper',
-  standalone: true,
   imports: [
     IndoorRoutesComponent,
     OfflineNotCachedComponent,
@@ -179,14 +172,13 @@ import { safeResourceValue } from '../../utils';
   host: { class: 'flex flex-col w-full h-full min-h-0 min-w-0' },
 })
 export class EquipperComponent {
-  private readonly dialogs = inject(TuiDialogService);
+  private readonly appDialogs = inject(AppDialogsService);
   protected readonly equipperService = inject(EquipperService);
   protected readonly equipperRequests = inject(EquipperRequestsService);
   protected readonly layoutService = inject(LayoutService);
   protected readonly onlineStatus = inject(OnlineStatusService);
   protected readonly supabase = inject(SupabaseService);
   private readonly toast = inject(ToastService);
-  private readonly translate = inject(TranslateService);
   protected readonly router = inject(Router);
 
   // Route param
@@ -266,30 +258,18 @@ export class EquipperComponent {
     }
 
     const hasRequest = !!this.myRequest();
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant(
-          hasRequest
-            ? 'equipperRequest.pendingTitle'
-            : 'equipperRequest.requestTitle',
-        ),
-        size: 's',
-        data: {
-          content: this.translate.instant(
-            hasRequest
-              ? 'equipperRequest.pendingCancelConfirm'
-              : 'equipperRequest.confirmText',
-            { name: equipperName },
-          ),
-          yes: this.translate.instant(
-            hasRequest ? 'equipperRequest.cancel' : 'accept',
-          ),
-          no: this.translate.instant(hasRequest ? 'cancel' : 'cancel'),
-          appearance: hasRequest ? 'negative' : 'primary',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: hasRequest
+        ? 'equipperRequest.pendingTitle'
+        : 'equipperRequest.requestTitle',
+      contentKey: hasRequest
+        ? 'equipperRequest.pendingCancelConfirm'
+        : 'equipperRequest.confirmText',
+      contentParams: { name: equipperName },
+      yesKey: hasRequest ? 'equipperRequest.cancel' : 'accept',
+      noKey: 'cancel',
+      appearance: hasRequest ? 'negative' : 'primary',
+    });
 
     if (!confirmed) return;
 

@@ -1,4 +1,4 @@
-import { CommonModule, LowerCasePipe } from '@angular/common';
+import { LowerCasePipe } from '@angular/common';
 import {
   Component,
   computed,
@@ -21,10 +21,8 @@ import { AvatarUrlPipe, InitialsPipe } from '../../pipes';
 
 @Component({
   selector: 'app-user-info',
-  standalone: true,
   imports: [
     AvatarUrlPipe,
-    CommonModule,
     InitialsPipe,
     LowerCasePipe,
     TranslatePipe,

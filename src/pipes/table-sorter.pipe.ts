@@ -19,7 +19,6 @@ export const TOPO_ROUTE_SORTERS: Record<string, TuiComparator<TopoRouteRow>> = {
 
 @Pipe({
   name: 'tableSorter',
-  standalone: true,
 })
 export class TableSorterPipe implements PipeTransform {
   transform(col: string): TuiComparator<TopoRouteRow> | null {

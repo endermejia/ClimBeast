@@ -1,4 +1,4 @@
-import { CommonModule, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import {
   Component,
   computed,
@@ -22,9 +22,7 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
 
 @Component({
   selector: 'app-merchandise-card',
-  standalone: true,
   imports: [
-    CommonModule,
     DecimalPipe,
     TranslatePipe,
     TuiBadge,

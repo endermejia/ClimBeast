@@ -20,7 +20,6 @@ import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-admin-routesetter-requests',
-  standalone: true,
   imports: [AdminRequestsTableComponent],
   template: `
     <app-admin-requests-table

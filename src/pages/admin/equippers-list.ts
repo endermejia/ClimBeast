@@ -32,20 +32,19 @@ import {
   TuiTextfield,
 } from '@taiga-ui/core';
 import {
-  TUI_CONFIRM,
   TuiBadgeNotification,
   TuiBadgedContentComponent,
   TuiBadgedContentDirective,
   TuiComboBox,
   TuiDataListWrapper,
   TuiSkeleton,
-  type TuiConfirmData,
 } from '@taiga-ui/kit';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { LayoutService } from '../../services/layout.service'; // Only for non-delegated properties
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { SupabaseService } from '../../services/supabase.service';
@@ -61,7 +60,6 @@ import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-admin-equippers-list',
-  standalone: true,
   imports: [
     EmptyStateComponent,
     FormsModule,
@@ -356,6 +354,7 @@ export class AdminEquippersListComponent {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly dialogs = inject(TuiDialogService);
 
   private readonly addEquipperDialog =
@@ -549,24 +548,19 @@ export class AdminEquippersListComponent {
   }
 
   protected deleteEquipper(equipper: EquipperDto): void {
-    void firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('admin.equippers.deleteTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('admin.equippers.deleteConfirm', {
-            name: equipper.name,
-          }),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    ).then((confirmed) => {
-      if (!confirmed) return;
-      this.performDelete(equipper.id);
-    });
+    void this.appDialogs
+      .confirm({
+        labelKey: 'admin.equippers.deleteTitle',
+        contentKey: 'admin.equippers.deleteConfirm',
+        contentParams: { name: equipper.name },
+        yesKey: 'delete',
+        noKey: 'cancel',
+        appearance: 'primary-destructive',
+      })
+      .then((confirmed) => {
+        if (!confirmed) return;
+        this.performDelete(equipper.id);
+      });
   }
 
   private async performDelete(id: number): Promise<void> {

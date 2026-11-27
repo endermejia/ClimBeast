@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@angular/common';
 import { Component, computed, inject, resource } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
@@ -18,9 +18,8 @@ import { CheckoutService } from '../../services/checkout.service';
 
 @Component({
   selector: 'app-order-success',
-  standalone: true,
   imports: [
-    CommonModule,
+    CurrencyPipe,
     RouterLink,
     TranslatePipe,
     TuiButton,

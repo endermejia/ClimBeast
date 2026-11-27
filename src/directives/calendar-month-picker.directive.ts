@@ -21,7 +21,6 @@ import { firstValueFrom } from 'rxjs';
  */
 @Directive({
   selector: '[appCalendarMonthPicker]',
-  standalone: true,
   host: {
     '(click)': 'onHostClick($event)',
   },

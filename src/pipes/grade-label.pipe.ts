@@ -4,7 +4,6 @@ import { GRADE_NUMBER_TO_LABEL, VERTICAL_LIFE_GRADES } from '../models';
 
 @Pipe({
   name: 'gradeLabel',
-  standalone: true,
 })
 export class GradeLabelPipe implements PipeTransform {
   transform(grade: number | null | undefined): string {

@@ -7,10 +7,9 @@ import {
   TuiIcon,
   TuiLoader,
 } from '@taiga-ui/core';
-import { TUI_CONFIRM, TuiBadge, type TuiConfirmData } from '@taiga-ui/kit';
+import { TuiBadge } from '@taiga-ui/kit';
 
 import { TranslatePipe } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
 
 import { AuthStateService } from '../../services/auth-state.service';
 import { LayoutService } from '../../services/layout.service';
@@ -267,7 +266,6 @@ export class OutdoorTopoComponent extends TopoPageBase {
     const t = this.topo();
     if (!t) return [];
 
-    const actions: SectionHeaderAction[] = [];
     const isAdmin = this.authState.isAdmin();
     const crag = this.crag();
     const areaId = t.crag?.area_id ?? crag?.area_id ?? -1;
@@ -276,32 +274,19 @@ export class OutdoorTopoComponent extends TopoPageBase {
       t.crag ?? crag,
     );
 
-    if (this.canDraw()) {
-      actions.push({
-        label: 'draw',
-        icon: '/image/topo.svg',
-        appearance: 'neutral',
-        action: () => this.openDrawTopo(t),
-      });
-    }
-    if (canEdit) {
-      actions.push({
-        label: 'edit',
-        icon: '@tui.square-pen',
-        appearance: 'neutral',
-        action: () => this.openEditTopo(t),
-      });
-      if (isAdmin || canAreaAdmin) {
-        actions.push({
-          label: 'delete',
-          icon: '@tui.trash',
-          appearance: 'negative',
-          action: () => this.deleteTopo(t),
-        });
-      }
-    }
-
-    return actions;
+    return this.buildTopoHeaderActions(
+      t,
+      {
+        canDraw: this.canDraw(),
+        canEdit,
+        canDelete: isAdmin || canAreaAdmin,
+      },
+      {
+        onDraw: (topo) => void this.openDrawTopo(topo),
+        onEdit: (topo) => this.openEditTopo(topo),
+        onDelete: (topo) => this.deleteTopo(topo),
+      },
+    );
   });
 
   protected readonly columns = computed(() => {
@@ -311,25 +296,17 @@ export class OutdoorTopoComponent extends TopoPageBase {
       : ['index', 'grade', 'name', 'height', 'actions'];
   });
 
-  protected readonly tableData = computed(() => {
+  protected readonly tableData = computed<TopoRouteRow[]>(() => {
     const topo = this.topo();
     if (!topo) return [];
-    return topo.topo_routes.map((tr: TopoRouteWithRoute) => {
-      const r = tr.route;
-      const climbed = !!r.own_ascent && r.own_ascent.type !== 'attempt';
-      const project = !!r.project;
-      return {
-        index: tr.number,
-        name: r.name,
-        grade: r.grade,
-        height: r.height || null,
-        slug: r.slug,
-        link: ['/area', this.areaSlug()!, this.cragSlug()!, r.slug],
-        climbed,
-        project,
-        _ref: tr,
-      } as TopoRouteRow;
-    });
+    return topo.topo_routes.map((tr: TopoRouteWithRoute) =>
+      this.mapTopoRouteToRow(tr, [
+        '/area',
+        this.areaSlug()!,
+        this.cragSlug()!,
+        tr.route.slug,
+      ]),
+    );
   });
 
   protected readonly sortedTableData = computed(() => {
@@ -355,21 +332,12 @@ export class OutdoorTopoComponent extends TopoPageBase {
       ));
     if (!imageUrl) return;
 
-    const routes = (topo.topo_routes || []).map((tr, i) => ({
-      topo_id: topo.id,
-      route_id: tr.route_id,
-      number: tr.number ?? i,
-      route: tr.route,
-      path: tr.path,
-    }));
-
     const result = await this.toposService.openTopoPathEditor({
       imageUrl,
-      topoRoutes: routes as TopoRouteWithRoute[],
+      topoRoutes: this.mapTopoRoutesForEditor(topo),
       topoName: topo.name,
       topoId: topo.id,
       cragId: topo.crag_id,
-      standalone: true,
       isIndoor: false,
     });
 
@@ -389,31 +357,12 @@ export class OutdoorTopoComponent extends TopoPageBase {
   }
 
   protected deleteTopo(topo: TopoDetail): void {
-    if (!this.isBrowser) return;
-    void firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('topos.deleteTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('topos.deleteConfirm', {
-            name: topo.name,
-          }),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    ).then((confirmed) => {
-      if (!confirmed) return;
+    this.confirmDeleteTopo(topo, () =>
       this.toposService
         .delete(topo.id)
         .then(() =>
           this.router.navigate(['/area', this.areaSlug()!, this.cragSlug()!]),
-        )
-        .catch(() => {
-          // noop
-        });
-    });
+        ),
+    );
   }
 }

@@ -1,4 +1,4 @@
-import { CommonModule, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Component, computed, inject, resource } from '@angular/core';
 import { Router } from '@angular/router';
 
@@ -51,10 +51,8 @@ interface GroupedNotification {
 
 @Component({
   selector: 'app-notifications-dialog',
-  standalone: true,
   imports: [
     AvatarUrlPipe,
-    CommonModule,
     DatePipe,
     EmptyStateComponent,
     TranslatePipe,

@@ -9,7 +9,6 @@ import { UserProfileProjectsListComponent } from './projects/projects-list';
 
 @Component({
   selector: 'app-user-profile-projects',
-  standalone: true,
   imports: [PyramidComponent, TuiScrollbar, UserProfileProjectsListComponent],
   template: `
     <div

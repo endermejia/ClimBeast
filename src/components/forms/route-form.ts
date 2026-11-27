@@ -1,4 +1,4 @@
-import { CommonModule, Location } from '@angular/common';
+import { Location } from '@angular/common';
 import {
   Component,
   computed,
@@ -86,7 +86,6 @@ interface RouteFormModel {
 @Component({
   selector: 'app-route-form',
   imports: [
-    CommonModule,
     CounterComponent,
     FormField,
     FormsModule,

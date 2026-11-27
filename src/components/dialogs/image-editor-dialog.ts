@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   Component,
   Inject,
@@ -49,9 +48,7 @@ export interface ImageEditorConfig {
 
 @Component({
   selector: 'app-image-editor-dialog',
-  standalone: true,
   imports: [
-    CommonModule,
     ImageCropperComponent,
     TranslatePipe,
     TuiButton,

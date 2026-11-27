@@ -16,7 +16,6 @@ import { IS_BROWSER } from '../../app/is-browser';
       <tui-loader size="xl"></tui-loader>
     </div>
   `,
-  standalone: true,
 })
 export class AreaRedirectComponent {
   private readonly isBrowser = inject(IS_BROWSER);

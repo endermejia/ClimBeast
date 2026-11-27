@@ -7,7 +7,6 @@ import { UserInfoHintComponent } from '../components/ui/user-info-hint';
 
 @Directive({
   selector: '[appMentionHint]',
-  standalone: true,
   host: {
     '(mouseover)': 'onMouseOver($event)',
     '(mouseout)': 'onMouseOut($event)',
@@ -25,6 +24,7 @@ export class MentionHintDirective implements OnDestroy {
   private currentMentionEl: HTMLElement | null = null;
   private hideTimeout: ReturnType<typeof setTimeout> | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private hintListenersAbort: AbortController | null = null;
 
   ngOnDestroy(): void {
     this.closeHint();
@@ -155,8 +155,14 @@ export class MentionHintDirective implements OnDestroy {
 
     const hintNativeEl = this.componentRef.location
       .nativeElement as HTMLElement;
-    hintNativeEl.addEventListener('mouseenter', () => this.cancelHide());
-    hintNativeEl.addEventListener('mouseleave', () => this.scheduleHide());
+    this.hintListenersAbort = new AbortController();
+    const { signal } = this.hintListenersAbort;
+    hintNativeEl.addEventListener('mouseenter', () => this.cancelHide(), {
+      signal,
+    });
+    hintNativeEl.addEventListener('mouseleave', () => this.scheduleHide(), {
+      signal,
+    });
 
     if (typeof ResizeObserver !== 'undefined') {
       this.resizeObserver = new ResizeObserver(() => {
@@ -191,6 +197,10 @@ export class MentionHintDirective implements OnDestroy {
 
   private closeHint(): void {
     this.cancelHide();
+    if (this.hintListenersAbort) {
+      this.hintListenersAbort.abort();
+      this.hintListenersAbort = null;
+    }
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
       this.resizeObserver = null;

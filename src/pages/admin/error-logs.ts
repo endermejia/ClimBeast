@@ -7,7 +7,6 @@ import { TuiTable } from '@taiga-ui/addon-table';
 import {
   TuiAppearance,
   TuiButton,
-  TuiDialogService,
   TuiIcon,
   TuiInput,
   TuiLink,
@@ -16,20 +15,17 @@ import {
   TuiTextfield,
 } from '@taiga-ui/core';
 import {
-  TUI_CONFIRM,
   TuiAvatar,
   TuiBadge,
   TuiBadgeNotification,
   TuiBadgedContentComponent,
   TuiBadgedContentDirective,
   TuiCopy,
-  type TuiConfirmData,
 } from '@taiga-ui/kit';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import { firstValueFrom } from 'rxjs';
-
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import {
   AppErrorLog,
   ErrorLogService,
@@ -44,7 +40,6 @@ import { matchesQuery } from '../../utils';
 
 @Component({
   selector: 'app-admin-error-logs',
-  standalone: true,
   imports: [
     AvatarUrlPipe,
     DatePipe,
@@ -454,7 +449,7 @@ import { matchesQuery } from '../../utils';
 })
 export class AdminErrorLogsComponent {
   private readonly errorLogService = inject(ErrorLogService);
-  private readonly dialogs = inject(TuiDialogService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
 
@@ -560,19 +555,13 @@ export class AdminErrorLogsComponent {
   }
 
   async confirmClearLogs(): Promise<void> {
-    const data: TuiConfirmData = {
-      content: this.translate.instant('admin.errorLogs.confirmClearText'),
-      yes: this.translate.instant('accept'),
-      no: this.translate.instant('cancel'),
-    };
-
-    const confirm = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('admin.errorLogs.confirmClearTitle'),
-        data,
-      }),
-      { defaultValue: false },
-    );
+    const confirm = await this.appDialogs.confirm({
+      labelKey: 'admin.errorLogs.confirmClearTitle',
+      contentKey: 'admin.errorLogs.confirmClearText',
+      yesKey: 'accept',
+      noKey: 'cancel',
+      size: 'm',
+    });
 
     if (confirm) {
       await this.errorLogService.clearErrors();

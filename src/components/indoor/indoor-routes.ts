@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   Component,
   inject,
@@ -33,14 +32,14 @@ import {
   TuiHint,
   TuiGroup,
   TuiCheckbox,
-  TuiDialogService,
 } from '@taiga-ui/core';
-import { TuiBadge, TuiPin, TUI_CONFIRM, TuiConfirmData } from '@taiga-ui/kit';
+import { TuiBadge, TuiPin } from '@taiga-ui/kit';
 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { AscentsService } from '../../services/ascents.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { IndoorService } from '../../services/indoor.service';
@@ -66,9 +65,7 @@ import { EmptyStateComponent } from '../ui/empty-state';
 
 @Component({
   selector: 'app-indoor-routes',
-  standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     TranslateModule,
     RouterLink,
@@ -411,7 +408,7 @@ export class IndoorRoutesComponent {
   private readonly translate = inject(TranslateService);
   protected readonly ascentsService = inject(AscentsService);
   private readonly isBrowser = inject(IS_BROWSER);
-  private readonly dialogs = inject(TuiDialogService);
+  private readonly appDialogs = inject(AppDialogsService);
 
   protected readonly columns = computed(() => {
     if (this.layoutService.isMobile()) {
@@ -541,27 +538,21 @@ export class IndoorRoutesComponent {
     if (!this.isBrowser) return;
     const r = route as IndoorRouteWithExtras;
 
-    void firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('routes.deleteTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('routes.deleteConfirm', {
-            name: r.name || this.translate.instant('route'),
-          }),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    ).then(async (confirmed) => {
-      if (!confirmed) return;
-      await this.indoor.deleteRoute(r.id);
-      if (this.centerId()) {
-        this.routesResource.reload();
-      }
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'routes.deleteTitle',
+      contentKey: 'routes.deleteConfirm',
+      contentParams: {
+        name: r.name || this.translate.instant('route'),
+      },
+      yesKey: 'delete',
+      noKey: 'cancel',
+      appearance: 'primary-destructive',
     });
+    if (!confirmed) return;
+    await this.indoor.deleteRoute(r.id);
+    if (this.centerId()) {
+      this.routesResource.reload();
+    }
   }
 
   protected readonly columnSorterMap = computed(() => {

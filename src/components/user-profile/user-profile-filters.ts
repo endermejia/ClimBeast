@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, inject, linkedSignal } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
@@ -35,9 +34,7 @@ import { FilterDialog, FilterDialogComponent } from '../dialogs/filter-dialog';
 
 @Component({
   selector: 'app-user-profile-filters',
-  standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     ReactiveFormsModule,
     TranslatePipe,

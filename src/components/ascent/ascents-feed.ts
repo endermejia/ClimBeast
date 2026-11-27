@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, input, output, signal } from '@angular/core';
 
 import { TuiDay, TuiMonth } from '@taiga-ui/cdk';
@@ -46,9 +46,9 @@ export interface DateGroup {
     AscentCardSkeletonComponent,
     AscentDatePipe,
     CalendarMonthPickerDirective,
-    CommonModule,
     InfiniteScrollTriggerComponent,
     NewsCardComponent,
+    NgTemplateOutlet,
     TranslatePipe,
     TuiCalendar,
     TuiDropdown,
@@ -107,48 +107,15 @@ export interface DateGroup {
                     [class.lg:col-span-3]="columns() >= 3"
                   />
                 } @else if (processed.item.kind === 'ascent') {
-                  @let ascent = processed.item;
-                  @if (processed.index === 0) {
-                    <app-ascent-card
-                      [data]="ascent"
-                      [extraAscents]="processed.extraAscents ?? []"
-                      [showUser]="showUser()"
-                      [showRoute]="showRoute()"
-                      [showCrag]="showCrag()"
-                      [showArea]="showArea()"
-                      [showDate]="showDate() && !groupByDate()"
-                      [priority]="true"
-                      [highlightOwn]="highlightOwn()"
-                    />
-                  } @else {
-                    @defer (on viewport) {
-                      <app-ascent-card
-                        [data]="ascent"
-                        [extraAscents]="processed.extraAscents ?? []"
-                        [showUser]="showUser()"
-                        [showRoute]="showRoute()"
-                        [showCrag]="showCrag()"
-                        [showArea]="showArea()"
-                        [showDate]="showDate() && !groupByDate()"
-                        [priority]="false"
-                        [highlightOwn]="highlightOwn()"
-                      />
-                    } @placeholder {
-                      <app-ascent-card-skeleton
-                        [showUser]="showUser()"
-                        [showRoute]="showRoute()"
-                        [showDate]="showDate() && !groupByDate()"
-                        [hasPhoto]="!!ascent.photo_path"
-                        [photoWidth]="ascent.photo_width"
-                        [photoHeight]="ascent.photo_height"
-                        [photoLqip]="ascent.photo_lqip"
-                      />
-                    } @error {
-                      <div class="p-4 text-center text-xs opacity-60">
-                        {{ 'errors.unexpected' | translate }}
-                      </div>
-                    }
-                  }
+                  <ng-container
+                    *ngTemplateOutlet="
+                      ascentEntryTpl;
+                      context: {
+                        $implicit: processed.item,
+                        processed: processed,
+                      }
+                    "
+                  />
                 }
               }
             </div>
@@ -201,7 +168,6 @@ export interface DateGroup {
               [class.lg:col-span-3]="columns() >= 3"
             />
           } @else if (processed.item.kind === 'ascent') {
-            @let ascent = processed.item;
             @if (groupByGrade() && processed.showGradeHeader) {
               <div
                 class="mt-10 mb-4 flex items-center gap-4"
@@ -214,45 +180,15 @@ export interface DateGroup {
                 <div class="h-px grow bg-(--tui-border-normal)"></div>
               </div>
             }
-            @if (processed.index === 0) {
-              <app-ascent-card
-                [data]="ascent"
-                [showUser]="showUser()"
-                [showRoute]="showRoute()"
-                [showCrag]="showCrag()"
-                [showArea]="showArea()"
-                [showDate]="showDate() && !groupByDate()"
-                [priority]="true"
-                [highlightOwn]="highlightOwn()"
-              />
-            } @else {
-              @defer (on viewport) {
-                <app-ascent-card
-                  [data]="ascent"
-                  [showUser]="showUser()"
-                  [showRoute]="showRoute()"
-                  [showCrag]="showCrag()"
-                  [showArea]="showArea()"
-                  [showDate]="showDate() && !groupByDate()"
-                  [priority]="false"
-                  [highlightOwn]="highlightOwn()"
-                />
-              } @placeholder {
-                <app-ascent-card-skeleton
-                  [showUser]="showUser()"
-                  [showRoute]="showRoute()"
-                  [showDate]="showDate() && !groupByDate()"
-                  [hasPhoto]="!!ascent.photo_path"
-                  [photoWidth]="ascent.photo_width"
-                  [photoHeight]="ascent.photo_height"
-                  [photoLqip]="ascent.photo_lqip"
-                />
-              } @error {
-                <div class="p-4 text-center text-xs opacity-60">
-                  {{ 'errors.unexpected' | translate }}
-                </div>
-              }
-            }
+            <ng-container
+              *ngTemplateOutlet="
+                ascentEntryTpl;
+                context: {
+                  $implicit: processed.item,
+                  processed: processed,
+                }
+              "
+            />
           }
         }
 
@@ -277,6 +213,67 @@ export interface DateGroup {
         }
       </div>
     }
+
+    <ng-template
+      #ascentCardTpl
+      let-ascent
+      let-extraAscents="extraAscents"
+      let-priority="priority"
+    >
+      <app-ascent-card
+        [data]="ascent"
+        [extraAscents]="extraAscents ?? []"
+        [showUser]="showUser()"
+        [showRoute]="showRoute()"
+        [showCrag]="showCrag()"
+        [showArea]="showArea()"
+        [showDate]="showCardDate()"
+        [priority]="!!priority"
+        [highlightOwn]="highlightOwn()"
+      />
+    </ng-template>
+
+    <ng-template #ascentEntryTpl let-ascent let-processed="processed">
+      @if (processed.index === 0) {
+        <ng-container
+          *ngTemplateOutlet="
+            ascentCardTpl;
+            context: {
+              $implicit: ascent,
+              extraAscents: processed.extraAscents,
+              priority: true,
+            }
+          "
+        />
+      } @else {
+        @defer (on viewport) {
+          <ng-container
+            *ngTemplateOutlet="
+              ascentCardTpl;
+              context: {
+                $implicit: ascent,
+                extraAscents: processed.extraAscents,
+                priority: false,
+              }
+            "
+          />
+        } @placeholder {
+          <app-ascent-card-skeleton
+            [showUser]="showUser()"
+            [showRoute]="showRoute()"
+            [showDate]="showCardDate()"
+            [hasPhoto]="!!ascent.photo_path"
+            [photoWidth]="ascent.photo_width"
+            [photoHeight]="ascent.photo_height"
+            [photoLqip]="ascent.photo_lqip"
+          />
+        } @error {
+          <div class="p-4 text-center text-xs opacity-60">
+            {{ 'errors.unexpected' | translate }}
+          </div>
+        }
+      }
+    </ng-template>
 
     <ng-template #calendarDropdown>
       <div class="p-2">
@@ -313,6 +310,9 @@ export class AscentsFeedComponent {
   loadMore = output<void>();
   dateSelected = output<string>();
 
+  protected readonly showCardDate = computed(
+    () => this.showDate() && !this.groupByDate(),
+  );
   protected readonly openCalendarDateKey = signal<string | null>(null);
   protected readonly calendarSelectedDay = signal<TuiDay>(
     TuiDay.currentLocal(),

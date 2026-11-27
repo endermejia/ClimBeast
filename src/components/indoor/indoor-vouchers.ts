@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Component, inject, input, resource, computed } from '@angular/core';
 
 import { TuiAmountPipe } from '@taiga-ui/addon-commerce';
@@ -29,9 +29,8 @@ import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-indoor-vouchers',
-  standalone: true,
   imports: [
-    CommonModule,
+    DatePipe,
     TranslateModule,
     TuiAppearance,
     TuiButton,

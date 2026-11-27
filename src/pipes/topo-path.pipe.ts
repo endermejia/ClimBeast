@@ -12,7 +12,6 @@ import {
 
 @Pipe({
   name: 'topoPointStateColor',
-  standalone: true,
   pure: true,
 })
 export class TopoPointStateColorPipe implements PipeTransform {
@@ -23,7 +22,6 @@ export class TopoPointStateColorPipe implements PipeTransform {
 
 @Pipe({
   name: 'topoPointStateBadge',
-  standalone: true,
   pure: true,
 })
 export class TopoPointStateBadgePipe implements PipeTransform {
@@ -34,7 +32,6 @@ export class TopoPointStateBadgePipe implements PipeTransform {
 
 @Pipe({
   name: 'topoPointStateLabel',
-  standalone: true,
   pure: true,
 })
 export class TopoPointStateLabelPipe implements PipeTransform {
@@ -45,7 +42,6 @@ export class TopoPointStateLabelPipe implements PipeTransform {
 
 @Pipe({
   name: 'topoPointPillGeometry',
-  standalone: true,
   pure: true,
 })
 export class TopoPointPillGeometryPipe implements PipeTransform {

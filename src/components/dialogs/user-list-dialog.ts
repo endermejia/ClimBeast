@@ -11,7 +11,6 @@ import { RouterLink } from '@angular/router';
 import {
   TuiButton,
   TuiDialogContext,
-  TuiDialogService,
   TuiIcon,
   TuiInput,
   TuiLabel,
@@ -19,14 +18,12 @@ import {
   TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
-
-import { TuiAvatar, TuiConfirmData, TUI_CONFIRM } from '@taiga-ui/kit';
+import { TuiAvatar } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 
-import { firstValueFrom } from 'rxjs';
-
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { AscentsService } from '../../services/ascents.service';
 
 import { FollowsService } from '../../services/follows.service';
@@ -170,8 +167,7 @@ export class UserListDialogComponent {
   private readonly ascentsService = inject(AscentsService);
   protected readonly context =
     injectContext<TuiDialogContext<boolean, UserListDialogData>>();
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly translate = inject(TranslateService);
+  private readonly appDialogs = inject(AppDialogsService);
 
   protected readonly userId = this.context.data.userId;
   protected readonly ascentId = this.context.data.ascentId;
@@ -317,23 +313,14 @@ export class UserListDialogComponent {
     event.preventDefault();
     event.stopPropagation();
 
-    const data: TuiConfirmData = {
-      content: this.translate.instant('unfollowConfirm', {
-        name: user.name,
-      }),
-      yes: this.translate.instant('unfollow'),
-      no: this.translate.instant('cancel'),
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'unfollow',
+      contentKey: 'unfollowConfirm',
+      contentParams: { name: user.name },
+      yesKey: 'unfollow',
+      noKey: 'cancel',
       appearance: 'negative',
-    };
-
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('unfollow'),
-        size: 's',
-        data,
-      }),
-      { defaultValue: false },
-    );
+    });
 
     if (confirmed) {
       const success = await this.followsService.unfollow(user.id);

@@ -13,7 +13,6 @@ import { formatAscentCount } from '../utils';
 @Directive({
   selector: '[appAscentCount]',
   exportAs: 'appAscentCount',
-  standalone: true,
 })
 export class AscentCountDirective {
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);

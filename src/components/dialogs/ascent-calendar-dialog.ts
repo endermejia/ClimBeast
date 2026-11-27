@@ -1,4 +1,4 @@
-import { CommonModule, DatePipe, LowerCasePipe } from '@angular/common';
+import { DatePipe, LowerCasePipe } from '@angular/common';
 import { Component, computed, inject, resource, signal } from '@angular/core';
 
 import { TuiDay, TuiBooleanHandler, TuiMonth } from '@taiga-ui/cdk';
@@ -45,12 +45,10 @@ interface AscentDateMarker {
 
 @Component({
   selector: 'app-ascent-calendar-dialog',
-  standalone: true,
   imports: [
     AscentCardComponent,
     AscentCountDirective,
     CalendarMonthPickerDirective,
-    CommonModule,
     DatePipe,
     LowerCasePipe,
     TranslatePipe,

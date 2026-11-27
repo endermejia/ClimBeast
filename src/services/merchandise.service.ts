@@ -1,7 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 
 import { TuiDialogService } from '@taiga-ui/core';
-import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslateService } from '@ngx-translate/core';
@@ -23,6 +22,7 @@ import type {
 
 import { IS_BROWSER } from '../app/is-browser';
 
+import { AppDialogsService } from './app-dialogs.service';
 import { SupabaseService } from './supabase.service';
 
 import { ToastService } from './toast.service';
@@ -31,6 +31,7 @@ import { ToastService } from './toast.service';
 export class MerchandiseService {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
@@ -374,21 +375,14 @@ export class MerchandiseService {
 
   /** Confirma y borra el artículo. Devuelve `true` si se borró. */
   async deleteItem(item: MerchandiseItemDetail): Promise<boolean> {
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('merchandising.items.deleteTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('merchandising.items.deleteConfirm', {
-            name: item.name,
-          }),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'merchandising.items.deleteTitle',
+      contentKey: 'merchandising.items.deleteConfirm',
+      contentParams: { name: item.name },
+      yesKey: 'delete',
+      noKey: 'cancel',
+      appearance: 'primary-destructive',
+    });
 
     if (!confirmed) return false;
 

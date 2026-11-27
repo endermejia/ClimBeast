@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
@@ -42,9 +41,7 @@ export interface MaterialCatalogFormData {
 
 @Component({
   selector: 'app-material-catalog-form',
-  standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     TranslatePipe,
     TuiButton,

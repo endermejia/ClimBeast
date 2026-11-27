@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { LowerCasePipe, NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   computed,
@@ -8,27 +8,22 @@ import {
   input,
   resource,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
 import {
+  TuiAppearance,
   TuiButton,
+  TuiHint,
   TuiIcon,
   TuiLoader,
-  TuiHint,
-  TuiAppearance,
-  TuiDialogService,
   TuiScrollbar,
 } from '@taiga-ui/core';
-import {
-  TuiBadge,
-  TuiAvatar,
-  TUI_CONFIRM,
-  TuiConfirmData,
-} from '@taiga-ui/kit';
+import { TuiAvatar, TuiBadge } from '@taiga-ui/kit';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { AscentsService } from '../../services/ascents.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { BreadcrumbsService } from '../../services/breadcrumbs.service';
@@ -38,9 +33,12 @@ import { OnlineStatusService } from '../../services/online-status.service';
 import { ToastService } from '../../services/toast.service';
 
 import { AscentCardComponent } from '../../components/ascent/ascent-card';
-
 import { ChartAscentsByGradeComponent } from '../../components/charts/chart-ascents-by-grade';
 import { ChartAscentsByStyleComponent } from '../../components/charts/chart-ascents-by-style';
+import {
+  RouteMetaLinksComponent,
+  type RouteMetaTopoLink,
+} from '../../components/route/route-meta-links';
 import { GradeComponent } from '../../components/ui/avatar-grade';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
@@ -61,7 +59,6 @@ import {
   IndoorCenterDto,
 } from '../../models';
 
-import { AvatarUrlPipe } from '../../pipes';
 import { inputValueOrUndefined, safeResourceValue } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
@@ -69,44 +66,28 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
 
 @Component({
   selector: 'app-indoor-route',
-  standalone: true,
   imports: [
+    AscentCardComponent,
     AscentCountDirective,
-    AvatarUrlPipe,
-    CommonModule,
-    OfflineNotCachedComponent,
-    RouterLink,
-    TranslatePipe,
-    TuiAvatar,
-    TuiButton,
-    TuiIcon,
-    TuiLoader,
-    TuiBadge,
-    TuiHint,
-    TuiAppearance,
-    TuiScrollbar,
-    GradeComponent,
-    EmptyStateComponent,
-    SectionHeaderComponent,
     ChartAscentsByGradeComponent,
     ChartAscentsByStyleComponent,
-    AscentCardComponent,
+    NgTemplateOutlet,
+    LowerCasePipe,
+    EmptyStateComponent,
+    GradeComponent,
+    OfflineNotCachedComponent,
+    RouteMetaLinksComponent,
+    SectionHeaderComponent,
+    TranslatePipe,
+    TuiAppearance,
+    TuiAvatar,
+    TuiBadge,
+    TuiButton,
+    TuiHint,
+    TuiIcon,
+    TuiLoader,
+    TuiScrollbar,
   ],
-  styles: `
-    @media (min-width: 1024px) {
-      :host > tui-scrollbar {
-        overflow: hidden !important;
-      }
-      :host > tui-scrollbar ::ng-deep > .t-content {
-        block-size: 100% !important;
-        height: 100% !important;
-        overflow: hidden !important;
-      }
-      :host > tui-scrollbar ::ng-deep > tui-scroll-controls {
-        display: none !important;
-      }
-    }
-  `,
   template: `
     <tui-scrollbar class="w-full h-full min-h-0 min-w-0">
       <section
@@ -280,72 +261,10 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
                       }
                     </div>
 
-                    <!-- Equippers -->
-                    @if (r.equippers && r.equippers.length > 0) {
-                      <div class="flex flex-col items-center">
-                        <span
-                          class="text-xs uppercase opacity-60 font-semibold tracking-wider mb-1"
-                        >
-                          {{ 'equippers' | translate }}
-                        </span>
-                        <div class="flex flex-wrap gap-2 justify-center">
-                          @for (e of r.equippers; track e.id) {
-                            <a
-                              tuiButton
-                              appearance="secondary"
-                              size="s"
-                              class="min-w-fit!"
-                              [routerLink]="['/equipper', e.id]"
-                            >
-                              @if (e.avatar; as avatar) {
-                                <span tuiAvatar size="xs" class="shrink-0">
-                                  <img
-                                    [src]="avatar | avatarUrl"
-                                    [alt]="e.name"
-                                  />
-                                </span>
-                              }
-                              {{ e.name }}
-                            </a>
-                          }
-                        </div>
-                      </div>
-                    }
-
-                    <!-- Topos (Croquis) -->
-                    @if (r.topos && r.topos.length > 0) {
-                      <div class="flex flex-col items-center">
-                        <span
-                          class="text-xs uppercase opacity-60 font-semibold tracking-wider mb-2"
-                        >
-                          {{
-                            (r.topos.length === 1 ? 'topo' : 'topos')
-                              | translate
-                          }}
-                        </span>
-                        <div class="flex flex-wrap gap-2 justify-center">
-                          @for (t of r.topos; track t.id) {
-                            <a
-                              tuiButton
-                              [appearance]="
-                                t.has_path === false ? 'warning' : 'info'
-                              "
-                              size="s"
-                              class="min-w-fit!"
-                              [routerLink]="[
-                                '/indoor',
-                                centerSlug(),
-                                'topo',
-                                t.id,
-                              ]"
-                              [queryParams]="{ route: r.id }"
-                            >
-                              {{ t.name }}
-                            </a>
-                          }
-                        </div>
-                      </div>
-                    }
+                    <app-route-meta-links
+                      [equippers]="metaEquippers()"
+                      [topos]="metaTopos()"
+                    />
                   </div>
                 </div>
 
@@ -417,7 +336,7 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
       </section>
     </tui-scrollbar>
   `,
-  host: { class: 'flex flex-col w-full h-full min-h-0' },
+  host: { class: 'flex flex-col w-full h-full min-h-0 lw-desktop-scroll-lock' },
 })
 export class IndoorRouteComponent {
   centerSlug = input.required<string>();
@@ -433,7 +352,7 @@ export class IndoorRouteComponent {
   private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
   private readonly isBrowser = inject(IS_BROWSER);
-  private readonly dialogs = inject(TuiDialogService);
+  private readonly appDialogs = inject(AppDialogsService);
 
   protected readonly climbingIcons = CLIMBING_ICONS;
 
@@ -443,6 +362,23 @@ export class IndoorRouteComponent {
       return null;
     }
     return this.routeResource.value() ?? null;
+  });
+
+  protected readonly metaEquippers = computed(
+    () => this.route()?.equippers ?? [],
+  );
+
+  protected readonly metaTopos = computed<RouteMetaTopoLink[]>(() => {
+    const r = this.route();
+    const cSlug = this.centerSlug();
+    if (!r?.topos?.length) return [];
+    return r.topos.map((t) => ({
+      id: t.id,
+      name: t.name,
+      link: ['/indoor', cSlug, 'topo', t.id],
+      queryParams: { route: r.id },
+      hasPath: t.has_path,
+    }));
   });
 
   /** Solo mostramos «no encontrado» cuando la consulta ya ha terminado. */
@@ -623,27 +559,20 @@ export class IndoorRouteComponent {
   async onDeleteAscent(ascentId: string): Promise<void> {
     if (!this.isBrowser) return;
 
-    void firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('ascent.deleteTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('ascent.deleteConfirm'),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    ).then(async (confirmed) => {
-      if (!confirmed) return;
-      try {
-        await this.indoor.deleteRouteAscent(ascentId);
-      } catch (e) {
-        console.error(e);
-        this.toast.error('errors.unexpected');
-      }
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'ascent.deleteTitle',
+      contentKey: 'ascent.deleteConfirm',
+      yesKey: 'delete',
+      appearance: 'primary-destructive',
     });
+    if (!confirmed) return;
+
+    try {
+      await this.indoor.deleteRouteAscent(ascentId);
+    } catch (e) {
+      console.error(e);
+      this.toast.error('errors.unexpected');
+    }
   }
 
   protected readonly routeColorName = computed(() => {
@@ -666,29 +595,23 @@ export class IndoorRouteComponent {
     const r = this.route();
     if (!r || !this.isBrowser) return;
 
-    void firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('routes.deleteTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('routes.deleteConfirm', {
-            name: r.name || this.translate.instant('route'),
-          }),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    ).then(async (confirmed) => {
-      if (!confirmed) return;
-      try {
-        await this.indoor.deleteRoute(r.id);
-        void this.router.navigate(['/indoor', r.center_slug]);
-      } catch (e) {
-        console.error(e);
-        this.toast.error('errors.unexpected');
-      }
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'routes.deleteTitle',
+      contentKey: 'routes.deleteConfirm',
+      contentParams: {
+        name: r.name || this.translate.instant('route'),
+      },
+      yesKey: 'delete',
+      appearance: 'primary-destructive',
     });
+    if (!confirmed) return;
+
+    try {
+      await this.indoor.deleteRoute(r.id);
+      void this.router.navigate(['/indoor', r.center_slug]);
+    } catch (e) {
+      console.error(e);
+      this.toast.error('errors.unexpected');
+    }
   }
 }

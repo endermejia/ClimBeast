@@ -16,7 +16,6 @@ export interface AscentViewDialogData {
 
 @Component({
   selector: 'app-ascent-dialog',
-  standalone: true,
   imports: [
     AscentCardComponent,
     AscentCardSkeletonComponent,

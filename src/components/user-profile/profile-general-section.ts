@@ -8,6 +8,7 @@ import {
   PLATFORM_ID,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { FieldTree } from '@angular/forms/signals';
 
 import { TuiDay, TuiStringMatcher } from '@taiga-ui/cdk';
 import {
@@ -428,7 +429,7 @@ import { TourHintComponent } from '../ui/tour-hint';
         (skip)="tourService.finish()"
         [disabled]="
           profileForm()['fullName']().invalid() ||
-          profileForm()['fullName']().value?.() === userEmail()
+          profileForm()['fullName']().value() === userEmail()
         "
         [showSkip]="false"
       />
@@ -456,8 +457,7 @@ export class ProfileGeneralSectionComponent {
   }
 
   readonly model = input.required<ProfileConfigModel>();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  readonly profileForm = input.required<any>();
+  readonly profileForm = input.required<FieldTree<ProfileConfigModel>>();
   readonly userEmail = input<string>('');
   readonly avatarSrc = input<string | null>(null);
   readonly hasAvatar = input<boolean>(false);

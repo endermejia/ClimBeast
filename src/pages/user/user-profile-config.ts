@@ -29,7 +29,7 @@ import {
   TuiTitle,
   type TuiDialogContext,
 } from '@taiga-ui/core';
-import { TUI_CONFIRM, TUI_COUNTRIES, type TuiConfirmData } from '@taiga-ui/kit';
+import { TUI_COUNTRIES } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
 import {
   injectContext,
@@ -52,6 +52,7 @@ import {
   tap,
 } from 'rxjs';
 
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { ConsentService } from '../../services/consent.service';
 import { EightAnuService } from '../../services/eight-anu.service';
@@ -98,7 +99,6 @@ interface Country {
 
 @Component({
   selector: 'app-user-profile-config',
-  standalone: true,
   imports: [
     FormsModule,
     Profile8aSectionComponent,
@@ -257,6 +257,7 @@ export class UserProfileConfigComponent {
   protected readonly followRequestsService = inject(FollowRequestsService);
   readonly router = inject(Router);
   private readonly location = inject(Location);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly merchService = inject(MerchandiseService);
   private readonly pushSubscription = inject(PushSubscriptionService);
@@ -612,18 +613,13 @@ export class UserProfileConfigComponent {
 
   async togglePrivateProfile(isPrivate: boolean): Promise<void> {
     if (isPrivate) {
-      const confirmed = await firstValueFrom(
-        this.dialogs.open<boolean>(TUI_CONFIRM, {
-          label: this.translate.instant('privateProfile'),
-          size: 'm',
-          data: {
-            content: this.translate.instant('profile.private.confirmation'),
-            yes: this.translate.instant('accept'),
-            no: this.translate.instant('cancel'),
-          },
-        }),
-        { defaultValue: false },
-      );
+      const confirmed = await this.appDialogs.confirm({
+        labelKey: 'privateProfile',
+        contentKey: 'profile.private.confirmation',
+        yesKey: 'accept',
+        noKey: 'cancel',
+        size: 'm',
+      });
 
       if (!confirmed) {
         this.updateModel('isPrivate', false);
@@ -929,19 +925,13 @@ export class UserProfileConfigComponent {
   }
 
   async deleteAvatar(): Promise<void> {
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('profile.avatar.delete.title'),
-        size: 's',
-        data: {
-          content: this.translate.instant('profile.avatar.delete.confirm'),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'profile.avatar.delete.title',
+      contentKey: 'profile.avatar.delete.confirm',
+      yesKey: 'delete',
+      noKey: 'cancel',
+      appearance: 'primary-destructive',
+    });
 
     if (!confirmed) return;
 
@@ -963,18 +953,13 @@ export class UserProfileConfigComponent {
   }
 
   async onRestartFirstSteps(): Promise<void> {
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('firstSteps.restart'),
-        size: 'm',
-        data: {
-          content: this.translate.instant('firstSteps.restartConfirm'),
-          yes: this.translate.instant('accept'),
-          no: this.translate.instant('cancel'),
-        },
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'firstSteps.restart',
+      contentKey: 'firstSteps.restartConfirm',
+      yesKey: 'accept',
+      noKey: 'cancel',
+      size: 'm',
+    });
 
     if (confirmed) {
       this.hasOpenedWelcome = false;

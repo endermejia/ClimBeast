@@ -1,4 +1,4 @@
-import { computed, inject, Injectable } from '@angular/core';
+import { computed, effect, inject, Injectable, untracked } from '@angular/core';
 
 import { createClient, Session, SupabaseClient } from '@supabase/supabase-js';
 
@@ -41,8 +41,6 @@ export class SupabaseService {
   /** `false` cuando el navegador reporta que no hay conexión. */
   readonly isOnline = computed(() => !this.onlineStatus.isOffline());
 
-  private onlineListener: (() => void) | null = null;
-
   // Auth signals re-exported for backwards compatibility
   readonly session = this.authService.session;
   readonly lastAuthEvent = this.authService.lastAuthEvent;
@@ -82,10 +80,14 @@ export class SupabaseService {
       }
       // El estado on/off lo gestiona OnlineStatusService; aquí solo se
       // reintenta el refresh del token al recuperar la conexión.
-      this.onlineListener = () => {
-        this.refreshAuthOnReconnect();
-      };
-      window.addEventListener('online', this.onlineListener);
+      let wasOffline = this.onlineStatus.isOffline();
+      effect(() => {
+        const offline = this.onlineStatus.isOffline();
+        if (wasOffline && !offline) {
+          untracked(() => this.refreshAuthOnReconnect());
+        }
+        wasOffline = offline;
+      });
     } else {
       this._readyResolve?.();
     }
@@ -144,15 +146,15 @@ export class SupabaseService {
                   : 15000;
 
             const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+            const onExternalAbort = () =>
+              controller.abort(options?.signal?.reason);
             if (options?.signal) {
               if (options.signal.aborted) {
                 controller.abort(options.signal.reason);
               } else {
-                options.signal.addEventListener(
-                  'abort',
-                  () => controller.abort(options.signal?.reason),
-                  { once: true },
-                );
+                options.signal.addEventListener('abort', onExternalAbort, {
+                  once: true,
+                });
               }
             }
             try {
@@ -162,15 +164,13 @@ export class SupabaseService {
                 url === ENV_SUPABASE_URL && urlStr.startsWith(supStoragePrefix)
                   ? `${storageBase}/storage/v1${urlStr.slice(supStoragePrefix.length)}`
                   : reqUrl;
-              const response = await fetch(targetUrl, {
+              return await fetch(targetUrl, {
                 ...options,
                 signal: controller.signal,
               });
+            } finally {
               clearTimeout(timeoutId);
-              return response;
-            } catch (err) {
-              clearTimeout(timeoutId);
-              throw err;
+              options?.signal?.removeEventListener('abort', onExternalAbort);
             }
           },
         },

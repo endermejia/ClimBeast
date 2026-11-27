@@ -1,5 +1,5 @@
 import { NgOptimizedImage } from '@angular/common';
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   NavigationEnd,
@@ -322,7 +322,33 @@ import { TourHintComponent } from './tour-hint';
           }
 
           <!-- Search -->
-          <app-search-dropdown [loading]="loading()" />
+          @defer (on idle; when searchRequested() || tourService.isActive()) {
+            <app-search-dropdown
+              [loading]="loading()"
+              [autoOpen]="searchRequested()"
+            />
+          } @placeholder {
+            <div class="flex flex-col gap-2 overflow-hidden flex-none relative">
+              <button
+                type="button"
+                tuiAppearance="flat-grayscale"
+                [tuiSkeleton]="loading()"
+                class="flex items-center gap-4 p-3 md:p-3 no-underline text-inherit rounded-xl transition-colors w-fit md:w-full cursor-pointer relative group"
+                (click)="searchRequested.set(true)"
+                [attr.aria-label]="'search' | translate"
+              >
+                <tui-icon
+                  icon="@tui.search"
+                  [style.color]="'var(--tui-text-primary)'"
+                />
+                <span
+                  class="hidden md:group-hover:block transition-opacity duration-300 whitespace-nowrap overflow-hidden"
+                >
+                  {{ 'search' | translate }}
+                </span>
+              </button>
+            </div>
+          }
 
           <!-- Profile Menu Button -->
           <div class="relative w-fit md:w-full lg:mt-auto">
@@ -403,18 +429,21 @@ import { TourHintComponent } from './tour-hint';
     </aside>
 
     <ng-template #tourHint>
-      <app-tour-hint
-        class="w-72 max-w-[calc(100vw-2rem)] block"
-        [description]="tourDescription() | translate"
-        [isLast]="tourService.step() === TourStep.PROFILE"
-        (next)="onTourNext()"
-        (skip)="tourService.finish()"
-      />
+      @defer (when tourService.isActive()) {
+        <app-tour-hint
+          class="w-72 max-w-[calc(100vw-2rem)] block"
+          [description]="tourDescription() | translate"
+          [isLast]="tourService.step() === TourStep.PROFILE"
+          (next)="onTourNext()"
+          (skip)="tourService.finish()"
+        />
+      }
     </ng-template>
   `,
 })
 export class NavbarComponent {
   readonly isLoading = input<boolean>(false);
+  protected readonly searchRequested = signal(false);
   protected readonly loading = computed(
     () => this.isLoading() || this.layoutService.isNavLoading(),
   );

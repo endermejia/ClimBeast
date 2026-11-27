@@ -12,7 +12,6 @@ export interface ProjectsDialogData {
 
 @Component({
   selector: 'app-projects-dialog',
-  standalone: true,
   imports: [TuiScrollbar, UserProfileProjectsComponent],
   styles: `
     @media (min-width: 1024px) {

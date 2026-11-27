@@ -45,7 +45,6 @@ import type { TopoRouteRow } from './topo.types';
 
 @Component({
   selector: 'app-topo-routes-table',
-  standalone: true,
   host: {
     class: 'flex flex-col w-full h-full min-w-0 min-h-0 overflow-hidden',
   },

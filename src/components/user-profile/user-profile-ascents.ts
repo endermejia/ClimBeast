@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   Component,
   computed,
@@ -39,10 +38,8 @@ import { UserProfileAscentsFiltersComponent } from './user-profile-ascents-filte
 
 @Component({
   selector: 'app-user-profile-ascents',
-  standalone: true,
   imports: [
     AscentsFeedComponent,
-    CommonModule,
     EmptyStateComponent,
     TranslatePipe,
     TuiButton,

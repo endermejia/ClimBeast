@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, effect, inject, linkedSignal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -20,9 +19,7 @@ import { ProfileDataService } from '../../services/profile-data.service';
 
 @Component({
   selector: 'app-user-profile-ascents-filters',
-  standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     TranslatePipe,
     TuiDataList,

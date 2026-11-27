@@ -37,7 +37,6 @@ export interface AreaDonationDialogData {
 
 @Component({
   selector: 'app-area-donation-dialog',
-  standalone: true,
   imports: [
     DecimalPipe,
     FormsModule,

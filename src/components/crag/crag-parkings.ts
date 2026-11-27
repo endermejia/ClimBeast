@@ -1,13 +1,12 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { TuiDialogService, TuiButton } from '@taiga-ui/core';
-import { TuiAvatar, TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit';
+import { TuiButton } from '@taiga-ui/core';
+import { TuiAvatar } from '@taiga-ui/kit';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 
-import { firstValueFrom } from 'rxjs';
-
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { MapDataService } from '../../services/map-data.service';
 
@@ -111,8 +110,7 @@ export class CragParkingsComponent {
   protected readonly mapData = inject(MapDataService);
   protected readonly parkingsService = inject(ParkingsService);
   protected readonly supabase = inject(SupabaseService);
-  protected readonly translate = inject(TranslateService);
-  protected readonly dialogs = inject(TuiDialogService);
+  private readonly appDialogs = inject(AppDialogsService);
   protected readonly toast = inject(ToastService);
   private readonly isBrowser = inject(IS_BROWSER);
   protected readonly router = inject(Router);
@@ -145,27 +143,22 @@ export class CragParkingsComponent {
     const c = this.crag();
     if (!c || !this.isBrowser) return;
 
-    void firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('admin.parkings.unlinkTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('admin.parkings.unlinkConfirm', {
-            name: parking.name,
-          }),
-          yes: this.translate.instant('unlink'),
-          no: this.translate.instant('cancel'),
-          appearance: 'accent',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    ).then((confirmed) => {
-      if (confirmed) {
-        this.parkingsService
-          .removeParkingFromCrag(c.id, parking.id)
-          .catch((err) => handleErrorToast(err, this.toast));
-      }
-    });
+    void this.appDialogs
+      .confirm({
+        labelKey: 'admin.parkings.unlinkTitle',
+        contentKey: 'admin.parkings.unlinkConfirm',
+        contentParams: { name: parking.name },
+        yesKey: 'unlink',
+        noKey: 'cancel',
+        appearance: 'accent',
+      })
+      .then((confirmed) => {
+        if (confirmed) {
+          this.parkingsService
+            .removeParkingFromCrag(c.id, parking.id)
+            .catch((err) => handleErrorToast(err, this.toast));
+        }
+      });
   }
 
   async viewOnMap(lat: number, lng: number): Promise<void> {

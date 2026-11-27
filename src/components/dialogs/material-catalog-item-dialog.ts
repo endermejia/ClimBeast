@@ -1,7 +1,6 @@
-import { CommonModule, DecimalPipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
 
-import { type TuiDialogContext, TuiButton, TuiIcon } from '@taiga-ui/core';
+import { type TuiDialogContext, TuiIcon } from '@taiga-ui/core';
 import { TuiBadge } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
@@ -11,17 +10,11 @@ import { AuthStateService } from '../../services/auth-state.service';
 
 import type { MaterialCatalogItem } from '../../models';
 
+import { AdminItemPriceHeaderComponent } from '../ui/admin-item-price-header';
+
 @Component({
   selector: 'app-material-catalog-item-dialog',
-  standalone: true,
-  imports: [
-    CommonModule,
-    DecimalPipe,
-    TranslatePipe,
-    TuiBadge,
-    TuiButton,
-    TuiIcon,
-  ],
+  imports: [AdminItemPriceHeaderComponent, TranslatePipe, TuiBadge, TuiIcon],
   template: `
     <div
       class="grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-6 md:gap-10 items-start"
@@ -62,38 +55,12 @@ import type { MaterialCatalogItem } from '../../models';
               }}
             </span>
           </div>
-          <div class="flex items-center gap-3 shrink-0">
-            @if (isAdmin()) {
-              <div class="flex gap-2">
-                <button
-                  tuiIconButton
-                  appearance="accent"
-                  size="s"
-                  type="button"
-                  class="rounded-xl!"
-                  (click)="setAction('edit')"
-                  [attr.aria-label]="'edit' | translate"
-                >
-                  <tui-icon icon="@tui.pencil" />
-                </button>
-
-                <button
-                  tuiIconButton
-                  appearance="negative"
-                  size="s"
-                  type="button"
-                  class="rounded-xl!"
-                  (click)="setAction('delete')"
-                  [attr.aria-label]="'delete' | translate"
-                >
-                  <tui-icon icon="@tui.trash" />
-                </button>
-              </div>
-            }
-            <div class="text-2xl font-black tabular-nums">
-              {{ item.price | number: '1.2-2' }}€
-            </div>
-          </div>
+          <app-admin-item-price-header
+            [isAdmin]="isAdmin()"
+            [price]="item.price"
+            (editClicked)="setAction('edit')"
+            (deleteClicked)="setAction('delete')"
+          />
         </div>
 
         @if (item.description) {

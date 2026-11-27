@@ -43,7 +43,6 @@ import { UserProfileStatsTrendsComponent } from './statistics/yearly-trend';
 
 @Component({
   selector: 'app-user-profile-statistics',
-  standalone: true,
   imports: [
     TuiScrollbar,
     UserProfileStatsPyramidComponent,

@@ -13,37 +13,26 @@ import { toObservable } from '@angular/core/rxjs-interop';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
-import { TuiDialogContext, TuiDialogService } from '@taiga-ui/core';
 import {
   TuiAppearance,
   TuiButton,
   TuiDataList,
+  TuiDialogContext,
   TuiIcon,
   TuiInput,
   TuiLabel,
   TuiLoader,
   TuiScrollbar,
 } from '@taiga-ui/core';
-import {
-  TuiAvatar,
-  TuiBadgeNotification,
-  TuiConfirmData,
-  TUI_CONFIRM,
-} from '@taiga-ui/kit';
+import { TuiAvatar, TuiBadgeNotification } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
-import {
-  debounceTime,
-  distinctUntilChanged,
-  firstValueFrom,
-  from,
-  of,
-  switchMap,
-} from 'rxjs';
+import { debounceTime, distinctUntilChanged, from, of, switchMap } from 'rxjs';
 
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { BlockingService } from '../../services/blocking.service';
 import { MessagingService } from '../../services/messaging.service';
 import { SupabaseService } from '../../services/supabase.service';
@@ -74,7 +63,6 @@ export interface ChatDialogData {
 
 @Component({
   selector: 'app-chat-dialog',
-  standalone: true,
   imports: [
     AvatarUrlPipe,
     ChatInputComponent,
@@ -303,8 +291,7 @@ export class ChatDialogComponent implements OnDestroy {
   protected readonly userProfilesService = inject(UserProfilesService);
   protected readonly blockingService = inject(BlockingService);
   protected readonly toast = inject(ToastService);
-  protected readonly translate = inject(TranslateService);
-  protected readonly dialogs = inject(TuiDialogService);
+  private readonly appDialogs = inject(AppDialogsService);
   protected readonly userReportsService = inject(UserReportsService);
   private readonly router = inject(Router);
   protected readonly context =
@@ -483,26 +470,16 @@ export class ChatDialogComponent implements OnDestroy {
     const room = this.selectedRoom();
     const isBlocking = !this.isBlockedByMe();
 
-    const data: TuiConfirmData = {
-      content: this.translate.instant(
-        isBlocking ? 'blockMessagesConfirm' : 'unblockMessagesConfirm',
-        { name: room?.participant?.name || 'User' },
-      ),
-      yes: this.translate.instant(isBlocking ? 'block' : 'unblock'),
-      no: this.translate.instant('cancel'),
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: isBlocking ? 'blockMessages' : 'unblockMessages',
+      contentKey: isBlocking
+        ? 'blockMessagesConfirm'
+        : 'unblockMessagesConfirm',
+      contentParams: { name: room?.participant?.name || 'User' },
+      yesKey: isBlocking ? 'block' : 'unblock',
+      noKey: 'cancel',
       appearance: isBlocking ? 'negative' : 'primary',
-    };
-
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant(
-          isBlocking ? 'blockMessages' : 'unblockMessages',
-        ),
-        size: 's',
-        data,
-      }),
-      { defaultValue: false },
-    );
+    });
 
     if (!confirmed) return;
 

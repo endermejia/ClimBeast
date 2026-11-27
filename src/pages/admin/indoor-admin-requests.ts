@@ -20,7 +20,6 @@ import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-admin-indoor-admin-requests',
-  standalone: true,
   imports: [AdminRequestsTableComponent],
   template: `
     <app-admin-requests-table

@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 
 import { TuiButton, TuiDialogContext, TuiIcon } from '@taiga-ui/core';
@@ -11,16 +10,16 @@ import { CartService } from '../../services/cart.service';
 
 import { MerchandiseItemDetail } from '../../models';
 
+import { AdminItemPriceHeaderComponent } from '../ui/admin-item-price-header';
 import { CustomCarouselComponent } from '../ui/custom-carousel';
 
 @Component({
   selector: 'app-merchandise-item-dialog',
-  standalone: true,
   imports: [
-    CommonModule,
+    AdminItemPriceHeaderComponent,
+    CustomCarouselComponent,
     TranslatePipe,
     TuiButton,
-    CustomCarouselComponent,
     TuiIcon,
   ],
   template: `
@@ -63,38 +62,13 @@ import { CustomCarouselComponent } from '../ui/custom-carousel';
                 }}
               </span>
             }
-            <div class="flex items-center gap-3 ml-auto">
-              @if (isAdmin()) {
-                <div class="flex gap-2">
-                  <button
-                    tuiIconButton
-                    appearance="accent"
-                    size="s"
-                    type="button"
-                    class="rounded-xl!"
-                    (click)="setAction('edit')"
-                    [attr.aria-label]="'edit' | translate"
-                  >
-                    <tui-icon icon="@tui.pencil" />
-                  </button>
-
-                  <button
-                    tuiIconButton
-                    appearance="negative"
-                    size="s"
-                    type="button"
-                    class="rounded-xl!"
-                    (click)="setAction('delete')"
-                    [attr.aria-label]="'delete' | translate"
-                  >
-                    <tui-icon icon="@tui.trash" />
-                  </button>
-                </div>
-              }
-              <div class="text-2xl font-black tabular-nums">
-                {{ item.price | number: '1.2-2' }}€
-              </div>
-            </div>
+            <app-admin-item-price-header
+              class="ml-auto"
+              [isAdmin]="isAdmin()"
+              [price]="item.price"
+              (editClicked)="setAction('edit')"
+              (deleteClicked)="setAction('delete')"
+            />
           </div>
 
           @if (item.description) {

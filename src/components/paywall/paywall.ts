@@ -9,7 +9,6 @@ import { AreaDonationsService } from '../../services/area-donations.service';
 
 @Component({
   selector: 'app-paywall',
-  standalone: true,
   imports: [DecimalPipe, TranslatePipe, TuiButton, TuiIcon],
   template: `
     <div

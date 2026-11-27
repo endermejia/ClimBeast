@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   Component,
   computed,
@@ -43,9 +42,7 @@ import { UserInfoComponent } from './user-info';
 
 @Component({
   selector: 'app-user-info-hint',
-  standalone: true,
   imports: [
-    CommonModule,
     TranslatePipe,
     UserInfoComponent,
     UserProfileStatsScoreComponent,

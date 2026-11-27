@@ -14,7 +14,7 @@ import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { TuiSwipe } from '@taiga-ui/cdk';
 import { TuiRoot } from '@taiga-ui/core';
 
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 
 import { filter, map, merge, startWith } from 'rxjs';
 
@@ -46,7 +46,6 @@ import { IS_BROWSER } from './is-browser';
     CartOverlayComponent,
     NavbarComponent,
     RouterOutlet,
-    TranslateModule,
     TuiRoot,
     TuiSwipe,
   ],
@@ -68,11 +67,13 @@ import { IS_BROWSER } from './is-browser';
         </main>
       </div>
 
-      @if (cartService.showCart()) {
-        <app-cart-overlay
-          (closeOverlay)="cartService.showCart.set(false)"
-          (checkout)="onCheckout()"
-        />
+      @defer (when cartService.showCart()) {
+        @if (cartService.showCart()) {
+          <app-cart-overlay
+            (closeOverlay)="cartService.showCart.set(false)"
+            (checkout)="onCheckout()"
+          />
+        }
       }
     </tui-root>
   `,

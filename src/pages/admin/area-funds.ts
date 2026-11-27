@@ -59,7 +59,6 @@ const AREA_TYPE_APPEARANCE_MAP: Record<AreaType, string> = {
 
 @Component({
   selector: 'app-admin-area-funds',
-  standalone: true,
   imports: [
     CurrencyPipe,
     DatePipe,

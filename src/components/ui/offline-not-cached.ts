@@ -7,7 +7,6 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-offline-not-cached',
-  standalone: true,
   imports: [RouterLink, TranslatePipe, TuiButton, TuiIcon],
   template: `
     <div

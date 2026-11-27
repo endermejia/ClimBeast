@@ -7,6 +7,7 @@ import { TuiDialogService } from '@taiga-ui/core';
 import { TranslateService } from '@ngx-translate/core';
 import { describe, expect, it, vi } from 'vitest';
 
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { AscentsService } from '../../services/ascents.service';
 import { BreadcrumbsService } from '../../services/breadcrumbs.service';
 import { IndoorDataService } from '../../services/indoor-data.service';
@@ -16,7 +17,7 @@ import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
 
-import type { TopoDetail } from '../../models';
+import type { TopoDetail, TopoRouteWithRoute } from '../../models';
 
 import { IS_BROWSER } from '../../app/is-browser';
 
@@ -41,6 +42,34 @@ class TestTopoPageComponent extends TopoPageBase {
 
   protected override onRouteParamSelected(routeId: string | number): void {
     this.onRouteParamSelectedSpy(routeId);
+  }
+
+  testBuildHeaderActions(
+    topo: TopoDetail,
+    permissions: { canDraw: boolean; canEdit: boolean; canDelete: boolean },
+    handlers: {
+      onDraw: (topo: TopoDetail) => void;
+      onEdit: (topo: TopoDetail) => void;
+      onDelete: (topo: TopoDetail) => void;
+    },
+  ) {
+    return this.buildTopoHeaderActions(topo, permissions, handlers);
+  }
+
+  testMapTopoRouteToRow(
+    tr: TopoRouteWithRoute,
+    link: string[],
+    extra?: { moves?: number },
+  ) {
+    return this.mapTopoRouteToRow(tr, link, extra);
+  }
+
+  testMapTopoRoutesForEditor(topo: TopoDetail) {
+    return this.mapTopoRoutesForEditor(topo);
+  }
+
+  testConfirmDeleteTopo(topo: TopoDetail, onConfirm: () => Promise<unknown>) {
+    this.confirmDeleteTopo(topo, onConfirm);
   }
 }
 
@@ -67,17 +96,20 @@ function makeTopo(
 }
 
 describe('TopoPageBase route query param selection', () => {
-  function setup() {
+  function setup(options?: { isBrowser?: boolean; confirmResult?: boolean }) {
     const outdoorTopoDetail = signal<TopoDetail | null>(null);
     const outdoorSelectedTopoId = signal<string | null>(null);
     const indoorTopoDetail = signal<TopoDetail | null>(null);
     const indoorSelectedTopoId = signal<string | null>(null);
+    const confirmSpy = vi
+      .fn()
+      .mockResolvedValue(options?.confirmResult ?? false);
 
     TestBed.configureTestingModule({
       imports: [TestTopoPageComponent],
       providers: [
         provideRouter([]),
-        { provide: IS_BROWSER, useValue: false },
+        { provide: IS_BROWSER, useValue: options?.isBrowser ?? false },
         {
           provide: OutdoorDataService,
           useValue: {
@@ -111,8 +143,12 @@ describe('TopoPageBase route query param selection', () => {
         { provide: AscentsService, useValue: {} },
         { provide: ToposService, useValue: {} },
         { provide: RoutesService, useValue: {} },
-        { provide: TuiDialogService, useValue: {} },
-        { provide: TranslateService, useValue: {} },
+        { provide: TuiDialogService, useValue: { open: vi.fn() } },
+        { provide: AppDialogsService, useValue: { confirm: confirmSpy } },
+        {
+          provide: TranslateService,
+          useValue: { instant: vi.fn((key: string) => key) },
+        },
         { provide: ToastService, useValue: {} },
       ],
     });
@@ -123,6 +159,7 @@ describe('TopoPageBase route query param selection', () => {
       comp: fixture.componentInstance,
       outdoorTopoDetail,
       indoorTopoDetail,
+      confirmSpy,
     };
   }
 
@@ -179,5 +216,82 @@ describe('TopoPageBase route query param selection', () => {
     outdoorTopoDetail.set(makeTopo(6, [61, 62]));
     fixture.detectChanges();
     expect(comp.currentSelectedRouteId).toBeNull();
+  });
+
+  it('builds header actions according to draw/edit/delete permissions and invokes callbacks', () => {
+    const { comp } = setup();
+    const topo = makeTopo(5, [1]);
+    const onDraw = vi.fn();
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+
+    const allActions = comp.testBuildHeaderActions(
+      topo,
+      { canDraw: true, canEdit: true, canDelete: true },
+      { onDraw, onEdit, onDelete },
+    );
+    expect(allActions.map((a) => a.label)).toEqual(['draw', 'edit', 'delete']);
+    allActions.forEach((a) => a.action());
+    expect(onDraw).toHaveBeenCalledWith(topo);
+    expect(onEdit).toHaveBeenCalledWith(topo);
+    expect(onDelete).toHaveBeenCalledWith(topo);
+
+    const drawOnly = comp.testBuildHeaderActions(
+      topo,
+      { canDraw: true, canEdit: false, canDelete: true },
+      { onDraw, onEdit, onDelete },
+    );
+    expect(drawOnly.map((a) => a.label)).toEqual(['draw']);
+  });
+
+  it('maps topo routes to table rows and editor payload', () => {
+    const { comp } = setup();
+    const topo = makeTopo(5, [10]);
+    const tr = topo.topo_routes[0];
+    tr.route.own_ascent = { type: 'redpoint' } as never;
+    tr.route.project = true;
+
+    const row = comp.testMapTopoRouteToRow(tr, ['/area', 'a', 'c', 'r'], {
+      moves: 12,
+    });
+    expect(row.climbed).toBe(true);
+    expect(row.project).toBe(true);
+    expect(row.moves).toBe(12);
+    expect(row.link).toEqual(['/area', 'a', 'c', 'r']);
+
+    const editorRoutes = comp.testMapTopoRoutesForEditor(topo);
+    expect(editorRoutes).toHaveLength(1);
+    expect(editorRoutes[0].topo_id).toBe(5);
+    expect(editorRoutes[0].route_id).toBe(10);
+  });
+
+  it('confirmDeleteTopo runs onConfirm only in browser when dialog confirms', async () => {
+    const { comp, confirmSpy } = setup({
+      isBrowser: true,
+      confirmResult: true,
+    });
+    const onConfirm = vi.fn().mockResolvedValue(undefined);
+    comp.testConfirmDeleteTopo(makeTopo(5, [1]), onConfirm);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(confirmSpy).toHaveBeenCalledOnce();
+    expect(onConfirm).toHaveBeenCalledOnce();
+  });
+
+  it('confirmDeleteTopo does not invoke onConfirm when dialog is cancelled', async () => {
+    const { comp, confirmSpy } = setup({
+      isBrowser: true,
+      confirmResult: false,
+    });
+    const onConfirm = vi.fn().mockResolvedValue(undefined);
+    comp.testConfirmDeleteTopo(makeTopo(5, [1]), onConfirm);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(confirmSpy).toHaveBeenCalledOnce();
+    expect(onConfirm).not.toHaveBeenCalled();
   });
 });

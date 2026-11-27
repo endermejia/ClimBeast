@@ -3,7 +3,6 @@ import { DomSanitizer } from '@angular/platform-browser';
 
 @Pipe({
   name: 'sanitizeHtml',
-  standalone: true,
 })
 export class SanitizeHtmlPipe implements PipeTransform {
   private readonly sanitizer = inject(DomSanitizer);

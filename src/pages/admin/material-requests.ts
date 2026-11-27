@@ -1,4 +1,4 @@
-import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -27,10 +27,8 @@ import { AvatarUrlPipe } from '../../pipes';
 
 @Component({
   selector: 'app-admin-material-requests',
-  standalone: true,
   imports: [
     AvatarUrlPipe,
-    CommonModule,
     DatePipe,
     DecimalPipe,
     EmptyStateComponent,

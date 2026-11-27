@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
@@ -7,15 +6,7 @@ import { TuiRating, TuiSkeleton } from '@taiga-ui/kit';
 
 @Component({
   selector: 'app-ascent-card-skeleton',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    TuiAppearance,
-    TuiIcon,
-    TuiRating,
-    TuiSkeleton,
-  ],
+  imports: [FormsModule, TuiAppearance, TuiIcon, TuiRating, TuiSkeleton],
   template: `
     <div
       tuiAppearance="flat-grayscale"

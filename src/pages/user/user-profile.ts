@@ -24,13 +24,13 @@ import {
   TuiScrollbar,
 } from '@taiga-ui/core';
 import { TuiCountryIsoCode } from '@taiga-ui/i18n';
-import { TuiConfirmData, TuiSkeleton, TUI_CONFIRM } from '@taiga-ui/kit';
+import { TuiSkeleton } from '@taiga-ui/kit';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-
 import { firstValueFrom } from 'rxjs';
 
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { BlockingService } from '../../services/blocking.service';
 import { CacheService } from '../../services/cache.service';
 import { FilterStateService } from '../../services/filter-state.service';
@@ -71,7 +71,6 @@ import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-user-profile',
-  standalone: true,
   imports: [
     EmptyStateComponent,
     LowerCasePipe,
@@ -92,21 +91,6 @@ import { IS_BROWSER } from '../../app/is-browser';
     UserProfileFiltersComponent,
     UserProfileStatisticsComponent,
   ],
-  styles: `
-    @media (min-width: 1024px) {
-      :host > tui-scrollbar {
-        overflow: hidden !important;
-      }
-      :host > tui-scrollbar ::ng-deep > .t-content {
-        block-size: 100% !important;
-        height: 100% !important;
-        overflow: hidden !important;
-      }
-      :host > tui-scrollbar ::ng-deep > tui-scroll-controls {
-        display: none !important;
-      }
-    }
-  `,
   template: `
     <tui-scrollbar class="w-full h-full min-h-0 min-w-0">
       <section
@@ -384,7 +368,7 @@ import { IS_BROWSER } from '../../app/is-browser';
       </section>
     </tui-scrollbar>
   `,
-  host: { class: 'flex flex-col w-full h-full min-h-0' },
+  host: { class: 'flex flex-col w-full h-full min-h-0 lw-desktop-scroll-lock' },
 })
 export class UserProfileComponent {
   protected readonly messagingService = inject(MessagingService);
@@ -404,6 +388,7 @@ export class UserProfileComponent {
   private readonly filterState = inject(FilterStateService);
   private readonly toast = inject(ToastService);
   private readonly dialogs = inject(TuiDialogService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly userReportsService = inject(UserReportsService);
   private readonly elementRef = inject(ElementRef);
   private readonly scrollService = inject(ScrollService);
@@ -784,22 +769,13 @@ export class UserProfileComponent {
 
     try {
       if (this.isFollowing()) {
-        const data: TuiConfirmData = {
-          content: this.translate.instant('unfollowConfirm', {
-            name: profile.name,
-          }),
-          yes: this.translate.instant('unfollow'),
-          no: this.translate.instant('cancel'),
+        const confirmed = await this.appDialogs.confirm({
+          labelKey: 'unfollow',
+          contentKey: 'unfollowConfirm',
+          contentParams: { name: profile.name },
+          yesKey: 'unfollow',
           appearance: 'negative',
-        };
-        const confirmed = await firstValueFrom(
-          this.dialogs.open<boolean>(TUI_CONFIRM, {
-            label: this.translate.instant('unfollow'),
-            size: 's',
-            data,
-          }),
-          { defaultValue: false },
-        );
+        });
         if (!confirmed) return;
         await this.followsService.unfollow(followedUserId);
         this.onUnfollow(followedUserId);
@@ -879,26 +855,15 @@ export class UserProfileComponent {
     const current = this.blockState();
     const isBlocking = !current.blockMessages;
 
-    const data: TuiConfirmData = {
-      content: this.translate.instant(
-        isBlocking ? 'blockMessagesConfirm' : 'unblockMessagesConfirm',
-        { name: profile.name },
-      ),
-      yes: this.translate.instant(isBlocking ? 'block' : 'unblock'),
-      no: this.translate.instant('cancel'),
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: isBlocking ? 'blockMessages' : 'unblockMessages',
+      contentKey: isBlocking
+        ? 'blockMessagesConfirm'
+        : 'unblockMessagesConfirm',
+      contentParams: { name: profile.name },
+      yesKey: isBlocking ? 'block' : 'unblock',
       appearance: isBlocking ? 'negative' : 'primary',
-    };
-
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant(
-          isBlocking ? 'blockMessages' : 'unblockMessages',
-        ),
-        size: 's',
-        data,
-      }),
-      { defaultValue: false },
-    );
+    });
 
     if (!confirmed) return;
 
@@ -929,24 +894,13 @@ export class UserProfileComponent {
     const current = this.blockState();
     const isHiding = !current.blockAscents;
 
-    const data: TuiConfirmData = {
-      content: this.translate.instant(
-        isHiding ? 'hideAscentsConfirm' : 'showAscentsConfirm',
-        { name: profile.name },
-      ),
-      yes: this.translate.instant(isHiding ? 'hide' : 'showAscents'),
-      no: this.translate.instant('cancel'),
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: isHiding ? 'hideAscents' : 'showAscents',
+      contentKey: isHiding ? 'hideAscentsConfirm' : 'showAscentsConfirm',
+      contentParams: { name: profile.name },
+      yesKey: isHiding ? 'hide' : 'showAscents',
       appearance: isHiding ? 'negative' : 'primary',
-    };
-
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant(isHiding ? 'hideAscents' : 'showAscents'),
-        size: 's',
-        data,
-      }),
-      { defaultValue: false },
-    );
+    });
 
     if (!confirmed) return;
 

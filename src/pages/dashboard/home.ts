@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   Component,
   DestroyRef,
@@ -120,7 +119,6 @@ import { IS_BROWSER } from '../../app/is-browser';
   imports: [
     AscentDatePipe,
     AscentsFeedComponent,
-    CommonModule,
     HomeFilterBarComponent,
     HomeNewsGridComponent,
     HomeNewsSidebarComponent,
@@ -1084,6 +1082,93 @@ export class HomeComponent {
     }
   }
 
+  private buildFeedFilterOptions(
+    filter: HomeFeedFilter,
+    userId: string,
+  ): FeedFilterOptions {
+    return {
+      filter,
+      userId,
+      categories: this.filterState.feedCategories(),
+      gradeRange: this.filterState.feedGradeRange(),
+      followedIds: Array.from(this.followedIds()),
+      likedAreaIds: this.favoritesData.likedAreaIds(),
+      likedCragIds: this.favoritesData.likedCragIds(),
+      likedRouteIds: this.favoritesData.likedRouteIds(),
+    };
+  }
+
+  private shouldSkipFeedQuery(
+    filterOptions: FeedFilterOptions,
+    isIndoor: boolean,
+  ): boolean {
+    const { filter } = filterOptions;
+    if (
+      filter === HomeFeedFilters.FOLLOWING &&
+      filterOptions.followedIds.length === 0 &&
+      !filterOptions.userId
+    ) {
+      return true;
+    }
+
+    if (isIndoor) {
+      // Indoor queries don't support favorite_areas/favorite_crags/favorite_routes
+      if (
+        filter === HomeFeedFilters.FAVORITE_CRAGS ||
+        filter === HomeFeedFilters.FAVORITE_ROUTES ||
+        filter === HomeFeedFilters.FAVORITE_AREAS
+      ) {
+        return true;
+      }
+      // If categories are filtered and do not include Sport (0) or Boulder (1), no indoor ascents can match
+      if (
+        filterOptions.categories.length > 0 &&
+        !filterOptions.categories.includes(0) &&
+        !filterOptions.categories.includes(1)
+      ) {
+        return true;
+      }
+      return false;
+    }
+
+    if (
+      filter === HomeFeedFilters.FAVORITE_AREAS &&
+      filterOptions.likedAreaIds.length === 0
+    ) {
+      return true;
+    }
+    if (
+      filter === HomeFeedFilters.FAVORITE_CRAGS &&
+      filterOptions.likedCragIds.length === 0
+    ) {
+      return true;
+    }
+    if (
+      filter === HomeFeedFilters.FAVORITE_ROUTES &&
+      filterOptions.likedRouteIds.length === 0
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  private readCachedAscents(
+    cacheKey: string,
+    anchorDate: string | null,
+    label: string,
+  ): (RouteAscentWithExtras & { kind: 'ascent' })[] {
+    const cached = !anchorDate ? this.storage.getItem(cacheKey) : null;
+    if (!cached) return [];
+    try {
+      const parsed = JSON.parse(cached) as
+        (RouteAscentWithExtras & { kind: 'ascent' })[] | null;
+      return parsed && parsed.length > 0 ? parsed : [];
+    } catch {
+      console.error(`[Home] ${label} cache parse error`);
+      return [];
+    }
+  }
+
   private async fetchIndoorAscents(
     page: number,
     filter: HomeFeedFilter = this.feedFilter(),
@@ -1097,41 +1182,8 @@ export class HomeComponent {
     const fromIdx = page * size;
     const toIdx = fromIdx + size - 1;
 
-    // Indoor queries don't support favorite_areas/favorite_crags/favorite_routes
-    if (
-      filter === HomeFeedFilters.FAVORITE_CRAGS ||
-      filter === HomeFeedFilters.FAVORITE_ROUTES ||
-      filter === HomeFeedFilters.FAVORITE_AREAS
-    ) {
-      return [];
-    }
-
-    const filterOptions: FeedFilterOptions = {
-      filter,
-      userId,
-      categories: this.filterState.feedCategories(),
-      gradeRange: this.filterState.feedGradeRange(),
-      followedIds: Array.from(this.followedIds()),
-      likedAreaIds: this.favoritesData.likedAreaIds(),
-      likedCragIds: this.favoritesData.likedCragIds(),
-      likedRouteIds: this.favoritesData.likedRouteIds(),
-    };
-
-    // Check if we should proceed based on filter type
-    if (
-      filter === HomeFeedFilters.FOLLOWING &&
-      filterOptions.followedIds.length === 0 &&
-      !filterOptions.userId
-    ) {
-      return [];
-    }
-
-    // If categories are filtered and do not include Sport (0) or Boulder (1), no indoor ascents can match
-    if (
-      filterOptions.categories.length > 0 &&
-      !filterOptions.categories.includes(0) &&
-      !filterOptions.categories.includes(1)
-    ) {
+    const filterOptions = this.buildFeedFilterOptions(filter, userId);
+    if (this.shouldSkipFeedQuery(filterOptions, true)) {
       return [];
     }
 
@@ -1233,19 +1285,7 @@ export class HomeComponent {
       return result;
     } catch (e: unknown) {
       console.warn('[Home] fetchIndoorAscents error/offline, trying cache', e);
-      const cached = !anchorDate ? this.storage.getItem(cacheKey) : null;
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (!parsed || parsed.length === 0) {
-            return [];
-          }
-          return parsed;
-        } catch {
-          console.error('[Home] Indoor cache parse error');
-        }
-      }
-      return [];
+      return this.readCachedAscents(cacheKey, anchorDate, 'Indoor');
     }
   }
 
@@ -1262,41 +1302,8 @@ export class HomeComponent {
     const fromIdx = page * size;
     const toIdx = fromIdx + size - 1;
 
-    const filterOptions: FeedFilterOptions = {
-      filter,
-      userId,
-      categories: this.filterState.feedCategories(),
-      gradeRange: this.filterState.feedGradeRange(),
-      followedIds: Array.from(this.followedIds()),
-      likedAreaIds: this.favoritesData.likedAreaIds(),
-      likedCragIds: this.favoritesData.likedCragIds(),
-      likedRouteIds: this.favoritesData.likedRouteIds(),
-    };
-
-    // Check if we should proceed based on filter type
-    if (
-      filter === HomeFeedFilters.FOLLOWING &&
-      filterOptions.followedIds.length === 0 &&
-      !filterOptions.userId
-    ) {
-      return [];
-    }
-    if (
-      filter === HomeFeedFilters.FAVORITE_AREAS &&
-      filterOptions.likedAreaIds.length === 0
-    ) {
-      return [];
-    }
-    if (
-      filter === HomeFeedFilters.FAVORITE_CRAGS &&
-      filterOptions.likedCragIds.length === 0
-    ) {
-      return [];
-    }
-    if (
-      filter === HomeFeedFilters.FAVORITE_ROUTES &&
-      filterOptions.likedRouteIds.length === 0
-    ) {
+    const filterOptions = this.buildFeedFilterOptions(filter, userId);
+    if (this.shouldSkipFeedQuery(filterOptions, false)) {
       return [];
     }
 
@@ -1414,19 +1421,7 @@ export class HomeComponent {
       return result;
     } catch (e: unknown) {
       console.warn('[Home] fetchAscents error/offline, trying cache', e);
-      const cached = !anchorDate ? this.storage.getItem(cacheKey) : null;
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (!parsed || parsed.length === 0) {
-            return [];
-          }
-          return parsed;
-        } catch {
-          console.error('[Home] Cache parse error');
-        }
-      }
-      return [];
+      return this.readCachedAscents(cacheKey, anchorDate, 'Outdoor');
     }
   }
 

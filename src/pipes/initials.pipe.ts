@@ -2,7 +2,6 @@ import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
   name: 'initials',
-  standalone: true,
 })
 export class InitialsPipe implements PipeTransform {
   transform(name: string | null | undefined, maxChars = 2): string {

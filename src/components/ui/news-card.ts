@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   Component,
   SecurityContext,
@@ -9,13 +8,13 @@ import {
 } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 
-import { TuiAppearance, TuiButton, TuiDialogService } from '@taiga-ui/core';
-import { TUI_CONFIRM, TuiAvatar, type TuiConfirmData } from '@taiga-ui/kit';
+import { TuiAppearance, TuiButton } from '@taiga-ui/core';
+import { TuiAvatar } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
+import { TranslatePipe } from '@ngx-translate/core';
 
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { FollowsService } from '../../services/follows.service';
 
 import { NewsItem } from '../../models';
@@ -25,10 +24,8 @@ import { toProxiedDesnivelUrl } from '../../utils';
 
 @Component({
   selector: 'app-news-card',
-  standalone: true,
   imports: [
     AscentDatePipe,
-    CommonModule,
     TranslatePipe,
     TuiAppearance,
     TuiAvatar,
@@ -126,8 +123,7 @@ import { toProxiedDesnivelUrl } from '../../utils';
 })
 export class NewsCardComponent {
   private readonly sanitizer = inject(DomSanitizer);
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly translate = inject(TranslateService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly followsService = inject(FollowsService);
 
   item = input.required<NewsItem>();
@@ -148,21 +144,14 @@ export class NewsCardComponent {
 
   async unfollow(name = 'Desnivel'): Promise<void> {
     if (this.loading()) return;
-    const data: TuiConfirmData = {
-      content: this.translate.instant('unfollowConfirm', { name }),
-      yes: this.translate.instant('unfollow'),
-      no: this.translate.instant('cancel'),
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'unfollow',
+      contentKey: 'unfollowConfirm',
+      contentParams: { name },
+      yesKey: 'unfollow',
+      noKey: 'cancel',
       appearance: 'negative',
-    };
-
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('unfollow'),
-        size: 's',
-        data,
-      }),
-      { defaultValue: false },
-    );
+    });
 
     if (confirmed) {
       this.loading.set(true);

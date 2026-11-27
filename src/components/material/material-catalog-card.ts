@@ -1,4 +1,4 @@
-import { CommonModule, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { Component, input, output } from '@angular/core';
 
 import { TuiIcon } from '@taiga-ui/core';
@@ -11,15 +11,7 @@ import type { MaterialCatalogItem } from '../../models';
 
 @Component({
   selector: 'app-material-catalog-card',
-  standalone: true,
-  imports: [
-    CommonModule,
-    DecimalPipe,
-    TranslatePipe,
-    TuiBadge,
-    TuiCardLarge,
-    TuiIcon,
-  ],
+  imports: [DecimalPipe, TranslatePipe, TuiBadge, TuiCardLarge, TuiIcon],
   template: `
     <button
       tuiCardLarge

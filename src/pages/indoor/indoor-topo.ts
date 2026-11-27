@@ -9,11 +9,9 @@ import {
   TuiLoader,
 } from '@taiga-ui/core';
 import {
-  TUI_CONFIRM,
   TuiBadge,
   TuiBadgedContent,
   TuiBadgeNotification,
-  type TuiConfirmData,
 } from '@taiga-ui/kit';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
@@ -22,7 +20,6 @@ import { firstValueFrom } from 'rxjs';
 
 import { AuthStateService } from '../../services/auth-state.service';
 import { FilterStateService } from '../../services/filter-state.service';
-import { IndoorDataService } from '../../services/indoor-data.service';
 import { IndoorService } from '../../services/indoor.service';
 import { LayoutService } from '../../services/layout.service';
 import { TopoImageCacheService } from '../../services/topo-image-cache.service';
@@ -47,7 +44,6 @@ import {
   ORDERED_GRADE_VALUES,
   PROJECT_GRADE_LABEL,
   type TopoDetail,
-  type TopoRouteWithRoute,
   type VERTICAL_LIFE_GRADES,
 } from '../../models';
 
@@ -58,7 +54,6 @@ import { TopoPageBase } from '../area/topo-page-base';
 
 @Component({
   selector: 'app-indoor-topo',
-  standalone: true,
   imports: [
     OfflineNotCachedComponent,
     SectionHeaderComponent,
@@ -192,7 +187,6 @@ import { TopoPageBase } from '../area/topo-page-base';
 export class IndoorTopoComponent extends TopoPageBase {
   protected readonly authState = inject(AuthStateService);
   protected readonly filterState = inject(FilterStateService);
-  protected override readonly indoorData = inject(IndoorDataService);
   protected readonly layoutService = inject(LayoutService);
   protected readonly indoorService = inject(IndoorService);
   protected readonly topoImageCache = inject(TopoImageCacheService);
@@ -236,38 +230,23 @@ export class IndoorTopoComponent extends TopoPageBase {
     const t = this.topo();
     if (!t) return [];
 
-    const actions: SectionHeaderAction[] = [];
     const centerId = t.center_id ?? '';
     const isAdmin = this.authState.isAdmin();
     const isCenterAdmin = this.authState.isIndoorAdminOf(centerId);
-    const canDelete = isAdmin || isCenterAdmin;
 
-    if (this.canDraw()) {
-      actions.push({
-        label: 'draw',
-        icon: '/image/topo.svg',
-        appearance: 'neutral',
-        action: () => this.openDrawTopo(t),
-      });
-    }
-    if (this.canEdit()) {
-      actions.push({
-        label: 'edit',
-        icon: '@tui.square-pen',
-        appearance: 'neutral',
-        action: () => this.openEditTopo(t),
-      });
-      if (canDelete) {
-        actions.push({
-          label: 'delete',
-          icon: '@tui.trash',
-          appearance: 'negative',
-          action: () => this.deleteTopo(t),
-        });
-      }
-    }
-
-    return actions;
+    return this.buildTopoHeaderActions(
+      t,
+      {
+        canDraw: this.canDraw(),
+        canEdit: this.canEdit(),
+        canDelete: isAdmin || isCenterAdmin,
+      },
+      {
+        onDraw: (topo) => void this.openDrawTopo(topo),
+        onEdit: (topo) => this.openEditTopo(topo),
+        onDelete: (topo) => this.deleteTopo(topo),
+      },
+    );
   });
 
   protected readonly columns = computed(() => {
@@ -378,28 +357,45 @@ export class IndoorTopoComponent extends TopoPageBase {
     });
   }
 
-  protected readonly tableData = computed(() => {
+  protected readonly tableData = computed<TopoRouteRow[]>(() => {
     const topo = this.topo();
     if (!topo) return [];
-    return topo.topo_routes.map((tr) => {
-      const r = tr.route;
-      const climbed = !!r.own_ascent && r.own_ascent.type !== 'attempt';
-      const project = !!r.project;
-      const moves = calculateRouteMoves(tr.path);
-      return {
-        index: tr.number ?? 0,
-        name: r.name,
-        grade: r.grade,
-        height: r.height || null,
-        slug: r.slug,
-        link: ['/indoor', this.centerSlug()!, 'route', r.slug],
-        climbed,
-        project,
-        moves,
-        _ref: tr,
-      } as TopoRouteRow;
-    });
+    return topo.topo_routes.map((tr) =>
+      this.mapTopoRouteToRow(
+        tr,
+        ['/indoor', this.centerSlug()!, 'route', tr.route.slug],
+        { moves: calculateRouteMoves(tr.path) },
+      ),
+    );
   });
+
+  private matchesIndoorFilters(
+    climbed: boolean,
+    moves: number,
+    gradeNum: number | null | undefined,
+    gr: [number, number],
+    mr: [number, number],
+    maxMoves: number,
+    showClimbed: boolean,
+  ): boolean {
+    if (!showClimbed && climbed) {
+      return false;
+    }
+    if (mr && (mr[0] > 0 || mr[1] < maxMoves)) {
+      if (moves < mr[0] || moves > mr[1]) return false;
+    }
+    if (gr && (gr[0] > 0 || gr[1] < this.maxGradeIndex)) {
+      const gradeLabel =
+        GRADE_NUMBER_TO_LABEL[gradeNum as VERTICAL_LIFE_GRADES];
+      if (gradeLabel && gradeLabel !== PROJECT_GRADE_LABEL) {
+        const idx = ORDERED_GRADE_VALUES.indexOf(gradeLabel);
+        if (idx !== -1 && (idx < gr[0] || idx > gr[1])) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
 
   protected readonly filteredTableData = computed(() => {
     const data = this.tableData();
@@ -408,27 +404,17 @@ export class IndoorTopoComponent extends TopoPageBase {
     const maxMoves = this.maxPossibleMoves();
     const showClimbed = this.showClimbed();
 
-    return data.filter((item) => {
-      if (!showClimbed && item.climbed) {
-        return false;
-      }
-      if (mr && (mr[0] > 0 || mr[1] < maxMoves)) {
-        const moves = item.moves ?? 0;
-        if (moves < mr[0] || moves > mr[1]) return false;
-      }
-      if (gr && (gr[0] > 0 || gr[1] < this.maxGradeIndex)) {
-        const gradeNum = item._ref.route?.grade;
-        const gradeLabel =
-          GRADE_NUMBER_TO_LABEL[gradeNum as VERTICAL_LIFE_GRADES];
-        if (gradeLabel && gradeLabel !== PROJECT_GRADE_LABEL) {
-          const idx = ORDERED_GRADE_VALUES.indexOf(gradeLabel);
-          if (idx !== -1 && (idx < gr[0] || idx > gr[1])) {
-            return false;
-          }
-        }
-      }
-      return true;
-    });
+    return data.filter((item) =>
+      this.matchesIndoorFilters(
+        item.climbed,
+        item.moves ?? 0,
+        item._ref.route?.grade,
+        gr,
+        mr,
+        maxMoves,
+        showClimbed,
+      ),
+    );
   });
 
   protected readonly sortedTableData = computed(() => {
@@ -449,31 +435,17 @@ export class IndoorTopoComponent extends TopoPageBase {
     const maxMoves = this.maxPossibleMoves();
     const showClimbed = this.showClimbed();
 
-    return all.filter((tr) => {
-      if (!showClimbed) {
-        const climbed =
-          !!tr.route?.own_ascent && tr.route.own_ascent.type !== 'attempt';
-        if (climbed) return false;
-      }
-      if (mr && (mr[0] > 0 || mr[1] < maxMoves)) {
-        const moves = calculateRouteMoves(tr.path);
-        if (moves < mr[0] || moves > mr[1]) return false;
-      }
-
-      if (gr && (gr[0] > 0 || gr[1] < this.maxGradeIndex)) {
-        const gradeNum = tr.route?.grade;
-        const gradeLabel =
-          GRADE_NUMBER_TO_LABEL[gradeNum as VERTICAL_LIFE_GRADES];
-        if (gradeLabel && gradeLabel !== PROJECT_GRADE_LABEL) {
-          const idx = ORDERED_GRADE_VALUES.indexOf(gradeLabel);
-          if (idx !== -1 && (idx < gr[0] || idx > gr[1])) {
-            return false;
-          }
-        }
-      }
-
-      return true;
-    });
+    return all.filter((tr) =>
+      this.matchesIndoorFilters(
+        !!tr.route?.own_ascent && tr.route.own_ascent.type !== 'attempt',
+        calculateRouteMoves(tr.path),
+        tr.route?.grade,
+        gr,
+        mr,
+        maxMoves,
+        showClimbed,
+      ),
+    );
   });
 
   protected async openDrawTopo(topo: TopoDetail): Promise<void> {
@@ -485,21 +457,11 @@ export class IndoorTopoComponent extends TopoPageBase {
       this.supabase.getPublicUrl('indoor-assets', photoPath);
     if (!imageUrl) return;
 
-    const routes = (topo.topo_routes || []).map((tr, i) => ({
-      topo_id: topo.id,
-      route_id: tr.route_id,
-      number: tr.number ?? i,
-      route: tr.route,
-      path: tr.path,
-      user_creator_id: tr.user_creator_id,
-    }));
-
     await this.toposService.openTopoPathEditor({
       imageUrl,
-      topoRoutes: routes as TopoRouteWithRoute[],
+      topoRoutes: this.mapTopoRoutesForEditor(topo),
       topoName: topo.name,
       topoId: topo.id,
-      standalone: true,
       isIndoor: true,
       centerId: topo.center_id ? String(topo.center_id) : undefined,
       center: topo.indoor_center ?? undefined,
@@ -543,32 +505,11 @@ export class IndoorTopoComponent extends TopoPageBase {
   }
 
   protected deleteTopo(topo: TopoDetail): void {
-    if (!this.isBrowser) return;
-    void firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('topos.deleteTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('topos.deleteConfirm', {
-            name: topo.name,
-          }),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
+    this.confirmDeleteTopo(topo, () =>
+      this.indoorService.deleteTopo(String(this.id())).then(() => {
+        this.toast.success('messages.toasts.topoDeleted');
+        return this.router.navigate(['/indoor', this.centerSlug()]);
       }),
-      { defaultValue: false },
-    ).then((confirmed) => {
-      if (!confirmed) return;
-      this.indoorService
-        .deleteTopo(String(this.id()))
-        .then(() => {
-          this.toast.success('messages.toasts.topoDeleted');
-          this.router.navigate(['/indoor', this.centerSlug()]);
-        })
-        .catch(() => {
-          // noop
-        });
-    });
+    );
   }
 }

@@ -136,15 +136,14 @@ export function removePoint(
  * Adds a point to a route path based on a mouse event's position
  * relative to a container element, accounting for scale.
  */
-export function addPointToPath(
+export function addPointToPath<
+  T extends { points: NormalizedPoint[]; color?: string },
+>(
   event: MouseEvent,
   routeId: string | number,
   containerEl: HTMLElement,
-  pathsMap: Map<
-    string | number,
-    { points: NormalizedPoint[]; color?: string; [key: string]: unknown }
-  >,
-  defaults?: { color?: string; [key: string]: unknown },
+  pathsMap: Map<string | number, T>,
+  defaults?: Omit<T, 'points'>,
 ): void {
   // getBoundingClientRect gives screen coords of the scaled container.
   // Dividing (clientX - rect.left) by rect.width gives the correct
@@ -156,7 +155,8 @@ export function addPointToPath(
     state: 'neutral',
   };
 
-  const current = pathsMap.get(routeId) || { points: [], ...defaults };
+  const current =
+    pathsMap.get(routeId) ?? ({ points: [], ...defaults } as unknown as T);
   pathsMap.set(routeId, {
     ...current,
     points: [...current.points, coords],
@@ -167,15 +167,12 @@ export function addPointToPath(
  * Sets up mouse-based point dragging for path editing.
  * Returns a cleanup callback.
  */
-export function startDragPointMouse(
+export function startDragPointMouse<T extends { points: NormalizedPoint[] }>(
   event: MouseEvent,
   routeId: string | number,
   index: number,
   containerEl: HTMLElement,
-  pathsMap: Map<
-    string | number,
-    { points: NormalizedPoint[]; [key: string]: unknown }
-  >,
+  pathsMap: Map<string | number, T>,
   callbacks?: {
     onUpdate?: () => void;
     onEnd?: () => void;
@@ -219,15 +216,12 @@ export function startDragPointMouse(
 /**
  * Sets up touch-based point dragging for path editing.
  */
-export function startDragPointTouch(
+export function startDragPointTouch<T extends { points: NormalizedPoint[] }>(
   event: TouchEvent,
   routeId: string | number,
   index: number,
   containerEl: HTMLElement,
-  pathsMap: Map<
-    string | number,
-    { points: NormalizedPoint[]; [key: string]: unknown }
-  >,
+  pathsMap: Map<string | number, T>,
   callbacks?: {
     onUpdate?: () => void;
     onEnd?: () => void;

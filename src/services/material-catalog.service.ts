@@ -1,7 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 
 import { TuiDialogService } from '@taiga-ui/core';
-import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslateService } from '@ngx-translate/core';
@@ -23,6 +22,7 @@ import { handleErrorToast } from '../utils';
 
 import { IS_BROWSER } from '../app/is-browser';
 
+import { AppDialogsService } from './app-dialogs.service';
 import { SupabaseService } from './supabase.service';
 
 import { ToastService } from './toast.service';
@@ -32,6 +32,7 @@ export class MaterialCatalogService {
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly supabase = inject(SupabaseService);
   private readonly toast = inject(ToastService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
 
@@ -113,24 +114,14 @@ export class MaterialCatalogService {
 
   /** Confirma y borra el artículo. Devuelve `true` si se borró. */
   async deleteItem(item: MaterialCatalogItem): Promise<boolean> {
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('admin.materialCatalog.deleteTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant(
-            'admin.materialCatalog.deleteConfirm',
-            {
-              name: item.name,
-            },
-          ),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'admin.materialCatalog.deleteTitle',
+      contentKey: 'admin.materialCatalog.deleteConfirm',
+      contentParams: { name: item.name },
+      yesKey: 'delete',
+      noKey: 'cancel',
+      appearance: 'primary-destructive',
+    });
 
     if (!confirmed) return false;
 

@@ -17,7 +17,6 @@ import { AscentType } from '../../models';
 
 @Component({
   selector: 'app-ascent-type',
-  standalone: true,
   imports: [TranslatePipe, TuiBadge, TuiHint, TuiIcon],
   template: `
     @let info = typeInfo();

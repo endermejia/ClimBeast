@@ -9,7 +9,6 @@ import { OutdoorRoutesTableComponent } from '../../route/outdoor-routes-table';
 
 @Component({
   selector: 'app-user-profile-projects-list',
-  standalone: true,
   imports: [OutdoorRoutesTableComponent, TuiSkeleton],
   template: `
     @if (loading()) {

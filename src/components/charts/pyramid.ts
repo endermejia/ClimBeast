@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   AfterViewInit,
   Component,
@@ -74,10 +73,8 @@ export interface PyramidLevel {
 
 @Component({
   selector: 'app-pyramid',
-  standalone: true,
   imports: [
     AscentTypeComponent,
-    CommonModule,
     FormsModule,
     GradeComponent,
     TranslatePipe,

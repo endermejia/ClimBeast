@@ -11,7 +11,6 @@ import { TuiLoader } from '@taiga-ui/core';
       <tui-loader size="xl"></tui-loader>
     </div>
   `,
-  standalone: true,
 })
 export class ChatRedirectComponent {
   private readonly route = inject(ActivatedRoute);

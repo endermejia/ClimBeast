@@ -6,12 +6,9 @@ import {
   WritableSignal,
 } from '@angular/core';
 
-import { TuiDialogService } from '@taiga-ui/core';
-import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit';
-
 import { TranslateService } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
 
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { EquipperRequestsService } from '../../services/equipper-requests.service';
 
 import {
@@ -25,7 +22,6 @@ import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-admin-equipper-requests',
-  standalone: true,
   imports: [AdminRequestsTableComponent],
   template: `
     <app-admin-requests-table
@@ -50,7 +46,7 @@ import { IS_BROWSER } from '../../app/is-browser';
 })
 export class AdminEquipperRequestsComponent {
   private readonly equipperRequests = inject(EquipperRequestsService);
-  private readonly dialogs = inject(TuiDialogService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly translate = inject(TranslateService);
   private readonly isBrowser = inject(IS_BROWSER);
 
@@ -88,27 +84,17 @@ export class AdminEquipperRequestsComponent {
     const req = this.requests().find((r) => r.id === row.id);
     if (!req) return;
 
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant(
-          'adminEquipperRequests.approveConfirmTitle',
-        ),
-        size: 's',
-        data: {
-          content: this.translate.instant(
-            'adminEquipperRequests.approveConfirmText',
-            {
-              user: req.user.name || this.translate.instant('anonymous'),
-              equipper: req.equipper.name,
-            },
-          ),
-          yes: this.translate.instant('accept'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'adminEquipperRequests.approveConfirmTitle',
+      contentKey: 'adminEquipperRequests.approveConfirmText',
+      contentParams: {
+        user: req.user.name || this.translate.instant('anonymous'),
+        equipper: req.equipper.name,
+      },
+      yesKey: 'accept',
+      noKey: 'cancel',
+      appearance: 'primary',
+    });
 
     if (!confirmed) return;
 
@@ -126,27 +112,17 @@ export class AdminEquipperRequestsComponent {
     const req = this.requests().find((r) => r.id === row.id);
     if (!req) return;
 
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant(
-          'adminEquipperRequests.rejectConfirmTitle',
-        ),
-        size: 's',
-        data: {
-          content: this.translate.instant(
-            'adminEquipperRequests.rejectConfirmText',
-            {
-              user: req.user.name || this.translate.instant('anonymous'),
-              equipper: req.equipper.name,
-            },
-          ),
-          yes: this.translate.instant('accept'),
-          no: this.translate.instant('cancel'),
-          appearance: 'negative',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'adminEquipperRequests.rejectConfirmTitle',
+      contentKey: 'adminEquipperRequests.rejectConfirmText',
+      contentParams: {
+        user: req.user.name || this.translate.instant('anonymous'),
+        equipper: req.equipper.name,
+      },
+      yesKey: 'accept',
+      noKey: 'cancel',
+      appearance: 'negative',
+    });
 
     if (!confirmed) return;
 

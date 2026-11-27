@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   Component,
   computed,
@@ -43,9 +42,7 @@ import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-merchandising',
-  standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     TranslatePipe,
     TuiAppearance,

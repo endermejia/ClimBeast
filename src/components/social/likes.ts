@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, input, output } from '@angular/core';
 
 import { TuiButton, TuiIcon } from '@taiga-ui/core';
@@ -8,8 +7,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-likes',
-  standalone: true,
-  imports: [CommonModule, TranslatePipe, TuiButton, TuiIcon, TuiSkeleton],
+  imports: [TranslatePipe, TuiButton, TuiIcon, TuiSkeleton],
   template: `
     <div
       class="flex items-center gap-1"

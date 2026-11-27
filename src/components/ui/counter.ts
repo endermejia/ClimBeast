@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   Component,
   computed,
@@ -28,9 +27,7 @@ let nextCounterId = 0;
 
 @Component({
   selector: 'app-counter',
-  standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     TranslatePipe,
     TuiButton,

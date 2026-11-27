@@ -1,4 +1,4 @@
-import { CommonModule, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
@@ -29,9 +29,7 @@ export interface MaterialRequestDialogData {
 
 @Component({
   selector: 'app-material-request-dialog',
-  standalone: true,
   imports: [
-    CommonModule,
     DecimalPipe,
     FormsModule,
     TranslatePipe,

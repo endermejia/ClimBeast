@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, inject, input } from '@angular/core';
 
 import { TuiIcon } from '@taiga-ui/core';
@@ -30,10 +29,8 @@ import { createCachedResource } from '../../utils';
 
 @Component({
   selector: 'app-user-profile-likes',
-  standalone: true,
   imports: [
     AreaCardSkeletonComponent,
-    CommonModule,
     EmptyStateComponent,
     OutdoorRoutesTableComponent,
     PlaceCardComponent,

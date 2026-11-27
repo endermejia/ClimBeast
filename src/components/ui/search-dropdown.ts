@@ -384,6 +384,33 @@ import { TourHintComponent } from './tour-hint';
                       ) | translate
                     "
                   >
+                    <ng-template
+                      #searchResultItem
+                      let-item
+                      let-isHighlight="isHighlight"
+                    >
+                      <a
+                        tuiOption
+                        [routerLink]="item.href || null"
+                        (click)="onResultClick(item, $event)"
+                        [class.ring-2]="isHighlight"
+                        [class.ring-negative]="isHighlight"
+                        class="relative"
+                      >
+                        @if (isHighlight) {
+                          <span
+                            class="absolute bottom-2 left-2 pointer-events-none z-10 size-0"
+                          >
+                            <tui-pulse />
+                          </span>
+                        }
+                        <ng-container
+                          [ngTemplateOutlet]="itemTemplate"
+                          [ngTemplateOutletContext]="{ $implicit: item }"
+                        ></ng-container>
+                      </a>
+                    </ng-template>
+
                     @let highlightHref = tourHighlightHref();
                     @if (
                       groupedResults().length > 1 && activeSearchTab() === 0
@@ -395,30 +422,17 @@ import { TourHintComponent } from './tour-hint';
                             item of group.items;
                             track item.href + item.type + item.title
                           ) {
-                            @let isHighlight =
-                              !!highlightHref && item.href === highlightHref;
-                            <a
-                              tuiOption
-                              [routerLink]="item.href || null"
-                              (click)="onResultClick(item, $event)"
-                              [class.ring-2]="isHighlight"
-                              [class.ring-negative]="isHighlight"
-                              class="relative"
-                            >
-                              @if (isHighlight) {
-                                <span
-                                  class="absolute bottom-2 left-2 pointer-events-none z-10 size-0"
-                                >
-                                  <tui-pulse />
-                                </span>
-                              }
-                              <ng-container
-                                [ngTemplateOutlet]="itemTemplate"
-                                [ngTemplateOutletContext]="{
+                            <ng-container
+                              *ngTemplateOutlet="
+                                searchResultItem;
+                                context: {
                                   $implicit: item,
-                                }"
-                              ></ng-container>
-                            </a>
+                                  isHighlight:
+                                    !!highlightHref &&
+                                    item.href === highlightHref,
+                                }
+                              "
+                            />
                           }
                         </tui-opt-group>
                       }
@@ -432,30 +446,17 @@ import { TourHintComponent } from './tour-hint';
                           item of activeGroup.items;
                           track item.href + item.type + item.title
                         ) {
-                          @let isHighlight =
-                            !!highlightHref && item.href === highlightHref;
-                          <a
-                            tuiOption
-                            [routerLink]="item.href || null"
-                            (click)="onResultClick(item, $event)"
-                            [class.ring-2]="isHighlight"
-                            [class.ring-negative]="isHighlight"
-                            class="relative"
-                          >
-                            @if (isHighlight) {
-                              <span
-                                class="absolute bottom-2 left-2 pointer-events-none z-10 size-0"
-                              >
-                                <tui-pulse />
-                              </span>
-                            }
-                            <ng-container
-                              [ngTemplateOutlet]="itemTemplate"
-                              [ngTemplateOutletContext]="{
+                          <ng-container
+                            *ngTemplateOutlet="
+                              searchResultItem;
+                              context: {
                                 $implicit: item,
-                              }"
-                            ></ng-container>
-                          </a>
+                                isHighlight:
+                                  !!highlightHref &&
+                                  item.href === highlightHref,
+                              }
+                            "
+                          />
                         }
                       }
                     }
@@ -471,6 +472,7 @@ import { TourHintComponent } from './tour-hint';
 })
 export class SearchDropdownComponent {
   readonly loading = input<boolean>(false);
+  readonly autoOpen = input<boolean>(false);
 
   private readonly tourService = inject(TourService);
   protected readonly outdoorData = inject(OutdoorDataService);
@@ -518,6 +520,14 @@ export class SearchDropdownComponent {
 
   constructor() {
     const cdr = inject(ChangeDetectorRef);
+    let hasAutoOpened = false;
+    effect(() => {
+      if (this.autoOpen() && !hasAutoOpened) {
+        hasAutoOpened = true;
+        this.searchOpen.set(true);
+      }
+    });
+
     let wasTourSearch = false;
     effect(() => {
       const isTourSearch = this.isTourSearch();

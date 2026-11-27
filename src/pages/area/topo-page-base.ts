@@ -20,15 +20,17 @@ import { TuiDialogService } from '@taiga-ui/core';
 
 import { TranslateService } from '@ngx-translate/core';
 
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { AscentsService } from '../../services/ascents.service';
 import { BreadcrumbsService } from '../../services/breadcrumbs.service';
-
 import { IndoorDataService } from '../../services/indoor-data.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { RoutesService } from '../../services/routes.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 import { ToposService } from '../../services/topos.service';
+
+import type { SectionHeaderAction } from '../../components/ui/section-header';
 
 import type {
   TopoDetail,
@@ -58,6 +60,7 @@ export abstract class TopoPageBase {
   protected readonly router = inject(Router);
   protected readonly isBrowser = inject(IS_BROWSER);
   protected readonly dialogs = inject(TuiDialogService);
+  protected readonly appDialogs = inject(AppDialogsService);
   protected readonly translate = inject(TranslateService);
   protected readonly toast = inject(ToastService);
 
@@ -255,6 +258,97 @@ export abstract class TopoPageBase {
   protected onSortChange(sort: TuiTableSortChange<TopoRouteRow>): void {
     this.direction.set(sort.sortDirection);
     this.sorter.set(sort.sortComparator || (() => 0));
+  }
+
+  protected buildTopoHeaderActions(
+    topo: TopoDetail,
+    permissions: { canDraw: boolean; canEdit: boolean; canDelete: boolean },
+    handlers: {
+      onDraw: (topo: TopoDetail) => void;
+      onEdit: (topo: TopoDetail) => void;
+      onDelete: (topo: TopoDetail) => void;
+    },
+  ): SectionHeaderAction[] {
+    const actions: SectionHeaderAction[] = [];
+    if (permissions.canDraw) {
+      actions.push({
+        label: 'draw',
+        icon: '/image/topo.svg',
+        appearance: 'neutral',
+        action: () => handlers.onDraw(topo),
+      });
+    }
+    if (permissions.canEdit) {
+      actions.push({
+        label: 'edit',
+        icon: '@tui.square-pen',
+        appearance: 'neutral',
+        action: () => handlers.onEdit(topo),
+      });
+      if (permissions.canDelete) {
+        actions.push({
+          label: 'delete',
+          icon: '@tui.trash',
+          appearance: 'negative',
+          action: () => handlers.onDelete(topo),
+        });
+      }
+    }
+    return actions;
+  }
+
+  protected mapTopoRouteToRow(
+    tr: TopoRouteWithRoute,
+    link: string[],
+    extra?: Partial<TopoRouteRow>,
+  ): TopoRouteRow {
+    const r = tr.route;
+    return {
+      index: tr.number ?? 0,
+      name: r.name,
+      grade: r.grade,
+      height: r.height || null,
+      slug: r.slug,
+      link,
+      climbed: !!r.own_ascent && r.own_ascent.type !== 'attempt',
+      project: !!r.project,
+      ...extra,
+      _ref: tr,
+    };
+  }
+
+  protected mapTopoRoutesForEditor(topo: TopoDetail): TopoRouteWithRoute[] {
+    return (topo.topo_routes || []).map((tr, i) => ({
+      topo_id: topo.id,
+      route_id: tr.route_id,
+      number: tr.number ?? i,
+      route: tr.route,
+      path: tr.path,
+      ...(tr.user_creator_id !== undefined
+        ? { user_creator_id: tr.user_creator_id }
+        : {}),
+    })) as TopoRouteWithRoute[];
+  }
+
+  protected confirmDeleteTopo(
+    topo: TopoDetail,
+    onConfirm: () => Promise<unknown>,
+  ): void {
+    if (!this.isBrowser) return;
+    void this.appDialogs
+      .confirm({
+        labelKey: 'topos.deleteTitle',
+        contentKey: 'topos.deleteConfirm',
+        contentParams: { name: topo.name },
+        yesKey: 'delete',
+        appearance: 'primary-destructive',
+      })
+      .then((confirmed) => {
+        if (!confirmed) return;
+        void onConfirm().catch(() => {
+          // noop
+        });
+      });
   }
 
   protected navigateToTopo(

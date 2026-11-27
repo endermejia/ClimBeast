@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, inject, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { form, required, submit } from '@angular/forms/signals';
@@ -32,7 +31,6 @@ import { IS_BROWSER } from '../../app/is-browser';
 @Component({
   selector: 'app-link-parking-form',
   imports: [
-    CommonModule,
     FormsModule,
     TranslatePipe,
     TuiButton,

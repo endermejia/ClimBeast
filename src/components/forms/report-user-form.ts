@@ -27,7 +27,6 @@ interface ReportReasonOption {
 
 @Component({
   selector: 'app-report-user-form',
-  standalone: true,
   imports: [
     AvatarUrlPipe,
     FormsModule,

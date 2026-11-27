@@ -13,7 +13,6 @@ import { reactToObservable } from '../../utils';
 
 @Component({
   selector: 'app-ascent-comments',
-  standalone: true,
   imports: [TranslatePipe, TuiButton, TuiIcon, TuiSkeleton],
   template: `
     @if (!isHidden()) {

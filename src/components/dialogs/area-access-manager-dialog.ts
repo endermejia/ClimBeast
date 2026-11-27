@@ -1,11 +1,10 @@
-import { CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Component, computed, inject, resource, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import {
   TuiButton,
   TuiDialogContext,
-  TuiDialogService,
   TuiIcon,
   TuiInput,
   TuiLabel,
@@ -13,12 +12,12 @@ import {
   TuiScrollbar,
   TuiTextfield,
 } from '@taiga-ui/core';
-import { TuiAvatar, TuiConfirmData, TUI_CONFIRM } from '@taiga-ui/kit';
+import { TuiAvatar } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
+import { TranslatePipe } from '@ngx-translate/core';
 
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { ToastService } from '../../services/toast.service';
 
@@ -44,7 +43,7 @@ interface ProfileSearchResult {
 @Component({
   selector: 'app-area-access-manager-dialog',
   imports: [
-    CommonModule,
+    DatePipe,
     FormsModule,
     AvatarUrlPipe,
     EmptyStateComponent,
@@ -202,8 +201,7 @@ export class AreaAccessManagerDialogComponent {
     >();
   private readonly supabase = inject(SupabaseService);
   private readonly toast = inject(ToastService);
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly translate = inject(TranslateService);
+  private readonly appDialogs = inject(AppDialogsService);
 
   readonly areaId = this.context.data.areaId;
   readonly searchQuery = signal('');
@@ -328,18 +326,12 @@ export class AreaAccessManagerDialogComponent {
   }
 
   async revokeAccess(user: AccessUser): Promise<void> {
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('areas.revokeAccess'),
-        size: 's',
-        data: {
-          content: `${user.name || 'Anonymous'}`,
-          yes: this.translate.instant('accept'),
-          no: this.translate.instant('cancel'),
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'areas.revokeAccess',
+      content: `${user.name || 'Anonymous'}`,
+      yesKey: 'accept',
+      noKey: 'cancel',
+    });
 
     if (!confirmed) return;
 

@@ -2,15 +2,13 @@ import { LowerCasePipe } from '@angular/common';
 import {
   Component,
   computed,
-  effect,
   ElementRef,
   inject,
   signal,
-  untracked,
   viewChild,
   WritableSignal,
 } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { TuiButton, TuiIcon, TuiInput, TuiScrollbar } from '@taiga-ui/core';
 import { TuiSegmented } from '@taiga-ui/kit';
@@ -24,9 +22,9 @@ import { IndoorCentersDataService } from '../../services/indoor-centers-data.ser
 import { LayoutService } from '../../services/layout.service';
 import { OnlineStatusService } from '../../services/online-status.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
-import { ScrollService } from '../../services/scroll.service';
 
 import { AreaCardSkeletonComponent } from '../../components/area/area-card-skeleton';
+import { createCardWindowController } from '../../components/ui/card-window.controller';
 import { EmptyStateComponent } from '../../components/ui/empty-state';
 import { ExploreMapFabComponent } from '../../components/ui/explore-map-fab';
 import { FilterButtonComponent } from '../../components/ui/filter-button';
@@ -34,18 +32,7 @@ import { InfiniteScrollTriggerComponent } from '../../components/ui/infinite-scr
 import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import { PlaceCardComponent } from '../../components/ui/place-card';
 
-import {
-  filterAreas,
-  hasActiveAreaFilters,
-  reactToObservable,
-} from '../../utils';
-
-/**
- * Tarjetas pintadas por lote. La primera render solo construye esta ventana
- * (unas pocas pantallas) y el resto entra al acercarse al final, así la
- * navegación no se bloquea creando cientos de tarjetas de golpe.
- */
-const CARD_WINDOW = 24;
+import { filterAreas, hasActiveAreaFilters } from '../../utils';
 
 @Component({
   selector: 'app-area-list',
@@ -185,8 +172,6 @@ export class AreaListComponent {
   protected readonly skeletons = Array.from({ length: 16 }, (_, i) => i);
   protected readonly layoutService = inject(LayoutService);
   protected readonly onlineStatus = inject(OnlineStatusService);
-  protected readonly router = inject(Router);
-  private readonly scrollService = inject(ScrollService);
 
   protected readonly areasService = inject(AreasService);
   protected readonly filtersService = inject(FiltersService);
@@ -225,23 +210,6 @@ export class AreaListComponent {
     }),
   );
 
-  /**
-   * Ventana de tarjetas efectivamente pintadas: `filtered()` completo solo se
-   * recorre para el contador y los filtros, el DOM se queda en `CARD_WINDOW`
-   * unidades hasta que el usuario baja el scroll.
-   */
-  private readonly visibleCount = this.outdoorData.areaListVisibleCount;
-  readonly visibleAreas = computed(() =>
-    this.filtered().slice(0, this.visibleCount()),
-  );
-  readonly hasMoreAreas = computed(
-    () => this.filtered().length > this.visibleCount(),
-  );
-
-  protected showMoreAreas(): void {
-    this.visibleCount.update((count) => count + CARD_WINDOW);
-  }
-
   /** Cambiar búsqueda o filtros vuelve la ventana a su tamaño inicial. */
   private readonly filterKey = computed(() =>
     JSON.stringify([
@@ -253,37 +221,17 @@ export class AreaListComponent {
     ]),
   );
 
-  constructor() {
-    reactToObservable(this.scrollService.scrollToTop$, () => {
-      this.scrollToTop();
-    });
+  private readonly cardWindow = createCardWindowController({
+    items: this.filtered,
+    visibleCount: this.outdoorData.areaListVisibleCount,
+    filterKey: this.filterKey,
+    scrollbar: this.scrollbar,
+  });
 
-    let initialRun = true;
-    effect(() => {
-      this.filterKey();
-      if (initialRun) {
-        initialRun = false;
-        return;
-      }
-      untracked(() => this.visibleCount.set(CARD_WINDOW));
-    });
-  }
-
-  protected onTabClick(event: MouseEvent, path: string): void {
-    const current = this.router.url.split('?')[0].split('#')[0];
-    if (current === path) {
-      event.preventDefault();
-      this.visibleCount.set(CARD_WINDOW);
-      this.scrollToTop();
-    }
-  }
-
-  private scrollToTop(): void {
-    this.visibleCount.set(CARD_WINDOW);
-    if (this.scrollbar()?.nativeElement) {
-      this.scrollbar()!.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }
+  readonly visibleAreas = this.cardWindow.visibleItems;
+  readonly hasMoreAreas = this.cardWindow.hasMore;
+  protected readonly showMoreAreas = this.cardWindow.showMore;
+  protected readonly onTabClick = this.cardWindow.onTabClick;
 
   onQuery(v: string) {
     this.query.set(v);

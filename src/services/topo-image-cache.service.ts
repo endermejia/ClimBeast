@@ -1,6 +1,6 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 
-import { IS_BROWSER } from '../app/is-browser';
+import { BlobImageCacheBase } from './blob-image-cache.base';
 
 /** Nombre de la caché de bytes (Cache Storage) con las fotos de los topos. */
 const TOPO_IMAGE_CACHE = 'topo-images';
@@ -22,20 +22,16 @@ const MAX_ENTRIES = 200;
  * y la app funciona como hasta ahora.
  */
 @Injectable({ providedIn: 'root' })
-export class TopoImageCacheService {
-  private readonly isBrowser = inject(IS_BROWSER);
-
-  /** `null` cuando Cache Storage no está disponible en este entorno. */
-  private readonly cacheReady = this.openCache();
-
-  /** `blob:` URL ya materializada por clave, para no recrearla en cada render. */
-  private readonly objectUrls = new Map<string, string>();
-
+export class TopoImageCacheService extends BlobImageCacheBase {
   /** Descargas en curso, para no pedir la misma imagen dos veces. */
   private readonly pending = new Map<string, Promise<boolean>>();
 
   /** Se incrementa cada vez que cambia el contenido de la caché de imágenes. */
   readonly cacheVersion = signal(0);
+
+  constructor() {
+    super(TOPO_IMAGE_CACHE);
+  }
 
   /**
    * Indica si la imagen de `url` ya tiene sus bytes persistidos en caché.
@@ -86,14 +82,8 @@ export class TopoImageCacheService {
       const cache = await this.cacheReady;
       if (!cache) return url;
 
-      const existing = this.objectUrls.get(url);
-      if (existing) return existing;
-
-      const cached = await cache.match(url);
-      if (cached) {
-        const blobUrl = await this.toBlobUrl(url, cached);
-        if (blobUrl) return blobUrl;
-      }
+      const cachedUrl = await this.resolveCachedBlobUrl(url, cache);
+      if (cachedUrl) return cachedUrl;
 
       void this.download(url, cache);
       return url;
@@ -132,34 +122,6 @@ export class TopoImageCacheService {
     }
   }
 
-  private openCache(): Promise<Cache | null> {
-    if (!this.isBrowser || typeof caches === 'undefined') {
-      return Promise.resolve(null);
-    }
-    try {
-      return caches.open(TOPO_IMAGE_CACHE).catch(() => null);
-    } catch {
-      return Promise.resolve(null);
-    }
-  }
-
-  /** Materializa la respuesta cacheada en un `blob:` URL reutilizable. */
-  private async toBlobUrl(
-    key: string,
-    response: Response,
-  ): Promise<string | null> {
-    if (typeof URL?.createObjectURL !== 'function') return null;
-    try {
-      const blob = await response.blob();
-      if (!blob.size) return null;
-      const blobUrl = URL.createObjectURL(blob);
-      this.objectUrls.set(key, blobUrl);
-      return blobUrl;
-    } catch {
-      return null;
-    }
-  }
-
   /** Descarga la imagen a Cache Storage y devuelve `true` si se guardó. */
   private download(url: string, cache: Cache): Promise<boolean> {
     const existing = this.pending.get(url);
@@ -172,7 +134,7 @@ export class TopoImageCacheService {
         const response = await fetch(url);
         if (!response.ok) return false;
         await cache.put(url, response);
-        await this.trim(cache);
+        await this.trim(cache, MAX_ENTRIES);
         this.cacheVersion.update((v) => v + 1);
         return true;
       } catch {
@@ -184,27 +146,5 @@ export class TopoImageCacheService {
     })();
     this.pending.set(url, task);
     return task;
-  }
-
-  /** Descarta las entradas más antiguas al superar el límite. */
-  private async trim(cache: Cache): Promise<void> {
-    const keys = await cache.keys();
-    if (keys.length <= MAX_ENTRIES) return;
-    const excess = keys.slice(0, keys.length - MAX_ENTRIES);
-    await Promise.all(
-      excess.map(async (request) => {
-        this.revoke(request.url);
-        await cache.delete(request);
-      }),
-    );
-  }
-
-  private revoke(key: string): void {
-    const blobUrl = this.objectUrls.get(key);
-    if (!blobUrl) return;
-    if (typeof URL?.revokeObjectURL === 'function') {
-      URL.revokeObjectURL(blobUrl);
-    }
-    this.objectUrls.delete(key);
   }
 }

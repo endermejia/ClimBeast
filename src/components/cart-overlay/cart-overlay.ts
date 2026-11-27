@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@angular/common';
 import { Component, inject, output, signal } from '@angular/core';
 
 import { TuiButton, TuiIcon, TuiLoader, TuiScrollbar } from '@taiga-ui/core';
@@ -13,9 +13,8 @@ import type { CartProduct } from '../../models';
 
 @Component({
   selector: 'app-cart-overlay',
-  standalone: true,
   imports: [
-    CommonModule,
+    CurrencyPipe,
     TranslatePipe,
     TuiBadge,
     TuiButton,

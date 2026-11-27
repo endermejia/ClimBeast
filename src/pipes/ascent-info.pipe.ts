@@ -4,7 +4,6 @@ import { AscentsService } from '../services/ascents.service';
 
 @Pipe({
   name: 'ascentInfo',
-  standalone: true,
   pure: true,
 })
 export class AscentInfoPipe implements PipeTransform {

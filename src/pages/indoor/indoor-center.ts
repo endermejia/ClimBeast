@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { LowerCasePipe } from '@angular/common';
 import {
   Component,
   computed,
@@ -19,7 +19,6 @@ import {
   TuiCarousel,
   TuiCheckbox,
   TuiDataList,
-  TuiDialogService,
   TuiDropdown,
   TuiIcon,
   TuiInput,
@@ -30,18 +29,15 @@ import {
   TuiTextfield,
 } from '@taiga-ui/core';
 import {
-  TUI_CONFIRM,
   TuiAvatar,
   TuiBadgedContent,
   TuiBadgeNotification,
-  TuiConfirmData,
   TuiSegmented,
 } from '@taiga-ui/kit';
 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
-import { firstValueFrom } from 'rxjs';
-
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { BreadcrumbsService } from '../../services/breadcrumbs.service';
 import { CacheService } from '../../services/cache.service';
@@ -101,10 +97,9 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
 
 @Component({
   selector: 'app-indoor-center',
-  standalone: true,
   imports: [
     AscentCountDirective,
-    CommonModule,
+    LowerCasePipe,
     FormsModule,
     TranslateModule,
     TuiAppearance,
@@ -577,7 +572,7 @@ export class IndoorCenterComponent {
   protected readonly queryParams = toSignal(this.route.queryParams);
   private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
-  private readonly dialogs = inject(TuiDialogService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly visitedCentersService = inject(VisitedIndoorCentersService);
 
@@ -950,30 +945,13 @@ export class IndoorCenterComponent {
     const center = this.center();
     if (!center || !this.isBrowser) return;
 
-    const t = await firstValueFrom(
-      this.translate.get([
-        'admin.indoorAdminRequests.confirmTitle',
-        'admin.indoorAdminRequests.confirmMessage',
-      ]),
-    );
-    const title = t['admin.indoorAdminRequests.confirmTitle'];
-    const message = t['admin.indoorAdminRequests.confirmMessage'];
-
-    const data: TuiConfirmData = {
-      content: message,
-      yes: this.translate.instant('accept'),
-      no: this.translate.instant('cancel'),
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'admin.indoorAdminRequests.confirmTitle',
+      contentKey: 'admin.indoorAdminRequests.confirmMessage',
+      yesKey: 'accept',
+      noKey: 'cancel',
       appearance: 'primary',
-    };
-
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: title,
-        size: 's',
-        data,
-      }),
-      { defaultValue: false },
-    );
+    });
 
     if (!confirmed) return;
 
@@ -1001,30 +979,13 @@ export class IndoorCenterComponent {
     const center = this.center();
     if (!center || !this.isBrowser) return;
 
-    const t = await firstValueFrom(
-      this.translate.get([
-        'admin.routesetterRequests.confirmTitle',
-        'admin.routesetterRequests.confirmMessage',
-      ]),
-    );
-    const title = t['admin.routesetterRequests.confirmTitle'];
-    const message = t['admin.routesetterRequests.confirmMessage'];
-
-    const data: TuiConfirmData = {
-      content: message,
-      yes: this.translate.instant('accept'),
-      no: this.translate.instant('cancel'),
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'admin.routesetterRequests.confirmTitle',
+      contentKey: 'admin.routesetterRequests.confirmMessage',
+      yesKey: 'accept',
+      noKey: 'cancel',
       appearance: 'primary',
-    };
-
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: title,
-        size: 's',
-        data,
-      }),
-      { defaultValue: false },
-    );
+    });
 
     if (!confirmed) return;
 
@@ -1161,27 +1122,14 @@ export class IndoorCenterComponent {
     if (!c) return;
     if (!this.isBrowser) return;
 
-    const t = await firstValueFrom(
-      this.translate.get(['indoor.deleteTitle', 'indoor.deleteConfirm'], {
-        name: c.name,
-      }),
-    );
-    const title = t['indoor.deleteTitle'];
-    const message = t['indoor.deleteConfirm'];
-    const data: TuiConfirmData = {
-      content: message,
-      yes: this.translate.instant('delete'),
-      no: this.translate.instant('cancel'),
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'indoor.deleteTitle',
+      contentKey: 'indoor.deleteConfirm',
+      contentParams: { name: c.name },
+      yesKey: 'delete',
+      noKey: 'cancel',
       appearance: 'primary-destructive',
-    };
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: title,
-        size: 's',
-        data,
-      }),
-      { defaultValue: false },
-    );
+    });
     if (!confirmed) return;
     try {
       const ok = await this.indoor.deleteCenter(c.id);

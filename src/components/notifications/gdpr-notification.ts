@@ -12,7 +12,6 @@ import { ConsentService } from '../../services/consent.service';
 
 @Component({
   selector: 'app-gdpr-notification',
-  standalone: true,
   imports: [
     FormsModule,
     RouterLink,

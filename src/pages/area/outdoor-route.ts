@@ -16,30 +16,23 @@ import {
   untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
-import { TuiDialogService } from '@taiga-ui/core';
 import {
   TuiButton,
+  TuiHint,
   TuiIcon,
   TuiLoader,
-  TuiHint,
   TuiScrollbar,
 } from '@taiga-ui/core';
-import {
-  TUI_CONFIRM,
-  TuiAvatar,
-  type TuiConfirmData,
-  TuiRating,
-} from '@taiga-ui/kit';
+import { TuiAvatar, TuiRating } from '@taiga-ui/kit';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-
 import { firstValueFrom } from 'rxjs';
 
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { AscentsService } from '../../services/ascents.service';
 import { AuthStateService } from '../../services/auth-state.service';
-
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { ProfileDataService } from '../../services/profile-data.service';
 import { RoutesService } from '../../services/routes.service';
@@ -47,9 +40,12 @@ import { SeoService } from '../../services/seo.service';
 import { ToastService } from '../../services/toast.service';
 
 import { AscentsFeedComponent } from '../../components/ascent/ascents-feed';
-
 import { ChartAscentsByGradeComponent } from '../../components/charts/chart-ascents-by-grade';
 import { ChartAscentsByStyleComponent } from '../../components/charts/chart-ascents-by-style';
+import {
+  RouteMetaLinksComponent,
+  type RouteMetaTopoLink,
+} from '../../components/route/route-meta-links';
 import { GradeComponent } from '../../components/ui/avatar-grade';
 import { OfflineNotCachedComponent } from '../../components/ui/offline-not-cached';
 import {
@@ -66,7 +62,6 @@ import {
   PROJECT_GRADE_LABEL,
 } from '../../models';
 
-import { AvatarUrlPipe } from '../../pipes';
 import { handleErrorToast, reactToObservable } from '../../utils';
 
 import { IS_BROWSER } from '../../app/is-browser';
@@ -77,7 +72,6 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
   imports: [
     AscentCountDirective,
     AscentsFeedComponent,
-    AvatarUrlPipe,
     ChartAscentsByGradeComponent,
     ChartAscentsByStyleComponent,
     DecimalPipe,
@@ -86,7 +80,7 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
     LowerCasePipe,
     NgTemplateOutlet,
     OfflineNotCachedComponent,
-    RouterLink,
+    RouteMetaLinksComponent,
     SectionHeaderComponent,
     TranslatePipe,
     TuiAvatar,
@@ -97,21 +91,6 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
     TuiRating,
     TuiScrollbar,
   ],
-  styles: `
-    @media (min-width: 1024px) {
-      :host > tui-scrollbar {
-        overflow: hidden !important;
-      }
-      :host > tui-scrollbar ::ng-deep > .t-content {
-        block-size: 100% !important;
-        height: 100% !important;
-        overflow: hidden !important;
-      }
-      :host > tui-scrollbar ::ng-deep > tui-scroll-controls {
-        display: none !important;
-      }
-    }
-  `,
   template: `
     <tui-scrollbar class="w-full h-full min-h-0 min-w-0">
       <section
@@ -296,71 +275,10 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
                       }
                     </div>
 
-                    @if (equippers().length > 0) {
-                      <div class="flex flex-col items-center">
-                        <span
-                          class="text-xs uppercase opacity-60 font-semibold tracking-wider mb-1"
-                        >
-                          {{ 'equippers' | translate }}
-                        </span>
-                        <div class="flex flex-wrap gap-2 justify-center">
-                          @for (e of equippers(); track e.id) {
-                            <a
-                              tuiButton
-                              appearance="secondary"
-                              size="s"
-                              class="min-w-fit!"
-                              [routerLink]="['/equipper', e.id]"
-                            >
-                              @if (e.avatar; as avatar) {
-                                <span tuiAvatar size="xs" class="shrink-0">
-                                  <img
-                                    [src]="avatar | avatarUrl"
-                                    [alt]="e.name"
-                                  />
-                                </span>
-                              }
-                              {{ e.name }}
-                            </a>
-                          }
-                        </div>
-                      </div>
-                    }
-
-                    @if (r.topos && r.topos.length) {
-                      <div class="flex flex-col items-center">
-                        <span
-                          class="text-xs uppercase opacity-60 font-semibold tracking-wider mb-2"
-                        >
-                          {{
-                            (r.topos.length === 1 ? 'topo' : 'topos')
-                              | translate
-                          }}
-                        </span>
-                        <div class="flex flex-wrap gap-2 justify-center">
-                          @for (t of r.topos; track t.id) {
-                            <a
-                              tuiButton
-                              [appearance]="
-                                t.has_path === false ? 'warning' : 'info'
-                              "
-                              size="s"
-                              class="min-w-fit!"
-                              [routerLink]="[
-                                '/area',
-                                areaSlug(),
-                                cragSlug(),
-                                'topo',
-                                t.id,
-                              ]"
-                              [queryParams]="{ route: r.id }"
-                            >
-                              {{ t.name }}
-                            </a>
-                          }
-                        </div>
-                      </div>
-                    }
+                    <app-route-meta-links
+                      [equippers]="equippers()"
+                      [topos]="metaTopos()"
+                    />
                   </div>
                 </div>
 
@@ -419,7 +337,7 @@ import { AscentCountDirective } from '../../directives/ascent-count.directive';
       </section>
     </tui-scrollbar>
   `,
-  host: { class: 'flex flex-col w-full h-full min-h-0' },
+  host: { class: 'flex flex-col w-full h-full min-h-0 lw-desktop-scroll-lock' },
 })
 export class OutdoorRouteComponent {
   protected readonly authState = inject(AuthStateService);
@@ -431,7 +349,7 @@ export class OutdoorRouteComponent {
   protected readonly router = inject(Router);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
-  private readonly dialogs = inject(TuiDialogService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly toast = inject(ToastService);
   private readonly seo = inject(SeoService);
 
@@ -457,6 +375,20 @@ export class OutdoorRouteComponent {
   protected readonly equippers = computed(
     () => this.equippersResource.value() ?? [],
   );
+
+  protected readonly metaTopos = computed<RouteMetaTopoLink[]>(() => {
+    const r = this.route();
+    const aSlug = this.areaSlug();
+    const cSlug = this.cragSlug();
+    if (!r?.topos?.length) return [];
+    return r.topos.map((t) => ({
+      id: t.id,
+      name: t.name,
+      link: ['/area', aSlug, cSlug, 'topo', t.id],
+      queryParams: { route: r.id },
+      hasPath: t.has_path,
+    }));
+  });
 
   protected readonly ascents = computed(
     () => this.outdoorData.routeAscentsResource.value()?.items ?? [],
@@ -668,30 +600,24 @@ export class OutdoorRouteComponent {
     });
   }
 
-  deleteRoute(): void {
+  async deleteRoute(): Promise<void> {
     const r = this.route();
     if (!r || !this.isBrowser) return;
 
-    void firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('routes.deleteTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('routes.deleteConfirm', {
-            name: r.name,
-          }),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    ).then((confirmed) => {
-      if (!confirmed) return;
-      this.routesService
-        .delete(r.id)
-        .then(() => this.location.back())
-        .catch((err) => handleErrorToast(err, this.toast));
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'routes.deleteTitle',
+      contentKey: 'routes.deleteConfirm',
+      contentParams: { name: r.name },
+      yesKey: 'delete',
+      appearance: 'primary-destructive',
     });
+    if (!confirmed) return;
+
+    try {
+      await this.routesService.delete(r.id);
+      this.location.back();
+    } catch (err) {
+      handleErrorToast(err, this.toast);
+    }
   }
 }

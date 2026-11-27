@@ -1,5 +1,4 @@
 import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
-import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
@@ -59,9 +58,7 @@ const MERCHANDISE_CATEGORIES = [
 
 @Component({
   selector: 'app-admin-merchandise-dialog',
-  standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     TranslatePipe,
     CdkDrag,

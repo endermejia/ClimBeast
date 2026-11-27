@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import {
   Component,
   computed,
@@ -28,8 +28,6 @@ import {
   TuiLoader,
 } from '@taiga-ui/core';
 import {
-  TUI_CONFIRM,
-  TuiConfirmData,
   TuiChevron,
   TuiDataListWrapper,
   TuiInputDate,
@@ -44,8 +42,7 @@ import { injectContext } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import { firstValueFrom } from 'rxjs';
-
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { AscentsService } from '../../services/ascents.service';
 import { IndoorService } from '../../services/indoor.service';
 import { RoutesService } from '../../services/routes.service';
@@ -82,7 +79,7 @@ import { CounterComponent } from '../ui/counter';
   imports: [
     ButtonAscentTypeComponent,
     CalendarMonthPickerDirective,
-    CommonModule,
+    AsyncPipe,
     CounterComponent,
     FormField,
     FormsModule,
@@ -629,6 +626,7 @@ export default class AscentFormComponent {
   private readonly routesService = inject(RoutesService);
   private readonly toast = inject(ToastService);
   private readonly translate = inject(TranslateService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly indoorService = inject(IndoorService);
   private readonly ascentDatePipe = new AscentDatePipe();
@@ -911,20 +909,12 @@ export default class AscentFormComponent {
 
     event.preventDefault();
 
-    const data: TuiConfirmData = {
-      content: this.translate.instant('ascent.privateConfirmation'),
-      yes: this.translate.instant('accept'),
-      no: this.translate.instant('cancel'),
-    };
-
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('ascent.private'),
-        size: 's',
-        data,
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'ascent.private',
+      contentKey: 'ascent.privateConfirmation',
+      yesKey: 'accept',
+      noKey: 'cancel',
+    });
 
     if (confirmed) {
       this.model.update((m) => ({ ...m, private_ascent: true }));
@@ -1004,20 +994,12 @@ export default class AscentFormComponent {
   }
 
   protected async attemptSelected(): Promise<void> {
-    const data: TuiConfirmData = {
-      content: this.translate.instant('ascent.attemptPrivateConfirmation'),
-      yes: this.translate.instant('accept'),
-      no: this.translate.instant('cancel'),
-    };
-
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('ascentTypes.attempt'),
-        size: 's',
-        data,
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'ascentTypes.attempt',
+      contentKey: 'ascent.attemptPrivateConfirmation',
+      yesKey: 'accept',
+      noKey: 'cancel',
+    });
 
     if (confirmed) {
       this.model.update((m) => ({
@@ -1234,19 +1216,13 @@ export default class AscentFormComponent {
     const data = this.effectiveAscentData();
     if (!data || !data.photo_path) return;
 
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('ascent.deletePhotoTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('ascent.deletePhotoConfirm'),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        },
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'ascent.deletePhotoTitle',
+      contentKey: 'ascent.deletePhotoConfirm',
+      yesKey: 'delete',
+      noKey: 'cancel',
+      appearance: 'primary-destructive',
+    });
 
     if (confirmed) {
       try {
@@ -1269,22 +1245,18 @@ export default class AscentFormComponent {
     // Format date for display using pipe
     const formattedDate = this.ascentDatePipe.transform(data.date);
 
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('ascent.deleteTitle'),
-        size: 'm',
-        data: {
-          content: this.translate.instant('ascent.deleteConfirm', {
-            routeName: this.routeName(),
-            date: formattedDate,
-          }),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        },
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'ascent.deleteTitle',
+      contentKey: 'ascent.deleteConfirm',
+      contentParams: {
+        routeName: this.routeName(),
+        date: formattedDate,
+      },
+      yesKey: 'delete',
+      noKey: 'cancel',
+      appearance: 'primary-destructive',
+      size: 'm',
+    });
 
     if (!confirmed) return;
 

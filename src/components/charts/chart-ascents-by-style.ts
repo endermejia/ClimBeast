@@ -1,4 +1,4 @@
-import { CommonModule, LowerCasePipe, PercentPipe } from '@angular/common';
+import { LowerCasePipe, PercentPipe } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 
 import { TuiHint } from '@taiga-ui/core';
@@ -15,15 +15,7 @@ export type AscentStyleRecord =
 
 @Component({
   selector: 'app-chart-ascents-by-style',
-  standalone: true,
-  imports: [
-    CommonModule,
-    LowerCasePipe,
-    PercentPipe,
-    TranslatePipe,
-    TuiHint,
-    TuiProgress,
-  ],
+  imports: [LowerCasePipe, PercentPipe, TranslatePipe, TuiHint, TuiProgress],
   host: { class: 'block w-full min-w-0' },
   template: `
     @if (effectiveTotal() > 0) {

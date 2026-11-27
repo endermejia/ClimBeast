@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   Component,
   inject,
@@ -15,15 +14,12 @@ import {
   TuiAppearance,
   TuiLoader,
   TuiButton,
-  TuiDialogService,
   TuiCheckbox,
 } from '@taiga-ui/core';
-import { TUI_CONFIRM, TuiConfirmData } from '@taiga-ui/kit';
 
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslateModule } from '@ngx-translate/core';
 
-import { firstValueFrom } from 'rxjs';
-
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { AuthStateService } from '../../services/auth-state.service';
 
 import { IndoorService } from '../../services/indoor.service';
@@ -41,9 +37,7 @@ import { safeResourceValue } from '../../utils';
 
 @Component({
   selector: 'app-indoor-topos',
-  standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     TranslateModule,
     TuiAppearance,
@@ -115,9 +109,8 @@ export class IndoorToposComponent {
   protected readonly indoor = inject(IndoorService);
   protected readonly supabase = inject(SupabaseService);
   protected readonly authState = inject(AuthStateService);
-  private readonly translate = inject(TranslateService);
   private readonly router = inject(Router);
-  private readonly dialogs = inject(TuiDialogService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly toast = inject(ToastService);
 
   protected readonly canCreate = computed(() => {
@@ -204,21 +197,14 @@ export class IndoorToposComponent {
 
   async deleteTopo(topo: IndoorTopoListItem, event: Event): Promise<void> {
     event.stopPropagation();
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('topos.deleteTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('topos.deleteConfirm', {
-            name: topo.name,
-          }),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'topos.deleteTitle',
+      contentKey: 'topos.deleteConfirm',
+      contentParams: { name: topo.name },
+      yesKey: 'delete',
+      noKey: 'cancel',
+      appearance: 'primary-destructive',
+    });
 
     if (confirmed) {
       await this.indoor.deleteTopo(topo.id);

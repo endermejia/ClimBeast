@@ -1,4 +1,4 @@
-import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, resource, signal } from '@angular/core';
 
 import {
@@ -29,9 +29,7 @@ export interface MaterialRequestsHistoryDialogData {
 
 @Component({
   selector: 'app-material-requests-history-dialog',
-  standalone: true,
   imports: [
-    CommonModule,
     DatePipe,
     DecimalPipe,
     EmptyStateComponent,

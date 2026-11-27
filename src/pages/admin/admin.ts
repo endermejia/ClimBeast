@@ -11,6 +11,7 @@ import {
 
 import { TranslatePipe } from '@ngx-translate/core';
 
+import { ErrorLogService } from '../../services/error-log.service';
 import { SupabaseService } from '../../services/supabase.service';
 
 import { AvatarUrlPipe } from '../../pipes';
@@ -19,7 +20,6 @@ import { IS_BROWSER } from '../../app/is-browser';
 
 @Component({
   selector: 'app-admin',
-  standalone: true,
   imports: [
     AvatarUrlPipe,
     RouterLink,
@@ -698,6 +698,7 @@ import { IS_BROWSER } from '../../app/is-browser';
   host: { class: 'flex grow min-h-0' },
 })
 export class AdminComponent {
+  private readonly errorLogService = inject(ErrorLogService);
   private readonly supabase = inject(SupabaseService);
   private readonly isBrowser = inject(IS_BROWSER);
 
@@ -727,7 +728,7 @@ export class AdminComponent {
         equipperReqsRes,
         materialReqsRes,
         materialCatalogRes,
-        errorLogsRes,
+        errorLogsCount,
         parkingsRes,
         equippersRes,
         usersRes,
@@ -755,10 +756,7 @@ export class AdminComponent {
           .from('material_catalog')
           .select('*', { count: 'exact', head: true })
           .eq('active', true),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (this.supabase.client as any)
-          .from('error_logs')
-          .select('*', { count: 'exact', head: true }),
+        this.errorLogService.getErrorLogsCount(),
         this.supabase.client
           .from('parkings')
           .select('*', { count: 'exact', head: true }),
@@ -789,7 +787,7 @@ export class AdminComponent {
         equipperRequests: equipperReqsRes.count ?? 0,
         materialRequests: materialReqsRes.count ?? 0,
         materialCatalog: materialCatalogRes.count ?? 0,
-        errorLogs: errorLogsRes.count ?? 0,
+        errorLogs: errorLogsCount,
         parkings: parkingsRes.count ?? 0,
         equippers: equippersRes.count ?? 0,
         users: usersRes.count ?? 0,

@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, inject, input, resource } from '@angular/core';
 
 import { TuiIcon } from '@taiga-ui/core';
@@ -19,11 +18,9 @@ import { CommentLikesComponent } from '../social/comment-likes';
 
 @Component({
   selector: 'app-ascent-last-comment',
-  standalone: true,
   imports: [
     AvatarUrlPipe,
     CommentLikesComponent,
-    CommonModule,
     MentionHintDirective,
     MentionLinkPipe,
     TuiAvatar,

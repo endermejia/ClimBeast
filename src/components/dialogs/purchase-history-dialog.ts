@@ -1,4 +1,4 @@
-import { CommonModule, DatePipe, CurrencyPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, DecimalPipe, NgClass } from '@angular/common';
 import {
   Component,
   computed,
@@ -18,16 +18,15 @@ import {
   TuiScrollbar,
   TuiTitle,
 } from '@taiga-ui/core';
-import { TUI_CONFIRM, TuiSegmented } from '@taiga-ui/kit';
+import { TuiSegmented } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
-import { injectContext } from '@taiga-ui/polymorpheus';
-
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
+import { injectContext, PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { firstValueFrom } from 'rxjs';
 
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { LanguageService } from '../../services/language.service';
 import { MerchandiseService } from '../../services/merchandise.service';
 import { SupabaseService } from '../../services/supabase.service';
@@ -53,9 +52,9 @@ interface PurchaseRecord {
 
 @Component({
   selector: 'app-purchase-history-dialog',
-  standalone: true,
   imports: [
-    CommonModule,
+    NgClass,
+    DecimalPipe,
     CurrencyPipe,
     DatePipe,
     TranslatePipe,
@@ -304,6 +303,7 @@ export class PurchaseHistoryDialogComponent {
   private readonly supabase = inject(SupabaseService);
   private readonly router = inject(Router);
   private readonly merchService = inject(MerchandiseService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly dialogService = inject(TuiDialogService);
   private readonly translate = inject(TranslateService);
   protected readonly context = injectContext<TuiDialogContext<void>>();
@@ -456,18 +456,12 @@ export class PurchaseHistoryDialogComponent {
   }
 
   async cancelOrder(orderId: string): Promise<void> {
-    const confirmed = await firstValueFrom(
-      this.dialogService.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('merchandising.order.cancelTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('merchandising.order.cancelConfirm'),
-          yes: this.translate.instant('merchandising.order.cancelYes'),
-          no: this.translate.instant('merchandising.order.cancelNo'),
-        },
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'merchandising.order.cancelTitle',
+      contentKey: 'merchandising.order.cancelConfirm',
+      yesKey: 'merchandising.order.cancelYes',
+      noKey: 'merchandising.order.cancelNo',
+    });
 
     if (confirmed) {
       const success = await this.merchService.cancelOrder(orderId);

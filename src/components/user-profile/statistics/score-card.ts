@@ -14,7 +14,6 @@ import { StatsRouteHintComponent } from './stats-route-hint';
 
 @Component({
   selector: 'app-user-profile-stats-score',
-  standalone: true,
   imports: [
     AscentCountDirective,
     ChartAscentsByStyleComponent,

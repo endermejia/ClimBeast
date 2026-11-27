@@ -1,7 +1,8 @@
 import {
-  CommonModule,
   DatePipe,
   DecimalPipe,
+  NgClass,
+  SlicePipe,
   UpperCasePipe,
 } from '@angular/common';
 import {
@@ -55,7 +56,8 @@ import { OrderDetail, OrderStatus } from '../../models';
 @Component({
   selector: 'app-admin-shop-orders',
   imports: [
-    CommonModule,
+    NgClass,
+    SlicePipe,
     DatePipe,
     DecimalPipe,
     RouterLink,

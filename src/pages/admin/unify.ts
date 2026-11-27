@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
@@ -14,7 +13,6 @@ import { SuggestedUnifiedRoutesComponent } from '../../components/admin/suggeste
 @Component({
   selector: 'app-admin-unify',
   imports: [
-    CommonModule,
     RouterLink,
     SuggestedUnifiedAreasComponent,
     SuggestedUnifiedCragsComponent,

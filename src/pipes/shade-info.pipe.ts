@@ -7,7 +7,6 @@ export interface ShadeInfo {
 
 @Pipe({
   name: 'shadeInfo',
-  standalone: true,
 })
 export class ShadeInfoPipe implements PipeTransform {
   transform(

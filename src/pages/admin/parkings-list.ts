@@ -10,7 +10,6 @@ import {
 } from '@taiga-ui/addon-table';
 import type { TuiComparator } from '@taiga-ui/addon-table/types';
 import { tuiDefaultSort } from '@taiga-ui/cdk';
-import { TuiDialogService } from '@taiga-ui/core';
 import {
   TuiAppearance,
   TuiButton,
@@ -19,19 +18,16 @@ import {
   TuiScrollbar,
 } from '@taiga-ui/core';
 import {
-  TUI_CONFIRM,
   TuiBadgeNotification,
   TuiBadgedContentComponent,
   TuiBadgedContentDirective,
   TuiSkeleton,
-  type TuiConfirmData,
 } from '@taiga-ui/kit';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-
-import { firstValueFrom } from 'rxjs';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { AdminParkingsService } from '../../services/admin-parkings.service';
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { LayoutService } from '../../services/layout.service';
 import { OutdoorDataService } from '../../services/outdoor-data.service';
 import { ParkingsService } from '../../services/parkings.service';
@@ -253,9 +249,8 @@ export class AdminParkingsListComponent {
   protected readonly layout = inject(LayoutService);
   protected readonly adminParkingsData = inject(AdminParkingsService);
   private readonly isBrowser = inject(IS_BROWSER);
-  private readonly translate = inject(TranslateService);
   private readonly toast = inject(ToastService);
-  private readonly dialogs = inject(TuiDialogService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly parkingsService = inject(ParkingsService);
 
   protected readonly columns = ['name', 'lat', 'lng', 'size', 'actions'];
@@ -309,24 +304,19 @@ export class AdminParkingsListComponent {
   }
 
   protected deleteParking(parking: ParkingDto): void {
-    void firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('admin.parkings.deleteTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('admin.parkings.deleteConfirm', {
-            name: parking.name,
-          }),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    ).then((confirmed) => {
-      if (!confirmed) return;
-      void this.performDelete(parking.id);
-    });
+    void this.appDialogs
+      .confirm({
+        labelKey: 'admin.parkings.deleteTitle',
+        contentKey: 'admin.parkings.deleteConfirm',
+        contentParams: { name: parking.name },
+        yesKey: 'delete',
+        noKey: 'cancel',
+        appearance: 'primary-destructive',
+      })
+      .then((confirmed) => {
+        if (!confirmed) return;
+        void this.performDelete(parking.id);
+      });
   }
 
   private async performDelete(id: number): Promise<void> {

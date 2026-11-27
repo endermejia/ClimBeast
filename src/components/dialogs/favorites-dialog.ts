@@ -11,7 +11,6 @@ export interface FavoritesDialogData {
 
 @Component({
   selector: 'app-favorites-dialog',
-  standalone: true,
   imports: [TuiScrollbar, UserProfileLikesComponent],
   styles: `
     :host tui-scrollbar {

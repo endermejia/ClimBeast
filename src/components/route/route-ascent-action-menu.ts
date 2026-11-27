@@ -6,7 +6,6 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-route-ascent-action-menu',
-  standalone: true,
   imports: [TranslatePipe, TuiButton, TuiDataList, TuiDropdown, TuiIcon],
   template: `
     <button

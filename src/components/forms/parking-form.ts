@@ -1,4 +1,4 @@
-import { CommonModule, Location } from '@angular/common';
+import { Location } from '@angular/common';
 import {
   Component,
   computed,
@@ -50,7 +50,6 @@ interface MinimalParking {
 @Component({
   selector: 'app-parking-form',
   imports: [
-    CommonModule,
     CoordinatesFieldsComponent,
     CounterComponent,
     FormField,

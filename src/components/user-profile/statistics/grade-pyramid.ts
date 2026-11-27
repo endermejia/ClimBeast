@@ -13,7 +13,6 @@ import { StatsRouteHintComponent } from './stats-route-hint';
 
 @Component({
   selector: 'app-user-profile-stats-pyramid',
-  standalone: true,
   imports: [
     AscentCountDirective,
     LowerCasePipe,

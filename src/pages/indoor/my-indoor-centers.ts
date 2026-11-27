@@ -6,7 +6,6 @@ import { ManagedIndoorCentersListComponent } from '../../components/indoor/manag
 
 @Component({
   selector: 'app-my-indoor-centers',
-  standalone: true,
   imports: [ManagedIndoorCentersListComponent],
   template: `
     <app-managed-indoor-centers-list

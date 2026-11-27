@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, inject, input, resource } from '@angular/core';
 
 import { TuiLoader } from '@taiga-ui/core';
@@ -19,11 +18,9 @@ import { safeResourceValue } from '../../utils';
 
 @Component({
   selector: 'app-route-info-hint',
-  standalone: true,
   imports: [
     ChartAscentsByGradeComponent,
     ChartAscentsByStyleComponent,
-    CommonModule,
     TuiLoader,
   ],
   template: `

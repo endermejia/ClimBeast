@@ -6,7 +6,6 @@ import { IconName } from '../models';
 
 @Pipe({
   name: 'iconSrc',
-  standalone: true,
   pure: true,
 })
 export class IconSrcPipe implements PipeTransform {

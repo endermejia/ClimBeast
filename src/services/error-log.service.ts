@@ -134,6 +134,20 @@ export class ErrorLogService {
     }
   }
 
+  async getErrorLogsCount(): Promise<number> {
+    if (!this.isBrowser) return 0;
+
+    try {
+      await this.supabase.whenReady();
+      const { count } = await this.supabase.client
+        .from('error_logs')
+        .select('*', { count: 'exact', head: true });
+      return count ?? 0;
+    } catch {
+      return 0;
+    }
+  }
+
   async fetchLogs(): Promise<AppErrorLog[]> {
     if (!this.isBrowser) return [];
 

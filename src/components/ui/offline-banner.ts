@@ -1,12 +1,11 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, inject, linkedSignal } from '@angular/core';
 
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { IS_BROWSER } from '../../app/is-browser';
+import { OnlineStatusService } from '../../services/online-status.service';
 
 @Component({
   selector: 'app-offline-banner',
-  standalone: true,
   imports: [TranslatePipe],
   template: `
     @if (isOffline()) {
@@ -40,29 +39,13 @@ import { IS_BROWSER } from '../../app/is-browser';
   `,
 })
 export class OfflineBannerComponent {
-  private readonly isBrowser = inject(IS_BROWSER);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly onlineStatus = inject(OnlineStatusService);
 
-  protected readonly isOffline = signal(false);
+  protected readonly isOffline = linkedSignal(() =>
+    this.onlineStatus.isOffline(),
+  );
 
   dismiss(): void {
     this.isOffline.set(false);
-  }
-
-  constructor() {
-    if (!this.isBrowser) return;
-
-    this.isOffline.set(!navigator.onLine);
-
-    const onlineHandler = () => this.isOffline.set(false);
-    const offlineHandler = () => this.isOffline.set(true);
-
-    window.addEventListener('online', onlineHandler);
-    window.addEventListener('offline', offlineHandler);
-
-    this.destroyRef.onDestroy(() => {
-      window.removeEventListener('online', onlineHandler);
-      window.removeEventListener('offline', offlineHandler);
-    });
   }
 }

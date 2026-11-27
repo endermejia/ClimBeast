@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import {
   Component,
   computed,
@@ -26,7 +26,7 @@ import { ChartRoutesByGradeComponent } from '../charts/chart-routes-by-grade';
   selector: 'app-topo-card',
   imports: [
     ChartRoutesByGradeComponent,
-    CommonModule,
+    AsyncPipe,
     IconSrcPipe,
     ShadeInfoPipe,
     TopoImagePipe,

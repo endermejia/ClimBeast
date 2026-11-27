@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   Component,
   DestroyRef,
@@ -56,10 +55,8 @@ export interface PyramidSlotDialogData {
 
 @Component({
   selector: 'app-pyramid-slot-dialog',
-  standalone: true,
   imports: [
     AscentTypeComponent,
-    CommonModule,
     FormsModule,
     GradeComponent,
     TranslatePipe,

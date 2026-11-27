@@ -6,24 +6,20 @@ import { TuiTable } from '@taiga-ui/addon-table';
 import {
   TuiAppearance,
   TuiButton,
-  TuiDialogService,
   TuiIcon,
   TuiScrollbar,
 } from '@taiga-ui/core';
 import {
-  TUI_CONFIRM,
   TuiAvatar,
   TuiBadge,
   TuiBadgedContent,
   TuiBadgeNotification,
   TuiSkeleton,
-  type TuiConfirmData,
 } from '@taiga-ui/kit';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 
-import { firstValueFrom } from 'rxjs';
-
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { UserReportsService } from '../../services/user-reports.service';
 
 import { EmptyStateComponent } from '../../components/ui/empty-state';
@@ -39,7 +35,6 @@ interface StatusFilter {
 
 @Component({
   selector: 'app-admin-user-reports-list',
-  standalone: true,
   imports: [
     AvatarUrlPipe,
     DatePipe,
@@ -297,8 +292,7 @@ interface StatusFilter {
 })
 export class AdminUserReportsListComponent {
   private readonly userReportsService = inject(UserReportsService);
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly translate = inject(TranslateService);
+  private readonly appDialogs = inject(AppDialogsService);
 
   protected readonly columns = [
     'reported',
@@ -365,21 +359,13 @@ export class AdminUserReportsListComponent {
   }
 
   protected async onDelete(report: UserReportWithDetails): Promise<void> {
-    const data: TuiConfirmData = {
-      content: this.translate.instant('admin.userReports.deleteConfirm'),
-      yes: this.translate.instant('delete'),
-      no: this.translate.instant('cancel'),
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'admin.userReports.deleteTitle',
+      contentKey: 'admin.userReports.deleteConfirm',
+      yesKey: 'delete',
+      noKey: 'cancel',
       appearance: 'primary-destructive',
-    };
-
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('admin.userReports.deleteTitle'),
-        size: 's',
-        data,
-      }),
-      { defaultValue: false },
-    );
+    });
 
     if (!confirmed) return;
 

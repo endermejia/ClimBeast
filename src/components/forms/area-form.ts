@@ -1,4 +1,4 @@
-import { CommonModule, Location } from '@angular/common';
+import { Location } from '@angular/common';
 import {
   Component,
   computed,
@@ -48,7 +48,6 @@ interface MinimalArea {
 @Component({
   selector: 'app-area-form',
   imports: [
-    CommonModule,
     CounterComponent,
     FormField,
     FormsModule,

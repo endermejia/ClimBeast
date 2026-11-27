@@ -5,7 +5,6 @@ import { TuiCardLarge, TuiHeader } from '@taiga-ui/layout';
 
 @Component({
   selector: 'app-area-card-skeleton',
-  standalone: true,
   imports: [TuiCardLarge, TuiHeader, TuiSkeleton],
   template: `
     <div

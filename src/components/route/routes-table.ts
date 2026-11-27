@@ -70,10 +70,20 @@ import { ButtonAscentTypeComponent } from '../ascent/button-ascent-type';
 import { GradeComponent } from '../ui/avatar-grade';
 import { EmptyStateComponent } from '../ui/empty-state';
 import { RouteAscentActionMenuComponent } from './route-ascent-action-menu';
+import {
+  blurActiveTableElement,
+  findFirstEditableRow,
+  findStickySiblingAbove,
+  findVerticalScrollAncestor,
+  focusTableCell,
+  getVisuallyOrderedRows,
+  resolveNextEditableCell,
+  resolveTableKeyDownAction,
+  TableNavigationDirection,
+} from './routes-table-navigation.utils';
 
 @Component({
   selector: 'app-routes-table',
-  standalone: true,
   imports: [
     AscentCountDirective,
     ButtonAscentTypeComponent,
@@ -969,40 +979,12 @@ export class RoutesTableComponent {
   }
 
   protected getSortedData(): RoutesTableRow[] {
-    const items = this.data();
-    const tableEl = this.table()?.nativeElement;
-    if (tableEl) {
-      const byKey = new Map<string, RoutesTableRow>();
-      for (const item of items) {
-        byKey.set(item.key, item);
-      }
-      const ordered: RoutesTableRow[] = [];
-      const seen = new Set<string>();
-      const cells = Array.from<Element>(
-        tableEl.querySelectorAll('tbody td[data-row-key]'),
-      );
-      for (const cell of cells) {
-        const key = cell.getAttribute('data-row-key');
-        if (key && !seen.has(key)) {
-          seen.add(key);
-          const row = byKey.get(key);
-          if (row) {
-            ordered.push(row);
-          }
-        }
-      }
-      if (ordered.length === items.length && ordered.length > 0) {
-        return ordered;
-      }
-    }
-
-    const copy = [...items];
-    const sorter = this.currentSorter;
-    if (sorter) {
-      const dir = this.currentDirection;
-      copy.sort((a, b) => dir * sorter(a, b));
-    }
-    return copy;
+    return getVisuallyOrderedRows(
+      this.data(),
+      this.table()?.nativeElement,
+      this.currentSorter,
+      this.currentDirection,
+    );
   }
 
   protected getFirstEditableColumn(): string {
@@ -1011,8 +993,7 @@ export class RoutesTableComponent {
   }
 
   protected getFirstEditableRow(): RoutesTableRow | undefined {
-    const sorted = this.getSortedData();
-    return sorted.find((r) => !!r.canEdit) || sorted[0];
+    return findFirstEditableRow(this.getSortedData());
   }
 
   protected readonly cragIdByRowKey = computed(() => {
@@ -1249,63 +1230,12 @@ export class RoutesTableComponent {
   }
 
   private blurActiveCellElement(): void {
-    if (
-      typeof document !== 'undefined' &&
-      document.activeElement instanceof HTMLElement
-    ) {
-      const tableEl = this.table()?.nativeElement;
-      if (
-        tableEl?.contains(document.activeElement) ||
-        document.activeElement.closest('tui-dropdown, [role="listbox"]')
-      ) {
-        document.activeElement.blur();
-      }
-    }
+    blurActiveTableElement(this.table()?.nativeElement);
   }
 
   protected focusSelectedCell(): void {
-    const attemptFocus = (): boolean => {
-      const sel = this.selectedCell();
-      const tableEl = this.table()?.nativeElement;
-      if (!sel || !tableEl) return false;
-
-      const cellEl = tableEl.querySelector(
-        `td[data-row-key="${sel.rowKey}"][data-col="${sel.col}"]`,
-      ) as HTMLElement | null;
-      if (!cellEl) return false;
-
-      const input = cellEl.querySelector(
-        'input:not([disabled]):not([type="hidden"]):not([tuiChip]):not(.t-filler), select:not([disabled])',
-      ) as HTMLInputElement | HTMLSelectElement | null;
-      if (input) {
-        input.focus({ preventScroll: true });
-        input.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
-        if (
-          input instanceof HTMLInputElement &&
-          !input.readOnly &&
-          !input.hasAttribute('tuiSelectLike') &&
-          input.type !== 'checkbox' &&
-          input.type !== 'radio' &&
-          input.type !== 'file'
-        ) {
-          input.select?.();
-        }
-        return true;
-      }
-
-      const btn = cellEl.querySelector(
-        'button:not([disabled])',
-      ) as HTMLButtonElement | null;
-      if (btn) {
-        btn.focus({ preventScroll: true });
-        btn.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
-        return true;
-      }
-
-      cellEl.focus({ preventScroll: true });
-      cellEl.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
-      return false;
-    };
+    const attemptFocus = (): boolean =>
+      focusTableCell(this.table()?.nativeElement, this.selectedCell());
 
     queueMicrotask(() => {
       if (!this.destroyed) {
@@ -1470,10 +1400,13 @@ export class RoutesTableComponent {
       // Re-run when mobile/desktop layout changes so scrollContainer/stickySibling updates
       this.isMobile();
 
-      const scrollContainer = this.findVerticalScrollAncestor(
+      const scrollContainer = findVerticalScrollAncestor(
         this.hostEl.nativeElement.parentElement,
       );
-      const stickySibling = this.findStickySiblingAbove(scrollContainer);
+      const stickySibling = findStickySiblingAbove(
+        this.hostEl.nativeElement,
+        scrollContainer,
+      );
 
       const updateOffset = () => {
         if (this.destroyed) return;
@@ -1514,59 +1447,15 @@ export class RoutesTableComponent {
   protected navigateCell(
     currentRowKey: string,
     currentCol: string,
-    direction: 'up' | 'down' | 'left' | 'right',
+    direction: TableNavigationDirection,
   ): void {
-    const sorted = this.getSortedData();
-    const rowIndex = sorted.findIndex((r) => r.key === currentRowKey);
-    if (rowIndex === -1) return;
-
-    const editCols = this.getEditableColumns();
-    const colIndex = editCols.indexOf(currentCol);
-
-    let nextTarget: { rowKey: string; col: string } | null = null;
-
-    if (direction === 'down') {
-      const nextRow = sorted.slice(rowIndex + 1).find((r) => !!r.canEdit);
-      if (nextRow) {
-        nextTarget = { rowKey: nextRow.key, col: currentCol };
-      }
-    } else if (direction === 'up') {
-      const prevRow = [...sorted.slice(0, rowIndex)]
-        .reverse()
-        .find((r) => !!r.canEdit);
-      if (prevRow) {
-        nextTarget = { rowKey: prevRow.key, col: currentCol };
-      }
-    } else if (direction === 'right') {
-      if (colIndex !== -1 && colIndex < editCols.length - 1) {
-        nextTarget = {
-          rowKey: currentRowKey,
-          col: editCols[colIndex + 1],
-        };
-      } else {
-        const nextRow = sorted.slice(rowIndex + 1).find((r) => !!r.canEdit);
-        if (nextRow && editCols.length > 0) {
-          nextTarget = { rowKey: nextRow.key, col: editCols[0] };
-        }
-      }
-    } else if (direction === 'left') {
-      if (colIndex > 0) {
-        nextTarget = {
-          rowKey: currentRowKey,
-          col: editCols[colIndex - 1],
-        };
-      } else {
-        const prevRow = [...sorted.slice(0, rowIndex)]
-          .reverse()
-          .find((r) => !!r.canEdit);
-        if (prevRow && editCols.length > 0) {
-          nextTarget = {
-            rowKey: prevRow.key,
-            col: editCols[editCols.length - 1],
-          };
-        }
-      }
-    }
+    const nextTarget = resolveNextEditableCell(
+      this.getSortedData(),
+      this.getEditableColumns(),
+      currentRowKey,
+      currentCol,
+      direction,
+    );
 
     if (nextTarget) {
       this.blurActiveCellElement();
@@ -1587,158 +1476,34 @@ export class RoutesTableComponent {
       return;
     }
 
-    const isDown = event.key === 'ArrowDown';
-    const isUp = event.key === 'ArrowUp';
-    const isLeft = event.key === 'ArrowLeft';
-    const isRight = event.key === 'ArrowRight';
-    const isTab = event.key === 'Tab';
-    const isEsc = event.key === 'Escape';
-    const isEnterOrSpace = event.key === 'Enter' || event.key === ' ';
-
-    if (
-      !isDown &&
-      !isUp &&
-      !isLeft &&
-      !isRight &&
-      !isTab &&
-      !isEsc &&
-      !isEnterOrSpace
-    ) {
-      return;
-    }
-
-    if (isLeft && this.isHandlingBackspace) {
-      return;
-    }
-
     const sel = this.selectedCell();
     const tableEl = this.table()?.nativeElement;
     if (!sel || !tableEl) return;
 
-    const target = event.target as HTMLElement | null;
-    if (!target) return;
+    const action = resolveTableKeyDownAction(event, {
+      tableEl,
+      selectedCell: sel,
+      isHandlingBackspace: this.isHandlingBackspace,
+    });
 
-    const isInsideTable = tableEl.contains(target);
-    const isInsideDropdown = !!target.closest('tui-dropdown, [role="listbox"]');
-    const isDocumentRoot =
-      typeof document !== 'undefined' &&
-      (target === document.body || target === document.documentElement);
+    if (action.type === 'ignore') return;
 
-    if (!isInsideTable && !isInsideDropdown && !isDocumentRoot) {
-      return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    switch (action.type) {
+      case 'open-select':
+        action.target.click();
+        break;
+      case 'escape':
+        this.openDropdownId.set(null);
+        this.selectedCell.set(null);
+        break;
+      case 'navigate':
+        this.navigateCell(sel.rowKey, sel.col, action.direction);
+        break;
     }
-
-    const currentCell =
-      target.closest('td') ??
-      (tableEl.querySelector(
-        `td[data-row-key="${sel.rowKey}"][data-col="${sel.col}"]`,
-      ) as HTMLElement | null);
-
-    if (
-      (isUp || isDown || isEnterOrSpace || isEsc) &&
-      this.hasOpenDropdownOptions(target, currentCell)
-    ) {
-      return;
-    }
-
-    if (isEnterOrSpace) {
-      if (sel.col === 'crag' && target.hasAttribute('tuiSelectLike')) {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        target.click();
-      }
-      return;
-    }
-
-    if (isEsc) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      this.openDropdownId.set(null);
-      this.selectedCell.set(null);
-      return;
-    }
-
-    if (isTab) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      this.navigateCell(sel.rowKey, sel.col, event.shiftKey ? 'left' : 'right');
-      return;
-    }
-
-    if (isRight) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      this.navigateCell(sel.rowKey, sel.col, 'right');
-      return;
-    }
-
-    if (isLeft) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      this.navigateCell(sel.rowKey, sel.col, 'left');
-      return;
-    }
-
-    if (isDown) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      this.navigateCell(sel.rowKey, sel.col, 'down');
-      return;
-    }
-
-    if (isUp) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      this.navigateCell(sel.rowKey, sel.col, 'up');
-      return;
-    }
-  }
-
-  private hasOpenDropdownOptions(
-    target: HTMLElement,
-    cell: HTMLElement | null,
-  ): boolean {
-    if (target.closest('tui-dropdown, [role="listbox"]')) {
-      return true;
-    }
-
-    const openHost =
-      target.closest('.tui-dropdown-open, [aria-expanded="true"]') ||
-      cell?.querySelector('.tui-dropdown-open, [aria-expanded="true"]');
-
-    if (!openHost) {
-      return false;
-    }
-
-    const controlsId = openHost.getAttribute('aria-controls');
-    const openDropdown =
-      (controlsId ? document.getElementById(controlsId) : null) ||
-      document.querySelector('tui-dropdown, [role="listbox"]');
-
-    if (openDropdown) {
-      const options = openDropdown.querySelectorAll(
-        '[role="option"]:not(.t-empty), [tuiOption]:not(.t-empty), button[tuiOption], a[tuiOption]',
-      );
-      if (options.length > 0) {
-        return true;
-      }
-    }
-
-    if (cell) {
-      const cellOptions = cell.querySelectorAll(
-        '[role="option"]:not(.t-empty), [tuiOption]:not(.t-empty), button[tuiOption], a[tuiOption]',
-      );
-      return cellOptions.length > 0;
-    }
-
-    return false;
   }
 
   protected readonly indoorRouteColors = INDOOR_ROUTE_COLORS;
@@ -1752,51 +1517,5 @@ export class RoutesTableComponent {
       key: this.activeCol(), // wrapper can use activeCol or computed col
       direction: sort.sortDirection,
     });
-  }
-
-  private findVerticalScrollAncestor(
-    start: HTMLElement | null,
-  ): HTMLElement | null {
-    let el = start;
-    while (el && el !== document.documentElement && el !== document.body) {
-      const overflowY = getComputedStyle(el).overflowY;
-      if (
-        overflowY === 'auto' ||
-        overflowY === 'scroll' ||
-        overflowY === 'overlay'
-      ) {
-        return el;
-      }
-      el = el.parentElement;
-    }
-    return null;
-  }
-
-  private findStickySiblingAbove(
-    scrollContainer: HTMLElement | null,
-  ): HTMLElement | null {
-    let cur: HTMLElement | null = this.hostEl.nativeElement;
-    while (cur && cur !== scrollContainer && cur !== document.body) {
-      // Stop at tui-scrollbar's .t-content wrapper so we never inspect
-      // internal scrollbar chrome such as <tui-scroll-controls> (position: sticky, height: 100%).
-      if (
-        cur.classList.contains('t-content') &&
-        cur.parentElement === scrollContainer
-      ) {
-        break;
-      }
-      let sib = cur.previousElementSibling as HTMLElement | null;
-      while (sib) {
-        if (
-          sib.tagName !== 'TUI-SCROLL-CONTROLS' &&
-          getComputedStyle(sib).position === 'sticky'
-        ) {
-          return sib;
-        }
-        sib = sib.previousElementSibling as HTMLElement | null;
-      }
-      cur = cur.parentElement;
-    }
-    return null;
   }
 }

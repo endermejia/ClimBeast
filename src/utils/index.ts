@@ -15,7 +15,6 @@ export * from './image-gallery.utils';
 export * from './image-thumbnail';
 export * from './input.utils';
 export * from './keyboard.utils';
-export * from './logger';
 export * from './map-location-url';
 export * from './mentions.utils';
 export * from './number.utils';

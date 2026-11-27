@@ -1,4 +1,4 @@
-import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import {
   Component,
   computed,
@@ -28,9 +28,7 @@ import { WeatherDay } from '../../models';
 
 @Component({
   selector: 'app-weather-forecast',
-  standalone: true,
   imports: [
-    CommonModule,
     DatePipe,
     DecimalPipe,
     TranslatePipe,

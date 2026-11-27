@@ -11,7 +11,6 @@ import { AscentCountDirective } from '../../../directives/ascent-count.directive
 
 @Component({
   selector: 'app-stats-route-hint',
-  standalone: true,
   imports: [AscentCountDirective, RouterLink, TranslatePipe, TuiScrollbar],
   template: `
     <div class="trend-hint" [class.trend-hint--compact]="compact()">

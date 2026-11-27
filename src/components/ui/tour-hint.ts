@@ -6,7 +6,6 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-tour-hint',
-  standalone: true,
   imports: [TranslatePipe, TuiButton, TuiIcon],
   template: `
     <div class="flex flex-col gap-4 p-4">

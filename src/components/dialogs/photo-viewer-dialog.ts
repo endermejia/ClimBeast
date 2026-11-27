@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, ElementRef, signal, viewChild } from '@angular/core';
 
 import { TuiButton, TuiIcon } from '@taiga-ui/core';
@@ -25,8 +24,7 @@ export interface PhotoViewerData {
 
 @Component({
   selector: 'app-photo-viewer-dialog',
-  standalone: true,
-  imports: [CommonModule, TranslatePipe, TuiButton, TuiIcon],
+  imports: [TranslatePipe, TuiButton, TuiIcon],
   template: `
     <div
       #container

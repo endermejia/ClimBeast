@@ -15,7 +15,6 @@ import { StatsRouteHintComponent } from './stats-route-hint';
 
 @Component({
   selector: 'app-user-profile-stats-trends',
-  standalone: true,
   imports: [
     DecimalPipe,
     StatsRouteHintComponent,

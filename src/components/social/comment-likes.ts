@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, inject, input, model } from '@angular/core';
 
 import { TuiDialogService } from '@taiga-ui/core';
@@ -15,8 +14,7 @@ import { LikesComponent } from './likes';
 
 @Component({
   selector: 'app-comment-likes',
-  standalone: true,
-  imports: [CommonModule, LikesComponent],
+  imports: [LikesComponent],
   template: `
     <app-likes
       size="s"

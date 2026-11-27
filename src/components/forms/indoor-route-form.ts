@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
   Component,
   computed,
@@ -65,9 +64,7 @@ export interface IndoorRouteFormData {
 
 @Component({
   selector: 'app-indoor-route-form',
-  standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     TranslatePipe,
     TuiButton,

@@ -4,7 +4,6 @@ import { LanguageService } from '../services/language.service';
 
 @Pipe({
   name: 'ascentDate',
-  standalone: true,
 })
 export class AscentDatePipe implements PipeTransform {
   private readonly languageService = inject(LanguageService);

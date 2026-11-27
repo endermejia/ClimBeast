@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   computed,
@@ -9,19 +10,13 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { TuiButton, TuiDialogService, TuiHint } from '@taiga-ui/core';
-import {
-  TUI_CONFIRM,
-  TuiAvatar,
-  TuiBadge,
-  TuiConfirmData,
-} from '@taiga-ui/kit';
+import { TuiButton, TuiHint } from '@taiga-ui/core';
+import { TuiAvatar, TuiBadge } from '@taiga-ui/kit';
 import { TuiHeader } from '@taiga-ui/layout';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 
-import { firstValueFrom } from 'rxjs';
-
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { FollowsService } from '../../services/follows.service';
 import { SupabaseService } from '../../services/supabase.service';
 
@@ -40,6 +35,7 @@ export interface AscentCardUser {
     AscentDatePipe,
     AvatarUrlPipe,
     InitialsPipe,
+    NgTemplateOutlet,
     RouterLink,
     TranslatePipe,
     TuiAvatar,
@@ -118,22 +114,7 @@ export interface AscentCardUser {
             </button>
           }
         } @else if (showEdit()) {
-          <div class="flex flex-col items-end gap-1">
-            <button
-              tuiButton
-              size="s"
-              appearance="secondary-grayscale"
-              class="rounded-full!"
-              (click)="editClick.emit()"
-            >
-              {{ 'edit' | translate }}
-            </button>
-            @if (isPrivate()) {
-              <span tuiBadge appearance="accent" class="text-xs">
-                {{ 'private' | translate }}
-              </span>
-            }
-          </div>
+          <ng-container *ngTemplateOutlet="editAction" />
         }
       } @else {
         <div class="flex justify-between items-center w-full">
@@ -145,33 +126,36 @@ export interface AscentCardUser {
             }
           </div>
           @if (userId() === supabase.authUserId() && showEdit()) {
-            <div class="flex flex-col items-end gap-1">
-              <button
-                tuiButton
-                size="s"
-                appearance="secondary-grayscale"
-                class="rounded-full!"
-                (click)="editClick.emit()"
-              >
-                {{ 'edit' | translate }}
-              </button>
-              @if (isPrivate()) {
-                <span tuiBadge appearance="accent" class="text-xs">
-                  {{ 'private' | translate }}
-                </span>
-              }
-            </div>
+            <ng-container *ngTemplateOutlet="editAction" />
           }
         </div>
       }
     </header>
+
+    <ng-template #editAction>
+      <div class="flex flex-col items-end gap-1">
+        <button
+          tuiButton
+          size="s"
+          appearance="secondary-grayscale"
+          class="rounded-full!"
+          (click)="editClick.emit()"
+        >
+          {{ 'edit' | translate }}
+        </button>
+        @if (isPrivate()) {
+          <span tuiBadge appearance="accent" class="text-xs">
+            {{ 'private' | translate }}
+          </span>
+        }
+      </div>
+    </ng-template>
   `,
 })
 export class AscentCardHeaderComponent {
   protected readonly supabase = inject(SupabaseService);
   private readonly followsService = inject(FollowsService);
-  private readonly translate = inject(TranslateService);
-  private readonly dialogs = inject(TuiDialogService);
+  private readonly appDialogs = inject(AppDialogsService);
 
   constructor() {
     if ('ensureFollowedIdsLoaded' in this.followsService) {
@@ -207,23 +191,13 @@ export class AscentCardHeaderComponent {
 
   async unfollow(userId: string, name: string) {
     if (this.loading()) return;
-    const data: TuiConfirmData = {
-      content: this.translate.instant('unfollowConfirm', {
-        name,
-      }),
-      yes: this.translate.instant('unfollow'),
-      no: this.translate.instant('cancel'),
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'unfollow',
+      contentKey: 'unfollowConfirm',
+      contentParams: { name },
+      yesKey: 'unfollow',
       appearance: 'negative',
-    };
-
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('unfollow'),
-        size: 's',
-        data,
-      }),
-      { defaultValue: false },
-    );
+    });
 
     if (confirmed) {
       this.loading.set(true);

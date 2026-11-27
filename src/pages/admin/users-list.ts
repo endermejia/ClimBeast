@@ -3,6 +3,7 @@ import {
   CdkVirtualForOf,
   CdkVirtualScrollViewport,
 } from '@angular/cdk/scrolling';
+import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   computed,
@@ -41,8 +42,6 @@ import {
   TuiTitle,
 } from '@taiga-ui/core';
 import {
-  TUI_CONFIRM,
-  type TuiConfirmData,
   TuiAvatar,
   TuiBadge,
   TuiBadgeNotification,
@@ -59,6 +58,7 @@ import {
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { firstValueFrom, type Observer } from 'rxjs';
 
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { CacheService } from '../../services/cache.service';
 import { IndoorService } from '../../services/indoor.service';
 import { LayoutService } from '../../services/layout.service';
@@ -93,7 +93,6 @@ interface UserWithRole {
 
 @Component({
   selector: 'app-users-list-admin',
-  standalone: true,
   imports: [
     AvatarUrlPipe,
     CdkFixedSizeVirtualScroll,
@@ -101,6 +100,7 @@ interface UserWithRole {
     CdkVirtualScrollViewport,
     EmptyStateComponent,
     FormsModule,
+    NgTemplateOutlet,
     ReactiveFormsModule,
     RouterLink,
     TranslatePipe,
@@ -678,116 +678,50 @@ interface UserWithRole {
             </div>
           </div>
 
-          <tui-textfield
-            multi
-            tuiChevron
-            [stringify]="stringifyArea"
-            [disabledItemHandler]="strings"
-            [identityMatcher]="areaIdentityMatcher"
-            [tuiTextfieldCleaner]="false"
-          >
-            <label tuiLabel for="edit-areas-select">{{
-              'admin.users.adminInArea' | translate
-            }}</label>
-            <input
-              tuiInputChip
-              id="edit-areas-select"
-              [formControl]="editAreasControl"
-              [placeholder]="'select' | translate"
-              autocomplete="off"
-            />
-            <tui-input-chip *tuiItem />
-            <tui-data-list *tuiDropdown>
-              <tui-opt-group [label]="'areas' | translate" tuiMultiSelectGroup>
-                @for (
-                  area of availableAreas() | tuiFilterByInput;
-                  track area.id
-                ) {
-                  <button type="button" new tuiOption [value]="area">
-                    <div tuiCell size="s">
-                      <div tuiTitle>{{ area.name }}</div>
-                    </div>
-                  </button>
-                }
-              </tui-opt-group>
-            </tui-data-list>
-          </tui-textfield>
+          <ng-container
+            *ngTemplateOutlet="
+              permissionsMultiSelect;
+              context: {
+                id: 'edit-areas-select',
+                labelKey: 'admin.users.adminInArea',
+                groupLabelKey: 'areas',
+                control: editAreasControl,
+                kind: 'areas',
+                stringify: stringifyArea,
+                identityMatcher: areaIdentityMatcher,
+              }
+            "
+          />
 
-          <tui-textfield
-            multi
-            tuiChevron
-            [stringify]="stringifyCenter"
-            [disabledItemHandler]="strings"
-            [identityMatcher]="centerIdentityMatcher"
-            [tuiTextfieldCleaner]="false"
-          >
-            <label tuiLabel for="edit-centers-select">{{
-              'admin.users.adminInCenter' | translate
-            }}</label>
-            <input
-              tuiInputChip
-              id="edit-centers-select"
-              [formControl]="editCentersControl"
-              [placeholder]="'select' | translate"
-              autocomplete="off"
-            />
-            <tui-input-chip *tuiItem />
-            <tui-data-list *tuiDropdown>
-              <tui-opt-group
-                [label]="'indoor.title' | translate"
-                tuiMultiSelectGroup
-              >
-                @for (
-                  center of availableCenters() | tuiFilterByInput;
-                  track center.id
-                ) {
-                  <button type="button" new tuiOption [value]="center">
-                    <div tuiCell size="s">
-                      <div tuiTitle>{{ center.name }}</div>
-                    </div>
-                  </button>
-                }
-              </tui-opt-group>
-            </tui-data-list>
-          </tui-textfield>
+          <ng-container
+            *ngTemplateOutlet="
+              permissionsMultiSelect;
+              context: {
+                id: 'edit-centers-select',
+                labelKey: 'admin.users.adminInCenter',
+                groupLabelKey: 'indoor.title',
+                control: editCentersControl,
+                kind: 'centers',
+                stringify: stringifyCenter,
+                identityMatcher: centerIdentityMatcher,
+              }
+            "
+          />
 
-          <tui-textfield
-            multi
-            tuiChevron
-            [stringify]="stringifyCenter"
-            [disabledItemHandler]="strings"
-            [identityMatcher]="centerIdentityMatcher"
-            [tuiTextfieldCleaner]="false"
-          >
-            <label tuiLabel for="edit-routesetters-select">{{
-              'admin.users.routesetterIn' | translate
-            }}</label>
-            <input
-              tuiInputChip
-              id="edit-routesetters-select"
-              [formControl]="editRoutesettersControl"
-              [placeholder]="'select' | translate"
-              autocomplete="off"
-            />
-            <tui-input-chip *tuiItem />
-            <tui-data-list *tuiDropdown>
-              <tui-opt-group
-                [label]="'indoor.title' | translate"
-                tuiMultiSelectGroup
-              >
-                @for (
-                  center of availableCenters() | tuiFilterByInput;
-                  track center.id
-                ) {
-                  <button type="button" new tuiOption [value]="center">
-                    <div tuiCell size="s">
-                      <div tuiTitle>{{ center.name }}</div>
-                    </div>
-                  </button>
-                }
-              </tui-opt-group>
-            </tui-data-list>
-          </tui-textfield>
+          <ng-container
+            *ngTemplateOutlet="
+              permissionsMultiSelect;
+              context: {
+                id: 'edit-routesetters-select',
+                labelKey: 'admin.users.routesetterIn',
+                groupLabelKey: 'indoor.title',
+                control: editRoutesettersControl,
+                kind: 'centers',
+                stringify: stringifyCenter,
+                identityMatcher: centerIdentityMatcher,
+              }
+            "
+          />
 
           <div class="flex justify-end gap-2 mt-4">
             <button
@@ -812,6 +746,66 @@ interface UserWithRole {
           </div>
         </form>
       }
+    </ng-template>
+
+    <ng-template
+      #permissionsMultiSelect
+      let-id="id"
+      let-labelKey="labelKey"
+      let-groupLabelKey="groupLabelKey"
+      let-control="control"
+      let-kind="kind"
+      let-stringify="stringify"
+      let-identityMatcher="identityMatcher"
+    >
+      <tui-textfield
+        multi
+        tuiChevron
+        [stringify]="stringify"
+        [disabledItemHandler]="strings"
+        [identityMatcher]="identityMatcher"
+        [tuiTextfieldCleaner]="false"
+      >
+        <label tuiLabel [for]="id">{{ labelKey | translate }}</label>
+        <input
+          tuiInputChip
+          [id]="id"
+          [formControl]="control"
+          [placeholder]="'select' | translate"
+          autocomplete="off"
+        />
+        <tui-input-chip *tuiItem />
+        <tui-data-list *tuiDropdown>
+          <tui-opt-group
+            [label]="groupLabelKey | translate"
+            tuiMultiSelectGroup
+          >
+            @if (kind === 'areas') {
+              @for (
+                item of availableAreas() | tuiFilterByInput;
+                track item.id
+              ) {
+                <button type="button" new tuiOption [value]="item">
+                  <div tuiCell size="s">
+                    <div tuiTitle>{{ item.name }}</div>
+                  </div>
+                </button>
+              }
+            } @else {
+              @for (
+                item of availableCenters() | tuiFilterByInput;
+                track item.id
+              ) {
+                <button type="button" new tuiOption [value]="item">
+                  <div tuiCell size="s">
+                    <div tuiTitle>{{ item.name }}</div>
+                  </div>
+                </button>
+              }
+            }
+          </tui-opt-group>
+        </tui-data-list>
+      </tui-textfield>
     </ng-template>
   `,
   styles: [
@@ -873,6 +867,7 @@ export class AdminUsersListComponent {
   protected readonly supabase = inject(SupabaseService);
   private readonly indoor = inject(IndoorService);
   private readonly outdoorData = inject(OutdoorDataService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly dialogs = inject(TuiDialogService);
   private readonly isBrowser = inject(IS_BROWSER);
   private readonly translate = inject(TranslateService);
@@ -1266,25 +1261,22 @@ export class AdminUsersListComponent {
   protected deleteUser(user: UserWithRole): void {
     if (!user.canDelete) return;
 
-    void firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('admin.users.deleteConfirmTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('admin.users.deleteConfirm', {
-            name: user.name || user.email || this.translate.instant('user'),
-          }),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    ).then((confirmed) => {
-      if (confirmed) {
-        void this.performDeleteUser(user);
-      }
-    });
+    void this.appDialogs
+      .confirm({
+        labelKey: 'admin.users.deleteConfirmTitle',
+        contentKey: 'admin.users.deleteConfirm',
+        contentParams: {
+          name: user.name || user.email || this.translate.instant('user'),
+        },
+        yesKey: 'delete',
+        noKey: 'cancel',
+        appearance: 'primary-destructive',
+      })
+      .then((confirmed) => {
+        if (confirmed) {
+          void this.performDeleteUser(user);
+        }
+      });
   }
 
   private async performDeleteUser(user: UserWithRole): Promise<void> {
@@ -1320,28 +1312,24 @@ export class AdminUsersListComponent {
       return;
     }
 
-    void firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('admin.users.confirmTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant(
-            user.is_admin
-              ? 'admin.users.revokeConfirm'
-              : 'admin.users.makeConfirm',
-            { name: user.name || this.translate.instant('anonymous') },
-          ),
-          yes: this.translate.instant('accept'),
-          no: this.translate.instant('cancel'),
-          appearance: user.is_admin ? 'negative' : 'primary',
-        } as TuiConfirmData,
-      }),
-      { defaultValue: false },
-    ).then((confirmed) => {
-      if (confirmed) {
-        void this.performToggleAdminStatus(user);
-      }
-    });
+    void this.appDialogs
+      .confirm({
+        labelKey: 'admin.users.confirmTitle',
+        contentKey: user.is_admin
+          ? 'admin.users.revokeConfirm'
+          : 'admin.users.makeConfirm',
+        contentParams: {
+          name: user.name || this.translate.instant('anonymous'),
+        },
+        yesKey: 'accept',
+        noKey: 'cancel',
+        appearance: user.is_admin ? 'negative' : 'primary',
+      })
+      .then((confirmed) => {
+        if (confirmed) {
+          void this.performToggleAdminStatus(user);
+        }
+      });
   }
 
   private async performToggleAdminStatus(user: UserWithRole): Promise<void> {

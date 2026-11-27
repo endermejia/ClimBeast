@@ -12,7 +12,6 @@ import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-cookie-settings-dialog',
-  standalone: true,
   imports: [FormsModule, TranslatePipe, TuiBadge, TuiButton, TuiSwitch],
   template: `
     <div class="flex flex-col gap-4">

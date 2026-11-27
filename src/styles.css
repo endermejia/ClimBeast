@@ -814,3 +814,54 @@ tui-calendar.cal-month-picker-open > tui-calendar-month {
   width: 100%;
   padding: 0;
 }
+
+/* ---- Two-column responsive tui-scrollbar layouts ---- */
+/*
+ * `.lw-desktop-scroll-lock`: Locks the outer page `tui-scrollbar` on desktop
+ * (>= 1024px) so inner column scrollbars own vertical scrolling instead.
+ *
+ * `.lw-two-col-scroll-host`: Same desktop outer-scrollbar lock, plus mobile
+ * (< 1024px) horizontal-overflow clamping and `.column-scrollbar` expansion
+ * so mobile collapses into a single vertical scroll container.
+ */
+@media (min-width: 1024px) {
+  .lw-desktop-scroll-lock > tui-scrollbar,
+  .lw-two-col-scroll-host > tui-scrollbar {
+    overflow: hidden !important;
+  }
+
+  .lw-desktop-scroll-lock > tui-scrollbar > .t-content,
+  .lw-two-col-scroll-host > tui-scrollbar > .t-content {
+    block-size: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .lw-desktop-scroll-lock > tui-scrollbar > tui-scroll-controls,
+  .lw-two-col-scroll-host > tui-scrollbar > tui-scroll-controls {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1023.98px) {
+  .lw-two-col-scroll-host > tui-scrollbar {
+    overflow-x: hidden !important;
+  }
+
+  .lw-two-col-scroll-host > tui-scrollbar > .t-content {
+    min-inline-size: 0 !important;
+    max-inline-size: 100% !important;
+    overflow-x: clip !important;
+  }
+
+  .lw-two-col-scroll-host .column-scrollbar,
+  .lw-two-col-scroll-host .column-scrollbar > .t-content {
+    overflow: visible !important;
+    min-inline-size: 0 !important;
+    max-inline-size: 100% !important;
+  }
+
+  .lw-two-col-scroll-host .column-scrollbar > tui-scroll-controls {
+    display: none !important;
+  }
+}

@@ -14,7 +14,6 @@ import { AscentType } from '../../models';
 
 @Component({
   selector: 'app-button-ascent-type',
-  standalone: true,
   imports: [TuiButton, TuiIcon],
   template: `
     @let info = typeInfo();

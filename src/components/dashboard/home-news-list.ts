@@ -10,7 +10,6 @@ import { NewsCardSkeletonComponent } from '../ui/news-card-skeleton';
 
 @Component({
   selector: 'app-home-news-list',
-  standalone: true,
   imports: [
     InfiniteScrollTriggerComponent,
     NewsCardComponent,

@@ -10,7 +10,6 @@ import { HomeNewsListComponent } from './home-news-list';
 
 @Component({
   selector: 'app-home-news-sidebar',
-  standalone: true,
   imports: [HomeNewsListComponent, TranslatePipe, TuiScrollbar],
   template: `
     <aside

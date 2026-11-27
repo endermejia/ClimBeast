@@ -6,7 +6,6 @@ import { HomeNewsListComponent } from './home-news-list';
 
 @Component({
   selector: 'app-home-news-grid',
-  standalone: true,
   imports: [HomeNewsListComponent],
   template: `
     <app-home-news-list

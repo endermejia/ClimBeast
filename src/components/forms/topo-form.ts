@@ -1,4 +1,4 @@
-import { CommonModule, Location } from '@angular/common';
+import { Location } from '@angular/common';
 import {
   Component,
   computed,
@@ -31,7 +31,6 @@ import {
   TuiDropdown,
 } from '@taiga-ui/core';
 import {
-  TUI_CONFIRM,
   TuiChevron,
   TuiFiles,
   TuiInputChip,
@@ -41,10 +40,9 @@ import {
 } from '@taiga-ui/kit';
 import { injectContext } from '@taiga-ui/polymorpheus';
 
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 
-import { firstValueFrom } from 'rxjs';
-
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { CragRoutesDataService } from '../../services/crag-routes-data.service';
 import { IndoorDataService } from '../../services/indoor-data.service';
@@ -88,7 +86,6 @@ import { GradeComponent } from '../ui/avatar-grade';
 @Component({
   selector: 'app-topo-form',
   imports: [
-    CommonModule,
     FormField,
     FormsModule,
     GradeComponent,
@@ -427,8 +424,8 @@ export class TopoFormComponent {
   private readonly cragRoutesData = inject(CragRoutesDataService);
   private readonly location = inject(Location);
   private readonly toast = inject(ToastService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly dialogs = inject(TuiDialogService);
-  private readonly translate = inject(TranslateService);
   private readonly supabase = inject(SupabaseService);
   protected readonly indoor = inject(IndoorService);
   private readonly authState = inject(AuthStateService);
@@ -1172,19 +1169,13 @@ export class TopoFormComponent {
     if (this.isIndoor()) {
       const indoorTopo = this._dialogCtx?.data?.indoorTopoData;
       if (!indoorTopo) return;
-      const confirmed = await firstValueFrom(
-        this.dialogs.open<boolean>(TUI_CONFIRM, {
-          label: this.translate.instant('topos.deletePhotoTitle'),
-          size: 's',
-          data: {
-            content: this.translate.instant('topos.deletePhotoConfirm'),
-            yes: this.translate.instant('delete'),
-            no: this.translate.instant('cancel'),
-            appearance: 'primary-destructive',
-          },
-        }),
-        { defaultValue: false },
-      );
+      const confirmed = await this.appDialogs.confirm({
+        labelKey: 'topos.deletePhotoTitle',
+        contentKey: 'topos.deletePhotoConfirm',
+        yesKey: 'delete',
+        noKey: 'cancel',
+        appearance: 'primary-destructive',
+      });
       if (confirmed) {
         try {
           await this.indoor.updateTopo(indoorTopo.id, { image_url: '' });
@@ -1200,19 +1191,13 @@ export class TopoFormComponent {
     const data = this.effectiveTopoData();
     if (!data || !data.photo) return;
 
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: this.translate.instant('topos.deletePhotoTitle'),
-        size: 's',
-        data: {
-          content: this.translate.instant('topos.deletePhotoConfirm'),
-          yes: this.translate.instant('delete'),
-          no: this.translate.instant('cancel'),
-          appearance: 'primary-destructive',
-        },
-      }),
-      { defaultValue: false },
-    );
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'topos.deletePhotoTitle',
+      contentKey: 'topos.deletePhotoConfirm',
+      yesKey: 'delete',
+      noKey: 'cancel',
+      appearance: 'primary-destructive',
+    });
 
     if (confirmed) {
       try {

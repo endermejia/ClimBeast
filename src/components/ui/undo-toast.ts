@@ -13,7 +13,6 @@ export interface UndoToastData {
 }
 
 @Component({
-  standalone: true,
   selector: 'app-undo-toast',
   imports: [TranslatePipe, TuiButton, TuiButtonX, TuiToast],
   template: `

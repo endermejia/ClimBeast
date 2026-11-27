@@ -14,19 +14,17 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import {
   TuiDataList,
-  TuiDialogService,
   TuiDropdown,
   TuiIcon,
   TuiLoader,
   TuiNotification,
   TuiScrollbar,
 } from '@taiga-ui/core';
-import { TUI_CONFIRM, TuiSegmented, type TuiConfirmData } from '@taiga-ui/kit';
+import { TuiSegmented } from '@taiga-ui/kit';
 
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
-import { firstValueFrom } from 'rxjs';
-
+import { AppDialogsService } from '../../services/app-dialogs.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { CacheService } from '../../services/cache.service';
 import { CragRoutesDataService } from '../../services/crag-routes-data.service';
@@ -104,40 +102,6 @@ const PAGE_SIZE = 20;
     TuiSegmented,
     UbicacionDropdownComponent,
   ],
-  styles: `
-    @media (min-width: 1024px) {
-      :host > tui-scrollbar {
-        overflow: hidden !important;
-      }
-      :host > tui-scrollbar ::ng-deep > .t-content {
-        block-size: 100% !important;
-        height: 100% !important;
-        overflow: hidden !important;
-      }
-      :host > tui-scrollbar ::ng-deep > tui-scroll-controls {
-        display: none !important;
-      }
-    }
-    @media (max-width: 1023.98px) {
-      :host > tui-scrollbar {
-        overflow-x: hidden !important;
-      }
-      :host > tui-scrollbar ::ng-deep > .t-content {
-        min-inline-size: 0 !important;
-        max-inline-size: 100% !important;
-        overflow-x: clip !important;
-      }
-      .column-scrollbar,
-      .column-scrollbar ::ng-deep > .t-content {
-        overflow: visible !important;
-        min-inline-size: 0 !important;
-        max-inline-size: 100% !important;
-      }
-      .column-scrollbar ::ng-deep > tui-scroll-controls {
-        display: none !important;
-      }
-    }
-  `,
   template: `
     <tui-scrollbar class="w-full h-full min-h-0 min-w-0">
       <section
@@ -391,7 +355,7 @@ const PAGE_SIZE = 20;
       </section>
     </tui-scrollbar>
   `,
-  host: { class: 'flex flex-col w-full h-full min-h-0' },
+  host: { class: 'flex flex-col w-full h-full min-h-0 lw-two-col-scroll-host' },
 })
 export class CragComponent {
   protected readonly authState = inject(AuthStateService);
@@ -412,7 +376,7 @@ export class CragComponent {
   private readonly cache = inject(CacheService);
   protected readonly toast = inject(ToastService);
   protected readonly translate = inject(TranslateService);
-  protected readonly dialogs = inject(TuiDialogService);
+  private readonly appDialogs = inject(AppDialogsService);
   private readonly visitedCragsService = inject(VisitedCragsService);
   private readonly seo = inject(SeoService);
   private readonly route = inject(ActivatedRoute);
@@ -826,27 +790,13 @@ export class CragComponent {
     if (!c) return;
     if (!this.isBrowser) return;
 
-    const t = await firstValueFrom(
-      this.translate.get(['crags.deleteTitle', 'crags.deleteConfirm'], {
-        name: c.name,
-      }),
-    );
-    const title = t['crags.deleteTitle'];
-    const message = t['crags.deleteConfirm'];
-    const data: TuiConfirmData = {
-      content: message,
-      yes: this.translate.instant('delete'),
-      no: this.translate.instant('cancel'),
+    const confirmed = await this.appDialogs.confirm({
+      labelKey: 'crags.deleteTitle',
+      contentKey: 'crags.deleteConfirm',
+      contentParams: { name: c.name },
+      yesKey: 'delete',
       appearance: 'primary-destructive',
-    };
-    const confirmed = await firstValueFrom(
-      this.dialogs.open<boolean>(TUI_CONFIRM, {
-        label: title,
-        size: 's',
-        data,
-      }),
-      { defaultValue: false },
-    );
+    });
     if (!confirmed) return;
     try {
       const ok = await this.cragsService.delete(c.id);

@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, input, output, TemplateRef } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
@@ -17,9 +16,7 @@ import { DropdownButtonComponent } from '../ui/dropdown-button';
 
 @Component({
   selector: 'app-home-filter-bar',
-  standalone: true,
   imports: [
-    CommonModule,
     DropdownButtonComponent,
     RouterLink,
     TranslatePipe,
